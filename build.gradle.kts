@@ -3,8 +3,8 @@ plugins {
     id("com.github.johnrengelman.shadow") version "7.1.2"
 }
 
-group = "net.onelitefeather"
-version = "0.0.1-SNAPSHOT"
+group = "net.onelitefeather.titan"
+version = "1.0.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
@@ -28,7 +28,6 @@ repositories {
                 System.getenv("CI_JOB_TOKEN")
             } else {
                 val gitLabPrivateToken: String? by project
-                println(gitLabPrivateToken)
                 gitLabPrivateToken
             }
         }
@@ -40,7 +39,7 @@ repositories {
 }
 
 dependencies {
-    compileOnly("com.github.Minestom:Minestom:master-SNAPSHOT")
+    compileOnly("net.onelitefeather.microtus:Minestom:1.1.1")
     implementation("net.kyori:adventure-text-minimessage:4.12.0")
     // compileOnly("de.icevizion.lib:Aves:1.2.0+6d3788cb")
     api("com.squareup.moshi:moshi:1.14.0")
