@@ -28,9 +28,6 @@ class TitanExtension : Extension() {
     private val tickelEventNode: EventNode<Event>
     private val worldPath = Path.of(WORLD_FOLDER_NAME)
 
-
-    //private val worldConfigPath = worldPath.resolve("lobby.json")
-
     private val spawnLocation: Pos by lazy {
         Pos(0.5, 65.0, 0.5, -180f, 0f)
     }
@@ -44,6 +41,7 @@ class TitanExtension : Extension() {
     }
 
     override fun initialize() {
+
         MinecraftServer.getGlobalEventHandler().addChild(extensionEventNode)
         extensionEventNode.addListener(PlayerLoginEvent::class.java, this::playerLoginListener)
         extensionEventNode.addListener(PlayerSpawnEvent::class.java, this::playerSpawnListener)
