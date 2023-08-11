@@ -51,6 +51,7 @@ class TitanExtension : Extension() {
         extensionEventNode.addListener(PlayerBlockBreakEvent::class.java, this::cancelListener)
         extensionEventNode.addListener(PlayerBlockPlaceEvent::class.java, this::cancelListener)
         extensionEventNode.addListener(PlayerSwapItemEvent::class.java, this::cancelListener)
+        extensionEventNode.addListener(PlayerRespawnEvent::class.java, this::respawnListener)
         MinecraftServer.getGlobalEventHandler().addChild(sitEventNode)
         MinecraftServer.getGlobalEventHandler().addChild(elytraEventNode)
         MinecraftServer.getGlobalEventHandler().addChild(tickelEventNode)
@@ -64,6 +65,11 @@ class TitanExtension : Extension() {
 
     private fun deathListener(event: PlayerDeathEvent) {
         event.deathText = Component.empty()
+        event.player.respawn()
+    }
+
+    private fun respawnListener(event: PlayerRespawnEvent) {
+        setItems(event.player)
     }
 
     private fun cancelListener(event: CancellableEvent) {
@@ -72,6 +78,7 @@ class TitanExtension : Extension() {
 
     private fun playerLoginListener(event: PlayerLoginEvent) {
         event.setSpawningInstance(lobbyWorld)
+        event.player.respawnPoint = spawnLocation
     }
 
     private fun playerSpawnListener(event: PlayerSpawnEvent) {
