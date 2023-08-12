@@ -12,6 +12,7 @@ import net.minestom.server.event.EventNode
 import net.minestom.server.event.player.PlayerBlockInteractEvent
 import net.minestom.server.event.player.PlayerDisconnectEvent
 import net.minestom.server.event.player.PlayerPacketEvent
+import net.minestom.server.instance.block.Block
 import net.minestom.server.network.packet.client.play.ClientSteerVehiclePacket
 import net.onelitefeather.titan.event.EntityDismountEvent
 import java.util.*
@@ -49,7 +50,7 @@ class SitFeature(private val yOffset: Double, eventNode: EventNode<Event>) {
     }
 
     private fun onInteract(playerBlockInteractEvent: PlayerBlockInteractEvent) {
-        if (playerBlockInteractEvent.block.name().contains("stairs", true)) {
+        if (playerBlockInteractEvent.block.namespace() == Block.SPRUCE_STAIRS.namespace()) {
             sitPlayer(playerBlockInteractEvent.player, playerBlockInteractEvent.blockPosition)
         }
     }
