@@ -28,9 +28,6 @@ class TitanExtension : Extension() {
     private val tickelEventNode: EventNode<Event>
     private val worldPath = Path.of(WORLD_FOLDER_NAME)
 
-
-    //private val worldConfigPath = worldPath.resolve("lobby.json")
-
     private val spawnLocation: Pos by lazy {
         Pos(0.5, 65.0, 0.5, -180f, 0f)
     }
@@ -44,6 +41,7 @@ class TitanExtension : Extension() {
     }
 
     override fun initialize() {
+
         MinecraftServer.getGlobalEventHandler().addChild(extensionEventNode)
         extensionEventNode.addListener(PlayerLoginEvent::class.java, this::playerLoginListener)
         extensionEventNode.addListener(PlayerSpawnEvent::class.java, this::playerSpawnListener)
@@ -53,6 +51,7 @@ class TitanExtension : Extension() {
         extensionEventNode.addListener(PlayerBlockBreakEvent::class.java, this::cancelListener)
         extensionEventNode.addListener(PlayerBlockPlaceEvent::class.java, this::cancelListener)
         extensionEventNode.addListener(PlayerSwapItemEvent::class.java, this::cancelListener)
+        extensionEventNode.addListener(PlayerRespawnEvent::class.java, this::respawnListener)
         MinecraftServer.getGlobalEventHandler().addChild(sitEventNode)
         MinecraftServer.getGlobalEventHandler().addChild(elytraEventNode)
         MinecraftServer.getGlobalEventHandler().addChild(tickelEventNode)
@@ -66,6 +65,11 @@ class TitanExtension : Extension() {
 
     private fun deathListener(event: PlayerDeathEvent) {
         event.deathText = Component.empty()
+        event.player.respawn()
+    }
+
+    private fun respawnListener(event: PlayerRespawnEvent) {
+        setItems(event.player)
     }
 
     private fun cancelListener(event: CancellableEvent) {
@@ -74,6 +78,7 @@ class TitanExtension : Extension() {
 
     private fun playerLoginListener(event: PlayerLoginEvent) {
         event.setSpawningInstance(lobbyWorld)
+        event.player.respawnPoint = spawnLocation
     }
 
     private fun playerSpawnListener(event: PlayerSpawnEvent) {

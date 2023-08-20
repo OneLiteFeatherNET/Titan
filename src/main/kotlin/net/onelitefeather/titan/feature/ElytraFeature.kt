@@ -17,18 +17,24 @@ class ElytraFeature(eventNode: EventNode<Event>) {
     }
 
     private fun playerStartFlyingWithElytraEvent(event: PlayerStartFlyingWithElytraEvent) {
-        event.player.inventory.setItemStack(0, firework)
+        event.player.inventory.setItemStack(45, firework)
     }
 
     private fun playerStopFlyingWithElytraEvent(event: PlayerStopFlyingWithElytraEvent) {
-        event.player.inventory.setItemStack(0, ItemStack.AIR)
+        event.player.inventory.setItemStack(45, ItemStack.AIR)
     }
 
     private fun playerUseItemEvent(event: PlayerUseItemEvent) {
         val item = event.itemStack
         if (item == firework && event.player.isFlyingWithElytra) {
             event.player.velocity = event.player.velocity.normalize().add(event.player.position.direction().mul(35.0))
+
+            /*val spawnBlock = event.entity.position
+            val instance = event.player.instance ?: return
+            val customFirework = CustomFirework(event.player, EntityType.FIREWORK_ROCKET)
+            customFirework.setInstance(instance, spawnBlock)*/
         }
     }
+
 
 }
