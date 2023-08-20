@@ -12,11 +12,9 @@ import net.minestom.server.event.trait.CancellableEvent
 import net.minestom.server.extensions.Extension
 import net.minestom.server.instance.AnvilLoader
 import net.minestom.server.instance.InstanceContainer
-import net.onelitefeather.titan.config.WorldConfig
 import net.onelitefeather.titan.feature.ElytraFeature
 import net.onelitefeather.titan.feature.SitFeature
 import net.onelitefeather.titan.feature.TickelFeature
-import net.onelitefeather.titan.service.Cooldown
 import net.onelitefeather.titan.service.elytra
 import net.onelitefeather.titan.service.teleporter
 import java.nio.file.Path
@@ -32,9 +30,10 @@ class TitanExtension : Extension() {
 
 
     //private val worldConfigPath = worldPath.resolve("lobby.json")
-    private val worldConfig = WorldConfig(
-        spawnLocation = Pos(0.5, 65.0, 0.5, -180f, 0f)
-    )
+
+    private val spawnLocation: Pos by lazy {
+        Pos(0.5, 65.0, 0.5, -180f, 0f)
+    }
 
     init {
         lobbyWorld.chunkLoader = AnvilLoader(worldPath)
@@ -79,7 +78,7 @@ class TitanExtension : Extension() {
 
     private fun playerSpawnListener(event: PlayerSpawnEvent) {
         setItems(event.player)
-        event.player.teleport(worldConfig.spawnLocation)
+        event.player.teleport(spawnLocation)
     }
 
     private fun setItems(player: Player) {
