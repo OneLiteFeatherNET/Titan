@@ -4,7 +4,7 @@ include:
     file: s3-upload.yaml
 
 variables:
-  JAR_FILE: "Titan.jar"
+  JAR_FILE: "titan.jar"
   BUCKET: "olf-dev"
   TEMPLATE: "default"
 
