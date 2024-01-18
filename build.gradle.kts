@@ -32,7 +32,13 @@ repositories {
 
 dependencies {
     compileOnly(libs.minestom)
+    compileOnly(libs.aves)
     implementation(libs.adventure.minimessage)
+    implementation(libs.guava)
+
+    compileOnly(libs.cloudnet.bridge)
+    compileOnly(libs.cloudnet.driver)
+    compileOnly(libs.cloudnet.wrapper.jvm)
 }
 
 publishData {
