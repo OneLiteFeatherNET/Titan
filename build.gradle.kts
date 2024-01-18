@@ -1,22 +1,18 @@
 plugins {
-    kotlin("jvm") version "1.7.20"
-    id("com.github.johnrengelman.shadow") version "7.1.2"
+    kotlin("jvm") version "1.9.22"
+    alias(libs.plugins.shadow)
+    alias(libs.plugins.publishdata)
+    `maven-publish`
 }
 
 group = "net.onelitefeather.titan"
-version = "1.0.0-SNAPSHOT"
+version = "1.0.0"
 
 repositories {
     mavenCentral()
     maven("https://jitpack.io")
     maven {
-        val groupdId = 28 // Gitlab Group
-        url = if (System.getenv().containsKey("CI")) {
-            val ciApiv4Url = System.getenv("CI_API_V4_URL")
-            uri("$ciApiv4Url/groups/$groupdId/-/packages/maven")
-        } else {
-            uri("https://gitlab.themeinerlp.dev/api/v4/groups/$groupdId/-/packages/maven")
-        }
+        url = uri("https://gitlab.themeinerlp.dev/api/v4/groups/28/-/packages/maven")
         name = "GitLab"
         credentials(HttpHeaderCredentials::class.java) {
             name = if (System.getenv().containsKey("CI")) {
@@ -24,12 +20,8 @@ repositories {
             } else {
                 "Private-Token"
             }
-            value = if (System.getenv().containsKey("CI")) {
-                System.getenv("CI_JOB_TOKEN")
-            } else {
-                val gitLabPrivateToken: String? by project
-                gitLabPrivateToken
-            }
+            val gitLabPrivateToken: String? by project
+            value = gitLabPrivateToken ?: System.getenv("CI_JOB_TOKEN")
         }
         authentication {
             create<HttpHeaderAuthentication>("header")
@@ -39,19 +31,45 @@ repositories {
 }
 
 dependencies {
-    compileOnly("net.onelitefeather.microtus:Minestom:1.1.1")
-    implementation("net.kyori:adventure-text-minimessage:4.12.0")
-    // compileOnly("de.icevizion.lib:Aves:1.2.0+6d3788cb")
-    api("com.squareup.moshi:moshi:1.14.0")
-    api("com.squareup.moshi:moshi-kotlin:1.14.0")
-    api("org.jetbrains.kotlin:kotlin-reflect:1.7.20")
-
-
+    compileOnly(libs.minestom)
+    implementation(libs.adventure.minimessage)
 }
+
+publishData {
+    addBuildData()
+    useGitlabReposForProject("106", "https://gitlab.themeinerlp.dev/")
+    publishTask("shadowJar")
+}
+
 
 tasks {
     shadowJar {
         archiveFileName.set("${rootProject.name}.${archiveExtension.getOrElse("jar")}")
     }
 }
+
+publishing {
+    publications.create<MavenPublication>("maven") {
+        // configure the publication as defined previously.
+        publishData.configurePublication(this)
+    }
+
+    repositories {
+        maven {
+            credentials(HttpHeaderCredentials::class) {
+                name = "Job-Token"
+                value = System.getenv("CI_JOB_TOKEN")
+            }
+            authentication {
+                create("header", HttpHeaderAuthentication::class)
+            }
+
+
+            name = "Gitlab"
+            // Get the detected repository from the publish data
+            url = uri(publishData.getRepository())
+        }
+    }
+}
+
 
