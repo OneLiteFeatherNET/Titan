@@ -2,6 +2,7 @@ package net.onelitefeather.titan
 
 import net.kyori.adventure.key.Key
 import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.format.NamedTextColor
 import net.minestom.server.MinecraftServer
 import net.minestom.server.coordinate.Pos
 import net.minestom.server.entity.Player
@@ -13,14 +14,14 @@ import net.minestom.server.event.trait.CancellableEvent
 import net.minestom.server.extensions.Extension
 import net.minestom.server.instance.AnvilLoader
 import net.minestom.server.instance.InstanceContainer
+import net.minestom.server.item.ItemStack
+import net.minestom.server.item.Material
 import net.minestom.server.utils.NamespaceID
 import net.onelitefeather.titan.blockhandler.*
 import net.onelitefeather.titan.blockhandler.banner.BedHandler
 import net.onelitefeather.titan.feature.ElytraFeature
 import net.onelitefeather.titan.feature.SitFeature
 import net.onelitefeather.titan.feature.TickelFeature
-import net.onelitefeather.titan.service.elytra
-import net.onelitefeather.titan.service.teleporter
 import java.nio.file.Path
 
 class TitanExtension : Extension() {
@@ -30,7 +31,22 @@ class TitanExtension : Extension() {
     private val sitEventNode: EventNode<Event>
     private val elytraEventNode: EventNode<Event>
     private val tickleEventNode: EventNode<Event>
-    private val worldPath = Path.of(WORLD_FOLDER_NAME)
+    private val worldPath = Path.of("world")
+    private val elytra =
+        ItemStack.builder(Material.ELYTRA)
+            .displayName(
+                Component.text("Elytra", NamedTextColor.DARK_PURPLE)
+            )
+            .meta {
+                it.unbreakable(true)
+            }
+            .build()
+    private val teleporter =
+        ItemStack.builder(Material.FEATHER)
+            .displayName(
+                Component.text("Navigator", NamedTextColor.AQUA)
+            )
+            .build()
 
     private val spawnLocation: Pos by lazy {
         Pos(0.5, 65.0, 0.5, -180f, 0f)
