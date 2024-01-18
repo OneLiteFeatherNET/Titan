@@ -1,6 +1,5 @@
 package net.onelitefeather.titan.feature
 
-import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.minimessage.MiniMessage
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder
 import net.minestom.server.entity.Player
@@ -10,10 +9,9 @@ import net.minestom.server.event.EventNode
 import net.minestom.server.event.entity.EntityAttackEvent
 import net.minestom.server.item.Material
 import net.minestom.server.tag.Tag
-import net.onelitefeather.titan.TICKLE_MESSAGE
 
 class TickelFeature(eventNode: EventNode<Event>) {
-
+    private val TICKLE_MESSAGE = "<yellow><player> <white>tickled <yellow><target>"
     private val cooldown: Tag<Long> = Tag.Long("tickel_cooldown")
 
     init {
