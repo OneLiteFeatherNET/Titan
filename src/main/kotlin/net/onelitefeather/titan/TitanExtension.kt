@@ -31,6 +31,7 @@ import net.onelitefeather.titan.feature.ElytraFeature
 import net.onelitefeather.titan.feature.NavigatorFeature
 import net.onelitefeather.titan.feature.SitFeature
 import net.onelitefeather.titan.feature.TickelFeature
+import net.onelitefeather.titan.featureflag.Feature
 import net.onelitefeather.titan.featureflag.FeatureService
 import java.nio.file.Path
 
@@ -42,7 +43,13 @@ class TitanExtension : Extension() {
     private val elytraEventNode: EventNode<Event>
     private val tickleEventNode: EventNode<Event>
     private val navigatorEventNode: EventNode<Event>
-    private val worldPath = Path.of("world")
+    private val worldPath: Path by lazy {
+        if (featureService.isFeatureEnabled(Feature.HALLOWEEN)) {
+            return@lazy Path.of("world_halloween")
+        }
+        return@lazy Path.of("world")
+    }
+
     private val elytra =
         ItemStack.builder(Material.ELYTRA)
             .displayName(
