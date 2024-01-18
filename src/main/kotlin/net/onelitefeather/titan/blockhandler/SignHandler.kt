@@ -1,7 +1,6 @@
 package net.onelitefeather.titan.blockhandler
 
 import net.kyori.adventure.key.Key
-import net.kyori.adventure.text.Component
 import net.minestom.server.instance.block.BlockHandler
 import net.minestom.server.tag.Tag
 import net.minestom.server.tag.TagReadable
