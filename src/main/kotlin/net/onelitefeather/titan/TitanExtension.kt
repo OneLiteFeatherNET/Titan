@@ -31,6 +31,7 @@ import net.onelitefeather.titan.feature.ElytraFeature
 import net.onelitefeather.titan.feature.NavigatorFeature
 import net.onelitefeather.titan.feature.SitFeature
 import net.onelitefeather.titan.feature.TickelFeature
+import net.onelitefeather.titan.featureflag.FeatureService
 import java.nio.file.Path
 
 class TitanExtension : Extension() {
@@ -70,6 +71,10 @@ class TitanExtension : Extension() {
             DummyDeliver()
         }
         DummyDeliver()
+    }
+
+    val featureService: FeatureService by lazy {
+        return@lazy FeatureService()
     }
 
     init {
