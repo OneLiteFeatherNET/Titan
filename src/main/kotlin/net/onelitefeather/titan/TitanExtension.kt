@@ -1,5 +1,6 @@
 package net.onelitefeather.titan
 
+import de.icevizion.aves.inventory.util.InventoryConstants
 import net.kyori.adventure.key.Key
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
@@ -10,16 +11,24 @@ import net.minestom.server.event.Event
 import net.minestom.server.event.EventNode
 import net.minestom.server.event.item.PickupItemEvent
 import net.minestom.server.event.player.*
-import net.minestom.server.event.trait.CancellableEvent
 import net.minestom.server.extensions.Extension
 import net.minestom.server.instance.AnvilLoader
 import net.minestom.server.instance.InstanceContainer
 import net.minestom.server.item.ItemStack
 import net.minestom.server.item.Material
 import net.minestom.server.utils.NamespaceID
+import net.minestom.server.world.biomes.Biome
+import net.minestom.server.world.biomes.BiomeEffects
+import net.minestom.server.world.biomes.BiomeParticle
+import net.onelitefeather.titan.biome.DustOption
 import net.onelitefeather.titan.blockhandler.*
 import net.onelitefeather.titan.blockhandler.banner.BedHandler
+import net.onelitefeather.titan.commands.EndCommand
+import net.onelitefeather.titan.deliver.CloudNetDeliver
+import net.onelitefeather.titan.deliver.Deliver
+import net.onelitefeather.titan.deliver.DummyDeliver
 import net.onelitefeather.titan.feature.ElytraFeature
+import net.onelitefeather.titan.feature.NavigatorFeature
 import net.onelitefeather.titan.feature.SitFeature
 import net.onelitefeather.titan.feature.TickelFeature
 import java.nio.file.Path
@@ -31,6 +40,7 @@ class TitanExtension : Extension() {
     private val sitEventNode: EventNode<Event>
     private val elytraEventNode: EventNode<Event>
     private val tickleEventNode: EventNode<Event>
+    private val navigatorEventNode: EventNode<Event>
     private val worldPath = Path.of("world")
     private val elytra =
         ItemStack.builder(Material.ELYTRA)
@@ -41,7 +51,7 @@ class TitanExtension : Extension() {
                 it.unbreakable(true)
             }
             .build()
-    private val teleporter =
+    internal val teleporter =
         ItemStack.builder(Material.FEATHER)
             .displayName(
                 Component.text("Navigator", NamedTextColor.AQUA)
@@ -50,6 +60,16 @@ class TitanExtension : Extension() {
 
     private val spawnLocation: Pos by lazy {
         Pos(0.5, 65.0, 0.5, -180f, 0f)
+    }
+
+    val deliver: Deliver by lazy {
+        try {
+            Class.forName("eu.cloudnetservice.wrapper.Main")
+            return@lazy CloudNetDeliver()
+        } catch (e: ClassNotFoundException) {
+            DummyDeliver()
+        }
+        DummyDeliver()
     }
 
     init {
@@ -80,26 +100,52 @@ class TitanExtension : Extension() {
         sitEventNode = EventNode.all("SitFeature")
         elytraEventNode = EventNode.all("ElytraRaceFeature")
         tickleEventNode = EventNode.all("TickelFeature")
+        navigatorEventNode = EventNode.all("NavigatorFeature")
     }
 
     override fun initialize() {
-
         MinecraftServer.getGlobalEventHandler().addChild(extensionEventNode)
         extensionEventNode.addListener(PlayerLoginEvent::class.java, this::playerLoginListener)
         extensionEventNode.addListener(PlayerSpawnEvent::class.java, this::playerSpawnListener)
         extensionEventNode.addListener(PlayerDeathEvent::class.java, this::deathListener)
 
-        extensionEventNode.addListener(PickupItemEvent::class.java, this::cancelListener)
-        extensionEventNode.addListener(PlayerBlockBreakEvent::class.java, this::cancelListener)
-        extensionEventNode.addListener(PlayerBlockPlaceEvent::class.java, this::cancelListener)
-        extensionEventNode.addListener(PlayerSwapItemEvent::class.java, this::cancelListener)
+        extensionEventNode.addListener(PickupItemEvent::class.java, InventoryConstants.CANCELLABLE_EVENT::accept)
+        extensionEventNode.addListener(PlayerBlockBreakEvent::class.java, InventoryConstants.CANCELLABLE_EVENT::accept)
+        extensionEventNode.addListener(PlayerBlockPlaceEvent::class.java, InventoryConstants.CANCELLABLE_EVENT::accept)
+        extensionEventNode.addListener(PlayerSwapItemEvent::class.java, InventoryConstants.CANCELLABLE_EVENT::accept)
         extensionEventNode.addListener(PlayerRespawnEvent::class.java, this::respawnListener)
         MinecraftServer.getGlobalEventHandler().addChild(sitEventNode)
         MinecraftServer.getGlobalEventHandler().addChild(elytraEventNode)
         MinecraftServer.getGlobalEventHandler().addChild(tickleEventNode)
+        MinecraftServer.getGlobalEventHandler().addChild(navigatorEventNode)
         SitFeature(0.25, sitEventNode)
         ElytraFeature(elytraEventNode)
         TickelFeature(tickleEventNode)
+        NavigatorFeature(this, navigatorEventNode)
+        MinecraftServer.getCommandManager().register(EndCommand())
+        val biomeManager = MinecraftServer.getBiomeManager()
+        val biome = Biome.builder()
+            .name(NamespaceID.from("crimson_forest"))
+            .category(Biome.Category.NETHER)
+            .temperature(2.0f)
+            .effects(
+                BiomeEffects.builder()
+                .fogColor(0x820000) // ff6600
+                .skyColor(0x820000)
+                .waterFogColor(0x050533)
+                .grassColor(0xBFB755)
+                .waterColor(0x820000)
+                .foliageColor(0xAEA42A)
+                .biomeParticle(
+                    BiomeParticle(
+                    1f,
+                    DustOption(1f,0f,0f,1.0f)
+                )
+                ).build()
+            )
+            .depth(1.1f)
+            .build()
+        biomeManager.addBiome(biome)
     }
 
     override fun terminate() {
@@ -112,10 +158,6 @@ class TitanExtension : Extension() {
 
     private fun respawnListener(event: PlayerRespawnEvent) {
         setItems(event.player)
-    }
-
-    private fun cancelListener(event: CancellableEvent) {
-        event.isCancelled = true
     }
 
     private fun playerLoginListener(event: PlayerLoginEvent) {
