@@ -1,14 +1,12 @@
 include:
+  - template: Jobs/Dependency-Scanning.gitlab-ci.yml
+  - template: Security/Secret-Detection.gitlab-ci.yml
   - project: onelitefeather/ci-template
-    ref: Better-Pipelines
-    file: s3-upload.yaml
-
-variables:
-  JAR_FILE: "titan.jar"
-  BUCKET: "olf-dev"
-  TEMPLATE: "default"
-
+    ref: template
+    file: gradle-build.yml
+    inputs:
+      archivePath: ''
 
 deploy:
   script:
-    - gradle shadowJar
+    - gradle publish
