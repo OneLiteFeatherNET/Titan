@@ -15,6 +15,7 @@ import net.minestom.server.inventory.condition.InventoryConditionResult
 import net.minestom.server.item.ItemStack
 import net.minestom.server.item.Material
 import net.onelitefeather.titan.*
+import net.onelitefeather.titan.featureflag.Feature
 
 class NavigatorFeature(
     private val titanExtension: TitanExtension, eventNode: EventNode<Event>
@@ -59,8 +60,12 @@ class NavigatorFeature(
     init {
         globalLayout.setNonClickItems(LayoutCalculator.fillRow(InventoryType.CHEST_1_ROW), blankItemStack)
         globalLayout.setItem(0, elytraItemStack, this::clickElytra)
-        globalLayout.setItem(3, survivalItemStack, this::clickSurvival)
-        globalLayout.setItem(5, slenderItemStack, this::clickSlender)
+        if (titanExtension.featureService.isFeatureEnabled(Feature.SLENDER)) {
+            globalLayout.setItem(3, survivalItemStack, this::clickSurvival)
+            globalLayout.setItem(5, slenderItemStack, this::clickSlender)
+        } else {
+            globalLayout.setItem(4, survivalItemStack, this::clickSurvival)
+        }
         globalLayout.setItem(8, creativeItemStack, this::clickCreative)
         globalInventory.setLayout(globalLayout)
         globalInventory.register()
