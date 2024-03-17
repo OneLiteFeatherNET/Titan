@@ -17,6 +17,7 @@ import net.minestom.server.instance.InstanceContainer
 import net.minestom.server.item.ItemStack
 import net.minestom.server.item.Material
 import net.minestom.server.utils.NamespaceID
+import net.minestom.server.utils.chunk.ChunkUtils
 import net.minestom.server.world.biomes.Biome
 import net.minestom.server.world.biomes.BiomeEffects
 import net.minestom.server.world.biomes.BiomeParticle
@@ -34,6 +35,7 @@ import net.onelitefeather.titan.feature.TickelFeature
 import net.onelitefeather.titan.featureflag.Feature
 import net.onelitefeather.titan.featureflag.FeatureService
 import java.nio.file.Path
+import java.util.function.BiConsumer
 
 class TitanExtension : Extension() {
 
@@ -158,6 +160,14 @@ class TitanExtension : Extension() {
             .depth(1.1f)
             .build()
         biomeManager.addBiome(biome)
+
+        if (!ChunkUtils.isLoaded(lobbyWorld, spawnLocation)) {
+            lobbyWorld.loadChunk(spawnLocation).whenComplete { _, throwable ->
+                if (throwable != null) {
+                    throw RuntimeException("Unable to load spawn chunk", throwable)
+                }
+            }
+        }
     }
 
     override fun terminate() {
