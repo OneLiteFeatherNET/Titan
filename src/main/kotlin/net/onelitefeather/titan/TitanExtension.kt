@@ -9,6 +9,7 @@ import net.minestom.server.coordinate.Pos
 import net.minestom.server.entity.Player
 import net.minestom.server.event.Event
 import net.minestom.server.event.EventNode
+import net.minestom.server.event.item.ItemDropEvent
 import net.minestom.server.event.item.PickupItemEvent
 import net.minestom.server.event.player.*
 import net.minestom.server.extensions.Extension
@@ -128,6 +129,7 @@ class TitanExtension : Extension() {
         extensionEventNode.addListener(PlayerBlockPlaceEvent::class.java, InventoryConstants.CANCELLABLE_EVENT::accept)
         extensionEventNode.addListener(PlayerSwapItemEvent::class.java, InventoryConstants.CANCELLABLE_EVENT::accept)
         extensionEventNode.addListener(PlayerRespawnEvent::class.java, this::respawnListener)
+        extensionEventNode.addListener(ItemDropEvent::class.java, InventoryConstants.CANCELLABLE_EVENT::accept)
         MinecraftServer.getGlobalEventHandler().addChild(sitEventNode)
         MinecraftServer.getGlobalEventHandler().addChild(elytraEventNode)
         MinecraftServer.getGlobalEventHandler().addChild(tickleEventNode)
