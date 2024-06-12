@@ -19,10 +19,6 @@ import net.minestom.server.item.ItemStack
 import net.minestom.server.item.Material
 import net.minestom.server.utils.NamespaceID
 import net.minestom.server.utils.chunk.ChunkUtils
-import net.minestom.server.world.biomes.Biome
-import net.minestom.server.world.biomes.BiomeEffects
-import net.minestom.server.world.biomes.BiomeParticle
-import net.onelitefeather.titan.biome.DustOption
 import net.onelitefeather.titan.blockhandler.*
 import net.onelitefeather.titan.blockhandler.banner.BedHandler
 import net.onelitefeather.titan.commands.EndCommand
@@ -120,7 +116,7 @@ class TitanExtension : Extension() {
 
     override fun initialize() {
         MinecraftServer.getGlobalEventHandler().addChild(extensionEventNode)
-        extensionEventNode.addListener(PlayerLoginEvent::class.java, this::playerLoginListener)
+        extensionEventNode.addListener(AsyncPlayerConfigurationEvent::class.java, this::playerLoginListener)
         extensionEventNode.addListener(PlayerSpawnEvent::class.java, this::playerSpawnListener)
         extensionEventNode.addListener(PlayerDeathEvent::class.java, this::deathListener)
 
@@ -139,30 +135,6 @@ class TitanExtension : Extension() {
         TickelFeature(tickleEventNode)
         NavigatorFeature(this, navigatorEventNode)
         MinecraftServer.getCommandManager().register(EndCommand())
-        val biomeManager = MinecraftServer.getBiomeManager()
-        val biome = Biome.builder()
-            .name(NamespaceID.from("crimson_forest"))
-            .category(Biome.Category.NETHER)
-            .temperature(2.0f)
-            .effects(
-                BiomeEffects.builder()
-                .fogColor(0x820000) // ff6600
-                .skyColor(0x820000)
-                .waterFogColor(0x050533)
-                .grassColor(0xBFB755)
-                .waterColor(0x820000)
-                .foliageColor(0xAEA42A)
-                .biomeParticle(
-                    BiomeParticle(
-                    1f,
-                    DustOption(1f,0f,0f,1.0f)
-                )
-                ).build()
-            )
-            .depth(1.1f)
-            .build()
-        biomeManager.addBiome(biome)
-
         if (!ChunkUtils.isLoaded(lobbyWorld, spawnLocation)) {
             lobbyWorld.loadChunk(spawnLocation).whenComplete { _, throwable ->
                 if (throwable != null) {
@@ -184,7 +156,7 @@ class TitanExtension : Extension() {
         setItems(event.player)
     }
 
-    private fun playerLoginListener(event: PlayerLoginEvent) {
+    private fun playerLoginListener(event: AsyncPlayerConfigurationEvent) {
         event.setSpawningInstance(lobbyWorld)
         event.player.respawnPoint = spawnLocation
     }
