@@ -1,28 +1,69 @@
 plugins {
-    id("java")
+    kotlin("jvm") version "1.9.22"
+    alias(libs.plugins.publishdata)
+    `maven-publish`
 }
 
-group = "net.onelitefeather"
-version = "0.0.1-SNAPSHOT"
+group = "net.onelitefeather.titan"
+version = "1.0.0"
 
 repositories {
     mavenCentral()
-    maven("https://papermc.io/repo/repository/maven-public/")
+    maven("https://jitpack.io")
+    maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+    maven {
+        url = uri("https://gitlab.themeinerlp.dev/api/v4/groups/28/-/packages/maven")
+        name = "GitLab"
+        credentials(HttpHeaderCredentials::class.java) {
+            name = "Private-Token"
+            val gitLabPrivateToken: String? by project
+            value = gitLabPrivateToken
+        }
+        authentication {
+            create<HttpHeaderAuthentication>("header")
+        }
+    }
+
 }
 
 dependencies {
-    // Paper
-    compileOnly(libs.paper)
-}
-java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    implementation(platform(libs.microtus.bom))
+    compileOnly(libs.microtus)
+    compileOnly(libs.aves)
+
+    compileOnly(libs.cloudnet.bridge)
+    compileOnly(libs.cloudnet.driver)
+    compileOnly(libs.cloudnet.wrapper.jvm)
 }
 
-tasks {
-    compileJava {
-        options.release.set(17)
-        options.encoding = "UTF-8"
+publishData {
+    addBuildData()
+    useGitlabReposForProject("106", "https://gitlab.themeinerlp.dev/")
+    publishTask("jar")
+}
+
+publishing {
+    publications.create<MavenPublication>("maven") {
+        // configure the publication as defined previously.
+        publishData.configurePublication(this)
+    }
+
+    repositories {
+        maven {
+            credentials(HttpHeaderCredentials::class) {
+                name = "Job-Token"
+                value = System.getenv("CI_JOB_TOKEN")
+            }
+            authentication {
+                create("header", HttpHeaderAuthentication::class)
+            }
+
+
+            name = "Gitlab"
+            // Get the detected repository from the publish data
+            url = uri(publishData.getRepository())
+        }
     }
 }
+
 
