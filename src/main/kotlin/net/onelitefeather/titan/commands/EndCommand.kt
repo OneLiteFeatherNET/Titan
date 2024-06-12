@@ -10,6 +10,11 @@ class EndCommand : Command("end") {
 
     init {
         addSyntax(this::run)
+        setCondition(this::hasPermission)
+    }
+
+    private fun hasPermission(commandSender: CommandSender, s: String?): Boolean {
+        return commandSender.hasPermission("lobby.end");
     }
 
     private fun run(commandSender: CommandSender, context: CommandContext) {
