@@ -1,6 +1,5 @@
 package net.onelitefeather.titan
 
-import de.icevizion.aves.inventory.util.InventoryConstants
 import java.nio.file.Path
 import net.kyori.adventure.key.Key
 import net.kyori.adventure.text.Component
@@ -22,6 +21,8 @@ import net.minestom.server.event.player.PlayerSwapItemEvent
 import net.minestom.server.extensions.Extension
 import net.minestom.server.instance.AnvilLoader
 import net.minestom.server.instance.InstanceContainer
+import net.minestom.server.inventory.click.ClickType
+import net.minestom.server.inventory.condition.InventoryConditionResult
 import net.minestom.server.item.ItemStack
 import net.minestom.server.item.Material
 import net.minestom.server.utils.NamespaceID
@@ -43,6 +44,7 @@ import net.onelitefeather.titan.feature.SitFeature
 import net.onelitefeather.titan.feature.TickelFeature
 import net.onelitefeather.titan.featureflag.Feature
 import net.onelitefeather.titan.featureflag.FeatureService
+import net.onelitefeather.titan.helper.Cancelable
 
 class TitanExtension : Extension() {
 
@@ -52,69 +54,18 @@ class TitanExtension : Extension() {
     private val elytraEventNode: EventNode<Event>
     private val tickleEventNode: EventNode<Event>
     private val navigatorEventNode: EventNode<Event>
-    private val worldPath: Path by lazy {
-        if (featureService.isFeatureEnabled(Feature.HALLOWEEN)) {
-            return@lazy Path.of("world_halloween")
-        }
-        return@lazy Path.of("world")
-    }
+    private val worldPath: Path by lazy(TitanExtension::createWorldPath)
+    private val spawnLocation: Pos by lazy(TitanExtension::createSpawn)
 
-    private val elytra =
-        ItemStack.builder(Material.ELYTRA)
-            .displayName(
-                Component.text("Elytra", NamedTextColor.DARK_PURPLE)
-            )
-            .meta {
-                it.unbreakable(true)
-            }
-            .build()
-    internal val teleporter =
-        ItemStack.builder(Material.FEATHER)
-            .displayName(
-                Component.text("Navigator", NamedTextColor.AQUA)
-            )
-            .build()
-
-    private val spawnLocation: Pos by lazy {
-        Pos(0.5, 65.0, 0.5, -180f, 0f)
-    }
-
-    val deliver: Deliver by lazy {
-        try {
-            Class.forName("eu.cloudnetservice.wrapper.Main")
-            return@lazy CloudNetDeliver()
-        } catch (e: ClassNotFoundException) {
-            DummyDeliver()
-        }
-        DummyDeliver()
-    }
-
-    val featureService: FeatureService by lazy {
-        return@lazy FeatureService()
-    }
 
     init {
-        MinecraftServer.getBlockManager().registerHandler(NamespaceID.from(Key.key("minecraft:bed"))) {
-            BedHandler()
-        }
-        MinecraftServer.getBlockManager().registerHandler(NamespaceID.from(Key.key("minecraft:jukebox"))) {
-            JukeboxHandler()
-        }
-        MinecraftServer.getBlockManager().registerHandler(NamespaceID.from(Key.key("minecraft:beacon"))) {
-            BeaconHandler()
-        }
-        MinecraftServer.getBlockManager().registerHandler(NamespaceID.from(Key.key("minecraft:sign"))) {
-            SignHandler()
-        }
-        MinecraftServer.getBlockManager().registerHandler(NamespaceID.from(Key.key("minecraft:banner"))) {
-            BannerHandler()
-        }
-        MinecraftServer.getBlockManager().registerHandler(NamespaceID.from(Key.key("minecraft:skull"))) {
-            SkullHandler()
-        }
-        MinecraftServer.getBlockManager().registerHandler(NamespaceID.from(Key.key("minecraft:candle"))) {
-            CandleHandler()
-        }
+        MinecraftServer.getBlockManager().registerHandler(NamespaceID.from(Key.key("minecraft:bed")), ::BedHandler)
+        MinecraftServer.getBlockManager().registerHandler(NamespaceID.from(Key.key("minecraft:jukebox")), ::JukeboxHandler)
+        MinecraftServer.getBlockManager().registerHandler(NamespaceID.from(Key.key("minecraft:beacon")), ::BeaconHandler)
+        MinecraftServer.getBlockManager().registerHandler(NamespaceID.from(Key.key("minecraft:sign")), ::SignHandler)
+        MinecraftServer.getBlockManager().registerHandler(NamespaceID.from(Key.key("minecraft:banner")), ::BannerHandler)
+        MinecraftServer.getBlockManager().registerHandler(NamespaceID.from(Key.key("minecraft:skull")), ::SkullHandler)
+        MinecraftServer.getBlockManager().registerHandler(NamespaceID.from(Key.key("minecraft:candle")), ::CandleHandler)
         lobbyWorld.chunkLoader = AnvilLoader(worldPath)
 
         extensionEventNode = EventNode.all("TitanExtension")
@@ -130,12 +81,12 @@ class TitanExtension : Extension() {
         extensionEventNode.addListener(PlayerSpawnEvent::class.java, this::playerSpawnListener)
         extensionEventNode.addListener(PlayerDeathEvent::class.java, this::deathListener)
 
-        extensionEventNode.addListener(PickupItemEvent::class.java, InventoryConstants.CANCELLABLE_EVENT::accept)
-        extensionEventNode.addListener(PlayerBlockBreakEvent::class.java, InventoryConstants.CANCELLABLE_EVENT::accept)
-        extensionEventNode.addListener(PlayerBlockPlaceEvent::class.java, InventoryConstants.CANCELLABLE_EVENT::accept)
-        extensionEventNode.addListener(PlayerSwapItemEvent::class.java, InventoryConstants.CANCELLABLE_EVENT::accept)
+        extensionEventNode.addListener(PickupItemEvent::class.java, Cancelable::cancel)
+        extensionEventNode.addListener(PlayerBlockBreakEvent::class.java, Cancelable::cancel)
+        extensionEventNode.addListener(PlayerBlockPlaceEvent::class.java, Cancelable::cancel)
+        extensionEventNode.addListener(PlayerSwapItemEvent::class.java, Cancelable::cancel)
         extensionEventNode.addListener(PlayerRespawnEvent::class.java, this::respawnListener)
-        extensionEventNode.addListener(ItemDropEvent::class.java, InventoryConstants.CANCELLABLE_EVENT::accept)
+        extensionEventNode.addListener(ItemDropEvent::class.java, Cancelable::cancel)
         MinecraftServer.getGlobalEventHandler().addChild(sitEventNode)
         MinecraftServer.getGlobalEventHandler().addChild(elytraEventNode)
         MinecraftServer.getGlobalEventHandler().addChild(tickleEventNode)
@@ -143,7 +94,7 @@ class TitanExtension : Extension() {
         SitFeature(0.25, sitEventNode)
         ElytraFeature(elytraEventNode)
         TickelFeature(tickleEventNode)
-        NavigatorFeature(this, navigatorEventNode)
+        NavigatorFeature(navigatorEventNode)
         MinecraftServer.getCommandManager().register(EndCommand())
         if (!ChunkUtils.isLoaded(lobbyWorld, spawnLocation)) {
             lobbyWorld.loadChunk(spawnLocation).whenComplete { _, throwable ->
@@ -169,7 +120,10 @@ class TitanExtension : Extension() {
     private fun playerLoginListener(event: AsyncPlayerConfigurationEvent) {
         event.setSpawningInstance(lobbyWorld)
         event.player.respawnPoint = spawnLocation
+        event.player.inventory.addInventoryCondition(Cancelable::cancelClick)
     }
+
+
 
     private fun playerSpawnListener(event: PlayerSpawnEvent) {
         setItems(event.player)
@@ -182,5 +136,47 @@ class TitanExtension : Extension() {
         player.inventory.chestplate = elytra
     }
 
+    companion object {
+        val elytra = ItemStack.builder(Material.ELYTRA)
+            .displayName(Component.text("Elytra", NamedTextColor.DARK_PURPLE))
+            .meta {
+                it.unbreakable(true)
+            }
+            .build()
+
+        val teleporter =
+            ItemStack.builder(Material.FEATHER)
+                .displayName(
+                    Component.text("Navigator", NamedTextColor.AQUA)
+                )
+                .build()
+
+        val featureService: FeatureService by lazy(TitanExtension::createFeatureService)
+
+        private fun createWorldPath(): Path {
+            if (featureService.isFeatureEnabled(Feature.HALLOWEEN)) {
+                return Path.of("world_halloween")
+            }
+            return Path.of("world")
+        }
+
+        private fun createSpawn(): Pos {
+            return Pos(0.5, 65.0, 0.5, -180f, 0f)
+        }
+
+        fun createDeliverAPI(): Deliver {
+            try {
+                Class.forName("eu.cloudnetservice.wrapper.Main")
+                return CloudNetDeliver()
+            } catch (e: ClassNotFoundException) {
+                DummyDeliver()
+            }
+            return DummyDeliver()
+        }
+
+        private fun createFeatureService(): FeatureService  {
+            return FeatureService()
+        }
+    }
 
 }
