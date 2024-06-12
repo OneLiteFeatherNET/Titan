@@ -40,7 +40,7 @@ dependencyResolutionManagement {
             // Minestom
             library("microtus-bom", "net.onelitefeather.microtus", "bom").versionRef("microtus-bom")
             library("microtus", "net.onelitefeather.microtus", "Microtus").withoutVersion()
-            library("aves", "de.icevizion.lib", "Aves").versionRef("aves")
+            library("aves", "de.icevizion.lib", "aves").versionRef("aves")
 
             library("cloudnet.bridge", "eu.cloudnetservice.cloudnet", "bridge").versionRef("cloudnet")
             library("cloudnet.wrapper-jvm", "eu.cloudnetservice.cloudnet", "wrapper-jvm").versionRef("cloudnet")
