@@ -1,6 +1,5 @@
 plugins {
     kotlin("jvm") version "1.9.22"
-    alias(libs.plugins.shadow)
     alias(libs.plugins.publishdata)
     `maven-publish`
 }
@@ -11,17 +10,14 @@ version = "1.0.0"
 repositories {
     mavenCentral()
     maven("https://jitpack.io")
+    maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
     maven {
         url = uri("https://gitlab.themeinerlp.dev/api/v4/groups/28/-/packages/maven")
         name = "GitLab"
         credentials(HttpHeaderCredentials::class.java) {
-            name = if (System.getenv().containsKey("CI")) {
-                "Job-Token"
-            } else {
-                "Private-Token"
-            }
+            name = "Private-Token"
             val gitLabPrivateToken: String? by project
-            value = gitLabPrivateToken ?: System.getenv("CI_JOB_TOKEN")
+            value = gitLabPrivateToken
         }
         authentication {
             create<HttpHeaderAuthentication>("header")
@@ -31,10 +27,9 @@ repositories {
 }
 
 dependencies {
-    compileOnly(libs.minestom)
+    implementation(platform(libs.microtus.bom))
+    compileOnly(libs.microtus)
     compileOnly(libs.aves)
-    implementation(libs.adventure.minimessage)
-    implementation(libs.guava)
 
     compileOnly(libs.cloudnet.bridge)
     compileOnly(libs.cloudnet.driver)
@@ -44,14 +39,7 @@ dependencies {
 publishData {
     addBuildData()
     useGitlabReposForProject("106", "https://gitlab.themeinerlp.dev/")
-    publishTask("shadowJar")
-}
-
-
-tasks {
-    shadowJar {
-        archiveFileName.set("${rootProject.name}.${archiveExtension.getOrElse("jar")}")
-    }
+    publishTask("jar")
 }
 
 publishing {
