@@ -51,22 +51,22 @@ class NavigatorFeature(eventNode: EventNode<Event>) {
         private const val CREATIVE_NAME = "<!i><rainbow>Creative</rainbow>"
         private val deliver: Deliver by lazy(TitanExtension::createDeliverAPI)
 
-        private fun clickElytra(player: Player, type: ClickType, slot: Int, conditionResult: InventoryConditionResult) {
+        private fun clickElytra(player: Player, slot: Int, type: ClickType,  conditionResult: InventoryConditionResult) {
             conditionResult.isCancel = true
             deliver.sendPlayer(player, "ElytraRace")
         }
 
-        private fun clickSurvival(player: Player, type: ClickType, slot: Int, conditionResult: InventoryConditionResult) {
+        private fun clickSurvival(player: Player, slot: Int, type: ClickType, conditionResult: InventoryConditionResult) {
             conditionResult.isCancel = true
             deliver.sendPlayer(player, "120Survival")
         }
 
-        private fun clickSlender(player: Player, type: ClickType, slot: Int, conditionResult: InventoryConditionResult) {
+        private fun clickSlender(player: Player, slot: Int, type: ClickType, conditionResult: InventoryConditionResult) {
             conditionResult.isCancel = true
             deliver.sendPlayer(player, "Slender")
         }
 
-        private fun clickCreative(player: Player, type: ClickType, slot: Int, conditionResult: InventoryConditionResult) {
+        private fun clickCreative(player: Player,  slot: Int,type: ClickType, conditionResult: InventoryConditionResult) {
             conditionResult.isCancel = true
             deliver.sendPlayer(player, "MemberBuild")
         }
@@ -76,7 +76,7 @@ class NavigatorFeature(eventNode: EventNode<Event>) {
         }
 
         private val globalLayout by lazy {
-            InventoryLayout(InventoryType.CHEST_1_ROW)
+            InventoryLayout.fromType(InventoryType.CHEST_1_ROW)
         }
         private val blankItemStack by lazy {
             ItemStack.builder(Material.GRAY_STAINED_GLASS_PANE).displayName(Component.empty()).build()
