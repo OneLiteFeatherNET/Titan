@@ -1,6 +1,7 @@
 package net.onelitefeather.titan
 
 import de.icevizion.aves.inventory.util.InventoryConstants
+import java.nio.file.Path
 import net.kyori.adventure.key.Key
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
@@ -11,7 +12,13 @@ import net.minestom.server.event.Event
 import net.minestom.server.event.EventNode
 import net.minestom.server.event.item.ItemDropEvent
 import net.minestom.server.event.item.PickupItemEvent
-import net.minestom.server.event.player.*
+import net.minestom.server.event.player.AsyncPlayerConfigurationEvent
+import net.minestom.server.event.player.PlayerBlockBreakEvent
+import net.minestom.server.event.player.PlayerBlockPlaceEvent
+import net.minestom.server.event.player.PlayerDeathEvent
+import net.minestom.server.event.player.PlayerRespawnEvent
+import net.minestom.server.event.player.PlayerSpawnEvent
+import net.minestom.server.event.player.PlayerSwapItemEvent
 import net.minestom.server.extensions.Extension
 import net.minestom.server.instance.AnvilLoader
 import net.minestom.server.instance.InstanceContainer
@@ -19,7 +26,12 @@ import net.minestom.server.item.ItemStack
 import net.minestom.server.item.Material
 import net.minestom.server.utils.NamespaceID
 import net.minestom.server.utils.chunk.ChunkUtils
-import net.onelitefeather.titan.blockhandler.*
+import net.onelitefeather.titan.blockhandler.BannerHandler
+import net.onelitefeather.titan.blockhandler.BeaconHandler
+import net.onelitefeather.titan.blockhandler.CandleHandler
+import net.onelitefeather.titan.blockhandler.JukeboxHandler
+import net.onelitefeather.titan.blockhandler.SignHandler
+import net.onelitefeather.titan.blockhandler.SkullHandler
 import net.onelitefeather.titan.blockhandler.banner.BedHandler
 import net.onelitefeather.titan.commands.EndCommand
 import net.onelitefeather.titan.deliver.CloudNetDeliver
@@ -31,8 +43,6 @@ import net.onelitefeather.titan.feature.SitFeature
 import net.onelitefeather.titan.feature.TickelFeature
 import net.onelitefeather.titan.featureflag.Feature
 import net.onelitefeather.titan.featureflag.FeatureService
-import java.nio.file.Path
-import java.util.function.BiConsumer
 
 class TitanExtension : Extension() {
 
