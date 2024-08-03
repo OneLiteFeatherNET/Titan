@@ -19,5 +19,6 @@ class FunctionModule : AbstractModule() {
         functionBinder.addBinding().to(ElytraFunction::class.java)
         functionBinder.addBinding().to(SitFunction::class.java)
         functionBinder.addBinding().to(RespawnFunction::class.java)
+        functionBinder.addBinding().to(EntityFunction::class.java)
     }
 }
