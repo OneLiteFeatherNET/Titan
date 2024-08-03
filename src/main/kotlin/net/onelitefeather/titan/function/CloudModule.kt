@@ -6,7 +6,7 @@ import net.onelitefeather.titan.deliver.CloudNetDeliver
 import net.onelitefeather.titan.deliver.Deliver
 import net.onelitefeather.titan.deliver.DummyDeliver
 
-class CloudFunction: AbstractModule() {
+class CloudModule: AbstractModule() {
 
     @Provides
     fun cloudSupport(): Deliver {

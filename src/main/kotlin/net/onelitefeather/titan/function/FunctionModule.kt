@@ -5,9 +5,10 @@ import com.google.inject.multibindings.Multibinder
 
 class FunctionModule : AbstractModule() {
     override fun configure() {
-        install(ItemFunction())
-        install(CloudFunction())
-        val functionBinder = Multibinder.newSetBinder(binder(), TitanFunction::class.java)
+        install(ItemModule())
+        install(CloudModule())
+        val functionBinder =
+            Multibinder.newSetBinder(binder(), TitanFunction::class.java)
         functionBinder.addBinding().to(BlockFunction::class.java)
         functionBinder.addBinding().to(PreventFunction::class.java)
         functionBinder.addBinding().to(WorldFunction::class.java)
@@ -17,5 +18,6 @@ class FunctionModule : AbstractModule() {
         functionBinder.addBinding().to(TickleFunction::class.java)
         functionBinder.addBinding().to(ElytraFunction::class.java)
         functionBinder.addBinding().to(SitFunction::class.java)
+        functionBinder.addBinding().to(RespawnFunction::class.java)
     }
 }

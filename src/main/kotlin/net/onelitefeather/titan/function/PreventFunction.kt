@@ -11,7 +11,7 @@ import net.minestom.server.event.player.PlayerBlockPlaceEvent
 import net.minestom.server.event.player.PlayerSwapItemEvent
 import net.onelitefeather.titan.helper.Cancelable
 
-class PreventFunction: TitanFunction {
+class PreventFunction : TitanFunction {
 
     @Named("titanNode")
     @Inject
