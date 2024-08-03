@@ -37,10 +37,18 @@ dependencyResolutionManagement {
             version("aves", "1.5.0")
             version("cloudnet", "4.0.0-RC9")
 
+            version("togglz", "4.4.0")
+            version("guice", "7.0.0")
+            version("caffeine", "3.1.8")
+
             // Minestom
             library("microtus-bom", "net.onelitefeather.microtus", "bom").versionRef("microtus-bom")
             library("microtus", "net.onelitefeather.microtus", "Microtus").withoutVersion()
             library("aves", "de.icevizion.lib", "aves").versionRef("aves")
+
+            library("togglz", "org.togglz", "togglz-core").versionRef("togglz")
+            library("guice", "com.google.inject", "guice").versionRef("guice")
+            library("caffeine", "com.github.ben-manes.caffeine", "caffeine").versionRef("caffeine")
 
             library("cloudnet.bridge", "eu.cloudnetservice.cloudnet", "bridge").versionRef("cloudnet")
             library("cloudnet.wrapper-jvm", "eu.cloudnetservice.cloudnet", "wrapper-jvm").versionRef("cloudnet")

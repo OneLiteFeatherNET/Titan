@@ -6,6 +6,7 @@ import org.togglz.core.manager.FeatureManagerBuilder;
 import org.togglz.core.repository.file.FileBasedStateRepository;
 import org.togglz.core.spi.FeatureManagerProvider;
 import org.togglz.core.user.NoOpUserProvider;
+import org.togglz.core.user.thread.ThreadLocalUserProvider;
 
 import java.io.File;
 
@@ -20,7 +21,7 @@ public final class SingletonFeatureManagerProvider implements FeatureManagerProv
             featureManager = new FeatureManagerBuilder()
                     .featureEnum(TitanFeatures.class)
                     .stateRepository(new FileBasedStateRepository(FLAGS))
-                    .userProvider(new NoOpUserProvider())
+                    .userProvider(new ThreadLocalUserProvider())
                     .activationStrategyProvider(new DefaultActivationStrategyProvider())
                     .build();
         }

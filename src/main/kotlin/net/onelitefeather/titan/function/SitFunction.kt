@@ -1,5 +1,7 @@
-package net.onelitefeather.titan.feature
+package net.onelitefeather.titan.function
 
+import com.google.inject.Inject
+import com.google.inject.name.Named
 import net.minestom.server.coordinate.Point
 import net.minestom.server.coordinate.Pos
 import net.minestom.server.entity.Entity
@@ -17,16 +19,16 @@ import net.minestom.server.network.packet.client.play.ClientSteerVehiclePacket
 import net.onelitefeather.titan.event.EntityDismountEvent
 import java.util.*
 
-class SitFeature(private val yOffset: Double, eventNode: EventNode<Event>) {
+class SitFunction : TitanFunction {
+
+    private val offsetY: Double = 0.25
+
+    @Named("titanNode")
+    @Inject
+    lateinit var eventNode: EventNode<Event>
+
     private var playerSitsMap: MutableMap<UUID, Entity> = mutableMapOf()
     private var playerExitLocations: MutableMap<UUID, Pos> = mutableMapOf()
-
-    init {
-        eventNode.addListener(EventListener.of(PlayerBlockInteractEvent::class.java, this::onInteract))
-        eventNode.addListener(EventListener.of(PlayerPacketEvent::class.java, this::onPacket))
-        eventNode.addListener(EventListener.of(EntityDismountEvent::class.java, this::onDismount))
-        eventNode.addListener(EventListener.of(PlayerDisconnectEvent::class.java, this::onDisconnect))
-    }
 
     private fun onDisconnect(playerDisconnectEvent: PlayerDisconnectEvent) {
         removePlayer(playerDisconnectEvent.player, true)
@@ -59,7 +61,7 @@ class SitFeature(private val yOffset: Double, eventNode: EventNode<Event>) {
         val instance = player.instance ?: return
         val playerLocation = player.position
         val arrow = Entity(EntityType.ARROW)
-        arrow.setInstance(instance, sitLocation.add(0.5, yOffset, 0.5))
+        arrow.setInstance(instance, sitLocation.add(0.5, offsetY, 0.5))
         arrow.isSilent = true
         arrow.isInvisible = true
 
@@ -86,5 +88,15 @@ class SitFeature(private val yOffset: Double, eventNode: EventNode<Event>) {
                 player.teleport(exitLocation)
             }
         }
+    }
+
+    override fun initialize() {
+        eventNode.addListener(EventListener.of(PlayerBlockInteractEvent::class.java, this::onInteract))
+        eventNode.addListener(EventListener.of(PlayerPacketEvent::class.java, this::onPacket))
+        eventNode.addListener(EventListener.of(EntityDismountEvent::class.java, this::onDismount))
+        eventNode.addListener(EventListener.of(PlayerDisconnectEvent::class.java, this::onDisconnect))
+    }
+
+    override fun terminate() {
     }
 }
