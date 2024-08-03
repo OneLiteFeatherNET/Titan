@@ -45,7 +45,8 @@ class SitFunction : TitanFunction {
         if (packet is ClientSteerVehiclePacket) {
             val ridingEntity = event.player.vehicle
             if (packet.flags == 2.toByte() && ridingEntity != null) {
-                val entityDismount = EntityDismountEvent(ridingEntity, event.player)
+                val entityDismount =
+                    EntityDismountEvent(ridingEntity, event.player)
                 EventDispatcher.call(entityDismount)
             }
         }
@@ -53,7 +54,10 @@ class SitFunction : TitanFunction {
 
     private fun onInteract(playerBlockInteractEvent: PlayerBlockInteractEvent) {
         if (playerBlockInteractEvent.block.namespace() == Block.SPRUCE_STAIRS.namespace()) {
-            sitPlayer(playerBlockInteractEvent.player, playerBlockInteractEvent.blockPosition)
+            sitPlayer(
+                playerBlockInteractEvent.player,
+                playerBlockInteractEvent.blockPosition
+            )
         }
     }
 
@@ -91,10 +95,30 @@ class SitFunction : TitanFunction {
     }
 
     override fun initialize() {
-        eventNode.addListener(EventListener.of(PlayerBlockInteractEvent::class.java, this::onInteract))
-        eventNode.addListener(EventListener.of(PlayerPacketEvent::class.java, this::onPacket))
-        eventNode.addListener(EventListener.of(EntityDismountEvent::class.java, this::onDismount))
-        eventNode.addListener(EventListener.of(PlayerDisconnectEvent::class.java, this::onDisconnect))
+        eventNode.addListener(
+            EventListener.of(
+                PlayerBlockInteractEvent::class.java,
+                this::onInteract
+            )
+        )
+        eventNode.addListener(
+            EventListener.of(
+                PlayerPacketEvent::class.java,
+                this::onPacket
+            )
+        )
+        eventNode.addListener(
+            EventListener.of(
+                EntityDismountEvent::class.java,
+                this::onDismount
+            )
+        )
+        eventNode.addListener(
+            EventListener.of(
+                PlayerDisconnectEvent::class.java,
+                this::onDisconnect
+            )
+        )
     }
 
     override fun terminate() {

@@ -8,7 +8,7 @@ import net.kyori.adventure.text.minimessage.MiniMessage
 import net.minestom.server.item.ItemStack
 import net.minestom.server.item.Material
 
-class ItemFunction : AbstractModule() {
+class ItemModule : AbstractModule() {
     private val playerElytra = ItemStack.builder(Material.ELYTRA)
         .displayName(Component.text("Elytra", NamedTextColor.DARK_PURPLE))
         .meta {

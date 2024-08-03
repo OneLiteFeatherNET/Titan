@@ -29,14 +29,24 @@ class ElytraFunction : TitanFunction {
     private fun playerUseItemEvent(event: PlayerUseItemEvent) {
         val item = event.itemStack
         if (item == playerFirework && event.player.isFlyingWithElytra) {
-            event.player.velocity = event.player.velocity.normalize().add(event.player.position.direction().mul(35.0))
+            event.player.velocity = event.player.velocity.normalize()
+                .add(event.player.position.direction().mul(35.0))
         }
     }
 
     override fun initialize() {
-        eventNode.addListener(PlayerStartFlyingWithElytraEvent::class.java, this::playerStartFlyingWithElytraEvent)
-        eventNode.addListener(PlayerStopFlyingWithElytraEvent::class.java, this::playerStopFlyingWithElytraEvent)
-        eventNode.addListener(PlayerUseItemEvent::class.java, this::playerUseItemEvent)
+        eventNode.addListener(
+            PlayerStartFlyingWithElytraEvent::class.java,
+            this::playerStartFlyingWithElytraEvent
+        )
+        eventNode.addListener(
+            PlayerStopFlyingWithElytraEvent::class.java,
+            this::playerStopFlyingWithElytraEvent
+        )
+        eventNode.addListener(
+            PlayerUseItemEvent::class.java,
+            this::playerUseItemEvent
+        )
     }
 
     override fun terminate() {

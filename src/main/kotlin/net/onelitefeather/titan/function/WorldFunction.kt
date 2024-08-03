@@ -14,7 +14,9 @@ import java.nio.file.Paths
 class WorldFunction : TitanFunction {
 
     private val basePath: Path = Paths.get("worlds")
-    private val lobbyInstance = MinecraftServer.getInstanceManager().createInstanceContainer(AnvilLoader(createWorldPath()))
+    private val lobbyInstance = MinecraftServer.getInstanceManager()
+        .createInstanceContainer(AnvilLoader(createWorldPath()))
+
     @Named("spawnPos")
     @Inject
     lateinit var spawnPos: Pos

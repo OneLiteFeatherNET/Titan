@@ -24,7 +24,7 @@ import java.time.Duration
 import java.util.*
 
 
-class NavigationFunction: TitanFunction {
+class NavigationFunction : TitanFunction {
 
     private val inventoryName = "<yellow>Navigator"
 
@@ -54,7 +54,7 @@ class NavigationFunction: TitanFunction {
 
     @Named("playerElytra")
     @Inject
-    lateinit var  elytra: ItemStack
+    lateinit var elytra: ItemStack
 
     @Inject
     lateinit var deliver: Deliver
@@ -63,19 +63,33 @@ class NavigationFunction: TitanFunction {
     @Inject
     lateinit var eventNode: EventNode<Event>
 
-    private var inventoryBuilderLoadingCache: LoadingCache<UUID, PersonalInventoryBuilder> = Caffeine.newBuilder()
-        .maximumSize(10000)
-        .expireAfterWrite(Duration.ofMinutes(5))
-        .refreshAfterWrite(Duration.ofMinutes(1))
-        .build { key: UUID -> createPersonalInventoryBuilder(MinecraftServer.getConnectionManager().getOnlinePlayerByUuid(key)) }
+    private var inventoryBuilderLoadingCache: LoadingCache<UUID, PersonalInventoryBuilder> =
+        Caffeine.newBuilder()
+            .maximumSize(10000)
+            .expireAfterWrite(Duration.ofMinutes(5))
+            .refreshAfterWrite(Duration.ofMinutes(1))
+            .build { key: UUID ->
+                createPersonalInventoryBuilder(
+                    MinecraftServer.getConnectionManager()
+                        .getOnlinePlayerByUuid(key)
+                )
+            }
 
     private fun createPersonalInventoryBuilder(player: Player?): PersonalInventoryBuilder? {
         player ?: return null
-        val inventoryBuilder = PersonalInventoryBuilder(MiniMessage.miniMessage().deserialize(inventoryName), InventoryType.CHEST_1_ROW, player)
+        val inventoryBuilder = PersonalInventoryBuilder(
+            MiniMessage.miniMessage().deserialize(inventoryName),
+            InventoryType.CHEST_1_ROW,
+            player
+        )
         inventoryBuilder.setLayout(InventoryLayout.fromType(InventoryType.CHEST_1_ROW))
         inventoryBuilder.setDataLayoutFunction {
-            val layout = it ?: InventoryLayout.fromType(InventoryType.CHEST_1_ROW)
-            layout.setNonClickItems(LayoutCalculator.fillRow(InventoryType.CHEST_1_ROW), navigatorBlankItemStack)
+            val layout =
+                it ?: InventoryLayout.fromType(InventoryType.CHEST_1_ROW)
+            layout.setNonClickItems(
+                LayoutCalculator.fillRow(InventoryType.CHEST_1_ROW),
+                navigatorBlankItemStack
+            )
             layout.setItem(0, navigatorElytraItemStack, this::clickElytra)
             ThreadLocalUserProvider.bind(player.toFeatureUser())
             if (TitanFeatures.SLENDER.isActive) {
@@ -83,7 +97,11 @@ class NavigationFunction: TitanFunction {
             }
             layout.setItem(4, navigatorSurvivalItemStack, this::clickSurvival)
             if (TitanFeatures.MANIS.isActive) {
-                layout.setItem(5, navigatorSlenderItemStack, this::clickSurvival)
+                layout.setItem(
+                    5,
+                    navigatorSlenderItemStack,
+                    this::clickSurvival
+                )
             }
             layout.setItem(8, navigatorCreativeItemStack, this::clickCreative)
             ThreadLocalUserProvider.release()
@@ -99,22 +117,42 @@ class NavigationFunction: TitanFunction {
         player.inventory.chestplate = elytra
     }
 
-    private fun clickElytra(player: Player, slot: Int, type: ClickType, conditionResult: InventoryConditionResult) {
+    private fun clickElytra(
+        player: Player,
+        slot: Int,
+        type: ClickType,
+        conditionResult: InventoryConditionResult
+    ) {
         conditionResult.isCancel = true
         deliver.sendPlayer(player, "ElytraRace")
     }
 
-    private fun clickSurvival(player: Player, slot: Int, type: ClickType, conditionResult: InventoryConditionResult) {
+    private fun clickSurvival(
+        player: Player,
+        slot: Int,
+        type: ClickType,
+        conditionResult: InventoryConditionResult
+    ) {
         conditionResult.isCancel = true
         deliver.sendPlayer(player, "120Survival")
     }
 
-    private fun clickSlender(player: Player, slot: Int, type: ClickType, conditionResult: InventoryConditionResult) {
+    private fun clickSlender(
+        player: Player,
+        slot: Int,
+        type: ClickType,
+        conditionResult: InventoryConditionResult
+    ) {
         conditionResult.isCancel = true
         deliver.sendPlayer(player, "Slender")
     }
 
-    private fun clickCreative(player: Player, slot: Int, type: ClickType, conditionResult: InventoryConditionResult) {
+    private fun clickCreative(
+        player: Player,
+        slot: Int,
+        type: ClickType,
+        conditionResult: InventoryConditionResult
+    ) {
         conditionResult.isCancel = true
         deliver.sendPlayer(player, "MemberBuild")
     }
