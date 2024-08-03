@@ -2,10 +2,12 @@ plugins {
     kotlin("jvm") version "1.9.22"
     alias(libs.plugins.publishdata)
     `maven-publish`
+    id("io.github.goooler.shadow") version "8.1.8"
+
 }
 
 group = "net.onelitefeather.titan"
-version = "1.0.1"
+version = "1.1.0"
 
 repositories {
     mavenCentral()
@@ -34,6 +36,16 @@ dependencies {
     compileOnly(libs.cloudnet.bridge)
     compileOnly(libs.cloudnet.driver)
     compileOnly(libs.cloudnet.wrapper.jvm)
+
+    implementation("org.togglz:togglz-core:4.4.0")
+}
+
+tasks {
+    compileKotlin {
+        kotlinOptions {
+            options.freeCompilerArgs.add("-Xjvm-default=all")
+        }
+    }
 }
 
 publishData {

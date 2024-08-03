@@ -42,9 +42,8 @@ import net.onelitefeather.titan.feature.ElytraFeature
 import net.onelitefeather.titan.feature.NavigatorFeature
 import net.onelitefeather.titan.feature.SitFeature
 import net.onelitefeather.titan.feature.TickelFeature
-import net.onelitefeather.titan.featureflag.Feature
-import net.onelitefeather.titan.featureflag.FeatureService
 import net.onelitefeather.titan.helper.Cancelable
+import net.onelitefeather.titan.utils.TitanFeatures
 
 class TitanExtension : Extension() {
 
@@ -151,13 +150,14 @@ class TitanExtension : Extension() {
                 )
                 .build()
 
-        val featureService: FeatureService by lazy(TitanExtension::createFeatureService)
-
         private fun createWorldPath(): Path {
-            if (featureService.isFeatureEnabled(Feature.HALLOWEEN)) {
-                return Path.of("world_halloween")
+            if (TitanFeatures.HALLOWEEN.isActive) {
+                return Path.of("worlds","halloween")
             }
-            return Path.of("world")
+            if (TitanFeatures.WINTER.isActive) {
+                return Path.of("worlds","winter")
+            }
+            return Path.of("worlds","world")
         }
 
         private fun createSpawn(): Pos {
@@ -174,9 +174,6 @@ class TitanExtension : Extension() {
             return DummyDeliver()
         }
 
-        private fun createFeatureService(): FeatureService  {
-            return FeatureService()
-        }
     }
 
 }
