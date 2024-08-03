@@ -13,10 +13,11 @@ import net.minestom.server.item.Material
 import net.minestom.server.network.packet.server.play.SetCooldownPacket
 import net.minestom.server.tag.Tag
 
-class TickleFunction: TitanFunction {
+class TickleFunction : TitanFunction {
 
     private val cooldown: Tag<Long> = Tag.Long("tickel_cooldown")
-    private val tickleMessage = "<yellow><player> <white>tickled <yellow><target>"
+    private val tickleMessage =
+        "<yellow><player> <white>tickled <yellow><target>"
 
     @Named("titanNode")
     @Inject
@@ -30,13 +31,22 @@ class TickleFunction: TitanFunction {
             if (player.itemInOffHand.material() == Material.FEATHER || player.itemInMainHand.material() == Material.FEATHER) {
                 if (!player.hasTag(cooldown)) {
                     player.setTag(cooldown, System.currentTimeMillis() + 4000)
-                    val packet = SetCooldownPacket(player.itemInOffHand.material().id(),
+                    val packet = SetCooldownPacket(
+                        player.itemInOffHand.material().id(),
                         ((System.currentTimeMillis() + 4000) / 20).toInt()
                     )
                     player.playerConnection.sendPacket(packet)
                     player.instance?.players?.forEach { worldPlayer ->
                         val message = MiniMessage.miniMessage().deserialize(
-                            tickleMessage, Placeholder.component("player", player.displayName ?: player.name), Placeholder.component("target", target.displayName ?: target.name)
+                            tickleMessage,
+                            Placeholder.component(
+                                "player",
+                                player.displayName ?: player.name
+                            ),
+                            Placeholder.component(
+                                "target",
+                                target.displayName ?: target.name
+                            )
                         )
                         worldPlayer.sendMessage(message)
                     }
@@ -48,7 +58,12 @@ class TickleFunction: TitanFunction {
     }
 
     override fun initialize() {
-        eventNode.addListener(EventListener.of(EntityAttackEvent::class.java, this::onEntityAttack))
+        eventNode.addListener(
+            EventListener.of(
+                EntityAttackEvent::class.java,
+                this::onEntityAttack
+            )
+        )
     }
 
     override fun terminate() {

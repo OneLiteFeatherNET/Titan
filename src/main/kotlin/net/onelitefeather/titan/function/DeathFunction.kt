@@ -7,7 +7,7 @@ import net.minestom.server.event.Event
 import net.minestom.server.event.EventNode
 import net.minestom.server.event.player.PlayerDeathEvent
 
-class DeathFunction: TitanFunction {
+class DeathFunction : TitanFunction {
 
     @Named("titanNode")
     @Inject
