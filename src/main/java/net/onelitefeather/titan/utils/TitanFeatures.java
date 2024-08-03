@@ -1,6 +1,7 @@
 package net.onelitefeather.titan.utils;
 
 import org.togglz.core.Feature;
+import org.togglz.core.annotation.EnabledByDefault;
 import org.togglz.core.context.FeatureContext;
 
 public enum TitanFeatures implements Feature, ThreadHelper {
@@ -8,6 +9,8 @@ public enum TitanFeatures implements Feature, ThreadHelper {
     HALLOWEEN,
     SLENDER,
     MANIS,
+    @EnabledByDefault
+    ELYTRA_FLY
     ;
 
     @Override
