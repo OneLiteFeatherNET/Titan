@@ -16,7 +16,7 @@ import net.minestom.server.item.ItemStack
 import net.minestom.server.item.Material
 import net.onelitefeather.titan.*
 import net.onelitefeather.titan.deliver.Deliver
-import net.onelitefeather.titan.featureflag.Feature
+import net.onelitefeather.titan.utils.TitanFeatures
 
 class NavigatorFeature(eventNode: EventNode<Event>) {
 
@@ -24,7 +24,7 @@ class NavigatorFeature(eventNode: EventNode<Event>) {
     init {
         globalLayout.setNonClickItems(LayoutCalculator.fillRow(InventoryType.CHEST_1_ROW), blankItemStack)
         globalLayout.setItem(0, elytraItemStack, NavigatorFeature::clickElytra)
-        if (TitanExtension.featureService.isFeatureEnabled(Feature.SLENDER)) {
+        if (TitanFeatures.SLENDER.isActive) {
             globalLayout.setItem(3, survivalItemStack, NavigatorFeature::clickSurvival)
             globalLayout.setItem(5, slenderItemStack, NavigatorFeature::clickSlender)
         } else {
