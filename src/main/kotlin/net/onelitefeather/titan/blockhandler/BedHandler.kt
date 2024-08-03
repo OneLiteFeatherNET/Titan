@@ -1,4 +1,4 @@
-package net.onelitefeather.titan.blockhandler.banner
+package net.onelitefeather.titan.blockhandler
 
 import net.kyori.adventure.key.Key
 import net.minestom.server.instance.block.BlockHandler

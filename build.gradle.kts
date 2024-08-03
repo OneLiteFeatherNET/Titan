@@ -37,7 +37,9 @@ dependencies {
     compileOnly(libs.cloudnet.driver)
     compileOnly(libs.cloudnet.wrapper.jvm)
 
-    implementation("org.togglz:togglz-core:4.4.0")
+    implementation(libs.togglz)
+    implementation(libs.guice)
+    implementation(libs.caffeine)
 }
 
 tasks {
