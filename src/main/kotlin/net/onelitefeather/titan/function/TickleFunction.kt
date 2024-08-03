@@ -1,5 +1,7 @@
-package net.onelitefeather.titan.feature
+package net.onelitefeather.titan.function
 
+import com.google.inject.Inject
+import com.google.inject.name.Named
 import net.kyori.adventure.text.minimessage.MiniMessage
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder
 import net.minestom.server.entity.Player
@@ -11,13 +13,14 @@ import net.minestom.server.item.Material
 import net.minestom.server.network.packet.server.play.SetCooldownPacket
 import net.minestom.server.tag.Tag
 
-class TickelFeature(eventNode: EventNode<Event>) {
-    private val TICKLE_MESSAGE = "<yellow><player> <white>tickled <yellow><target>"
-    private val cooldown: Tag<Long> = Tag.Long("tickel_cooldown")
+class TickleFunction: TitanFunction {
 
-    init {
-        eventNode.addListener(EventListener.of(EntityAttackEvent::class.java, this::onEntityAttack))
-    }
+    private val cooldown: Tag<Long> = Tag.Long("tickel_cooldown")
+    private val tickleMessage = "<yellow><player> <white>tickled <yellow><target>"
+
+    @Named("titanNode")
+    @Inject
+    lateinit var eventNode: EventNode<Event>
 
     private fun onEntityAttack(entityAttackEvent: EntityAttackEvent) {
         val player = entityAttackEvent.entity
@@ -33,7 +36,7 @@ class TickelFeature(eventNode: EventNode<Event>) {
                     player.playerConnection.sendPacket(packet)
                     player.instance?.players?.forEach { worldPlayer ->
                         val message = MiniMessage.miniMessage().deserialize(
-                            TICKLE_MESSAGE, Placeholder.component("player", player.displayName ?: player.name), Placeholder.component("target", target.displayName ?: target.name)
+                            tickleMessage, Placeholder.component("player", player.displayName ?: player.name), Placeholder.component("target", target.displayName ?: target.name)
                         )
                         worldPlayer.sendMessage(message)
                     }
@@ -42,6 +45,13 @@ class TickelFeature(eventNode: EventNode<Event>) {
                 }
             }
         }
+    }
+
+    override fun initialize() {
+        eventNode.addListener(EventListener.of(EntityAttackEvent::class.java, this::onEntityAttack))
+    }
+
+    override fun terminate() {
     }
 
 }
