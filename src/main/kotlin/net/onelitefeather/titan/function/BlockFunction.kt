@@ -13,13 +13,34 @@ import net.onelitefeather.titan.blockhandler.CandleHandler
 
 class BlockFunction : TitanFunction {
     override fun initialize() {
-        MinecraftServer.getBlockManager().registerHandler(NamespaceID.from(Key.key("minecraft:bed")), ::BedHandler)
-        MinecraftServer.getBlockManager().registerHandler(NamespaceID.from(Key.key("minecraft:jukebox")),::JukeboxHandler)
-        MinecraftServer.getBlockManager().registerHandler(NamespaceID.from(Key.key("minecraft:beacon")), ::BeaconHandler)
-        MinecraftServer.getBlockManager().registerHandler(NamespaceID.from(Key.key("minecraft:sign")), ::SignHandler)
-        MinecraftServer.getBlockManager().registerHandler(NamespaceID.from(Key.key("minecraft:banner")), ::BannerHandler)
-        MinecraftServer.getBlockManager().registerHandler(NamespaceID.from(Key.key("minecraft:skull")), ::SkullHandler)
-        MinecraftServer.getBlockManager().registerHandler(NamespaceID.from(Key.key("minecraft:candle")), ::CandleHandler)
+        MinecraftServer.getBlockManager().registerHandler(
+            NamespaceID.from(Key.key("minecraft:bed")),
+            ::BedHandler
+        )
+        MinecraftServer.getBlockManager().registerHandler(
+            NamespaceID.from(Key.key("minecraft:jukebox")),
+            ::JukeboxHandler
+        )
+        MinecraftServer.getBlockManager().registerHandler(
+            NamespaceID.from(Key.key("minecraft:beacon")),
+            ::BeaconHandler
+        )
+        MinecraftServer.getBlockManager().registerHandler(
+            NamespaceID.from(Key.key("minecraft:sign")),
+            ::SignHandler
+        )
+        MinecraftServer.getBlockManager().registerHandler(
+            NamespaceID.from(Key.key("minecraft:banner")),
+            ::BannerHandler
+        )
+        MinecraftServer.getBlockManager().registerHandler(
+            NamespaceID.from(Key.key("minecraft:skull")),
+            ::SkullHandler
+        )
+        MinecraftServer.getBlockManager().registerHandler(
+            NamespaceID.from(Key.key("minecraft:candle")),
+            ::CandleHandler
+        )
     }
 
     override fun terminate() {
