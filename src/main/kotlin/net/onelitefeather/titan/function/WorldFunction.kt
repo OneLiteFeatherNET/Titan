@@ -4,9 +4,9 @@ import com.google.inject.Inject
 import com.google.inject.name.Named
 import net.minestom.server.MinecraftServer
 import net.minestom.server.coordinate.Pos
-import net.minestom.server.instance.AnvilLoader
 import net.minestom.server.instance.InstanceContainer
 import net.minestom.server.utils.chunk.ChunkUtils
+import net.onelitefeather.titan.instance.EntityAnvilLoader
 import net.onelitefeather.titan.utils.TitanFeatures
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -15,7 +15,7 @@ class WorldFunction : TitanFunction {
 
     private val basePath: Path = Paths.get("worlds")
     private val lobbyInstance = MinecraftServer.getInstanceManager()
-        .createInstanceContainer(AnvilLoader(createWorldPath()))
+        .createInstanceContainer(EntityAnvilLoader(createWorldPath()))
 
     @Named("spawnPos")
     @Inject
