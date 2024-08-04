@@ -7,6 +7,8 @@ import net.minestom.server.event.Event
 import net.minestom.server.event.EventNode
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent
 import net.minestom.server.event.player.PlayerSpawnEvent
+import net.minestom.server.network.packet.server.CachedPacket
+import net.minestom.server.network.packet.server.play.UpdateSimulationDistancePacket
 import net.onelitefeather.titan.helper.Cancelable
 
 class JoinFunction : TitanFunction {
@@ -24,6 +26,9 @@ class JoinFunction : TitanFunction {
 
     @Inject
     lateinit var worldFunction: WorldFunction
+
+    private val simulationDistance = CachedPacket(UpdateSimulationDistancePacket(2))
+
     private fun playerLoginListener(event: AsyncPlayerConfigurationEvent) {
         event.setSpawningInstance(worldFunction.provideLobbyWorld())
         event.player.respawnPoint = spawnPos
@@ -33,6 +38,7 @@ class JoinFunction : TitanFunction {
     private fun playerSpawnListener(event: PlayerSpawnEvent) {
         navigationFunction.setItems(event.player)
         event.player.teleport(spawnPos)
+        event.player.playerConnection.sendPacket(simulationDistance)
     }
 
     override fun initialize() {
