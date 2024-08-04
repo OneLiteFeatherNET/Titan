@@ -4,14 +4,13 @@ import net.kyori.adventure.util.Codec
 import net.minestom.server.coordinate.Point
 import net.minestom.server.entity.Entity
 import net.minestom.server.entity.EntityType
-import net.minestom.server.entity.LivingEntity
-import net.minestom.server.entity.metadata.other.ArmorStandMeta
 import net.minestom.server.entity.metadata.other.ItemFrameMeta
 import net.minestom.server.item.ItemStack
 import net.minestom.server.utils.NamespaceID
 import net.onelitefeather.titan.entity.EntityDecodeException
 import net.onelitefeather.titan.entity.EntityEncodeException
 import net.onelitefeather.titan.entity.EntityHandler
+import net.onelitefeather.titan.entity.ReusableLivingEntity
 import net.onelitefeather.titan.helper.EntityLoadingHelper
 import org.jglrxavpok.hephaistos.nbt.NBTCompound
 import java.util.*
@@ -34,10 +33,11 @@ class ItemFrameHandler :
         Codec.Decoder<Entity, NBTCompound, EntityDecodeException> {
         override fun decode(encoded: NBTCompound): Entity {
             val uuid = encoded.getIntArray("UUID")
-            val itemFrame = LivingEntity(
-                EntityType.ITEM_FRAME,
-                UUID(uuid!![0].toLong(), uuid[1].toLong())
-            )
+            val itemFrame =
+                ReusableLivingEntity(
+                    EntityType.ITEM_FRAME,
+                    UUID(uuid!![0].toLong(), uuid[1].toLong())
+                )
             EntityLoadingHelper.genericNbtCompound(itemFrame, encoded)
             EntityLoadingHelper.genericMobNbtCompound(itemFrame, encoded)
             itemFrame.editEntityMeta(ItemFrameMeta::class.java) { meta ->

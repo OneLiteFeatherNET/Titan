@@ -4,12 +4,12 @@ import net.kyori.adventure.util.Codec
 import net.minestom.server.coordinate.Point
 import net.minestom.server.entity.Entity
 import net.minestom.server.entity.EntityType
-import net.minestom.server.entity.LivingEntity
 import net.minestom.server.entity.metadata.other.ArmorStandMeta
 import net.minestom.server.utils.NamespaceID
 import net.onelitefeather.titan.entity.EntityDecodeException
 import net.onelitefeather.titan.entity.EntityEncodeException
 import net.onelitefeather.titan.entity.EntityHandler
+import net.onelitefeather.titan.entity.ReusableLivingEntity
 import net.onelitefeather.titan.helper.EntityLoadingHelper
 import org.jglrxavpok.hephaistos.nbt.NBTCompound
 import java.util.*
@@ -32,10 +32,11 @@ class ArmorStandHandler :
         Codec.Decoder<Entity, NBTCompound, EntityDecodeException> {
         override fun decode(encoded: NBTCompound): Entity {
             val uuid = encoded.getIntArray("UUID")
-            val armorStand = LivingEntity(
-                EntityType.ARMOR_STAND,
-                UUID(uuid!![0].toLong(), uuid[1].toLong())
-            )
+            val armorStand =
+                ReusableLivingEntity(
+                    EntityType.ARMOR_STAND,
+                    UUID(uuid!![0].toLong(), uuid[1].toLong())
+                )
             EntityLoadingHelper.genericNbtCompound(armorStand, encoded)
             EntityLoadingHelper.genericMobNbtCompound(armorStand, encoded)
             armorStand.editEntityMeta(ArmorStandMeta::class.java) {
