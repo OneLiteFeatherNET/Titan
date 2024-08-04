@@ -45,3 +45,4 @@ gradle-app.setting
 !gradle-wrapper.jar
 .gradletasknamecache
 run/
+/test-server/.bstats
