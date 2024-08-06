@@ -48,6 +48,15 @@ tasks {
             options.freeCompilerArgs.add("-Xjvm-default=all")
         }
     }
+    jar {
+        archiveClassifier.set("unshaded")
+    }
+    build {
+        dependsOn(shadowJar)
+    }
+    shadowJar {
+        archiveClassifier.set("")
+    }
 }
 
 publishData {
