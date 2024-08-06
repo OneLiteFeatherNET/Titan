@@ -10,7 +10,8 @@ public enum TitanFeatures implements Feature, ThreadHelper {
     SLENDER,
     MANIS,
     @EnabledByDefault
-    ELYTRA_FLY
+    ELYTRA_FLY,
+    ENTITIES
     ;
 
     @Override
