@@ -58,7 +58,7 @@ class NavigatorFeature(eventNode: EventNode<Event>) {
 
         private fun clickSurvival(player: Player, type: ClickType, slot: Int, conditionResult: InventoryConditionResult) {
             conditionResult.isCancel = true
-            deliver.sendPlayer(player, "120Survival")
+            deliver.sendPlayer(player, "Survival")
         }
 
         private fun clickSlender(player: Player, type: ClickType, slot: Int, conditionResult: InventoryConditionResult) {
