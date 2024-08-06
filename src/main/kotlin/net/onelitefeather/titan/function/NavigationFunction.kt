@@ -134,7 +134,7 @@ class NavigationFunction : TitanFunction {
         conditionResult: InventoryConditionResult
     ) {
         conditionResult.isCancel = true
-        deliver.sendPlayer(player, "120Survival")
+        deliver.sendPlayer(player, "Survival")
     }
 
     private fun clickSlender(
