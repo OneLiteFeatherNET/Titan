@@ -3,7 +3,6 @@
   "name": "Titan",
   "version": "1.0.1",
   "dependencies": [
-    "Aves",
-    "CloudNet_Bridge"
+    "Aves"
   ]
 }
