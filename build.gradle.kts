@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "net.onelitefeather.titan"
-version = "1.1.0"
+version = "1.1.1"
 
 repositories {
     mavenCentral()
@@ -62,7 +62,7 @@ tasks {
 publishData {
     addBuildData()
     useGitlabReposForProject("106", "https://gitlab.themeinerlp.dev/")
-    publishTask("jar")
+    publishTask("shadowJar")
 }
 
 publishing {
