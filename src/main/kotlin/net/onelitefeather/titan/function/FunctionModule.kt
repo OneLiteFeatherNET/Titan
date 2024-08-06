@@ -2,6 +2,7 @@ package net.onelitefeather.titan.function
 
 import com.google.inject.AbstractModule
 import com.google.inject.multibindings.Multibinder
+import net.onelitefeather.titan.utils.TitanFeatures
 
 class FunctionModule : AbstractModule() {
     override fun configure() {
@@ -19,5 +20,8 @@ class FunctionModule : AbstractModule() {
         functionBinder.addBinding().to(ElytraFunction::class.java)
         functionBinder.addBinding().to(SitFunction::class.java)
         functionBinder.addBinding().to(RespawnFunction::class.java)
+        if (TitanFeatures.ENTITIES.isActive) {
+            functionBinder.addBinding().to(EntityFunction::class.java)
+        }
     }
 }
