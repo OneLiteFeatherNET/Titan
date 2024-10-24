@@ -32,7 +32,7 @@ dependencyResolutionManagement {
 
     versionCatalogs {
         create("libs") {
-            version("microtus-bom", "1.4.3-SNAPSHOT")
+            version("microtus-bom", "1.5.0-SNAPSHOT")
             version("publishdata", "1.4.0")
             version("aves", "1.5.0")
             version("cloudnet", "4.0.0-RC9")

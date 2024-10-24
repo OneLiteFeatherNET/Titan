@@ -7,21 +7,13 @@ import net.onelitefeather.titan.utils.TitanFeatures
 class FunctionModule : AbstractModule() {
     override fun configure() {
         install(ItemModule())
-        install(CloudModule())
         val functionBinder =
             Multibinder.newSetBinder(binder(), TitanFunction::class.java)
-        functionBinder.addBinding().to(BlockFunction::class.java)
-        functionBinder.addBinding().to(PreventFunction::class.java)
         functionBinder.addBinding().to(WorldFunction::class.java)
         functionBinder.addBinding().to(NavigationFunction::class.java)
         functionBinder.addBinding().to(JoinFunction::class.java)
-        functionBinder.addBinding().to(DeathFunction::class.java)
         functionBinder.addBinding().to(TickleFunction::class.java)
-        functionBinder.addBinding().to(ElytraFunction::class.java)
         functionBinder.addBinding().to(SitFunction::class.java)
         functionBinder.addBinding().to(RespawnFunction::class.java)
-        if (TitanFeatures.ENTITIES.isActive) {
-            functionBinder.addBinding().to(EntityFunction::class.java)
-        }
     }
 }
