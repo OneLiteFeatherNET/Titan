@@ -10,11 +10,11 @@ group = "net.onelitefeather.titan"
 version = "1.1.1"
 
 repositories {
+    maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
     mavenCentral()
     maven("https://jitpack.io")
-    maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
     maven {
-        url = uri("https://gitlab.themeinerlp.dev/api/v4/groups/28/-/packages/maven")
+        url = uri("https://gitlab.onelitefeather.dev/api/v4/groups/28/-/packages/maven")
         name = "GitLab"
         credentials(HttpHeaderCredentials::class.java) {
             name = "Private-Token"
