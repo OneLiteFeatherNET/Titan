@@ -30,15 +30,10 @@ repositories {
 
 dependencies {
     implementation(platform(libs.microtus.bom))
-    compileOnly(libs.microtus)
-    compileOnly(libs.aves)
-
-    compileOnly(libs.cloudnet.bridge)
-    compileOnly(libs.cloudnet.driver)
-    compileOnly(libs.cloudnet.wrapper.jvm)
+    implementation(libs.microtus)
+    implementation(libs.aves)
 
     implementation(libs.togglz)
-    implementation(libs.guice)
     implementation(libs.caffeine)
 }
 

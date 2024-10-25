@@ -13,7 +13,7 @@ import net.minestom.server.tag.Tag;
 
 import java.util.Optional;
 
-public class TickleFunction {
+public final class TickleFunction {
 
     private static final Tag<Long> COOLDOWN = Tag.Long("tickle_cooldown");
     private static final String TICKLE_MESSAGE = "<yellow><player> <white>tickled <yellow><target>";
