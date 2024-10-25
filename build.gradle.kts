@@ -1,9 +1,11 @@
+import org.gradle.language.nativeplatform.internal.Dimensions
+
 plugins {
     java
+    application
     alias(libs.plugins.publishdata)
     `maven-publish`
-    id("io.github.goooler.shadow") version "8.1.8"
-
+    id("com.gradleup.shadow") version "8.3.3"
 }
 
 group = "net.onelitefeather.titan"
@@ -46,7 +48,12 @@ tasks {
     }
     shadowJar {
         archiveClassifier.set("")
+        archiveFileName.set("titan.jar")
+        mergeServiceFiles()
     }
+}
+application {
+    mainClass.set("net.onelitefeather.titan.TitanApplication")
 }
 
 publishData {
