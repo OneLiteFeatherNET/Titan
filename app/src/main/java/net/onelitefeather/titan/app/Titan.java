@@ -18,37 +18,40 @@ import net.minestom.server.event.player.PlayerSpawnEvent;
 import net.minestom.server.event.player.PlayerStartFlyingWithElytraEvent;
 import net.minestom.server.event.player.PlayerSwapItemEvent;
 import net.minestom.server.event.player.PlayerUseItemEvent;
+import net.minestom.server.event.server.ServerTickMonitorEvent;
 import net.minestom.server.instance.InstanceContainer;
+import net.onelitefeather.agones.AgonesAPI;
+import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.app.commands.EndCommand;
+import net.onelitefeather.titan.app.helper.NavigationHelper;
+import net.onelitefeather.titan.app.listener.DeathListener;
 import net.onelitefeather.titan.app.listener.ElytraBoostListener;
 import net.onelitefeather.titan.app.listener.ElytraStartFlyingListener;
 import net.onelitefeather.titan.app.listener.ElytraStopFlyingListener;
+import net.onelitefeather.titan.app.listener.NavigationListener;
 import net.onelitefeather.titan.app.listener.PlayerConfigurationListener;
 import net.onelitefeather.titan.app.listener.PlayerSpawnListener;
 import net.onelitefeather.titan.app.listener.RespawnListener;
-import net.onelitefeather.titan.common.deliver.Deliver;
-import net.onelitefeather.titan.app.deliver.MessageChannelDeliver;
-import net.onelitefeather.titan.app.helper.NavigationHelper;
-import net.onelitefeather.titan.app.listener.DeathListener;
-import net.onelitefeather.titan.app.listener.NavigationListener;
 import net.onelitefeather.titan.app.listener.SitDisconnectListener;
 import net.onelitefeather.titan.app.listener.SitDismountListener;
 import net.onelitefeather.titan.app.listener.SitLeavePacketListener;
 import net.onelitefeather.titan.app.listener.SitListener;
 import net.onelitefeather.titan.app.listener.TickleListener;
 import net.onelitefeather.titan.common.config.AppConfigProvider;
+import net.onelitefeather.titan.common.deliver.DummyDeliver;
 import net.onelitefeather.titan.common.event.EntityDismountEvent;
 import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
 import net.onelitefeather.titan.common.map.MapProvider;
 import net.onelitefeather.titan.common.utils.Cancelable;
 
 import java.nio.file.Path;
+import java.time.temporal.ChronoUnit;
 
 public final class Titan {
 
     private final Path path;
     private final EventNode<Event> eventNode = EventNode.all("titan");
-    private final Deliver deliver = new MessageChannelDeliver();
+    private final Deliver deliver = new DummyDeliver();
     private final MapProvider mapProvider;
     private final AppConfigProvider appConfigProvider;
     private final NavigationHelper navigationHelper;
@@ -97,6 +100,20 @@ public final class Titan {
 
         this.eventNode.addListener(AsyncPlayerConfigurationEvent.class, new PlayerConfigurationListener(this.mapProvider));
         this.eventNode.addListener(PlayerSpawnEvent.class, new PlayerSpawnListener(this.appConfigProvider.getAppConfig(), this.mapProvider.getActiveLobby(), this.navigationHelper));
+
+        this.eventNode.addListener(ServerTickMonitorEvent.class, event -> {
+            AgonesAPI.instance().alive();
+        });
+        MinecraftServer.getSchedulerManager().buildTask(this::onUpdateAgones).repeat(this.appConfigProvider.getAppConfig().updateRateAgones(), ChronoUnit.MILLIS).schedule();
+    }
+
+    private void onUpdateAgones() {
+        int onlinePlayerSize = MinecraftServer.getConnectionManager().getOnlinePlayers().size();
+        if (onlinePlayerSize > 0) {
+            AgonesAPI.instance().allocate();
+        } else {
+            AgonesAPI.instance().ready();
+        }
     }
 
     public static Titan instance() {

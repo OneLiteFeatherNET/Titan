@@ -10,6 +10,7 @@ record AppConfigImpl(long tickleDuration,
                      List<NamespaceID> allowedSitBlocks,
                      int simulationDistance,
                      int fireworkBoostSlot,
-                     double elytraBoostMultiplier) implements AppConfig {
+                     double elytraBoostMultiplier,
+                     long updateRateAgones) implements AppConfig {
 
 }

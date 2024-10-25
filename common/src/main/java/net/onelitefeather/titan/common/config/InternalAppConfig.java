@@ -12,7 +12,8 @@ record InternalAppConfig(
     List<NamespaceID> allowedSitBlocks,
     int simulationDistance,
     int fireworkBoostSlot,
-    double elytraBoostMultiplier
+    double elytraBoostMultiplier,
+    long updateRateAgones
 ) implements AppConfig {
 
     public static AppConfig defaultConfig() {
@@ -27,6 +28,7 @@ record InternalAppConfig(
         private static final int DEFAULT_SIMULATION_DISTANCE = 2;
         private static final int DEFAULT_FIREWORK_BOOST_SLOT = 45;
         private static final double DEFAULT_ELYTRA_BOOST_MULTIPLIER = 35.0;
+        private static final long DEFAULT_UPDATE_RATE_AGONES = 2000;
 
         private static final InternalAppConfig DEFAULT;
 
@@ -37,7 +39,8 @@ record InternalAppConfig(
                     DEFAULT_ALLOWED_SIT_BLOCKS,
                     DEFAULT_SIMULATION_DISTANCE,
                     DEFAULT_FIREWORK_BOOST_SLOT,
-                    DEFAULT_ELYTRA_BOOST_MULTIPLIER
+                    DEFAULT_ELYTRA_BOOST_MULTIPLIER,
+                    DEFAULT_UPDATE_RATE_AGONES
             );
         }
 
