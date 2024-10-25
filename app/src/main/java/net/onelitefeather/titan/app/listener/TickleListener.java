@@ -14,7 +14,7 @@ import net.onelitefeather.titan.common.utils.Tags;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-public final final class TickleListener implements Consumer<EntityAttackEvent> {
+public final class TickleListener implements Consumer<EntityAttackEvent> {
 
 
     private static final String TICKLE_MESSAGE = "<yellow><player> <white>tickled <yellow><target>";

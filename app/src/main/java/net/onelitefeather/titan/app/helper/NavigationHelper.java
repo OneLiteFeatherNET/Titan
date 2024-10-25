@@ -11,7 +11,7 @@ import net.minestom.server.entity.Player;
 import net.minestom.server.inventory.InventoryType;
 import net.minestom.server.inventory.click.ClickType;
 import net.minestom.server.inventory.condition.InventoryConditionResult;
-import net.onelitefeather.titan.common.deliver.Deliver;
+import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.common.utils.Items;
 import net.onelitefeather.titan.common.utils.TitanFeatures;
 import org.togglz.core.user.SimpleFeatureUser;
