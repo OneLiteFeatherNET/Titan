@@ -28,6 +28,24 @@ dependencyResolutionManagement {
                 }
             }
         }
+    } else {
+        repositories {
+            maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+            mavenCentral()
+            maven {
+                url = uri("https://gitlab.onelitefeather.dev/api/v4/groups/28/-/packages/maven")
+                name = "GitLab"
+                credentials(HttpHeaderCredentials::class.java) {
+                    name = "Private-Token"
+                    val gitLabPrivateToken: String? by settings
+                    value = gitLabPrivateToken
+                }
+                authentication {
+                    create<HttpHeaderAuthentication>("header")
+                }
+            }
+
+        }
     }
 
     versionCatalogs {
@@ -51,3 +69,6 @@ dependencyResolutionManagement {
         }
     }
 }
+include("app")
+include("common")
+include("api")

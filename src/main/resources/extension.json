@@ -1,8 +1,0 @@
-{
-  "entrypoint": "net.onelitefeather.titan.TitanExtension",
-  "name": "Titan",
-  "version": "1.0.1",
-  "dependencies": [
-    "Aves"
-  ]
-}
