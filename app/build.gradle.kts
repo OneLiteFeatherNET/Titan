@@ -18,7 +18,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter")
 }
 application {
-    mainClass.set("net.onelitefeather.titan.TitanApplication")
+    mainClass.set("net.onelitefeather.titan.app.TitanApplication")
 }
 
 tasks {
