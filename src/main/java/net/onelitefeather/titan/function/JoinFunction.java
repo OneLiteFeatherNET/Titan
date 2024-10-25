@@ -9,7 +9,7 @@ import net.minestom.server.network.packet.server.CachedPacket;
 import net.minestom.server.network.packet.server.play.UpdateSimulationDistancePacket;
 import net.onelitefeather.titan.utils.Cancelable;
 
-public class JoinFunction {
+public final class JoinFunction {
 
     private static final CachedPacket SIMULATED_DISTANCE_PACKET = new CachedPacket(new UpdateSimulationDistancePacket(2));
     private final Pos spawn;
