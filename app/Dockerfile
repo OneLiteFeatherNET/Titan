@@ -10,6 +10,6 @@ ARG JAR_FILE
 COPY ${JAR_FILE} /app/app.jar
 
 ARG MAPS
-ADD ${MAPS} /app/worlds
+ADD ${MAPS} /app/maps
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
