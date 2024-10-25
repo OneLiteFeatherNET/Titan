@@ -34,7 +34,7 @@ pre-container-app:
     - if: '$CI_MERGE_REQUEST_LABELS =~ /pipeline:jdk21/'
       variables:
         GRADLE_IMAGE: "${HTL_NEXUS_PROXY}/gradle:8.10.2-jdk21"
-container-game:
+container-app:
   image: "${HTL_NEXUS_PROXY}/buildah/stable:latest"
   stage: publish
   tags:
