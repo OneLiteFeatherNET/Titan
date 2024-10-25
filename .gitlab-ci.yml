@@ -13,6 +13,36 @@ stages:
   - test
   - publish
   - deploy
+
+build app:
+  stage: build
+  image: "$GRADLE_IMAGE"
+  tags:
+      - saas-linux-medium-amd64
+  script:
+      - gradle classes
+  rules:
+  - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
+  - if: ($CI_COMMIT_BRANCH == 'main' ||  $CI_COMMIT_BRANCH == 'master')
+  - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && '$CI_MERGE_REQUEST_LABELS =~ /pipeline:deploy/'
+  - if: '$CI_MERGE_REQUEST_LABELS =~ /pipeline:jdk21/'
+    variables:
+        GRADLE_IMAGE: "${HTL_NEXUS_PROXY}/gradle:8.7.0-jdk21"
+
+test app:
+  stage: test
+  image: "$GRADLE_IMAGE"
+  tags:
+    - saas-linux-medium-amd64
+  script:
+    - gradle test
+  rules:
+    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
+    - if: ($CI_COMMIT_BRANCH == 'main' ||  $CI_COMMIT_BRANCH == 'master')
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && '$CI_MERGE_REQUEST_LABELS =~ /pipeline:deploy/'
+    - if: '$CI_MERGE_REQUEST_LABELS =~ /pipeline:jdk21/'
+      variables:
+        GRADLE_IMAGE: "${HTL_NEXUS_PROXY}/gradle:8.7.0-jdk21"
 # Container for the game module
 pre-container-app:
   image: "${HTL_NEXUS_PROXY}/gradle:8.10.2-jdk21"
