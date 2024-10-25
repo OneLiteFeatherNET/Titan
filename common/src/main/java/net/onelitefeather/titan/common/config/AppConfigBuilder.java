@@ -13,6 +13,7 @@ final class AppConfigBuilder implements AppConfig.Builder {
     private int simulationDistance;
     private int fireworkBoostSlot;
     private double elytraBoostMultiplier;
+    private long updateRateAgones;
 
     @Override
     public AppConfig.Builder tickleDuration(long tickleDuration) {
@@ -51,7 +52,13 @@ final class AppConfigBuilder implements AppConfig.Builder {
     }
 
     @Override
+    public AppConfig.Builder updateRateAgones(long updateRateAgones) {
+        this.updateRateAgones = updateRateAgones;
+        return this;
+    }
+
+    @Override
     public AppConfig build() {
-        return new AppConfigImpl(tickleDuration, sitOffset, allowedSitBlocks, simulationDistance, fireworkBoostSlot, elytraBoostMultiplier);
+        return new AppConfigImpl(tickleDuration, sitOffset, allowedSitBlocks, simulationDistance, fireworkBoostSlot, elytraBoostMultiplier, updateRateAgones);
     }
 }

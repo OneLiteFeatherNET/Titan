@@ -57,6 +57,10 @@ dependencyResolutionManagement {
             version("togglz", "4.4.0")
             version("caffeine", "3.1.8")
 
+            version("agones4j", "2.0.2")
+            version("grpc", "1.68.0")
+            version("tomcat-annotations-api", "6.0.53")
+
             // Minestom
             library("microtus-bom", "net.onelitefeather.microtus", "bom").versionRef("microtus-bom")
             library("microtus", "net.onelitefeather.microtus", "Microtus").withoutVersion()
@@ -65,6 +69,13 @@ dependencyResolutionManagement {
             library("togglz", "org.togglz", "togglz-core").versionRef("togglz")
             library("caffeine", "com.github.ben-manes.caffeine", "caffeine").versionRef("caffeine")
 
+            library("agones4j", "net.infumia", "agones4j").versionRef("agones4j")
+            library("grpc.stub", "io.grpc", "grpc-stub").versionRef("grpc")
+            library("grpc.protobuf", "io.grpc", "grpc-protobuf").versionRef("grpc")
+            library("grpc.netty", "io.grpc", "grpc-netty").versionRef("grpc")
+            library("grpc.okhttp", "io.grpc", "grpc-okhttp").versionRef("grpc")
+            library("tomcat-annotations-api", "org.apache.tomcat", "annotations-api").versionRef("tomcat-annotations-api")
+
             plugin("publishdata", "de.chojo.publishdata").versionRef("publishdata")
         }
     }
@@ -72,3 +83,5 @@ dependencyResolutionManagement {
 include("app")
 include("common")
 include("api")
+include("agones")
+include("kubernetes-deliver")
