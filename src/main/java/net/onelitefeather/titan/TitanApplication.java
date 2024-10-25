@@ -2,6 +2,7 @@ package net.onelitefeather.titan;
 
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.event.EventNode;
+import net.onelitefeather.titan.commands.EndCommand;
 import net.onelitefeather.titan.deliver.MessageChannelDeliver;
 import net.onelitefeather.titan.function.BlockHandlerFunction;
 import net.onelitefeather.titan.function.DeathFunction;
@@ -28,6 +29,7 @@ public final class TitanApplication {
         DeathFunction.instance(eventNode);
         BlockHandlerFunction.registerAll();
         RespawnFunction.instance(eventNode, navigationFunction);
+        MinecraftServer.getCommandManager().register(EndCommand.instance());
 
         minecraftServer.start("0.0.0.0", 25565);
     }

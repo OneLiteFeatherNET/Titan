@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "1.9.22"
+    java
     alias(libs.plugins.publishdata)
     `maven-publish`
     id("io.github.goooler.shadow") version "8.1.8"
@@ -38,11 +38,6 @@ dependencies {
 }
 
 tasks {
-    compileKotlin {
-        kotlinOptions {
-            options.freeCompilerArgs.add("-Xjvm-default=all")
-        }
-    }
     jar {
         archiveClassifier.set("unshaded")
     }
