@@ -19,18 +19,22 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public final class MapProvider {
     private static final Logger LOGGER = LoggerFactory.getLogger(MapProvider.class);
-    private static final String MAP_PATH = "maps";
+    private static final String MAP_PATH = "worlds";
     private final GsonFileHandler fileHandler;
     private final MapPool mapPool;
     private final Gson gson;
     private InstanceContainer instance;
     private LobbyMap activeLobby;
 
-    private MapProvider(@NotNull Path path, @NotNull InstanceContainer instance) {
-        this.mapPool = new MapPool(path.resolve(MAP_PATH));
+    private MapProvider(@NotNull Path path, @NotNull InstanceContainer instance, Function<Stream<Path>, List<MapEntry>> filterMaps) {
+        this.mapPool = new MapPool(path.resolve(MAP_PATH), filterMaps);
         this.instance = instance;
         var typeAdapter = new PositionGsonAdapter();
         this.gson = new Gson().newBuilder()
@@ -41,18 +45,32 @@ public final class MapProvider {
         this.loadMapData();
     }
 
-    public void saveMap(@NotNull Path path, @NotNull BaseMap baseMap) {
-        this.fileHandler.save(path, baseMap instanceof LobbyMap gameMap ? gameMap : baseMap);
+    private MapProvider(@NotNull Path path, @NotNull InstanceContainer instance) {
+        this(path, instance, MapProvider::defaultFilter);
+    }
+
+    private static List<MapEntry> defaultFilter(Stream<Path> pathStream) {
+        return pathStream.map(MapEntry::new).filter(MapEntry::hasMapFile).collect(Collectors.toList());
+    }
+
+    public void saveMap(@NotNull BaseMap baseMap) {
+        this.fileHandler.save(this.mapPool.getMapEntry().path().resolve(AppConfig.MAP_FILE_NAME), baseMap instanceof LobbyMap gameMap ? gameMap : baseMap);
+        loadMapData();
     }
 
     private void loadMapData() {
         var lobbyData = this.fileHandler.load(this.mapPool.getMapEntry().path().resolve(AppConfig.MAP_FILE_NAME), LobbyMap.class);
         this.instance.setChunkLoader(new AnvilLoader(mapPool.getMapEntry().path()));
-        this.activeLobby = lobbyData.get();
+        try {
+            this.activeLobby = lobbyData.orElse(LobbyMap.builder().build());
 
-        if (this.activeLobby.getSpawn() != null) {
-            loadChunk(this.instance, this.activeLobby.getSpawn());
+            if (this.activeLobby.getSpawn() != null) {
+                loadChunk(this.instance, this.activeLobby.getSpawn());
+            }
+        } catch (NoSuchElementException noSuchElementException) {
+            LOGGER.error("Failed to load the lobby data");
         }
+
     }
 
     private <T extends Point> void loadChunk(@NotNull InstanceContainer instance, @NotNull T pos) {
@@ -75,5 +93,9 @@ public final class MapProvider {
 
     public static MapProvider create(@NotNull Path path, @NotNull InstanceContainer instance) {
         return new MapProvider(path, instance);
+    }
+
+    public static MapProvider create(@NotNull Path path, @NotNull InstanceContainer instance, Function<Stream<Path>, List<MapEntry>> filterMaps) {
+        return new MapProvider(path, instance, filterMaps);
     }
 }

@@ -31,13 +31,14 @@ public final class AppConfigProvider {
     private void loadConfig() {
         Optional<AppConfigImpl> appConfig = this.fileHandler.load(this.path.resolve(this.APP_FILE_NAME), AppConfigImpl.class);
         if (appConfig.isEmpty()) {
-            this.saveConfig(this.path.resolve(this.APP_FILE_NAME), InternalAppConfig.defaultConfig());
+            this.saveConfig(InternalAppConfig.defaultConfig());
         }
         this.appConfig = appConfig.map(AppConfig.class::cast).orElse(InternalAppConfig.defaultConfig());
     }
 
-    public void saveConfig(@NotNull Path path, @NotNull AppConfig config) {
-        this.fileHandler.save(path, config);
+    public void saveConfig(@NotNull AppConfig config) {
+        this.fileHandler.save(this.path.resolve(this.APP_FILE_NAME), config);
+        this.loadConfig();
     }
 
     public AppConfig getAppConfig() {

@@ -57,7 +57,8 @@ public class NavigationHelper {
         inventoryBuilder.setLayout(InventoryLayout.fromType(InventoryType.CHEST_1_ROW));
         inventoryBuilder.setDataLayoutFunction(layout -> {
             InventoryLayout finalLayout = layout != null ? layout : InventoryLayout.fromType(InventoryType.CHEST_1_ROW);
-            finalLayout.setNonClickItems(LayoutCalculator.fillRow(InventoryType.CHEST_1_ROW), Items.NAVIGATOR_BLANK_ITEM_STACK);
+
+            finalLayout.setItems(LayoutCalculator.fillRow(InventoryType.CHEST_1_ROW), Items.NAVIGATOR_BLANK_ITEM_STACK);
             ThreadLocalUserProvider.bind(toUser(player));
             if (TitanFeatures.NAVIGATOR_ELYTRA.isActive()) {
                 finalLayout.setItem(0, Items.NAVIGATOR_ELYTRA_ITEM_STACK, this::clickElytra);

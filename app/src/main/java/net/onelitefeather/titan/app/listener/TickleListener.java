@@ -7,7 +7,6 @@ import net.minestom.server.entity.Player;
 import net.minestom.server.event.entity.EntityAttackEvent;
 import net.minestom.server.item.Material;
 import net.minestom.server.network.packet.server.play.SetCooldownPacket;
-import net.minestom.server.tag.Tag;
 import net.onelitefeather.titan.common.config.AppConfig;
 import net.onelitefeather.titan.common.utils.Tags;
 
