@@ -10,9 +10,6 @@ public enum TitanFeatures implements Feature, ThreadHelper {
     NAVIGATOR_MANIS,
     NAVIGATOR_SURVIVAL,
     NAVIGATOR_ELYTRA,
-    @EnabledByDefault
-    ELYTRA_FLY,
-    ENTITIES,
 ;
     @Override
     public boolean isActive() {
