@@ -14,6 +14,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -32,14 +33,16 @@ public final class MapPool {
 
     private List<MapEntry> referenceList;
     private MapEntry selectedMap;
+    private final Function<Stream<Path>, List<MapEntry>> filterMaps;
 
     /**
      * Creates a new instance of the map pool. It will load all maps from the given path.
      *
      * @param path the path where the maps are stored
      */
-    public MapPool(@NotNull Path path) {
-        referenceList = loadMapsEntries(path);
+    public MapPool(@NotNull Path path,@NotNull Function<Stream<Path>, List<MapEntry>> filterMaps) {
+        this.filterMaps = filterMaps;
+        this.referenceList = loadMapsEntries(path);
         this.peekMap();
     }
 
@@ -61,7 +64,7 @@ public final class MapPool {
     private @NotNull List<MapEntry> loadMapsEntries(@NotNull Path path) {
         List<MapEntry> mapEntries = new ArrayList<>();
         try (Stream<Path> stream = Files.list(path)) {
-            mapEntries = stream.filter(Files::isDirectory).map(MapEntry::new).filter(MapEntry::hasMapFile).collect(Collectors.toList());
+            mapEntries = this.filterMaps.apply(stream.filter(Files::isDirectory));
         } catch (IOException exception) {
             MinecraftServer.getExceptionManager().handleException(exception);
             LOGGER.error("Unable to load maps from path {}", path, exception);

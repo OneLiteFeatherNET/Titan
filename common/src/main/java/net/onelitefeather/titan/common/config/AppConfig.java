@@ -1,6 +1,8 @@
 package net.onelitefeather.titan.common.config;
 
+import net.kyori.adventure.text.Component;
 import net.minestom.server.coordinate.Vec;
+import net.minestom.server.item.Material;
 import net.minestom.server.utils.NamespaceID;
 
 import java.util.List;
@@ -49,6 +51,8 @@ public sealed interface AppConfig permits AppConfigImpl, InternalAppConfig {
      * @return The rate at which the Agones server should be updated
      */
     long updateRateAgones();
+
+    Component displayConfig();
 
     /**
      * Create a new {@link AppConfig} builder
@@ -122,6 +126,38 @@ public sealed interface AppConfig permits AppConfigImpl, InternalAppConfig {
          * @return The builder
          */
         Builder updateRateAgones(long updateRateAgones);
+
+        /**
+         * Add an allowed sit block
+         * @param namespaceID The namespace of the block
+         * @return The builder
+         */
+        Builder addAllowedSitBlock(NamespaceID namespaceID);
+
+        /**
+         * Remove an allowed sit block
+         * @param namespaceID The namespace of the block
+         * @return The builder
+         */
+        Builder removeAllowedSitBlock(NamespaceID namespaceID);
+
+        /**
+         * Add an allowed sit block
+         * @param material The material of the block
+         * @return The builder
+         */
+        default Builder addAllowedSitBlock(Material material) {
+            return addAllowedSitBlock(material.namespace());
+        }
+
+        /**
+         * Remove an allowed sit block
+         * @param material The material of the block
+         * @return The builder
+         */
+        default Builder removeAllowedSitBlock(Material material) {
+            return removeAllowedSitBlock(material.namespace());
+        }
 
         /**
          * Build the {@link AppConfig} instance

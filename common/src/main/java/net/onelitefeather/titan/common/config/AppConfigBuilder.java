@@ -58,6 +58,18 @@ final class AppConfigBuilder implements AppConfig.Builder {
     }
 
     @Override
+    public AppConfig.Builder addAllowedSitBlock(NamespaceID namespaceID) {
+        this.allowedSitBlocks.add(namespaceID);
+        return this;
+    }
+
+    @Override
+    public AppConfig.Builder removeAllowedSitBlock(NamespaceID namespaceID) {
+        this.allowedSitBlocks.remove(namespaceID);
+        return this;
+    }
+
+    @Override
     public AppConfig build() {
         return new AppConfigImpl(tickleDuration, sitOffset, allowedSitBlocks, simulationDistance, fireworkBoostSlot, elytraBoostMultiplier, updateRateAgones);
     }
