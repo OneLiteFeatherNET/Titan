@@ -1,6 +1,7 @@
 package net.onelitefeather.titan.api.deliver;
 
 import net.minestom.server.entity.Player;
+import net.onelitefeather.titan.api.deliver.model.DeliverComponent;
 
 /**
  * Represents the delivery interface to send a player to another server
@@ -8,5 +9,5 @@ import net.minestom.server.entity.Player;
  * @version 1.0.0
  */
 public interface Deliver {
-    void sendPlayer(Player player, String server);
+    void sendPlayer(Player player, DeliverComponent component);
 }
