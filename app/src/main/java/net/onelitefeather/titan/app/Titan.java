@@ -105,6 +105,8 @@ public final class Titan {
             AgonesAPI.instance().alive();
         });
         MinecraftServer.getSchedulerManager().buildTask(this::onUpdateAgones).repeat(this.appConfigProvider.getAppConfig().updateRateAgones(), ChronoUnit.MILLIS).schedule();
+
+        MinecraftServer.getGlobalEventHandler().addChild(eventNode);
     }
 
     private void onUpdateAgones() {

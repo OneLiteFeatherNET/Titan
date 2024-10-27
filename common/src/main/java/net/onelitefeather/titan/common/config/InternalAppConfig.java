@@ -1,5 +1,6 @@
 package net.onelitefeather.titan.common.config;
 
+import net.kyori.adventure.text.Component;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.item.Material;
 import net.minestom.server.utils.NamespaceID;
@@ -18,6 +19,11 @@ record InternalAppConfig(
 
     public static AppConfig defaultConfig() {
         return Instances.DEFAULT;
+    }
+
+    @Override
+    public Component displayConfig() {
+        return Component.empty();
     }
 
     static final class Instances {
