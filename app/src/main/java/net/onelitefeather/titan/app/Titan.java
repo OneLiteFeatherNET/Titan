@@ -38,7 +38,7 @@ import net.onelitefeather.titan.app.listener.SitLeavePacketListener;
 import net.onelitefeather.titan.app.listener.SitListener;
 import net.onelitefeather.titan.app.listener.TickleListener;
 import net.onelitefeather.titan.common.config.AppConfigProvider;
-import net.onelitefeather.titan.common.deliver.DummyDeliver;
+import net.onelitefeather.titan.common.deliver.MessageChannelDeliver;
 import net.onelitefeather.titan.common.event.EntityDismountEvent;
 import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
 import net.onelitefeather.titan.common.map.MapProvider;
@@ -51,7 +51,7 @@ public final class Titan {
 
     private final Path path;
     private final EventNode<Event> eventNode = EventNode.all("titan");
-    private final Deliver deliver = new DummyDeliver();
+    private final Deliver deliver = new MessageChannelDeliver();
     private final MapProvider mapProvider;
     private final AppConfigProvider appConfigProvider;
     private final NavigationHelper navigationHelper;
