@@ -52,7 +52,7 @@ dependencyResolutionManagement {
         create("libs") {
             version("microtus-bom", "1.5.0-SNAPSHOT")
             version("publishdata", "1.4.0")
-            version("aves", "1.5.0")
+            version("aves", "1.6.0-SNAPSHOT")
 
             version("togglz", "4.4.0")
             version("caffeine", "3.1.8")
@@ -84,3 +84,4 @@ include("app")
 include("common")
 include("api")
 include("agones")
+include("setup")

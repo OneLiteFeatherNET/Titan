@@ -58,7 +58,8 @@ public class NavigationHelper {
         inventoryBuilder.setLayout(InventoryLayout.fromType(InventoryType.CHEST_1_ROW));
         inventoryBuilder.setDataLayoutFunction(layout -> {
             InventoryLayout finalLayout = layout != null ? layout : InventoryLayout.fromType(InventoryType.CHEST_1_ROW);
-            finalLayout.setNonClickItems(LayoutCalculator.fillRow(InventoryType.CHEST_1_ROW), Items.NAVIGATOR_BLANK_ITEM_STACK);
+
+            finalLayout.setItems(LayoutCalculator.fillRow(InventoryType.CHEST_1_ROW), Items.NAVIGATOR_BLANK_ITEM_STACK);
             ThreadLocalUserProvider.bind(toUser(player));
             finalLayout.setItem(0, Items.NAVIGATOR_ELYTRA_ITEM_STACK, this::clickElytra);
             finalLayout.setItem(3, Items.NAVIGATOR_SLENDER_ITEM_STACK, this::clickSlender);
