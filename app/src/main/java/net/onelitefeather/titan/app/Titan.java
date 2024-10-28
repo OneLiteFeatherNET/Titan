@@ -16,6 +16,7 @@ import net.minestom.server.event.player.PlayerPacketEvent;
 import net.minestom.server.event.player.PlayerRespawnEvent;
 import net.minestom.server.event.player.PlayerSpawnEvent;
 import net.minestom.server.event.player.PlayerStartFlyingWithElytraEvent;
+import net.minestom.server.event.player.PlayerStopFlyingWithElytraEvent;
 import net.minestom.server.event.player.PlayerSwapItemEvent;
 import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.server.event.server.ServerTickMonitorEvent;
@@ -92,8 +93,8 @@ public final class Titan {
 
         this.eventNode.addListener(PlayerUseItemEvent.class, new NavigationListener(this.navigationHelper));
 
-        this.eventNode.addListener(PlayerStartFlyingWithElytraEvent.class, new ElytraStartFlyingListener(this.appConfigProvider.getAppConfig()));
-        this.eventNode.addListener(PlayerStartFlyingWithElytraEvent.class, new ElytraStopFlyingListener(this.appConfigProvider.getAppConfig()));
+        this.eventNode.addListener(PlayerStartFlyingWithElytraEvent.class, new ElytraStartFlyingListener());
+        this.eventNode.addListener(PlayerStopFlyingWithElytraEvent.class, new ElytraStopFlyingListener());
         this.eventNode.addListener(PlayerUseItemEvent.class, new ElytraBoostListener(this.appConfigProvider.getAppConfig()));
 
         this.eventNode.addListener(PlayerRespawnEvent.class, new RespawnListener(this.navigationHelper));
