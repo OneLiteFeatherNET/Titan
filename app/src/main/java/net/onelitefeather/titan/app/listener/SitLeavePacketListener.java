@@ -13,7 +13,7 @@ public final class SitLeavePacketListener implements Consumer<PlayerPacketEvent>
         if (event.getPacket() instanceof ClientSteerVehiclePacket packet) {
             var ridingEntity = event.getPlayer().getVehicle();
             if (packet.flags() == 2 && ridingEntity != null) {
-                var entityDismountEvent = new EntityDismountEvent(ridingEntity, event.getPlayer());
+                var entityDismountEvent = new EntityDismountEvent(event.getPlayer(), ridingEntity);
                 EventDispatcher.call(entityDismountEvent);
             }
         }
