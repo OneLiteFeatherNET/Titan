@@ -1,4 +1,4 @@
-package net.onelitefeather.titan.api.deliver.model;
+package net.onelitefeather.deliver;
 
 import java.util.UUID;
 
@@ -27,6 +27,6 @@ final class FleetBuilderImpl implements DeliverComponent.FleetBuilder {
         if (fleetName == null) {
             throw new IllegalStateException("Fleet name not set");
         }
-        return new FleetDeliverComponent(DeliverType.FLEET, fleetName, playerId);
+        return new FleetDeliverComponentImpl(DeliverType.FLEET, fleetName, playerId);
     }
 }

@@ -1,4 +1,4 @@
-package net.onelitefeather.titan.api.deliver.model;
+package net.onelitefeather.deliver;
 
 import java.util.UUID;
 
@@ -27,6 +27,6 @@ final class GameServerBuilderImpl implements DeliverComponent.GameServerBuilder 
         if (playerId == null) {
             throw new IllegalArgumentException("playerId cannot be null");
         }
-        return new GameServerDeliverComponent(DeliverType.GAME_SERVER, gameServerId, playerId);
+        return new GameServerDeliverComponentImpl(DeliverType.GAME_SERVER, gameServerId, playerId);
     }
 }
