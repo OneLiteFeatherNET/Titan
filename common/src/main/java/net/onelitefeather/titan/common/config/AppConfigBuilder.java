@@ -14,6 +14,8 @@ final class AppConfigBuilder implements AppConfig.Builder {
     private int fireworkBoostSlot;
     private double elytraBoostMultiplier;
     private long updateRateAgones;
+    private int maxHeightBeforeTeleport;
+    private int minHeightBeforeTeleport;
 
     @Override
     public AppConfig.Builder tickleDuration(long tickleDuration) {
@@ -70,7 +72,19 @@ final class AppConfigBuilder implements AppConfig.Builder {
     }
 
     @Override
+    public AppConfig.Builder minHeightBeforeTeleport(int minHeightBeforeTeleport) {
+        this.minHeightBeforeTeleport = minHeightBeforeTeleport;
+        return this;
+    }
+
+    @Override
+    public AppConfig.Builder maxHeightBeforeTeleport(int maxHeightBeforeTeleport) {
+        this.maxHeightBeforeTeleport = maxHeightBeforeTeleport;
+        return this;
+    }
+
+    @Override
     public AppConfig build() {
-        return new AppConfigImpl(tickleDuration, sitOffset, allowedSitBlocks, simulationDistance, fireworkBoostSlot, elytraBoostMultiplier, updateRateAgones);
+        return new AppConfigImpl(tickleDuration, sitOffset, allowedSitBlocks, simulationDistance, fireworkBoostSlot, elytraBoostMultiplier, updateRateAgones,minHeightBeforeTeleport, maxHeightBeforeTeleport);
     }
 }
