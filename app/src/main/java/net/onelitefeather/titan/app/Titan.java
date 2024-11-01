@@ -78,7 +78,7 @@ public final class Titan {
         this.eventNode.addListener(AsyncPlayerConfigurationEvent.class, new PlayerConfigurationListener(this.mapProvider));
         this.eventNode.addListener(PlayerSpawnEvent.class, new PlayerSpawnListener(this.appConfigProvider.getAppConfig(), this.mapProvider.getActiveLobby(), this.navigationHelper));
 
-        if (TitanFlag.AGONES_SUPPORT) {
+        if (TitanFlag.AGONES_SUPPORT.isPresent()) {
             this.eventNode.addListener(ServerTickMonitorEvent.class, event -> {
                 AgonesAPI.instance().alive();
             });
