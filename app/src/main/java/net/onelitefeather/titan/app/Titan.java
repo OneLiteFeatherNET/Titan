@@ -6,38 +6,14 @@ import net.minestom.server.event.EventNode;
 import net.minestom.server.event.entity.EntityAttackEvent;
 import net.minestom.server.event.item.ItemDropEvent;
 import net.minestom.server.event.item.PickupItemEvent;
-import net.minestom.server.event.player.AsyncPlayerConfigurationEvent;
-import net.minestom.server.event.player.PlayerBlockBreakEvent;
-import net.minestom.server.event.player.PlayerBlockInteractEvent;
-import net.minestom.server.event.player.PlayerBlockPlaceEvent;
-import net.minestom.server.event.player.PlayerDeathEvent;
-import net.minestom.server.event.player.PlayerDisconnectEvent;
-import net.minestom.server.event.player.PlayerPacketEvent;
-import net.minestom.server.event.player.PlayerRespawnEvent;
-import net.minestom.server.event.player.PlayerSpawnEvent;
-import net.minestom.server.event.player.PlayerStartFlyingWithElytraEvent;
-import net.minestom.server.event.player.PlayerStopFlyingWithElytraEvent;
-import net.minestom.server.event.player.PlayerSwapItemEvent;
-import net.minestom.server.event.player.PlayerUseItemEvent;
+import net.minestom.server.event.player.*;
 import net.minestom.server.event.server.ServerTickMonitorEvent;
 import net.minestom.server.instance.InstanceContainer;
 import net.onelitefeather.agones.AgonesAPI;
 import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.app.commands.EndCommand;
 import net.onelitefeather.titan.app.helper.NavigationHelper;
-import net.onelitefeather.titan.app.listener.DeathListener;
-import net.onelitefeather.titan.app.listener.ElytraBoostListener;
-import net.onelitefeather.titan.app.listener.ElytraStartFlyingListener;
-import net.onelitefeather.titan.app.listener.ElytraStopFlyingListener;
-import net.onelitefeather.titan.app.listener.NavigationListener;
-import net.onelitefeather.titan.app.listener.PlayerConfigurationListener;
-import net.onelitefeather.titan.app.listener.PlayerSpawnListener;
-import net.onelitefeather.titan.app.listener.RespawnListener;
-import net.onelitefeather.titan.app.listener.SitDisconnectListener;
-import net.onelitefeather.titan.app.listener.SitDismountListener;
-import net.onelitefeather.titan.app.listener.SitLeavePacketListener;
-import net.onelitefeather.titan.app.listener.SitListener;
-import net.onelitefeather.titan.app.listener.TickleListener;
+import net.onelitefeather.titan.app.listener.*;
 import net.onelitefeather.titan.common.config.AppConfigProvider;
 import net.onelitefeather.titan.common.deliver.MessageChannelDeliver;
 import net.onelitefeather.titan.common.event.EntityDismountEvent;
@@ -59,13 +35,12 @@ public final class Titan {
 
     private Titan() {
         this.path = Path.of("");
+        BlockHandlerHelper.registerAll();
         InstanceContainer instance = MinecraftServer.getInstanceManager().createInstanceContainer();
         MinecraftServer.getInstanceManager().registerInstance(instance);
         this.mapProvider = MapProvider.create(this.path, instance);
         this.appConfigProvider = AppConfigProvider.create(this.path);
         this.navigationHelper = NavigationHelper.instance(this.deliver);
-
-        BlockHandlerHelper.registerAll();
 
         initListeners();
         initCommands();
@@ -98,6 +73,7 @@ public final class Titan {
         this.eventNode.addListener(PlayerUseItemEvent.class, new ElytraBoostListener(this.appConfigProvider.getAppConfig()));
 
         this.eventNode.addListener(PlayerRespawnEvent.class, new RespawnListener(this.navigationHelper));
+        this.eventNode.addListener(PlayerMoveEvent.class, new PlayerMoveListener(this.appConfigProvider.getAppConfig(), this.mapProvider.getActiveLobby()));
 
         this.eventNode.addListener(AsyncPlayerConfigurationEvent.class, new PlayerConfigurationListener(this.mapProvider));
         this.eventNode.addListener(PlayerSpawnEvent.class, new PlayerSpawnListener(this.appConfigProvider.getAppConfig(), this.mapProvider.getActiveLobby(), this.navigationHelper));
