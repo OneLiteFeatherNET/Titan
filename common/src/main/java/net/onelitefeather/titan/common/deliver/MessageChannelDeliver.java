@@ -1,8 +1,8 @@
 package net.onelitefeather.titan.common.deliver;
 
 import net.minestom.server.entity.Player;
+import net.onelitefeather.deliver.DeliverComponent;
 import net.onelitefeather.titan.api.deliver.Deliver;
-import net.onelitefeather.titan.api.deliver.model.DeliverComponent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
