@@ -102,11 +102,12 @@ public final class Titan {
         this.eventNode.addListener(AsyncPlayerConfigurationEvent.class, new PlayerConfigurationListener(this.mapProvider));
         this.eventNode.addListener(PlayerSpawnEvent.class, new PlayerSpawnListener(this.appConfigProvider.getAppConfig(), this.mapProvider.getActiveLobby(), this.navigationHelper));
 
-        this.eventNode.addListener(ServerTickMonitorEvent.class, event -> {
-            AgonesAPI.instance().alive();
-        });
-        MinecraftServer.getSchedulerManager().buildTask(this::onUpdateAgones).repeat(this.appConfigProvider.getAppConfig().updateRateAgones(), ChronoUnit.MILLIS).schedule();
-
+        if (TitanFlag.AGONES_SUPPORT) {
+            this.eventNode.addListener(ServerTickMonitorEvent.class, event -> {
+                AgonesAPI.instance().alive();
+            });
+            MinecraftServer.getSchedulerManager().buildTask(this::onUpdateAgones).repeat(this.appConfigProvider.getAppConfig().updateRateAgones(), ChronoUnit.MILLIS).schedule();
+        }
         MinecraftServer.getGlobalEventHandler().addChild(eventNode);
     }
 
