@@ -11,6 +11,18 @@ public sealed interface AppConfig permits AppConfigImpl, InternalAppConfig {
     String MAP_FILE_NAME = "map.json";
 
     /**
+     * The maximum height before teleport is triggered to prevent the player from flying too high
+     * @return The maximum height before teleport
+     */
+    int maxHeightBeforeTeleport();
+
+    /**
+     * The minimum height before teleport is triggered to prevent the player from falling through the world
+     * @return The minimum height before teleport
+     */
+    int minHeightBeforeTeleport();
+
+    /**
      * The delay between each tickle
      * @return The duration of the delay
      */
@@ -140,6 +152,20 @@ public sealed interface AppConfig permits AppConfigImpl, InternalAppConfig {
          * @return The builder
          */
         Builder removeAllowedSitBlock(NamespaceID namespaceID);
+
+        /**
+         * Set the minimum height before teleport is triggered
+         * @param minHeightBeforeTeleport The minimum height before teleport
+         * @return The builder
+         */
+        Builder minHeightBeforeTeleport(int minHeightBeforeTeleport);
+
+        /**
+         * Set the maximum height before teleport is triggered
+         * @param maxHeightBeforeTeleport The maximum height before teleport
+         * @return The builder
+         */
+        Builder maxHeightBeforeTeleport(int maxHeightBeforeTeleport);
 
         /**
          * Add an allowed sit block

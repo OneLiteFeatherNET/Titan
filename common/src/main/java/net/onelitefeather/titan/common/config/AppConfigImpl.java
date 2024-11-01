@@ -17,7 +17,9 @@ record AppConfigImpl(long tickleDuration,
                      int simulationDistance,
                      int fireworkBoostSlot,
                      double elytraBoostMultiplier,
-                     long updateRateAgones) implements AppConfig, ThreadHelper {
+                     long updateRateAgones,
+                     int minHeightBeforeTeleport,
+                     int maxHeightBeforeTeleport) implements AppConfig, ThreadHelper {
 
     @Override
     public Component displayConfig() {
@@ -30,14 +32,18 @@ record AppConfigImpl(long tickleDuration,
             <dark_aqua>Simulation distance: <yellow><simulation_distance>
             <dark_aqua>Firework boost slot: <yellow><firework_boost_slot>
             <dark_aqua>Elytra boost multiplier: <yellow><elytra_boost_multiplier>
-            <dark_aqua>Update rate Agones: <yellow><update_rate_agones>""",
+            <dark_aqua>Update rate Agones: <yellow><update_rate_agones>
+            <dark_aqua>Max height before teleport: <yellow><max_height_before_teleport>
+            <dark_aqua>Min height before teleport: <yellow><min_height_before_teleport>""",
                         Placeholder.parsed("tickle_duration", String.valueOf(tickleDuration)),
                         Placeholder.component("sit_offset", Components.convertPoint(sitOffset)),
                         Placeholder.parsed("allowed_sit_blocks", allowedSitBlocks.toString()),
                         Placeholder.parsed("simulation_distance", String.valueOf(simulationDistance)),
                         Placeholder.parsed("firework_boost_slot", String.valueOf(fireworkBoostSlot)),
                         Placeholder.parsed("elytra_boost_multiplier", String.valueOf(elytraBoostMultiplier)),
-                        Placeholder.parsed("update_rate_agones", String.valueOf(updateRateAgones))
+                        Placeholder.parsed("update_rate_agones", String.valueOf(updateRateAgones)),
+                        Placeholder.parsed("max_height_before_teleport", String.valueOf(maxHeightBeforeTeleport)),
+                        Placeholder.parsed("min_height_before_teleport", String.valueOf(minHeightBeforeTeleport))
                 );
     }
 }
