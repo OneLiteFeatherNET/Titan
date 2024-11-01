@@ -1,4 +1,4 @@
-package net.onelitefeather.titan.api.deliver.model;
+package net.onelitefeather.deliver;
 
 public enum DeliverType {
     FLEET,

@@ -1,7 +1,7 @@
 package net.onelitefeather.titan.api.deliver;
 
 import net.minestom.server.entity.Player;
-import net.onelitefeather.titan.api.deliver.model.DeliverComponent;
+import net.onelitefeather.deliver.DeliverComponent;
 
 /**
  * Represents the delivery interface to send a player to another server
