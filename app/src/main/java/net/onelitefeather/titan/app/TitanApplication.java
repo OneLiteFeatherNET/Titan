@@ -1,12 +1,14 @@
 package net.onelitefeather.titan.app;
 
 import net.minestom.server.MinecraftServer;
+import net.minestom.server.extras.velocity.VelocityProxy;
 import net.onelitefeather.agones.AgonesAPI;
 
 public final class TitanApplication {
     public static void main(String[] args) {
         var minecraftServer = MinecraftServer.init();
-        if (TitanFlag.AGONES_SUPPORT) {
+        TitanFlag.VELOCITY_SECRET.ifPresent(VelocityProxy::enable);
+        if (TitanFlag.AGONES_SUPPORT.isPresent()) {
             MinecraftServer.getSchedulerManager().buildShutdownTask(AgonesAPI.instance()::shutdown);
         }
         Titan.instance();
