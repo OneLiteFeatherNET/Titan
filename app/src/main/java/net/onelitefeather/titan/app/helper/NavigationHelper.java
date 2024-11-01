@@ -11,10 +11,9 @@ import net.minestom.server.entity.Player;
 import net.minestom.server.inventory.InventoryType;
 import net.minestom.server.inventory.click.ClickType;
 import net.minestom.server.inventory.condition.InventoryConditionResult;
+import net.onelitefeather.deliver.DeliverComponent;
 import net.onelitefeather.titan.api.deliver.Deliver;
-import net.onelitefeather.titan.api.deliver.model.DeliverComponent;
 import net.onelitefeather.titan.common.utils.Items;
-import net.onelitefeather.titan.common.utils.TitanFeatures;
 import org.togglz.core.user.SimpleFeatureUser;
 import org.togglz.core.user.thread.ThreadLocalUserProvider;
 
@@ -92,7 +91,7 @@ public class NavigationHelper {
 
     private void clickSlender(Player player, int slot, ClickType type, InventoryConditionResult conditionResult) {
         conditionResult.setCancel(true);
-        deliver.sendPlayer(player, DeliverComponent.fleetBuilder().player(player).fleetName("Cygnus").build());
+        deliver.sendPlayer(player, DeliverComponent.fleetBuilder().player(player).fleetName("cygnus-fleet").build());
     }
 
     private void clickCreative(Player player, int slot, ClickType type, InventoryConditionResult conditionResult) {
