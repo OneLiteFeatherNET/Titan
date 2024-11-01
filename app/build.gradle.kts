@@ -2,6 +2,7 @@ plugins {
     java
     application
     id("com.gradleup.shadow") version "8.3.3"
+    id("info.solidsoft.pitest") apply true
 }
 
 dependencies {
@@ -16,6 +17,10 @@ dependencies {
 
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation(platform(libs.microtus.bom))
+    testImplementation(libs.microtus)
+    testImplementation(libs.microtus.testing)
+    testImplementation(libs.mockito)
 }
 application {
     mainClass.set("net.onelitefeather.titan.app.TitanApplication")

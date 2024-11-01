@@ -61,6 +61,8 @@ dependencyResolutionManagement {
             version("grpc", "1.68.0")
             version("tomcat-annotations-api", "6.0.53")
 
+            version("mockito", "5.14.2")
+
             // Minestom
             library("microtus-bom", "net.onelitefeather.microtus", "bom").versionRef("microtus-bom")
             library("microtus", "net.onelitefeather.microtus", "Microtus").withoutVersion()
@@ -76,6 +78,9 @@ dependencyResolutionManagement {
             library("grpc.okhttp", "io.grpc", "grpc-okhttp").versionRef("grpc")
             library("tomcat-annotations-api", "org.apache.tomcat", "annotations-api").versionRef("tomcat-annotations-api")
 
+            library("microtus.testing", "net.onelitefeather.microtus.testing", "testing").withoutVersion()
+            library("mockito", "org.mockito", "mockito-core").versionRef("mockito")
+
             plugin("publishdata", "de.chojo.publishdata").versionRef("publishdata")
         }
     }
@@ -85,3 +90,5 @@ include("common")
 include("api")
 include("agones")
 include("setup")
+
+findProject(":app")?.projectDir = file("app")
