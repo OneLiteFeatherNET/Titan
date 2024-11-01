@@ -7,7 +7,7 @@ import net.minestom.server.utils.NamespaceID;
 
 import java.util.List;
 
-record InternalAppConfig(
+public record InternalAppConfig(
     long tickleDuration,
     Vec sitOffset,
     List<NamespaceID> allowedSitBlocks,

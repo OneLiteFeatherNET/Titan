@@ -10,7 +10,7 @@ import net.onelitefeather.titan.common.map.LobbyMap;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-public class PlayerSpawnListener implements Consumer<PlayerSpawnEvent> {
+public final class PlayerSpawnListener implements Consumer<PlayerSpawnEvent> {
 
     private final CachedPacket simulatedDistancePacket;
     private final LobbyMap lobbyMap;

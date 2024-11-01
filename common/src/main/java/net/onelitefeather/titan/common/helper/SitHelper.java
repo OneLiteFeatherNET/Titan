@@ -7,8 +7,6 @@ import net.minestom.server.entity.Player;
 import net.onelitefeather.titan.common.config.AppConfig;
 import net.onelitefeather.titan.common.utils.Tags;
 
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
 public final class SitHelper {
@@ -28,7 +26,7 @@ public final class SitHelper {
         var instance = player.getInstance();
         if (instance == null) return;
         var playerLocation = player.getPosition();
-        var arrow = new Entity(EntityType.ARROW);
+        var arrow = new ArrowEntity();
         arrow.setInstance(instance, sitLocation.add(config.sitOffset()));
         arrow.setInvisible(true);
         arrow.setSilent(true);
@@ -37,23 +35,6 @@ public final class SitHelper {
         arrow.addPassenger(player);
         player.setTag(Tags.SIT_ARROW, arrow.getUuid());
     }
-
-    /**
-     * Removes the player from the sitting position.
-     *
-     * @param player the player to remove
-     */
-    public static void removePlayerFromArrow(Entity arrow) {
-        arrow.getPassengers().forEach(passenger -> {
-            if (passenger instanceof Player player) {
-                player.removeTag(Tags.SIT_ARROW);
-                Optional.ofNullable(player.getTag(Tags.SIT_PLAYER)).ifPresent(player::teleport);
-            }
-        });
-        arrow.remove();
-
-    }
-
     /**
      * Removes the player from the sitting position.
      *
@@ -63,11 +44,24 @@ public final class SitHelper {
         Optional.ofNullable(player.getTag(Tags.SIT_ARROW))
                 .map(player.getInstance()::getEntityByUuid)
                 .ifPresent(arrow -> {
-            arrow.removePassenger(player);
-            arrow.scheduleRemove(Duration.of(1, ChronoUnit.SECONDS));
-        });
-        Optional.ofNullable(player.getTag(Tags.SIT_PLAYER)).ifPresent(player::teleport);
+                    player.removeTag(Tags.SIT_ARROW);
+                    Optional.ofNullable(player.getTag(Tags.SIT_PLAYER)).ifPresent(player::teleport);
+                    arrow.removePassenger(player);
+                });
+    }
 
+    static class ArrowEntity extends Entity {
+        public ArrowEntity() {
+            super(EntityType.ARROW);
+        }
+
+        @Override
+        public void update(final long time) {
+            super.update(time);
+            if (this.getPassengers().isEmpty()) {
+                this.remove();
+            }
+        }
     }
 
     /**

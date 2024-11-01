@@ -8,7 +8,7 @@ import net.onelitefeather.titan.common.utils.Cancelable;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-public class PlayerConfigurationListener implements Consumer<AsyncPlayerConfigurationEvent> {
+public final class PlayerConfigurationListener implements Consumer<AsyncPlayerConfigurationEvent> {
 
     private final MapProvider mapProvider;
 
@@ -18,8 +18,8 @@ public class PlayerConfigurationListener implements Consumer<AsyncPlayerConfigur
 
     @Override
     public void accept(AsyncPlayerConfigurationEvent event) {
-        event.setSpawningInstance(this.mapProvider.getInstance());
-        Optional.of(this.mapProvider.getActiveLobby()).map(LobbyMap::getSpawn).ifPresent(event.getPlayer()::setRespawnPoint);
+        Optional.ofNullable(this.mapProvider).map(MapProvider::getInstance).ifPresent(event::setSpawningInstance);
+        Optional.of(this.mapProvider).map(MapProvider::getActiveLobby).map(LobbyMap::getSpawn).ifPresent(event.getPlayer()::setRespawnPoint);
         event.getPlayer().getInventory().addInventoryCondition(Cancelable::cancelClick);
     }
 }

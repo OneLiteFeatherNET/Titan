@@ -10,7 +10,7 @@ public final class SitDismountListener implements Consumer<EntityDismountEvent> 
     @Override
     public void accept(EntityDismountEvent event) {
         if (event.rider() instanceof Player player && SitHelper.isSitting(player)) {
-            SitHelper.removePlayerFromArrow(event.getEntity());
+            SitHelper.removePlayer(player);
         }
     }
 }
