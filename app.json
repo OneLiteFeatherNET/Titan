@@ -1,1 +1,20 @@
-{"tickleDuration":4000,"sitOffset":{"x":0.5,"y":0.25,"z":0.5},"allowedSitBlocks":[{"domain":"minecraft","path":"spruce_stairs"}],"simulationDistance":2,"fireworkBoostSlot":45,"elytraBoostMultiplier":35.0,"updateRateAgones":2000}
+{
+  "tickleDuration": 4000,
+  "sitOffset": {
+    "x": 0.5,
+    "y": 0.25,
+    "z": 0.5
+  },
+  "allowedSitBlocks": [
+    {
+      "domain": "minecraft",
+      "path": "spruce_stairs"
+    }
+  ],
+  "simulationDistance": 2,
+  "fireworkBoostSlot": 45,
+  "elytraBoostMultiplier": 35.0,
+  "updateRateAgones": 2000,
+  "maxHeightBeforeTeleport": 310,
+  "minHeightBeforeTeleport": -64
+}
