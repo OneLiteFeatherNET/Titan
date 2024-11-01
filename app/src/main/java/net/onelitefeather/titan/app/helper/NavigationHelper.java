@@ -92,7 +92,7 @@ public class NavigationHelper {
 
     private void clickSlender(Player player, int slot, ClickType type, InventoryConditionResult conditionResult) {
         conditionResult.setCancel(true);
-        deliver.sendPlayer(player, DeliverComponent.fleetBuilder().player(player).fleetName("Cygnus").build());
+        deliver.sendPlayer(player, DeliverComponent.fleetBuilder().player(player).fleetName("cygnus-fleet").build());
     }
 
     private void clickCreative(Player player, int slot, ClickType type, InventoryConditionResult conditionResult) {
