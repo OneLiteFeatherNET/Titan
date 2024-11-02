@@ -22,7 +22,8 @@ build:
     - saas-linux-medium-amd64
   extends:
     - .gradle-project-cache
-  rules: !reference [ .gradle-java-image-rules, .workflow-rules-deploy, .workflow-rules-run-on-merge-request, .workflow-rules-run-on-default-branch, .workflow-rules-run-on-main ]
+  rules:
+    - !reference [ .gradle-java-image-rules, .workflow-rules-deploy, .workflow-rules-run-on-merge-request, .workflow-rules-run-on-default-branch, .workflow-rules-run-on-main ]
   artifacts:
     paths:
       - app/build/libs/titan.jar
@@ -38,7 +39,8 @@ test:
     - saas-linux-medium-amd64
   extends:
     - .gradle-project-cache
-  rules: !reference [ .gradle-java-image-rules, .workflow-rules-deploy, .workflow-rules-run-on-merge-request, .workflow-rules-run-on-default-branch, .workflow-rules-run-on-main ]
+  rules:
+    - !reference [ .gradle-java-image-rules, .workflow-rules-deploy, .workflow-rules-run-on-merge-request, .workflow-rules-run-on-default-branch, .workflow-rules-run-on-main ]
   script:
     - gradle test
 
@@ -49,13 +51,15 @@ publish gradle:
     - saas-linux-medium-amd64
   extends:
     - .gradle-project-cache
-  rules: !reference [ .gradle-java-image-rules, .workflow-rules-deploy, .workflow-rules-run-on-merge-request, .workflow-rules-run-on-default-branch, .workflow-rules-run-on-main ]
+  rules:
+    - !reference [ .gradle-java-image-rules, .workflow-rules-deploy, .workflow-rules-run-on-merge-request, .workflow-rules-run-on-default-branch, .workflow-rules-run-on-main ]
   script:
     - gradle publish
 publish container:
   image: "${HTL_NEXUS_PROXY}/buildah/stable:latest"
   stage: publish
-  rules: !reference [.workflow-rules-deploy, .workflow-rules-run-on-merge-request, .workflow-rules-run-on-default-branch, .workflow-rules-run-on-main]
+  rules:
+    - !reference [.workflow-rules-deploy, .workflow-rules-run-on-merge-request, .workflow-rules-run-on-default-branch, .workflow-rules-run-on-main]
   tags:
     - saas-linux-medium-amd64
   dependencies:
