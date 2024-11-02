@@ -10,7 +10,6 @@ import net.minestom.server.utils.inventory.PlayerInventoryUtils;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.api.deliver.Deliver;
-import net.onelitefeather.titan.api.deliver.model.DeliverComponent;
 import net.onelitefeather.titan.app.testutils.DummyDeliver;
 import net.onelitefeather.titan.common.utils.Items;
 import org.junit.jupiter.api.Assertions;
