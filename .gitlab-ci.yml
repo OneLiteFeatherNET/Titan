@@ -1,14 +1,10 @@
 include:
   - template: Jobs/Dependency-Scanning.gitlab-ci.yml
   - template: Security/Secret-Detection.gitlab-ci.yml
-  - project: 'onelitefeather/ci-components'
-    file: 'templates/basic-rules.yml'
-    ref: '0.3.3'
-  - project: 'onelitefeather/ci-components'
-    file: 'templates/gradle-java-pipeline-versions-rules.yml'
-    ref: '0.3.3'
   - component: $CI_SERVER_FQDN/onelitefeather/ci-components/core-stages@0.3.3
   - component: $CI_SERVER_FQDN/onelitefeather/ci-components/gradle-build-cache@0.3.3
+  - component: $CI_SERVER_FQDN/onelitefeather/ci-components/gradle-java-pipeline-versions-rules@0.3.3
+  - component: $CI_SERVER_FQDN/onelitefeather/ci-components/basic-rules@0.3.3
 variables:
   SECURE_ANALYZERS_PREFIX: "${HTL_NEXUS_PROXY}/security-products"
   IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
@@ -23,7 +19,7 @@ build:
   extends:
     - .gradle-project-cache
   rules:
-    - !reference [ .gradle-java-image-rules, .workflow-rules-deploy, .workflow-rules-run-on-merge-request, .workflow-rules-run-on-default-branch, .workflow-rules-run-on-main ]
+    - !reference [.gradle-java-image-rules, .workflow-rules-deploy, .workflow-rules-run-on-merge-request, .workflow-rules-run-on-default-branch, .workflow-rules-run-on-main ]
   artifacts:
     paths:
       - app/build/libs/titan.jar
@@ -40,7 +36,7 @@ test:
   extends:
     - .gradle-project-cache
   rules:
-    - !reference [ .gradle-java-image-rules, .workflow-rules-deploy, .workflow-rules-run-on-merge-request, .workflow-rules-run-on-default-branch, .workflow-rules-run-on-main ]
+    - !reference [.gradle-java-image-rules, .workflow-rules-deploy, .workflow-rules-run-on-merge-request, .workflow-rules-run-on-default-branch, .workflow-rules-run-on-main ]
   script:
     - gradle test
 
@@ -52,7 +48,7 @@ publish gradle:
   extends:
     - .gradle-project-cache
   rules:
-    - !reference [ .gradle-java-image-rules, .workflow-rules-deploy, .workflow-rules-run-on-merge-request, .workflow-rules-run-on-default-branch, .workflow-rules-run-on-main ]
+    - !reference [.gradle-java-image-rules, .workflow-rules-deploy, .workflow-rules-run-on-merge-request, .workflow-rules-run-on-default-branch, .workflow-rules-run-on-main ]
   script:
     - gradle publish
 publish container:
