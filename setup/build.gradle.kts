@@ -20,8 +20,8 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter")
 }
 application {
-    mainClass.set("net.onelitefeather.titan.app.TitanApplication")
-
+    mainClass.set("net.onelitefeather.titan.setup.TitanLauncher")
+    applicationDefaultJvmArgs = listOf("-DTITAN_LOBBY_MAP=halloween")
 }
 
 tasks {
