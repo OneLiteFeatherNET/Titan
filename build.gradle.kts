@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "net.onelitefeather.titan"
-version = "2.0.1"
+version = "2.1.0"
 
 publishData {
     addBuildData()
