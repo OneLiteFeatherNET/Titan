@@ -62,7 +62,7 @@ publish gradle:
     - !reference [ .workflow-rules-run-on-merge-request, rules ]
     - !reference [ .workflow-rules-run-on-default-branch, rules ]
     - !reference [ .workflow-rules-run-on-main, rules ]
-    - !reference [ .workflow-rules-run-publish, rules ]
+    - !reference [ .workflow-rules-run-on-label-publish, rules ]
     - !reference [ .workflow-rules-run-on-tags, rules ]
   script:
     - gradle publish
