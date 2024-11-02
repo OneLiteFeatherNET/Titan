@@ -1,10 +1,10 @@
 include:
   - template: Jobs/Dependency-Scanning.gitlab-ci.yml
   - template: Security/Secret-Detection.gitlab-ci.yml
-  - component: $CI_SERVER_FQDN/onelitefeather/ci-components/core-stages@0.3.3
-  - component: $CI_SERVER_FQDN/onelitefeather/ci-components/gradle-build-cache@0.3.3
-  - component: $CI_SERVER_FQDN/onelitefeather/ci-components/gradle-java-pipeline-versions-rules@0.3.3
-  - component: $CI_SERVER_FQDN/onelitefeather/ci-components/basic-rules@0.3.3
+  - component: $CI_SERVER_FQDN/onelitefeather/ci-components/core-stages@0.3.6
+  - component: $CI_SERVER_FQDN/onelitefeather/ci-components/gradle-build-cache@0.3.6
+  - component: $CI_SERVER_FQDN/onelitefeather/ci-components/gradle-java-pipeline-versions-rules@0.3.6
+  - component: $CI_SERVER_FQDN/onelitefeather/ci-components/basic-rules@0.3.6
 variables:
   SECURE_ANALYZERS_PREFIX: "${HTL_NEXUS_PROXY}/security-products"
   IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
@@ -24,6 +24,8 @@ build:
     - !reference [.workflow-rules-run-on-merge-request, rules]
     - !reference [.workflow-rules-run-on-default-branch, rules]
     - !reference [.workflow-rules-run-on-main, rules]
+    - !reference [ .workflow-rules-run-on-publish, rules ]
+    - !reference [ .workflow-rules-run-on-tags, rules ]
   artifacts:
     paths:
       - app/build/libs/titan.jar
@@ -45,6 +47,8 @@ test:
     - !reference [ .workflow-rules-run-on-merge-request, rules ]
     - !reference [ .workflow-rules-run-on-default-branch, rules ]
     - !reference [ .workflow-rules-run-on-main, rules ]
+    - !reference [ .workflow-rules-run-on-publish, rules ]
+    - !reference [ .workflow-rules-run-on-tags, rules ]
   script:
     - gradle test
 
@@ -61,15 +65,18 @@ publish gradle:
     - !reference [ .workflow-rules-run-on-merge-request, rules ]
     - !reference [ .workflow-rules-run-on-default-branch, rules ]
     - !reference [ .workflow-rules-run-on-main, rules ]
+    - !reference [ .workflow-rules-run-on-publish, rules ]
+    - !reference [ .workflow-rules-run-on-tags, rules ]
   script:
     - gradle publish
 publish container:
   image: "${HTL_NEXUS_PROXY}/buildah/stable:latest"
   stage: publish
   rules:
+    - !reference [.workflow-rules-run-on-publish, rules]
+    - !reference [.workflow-rules-run-on-tags, rules]
     - !reference [.workflow-rules-run-on-main, rules]
     - !reference [.workflow-rules-run-on-default-branch, rules]
-    - !reference [.workflow-rules-run-on-merge-request, rules]
     - !reference [.workflow-rules-deploy, rules]
   tags:
     - saas-linux-medium-amd64
