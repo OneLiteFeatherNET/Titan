@@ -76,9 +76,8 @@ publish container:
     - build
   script:
     - buildah login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - buildah build -t $IMAGE_TAG -t $CI_REGISTRY_IMAGE:latest -f Dockerfile
-      --build-arg JAR_FILE=build/libs/fornax.jar
-      --build-arg PLUGINS=other_plugins/
-      --build-arg VELOCITY=velocity/ .
+    - buildah build -t $IMAGE_TAG -t $CI_REGISTRY_IMAGE:latest -f app/Dockerfile
+      --build-arg JAR_FILE=app/build/libs/titan.jar
+      --build-arg MAPS=worlds/ .
     - buildah push $IMAGE_TAG
     - buildah push $CI_REGISTRY_IMAGE:latest
