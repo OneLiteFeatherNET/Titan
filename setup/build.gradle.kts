@@ -2,6 +2,8 @@ plugins {
     java
     application
     id("com.gradleup.shadow") version "8.3.3"
+    `maven-publish`
+    alias(libs.plugins.publishdata)
 }
 
 dependencies {
@@ -36,5 +38,36 @@ tasks {
     }
     test {
         useJUnitPlatform()
+    }
+}
+
+publishData {
+    addBuildData()
+    useGitlabReposForProject("106", "https://gitlab.onelitefeather.dev/")
+    publishTask("shadowJar")
+}
+
+publishing {
+    publications.create<MavenPublication>("maven") {
+        // configure the publication as defined previously.
+        publishData.configurePublication(this)
+        version = publishData.getVersion(false)
+    }
+
+    repositories {
+        maven {
+            credentials(HttpHeaderCredentials::class) {
+                name = "Job-Token"
+                value = System.getenv("CI_JOB_TOKEN")
+            }
+            authentication {
+                create("header", HttpHeaderAuthentication::class)
+            }
+
+
+            name = "Gitlab"
+            // Get the detected repository from the publishing data
+            url = uri(publishData.getRepository())
+        }
     }
 }

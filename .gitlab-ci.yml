@@ -1,89 +1,89 @@
 include:
   - template: Jobs/Dependency-Scanning.gitlab-ci.yml
-  - template: Jobs/SAST.gitlab-ci.yml
-  - template: Jobs/Secret-Detection.gitlab-ci.yml
+  - template: Security/Secret-Detection.gitlab-ci.yml
+  - component: $CI_SERVER_FQDN/onelitefeather/ci-components/core-stages@0.3.7
+  - component: $CI_SERVER_FQDN/onelitefeather/ci-components/gradle-build-cache@0.3.7
+  - component: $CI_SERVER_FQDN/onelitefeather/ci-components/gradle-java-pipeline-versions-rules@0.3.7
+  - component: $CI_SERVER_FQDN/onelitefeather/ci-components/basic-rules@0.3.7
 variables:
   SECURE_ANALYZERS_PREFIX: "${HTL_NEXUS_PROXY}/security-products"
-  GRADLE_IMAGE: "${HTL_NEXUS_PROXY}/gradle:8.7.0-jdk21"
   IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  GRADLE_OPTS: "-Dorg.gradle.internal.launcher.welcomeMessageEnabled=false"
+  GRADLE_IMAGE: "${HTL_NEXUS_PROXY}/gradle:8.10.2-jdk21"
 
-
-stages:
-  - build
-  - test
-  - publish
-  - deploy
-
-build app:
+build:
   stage: build
-  image: "$GRADLE_IMAGE"
-  tags:
-      - saas-linux-medium-amd64
-  script:
-      - gradle classes
-  rules:
-  - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
-  - if: ($CI_COMMIT_BRANCH == 'main' ||  $CI_COMMIT_BRANCH == 'master')
-  - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && '$CI_MERGE_REQUEST_LABELS =~ /pipeline:deploy/'
-  - if: '$CI_MERGE_REQUEST_LABELS =~ /pipeline:jdk21/'
-    variables:
-        GRADLE_IMAGE: "${HTL_NEXUS_PROXY}/gradle:8.7.0-jdk21"
-
-test app:
-  stage: test
-  image: "$GRADLE_IMAGE"
+  image: $GRADLE_IMAGE
   tags:
     - saas-linux-medium-amd64
-  script:
-    - gradle test
+  extends:
+    - .gradle-project-cache
   rules:
-    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
-    - if: ($CI_COMMIT_BRANCH == 'main' ||  $CI_COMMIT_BRANCH == 'master')
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && '$CI_MERGE_REQUEST_LABELS =~ /pipeline:deploy/'
-    - if: '$CI_MERGE_REQUEST_LABELS =~ /pipeline:jdk21/'
-      variables:
-        GRADLE_IMAGE: "${HTL_NEXUS_PROXY}/gradle:8.7.0-jdk21"
-# Container for the game module
-pre-container-app:
-  image: "${HTL_NEXUS_PROXY}/gradle:8.10.2-jdk21"
-  stage: build
-  tags:
-    - saas-linux-medium-amd64
-  script:
-    - gradle build -x test
+    - !reference [.gradle-java-image-rules, rules]
+    - !reference [.workflow-rules-run-on-merge-request, rules]
+    - !reference [.workflow-rules-run-on-default-branch, rules]
+    - !reference [.workflow-rules-run-on-main, rules]
+    - !reference [ .workflow-rules-run-on-label-publish, rules ]
+    - !reference [ .workflow-rules-run-on-tags, rules ]
   artifacts:
     paths:
       - app/build/libs/titan.jar
+      - setup/build/libs/titan.jar
     expire_in: 1 week
+  script:
+    - gradle build -x test
+
+test:
+  stage: test
+  image: $GRADLE_IMAGE
+  tags:
+    - saas-linux-medium-amd64
+  extends:
+    - .gradle-project-cache
   rules:
-    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
-    - if: ($CI_COMMIT_BRANCH == 'main' ||  $CI_COMMIT_BRANCH == 'master')
-    - if: $CI_COMMIT_TAG != ""
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && '$CI_MERGE_REQUEST_LABELS =~ /pipeline:deploy/'
-    - if: '$CI_MERGE_REQUEST_LABELS =~ /pipeline:jdk21/'
-      variables:
-        GRADLE_IMAGE: "${HTL_NEXUS_PROXY}/gradle:8.10.2-jdk21"
-container-app:
+    - !reference [ .gradle-java-image-rules, rules ]
+    - !reference [ .workflow-rules-run-on-merge-request, rules ]
+    - !reference [ .workflow-rules-run-on-default-branch, rules ]
+    - !reference [ .workflow-rules-run-on-main, rules ]
+    - !reference [ .workflow-rules-run-on-label-publish, rules ]
+    - !reference [ .workflow-rules-run-on-tags, rules ]
+  script:
+    - gradle test
+
+publish gradle:
+  stage: publish
+  image: $GRADLE_IMAGE
+  tags:
+    - saas-linux-medium-amd64
+  extends:
+    - .gradle-project-cache
+  rules:
+    - !reference [ .gradle-java-image-rules, rules ]
+    - !reference [ .workflow-rules-run-on-merge-request, rules ]
+    - !reference [ .workflow-rules-run-on-default-branch, rules ]
+    - !reference [ .workflow-rules-run-on-main, rules ]
+    - !reference [ .workflow-rules-run-on-label-publish, rules ]
+    - !reference [ .workflow-rules-run-on-tags, rules ]
+  script:
+    - gradle publish
+publish container:
   image: "${HTL_NEXUS_PROXY}/buildah/stable:latest"
   stage: publish
+  rules:
+    - !reference [.workflow-rules-run-on-label-publish, rules]
+    - !reference [.workflow-rules-run-on-tags, rules]
+    - !reference [.workflow-rules-run-on-main, rules]
+    - !reference [.workflow-rules-run-on-default-branch, rules]
   tags:
     - saas-linux-medium-amd64
   dependencies:
-    - "pre-container-app"
+    - build
   needs:
-    - "pre-container-app"
-  cache: {}
+    - build
   script:
     - buildah login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - buildah build -t $IMAGE_TAG -t $CI_REGISTRY_IMAGE:latest -f app/Dockerfile --build-arg JAR_FILE=app/build/libs/titan.jar --build-arg MAPS=worlds/ .
+    - buildah build -t $IMAGE_TAG -t $CI_REGISTRY_IMAGE:latest -f app/Dockerfile
+      --build-arg JAR_FILE=app/build/libs/titan.jar
+      --build-arg MAPS=worlds/ .
     - buildah push $IMAGE_TAG
     - buildah push $CI_REGISTRY_IMAGE:latest
-  rules:
-    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
-    - if: ($CI_COMMIT_BRANCH == 'main' ||  $CI_COMMIT_BRANCH == 'master')
-    - if: $CI_COMMIT_TAG != ""
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && '$CI_MERGE_REQUEST_LABELS =~ /pipeline:deploy/'
-    - if: '$CI_MERGE_REQUEST_LABELS =~ /pipeline:jdk21/'
-      variables:
-        GRADLE_IMAGE: "${HTL_NEXUS_PROXY}/gradle:8.10.2-jdk21"
-
