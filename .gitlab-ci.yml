@@ -24,7 +24,7 @@ build:
     - !reference [.workflow-rules-run-on-merge-request, rules]
     - !reference [.workflow-rules-run-on-default-branch, rules]
     - !reference [.workflow-rules-run-on-main, rules]
-    - !reference [ .workflow-rules-run-on-publish, rules ]
+    - !reference [ .workflow-rules-run-publish, rules ]
     - !reference [ .workflow-rules-run-on-tags, rules ]
   artifacts:
     paths:
@@ -47,7 +47,7 @@ test:
     - !reference [ .workflow-rules-run-on-merge-request, rules ]
     - !reference [ .workflow-rules-run-on-default-branch, rules ]
     - !reference [ .workflow-rules-run-on-main, rules ]
-    - !reference [ .workflow-rules-run-on-publish, rules ]
+    - !reference [ .workflow-rules-run-publish, rules ]
     - !reference [ .workflow-rules-run-on-tags, rules ]
   script:
     - gradle test
@@ -65,7 +65,7 @@ publish gradle:
     - !reference [ .workflow-rules-run-on-merge-request, rules ]
     - !reference [ .workflow-rules-run-on-default-branch, rules ]
     - !reference [ .workflow-rules-run-on-main, rules ]
-    - !reference [ .workflow-rules-run-on-publish, rules ]
+    - !reference [ .workflow-rules-run-publish, rules ]
     - !reference [ .workflow-rules-run-on-tags, rules ]
   script:
     - gradle publish
@@ -73,7 +73,7 @@ publish container:
   image: "${HTL_NEXUS_PROXY}/buildah/stable:latest"
   stage: publish
   rules:
-    - !reference [.workflow-rules-run-on-publish, rules]
+    - !reference [.workflow-rules-run-publish, rules]
     - !reference [.workflow-rules-run-on-tags, rules]
     - !reference [.workflow-rules-run-on-main, rules]
     - !reference [.workflow-rules-run-on-default-branch, rules]
