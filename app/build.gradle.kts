@@ -1,7 +1,7 @@
 plugins {
     java
     application
-    id("com.gradleup.shadow") version "8.3.3"
+    id("com.gradleup.shadow") version "8.3.5"
     id("info.solidsoft.pitest") apply true
     `maven-publish`
     alias(libs.plugins.publishdata)
