@@ -50,7 +50,7 @@ dependencyResolutionManagement {
 
     versionCatalogs {
         create("libs") {
-            version("microtus-bom", "1.5.0")
+            version("microtus-bom", "1.5.1")
             version("publishdata", "1.4.0")
             version("aves", "1.6.0-SNAPSHOT")
 
