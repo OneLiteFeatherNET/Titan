@@ -89,7 +89,6 @@ include("app")
 include("common")
 include("api")
 include("agones")
-include("kubernetes-deliver")
 include("setup")
 
 findProject(":app")?.projectDir = file("app")
