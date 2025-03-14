@@ -55,7 +55,7 @@ dependencyResolutionManagement {
             version("aves", "1.6.0-SNAPSHOT")
 
             version("togglz", "4.4.0")
-            version("caffeine", "3.1.8")
+            version("caffeine", "3.2.0")
 
             version("agones4j", "2.0.2")
             version("grpc", "1.68.0")
