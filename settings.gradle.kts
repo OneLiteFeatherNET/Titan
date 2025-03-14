@@ -58,7 +58,7 @@ dependencyResolutionManagement {
             version("caffeine", "3.2.0")
 
             version("agones4j", "2.0.2")
-            version("grpc", "1.68.0")
+            version("grpc", "1.71.0")
             version("tomcat-annotations-api", "6.0.53")
 
             version("mockito", "5.15.2")
