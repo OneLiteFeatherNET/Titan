@@ -9,7 +9,7 @@ dependencies {
     api(project(":api"))
     implementation(libs.aves)
 
-    testImplementation(platform("org.junit:junit-bom:5.11.4"))
+    testImplementation(platform("org.junit:junit-bom:5.12.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
 }
 
