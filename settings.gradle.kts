@@ -61,7 +61,7 @@ dependencyResolutionManagement {
             version("grpc", "1.68.0")
             version("tomcat-annotations-api", "6.0.53")
 
-            version("mockito", "5.15.2")
+            version("mockito", "5.16.1")
 
             // Minestom
             library("microtus-bom", "net.onelitefeather.microtus", "bom").versionRef("microtus-bom")
