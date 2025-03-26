@@ -30,7 +30,7 @@ subprojects {
         outputFormats.addAll("XML", "HTML")
         timestampedReports.set(false)
 
-        if (project.name in listOf("common", "api", "agones", "setup")) {
+        if (project.name in listOf("common", "api", "setup")) {
             failWhenNoMutations.set(false)
         }
         targetClasses.add("net.onelitefeather.titan.*")

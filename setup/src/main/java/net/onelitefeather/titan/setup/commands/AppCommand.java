@@ -20,7 +20,6 @@ import java.util.function.Predicate;
 
 public class AppCommand extends Command {
 
-    private static final Argument<Long> UPDATE_RATE_AGONES = ArgumentType.Long("updateRateAgonesValue").setDefaultValue(4000L);
     private static final Argument<Double> ELYTRA_BOOST_MULTIPLIER = ArgumentType.Double("elytraBoostMultiplierValue").setDefaultValue(35.0);
     private static final Argument<Integer> FIREWORK_BOOST_SLOT = ArgumentType.Integer("fireworkBoostSlotValue").setDefaultValue(45);
     private static final Argument<Integer> SIMULATION_DISTANCE = ArgumentType.Integer("simulationDistanceValue").setDefaultValue(2);
@@ -34,7 +33,6 @@ public class AppCommand extends Command {
     public AppCommand(AppConfigProvider appConfigProvider) {
         super("app");
         addSyntax(this::display, ArgumentType.Literal("display"));
-        addSyntax(this::updateUpdateRate, ArgumentType.Literal("updateRateAgones"), UPDATE_RATE_AGONES);
         addSyntax(this::updateElytraMultiplier, ArgumentType.Literal("elytraBoostMultiplier"), ELYTRA_BOOST_MULTIPLIER);
         addSyntax(this::updateFireworkBoostSlot, ArgumentType.Literal("fireworkBoostSlot"), FIREWORK_BOOST_SLOT);
         addSyntax(this::updateSimulationDistance, ArgumentType.Literal("simulationDistance"), SIMULATION_DISTANCE);
@@ -101,13 +99,6 @@ public class AppCommand extends Command {
         AppConfig appConfig = AppConfig.builder(this.appConfigProvider.getAppConfig()).elytraBoostMultiplier(elytraBoostMultiplier).build();
         this.appConfigProvider.saveConfig(appConfig);
         commandSender.sendMessage(MiniMessage.miniMessage().deserialize("<prefix> Elytra boost multiplier has been updated to <multiplier>", Placeholder.parsed("multiplier", String.valueOf(elytraBoostMultiplier))));
-    }
-
-    private void updateUpdateRate(@NotNull CommandSender commandSender, @NotNull CommandContext commandContext) {
-        Long updateRate = commandContext.get(UPDATE_RATE_AGONES);
-        AppConfig appConfig = AppConfig.builder(this.appConfigProvider.getAppConfig()).updateRateAgones(updateRate).build();
-        this.appConfigProvider.saveConfig(appConfig);
-        commandSender.sendMessage(MiniMessage.miniMessage().deserialize("<prefix> Agones update rate has been updated to <rate>", Placeholder.parsed("rate", String.valueOf(updateRate))));
     }
 
     private void display(@NotNull CommandSender commandSender, @NotNull CommandContext commandContext) {
