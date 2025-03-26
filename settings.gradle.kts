@@ -38,7 +38,6 @@ dependencyResolutionManagement {
             version("togglz", "4.4.0")
             version("caffeine", "3.2.0")
 
-            version("agones4j", "2.0.2")
             version("grpc", "1.68.0")
             version("tomcat-annotations-api", "6.0.53")
 
@@ -52,7 +51,6 @@ dependencyResolutionManagement {
             library("togglz", "org.togglz", "togglz-core").versionRef("togglz")
             library("caffeine", "com.github.ben-manes.caffeine", "caffeine").versionRef("caffeine")
 
-            library("agones4j", "net.infumia", "agones4j").versionRef("agones4j")
             library("grpc.stub", "io.grpc", "grpc-stub").versionRef("grpc")
             library("grpc.protobuf", "io.grpc", "grpc-protobuf").versionRef("grpc")
             library("grpc.netty", "io.grpc", "grpc-netty").versionRef("grpc")
