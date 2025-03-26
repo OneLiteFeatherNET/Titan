@@ -10,7 +10,7 @@ plugins {
 dependencies {
     implementation(platform(libs.microtus.bom))
     compileOnly(libs.microtus)
-    implementation(libs.aves)
+    compileOnly(libs.aves)
     implementation(libs.caffeine)
 
     implementation(project(":common"))
