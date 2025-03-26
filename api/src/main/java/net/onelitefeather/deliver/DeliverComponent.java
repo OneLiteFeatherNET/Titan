@@ -5,7 +5,7 @@ import net.minestom.server.entity.Player;
 
 import java.util.UUID;
 
-public sealed interface DeliverComponent permits DeliverComponent.FleetDeliverComponent, DeliverComponent.GameServerDeliverComponent, FleetDeliverComponentImpl, GameServerDeliverComponentImpl {
+public sealed interface DeliverComponent permits DeliverComponent.TaskComponent, DeliverComponent.ServerDeliverComponent, TaskComponentImpl, ServerDeliverComponentImpl {
     /**
      * The type of deliver component
      * @return the type
@@ -14,27 +14,19 @@ public sealed interface DeliverComponent permits DeliverComponent.FleetDeliverCo
 
     UUID playerId();
 
-    static FleetBuilder fleetBuilder() {
-        return new FleetBuilderImpl();
+    static TaskBuilder taskBuilder() {
+        return new TaskBuilderImpl();
     }
 
-    static GameServerBuilder gameServerBuilder() {
-        return new GameServerBuilderImpl();
+    static ServerBuilder serverBuilder() {
+        return new ServerBuilderImpl();
     }
 
-    static FleetDeliverComponent fleetFrom(byte[] data) {
-        return FleetDeliverComponentImpl.from(data);
+    sealed interface TaskComponent extends DeliverComponent permits TaskComponentImpl {
+        String taskName();
     }
 
-    static GameServerDeliverComponent gameServerFrom(byte[] data) {
-        return GameServerDeliverComponentImpl.from(data);
-    }
-
-    sealed interface FleetDeliverComponent extends DeliverComponent permits FleetDeliverComponentImpl {
-        String fleetName();
-    }
-
-    sealed interface GameServerDeliverComponent extends DeliverComponent permits GameServerDeliverComponentImpl {
+    sealed interface ServerDeliverComponent extends DeliverComponent permits ServerDeliverComponentImpl {
         String gameServer();
     }
 
@@ -49,11 +41,11 @@ public sealed interface DeliverComponent permits DeliverComponent.FleetDeliverCo
         DeliverComponent build();
     }
 
-    sealed interface FleetBuilder extends Builder<FleetBuilder> permits FleetBuilderImpl {
-        FleetBuilder fleetName(String fleetName);
+    sealed interface TaskBuilder extends Builder<TaskBuilder> permits TaskBuilderImpl {
+        TaskBuilder taskName(String taskName);
     }
 
-    sealed interface GameServerBuilder extends Builder<GameServerBuilder> permits GameServerBuilderImpl {
-        GameServerBuilder gameServerId(String gameServerId);
+    sealed interface ServerBuilder extends Builder<ServerBuilder> permits ServerBuilderImpl {
+        ServerBuilder serverName(String serverName);
     }
 }

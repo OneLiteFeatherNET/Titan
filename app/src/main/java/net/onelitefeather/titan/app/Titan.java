@@ -7,9 +7,8 @@ import net.minestom.server.event.entity.EntityAttackEvent;
 import net.minestom.server.event.item.ItemDropEvent;
 import net.minestom.server.event.item.PickupItemEvent;
 import net.minestom.server.event.player.*;
-import net.minestom.server.event.server.ServerTickMonitorEvent;
+import net.minestom.server.extensions.Extension;
 import net.minestom.server.instance.InstanceContainer;
-import net.onelitefeather.agones.AgonesAPI;
 import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.app.commands.EndCommand;
 import net.onelitefeather.titan.app.helper.NavigationHelper;
@@ -22,9 +21,8 @@ import net.onelitefeather.titan.common.map.MapProvider;
 import net.onelitefeather.titan.common.utils.Cancelable;
 
 import java.nio.file.Path;
-import java.time.temporal.ChronoUnit;
 
-public final class Titan {
+public final class Titan extends Extension {
 
     private final Path path;
     private final EventNode<Event> eventNode = EventNode.all("titan");
@@ -42,8 +40,18 @@ public final class Titan {
         this.appConfigProvider = AppConfigProvider.create(this.path);
         this.navigationHelper = NavigationHelper.instance(this.deliver);
 
+
+    }
+
+    @Override
+    public void initialize() {
         initListeners();
         initCommands();
+    }
+
+    @Override
+    public void terminate() {
+
     }
 
     private void initCommands() {
@@ -78,22 +86,7 @@ public final class Titan {
         this.eventNode.addListener(AsyncPlayerConfigurationEvent.class, new PlayerConfigurationListener(this.mapProvider));
         this.eventNode.addListener(PlayerSpawnEvent.class, new PlayerSpawnListener(this.appConfigProvider.getAppConfig(), this.mapProvider.getActiveLobby(), this.navigationHelper));
 
-        if (TitanFlag.AGONES_SUPPORT.isPresent()) {
-            this.eventNode.addListener(ServerTickMonitorEvent.class, event -> {
-                AgonesAPI.instance().alive();
-            });
-            MinecraftServer.getSchedulerManager().buildTask(this::onUpdateAgones).repeat(this.appConfigProvider.getAppConfig().updateRateAgones(), ChronoUnit.MILLIS).schedule();
-        }
         MinecraftServer.getGlobalEventHandler().addChild(eventNode);
-    }
-
-    private void onUpdateAgones() {
-        int onlinePlayerSize = MinecraftServer.getConnectionManager().getOnlinePlayers().size();
-        if (onlinePlayerSize > 0) {
-            AgonesAPI.instance().allocate();
-        } else {
-            AgonesAPI.instance().ready();
-        }
     }
 
     public static Titan instance() {

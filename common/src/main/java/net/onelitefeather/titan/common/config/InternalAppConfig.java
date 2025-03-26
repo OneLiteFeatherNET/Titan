@@ -14,7 +14,6 @@ public record InternalAppConfig(
     int simulationDistance,
     int fireworkBoostSlot,
     double elytraBoostMultiplier,
-    long updateRateAgones,
     int maxHeightBeforeTeleport,
     int minHeightBeforeTeleport
 ) implements AppConfig {
@@ -36,7 +35,6 @@ public record InternalAppConfig(
         private static final int DEFAULT_SIMULATION_DISTANCE = 2;
         private static final int DEFAULT_FIREWORK_BOOST_SLOT = 45;
         private static final double DEFAULT_ELYTRA_BOOST_MULTIPLIER = 35.0;
-        private static final long DEFAULT_UPDATE_RATE_AGONES = 2000;
         private static final int DEFAULT_MAX_HEIGHT_BEFORE_TELEPORT = 310;
         private static final int DEFAULT_MIN_HEIGHT_BEFORE_TELEPORT = -64;
 
@@ -50,7 +48,6 @@ public record InternalAppConfig(
                     DEFAULT_SIMULATION_DISTANCE,
                     DEFAULT_FIREWORK_BOOST_SLOT,
                     DEFAULT_ELYTRA_BOOST_MULTIPLIER,
-                    DEFAULT_UPDATE_RATE_AGONES,
                     DEFAULT_MAX_HEIGHT_BEFORE_TELEPORT,
                     DEFAULT_MIN_HEIGHT_BEFORE_TELEPORT
             );
