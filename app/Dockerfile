@@ -1,4 +1,4 @@
-FROM docker.io/eclipse-temurin:23-jdk-alpine
+FROM docker.io/eclipse-temurin:24-jdk-alpine
 LABEL maintainer="TheMeinerLP"
 LABEL description="Docker container for the Titan Lobby"
 LABEL type="Microtus"
