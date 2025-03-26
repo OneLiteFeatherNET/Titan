@@ -61,8 +61,8 @@ public class NavigationHelper {
             finalLayout.setItems(LayoutCalculator.fillRow(InventoryType.CHEST_1_ROW), Items.NAVIGATOR_BLANK_ITEM_STACK);
             ThreadLocalUserProvider.bind(toUser(player));
             finalLayout.setItem(0, Items.NAVIGATOR_ELYTRA_ITEM_STACK, this::clickElytra);
-            finalLayout.setItem(4, Items.NAVIGATOR_SLENDER_ITEM_STACK, this::clickSlender);
-            finalLayout.setItem(5, Items.NAVIGATOR_SLENDER_ITEM_STACK, this::clickSurvival);
+            finalLayout.setItem(4, Items.NAVIGATOR_SURVIVAL_ITEM_STACK, this::clickSurvival);
+            finalLayout.setItem(5, Items.NAVIGATOR_SLENDER_ITEM_STACK, this::clickSlender);
             finalLayout.setItem(8, Items.NAVIGATOR_CREATIVE_ITEM_STACK, this::clickCreative);
             ThreadLocalUserProvider.release();
             return finalLayout;
