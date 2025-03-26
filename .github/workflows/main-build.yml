@@ -4,17 +4,16 @@ on:
   push:
     branches:
       - main
-      - 'releases/*'
+      - develop
 
 jobs:
-  build and test:
+  build:
     if: github.repository_owner == 'OneLiteFeatherNET'
-    name: Build and Test
-    description: This job builds and tests the project on different operating systems.
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+    name: Build
+    runs-on: ubuntu-latest
+    env:
+      ONELITEFEATHER_MAVEN_USERNAME: ${{ secrets.ONELITEFEATHER_MAVEN_USERNAME }}
+      ONELITEFEATHER_MAVEN_PASSWORD: ${{ secrets.ONELITEFEATHER_MAVEN_PASSWORD }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -24,6 +23,8 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 21
-      - name: Build on ${{ matrix.os }}
+          java-version: 23
+      - name: Test
         run: ./gradlew test
+      - name: Publish
+        run: ./gradlew publish

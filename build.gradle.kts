@@ -10,7 +10,9 @@ version = "2.1.0"
 
 publishData {
     addBuildData()
-    useGitlabReposForProject("106", "https://gitlab.onelitefeather.dev/")
+    addMainRepo("https://repo.onelitefeather.dev/onelitefeather-releases")
+    addMasterRepo("https://repo.onelitefeather.dev/onelitefeather-releases")
+    addSnapshotRepo("https://repo.onelitefeather.dev/onelitefeather-snapshots")
     publishTask("shadowJar")
 }
 
