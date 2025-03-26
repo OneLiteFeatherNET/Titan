@@ -1,5 +1,6 @@
 package net.onelitefeather.titan.common.deliver;
 
+import eu.cloudnetservice.common.concurrent.TaskUtil;
 import eu.cloudnetservice.driver.inject.InjectionLayer;
 import eu.cloudnetservice.driver.registry.ServiceRegistry;
 import eu.cloudnetservice.modules.bridge.player.PlayerManager;
@@ -10,21 +11,21 @@ import net.onelitefeather.titan.api.deliver.Deliver;
 
 public final class MessageChannelDeliver implements Deliver {
 
-    private final ServiceRegistry serviceRegistry;
-    private final PlayerManager playerManager;
-
-    public MessageChannelDeliver() {
-        this.serviceRegistry = InjectionLayer.ext().instance(ServiceRegistry.class);
-        this.playerManager = this.serviceRegistry.firstProvider(PlayerManager.class);
-    }
-
     @Override
     public void sendPlayer(Player player, DeliverComponent component) {
-        if (player == null) throw new IllegalArgumentException("player cannot be null");
-        if (component == null) throw new IllegalArgumentException("component cannot be null");
+        if (player == null) return;
+        if (component == null) return;
+
+        var serviceRegistry = InjectionLayer.ext().instance(ServiceRegistry.class);
+        if (serviceRegistry == null) return;
+
+        var playerManager = serviceRegistry.firstProvider(PlayerManager.class);
+        if (playerManager == null) return;
+
+        var executor = playerManager.playerExecutor(player.getUuid());
         switch (component) {
-            case DeliverComponent.TaskComponent taskComponent -> playerManager.playerExecutor(player.getUuid()).connectToTask(taskComponent.taskName(), ServerSelectorType.LOWEST_PLAYERS);
-            case DeliverComponent.ServerDeliverComponent serverDeliverComponent -> playerManager.playerExecutor(player.getUuid()).connect(serverDeliverComponent.gameServer());
+            case DeliverComponent.TaskComponent taskComponent -> executor.connectToTask(taskComponent.taskName(), ServerSelectorType.LOWEST_PLAYERS);
+            case DeliverComponent.ServerDeliverComponent serverDeliverComponent -> executor.connect(serverDeliverComponent.gameServer());
             case null, default -> throw new IllegalStateException("Unexpected value: " + component.type());
         };
 
