@@ -3,8 +3,6 @@ package net.onelitefeather.titan.common.map;
 import de.icevizion.aves.map.BaseMap;
 import net.minestom.server.coordinate.Pos;
 
-import java.util.Optional;
-
 public final class LobbyMap extends BaseMap {
 
 

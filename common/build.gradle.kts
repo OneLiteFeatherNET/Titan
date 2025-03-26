@@ -13,6 +13,7 @@ dependencies {
     compileOnly(libs.cloudnet.jvm.wrapper)
     compileOnly(libs.cloudnet.bridge)
 
+    testImplementation(libs.aves)
     testImplementation(platform("org.junit:junit-bom:5.12.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
 }
