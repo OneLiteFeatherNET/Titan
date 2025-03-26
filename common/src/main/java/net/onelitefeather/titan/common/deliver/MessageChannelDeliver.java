@@ -10,8 +10,13 @@ import net.onelitefeather.titan.api.deliver.Deliver;
 
 public final class MessageChannelDeliver implements Deliver {
 
-    private static final ServiceRegistry serviceRegistry = InjectionLayer.ext().instance(ServiceRegistry.class);
-    private static final PlayerManager playerManager = serviceRegistry.firstProvider(PlayerManager.class);
+    private final ServiceRegistry serviceRegistry;
+    private final PlayerManager playerManager;
+
+    public MessageChannelDeliver() {
+        this.serviceRegistry = InjectionLayer.ext().instance(ServiceRegistry.class);
+        this.playerManager = this.serviceRegistry.firstProvider(PlayerManager.class);
+    }
 
     @Override
     public void sendPlayer(Player player, DeliverComponent component) {
