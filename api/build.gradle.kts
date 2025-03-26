@@ -4,7 +4,7 @@ plugins {
 }
 dependencies {
     implementation(platform(libs.microtus.bom))
-    implementation(libs.microtus)
+    compileOnly(libs.microtus)
 
     testImplementation(platform("org.junit:junit-bom:5.12.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")

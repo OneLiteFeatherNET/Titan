@@ -4,14 +4,14 @@ plugins {
 }
 dependencies {
     implementation(platform(libs.microtus.bom))
-    implementation(libs.microtus)
+    compileOnly(libs.microtus)
     api(libs.togglz)
     api(project(":api"))
-    implementation(libs.aves)
+    compileOnly(libs.aves)
 
     implementation(platform(libs.cloudnet.bom))
-    implementation(libs.cloudnet.jvm.wrapper)
-    implementation(libs.cloudnet.bridge)
+    compileOnly(libs.cloudnet.jvm.wrapper)
+    compileOnly(libs.cloudnet.bridge)
 
     testImplementation(platform("org.junit:junit-bom:5.12.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
