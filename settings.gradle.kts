@@ -33,6 +33,7 @@ dependencyResolutionManagement {
             version("microtus-bom", "1.5.1")
             version("publishdata", "1.4.0")
             version("aves", "1.6.1")
+            version("cloudnet", "4.0.0-RC11.2")
 
             version("togglz", "4.4.0")
             version("caffeine", "3.2.0")
@@ -57,6 +58,11 @@ dependencyResolutionManagement {
             library("grpc.netty", "io.grpc", "grpc-netty").versionRef("grpc")
             library("grpc.okhttp", "io.grpc", "grpc-okhttp").versionRef("grpc")
             library("tomcat-annotations-api", "org.apache.tomcat", "annotations-api").versionRef("tomcat-annotations-api")
+
+            library("cloudnet-bom", "eu.cloudnetservice.cloudnet", "bom").versionRef("cloudnet")
+            library("cloudnet-bridge", "eu.cloudnetservice.cloudnet", "bridge").withoutVersion()
+            library("cloudnet-jvm-wrapper", "eu.cloudnetservice.cloudnet", "wrapper-jvm").withoutVersion()
+
 
             library("microtus.testing", "net.onelitefeather.microtus.testing", "testing").withoutVersion()
             library("mockito", "org.mockito", "mockito-core").versionRef("mockito")
