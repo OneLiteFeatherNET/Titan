@@ -58,12 +58,6 @@ public sealed interface AppConfig permits AppConfigImpl, InternalAppConfig {
      */
     double elytraBoostMultiplier();
 
-    /**
-     * The rate at which the Agones server should be updated about ready or allocated status
-     * @return The rate at which the Agones server should be updated
-     */
-    long updateRateAgones();
-
     Component displayConfig();
 
     /**
@@ -85,7 +79,6 @@ public sealed interface AppConfig permits AppConfigImpl, InternalAppConfig {
                 .simulationDistance(appConfig.simulationDistance())
                 .fireworkBoostSlot(appConfig.fireworkBoostSlot())
                 .elytraBoostMultiplier(appConfig.elytraBoostMultiplier())
-                .updateRateAgones(appConfig.updateRateAgones())
                 ;
     }
 
@@ -131,13 +124,6 @@ public sealed interface AppConfig permits AppConfigImpl, InternalAppConfig {
          * @return The builder
          */
         Builder elytraBoostMultiplier(double elytraBoostMultiplier);
-
-        /**
-         * Set the rate at which the Agones server should be updated about ready or allocated status
-         * @param updateRateAgones The rate at which the Agones server should be updated
-         * @return The builder
-         */
-        Builder updateRateAgones(long updateRateAgones);
 
         /**
          * Add an allowed sit block

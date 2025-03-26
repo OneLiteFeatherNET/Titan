@@ -13,7 +13,6 @@ final class AppConfigBuilder implements AppConfig.Builder {
     private int simulationDistance;
     private int fireworkBoostSlot;
     private double elytraBoostMultiplier;
-    private long updateRateAgones;
     private int maxHeightBeforeTeleport;
     private int minHeightBeforeTeleport;
 
@@ -54,12 +53,6 @@ final class AppConfigBuilder implements AppConfig.Builder {
     }
 
     @Override
-    public AppConfig.Builder updateRateAgones(long updateRateAgones) {
-        this.updateRateAgones = updateRateAgones;
-        return this;
-    }
-
-    @Override
     public AppConfig.Builder addAllowedSitBlock(NamespaceID namespaceID) {
         this.allowedSitBlocks.add(namespaceID);
         return this;
@@ -85,6 +78,6 @@ final class AppConfigBuilder implements AppConfig.Builder {
 
     @Override
     public AppConfig build() {
-        return new AppConfigImpl(tickleDuration, sitOffset, allowedSitBlocks, simulationDistance, fireworkBoostSlot, elytraBoostMultiplier, updateRateAgones,minHeightBeforeTeleport, maxHeightBeforeTeleport);
+        return new AppConfigImpl(tickleDuration, sitOffset, allowedSitBlocks, simulationDistance, fireworkBoostSlot, elytraBoostMultiplier,minHeightBeforeTeleport, maxHeightBeforeTeleport);
     }
 }

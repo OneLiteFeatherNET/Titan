@@ -60,12 +60,10 @@ public class NavigationHelper {
 
             finalLayout.setItems(LayoutCalculator.fillRow(InventoryType.CHEST_1_ROW), Items.NAVIGATOR_BLANK_ITEM_STACK);
             ThreadLocalUserProvider.bind(toUser(player));
-            // finalLayout.setItem(0, Items.NAVIGATOR_ELYTRA_ITEM_STACK, this::clickElytra);
-            // finalLayout.setItem(3, Items.NAVIGATOR_SLENDER_ITEM_STACK, this::clickSlender);
+            finalLayout.setItem(0, Items.NAVIGATOR_ELYTRA_ITEM_STACK, this::clickElytra);
             finalLayout.setItem(4, Items.NAVIGATOR_SLENDER_ITEM_STACK, this::clickSlender);
-            // finalLayout.setItem(4, Items.NAVIGATOR_SURVIVAL_ITEM_STACK, this::clickSurvival);
-            // finalLayout.setItem(5, Items.NAVIGATOR_SLENDER_ITEM_STACK, this::clickSurvival);
-            // finalLayout.setItem(8, Items.NAVIGATOR_CREATIVE_ITEM_STACK, this::clickCreative);
+            finalLayout.setItem(5, Items.NAVIGATOR_SLENDER_ITEM_STACK, this::clickSurvival);
+            finalLayout.setItem(8, Items.NAVIGATOR_CREATIVE_ITEM_STACK, this::clickCreative);
             ThreadLocalUserProvider.release();
             return finalLayout;
         });
@@ -81,23 +79,22 @@ public class NavigationHelper {
 
     private void clickElytra(Player player, int slot, ClickType type, InventoryConditionResult conditionResult) {
         conditionResult.setCancel(true);
-        deliver.sendPlayer(player, DeliverComponent.fleetBuilder().fleetName("ElytraRace").player(player).build());
+        deliver.sendPlayer(player, DeliverComponent.taskBuilder().taskName("ElytraRace").player(player).build());
     }
 
     private void clickSurvival(Player player, int slot, ClickType type, InventoryConditionResult conditionResult) {
         conditionResult.setCancel(true);
-        player.sendMessage(MiniMessage.miniMessage().deserialize("<prefix> Not yet implemented"));
-        // deliver.sendPlayer(player, DeliverComponent.fleetBuilder().player(player).fleetName("Survival").build());
+        deliver.sendPlayer(player, DeliverComponent.taskBuilder().player(player).taskName("Survival").build());
     }
 
     private void clickSlender(Player player, int slot, ClickType type, InventoryConditionResult conditionResult) {
         conditionResult.setCancel(true);
-        deliver.sendPlayer(player, DeliverComponent.fleetBuilder().player(player).fleetName("cygnus-fleet").build());
+        deliver.sendPlayer(player, DeliverComponent.taskBuilder().player(player).taskName("cygnus").build());
     }
 
     private void clickCreative(Player player, int slot, ClickType type, InventoryConditionResult conditionResult) {
         conditionResult.setCancel(true);
-        player.sendMessage(MiniMessage.miniMessage().deserialize("<prefix> Not yet implemented"));
+        deliver.sendPlayer(player, DeliverComponent.taskBuilder().player(player).taskName("MemberBuild").build());
     }
 
     public static NavigationHelper instance(Deliver deliver) {

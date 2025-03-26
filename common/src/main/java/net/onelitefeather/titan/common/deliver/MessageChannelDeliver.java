@@ -17,8 +17,8 @@ public final class MessageChannelDeliver implements Deliver {
     @Override
     public void sendPlayer(Player player, DeliverComponent component) {
         String channel = switch (component.type()) {
-            case FLEET -> "connect:fleet";
-            case GAME_SERVER -> "connect:game_server";
+            case TASK -> "connect:fleet";
+            case SERVER -> "connect:game_server";
             case null, default -> throw new IllegalStateException("Unexpected value: " + component.type());
         };
         try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();

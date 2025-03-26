@@ -13,7 +13,6 @@ dependencies {
     implementation(libs.caffeine)
 
     implementation(project(":common"))
-    implementation(project(":agones"))
 
 
     testImplementation(platform("org.junit:junit-bom:5.12.1"))
