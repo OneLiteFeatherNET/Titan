@@ -1,0 +1,5 @@
+{
+  "entrypoint": "net.onelitefeather.titan.app.Titan",
+  "name": "Titan",
+  "version": "1.2.0"
+}
