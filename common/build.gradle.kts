@@ -1,17 +1,18 @@
 plugins {
     id("java")
-    id("java-library")
 }
 dependencies {
-    implementation(enforcedPlatform(libs.mycelium.bom))
+    implementation(platform(libs.mycelium.bom))
     implementation(platform(libs.aonyx.bom))
-    api(libs.togglz)
-    api(project(":api"))
-    api(libs.aves)
+    implementation(libs.minestom)
+    implementation(libs.togglz)
+    implementation(project(":api"))
+    implementation(libs.aves)
+    implementation(libs.adventure.minimessage)
 
     implementation(platform(libs.cloudnet.bom))
-    api(libs.cloudnet.jvm.wrapper)
-    api(libs.cloudnet.bridge)
+    implementation(libs.cloudnet.jvm.wrapper)
+    implementation(libs.cloudnet.bridge)
 
     testImplementation(libs.aves)
     testImplementation(platform("org.junit:junit-bom:5.13.1"))
