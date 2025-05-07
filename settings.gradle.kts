@@ -47,6 +47,7 @@ dependencyResolutionManagement {
             library("mycelium-bom", "net.onelitefeather", "mycelium-bom").versionRef("mycelium-bom")
             library("minestom","net.minestom", "minestom-snapshots").withoutVersion()
             library("aves", "net.theevilreaper", "aves").withoutVersion()
+            library("adventure.minimessage", "net.kyori", "adventure-text-minimessage").withoutVersion()
 
             library("togglz", "org.togglz", "togglz-core").versionRef("togglz")
             library("caffeine", "com.github.ben-manes.caffeine", "caffeine").versionRef("caffeine")

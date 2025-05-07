@@ -8,8 +8,17 @@ plugins {
 }
 
 dependencies {
-    implementation(libs.caffeine)
+    implementation(platform(libs.mycelium.bom))
+    implementation(platform(libs.aonyx.bom))
+    implementation(libs.togglz)
     implementation(project(":common"))
+    implementation(libs.aves)
+    implementation(libs.adventure.minimessage)
+
+    implementation(libs.caffeine)
+
+    implementation(libs.cloudnet.jvm.wrapper)
+    implementation(libs.cloudnet.bridge)
 
     testImplementation(libs.aves)
     testImplementation(platform("org.junit:junit-bom:5.13.1"))

@@ -1,7 +1,7 @@
 package net.onelitefeather.titan.common.config;
 
+import net.kyori.adventure.key.Key;
 import net.minestom.server.coordinate.Vec;
-import net.minestom.server.utils.NamespaceID;
 
 import java.util.List;
 
@@ -9,7 +9,7 @@ final class AppConfigBuilder implements AppConfig.Builder {
 
     private long tickleDuration;
     private Vec sitOffset;
-    private List<NamespaceID> allowedSitBlocks;
+    private List<Key> allowedSitBlocks;
     private int simulationDistance;
     private int fireworkBoostSlot;
     private double elytraBoostMultiplier;
@@ -29,7 +29,7 @@ final class AppConfigBuilder implements AppConfig.Builder {
     }
 
     @Override
-    public AppConfig.Builder allowedSitBlocks(List<NamespaceID> allowedSitBlocks) {
+    public AppConfig.Builder allowedSitBlocks(List<Key> allowedSitBlocks) {
         this.allowedSitBlocks = allowedSitBlocks;
         return this;
     }
@@ -53,13 +53,13 @@ final class AppConfigBuilder implements AppConfig.Builder {
     }
 
     @Override
-    public AppConfig.Builder addAllowedSitBlock(NamespaceID namespaceID) {
+    public AppConfig.Builder addAllowedSitBlock(Key namespaceID) {
         this.allowedSitBlocks.add(namespaceID);
         return this;
     }
 
     @Override
-    public AppConfig.Builder removeAllowedSitBlock(NamespaceID namespaceID) {
+    public AppConfig.Builder removeAllowedSitBlock(Key namespaceID) {
         this.allowedSitBlocks.remove(namespaceID);
         return this;
     }

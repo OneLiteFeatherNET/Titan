@@ -1,7 +1,7 @@
 package net.onelitefeather.titan.common.map;
 
-import de.icevizion.aves.map.BaseMap;
 import net.minestom.server.coordinate.Pos;
+import net.theevilreaper.aves.map.BaseMap;
 
 public final class LobbyMap extends BaseMap {
 

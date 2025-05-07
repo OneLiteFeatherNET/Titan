@@ -1,11 +1,11 @@
 package net.onelitefeather.titan.common.blockhandler;
 
+import net.kyori.adventure.key.Key;
 import net.minestom.server.instance.block.BlockHandler;
 import net.minestom.server.tag.Tag;
 import net.minestom.server.tag.TagReadable;
 import net.minestom.server.tag.TagSerializer;
 import net.minestom.server.tag.TagWritable;
-import net.minestom.server.utils.NamespaceID;
 import net.onelitefeather.titan.common.blockhandler.objects.BannerPattern;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -15,12 +15,12 @@ import java.util.List;
 
 public final class BannerHandler implements BlockHandler {
 
-    private static final NamespaceID NAMESPACE_ID = NamespaceID.from("minecraft:banner");
+    private static final Key NAMESPACE_ID = Key.key("minecraft","banner");
     private static final Tag<List<BannerPattern>> PATTERN_TAG = Tag.Structure("Patterns", new BannerTagSerializer()).list();
     private static final List<Tag<?>> TAG_LIST = List.of(Tag.String("CustomName"), PATTERN_TAG);
 
     @Override
-    public @NotNull NamespaceID getNamespaceId() {
+    public @NotNull Key getKey() {
         return NAMESPACE_ID;
     }
 

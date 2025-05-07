@@ -3,7 +3,7 @@ plugins {
     id("java-library")
 }
 dependencies {
-    implementation(enforcedPlatform(libs.mycelium.bom))
+    implementation(platform(libs.mycelium.bom))
     implementation(platform(libs.aonyx.bom))
     api(libs.minestom)
 

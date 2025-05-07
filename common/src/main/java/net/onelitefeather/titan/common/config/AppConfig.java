@@ -1,9 +1,9 @@
 package net.onelitefeather.titan.common.config;
 
+import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.item.Material;
-import net.minestom.server.utils.NamespaceID;
 
 import java.util.List;
 
@@ -38,7 +38,7 @@ public sealed interface AppConfig permits AppConfigImpl, InternalAppConfig {
      * The list of allowed sit blocks
      * @return The list of allowed sit blocks
      */
-    List<NamespaceID> allowedSitBlocks();
+    List<Key> allowedSitBlocks();
 
     /**
      * The distance for the simulation
@@ -102,7 +102,7 @@ public sealed interface AppConfig permits AppConfigImpl, InternalAppConfig {
          * @param allowedSitBlocks The list of allowed sit blocks
          * @return The builder
          */
-        Builder allowedSitBlocks(List<NamespaceID> allowedSitBlocks);
+        Builder allowedSitBlocks(List<Key> allowedSitBlocks);
 
         /**
          * Set the distance for the simulation
@@ -130,14 +130,14 @@ public sealed interface AppConfig permits AppConfigImpl, InternalAppConfig {
          * @param namespaceID The namespace of the block
          * @return The builder
          */
-        Builder addAllowedSitBlock(NamespaceID namespaceID);
+        Builder addAllowedSitBlock(Key namespaceID);
 
         /**
          * Remove an allowed sit block
          * @param namespaceID The namespace of the block
          * @return The builder
          */
-        Builder removeAllowedSitBlock(NamespaceID namespaceID);
+        Builder removeAllowedSitBlock(Key namespaceID);
 
         /**
          * Set the minimum height before teleport is triggered
@@ -159,7 +159,7 @@ public sealed interface AppConfig permits AppConfigImpl, InternalAppConfig {
          * @return The builder
          */
         default Builder addAllowedSitBlock(Material material) {
-            return addAllowedSitBlock(material.namespace());
+            return addAllowedSitBlock(material.key());
         }
 
         /**
@@ -168,7 +168,7 @@ public sealed interface AppConfig permits AppConfigImpl, InternalAppConfig {
          * @return The builder
          */
         default Builder removeAllowedSitBlock(Material material) {
-            return removeAllowedSitBlock(material.namespace());
+            return removeAllowedSitBlock(material.key());
         }
 
         /**
