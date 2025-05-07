@@ -35,4 +35,7 @@ subprojects {
         }
         targetClasses.add("net.onelitefeather.titan.*")
     }
+    configure<JavaPluginExtension> {
+        toolchain.languageVersion.set(JavaLanguageVersion.of(23))
+    }
 }
