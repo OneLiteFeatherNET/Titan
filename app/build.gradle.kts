@@ -8,20 +8,15 @@ plugins {
 }
 
 dependencies {
-    implementation(platform(libs.microtus.bom))
-    compileOnly(libs.microtus)
-    compileOnly(libs.aves)
     implementation(libs.caffeine)
-
     implementation(project(":common"))
-
 
     testImplementation(libs.aves)
     testImplementation(platform("org.junit:junit-bom:5.13.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
-    testImplementation(platform(libs.microtus.bom))
-    testImplementation(libs.microtus)
-    testImplementation(libs.microtus.testing)
+    testImplementation(platform(libs.aonyx.bom))
+    testImplementation(libs.minestom)
+    testImplementation(libs.cyano)
     testImplementation(libs.mockito)
 }
 application {

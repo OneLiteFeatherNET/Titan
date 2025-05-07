@@ -1,10 +1,11 @@
 plugins {
     id("java")
-    `java-library`
+    id("java-library")
 }
 dependencies {
-    implementation(platform(libs.microtus.bom))
-    compileOnly(libs.microtus)
+    implementation(enforcedPlatform(libs.mycelium.bom))
+    implementation(platform(libs.aonyx.bom))
+    api(libs.minestom)
 
     testImplementation(platform("org.junit:junit-bom:5.13.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
@@ -12,4 +13,8 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+java {
+    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
 }

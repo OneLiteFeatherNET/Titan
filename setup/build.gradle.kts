@@ -1,17 +1,13 @@
 plugins {
-    java
-    application
+    id("java")
+    id("application")
     id("com.gradleup.shadow") version "8.3.6"
-    `maven-publish`
+    id("maven-publish")
     alias(libs.plugins.publishdata)
 }
 
 dependencies {
-    implementation(platform(libs.microtus.bom))
-    implementation(libs.microtus)
-    implementation(libs.aves)
     implementation(libs.caffeine)
-
     implementation(project(":common"))
 
 

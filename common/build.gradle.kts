@@ -1,17 +1,17 @@
 plugins {
     id("java")
-    `java-library`
+    id("java-library")
 }
 dependencies {
-    implementation(platform(libs.microtus.bom))
-    compileOnly(libs.microtus)
+    implementation(enforcedPlatform(libs.mycelium.bom))
+    implementation(platform(libs.aonyx.bom))
     api(libs.togglz)
     api(project(":api"))
-    compileOnly(libs.aves)
+    api(libs.aves)
 
     implementation(platform(libs.cloudnet.bom))
-    compileOnly(libs.cloudnet.jvm.wrapper)
-    compileOnly(libs.cloudnet.bridge)
+    api(libs.cloudnet.jvm.wrapper)
+    api(libs.cloudnet.bridge)
 
     testImplementation(libs.aves)
     testImplementation(platform("org.junit:junit-bom:5.13.1"))
