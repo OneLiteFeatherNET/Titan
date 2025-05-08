@@ -1,18 +1,19 @@
 plugins {
-    id("java")
-    id("application")
+    java
+    application
+    `maven-publish`
     id("com.gradleup.shadow") version "8.3.6"
-    id("maven-publish")
     alias(libs.plugins.publishdata)
 }
 
 dependencies {
-    implementation(libs.caffeine)
     implementation(project(":common"))
+    implementation(libs.caffeine)
 
-
-    testImplementation(platform("org.junit:junit-bom:5.13.1"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation(platform(libs.mycelium.bom))
+    testImplementation(libs.junit.api)
+    testImplementation(libs.junit.platform.launcher)
+    testRuntimeOnly(libs.junit.engine)
 }
 application {
     mainClass.set("net.onelitefeather.titan.setup.TitanLauncher")
