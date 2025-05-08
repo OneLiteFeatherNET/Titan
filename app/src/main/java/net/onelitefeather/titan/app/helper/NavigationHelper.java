@@ -2,9 +2,9 @@ package net.onelitefeather.titan.app.helper;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
-import de.icevizion.aves.inventory.InventoryLayout;
-import de.icevizion.aves.inventory.PersonalInventoryBuilder;
-import de.icevizion.aves.inventory.util.LayoutCalculator;
+import net.theevilreaper.aves.inventory.InventoryLayout;
+import net.theevilreaper.aves.inventory.PersonalInventoryBuilder;
+import net.theevilreaper.aves.inventory.util.LayoutCalculator;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.entity.Player;
@@ -44,7 +44,7 @@ public class NavigationHelper {
     public void setItems(Player player) {
         player.getInventory().clear();
         player.getInventory().setItemStack(4, Items.PLAYER_TELEPORTER);
-        player.getInventory().setChestplate(Items.PLAYER_ELYTRA);
+        player.getInventory().setEquipment(Items.PLAYER_ELYTRA);
     }
 
     private PersonalInventoryBuilder createPersonalInventoryBuilder(Player player) {
