@@ -57,6 +57,11 @@ dependencyResolutionManagement {
             library("cloudnet-bridge", "eu.cloudnetservice.cloudnet", "bridge").withoutVersion()
             library("cloudnet-jvm-wrapper", "eu.cloudnetservice.cloudnet", "wrapper-jvm").withoutVersion()
 
+            library("junit.api", "org.junit.jupiter", "junit-jupiter-api").withoutVersion()
+            library("junit.engine", "org.junit.jupiter", "junit-jupiter-engine").withoutVersion()
+            library("junit.params", "org.junit.jupiter", "junit-jupiter-params").withoutVersion()
+            library("junit.platform.launcher", "org.junit.platform", "junit-platform-launcher").withoutVersion()
+
 
             library("cyano", "net.onelitefeather", "cyano").withoutVersion()
             library("mockito", "org.mockito", "mockito-core").versionRef("mockito")
@@ -65,9 +70,10 @@ dependencyResolutionManagement {
         }
     }
 }
+
 include("app")
-include("common")
 include("api")
+include("common")
 include("setup")
 
 findProject(":app")?.projectDir = file("app")
