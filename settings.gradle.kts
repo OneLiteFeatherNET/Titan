@@ -38,7 +38,7 @@ dependencyResolutionManagement {
             version("togglz", "4.4.0")
             version("caffeine", "3.2.0")
 
-            version("grpc", "1.72.0")
+            version("grpc", "1.73.0")
             version("tomcat-annotations-api", "6.0.53")
 
             version("mockito", "5.17.0")
