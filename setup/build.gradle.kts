@@ -15,7 +15,7 @@ dependencies {
     implementation(project(":common"))
 
 
-    testImplementation(platform("org.junit:junit-bom:5.12.2"))
+    testImplementation(platform("org.junit:junit-bom:5.13.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
 }
 application {
