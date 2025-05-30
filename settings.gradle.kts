@@ -13,7 +13,7 @@ dependencyResolutionManagement {
         mavenCentral()
         maven {
             name = "OneLiteFeatherRepository"
-            url = uri("https://repo.onelitefeather.dev/onelitefeather")
+            url = uri("https://repo.onelitefeather.dev/onelitefeather-releases")
             if (System.getenv("CI") != null) {
                 credentials {
                     username = System.getenv("ONELITEFEATHER_MAVEN_USERNAME")
