@@ -33,7 +33,7 @@ dependencyResolutionManagement {
             version("microtus-bom", "1.5.1")
             version("publishdata", "1.4.0")
             version("aves", "1.6.1")
-            version("cloudnet", "4.0.0-RC11.2")
+            version("cloudnet", "4.0.0-RC12")
 
             version("togglz", "4.4.0")
             version("caffeine", "3.2.0")
