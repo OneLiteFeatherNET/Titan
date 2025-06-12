@@ -17,7 +17,7 @@ dependencies {
 
 
     testImplementation(libs.aves)
-    testImplementation(platform("org.junit:junit-bom:5.13.0"))
+    testImplementation(platform("org.junit:junit-bom:5.13.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation(platform(libs.microtus.bom))
     testImplementation(libs.microtus)
