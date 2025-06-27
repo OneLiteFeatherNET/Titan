@@ -7,8 +7,8 @@ import net.minestom.server.command.builder.CommandContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class EndCommand extends Command {
-    private EndCommand() {
+public final class EndCommand extends Command {
+    public EndCommand() {
         super("end");
         setCondition(this::hasPermission);
         addSyntax(this::execute);
@@ -20,10 +20,7 @@ public class EndCommand extends Command {
     }
 
     private boolean hasPermission(@NotNull CommandSender commandSender, @Nullable String s) {
-        return commandSender.hasPermission("titan.command.end") || commandSender.hasPermission("lobby.end");
-    }
-
-    public static EndCommand instance() {
-        return new EndCommand();
+        return false;
+        //return commandSender.hasPermission("titan.command.end") || commandSender.hasPermission("lobby.end");
     }
 }
