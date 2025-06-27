@@ -54,7 +54,7 @@ public final class Titan {
     }
 
     private void initCommands() {
-        MinecraftServer.getCommandManager().register(EndCommand.instance());
+        MinecraftServer.getCommandManager().register(new EndCommand());
     }
 
     private void initListeners() {

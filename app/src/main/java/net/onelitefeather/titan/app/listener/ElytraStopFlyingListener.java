@@ -13,6 +13,6 @@ public final class ElytraStopFlyingListener implements Consumer<PlayerStopFlying
     @Override
     public void accept(@NotNull PlayerStopFlyingWithElytraEvent event) {
         Player player = event.getPlayer();
-        player.getInventory().setItemStack(EquipmentSlot.OFF_HAND.armorSlot(), ItemStack.AIR, true);
+        player.setItemInOffHand(ItemStack.AIR);
     }
 }

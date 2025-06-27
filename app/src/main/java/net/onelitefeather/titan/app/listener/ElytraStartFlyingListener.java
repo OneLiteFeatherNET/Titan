@@ -1,6 +1,5 @@
 package net.onelitefeather.titan.app.listener;
 
-import net.minestom.server.entity.EquipmentSlot;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.player.PlayerStartFlyingWithElytraEvent;
 import net.onelitefeather.titan.common.utils.Items;
@@ -13,6 +12,6 @@ public final class ElytraStartFlyingListener implements Consumer<PlayerStartFlyi
     @Override
     public void accept(@NotNull PlayerStartFlyingWithElytraEvent event) {
         Player player = event.getPlayer();
-        player.getInventory().setItemStack(EquipmentSlot.OFF_HAND.armorSlot(), Items.PLAYER_FIREWORK, true);
+        player.setItemInOffHand(Items.PLAYER_FIREWORK);
     }
 }
