@@ -7,7 +7,6 @@ import net.minestom.server.event.entity.EntityAttackEvent;
 import net.minestom.server.event.item.ItemDropEvent;
 import net.minestom.server.event.item.PickupItemEvent;
 import net.minestom.server.event.player.*;
-import net.minestom.server.extensions.Extension;
 import net.minestom.server.instance.InstanceContainer;
 import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.app.commands.EndCommand;
@@ -22,7 +21,7 @@ import net.onelitefeather.titan.common.utils.Cancelable;
 
 import java.nio.file.Path;
 
-public final class Titan extends Extension {
+public final class Titan {
 
     private final Path path;
     private final EventNode<Event> eventNode = EventNode.all("titan");
@@ -31,7 +30,7 @@ public final class Titan extends Extension {
     private final AppConfigProvider appConfigProvider;
     private final NavigationHelper navigationHelper;
 
-    private Titan() {
+    public Titan() {
         this.path = Path.of("");
         BlockHandlerHelper.registerAll();
         InstanceContainer instance = MinecraftServer.getInstanceManager().createInstanceContainer();
@@ -43,13 +42,13 @@ public final class Titan extends Extension {
 
     }
 
-    @Override
     public void initialize() {
         initListeners();
         initCommands();
+
+        MinecraftServer.getSchedulerManager().buildShutdownTask(this::terminate);
     }
 
-    @Override
     public void terminate() {
 
     }
