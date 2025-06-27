@@ -2,6 +2,7 @@ package net.onelitefeather.titan.app.helper;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
+import net.minestom.server.entity.EquipmentSlot;
 import net.theevilreaper.aves.inventory.InventoryLayout;
 import net.theevilreaper.aves.inventory.PersonalInventoryBuilder;
 import net.theevilreaper.aves.inventory.util.LayoutCalculator;
@@ -44,7 +45,7 @@ public class NavigationHelper {
     public void setItems(Player player) {
         player.getInventory().clear();
         player.getInventory().setItemStack(4, Items.PLAYER_TELEPORTER);
-        player.getInventory().setEquipment(Items.PLAYER_ELYTRA);
+        player.getInventory().setEquipment(EquipmentSlot.CHESTPLATE, (byte) EquipmentSlot.CHESTPLATE.armorSlot(), Items.PLAYER_ELYTRA);
     }
 
     private PersonalInventoryBuilder createPersonalInventoryBuilder(Player player) {
