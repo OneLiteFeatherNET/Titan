@@ -14,7 +14,7 @@ dependencies {
     compileOnly(libs.cloudnet.bridge)
 
     testImplementation(libs.aves)
-    testImplementation(platform("org.junit:junit-bom:5.13.1"))
+    testImplementation(platform("org.junit:junit-bom:5.13.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
 }
 tasks.test {
