@@ -1,6 +1,5 @@
 package net.onelitefeather.titan.common.deliver;
 
-import eu.cloudnetservice.common.concurrent.TaskUtil;
 import eu.cloudnetservice.driver.inject.InjectionLayer;
 import eu.cloudnetservice.driver.registry.ServiceRegistry;
 import eu.cloudnetservice.modules.bridge.player.PlayerManager;
@@ -19,10 +18,10 @@ public final class MessageChannelDeliver implements Deliver {
         var serviceRegistry = InjectionLayer.ext().instance(ServiceRegistry.class);
         if (serviceRegistry == null) return;
 
-        var playerManager = serviceRegistry.firstProvider(PlayerManager.class);
+        var playerManager = serviceRegistry.registration(PlayerManager.class, "playerManager");
         if (playerManager == null) return;
 
-        var executor = playerManager.playerExecutor(player.getUuid());
+        var executor = playerManager.serviceInstance().playerExecutor(player.getUuid());
         switch (component) {
             case DeliverComponent.TaskComponent taskComponent -> executor.connectToTask(taskComponent.taskName(), ServerSelectorType.LOWEST_PLAYERS);
             case DeliverComponent.ServerDeliverComponent serverDeliverComponent -> executor.connect(serverDeliverComponent.gameServer());
