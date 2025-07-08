@@ -1,5 +1,6 @@
 package net.onelitefeather.titan.setup.commands;
 
+import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.minestom.server.command.CommandSender;
@@ -10,7 +11,6 @@ import net.minestom.server.command.builder.arguments.ArgumentType;
 import net.minestom.server.command.builder.suggestion.SuggestionEntry;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.item.Material;
-import net.minestom.server.utils.NamespaceID;
 import net.onelitefeather.titan.common.commands.ArgumentMaterialType;
 import net.onelitefeather.titan.common.config.AppConfig;
 import net.onelitefeather.titan.common.config.AppConfigProvider;
@@ -40,11 +40,11 @@ public class AppCommand extends Command {
         addSyntax(this::updateTickleDuration, ArgumentType.Literal("tickleDuration"), TICKLE_DURATION);
         materialTypeAdd = new ArgumentMaterialType("materialType");
         materialTypeAdd.setSuggestionCallback((sender, context, suggestion) -> {
-            Material.values().stream().map(Material::namespace).filter(Predicate.not(appConfigProvider.getAppConfig().allowedSitBlocks()::contains)).map(NamespaceID::asString).map(SuggestionEntry::new).forEach(suggestion::addEntry);
+            Material.values().stream().map(Material::key).filter(Predicate.not(appConfigProvider.getAppConfig().allowedSitBlocks()::contains)).map(Key::asString).map(SuggestionEntry::new).forEach(suggestion::addEntry);
         });
         materialTypeRemove = new ArgumentMaterialType("materialType");
         materialTypeRemove.setSuggestionCallback((sender, context, suggestion) -> {
-            Material.values().stream().map(Material::namespace).filter(appConfigProvider.getAppConfig().allowedSitBlocks()::contains).map(NamespaceID::asString).map(SuggestionEntry::new).forEach(suggestion::addEntry);
+            Material.values().stream().map(Material::key).filter(appConfigProvider.getAppConfig().allowedSitBlocks()::contains).map(Key::asString).map(SuggestionEntry::new).forEach(suggestion::addEntry);
         });
         addSyntax(this::addAllowedSitBlock, ArgumentType.Literal("allowedSitType"), ArgumentType.Literal("add"), materialTypeAdd);
         addSyntax(this::removeAllowedSitBlock, ArgumentType.Literal("allowedSitType"), ArgumentType.Literal("remove"), materialTypeRemove);
@@ -52,17 +52,17 @@ public class AppCommand extends Command {
     }
 
     private void removeAllowedSitBlock(@NotNull CommandSender commandSender, @NotNull CommandContext commandContext) {
-        Material material = Material.fromNamespaceId(commandContext.get(materialTypeRemove));
+        Material material = Material.fromKey(commandContext.get(materialTypeRemove));
         AppConfig appConfig = AppConfig.builder(this.appConfigProvider.getAppConfig()).removeAllowedSitBlock(material).build();
         this.appConfigProvider.saveConfig(appConfig);
-        commandSender.sendMessage(MiniMessage.miniMessage().deserialize("<prefix> Allowed sit block <material> has been removed", Placeholder.parsed("material", material.namespace().asString())));
+        commandSender.sendMessage(MiniMessage.miniMessage().deserialize("<prefix> Allowed sit block <material> has been removed", Placeholder.parsed("material", material.key().asString())));
     }
 
     private void addAllowedSitBlock(@NotNull CommandSender commandSender, @NotNull CommandContext commandContext) {
-        Material material = Material.fromNamespaceId(commandContext.get(materialTypeAdd));
+        Material material = Material.fromKey(commandContext.get(materialTypeAdd));
         AppConfig appConfig = AppConfig.builder(this.appConfigProvider.getAppConfig()).addAllowedSitBlock(material).build();
         this.appConfigProvider.saveConfig(appConfig);
-        commandSender.sendMessage(MiniMessage.miniMessage().deserialize("<prefix> Allowed sit block <material> has been added", Placeholder.parsed("material", material.namespace().asString())));
+        commandSender.sendMessage(MiniMessage.miniMessage().deserialize("<prefix> Allowed sit block <material> has been added", Placeholder.parsed("material", material.key().asString())));
 
     }
 
