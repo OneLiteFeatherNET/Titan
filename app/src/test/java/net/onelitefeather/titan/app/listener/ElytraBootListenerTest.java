@@ -2,6 +2,7 @@ package net.onelitefeather.titan.app.listener;
 
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.entity.Player;
+import net.minestom.server.entity.PlayerHand;
 import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.server.instance.Instance;
 import net.minestom.testing.Env;
@@ -26,7 +27,7 @@ class ElytraBootListenerTest {
         MinecraftServer.getGlobalEventHandler().addListener(PlayerUseItemEvent.class, new ElytraBoostListener(InternalAppConfig.defaultConfig()));
         when(player.isFlyingWithElytra()).thenReturn(true);
 
-        PlayerUseItemEvent playerUseItemEvent = new PlayerUseItemEvent(player, Player.Hand.MAIN, Items.PLAYER_FIREWORK, 1);
+        PlayerUseItemEvent playerUseItemEvent = new PlayerUseItemEvent(player, PlayerHand.MAIN, Items.PLAYER_FIREWORK, 1);
         MinecraftServer.getGlobalEventHandler().call(playerUseItemEvent);
 
         verify(player, times(1)).setVelocity(any());
@@ -40,7 +41,7 @@ class ElytraBootListenerTest {
         MinecraftServer.getGlobalEventHandler().addListener(PlayerUseItemEvent.class, new ElytraBoostListener(InternalAppConfig.defaultConfig()));
         when(player.isFlyingWithElytra()).thenReturn(true);
 
-        PlayerUseItemEvent playerUseItemEvent = new PlayerUseItemEvent(player, Player.Hand.MAIN, Items.NAVIGATOR_BLANK_ITEM_STACK, 1);
+        PlayerUseItemEvent playerUseItemEvent = new PlayerUseItemEvent(player, PlayerHand.MAIN, Items.NAVIGATOR_BLANK_ITEM_STACK, 1);
         MinecraftServer.getGlobalEventHandler().call(playerUseItemEvent);
 
         verify(player, times(0)).setVelocity(any());
@@ -55,7 +56,7 @@ class ElytraBootListenerTest {
         MinecraftServer.getGlobalEventHandler().addListener(PlayerUseItemEvent.class, new ElytraBoostListener(InternalAppConfig.defaultConfig()));
         when(player.isFlyingWithElytra()).thenReturn(false);
 
-        PlayerUseItemEvent playerUseItemEvent = new PlayerUseItemEvent(player, Player.Hand.MAIN, Items.PLAYER_FIREWORK, 1);
+        PlayerUseItemEvent playerUseItemEvent = new PlayerUseItemEvent(player, PlayerHand.MAIN, Items.PLAYER_FIREWORK, 1);
         MinecraftServer.getGlobalEventHandler().call(playerUseItemEvent);
 
         verify(player, times(0)).setVelocity(any());
