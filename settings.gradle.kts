@@ -31,9 +31,9 @@ dependencyResolutionManagement {
     versionCatalogs {
         create("libs") {
             version("aonyx-bom", "0.3.1")
-            version("mycelium-bom", "1.2.3")
+            version("mycelium-bom", "1.3.0")
             version("publishdata", "1.4.0")
-            version("cloudnet", "4.0.0-RC11.2")
+            version("cloudnet", "4.0.0-RC12")
 
             version("togglz", "4.4.0")
             version("caffeine", "3.2.0")
@@ -45,7 +45,7 @@ dependencyResolutionManagement {
             // Minestom
             library("aonyx-bom", "net.onelitefeather", "aonyx-bom").versionRef("aonyx-bom")
             library("mycelium-bom", "net.onelitefeather", "mycelium-bom").versionRef("mycelium-bom")
-            library("minestom","net.minestom", "minestom-snapshots").withoutVersion()
+            library("minestom","net.minestom", "minestom").withoutVersion()
             library("aves", "net.theevilreaper", "aves").withoutVersion()
             library("adventure.minimessage", "net.kyori", "adventure-text-minimessage").withoutVersion()
 
@@ -54,8 +54,8 @@ dependencyResolutionManagement {
             library("tomcat-annotations-api", "org.apache.tomcat", "annotations-api").versionRef("tomcat-annotations-api")
 
             library("cloudnet-bom", "eu.cloudnetservice.cloudnet", "bom").versionRef("cloudnet")
-            library("cloudnet-bridge", "eu.cloudnetservice.cloudnet", "bridge").withoutVersion()
-            library("cloudnet-jvm-wrapper", "eu.cloudnetservice.cloudnet", "wrapper-jvm").withoutVersion()
+            library("cloudnet-bridge", "eu.cloudnetservice.cloudnet", "bridge-api").withoutVersion()
+            library("cloudnet-jvm-wrapper", "eu.cloudnetservice.cloudnet", "wrapper-jvm-api").withoutVersion()
 
             library("junit.api", "org.junit.jupiter", "junit-jupiter-api").withoutVersion()
             library("junit.engine", "org.junit.jupiter", "junit-jupiter-engine").withoutVersion()
