@@ -3,6 +3,7 @@ package net.onelitefeather.titan.setup;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
+import net.minestom.server.event.inventory.InventoryPreClickEvent;
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent;
 import net.minestom.server.event.player.PlayerSpawnEvent;
 import net.minestom.server.instance.InstanceContainer;
@@ -10,6 +11,7 @@ import net.onelitefeather.titan.common.config.AppConfigProvider;
 import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
 import net.onelitefeather.titan.common.map.MapEntry;
 import net.onelitefeather.titan.common.map.MapProvider;
+import net.onelitefeather.titan.common.utils.Cancelable;
 import net.onelitefeather.titan.setup.commands.SetupCommand;
 import net.onelitefeather.titan.setup.listener.PlayerConfigurationListener;
 import net.onelitefeather.titan.setup.listener.PlayerSpawnListener;
@@ -39,6 +41,7 @@ public final class Titan {
     private void initListeners() {
         eventNode.addListener(AsyncPlayerConfigurationEvent.class, new PlayerConfigurationListener(this.mapProvider));
         eventNode.addListener(PlayerSpawnEvent.class, new PlayerSpawnListener(this.appConfigProvider.getAppConfig()));
+        eventNode.addListener(InventoryPreClickEvent.class, Cancelable::cancel);
         MinecraftServer.getGlobalEventHandler().addChild(eventNode);
     }
 
