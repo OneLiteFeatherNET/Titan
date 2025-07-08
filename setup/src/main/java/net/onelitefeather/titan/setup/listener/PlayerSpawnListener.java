@@ -21,6 +21,6 @@ public class PlayerSpawnListener implements Consumer<PlayerSpawnEvent> {
     @Override
     public void accept(PlayerSpawnEvent event) {
         event.getPlayer().sendPacket(this.simulatedDistancePacket);
-        Optional.of(event).map(PlayerSpawnEvent::getPlayer).map(Player::getInstance).map(Instance::getWorldSpawnPosition).ifPresent(event.getPlayer()::teleport);
+        // Optional.of(event).map(PlayerSpawnEvent::getPlayer).map(Player::getInstance).map(Instance::getWorldSpawnPosition).ifPresent(event.getPlayer()::teleport);
     }
 }
