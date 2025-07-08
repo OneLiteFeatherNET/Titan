@@ -8,6 +8,13 @@ plugins {
 
 dependencies {
     implementation(project(":common"))
+    implementation(project(":api"))
+    implementation(enforcedPlatform(libs.mycelium.bom))
+    implementation(platform(libs.aonyx.bom))
+    implementation(libs.minestom)
+    implementation(libs.togglz)
+    implementation(libs.aves)
+    implementation(libs.adventure.minimessage)
     implementation(libs.caffeine)
 
     testImplementation(platform(libs.mycelium.bom))
