@@ -6,8 +6,8 @@ import net.theevilreaper.aves.map.BaseMap;
 public final class LobbyMap extends BaseMap {
 
 
-    public static Builder builder(LobbyMap map) {
-        var builder = builder();
+    public static Builder lobbyMapBuilder(LobbyMap map) {
+        var builder = lobbyMapBuilder();
         if (map == null) {
             return builder;
         }
@@ -23,7 +23,7 @@ public final class LobbyMap extends BaseMap {
         return builder;
     }
 
-    public static Builder builder() {
+    public static Builder lobbyMapBuilder() {
         return new LobbyMapBuilder();
     }
 
