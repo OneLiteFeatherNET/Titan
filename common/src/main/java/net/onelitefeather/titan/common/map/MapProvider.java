@@ -62,7 +62,7 @@ public final class MapProvider {
         var lobbyData = this.fileHandler.load(this.mapPool.getMapEntry().path().resolve(AppConfig.MAP_FILE_NAME), LobbyMap.class);
         this.instance.setChunkLoader(new AnvilLoader(mapPool.getMapEntry().path()));
         try {
-            this.activeLobby = lobbyData.orElse(LobbyMap.builder().build());
+            this.activeLobby = lobbyData.orElse(LobbyMap.lobbyMapBuilder().build());
 
             if (this.activeLobby.getSpawn() != null) {
                 loadChunk(this.instance, this.activeLobby.getSpawn());
