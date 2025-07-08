@@ -3,10 +3,10 @@ package net.onelitefeather.titan.common.utils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.minestom.server.item.ItemComponent;
+import net.minestom.server.component.DataComponents;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
-import net.minestom.server.item.component.Unbreakable;
+import net.minestom.server.utils.Unit;
 
 public final class Items {
 
@@ -16,7 +16,7 @@ public final class Items {
 
     public static final ItemStack PLAYER_ELYTRA = ItemStack.builder(Material.ELYTRA)
             .customName(Component.text("Elytra", NamedTextColor.DARK_PURPLE))
-            .set(ItemComponent.UNBREAKABLE, new Unbreakable(false))
+            .set(DataComponents.UNBREAKABLE, Unit.INSTANCE)
             .build();
 
     public static final ItemStack PLAYER_TELEPORTER = ItemStack.builder(Material.FEATHER)
