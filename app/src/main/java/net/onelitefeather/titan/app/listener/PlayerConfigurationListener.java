@@ -20,6 +20,5 @@ public final class PlayerConfigurationListener implements Consumer<AsyncPlayerCo
     public void accept(AsyncPlayerConfigurationEvent event) {
         Optional.ofNullable(this.mapProvider).map(MapProvider::getInstance).ifPresent(event::setSpawningInstance);
         Optional.of(this.mapProvider).map(MapProvider::getActiveLobby).map(LobbyMap::getSpawn).ifPresent(event.getPlayer()::setRespawnPoint);
-        event.getPlayer().getInventory().addInventoryCondition(Cancelable::cancelClick);
     }
 }
