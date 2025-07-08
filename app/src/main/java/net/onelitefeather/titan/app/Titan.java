@@ -4,6 +4,7 @@ import net.minestom.server.MinecraftServer;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.event.entity.EntityAttackEvent;
+import net.minestom.server.event.inventory.InventoryPreClickEvent;
 import net.minestom.server.event.item.ItemDropEvent;
 import net.minestom.server.event.item.PickupItemEvent;
 import net.minestom.server.event.player.*;
@@ -60,6 +61,7 @@ public final class Titan {
     private void initListeners() {
 
         this.eventNode.addListener(PickupItemEvent.class, Cancelable::cancel);
+        this.eventNode.addListener(InventoryPreClickEvent.class, Cancelable::cancel);
         this.eventNode.addListener(PlayerBlockBreakEvent.class, Cancelable::cancel);
         this.eventNode.addListener(PlayerBlockPlaceEvent.class, Cancelable::cancel);
         this.eventNode.addListener(PlayerSwapItemEvent.class, Cancelable::cancel);
