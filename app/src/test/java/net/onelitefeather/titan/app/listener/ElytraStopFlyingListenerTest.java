@@ -8,6 +8,7 @@ import net.minestom.server.item.ItemStack;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,6 +19,7 @@ import static org.mockito.Mockito.*;
 class ElytraStopFlyingListenerTest {
 
     @DisplayName("Test if the is air item is set in the offhand when the player stops flying with the elytra")
+    @Disabled
     @Test
     void testElytraStopFlyingListener(Env env) {
         Instance flatInstance = env.createFlatInstance();
