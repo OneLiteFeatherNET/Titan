@@ -40,7 +40,7 @@ public final class Titan {
 
     private void initListeners() {
         eventNode.addListener(AsyncPlayerConfigurationEvent.class, new PlayerConfigurationListener(this.mapProvider));
-        eventNode.addListener(PlayerSpawnEvent.class, new PlayerSpawnListener(this.appConfigProvider.getAppConfig()));
+        eventNode.addListener(PlayerSpawnEvent.class, new PlayerSpawnListener(this.appConfigProvider.getAppConfig(), this.mapProvider));
         eventNode.addListener(InventoryPreClickEvent.class, Cancelable::cancel);
         MinecraftServer.getGlobalEventHandler().addChild(eventNode);
     }
