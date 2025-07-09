@@ -1,22 +1,27 @@
 plugins {
-    id("java")
-    `java-library`
+   java
 }
+
 dependencies {
-    implementation(platform(libs.microtus.bom))
-    compileOnly(libs.microtus)
-    api(libs.togglz)
-    api(project(":api"))
-    compileOnly(libs.aves)
+    implementation(project(":api"))
+    implementation(enforcedPlatform(libs.mycelium.bom))
+    implementation(platform(libs.aonyx.bom))
+    implementation(libs.minestom)
+    implementation(libs.togglz)
+    implementation(libs.aves)
+    implementation(libs.adventure.minimessage)
 
     implementation(platform(libs.cloudnet.bom))
-    compileOnly(libs.cloudnet.jvm.wrapper)
-    compileOnly(libs.cloudnet.bridge)
+    implementation(libs.cloudnet.jvm.wrapper)
+    implementation(libs.cloudnet.bridge)
 
+    testImplementation(platform(libs.aonyx.bom))
     testImplementation(libs.aves)
-    testImplementation(platform("org.junit:junit-bom:5.13.1"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation(libs.junit.api)
+    testImplementation(libs.junit.platform.launcher)
+    testRuntimeOnly(libs.junit.engine)
 }
+
 tasks.test {
     useJUnitPlatform()
 }

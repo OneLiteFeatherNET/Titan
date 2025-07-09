@@ -32,20 +32,20 @@ public class MapCommand extends Command {
 
     private void setAuthor(@NotNull CommandSender commandSender, @NotNull CommandContext commandContext) {
         var author = commandContext.get(MAP_AUTHOR);
-        this.mapProvider.saveMap(LobbyMap.builder(this.mapProvider.getActiveLobby()).author(author).build());
+        this.mapProvider.saveMap(LobbyMap.lobbyMapBuilder(this.mapProvider.getActiveLobby()).author(author).build());
         Component join = Component.join(JoinConfiguration.commas(false), Arrays.stream(author).map(Component::text).toList());
         commandSender.sendMessage(MiniMessage.miniMessage().deserialize("<prefix> <green><name> authors set!", Placeholder.component("name", join)));
     }
 
     private void setName(@NotNull CommandSender commandSender, @NotNull CommandContext commandContext) {
         var name = commandContext.get(MAP_NAME);
-        this.mapProvider.saveMap(LobbyMap.builder(this.mapProvider.getActiveLobby()).name(name).build());
+        this.mapProvider.saveMap(LobbyMap.lobbyMapBuilder(this.mapProvider.getActiveLobby()).name(name).build());
         commandSender.sendMessage(MiniMessage.miniMessage().deserialize("<prefix> <green><name> set!", Placeholder.parsed("name", name)));
     }
 
     private void setSpawn(@NotNull CommandSender commandSender, @NotNull CommandContext commandContext) {
         if (commandSender instanceof Player player) {
-            this.mapProvider.saveMap(LobbyMap.builder(this.mapProvider.getActiveLobby()).spawn(player.getPosition()).build());
+            this.mapProvider.saveMap(LobbyMap.lobbyMapBuilder(this.mapProvider.getActiveLobby()).spawn(player.getPosition()).build());
             commandSender.sendMessage(MiniMessage.miniMessage().deserialize("<prefix> <green>Spawn set!"));
         }
     }

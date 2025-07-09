@@ -6,7 +6,6 @@ import net.minestom.server.tag.Tag;
 import net.minestom.server.tag.TagReadable;
 import net.minestom.server.tag.TagSerializer;
 import net.minestom.server.tag.TagWritable;
-import net.minestom.server.utils.NamespaceID;
 import net.onelitefeather.titan.common.blockhandler.objects.SignSide;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -16,13 +15,13 @@ import java.util.List;
 
 public final class SignHandler implements BlockHandler {
 
-    private static final @NotNull NamespaceID NAMESPACE_ID = NamespaceID.from(Key.key("minecraft:sign"));
+    private static final @NotNull Key NAMESPACE_ID = Key.key("minecraft:sign");
     private static final List<Tag<?>> TAG_LIST = List.of(Tag.Byte("is_waxed"),
             Tag.Structure("front_text", new SignTagSerializer()),
             Tag.Structure("back_text", new SignTagSerializer()));
 
     @Override
-    public @NotNull NamespaceID getNamespaceId() {
+    public @NotNull Key getKey() {
         return NAMESPACE_ID;
     }
 

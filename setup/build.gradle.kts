@@ -1,22 +1,26 @@
 plugins {
     java
     application
-    id("com.gradleup.shadow") version "8.3.6"
     `maven-publish`
+    id("com.gradleup.shadow") version "8.3.6"
     alias(libs.plugins.publishdata)
 }
 
 dependencies {
-    implementation(platform(libs.microtus.bom))
-    implementation(libs.microtus)
+    implementation(project(":common"))
+    implementation(project(":api"))
+    implementation(enforcedPlatform(libs.mycelium.bom))
+    implementation(platform(libs.aonyx.bom))
+    implementation(libs.minestom)
+    implementation(libs.togglz)
     implementation(libs.aves)
+    implementation(libs.adventure.minimessage)
     implementation(libs.caffeine)
 
-    implementation(project(":common"))
-
-
-    testImplementation(platform("org.junit:junit-bom:5.13.1"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation(platform(libs.mycelium.bom))
+    testImplementation(libs.junit.api)
+    testImplementation(libs.junit.platform.launcher)
+    testRuntimeOnly(libs.junit.engine)
 }
 application {
     mainClass.set("net.onelitefeather.titan.setup.TitanLauncher")

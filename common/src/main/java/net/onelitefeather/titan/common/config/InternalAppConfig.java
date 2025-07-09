@@ -1,16 +1,16 @@
 package net.onelitefeather.titan.common.config;
 
+import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.item.Material;
-import net.minestom.server.utils.NamespaceID;
 
 import java.util.List;
 
 public record InternalAppConfig(
     long tickleDuration,
     Vec sitOffset,
-    List<NamespaceID> allowedSitBlocks,
+    List<Key> allowedSitBlocks,
     int simulationDistance,
     int fireworkBoostSlot,
     double elytraBoostMultiplier,
@@ -31,7 +31,7 @@ public record InternalAppConfig(
 
         private static final long DEFAULT_TICKLE_DURATION = 4000;
         private static final Vec DEFAULT_SIT_OFFSET = new Vec(0.5, 0.25, 0.5);
-        private static final List<NamespaceID> DEFAULT_ALLOWED_SIT_BLOCKS = List.of(Material.SPRUCE_STAIRS.namespace());
+        private static final List<Key> DEFAULT_ALLOWED_SIT_BLOCKS = List.of(Material.SPRUCE_STAIRS.key());
         private static final int DEFAULT_SIMULATION_DISTANCE = 2;
         private static final int DEFAULT_FIREWORK_BOOST_SLOT = 45;
         private static final double DEFAULT_ELYTRA_BOOST_MULTIPLIER = 35.0;

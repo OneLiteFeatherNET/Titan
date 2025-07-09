@@ -1,13 +1,16 @@
 plugins {
-    id("java")
+    java
     `java-library`
 }
 dependencies {
-    implementation(platform(libs.microtus.bom))
-    compileOnly(libs.microtus)
+    implementation(platform(libs.mycelium.bom))
+    implementation(platform(libs.aonyx.bom))
+    api(libs.minestom)
 
-    testImplementation(platform("org.junit:junit-bom:5.13.1"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation(platform(libs.mycelium.bom))
+    testImplementation(libs.junit.api)
+    testImplementation(libs.junit.platform.launcher)
+    testRuntimeOnly(libs.junit.engine)
 }
 
 tasks.test {

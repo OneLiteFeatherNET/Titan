@@ -13,7 +13,7 @@ dependencyResolutionManagement {
         mavenCentral()
         maven {
             name = "OneLiteFeatherRepository"
-            url = uri("https://repo.onelitefeather.dev/onelitefeather-releases")
+            url = uri("https://repo.onelitefeather.dev/onelitefeather")
             if (System.getenv("CI") != null) {
                 credentials {
                     username = System.getenv("ONELITEFEATHER_MAVEN_USERNAME")
@@ -26,52 +26,59 @@ dependencyResolutionManagement {
                 }
             }
         }
+        maven("https://central.sonatype.com/repository/maven-snapshots/")
+        maven("https://repository.derklaro.dev/snapshots/")
     }
 
     versionCatalogs {
         create("libs") {
-            version("microtus-bom", "1.5.1")
+            version("aonyx-bom", "0.3.1")
+            version("mycelium-bom", "1.3.0")
             version("publishdata", "1.4.0")
-            version("aves", "1.6.1")
             version("cloudnet", "4.0.0-RC12")
 
             version("togglz", "4.4.0")
-            version("caffeine", "3.2.1")
+            version("caffeine", "3.2.0")
 
-            version("grpc", "1.73.0")
             version("tomcat-annotations-api", "6.0.53")
 
-            version("mockito", "5.18.0")
+            version("mockito", "5.17.0")
 
             // Minestom
-            library("microtus-bom", "net.onelitefeather.microtus", "bom").versionRef("microtus-bom")
-            library("microtus", "net.onelitefeather.microtus", "Microtus").withoutVersion()
-            library("aves", "de.icevizion.lib", "aves").versionRef("aves")
+            library("aonyx-bom", "net.onelitefeather", "aonyx-bom").versionRef("aonyx-bom")
+            library("mycelium-bom", "net.onelitefeather", "mycelium-bom").versionRef("mycelium-bom")
+            library("minestom","net.minestom", "minestom").withoutVersion()
+            library("aves", "net.theevilreaper", "aves").version("1.9.0")
+            library("adventure.minimessage", "net.kyori", "adventure-text-minimessage").withoutVersion()
 
             library("togglz", "org.togglz", "togglz-core").versionRef("togglz")
             library("caffeine", "com.github.ben-manes.caffeine", "caffeine").versionRef("caffeine")
-
-            library("grpc.stub", "io.grpc", "grpc-stub").versionRef("grpc")
-            library("grpc.protobuf", "io.grpc", "grpc-protobuf").versionRef("grpc")
-            library("grpc.netty", "io.grpc", "grpc-netty").versionRef("grpc")
-            library("grpc.okhttp", "io.grpc", "grpc-okhttp").versionRef("grpc")
             library("tomcat-annotations-api", "org.apache.tomcat", "annotations-api").versionRef("tomcat-annotations-api")
 
             library("cloudnet-bom", "eu.cloudnetservice.cloudnet", "bom").versionRef("cloudnet")
-            library("cloudnet-bridge", "eu.cloudnetservice.cloudnet", "bridge").withoutVersion()
-            library("cloudnet-jvm-wrapper", "eu.cloudnetservice.cloudnet", "wrapper-jvm").withoutVersion()
+            library("cloudnet-bridge", "eu.cloudnetservice.cloudnet", "bridge-api").withoutVersion()
+            library("cloudnet-bridge-impl", "eu.cloudnetservice.cloudnet", "bridge-impl").withoutVersion()
+            library("cloudnet-driver-impl", "eu.cloudnetservice.cloudnet", "driver-impl").withoutVersion()
+            library("cloudnet-platform-inject", "eu.cloudnetservice.cloudnet", "platform-inject-api").withoutVersion()
+            library("cloudnet-jvm-wrapper", "eu.cloudnetservice.cloudnet", "wrapper-jvm-api").withoutVersion()
+
+            library("junit.api", "org.junit.jupiter", "junit-jupiter-api").withoutVersion()
+            library("junit.engine", "org.junit.jupiter", "junit-jupiter-engine").withoutVersion()
+            library("junit.params", "org.junit.jupiter", "junit-jupiter-params").withoutVersion()
+            library("junit.platform.launcher", "org.junit.platform", "junit-platform-launcher").withoutVersion()
 
 
-            library("microtus.testing", "net.onelitefeather.microtus.testing", "testing").withoutVersion()
+            library("cyano", "net.onelitefeather", "cyano").withoutVersion()
             library("mockito", "org.mockito", "mockito-core").versionRef("mockito")
 
             plugin("publishdata", "de.chojo.publishdata").versionRef("publishdata")
         }
     }
 }
+
 include("app")
-include("common")
 include("api")
+include("common")
 include("setup")
 
 findProject(":app")?.projectDir = file("app")

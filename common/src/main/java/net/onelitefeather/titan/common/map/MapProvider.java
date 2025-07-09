@@ -1,9 +1,6 @@
 package net.onelitefeather.titan.common.map;
 
 import com.google.gson.Gson;
-import de.icevizion.aves.file.GsonFileHandler;
-import de.icevizion.aves.file.gson.PositionGsonAdapter;
-import de.icevizion.aves.map.BaseMap;
 import net.minestom.server.coordinate.Point;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
@@ -11,6 +8,9 @@ import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.anvil.AnvilLoader;
 import net.minestom.server.utils.chunk.ChunkUtils;
 import net.onelitefeather.titan.common.config.AppConfig;
+import net.theevilreaper.aves.file.GsonFileHandler;
+import net.theevilreaper.aves.file.gson.PositionGsonAdapter;
+import net.theevilreaper.aves.map.BaseMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.UnmodifiableView;
 import org.slf4j.Logger;
@@ -62,7 +62,7 @@ public final class MapProvider {
         var lobbyData = this.fileHandler.load(this.mapPool.getMapEntry().path().resolve(AppConfig.MAP_FILE_NAME), LobbyMap.class);
         this.instance.setChunkLoader(new AnvilLoader(mapPool.getMapEntry().path()));
         try {
-            this.activeLobby = lobbyData.orElse(LobbyMap.builder().build());
+            this.activeLobby = lobbyData.orElse(LobbyMap.lobbyMapBuilder().build());
 
             if (this.activeLobby.getSpawn() != null) {
                 loadChunk(this.instance, this.activeLobby.getSpawn());

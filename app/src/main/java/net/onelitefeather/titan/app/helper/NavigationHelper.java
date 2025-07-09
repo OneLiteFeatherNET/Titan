@@ -2,18 +2,19 @@ package net.onelitefeather.titan.app.helper;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
-import de.icevizion.aves.inventory.InventoryLayout;
-import de.icevizion.aves.inventory.PersonalInventoryBuilder;
-import de.icevizion.aves.inventory.util.LayoutCalculator;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.minestom.server.MinecraftServer;
+import net.minestom.server.entity.EquipmentSlot;
 import net.minestom.server.entity.Player;
 import net.minestom.server.inventory.InventoryType;
-import net.minestom.server.inventory.click.ClickType;
-import net.minestom.server.inventory.condition.InventoryConditionResult;
+import net.minestom.server.inventory.click.Click;
 import net.onelitefeather.deliver.DeliverComponent;
 import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.common.utils.Items;
+import net.theevilreaper.aves.inventory.InventoryLayout;
+import net.theevilreaper.aves.inventory.PersonalInventoryBuilder;
+import net.theevilreaper.aves.inventory.click.ClickHolder;
+import net.theevilreaper.aves.inventory.util.LayoutCalculator;
 import org.togglz.core.user.SimpleFeatureUser;
 import org.togglz.core.user.thread.ThreadLocalUserProvider;
 
@@ -44,7 +45,7 @@ public class NavigationHelper {
     public void setItems(Player player) {
         player.getInventory().clear();
         player.getInventory().setItemStack(4, Items.PLAYER_TELEPORTER);
-        player.getInventory().setChestplate(Items.PLAYER_ELYTRA);
+        player.getInventory().setEquipment(EquipmentSlot.CHESTPLATE, (byte) EquipmentSlot.CHESTPLATE.armorSlot(), Items.PLAYER_ELYTRA);
     }
 
     private PersonalInventoryBuilder createPersonalInventoryBuilder(Player player) {
@@ -77,24 +78,24 @@ public class NavigationHelper {
         return new SimpleFeatureUser(player.getUsername());
     }
 
-    private void clickElytra(Player player, int slot, ClickType type, InventoryConditionResult conditionResult) {
-        conditionResult.setCancel(true);
+    private ClickHolder clickElytra(Player player, int slot, Click click) {
         deliver.sendPlayer(player, DeliverComponent.taskBuilder().taskName("ElytraRace").player(player).build());
+        return ClickHolder.cancelClick();
     }
 
-    private void clickSurvival(Player player, int slot, ClickType type, InventoryConditionResult conditionResult) {
-        conditionResult.setCancel(true);
+    private ClickHolder clickSurvival(Player player, int slot, Click click) {
         deliver.sendPlayer(player, DeliverComponent.taskBuilder().player(player).taskName("Survival").build());
+        return ClickHolder.cancelClick();
     }
 
-    private void clickSlender(Player player, int slot, ClickType type, InventoryConditionResult conditionResult) {
-        conditionResult.setCancel(true);
+    private ClickHolder clickSlender(Player player, int slot, Click click) {
         deliver.sendPlayer(player, DeliverComponent.taskBuilder().player(player).taskName("cygnus").build());
+        return ClickHolder.cancelClick();
     }
 
-    private void clickCreative(Player player, int slot, ClickType type, InventoryConditionResult conditionResult) {
-        conditionResult.setCancel(true);
+    private ClickHolder clickCreative(Player player, int slot, Click click) {
         deliver.sendPlayer(player, DeliverComponent.taskBuilder().player(player).taskName("MemberBuild").build());
+        return ClickHolder.cancelClick();
     }
 
     public static NavigationHelper instance(Deliver deliver) {
