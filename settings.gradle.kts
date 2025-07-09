@@ -11,6 +11,8 @@ pluginManagement {
 dependencyResolutionManagement {
     repositories {
         mavenCentral()
+        maven("https://central.sonatype.com/repository/maven-snapshots/")
+        maven("https://repository.derklaro.dev/snapshots/")
         maven {
             name = "OneLiteFeatherRepository"
             url = uri("https://repo.onelitefeather.dev/onelitefeather")
@@ -26,8 +28,6 @@ dependencyResolutionManagement {
                 }
             }
         }
-        maven("https://central.sonatype.com/repository/maven-snapshots/")
-        maven("https://repository.derklaro.dev/snapshots/")
     }
 
     versionCatalogs {
