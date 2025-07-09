@@ -137,10 +137,10 @@
       {
         "assets": [
           {
-            "path": "app/build/libs/titan.jar"
+            "path": "app/build/libs/app-titan.jar"
           },
           {
-            "path": "setup/build/libs/titan.jar"
+            "path": "setup/build/libs/setup-titan.jar"
           }
         ],
         "labels": false,
