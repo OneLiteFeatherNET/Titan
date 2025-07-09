@@ -30,7 +30,7 @@ dependencyResolutionManagement {
             version("cloudnet", "4.0.0-RC12")
 
             version("togglz", "4.4.0")
-            version("caffeine", "3.2.0")
+            version("caffeine", "3.2.1")
 
             version("tomcat-annotations-api", "6.0.53")
 
