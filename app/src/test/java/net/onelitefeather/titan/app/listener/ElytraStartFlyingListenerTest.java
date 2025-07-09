@@ -29,7 +29,7 @@ class ElytraStartFlyingListenerTest {
         MinecraftServer.getGlobalEventHandler().addListener(PlayerStartFlyingWithElytraEvent.class, new ElytraStartFlyingListener());
         MinecraftServer.getGlobalEventHandler().call(new PlayerStartFlyingWithElytraEvent(player));
 
-        Assertions.assertEquals(Items.PLAYER_FIREWORK, player.getInventory().getItemInOffHand());
+        Assertions.assertEquals(Items.PLAYER_FIREWORK, player.getItemInOffHand());
         verify(player.getInventory(), atLeastOnce()).update();
     }
 
