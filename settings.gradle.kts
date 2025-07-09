@@ -1,16 +1,11 @@
 rootProject.name = "titan"
 
-pluginManagement {
-    repositories {
-        gradlePluginPortal()
-        maven("https://eldonexus.de/repository/maven-public/")
-    }
-}
-
 
 dependencyResolutionManagement {
     repositories {
         mavenCentral()
+        maven("https://central.sonatype.com/repository/maven-snapshots/")
+        maven("https://repository.derklaro.dev/snapshots/")
         maven {
             name = "OneLiteFeatherRepository"
             url = uri("https://repo.onelitefeather.dev/onelitefeather")
@@ -26,23 +21,20 @@ dependencyResolutionManagement {
                 }
             }
         }
-        maven("https://central.sonatype.com/repository/maven-snapshots/")
-        maven("https://repository.derklaro.dev/snapshots/")
     }
 
     versionCatalogs {
         create("libs") {
-            version("aonyx-bom", "0.3.1")
+            version("aonyx-bom", "0.4.0")
             version("mycelium-bom", "1.3.0")
-            version("publishdata", "1.4.0")
-            version("cloudnet", "4.0.0-RC12")
+            version("cloudnet", "4.0.0-RC14-SNAPSHOT")
 
             version("togglz", "4.4.0")
-            version("caffeine", "3.2.0")
+            version("caffeine", "3.2.1")
 
             version("tomcat-annotations-api", "6.0.53")
 
-            version("mockito", "5.17.0")
+            version("mockito", "5.18.0")
 
             // Minestom
             library("aonyx-bom", "net.onelitefeather", "aonyx-bom").versionRef("aonyx-bom")
@@ -70,8 +62,6 @@ dependencyResolutionManagement {
 
             library("cyano", "net.onelitefeather", "cyano").withoutVersion()
             library("mockito", "org.mockito", "mockito-core").versionRef("mockito")
-
-            plugin("publishdata", "de.chojo.publishdata").versionRef("publishdata")
         }
     }
 }

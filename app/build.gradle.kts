@@ -1,10 +1,10 @@
 plugins {
     java
     application
-    id("com.gradleup.shadow") version "8.3.6"
+    id("com.gradleup.shadow") version "8.3.8"
     id("info.solidsoft.pitest") apply true
     `maven-publish`
-    alias(libs.plugins.publishdata)
+    id("com.diffplug.spotless") version "7.1.0" apply true
 }
 
 dependencies {
@@ -48,7 +48,7 @@ tasks {
     }
     shadowJar {
         archiveClassifier.set("")
-        archiveFileName.set("titan.jar")
+        archiveFileName.set("app-titan.jar")
         mergeServiceFiles()
     }
     test {
@@ -56,19 +56,35 @@ tasks {
         jvmArgs("-Dminestom.inside-test=true")
     }
 }
-publishData {
-    addBuildData()
-    addMainRepo("https://repo.onelitefeather.dev/onelitefeather-releases")
-    addMasterRepo("https://repo.onelitefeather.dev/onelitefeather-releases")
-    addSnapshotRepo("https://repo.onelitefeather.dev/onelitefeather-snapshots")
-    publishTask("shadowJar")
-}
-
 publishing {
     publications.create<MavenPublication>("maven") {
-        // configure the publication as defined previously.
-        publishData.configurePublication(this)
-        version = publishData.getVersion(false)
+        artifact(project.tasks.getByName("shadowJar"))
+        version = rootProject.version as String
+        artifactId = "titan-app"
+        groupId = rootProject.group as String
+        pom {
+            name = "Titan App"
+            description = "Titan App Server for OneLiteFeather"
+            url = "https://github.com/OneLiteFeatherNET/titan"
+            licenses {
+                license {
+                    name = "The Apache License, Version 2.0"
+                    url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+                }
+            }
+            developers {
+                developer {
+                    id = "themeinerlp"
+                    name = "Phillipp Glanz"
+                    email = "p.glanz@madfix.me"
+                }
+            }
+            scm {
+                connection = "scm:git:git://github.com:OneLiteFeatherNET/Titan.git"
+                developerConnection = "scm:git:ssh://git@github.com:OneLiteFeatherNET/Titan.git"
+                url = "https://github.com/OneLiteFeatherNET/titan"
+            }
+        }
     }
 
     repositories {
@@ -82,14 +98,9 @@ publishing {
             }
 
             name = "OneLiteFeatherRepository"
-            // Get the detected repository from the publish data
-            url = uri(publishData.getRepository())
+            val releasesRepoUrl = uri("https://repo.onelitefeather.dev/onelitefeather-releases")
+            val snapshotsRepoUrl = uri("https://repo.onelitefeather.dev/onelitefeather-snapshots")
+            url = if (version.toString().contains("SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl
         }
-    }
-}
-
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(24))
     }
 }
