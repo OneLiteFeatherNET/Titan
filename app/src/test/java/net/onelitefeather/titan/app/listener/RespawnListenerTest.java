@@ -25,7 +25,7 @@ class RespawnListenerTest {
     void testRespawnListener(Env env) {
         Instance flatInstance = env.createFlatInstance();
         TestConnection connection = env.createConnection();
-        Player player = connection.connect(flatInstance, Pos.ZERO).join();
+        Player player = connection.connect(flatInstance);
 
         NavigationHelper navigationHelper = mock(NavigationHelper.class);
 

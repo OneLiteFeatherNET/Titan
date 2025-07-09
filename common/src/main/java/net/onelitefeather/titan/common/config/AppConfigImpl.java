@@ -1,19 +1,18 @@
 package net.onelitefeather.titan.common.config;
 
-import de.icevizion.aves.util.Components;
+import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.tag.Tag;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.minestom.server.coordinate.Vec;
-import net.minestom.server.utils.NamespaceID;
 import net.onelitefeather.titan.common.utils.ThreadHelper;
+import net.theevilreaper.aves.util.Components;
 
 import java.util.List;
 
 record AppConfigImpl(long tickleDuration,
                      Vec sitOffset,
-                     List<NamespaceID> allowedSitBlocks,
+                     List<Key> allowedSitBlocks,
                      int simulationDistance,
                      int fireworkBoostSlot,
                      double elytraBoostMultiplier,

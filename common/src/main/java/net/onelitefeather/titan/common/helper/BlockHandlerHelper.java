@@ -32,7 +32,7 @@ public enum BlockHandlerHelper {
 
     private void register() {
         final var handler = this.blockHandler.get();
-        MinecraftServer.getBlockManager().registerHandler(handler.getNamespaceId(), this.blockHandler);
+        MinecraftServer.getBlockManager().registerHandler(handler.getKey(), this.blockHandler);
     }
 
     public static void registerAll() {

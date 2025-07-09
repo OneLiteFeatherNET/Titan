@@ -8,21 +8,32 @@ plugins {
 }
 
 dependencies {
-    implementation(platform(libs.microtus.bom))
-    compileOnly(libs.microtus)
-    compileOnly(libs.aves)
-    implementation(libs.caffeine)
-
+    implementation(project(":api"))
     implementation(project(":common"))
+    implementation(platform(libs.mycelium.bom))
+    implementation(platform(libs.aonyx.bom))
+    implementation(libs.togglz)
+    implementation(libs.aves)
+    implementation(libs.adventure.minimessage)
+    implementation(libs.caffeine)
+    implementation(libs.minestom)
 
+    implementation(platform(libs.cloudnet.bom))
+    implementation(libs.cloudnet.jvm.wrapper)
+    implementation(libs.cloudnet.bridge)
+    implementation(libs.cloudnet.bridge.impl)
+    implementation(libs.cloudnet.driver.impl)
+    implementation(libs.cloudnet.platform.inject)
 
+    testImplementation(platform(libs.aonyx.bom))
+    testImplementation(libs.minestom)
     testImplementation(libs.aves)
-    testImplementation(platform("org.junit:junit-bom:5.13.1"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
-    testImplementation(platform(libs.microtus.bom))
-    testImplementation(libs.microtus)
-    testImplementation(libs.microtus.testing)
+    testImplementation(libs.cyano)
     testImplementation(libs.mockito)
+
+    testImplementation(libs.junit.api)
+    testImplementation(libs.junit.platform.launcher)
+    testRuntimeOnly(libs.junit.engine)
 }
 application {
     mainClass.set("net.onelitefeather.titan.app.TitanApplication")
@@ -42,6 +53,7 @@ tasks {
     }
     test {
         useJUnitPlatform()
+        jvmArgs("-Dminestom.inside-test=true")
     }
 }
 publishData {

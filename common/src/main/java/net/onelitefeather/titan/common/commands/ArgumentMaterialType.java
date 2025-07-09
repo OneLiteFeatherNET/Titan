@@ -17,9 +17,9 @@ public final class ArgumentMaterialType extends ArgumentString {
     @Override
     public @NotNull String parse(@NotNull CommandSender sender, @NotNull String input) throws ArgumentSyntaxException {
         final Material registryValue =  Material.values().stream()
-                .filter(material -> material.namespace().asString().equalsIgnoreCase(input))
+                .filter(material -> material.key().asString().equalsIgnoreCase(input))
                 .findAny()
                 .orElseThrow(() -> new ArgumentSyntaxException("Registry value is invalid", input, INVALID_NAME));
-        return registryValue.namespace().asString();
+        return registryValue.key().asString();
     }
 }

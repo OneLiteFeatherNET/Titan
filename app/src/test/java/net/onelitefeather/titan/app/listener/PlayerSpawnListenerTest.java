@@ -28,7 +28,7 @@ class PlayerSpawnListenerTest {
     void testSendSimulationCachedPacket(Env env) {
         Instance flatInstance = env.createFlatInstance();
         TestConnection connection = env.createConnection();
-        Player player = connection.connect(flatInstance, Pos.ZERO).join();
+        Player player = connection.connect(flatInstance);
 
         LobbyMap lobbyMap = mock(LobbyMap.class);
         NavigationHelper navigationHelper = mock(NavigationHelper.class);
@@ -46,7 +46,7 @@ class PlayerSpawnListenerTest {
     void testPlayerTeleport(Env env) {
         Instance flatInstance = env.createFlatInstance();
         TestConnection connection = env.createConnection();
-        Player player = spy(connection.connect(flatInstance, Pos.ZERO).join());
+        Player player = spy(connection.connect(flatInstance));
 
         LobbyMap lobbyMap = mock(LobbyMap.class);
         var lobbyMapSpawn = new Pos(1, 2, 3);
@@ -64,7 +64,7 @@ class PlayerSpawnListenerTest {
     void testPlayerItemsSet(Env env) {
         Instance flatInstance = env.createFlatInstance();
         TestConnection connection = env.createConnection();
-        Player player = connection.connect(flatInstance, Pos.ZERO).join();
+        Player player = connection.connect(flatInstance);
 
         LobbyMap lobbyMap = mock(LobbyMap.class);
         NavigationHelper navigationHelper = mock(NavigationHelper.class);

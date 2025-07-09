@@ -5,7 +5,6 @@ import net.minestom.server.entity.GameMode;
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent;
 import net.onelitefeather.titan.common.map.LobbyMap;
 import net.onelitefeather.titan.common.map.MapProvider;
-import net.onelitefeather.titan.common.utils.Cancelable;
 
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -25,8 +24,8 @@ public class PlayerConfigurationListener implements Consumer<AsyncPlayerConfigur
         Pos pos = Optional.of(this.mapProvider)
                 .map(MapProvider::getActiveLobby)
                 .map(LobbyMap::getSpawn)
-                .orElse(this.mapProvider.getInstance().getWorldSpawnPosition());
+                .orElse(null);
+        if (pos == null) return;
         event.getPlayer().setRespawnPoint(pos);
-        event.getPlayer().getInventory().addInventoryCondition(Cancelable::cancelClick);
     }
 }
