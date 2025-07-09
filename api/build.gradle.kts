@@ -1,6 +1,7 @@
 plugins {
     java
     `java-library`
+    id("com.diffplug.spotless") version "7.1.0" apply true
 }
 dependencies {
     implementation(platform(libs.mycelium.bom))

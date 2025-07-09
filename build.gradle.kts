@@ -1,12 +1,15 @@
+import com.diffplug.gradle.spotless.SpotlessExtension
 import info.solidsoft.gradle.pitest.PitestPluginExtension
 
 plugins {
     id("info.solidsoft.pitest") version "1.15.0" apply false
+    id("com.diffplug.spotless") version "7.1.0" apply false
 }
 
 subprojects {
     apply(plugin = "java")
     apply(plugin = "info.solidsoft.pitest")
+    apply(plugin = "com.diffplug.spotless")
 
     configure<PitestPluginExtension> {
         pitestVersion.set("1.16.3")
@@ -24,5 +27,10 @@ subprojects {
     }
     configure<JavaPluginExtension> {
         toolchain.languageVersion.set(JavaLanguageVersion.of(24))
+    }
+    configure<SpotlessExtension> {
+        java {
+            licenseHeaderFile("${rootDir}/header.java")
+        }
     }
 }
