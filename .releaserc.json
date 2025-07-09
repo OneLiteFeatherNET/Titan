@@ -65,10 +65,6 @@
             "BREAKING"
           ]
         },
-        "writerOpts": {
-          "mainTemplate": ".github/release/template.hbs",
-          "commitPartial": ".github/release/commit.hbs"
-        },
         "presetConfig": {
           "releaseCommitMessageFormat": "release: {{currentTag}}",
           "types": [
