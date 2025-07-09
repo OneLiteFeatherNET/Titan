@@ -4,6 +4,7 @@ plugins {
     id("com.gradleup.shadow") version "8.3.6"
     id("info.solidsoft.pitest") apply true
     `maven-publish`
+    id("com.diffplug.spotless") version "7.1.0" apply true
 }
 
 dependencies {
