@@ -21,6 +21,7 @@ dependencies {
     implementation(platform(libs.cloudnet.bom))
     implementation(libs.cloudnet.jvm.wrapper)
     implementation(libs.cloudnet.bridge)
+    implementation(libs.cloudnet.bridge.impl)
 
     testImplementation(platform(libs.aonyx.bom))
     testImplementation(libs.minestom)
