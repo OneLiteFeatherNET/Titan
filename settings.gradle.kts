@@ -1,12 +1,5 @@
 rootProject.name = "titan"
 
-pluginManagement {
-    repositories {
-        gradlePluginPortal()
-        maven("https://eldonexus.de/repository/maven-public/")
-    }
-}
-
 
 dependencyResolutionManagement {
     repositories {
@@ -34,7 +27,6 @@ dependencyResolutionManagement {
         create("libs") {
             version("aonyx-bom", "0.3.1")
             version("mycelium-bom", "1.3.0")
-            version("publishdata", "1.4.0")
             version("cloudnet", "4.0.0-RC12")
 
             version("togglz", "4.4.0")
@@ -70,8 +62,6 @@ dependencyResolutionManagement {
 
             library("cyano", "net.onelitefeather", "cyano").withoutVersion()
             library("mockito", "org.mockito", "mockito-core").versionRef("mockito")
-
-            plugin("publishdata", "de.chojo.publishdata").versionRef("publishdata")
         }
     }
 }
