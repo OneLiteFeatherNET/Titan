@@ -1,25 +1,15 @@
+import com.diffplug.gradle.spotless.SpotlessExtension
 import info.solidsoft.gradle.pitest.PitestPluginExtension
 
 plugins {
-    alias(libs.plugins.publishdata)
     id("info.solidsoft.pitest") version "1.15.0" apply false
+    id("com.diffplug.spotless") version "7.1.0" apply false
 }
-
-group = "net.onelitefeather.titan"
-
-
-publishData {
-    addBuildData()
-    addMainRepo("https://repo.onelitefeather.dev/onelitefeather-releases")
-    addMasterRepo("https://repo.onelitefeather.dev/onelitefeather-releases")
-    addSnapshotRepo("https://repo.onelitefeather.dev/onelitefeather-snapshots")
-    publishTask("shadowJar")
-}
-
 
 subprojects {
     apply(plugin = "java")
     apply(plugin = "info.solidsoft.pitest")
+    apply(plugin = "com.diffplug.spotless")
 
     configure<PitestPluginExtension> {
         pitestVersion.set("1.16.3")
@@ -37,5 +27,10 @@ subprojects {
     }
     configure<JavaPluginExtension> {
         toolchain.languageVersion.set(JavaLanguageVersion.of(24))
+    }
+    configure<SpotlessExtension> {
+        java {
+            licenseHeaderFile("${rootDir}/header.java")
+        }
     }
 }
