@@ -29,7 +29,7 @@ class ElytraStopFlyingListenerTest {
         MinecraftServer.getGlobalEventHandler().addListener(PlayerStopFlyingWithElytraEvent.class, new ElytraStopFlyingListener());
         MinecraftServer.getGlobalEventHandler().call(new PlayerStopFlyingWithElytraEvent(player));
 
-        Assertions.assertEquals(ItemStack.AIR, player.getInventory().getItemInOffHand());
+        Assertions.assertEquals(ItemStack.AIR, player.getItemInOffHand());
         verify(player.getInventory(), atLeastOnce()).update();
     }
 
