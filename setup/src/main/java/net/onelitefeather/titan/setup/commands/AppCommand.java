@@ -26,7 +26,7 @@ import net.minestom.server.command.builder.arguments.ArgumentType;
 import net.minestom.server.command.builder.suggestion.SuggestionEntry;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.item.Material;
-import net.onelitefeather.titan.common.commands.ArgumentMaterialType;
+import net.onelitefeather.titan.common.argument.ArgumentMaterialType;
 import net.onelitefeather.titan.common.config.AppConfig;
 import net.onelitefeather.titan.common.config.AppConfigProvider;
 import org.jetbrains.annotations.NotNull;
