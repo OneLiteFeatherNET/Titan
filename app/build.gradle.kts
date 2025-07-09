@@ -48,7 +48,7 @@ tasks {
     }
     shadowJar {
         archiveClassifier.set("")
-        archiveFileName.set("titan.jar")
+        archiveFileName.set("app-titan.jar")
         mergeServiceFiles()
     }
     test {
