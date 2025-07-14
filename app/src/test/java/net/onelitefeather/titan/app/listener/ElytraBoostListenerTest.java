@@ -91,25 +91,60 @@ class ElytraBoostListenerTest {
         AppConfig customConfig = AppConfig.builder()
                 .elytraBoostMultiplier(boostMultiplier)
                 .build();
-        
+
         // Create the listener with the custom config
         ElytraBoostListener listener = new ElytraBoostListener(customConfig);
-        
+
         // Create a player
         Instance flatInstance = env.createFlatInstance();
         Player player = spy(env.createPlayer(flatInstance));
-        
+
+        // Set up a specific position and direction
+        Pos playerPos = new Pos(0, 64, 0, 0, 0); // Looking straight ahead (pitch=0, yaw=0)
+        doReturn(playerPos).when(player).getPosition();
+
+        // Set up a specific velocity
+        Vec initialVelocity = new Vec(1.0, 0.0, 0.0);
+        doReturn(initialVelocity).when(player).getVelocity();
+
         // Mock the necessary methods
         doReturn(true).when(player).isFlyingWithElytra();
-        
+
         // Create the event
         PlayerUseItemEvent event = new PlayerUseItemEvent(player, PlayerHand.MAIN, Items.PLAYER_FIREWORK, 1);
-        
+
+        // Capture the velocity that will be set
+        ArgumentCaptor<Vec> velocityCaptor = ArgumentCaptor.forClass(Vec.class);
+
         // Call the listener
         listener.accept(event);
-        
-        // Verify that setVelocity was called
-        verify(player).setVelocity(any(Vec.class));
+
+        // Verify that setVelocity was called and capture the value
+        verify(player).setVelocity(velocityCaptor.capture());
+
+        // Get the captured velocity
+        Vec capturedVelocity = velocityCaptor.getValue();
+
+        // Calculate the expected velocity
+        // Initial velocity + (direction * boostMultiplier) + random component
+        // Since we can't predict the random component exactly, we'll check if the velocity is in the expected range
+
+        // The direction vector when looking straight ahead (pitch=0, yaw=0) is (0, 0, 1)
+        Vec expectedDirectionBoost = new Vec(0, 0, boostMultiplier);
+
+        // Expected velocity without random component
+        Vec expectedBaseVelocity = initialVelocity.add(expectedDirectionBoost);
+
+        // Check if the captured velocity is close to the expected velocity (allowing for the random component)
+        double tolerance = 0.1; // Tolerance for the random component
+
+        // Check each component
+        assertTrue(Math.abs(capturedVelocity.x() - expectedBaseVelocity.x()) <= tolerance,
+                "X component of velocity should be within tolerance of expected value");
+        assertTrue(Math.abs(capturedVelocity.y() - expectedBaseVelocity.y()) <= tolerance,
+                "Y component of velocity should be within tolerance of expected value");
+        assertTrue(Math.abs(capturedVelocity.z() - expectedBaseVelocity.z()) <= tolerance,
+                "Z component of velocity should be within tolerance of expected value");
     }
 
     @DisplayName("Test the random component of the boost")
@@ -117,20 +152,20 @@ class ElytraBoostListenerTest {
     void testRandomComponent(Env env) {
         // Create the listener with the default config
         ElytraBoostListener listener = new ElytraBoostListener(InternalAppConfig.defaultConfig());
-        
+
         // Create a player
         Instance flatInstance = env.createFlatInstance();
         Player player = spy(env.createPlayer(flatInstance));
-        
+
         // Mock the necessary methods
         doReturn(true).when(player).isFlyingWithElytra();
-        
+
         // Create the event
         PlayerUseItemEvent event = new PlayerUseItemEvent(player, PlayerHand.MAIN, Items.PLAYER_FIREWORK, 1);
-        
+
         // Call the listener
         listener.accept(event);
-        
+
         // Verify that setVelocity was called
         verify(player).setVelocity(any(Vec.class));
     }
@@ -138,23 +173,65 @@ class ElytraBoostListenerTest {
     @DisplayName("Test the upward correction when looking down")
     @Test
     void testUpwardCorrectionWhenLookingDown(Env env) {
-        // Create the listener with the default config
-        ElytraBoostListener listener = new ElytraBoostListener(InternalAppConfig.defaultConfig());
-        
+        // Create a custom AppConfig with a specific boost multiplier
+        double boostMultiplier = 2.0;
+        AppConfig customConfig = AppConfig.builder()
+                .elytraBoostMultiplier(boostMultiplier)
+                .build();
+
+        // Create the listener with the custom config
+        ElytraBoostListener listener = new ElytraBoostListener(customConfig);
+
         // Create a player
         Instance flatInstance = env.createFlatInstance();
         Player player = spy(env.createPlayer(flatInstance));
-        
+
+        // Set up a position with the player looking down (pitch=90, yaw=0)
+        Pos playerPos = new Pos(0, 64, 0, 90, 0);
+        doReturn(playerPos).when(player).getPosition();
+
+        // Set up a specific velocity
+        Vec initialVelocity = new Vec(0.0, -1.0, 0.0); // Moving downward
+        doReturn(initialVelocity).when(player).getVelocity();
+
         // Mock the necessary methods
         doReturn(true).when(player).isFlyingWithElytra();
-        
+
         // Create the event
         PlayerUseItemEvent event = new PlayerUseItemEvent(player, PlayerHand.MAIN, Items.PLAYER_FIREWORK, 1);
-        
+
+        // Capture the velocity that will be set
+        ArgumentCaptor<Vec> velocityCaptor = ArgumentCaptor.forClass(Vec.class);
+
         // Call the listener
         listener.accept(event);
-        
-        // Verify that setVelocity was called
-        verify(player).setVelocity(any(Vec.class));
+
+        // Verify that setVelocity was called and capture the value
+        verify(player).setVelocity(velocityCaptor.capture());
+
+        // Get the captured velocity
+        Vec capturedVelocity = velocityCaptor.getValue();
+
+        // When looking down, the direction vector is approximately (0, -1, 0)
+        // The upward correction should add a positive Y component
+
+        // Check if the Y component of the velocity is greater than the initial Y velocity
+        // This indicates that the upward correction was applied
+        assertTrue(capturedVelocity.y() > initialVelocity.y(),
+                "Y component of velocity should be increased due to upward correction when looking down");
+
+        // Calculate the expected upward correction
+        // From the code: double upwardCorrection = -playerDirection.y() * 0.3;
+        // playerDirection.y() is -1 when looking straight down, so upwardCorrection should be 0.3
+        double expectedUpwardCorrection = 0.3;
+
+        // Expected Y component: initialVelocity.y + (direction.y * boostMultiplier) + upwardCorrection + random
+        // Since we can't predict the random component exactly, we'll check if the velocity is in the expected range
+        double expectedBaseY = initialVelocity.y() + (-1 * boostMultiplier) + expectedUpwardCorrection;
+
+        // Check if the captured Y velocity is close to the expected Y velocity (allowing for the random component)
+        double tolerance = 0.1; // Tolerance for the random component
+        assertTrue(Math.abs(capturedVelocity.y() - expectedBaseY) <= tolerance,
+                "Y component of velocity should be within tolerance of expected value with upward correction");
     }
 }
