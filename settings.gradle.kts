@@ -28,6 +28,7 @@ dependencyResolutionManagement {
             version("aonyx-bom", "0.5.0")
             version("mycelium-bom", "1.4.0")
             version("cloudnet", "4.0.0-RC14-SNAPSHOT")
+            version("butterfly", "1.0.0")
 
             version("togglz", "4.4.0")
             version("caffeine", "3.2.2")
@@ -42,6 +43,7 @@ dependencyResolutionManagement {
             library("minestom","net.minestom", "minestom").withoutVersion()
             library("aves", "net.theevilreaper", "aves").version("1.9.0")
             library("adventure.minimessage", "net.kyori", "adventure-text-minimessage").withoutVersion()
+            library("butterfly-minestom", "net.onelitefeather", "butterfly-minestom").versionRef("butterfly")
 
             library("togglz", "org.togglz", "togglz-core").versionRef("togglz")
             library("caffeine", "com.github.ben-manes.caffeine", "caffeine").versionRef("caffeine")
