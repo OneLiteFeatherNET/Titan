@@ -3,117 +3,10 @@
     [
       "@semantic-release/commit-analyzer",
       {
-        "preset": "conventionalcommits",
-        "releaseRules": [
-          {
-            "type": "feat",
-            "release": "minor"
-          },
-          {
-            "type": "perf",
-            "release": "patch"
-          },
-          {
-            "type": "fix",
-            "release": "patch"
-          },
-          {
-            "type": "refactor",
-            "release": "patch"
-          },
-          {
-            "type": "deps",
-            "release": "patch"
-          },
-          {
-            "type": "build",
-            "release": "patch"
-          },
-          {
-            "type": "chore",
-            "release": "patch"
-          },
-          {
-            "type": "docs",
-            "scope": "README",
-            "release": "patch"
-          },
-          {
-            "type": "style",
-            "release": "patch"
-          }
-        ],
-        "parserOpts": {
-          "noteKeywords": [
-            "BREAKING CHANGE",
-            "BREAKING CHANGES"
-          ]
-        }
+        "preset": "conventionalcommits"
       }
     ],
-    [
-      "@semantic-release/release-notes-generator",
-      {
-        "preset": "conventionalcommits",
-        "parserOpts": {
-          "noteKeywords": [
-            "BREAKING CHANGE",
-            "BREAKING CHANGES",
-            "BREAKING"
-          ]
-        },
-        "presetConfig": {
-          "releaseCommitMessageFormat": "release: {{currentTag}}",
-          "types": [
-            {
-              "type": "feat",
-              "section": "🧰 Features",
-              "hidden": false
-            },
-            {
-              "type": "perf",
-              "section": "⚙ Performance",
-              "hidden": false
-            },
-            {
-              "type": "fix",
-              "section": "🐛 Bugs fixed",
-              "hidden": false
-            },
-            {
-              "type": "refactor",
-              "section": "✏ Refactor",
-              "hidden": false
-            },
-            {
-              "type": "deps",
-              "section": "📥 Dependency Updates",
-              "hidden": false
-            },
-            {
-              "type": "chore",
-              "section": "📡 Conventional Changes",
-              "hidden": false
-            },
-            {
-              "type": "build",
-              "section": "⚒ Build Updates",
-              "hidden": false
-            },
-            {
-              "type": "docs",
-              "section": "📖 Documentation",
-              "hidden": false
-            },
-            {
-              "type": "style",
-              "section": "📜 Styling updates",
-              "hidden": false
-            }
-          ]
-        }
-      }
-    ],
+    "@semantic-release/release-notes-generator",
     [
       "@semantic-release/exec",
       {
@@ -121,14 +14,7 @@
         "publishCmd": "./gradlew -Pversion=${nextRelease.version} publish"
       }
     ],
-    [
-      "@semantic-release/git",
-      {
-        "assets": [
-          "gradle.properties"
-        ]
-      }
-    ],
+    "@semantic-release/git",
     [
       "@semantic-release/github",
       {

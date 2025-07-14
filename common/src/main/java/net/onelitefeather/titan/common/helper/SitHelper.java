@@ -40,6 +40,9 @@ public final class SitHelper {
     public static void sitPlayer(Player player, Point sitLocation, AppConfig config) {
         var instance = player.getInstance();
         if (instance == null) return;
+        if (player.getTag(Tags.SIT_ARROW) != null) {
+            removePlayer(player);
+        }
         var playerLocation = player.getPosition();
         var arrow = new ArrowEntity();
         arrow.setInstance(instance, sitLocation.add(config.sitOffset()));
@@ -62,6 +65,9 @@ public final class SitHelper {
                     player.removeTag(Tags.SIT_ARROW);
                     Optional.ofNullable(player.getTag(Tags.SIT_PLAYER)).ifPresent(player::teleport);
                     arrow.removePassenger(player);
+                    if (arrow.getPassengers().isEmpty()) {
+                        arrow.remove();
+                    }
                 });
     }
 
