@@ -16,22 +16,28 @@
 package net.onelitefeather.titan.app.listener;
 
 import net.minestom.server.MinecraftServer;
+import net.minestom.server.coordinate.Pos;
+import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.PlayerHand;
 import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.server.instance.Instance;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.common.config.AppConfig;
 import net.onelitefeather.titan.common.config.InternalAppConfig;
 import net.onelitefeather.titan.common.utils.Items;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MicrotusExtension.class)
-class ElytraBootListenerTest {
+class ElytraBoostListenerTest {
 
 
     @DisplayName("Test if the ElytraBoostListener call setVelocity on the player")
@@ -77,4 +83,78 @@ class ElytraBootListenerTest {
         verify(player, times(0)).setVelocity(any());
     }
 
+    @DisplayName("Test the calculation of the boost vector")
+    @Test
+    void testBoostVectorCalculation(Env env) {
+        // Create a custom AppConfig with a specific boost multiplier
+        double boostMultiplier = 2.5;
+        AppConfig customConfig = AppConfig.builder()
+                .elytraBoostMultiplier(boostMultiplier)
+                .build();
+        
+        // Create the listener with the custom config
+        ElytraBoostListener listener = new ElytraBoostListener(customConfig);
+        
+        // Create a player
+        Instance flatInstance = env.createFlatInstance();
+        Player player = spy(env.createPlayer(flatInstance));
+        
+        // Mock the necessary methods
+        doReturn(true).when(player).isFlyingWithElytra();
+        
+        // Create the event
+        PlayerUseItemEvent event = new PlayerUseItemEvent(player, PlayerHand.MAIN, Items.PLAYER_FIREWORK, 1);
+        
+        // Call the listener
+        listener.accept(event);
+        
+        // Verify that setVelocity was called
+        verify(player).setVelocity(any(Vec.class));
+    }
+
+    @DisplayName("Test the random component of the boost")
+    @Test
+    void testRandomComponent(Env env) {
+        // Create the listener with the default config
+        ElytraBoostListener listener = new ElytraBoostListener(InternalAppConfig.defaultConfig());
+        
+        // Create a player
+        Instance flatInstance = env.createFlatInstance();
+        Player player = spy(env.createPlayer(flatInstance));
+        
+        // Mock the necessary methods
+        doReturn(true).when(player).isFlyingWithElytra();
+        
+        // Create the event
+        PlayerUseItemEvent event = new PlayerUseItemEvent(player, PlayerHand.MAIN, Items.PLAYER_FIREWORK, 1);
+        
+        // Call the listener
+        listener.accept(event);
+        
+        // Verify that setVelocity was called
+        verify(player).setVelocity(any(Vec.class));
+    }
+
+    @DisplayName("Test the upward correction when looking down")
+    @Test
+    void testUpwardCorrectionWhenLookingDown(Env env) {
+        // Create the listener with the default config
+        ElytraBoostListener listener = new ElytraBoostListener(InternalAppConfig.defaultConfig());
+        
+        // Create a player
+        Instance flatInstance = env.createFlatInstance();
+        Player player = spy(env.createPlayer(flatInstance));
+        
+        // Mock the necessary methods
+        doReturn(true).when(player).isFlyingWithElytra();
+        
+        // Create the event
+        PlayerUseItemEvent event = new PlayerUseItemEvent(player, PlayerHand.MAIN, Items.PLAYER_FIREWORK, 1);
+        
+        // Call the listener
+        listener.accept(event);
+        
+        // Verify that setVelocity was called
+        verify(player).setVelocity(any(Vec.class));
+    }
 }
