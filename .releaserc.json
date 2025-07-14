@@ -121,14 +121,7 @@
         "publishCmd": "./gradlew -Pversion=${nextRelease.version} publish"
       }
     ],
-    [
-      "@semantic-release/git",
-      {
-        "assets": [
-          "gradle.properties"
-        ]
-      }
-    ],
+    "@semantic-release/git",
     [
       "@semantic-release/github",
       {
