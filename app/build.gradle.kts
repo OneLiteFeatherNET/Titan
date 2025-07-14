@@ -17,6 +17,7 @@ dependencies {
     implementation(libs.adventure.minimessage)
     implementation(libs.caffeine)
     implementation(libs.minestom)
+    implementation(libs.butterfly.minestom)
 
     implementation(platform(libs.cloudnet.bom))
     implementation(libs.cloudnet.jvm.wrapper)

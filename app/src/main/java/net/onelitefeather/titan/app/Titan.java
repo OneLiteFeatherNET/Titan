@@ -24,6 +24,7 @@ import net.minestom.server.event.item.ItemDropEvent;
 import net.minestom.server.event.item.PickupItemEvent;
 import net.minestom.server.event.player.*;
 import net.minestom.server.instance.InstanceContainer;
+import net.onelitefeather.butterfly.minestom.Butterfly;
 import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.app.commands.EndCommand;
 import net.onelitefeather.titan.app.helper.NavigationHelper;
@@ -54,15 +55,15 @@ public final class Titan {
         this.mapProvider = MapProvider.create(this.path, instance);
         this.appConfigProvider = AppConfigProvider.create(this.path);
         this.navigationHelper = NavigationHelper.instance(this.deliver);
-
-
     }
 
     public void initialize() {
         initListeners();
         initCommands();
-
+        Butterfly butterfly = Butterfly.create();
+        butterfly.load();
         MinecraftServer.getSchedulerManager().buildShutdownTask(this::terminate);
+        MinecraftServer.getSchedulerManager().buildShutdownTask(butterfly::terminate);
     }
 
     public void terminate() {
