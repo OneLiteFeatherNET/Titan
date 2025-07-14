@@ -20,8 +20,13 @@ import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.PlayerHand;
+import net.minestom.server.event.EventFilter;
+import net.minestom.server.event.EventListener;
 import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.server.instance.Instance;
+import net.minestom.server.listener.UseItemListener;
+import net.minestom.server.network.packet.client.play.ClientUseItemPacket;
+import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.common.config.AppConfig;
@@ -181,57 +186,44 @@ class ElytraBoostListenerTest {
 
         // Create the listener with the custom config
         ElytraBoostListener listener = new ElytraBoostListener(customConfig);
+        EventListener<PlayerUseItemEvent> playerUseItemEventEventListener = EventListener.of(PlayerUseItemEvent.class, listener);
+        env.process().eventHandler().addListener(playerUseItemEventEventListener);
 
         // Create a player
         Instance flatInstance = env.createFlatInstance();
-        Player player = spy(env.createPlayer(flatInstance));
-
         // Set up a position with the player looking down (pitch=90, yaw=0)
-        Pos playerPos = new Pos(0, 64, 0, 90, 0);
-        doReturn(playerPos).when(player).getPosition();
+        Player player = env.createPlayer(flatInstance, new Pos(0, 64, 0, 90, 0));
+        player.setItemInMainHand(Items.PLAYER_FIREWORK);
+        Vec initialVelocity = new Vec(1.0, 0.0, 0.0);
+        player.setVelocity(initialVelocity);
+        player.setFlyingWithElytra(true);
 
-        // Set up a specific velocity
-        Vec initialVelocity = new Vec(0.0, -1.0, 0.0); // Moving downward
-        doReturn(initialVelocity).when(player).getVelocity();
-
-        // Mock the necessary methods
-        doReturn(true).when(player).isFlyingWithElytra();
+        // Assert initial velocity is zero
+        assertEquals(initialVelocity, player.getVelocity());
+        Collector<PlayerUseItemEvent> playerUseItemEventCollector = env.trackEvent(PlayerUseItemEvent.class, EventFilter.PLAYER, player);
 
         // Create the event
-        PlayerUseItemEvent event = new PlayerUseItemEvent(player, PlayerHand.MAIN, Items.PLAYER_FIREWORK, 1);
+        ClientUseItemPacket packet = new ClientUseItemPacket(PlayerHand.MAIN, 42, 0f, 0f);
+        UseItemListener.useItemListener(packet, player);
 
-        // Capture the velocity that will be set
-        ArgumentCaptor<Vec> velocityCaptor = ArgumentCaptor.forClass(Vec.class);
 
-        // Call the listener
-        listener.accept(event);
+        playerUseItemEventCollector.assertSingle();
 
-        // Verify that setVelocity was called and capture the value
-        verify(player).setVelocity(velocityCaptor.capture());
+        Vec playerDirection = player.getPosition().direction();
+        Vec boost = playerDirection.mul(boostMultiplier);
+        if (playerDirection.y() < 0) {
+            boost = boost.add(0, -playerDirection.y() * 0.3, 0);
+        }
+        Vec expected = initialVelocity.add(boost);
 
-        // Get the captured velocity
-        Vec capturedVelocity = velocityCaptor.getValue();
+        Vec actual = player.getVelocity();
+        double tolerance = 0.1;
 
-        // When looking down, the direction vector is approximately (0, -1, 0)
-        // The upward correction should add a positive Y component
+        assertTrue(Math.abs(actual.x() - expected.x()) <= tolerance);
+        assertTrue(Math.abs(actual.y() - expected.y()) <= tolerance);
+        assertTrue(Math.abs(actual.z() - expected.z()) <= tolerance);
 
-        // Check if the Y component of the velocity is greater than the initial Y velocity
-        // This indicates that the upward correction was applied
-        assertTrue(capturedVelocity.y() > initialVelocity.y(),
-                "Y component of velocity should be increased due to upward correction when looking down");
-
-        // Calculate the expected upward correction
-        // From the code: double upwardCorrection = -playerDirection.y() * 0.3;
-        // playerDirection.y() is -1 when looking straight down, so upwardCorrection should be 0.3
-        double expectedUpwardCorrection = 0.3;
-
-        // Expected Y component: initialVelocity.y + (direction.y * boostMultiplier) + upwardCorrection + random
-        // Since we can't predict the random component exactly, we'll check if the velocity is in the expected range
-        double expectedBaseY = initialVelocity.y() + (-1 * boostMultiplier) + expectedUpwardCorrection;
-
-        // Check if the captured Y velocity is close to the expected Y velocity (allowing for the random component)
-        double tolerance = 0.1; // Tolerance for the random component
-        assertTrue(Math.abs(capturedVelocity.y() - expectedBaseY) <= tolerance,
-                "Y component of velocity should be within tolerance of expected value with upward correction");
+        env.destroyInstance(flatInstance, true);
+        env.process().eventHandler().removeListener(playerUseItemEventEventListener);
     }
 }
