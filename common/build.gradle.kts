@@ -17,12 +17,17 @@ dependencies {
     implementation(libs.cloudnet.bridge)
 
     testImplementation(platform(libs.aonyx.bom))
+    testImplementation(libs.minestom)
+    testImplementation(libs.cyano)
     testImplementation(libs.aves)
     testImplementation(libs.junit.api)
     testImplementation(libs.junit.platform.launcher)
     testRuntimeOnly(libs.junit.engine)
 }
 
-tasks.test {
-    useJUnitPlatform()
+tasks {
+    test {
+        useJUnitPlatform()
+        jvmArgs("-Dminestom.inside-test=true")
+    }
 }
