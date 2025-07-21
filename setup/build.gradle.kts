@@ -3,7 +3,7 @@ plugins {
     application
     `maven-publish`
     id("com.gradleup.shadow") version "8.3.8"
-    id("com.diffplug.spotless") version "7.1.0" apply true
+    id("com.diffplug.spotless") version "7.2.1" apply true
 }
 
 dependencies {
