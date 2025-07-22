@@ -23,6 +23,7 @@ import net.minestom.server.entity.EquipmentSlot;
 import net.minestom.server.entity.Player;
 import net.minestom.server.inventory.InventoryType;
 import net.minestom.server.inventory.click.Click;
+import net.minestom.server.item.ItemStack;
 import net.onelitefeather.deliver.DeliverComponent;
 import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.common.utils.Items;
@@ -35,6 +36,7 @@ import org.togglz.core.user.thread.ThreadLocalUserProvider;
 
 import java.time.Duration;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 public class NavigationHelper {
 
@@ -86,24 +88,24 @@ public class NavigationHelper {
         return new SimpleFeatureUser(player.getUsername());
     }
 
-    private ClickHolder clickElytra(Player player, int slot, Click click) {
+    private void clickElytra(Player player, int slot, Click click, ItemStack itemStack, Consumer<ClickHolder> result) {
         deliver.sendPlayer(player, DeliverComponent.taskBuilder().taskName("ElytraRace").player(player).build());
-        return ClickHolder.cancelClick();
+        result.accept(ClickHolder.cancelClick());
     }
 
-    private ClickHolder clickSurvival(Player player, int slot, Click click) {
+    private void clickSurvival(Player player, int slot, Click click, ItemStack itemStack, Consumer<ClickHolder> result) {
         deliver.sendPlayer(player, DeliverComponent.taskBuilder().player(player).taskName("Survival").build());
-        return ClickHolder.cancelClick();
+        result.accept(ClickHolder.cancelClick());
     }
 
-    private ClickHolder clickSlender(Player player, int slot, Click click) {
+    private void clickSlender(Player player, int slot, Click click, ItemStack itemStack, Consumer<ClickHolder> result) {
         deliver.sendPlayer(player, DeliverComponent.taskBuilder().player(player).taskName("cygnus").build());
-        return ClickHolder.cancelClick();
+        result.accept(ClickHolder.cancelClick());
     }
 
-    private ClickHolder clickCreative(Player player, int slot, Click click) {
+    private void clickCreative(Player player, int slot, Click click, ItemStack itemStack, Consumer<ClickHolder> result) {
         deliver.sendPlayer(player, DeliverComponent.taskBuilder().player(player).taskName("MemberBuild").build());
-        return ClickHolder.cancelClick();
+        result.accept(ClickHolder.cancelClick());
     }
 
     public static NavigationHelper instance(Deliver deliver) {
