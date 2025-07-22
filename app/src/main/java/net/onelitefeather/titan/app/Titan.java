@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -40,78 +40,74 @@ import java.nio.file.Path;
 
 public final class Titan {
 
-	private final Path path;
-	private final EventNode<Event> eventNode = EventNode.all("titan");
-	private final Deliver deliver = new MessageChannelDeliver();
-	private final MapProvider mapProvider;
-	private final AppConfigProvider appConfigProvider;
-	private final NavigationHelper navigationHelper;
+    private final Path path;
+    private final EventNode<Event> eventNode = EventNode.all("titan");
+    private final Deliver deliver = new MessageChannelDeliver();
+    private final MapProvider mapProvider;
+    private final AppConfigProvider appConfigProvider;
+    private final NavigationHelper navigationHelper;
 
-	public Titan() {
-		this.path = Path.of("");
-		BlockHandlerHelper.registerAll();
-		InstanceContainer instance = MinecraftServer.getInstanceManager().createInstanceContainer();
-		MinecraftServer.getInstanceManager().registerInstance(instance);
-		this.mapProvider = MapProvider.create(this.path, instance);
-		this.appConfigProvider = AppConfigProvider.create(this.path);
-		this.navigationHelper = NavigationHelper.instance(this.deliver);
-	}
+    public Titan() {
+        this.path = Path.of("");
+        BlockHandlerHelper.registerAll();
+        InstanceContainer instance = MinecraftServer.getInstanceManager().createInstanceContainer();
+        MinecraftServer.getInstanceManager().registerInstance(instance);
+        this.mapProvider = MapProvider.create(this.path, instance);
+        this.appConfigProvider = AppConfigProvider.create(this.path);
+        this.navigationHelper = NavigationHelper.instance(this.deliver);
+    }
 
-	public void initialize() {
-		initListeners();
-		initCommands();
-		Butterfly butterfly = Butterfly.create();
-		butterfly.load();
-		MinecraftServer.getSchedulerManager().buildShutdownTask(this::terminate);
-		MinecraftServer.getSchedulerManager().buildShutdownTask(butterfly::terminate);
-	}
+    public void initialize() {
+        initListeners();
+        initCommands();
+        Butterfly butterfly = Butterfly.create();
+        butterfly.load();
+        MinecraftServer.getSchedulerManager().buildShutdownTask(this::terminate);
+        MinecraftServer.getSchedulerManager().buildShutdownTask(butterfly::terminate);
+    }
 
-	public void terminate() {
+    public void terminate() {
 
-	}
+    }
 
-	private void initCommands() {
-		MinecraftServer.getCommandManager().register(new EndCommand());
-	}
+    private void initCommands() {
+        MinecraftServer.getCommandManager().register(new EndCommand());
+    }
 
-	private void initListeners() {
+    private void initListeners() {
 
-		this.eventNode.addListener(PickupItemEvent.class, Cancelable::cancel);
-		this.eventNode.addListener(InventoryPreClickEvent.class, Cancelable::cancel);
-		this.eventNode.addListener(PlayerBlockBreakEvent.class, Cancelable::cancel);
-		this.eventNode.addListener(PlayerBlockPlaceEvent.class, Cancelable::cancel);
-		this.eventNode.addListener(PlayerSwapItemEvent.class, Cancelable::cancel);
-		this.eventNode.addListener(ItemDropEvent.class, Cancelable::cancel);
+        this.eventNode.addListener(PickupItemEvent.class, Cancelable::cancel);
+        this.eventNode.addListener(InventoryPreClickEvent.class, Cancelable::cancel);
+        this.eventNode.addListener(PlayerBlockBreakEvent.class, Cancelable::cancel);
+        this.eventNode.addListener(PlayerBlockPlaceEvent.class, Cancelable::cancel);
+        this.eventNode.addListener(PlayerSwapItemEvent.class, Cancelable::cancel);
+        this.eventNode.addListener(ItemDropEvent.class, Cancelable::cancel);
 
-		this.eventNode.addListener(PlayerDeathEvent.class, new DeathListener());
-		this.eventNode.addListener(EntityAttackEvent.class, new TickleListener(this.appConfigProvider.getAppConfig()));
+        this.eventNode.addListener(PlayerDeathEvent.class, new DeathListener());
+        this.eventNode.addListener(EntityAttackEvent.class, new TickleListener(this.appConfigProvider.getAppConfig()));
 
-		this.eventNode.addListener(PlayerBlockInteractEvent.class,
-				new SitListener(this.appConfigProvider.getAppConfig()));
-		this.eventNode.addListener(PlayerPacketEvent.class, new SitLeavePacketListener());
-		this.eventNode.addListener(EntityDismountEvent.class, new SitDismountListener());
-		this.eventNode.addListener(PlayerDisconnectEvent.class, new SitDisconnectListener());
+        this.eventNode.addListener(PlayerBlockInteractEvent.class, new SitListener(this.appConfigProvider.getAppConfig()));
+        this.eventNode.addListener(PlayerPacketEvent.class, new SitLeavePacketListener());
+        this.eventNode.addListener(EntityDismountEvent.class, new SitDismountListener());
+        this.eventNode.addListener(PlayerDisconnectEvent.class, new SitDisconnectListener());
 
-		this.eventNode.addListener(PlayerUseItemEvent.class, new NavigationListener(this.navigationHelper));
+        this.eventNode.addListener(PlayerUseItemEvent.class, new NavigationListener(this.navigationHelper));
 
-		this.eventNode.addListener(PlayerStartFlyingWithElytraEvent.class, new ElytraStartFlyingListener());
-		this.eventNode.addListener(PlayerStopFlyingWithElytraEvent.class, new ElytraStopFlyingListener());
-		this.eventNode.addListener(PlayerUseItemEvent.class,
-				new ElytraBoostListener(this.appConfigProvider.getAppConfig()));
+        this.eventNode.addListener(PlayerStartFlyingWithElytraEvent.class, new ElytraStartFlyingListener());
+        this.eventNode.addListener(PlayerStopFlyingWithElytraEvent.class, new ElytraStopFlyingListener());
+        this.eventNode.addListener(PlayerUseItemEvent.class, new ElytraBoostListener(this.appConfigProvider.getAppConfig()));
 
-		this.eventNode.addListener(PlayerRespawnEvent.class, new RespawnListener(this.navigationHelper));
-		this.eventNode.addListener(PlayerMoveEvent.class,
-				new PlayerMoveListener(this.appConfigProvider.getAppConfig(), this.mapProvider.getActiveLobby()));
+        this.eventNode.addListener(PlayerRespawnEvent.class, new RespawnListener(this.navigationHelper));
+        this.eventNode.addListener(PlayerMoveEvent.class, new PlayerMoveListener(this.appConfigProvider.getAppConfig(), this.mapProvider.getActiveLobby()));
 
-		this.eventNode.addListener(AsyncPlayerConfigurationEvent.class,
-				new PlayerConfigurationListener(this.mapProvider));
-		this.eventNode.addListener(PlayerSpawnEvent.class, new PlayerSpawnListener(
-				this.appConfigProvider.getAppConfig(), this.mapProvider.getActiveLobby(), this.navigationHelper));
+        this.eventNode.addListener(AsyncPlayerConfigurationEvent.class, new PlayerConfigurationListener(this.mapProvider));
+        this.eventNode.addListener(PlayerSpawnEvent.class, new PlayerSpawnListener(
+                this.appConfigProvider.getAppConfig(), this.mapProvider.getActiveLobby(), this.navigationHelper));
 
-		MinecraftServer.getGlobalEventHandler().addChild(eventNode);
-	}
+        MinecraftServer.getGlobalEventHandler().addChild(eventNode);
+    }
 
-	public static Titan instance() {
-		return new Titan();
-	}
+    public static Titan instance() {
+        return new Titan();
+    }
 }

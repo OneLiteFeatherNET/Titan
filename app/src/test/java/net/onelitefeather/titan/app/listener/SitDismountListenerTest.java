@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -36,38 +36,38 @@ import java.util.UUID;
 @ExtendWith(MicrotusExtension.class)
 class SitDismountListenerTest {
 
-	@DisplayName("Test if player is removed from sitting position on dismount")
-	@Test
-	void testPlayerRemovedFromSittingPositionOnDismount(Env env) {
-		// Create a real instance and player
-		Instance flatInstance = env.createFlatInstance();
-		Player player = env.createPlayer(flatInstance);
+    @DisplayName("Test if player is removed from sitting position on dismount")
+    @Test
+    void testPlayerRemovedFromSittingPositionOnDismount(Env env) {
+        // Create a real instance and player
+        Instance flatInstance = env.createFlatInstance();
+        Player player = env.createPlayer(flatInstance);
 
-		// Create a real AppConfig
-		var appConfig = InternalAppConfig.defaultConfig();
+        // Create a real AppConfig
+        var appConfig = InternalAppConfig.defaultConfig();
 
-		// Register the listener
-		MinecraftServer.getGlobalEventHandler().addListener(EntityDismountEvent.class, new SitDismountListener());
+        // Register the listener
+        MinecraftServer.getGlobalEventHandler().addListener(EntityDismountEvent.class, new SitDismountListener());
 
-		// Make the player sit
-		Pos blockPos = new Pos(0, 0, 0);
-		SitHelper.sitPlayer(player, blockPos, appConfig);
+        // Make the player sit
+        Pos blockPos = new Pos(0, 0, 0);
+        SitHelper.sitPlayer(player, blockPos, appConfig);
 
-		// Verify that the player is sitting
-		Assertions.assertTrue(SitHelper.isSitting(player));
+        // Verify that the player is sitting
+        Assertions.assertTrue(SitHelper.isSitting(player));
 
-		// Get the arrow entity UUID from the player's tag
-		UUID arrowUuid = player.getTag(Tags.SIT_ARROW);
+        // Get the arrow entity UUID from the player's tag
+        UUID arrowUuid = player.getTag(Tags.SIT_ARROW);
 
-		// Get the arrow entity from the instance
-		Entity arrowEntity = player.getInstance().getEntityByUuid(arrowUuid);
-		Assertions.assertNotNull(arrowEntity, "Arrow entity should not be null");
+        // Get the arrow entity from the instance
+        Entity arrowEntity = player.getInstance().getEntityByUuid(arrowUuid);
+        Assertions.assertNotNull(arrowEntity, "Arrow entity should not be null");
 
-		// Trigger a dismount event
-		EntityDismountEvent dismountEvent = new EntityDismountEvent(player, arrowEntity);
-		MinecraftServer.getGlobalEventHandler().call(dismountEvent);
+        // Trigger a dismount event
+        EntityDismountEvent dismountEvent = new EntityDismountEvent(player, arrowEntity);
+        MinecraftServer.getGlobalEventHandler().call(dismountEvent);
 
-		// Verify that the player is no longer sitting
-		Assertions.assertFalse(SitHelper.isSitting(player));
-	}
+        // Verify that the player is no longer sitting
+        Assertions.assertFalse(SitHelper.isSitting(player));
+    }
 }

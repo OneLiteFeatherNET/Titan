@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -35,19 +35,17 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MicrotusExtension.class)
 class NavigationListenerTest {
 
-	@Test
-	@DisplayName("Test has the navigator is opened when the player uses the player teleporter")
-	void testNavigationListenerForClicked(Env env) {
-		NavigationHelper navigationHelper = spy(NavigationHelper.instance(DummyDeliver.instance()));
-		Instance flatInstance = env.createFlatInstance();
-		Player player = env.createPlayer(flatInstance);
-		MinecraftServer.getGlobalEventHandler().addListener(PlayerUseItemEvent.class,
-				new NavigationListener(navigationHelper));
-		PlayerUseItemEvent playerUseItemEvent = new PlayerUseItemEvent(player, PlayerHand.MAIN, Items.PLAYER_TELEPORTER,
-				1);
-		MinecraftServer.getGlobalEventHandler().call(playerUseItemEvent);
+    @Test
+    @DisplayName("Test has the navigator is opened when the player uses the player teleporter")
+    void testNavigationListenerForClicked(Env env) {
+        NavigationHelper navigationHelper = spy(NavigationHelper.instance(DummyDeliver.instance()));
+        Instance flatInstance = env.createFlatInstance();
+        Player player = env.createPlayer(flatInstance);
+        MinecraftServer.getGlobalEventHandler().addListener(PlayerUseItemEvent.class, new NavigationListener(navigationHelper));
+        PlayerUseItemEvent playerUseItemEvent = new PlayerUseItemEvent(player, PlayerHand.MAIN, Items.PLAYER_TELEPORTER, 1);
+        MinecraftServer.getGlobalEventHandler().call(playerUseItemEvent);
 
-		verify(navigationHelper).openNavigator(player);
-	}
+        verify(navigationHelper).openNavigator(player);
+    }
 
 }

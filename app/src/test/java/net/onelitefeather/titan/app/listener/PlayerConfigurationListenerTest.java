@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -33,22 +33,21 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MicrotusExtension.class)
 class PlayerConfigurationListenerTest {
 
-	@DisplayName("Test set spawning instance")
-	@Test
-	void testSetSpawningInstance(Env env) {
-		MapProvider mapProvider = mock(MapProvider.class);
+    @DisplayName("Test set spawning instance")
+    @Test
+    void testSetSpawningInstance(Env env) {
+        MapProvider mapProvider = mock(MapProvider.class);
 
-		MinecraftServer.getGlobalEventHandler().addListener(AsyncPlayerConfigurationEvent.class,
-				new PlayerConfigurationListener(mapProvider));
-		InstanceContainer instance = (InstanceContainer) env.createFlatInstance();
+        MinecraftServer.getGlobalEventHandler().addListener(AsyncPlayerConfigurationEvent.class, new PlayerConfigurationListener(mapProvider));
+        InstanceContainer instance = (InstanceContainer) env.createFlatInstance();
 
-		when(mapProvider.getInstance()).thenReturn(instance);
-		Player player = env.createPlayer(instance);
-		AsyncPlayerConfigurationEvent event = new AsyncPlayerConfigurationEvent(player, true);
-		MinecraftServer.getGlobalEventHandler().call(event);
+        when(mapProvider.getInstance()).thenReturn(instance);
+        Player player = env.createPlayer(instance);
+        AsyncPlayerConfigurationEvent event = new AsyncPlayerConfigurationEvent(player, true);
+        MinecraftServer.getGlobalEventHandler().call(event);
 
-		Mockito.verify(mapProvider, atLeastOnce()).getInstance();
-		assertEquals(instance, event.getSpawningInstance());
-	}
+        Mockito.verify(mapProvider, atLeastOnce()).getInstance();
+        assertEquals(instance, event.getSpawningInstance());
+    }
 
 }

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -40,79 +40,75 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class MapProvider {
-	private static final Logger LOGGER = LoggerFactory.getLogger(MapProvider.class);
-	private static final String MAP_PATH = "worlds";
-	private final GsonFileHandler fileHandler;
-	private final MapPool mapPool;
-	private final Gson gson;
-	private InstanceContainer instance;
-	private LobbyMap activeLobby;
+    private static final Logger LOGGER = LoggerFactory.getLogger(MapProvider.class);
+    private static final String MAP_PATH = "worlds";
+    private final GsonFileHandler fileHandler;
+    private final MapPool mapPool;
+    private final Gson gson;
+    private InstanceContainer instance;
+    private LobbyMap activeLobby;
 
-	private MapProvider(@NotNull Path path, @NotNull InstanceContainer instance,
-			Function<Stream<Path>, List<MapEntry>> filterMaps) {
-		this.mapPool = new MapPool(path.resolve(MAP_PATH), filterMaps);
-		this.instance = instance;
-		var typeAdapter = new PositionGsonAdapter();
-		this.gson = new Gson().newBuilder().registerTypeAdapter(Pos.class, typeAdapter)
-				.registerTypeAdapter(Vec.class, typeAdapter).create();
-		this.fileHandler = new GsonFileHandler(this.gson);
-		this.loadMapData();
-	}
+    private MapProvider(@NotNull Path path, @NotNull InstanceContainer instance, Function<Stream<Path>, List<MapEntry>> filterMaps) {
+        this.mapPool = new MapPool(path.resolve(MAP_PATH), filterMaps);
+        this.instance = instance;
+        var typeAdapter = new PositionGsonAdapter();
+        this.gson = new Gson().newBuilder().registerTypeAdapter(Pos.class, typeAdapter).registerTypeAdapter(Vec.class, typeAdapter).create();
+        this.fileHandler = new GsonFileHandler(this.gson);
+        this.loadMapData();
+    }
 
-	private MapProvider(@NotNull Path path, @NotNull InstanceContainer instance) {
-		this(path, instance, MapProvider::defaultFilter);
-	}
+    private MapProvider(@NotNull Path path, @NotNull InstanceContainer instance) {
+        this(path, instance, MapProvider::defaultFilter);
+    }
 
-	private static List<MapEntry> defaultFilter(Stream<Path> pathStream) {
-		return pathStream.map(MapEntry::new).filter(MapEntry::hasMapFile).collect(Collectors.toList());
-	}
+    private static List<MapEntry> defaultFilter(Stream<Path> pathStream) {
+        return pathStream.map(MapEntry::new).filter(MapEntry::hasMapFile).collect(Collectors.toList());
+    }
 
-	public void saveMap(@NotNull BaseMap baseMap) {
-		this.fileHandler.save(this.mapPool.getMapEntry().path().resolve(AppConfig.MAP_FILE_NAME),
-				baseMap instanceof LobbyMap gameMap ? gameMap : baseMap);
-		loadMapData();
-	}
+    public void saveMap(@NotNull BaseMap baseMap) {
+        this.fileHandler.save(this.mapPool.getMapEntry().path().resolve(AppConfig.MAP_FILE_NAME), baseMap instanceof LobbyMap gameMap ? gameMap : baseMap);
+        loadMapData();
+    }
 
-	private void loadMapData() {
-		var lobbyData = this.fileHandler.load(this.mapPool.getMapEntry().path().resolve(AppConfig.MAP_FILE_NAME),
-				LobbyMap.class);
-		this.instance.setChunkLoader(new AnvilLoader(mapPool.getMapEntry().path()));
-		try {
-			this.activeLobby = lobbyData.orElse(LobbyMap.lobbyMapBuilder().build());
+    private void loadMapData() {
+        var lobbyData = this.fileHandler.load(this.mapPool.getMapEntry().path().resolve(AppConfig.MAP_FILE_NAME), LobbyMap.class);
+        this.instance.setChunkLoader(new AnvilLoader(mapPool.getMapEntry().path()));
+        try {
+            this.activeLobby = lobbyData.orElse(LobbyMap.lobbyMapBuilder().build());
 
-			if (this.activeLobby.getSpawn() != null) {
-				loadChunk(this.instance, this.activeLobby.getSpawn());
-			}
-		} catch (NoSuchElementException noSuchElementException) {
-			LOGGER.error("Failed to load the lobby data");
-		}
+            if (this.activeLobby.getSpawn() != null) {
+                loadChunk(this.instance, this.activeLobby.getSpawn());
+            }
+        } catch (NoSuchElementException noSuchElementException) {
+            LOGGER.error("Failed to load the lobby data");
+        }
 
-	}
+    }
 
-	private <T extends Point> void loadChunk(@NotNull InstanceContainer instance, @NotNull T pos) {
-		if (!ChunkUtils.isLoaded(instance, pos)) {
-			instance.loadChunk(pos);
-		}
-	}
+    private <T extends Point> void loadChunk(@NotNull InstanceContainer instance, @NotNull T pos) {
+        if (!ChunkUtils.isLoaded(instance, pos)) {
+            instance.loadChunk(pos);
+        }
+    }
 
-	public InstanceContainer getInstance() {
-		return instance;
-	}
+    public InstanceContainer getInstance() {
+        return instance;
+    }
 
-	public @NotNull LobbyMap getActiveLobby() {
-		return activeLobby;
-	}
+    public @NotNull LobbyMap getActiveLobby() {
+        return activeLobby;
+    }
 
-	public @NotNull @UnmodifiableView List<MapEntry> getAvailableMaps() {
-		return Collections.unmodifiableList(this.mapPool.getAvailableMaps());
-	}
+    public @NotNull
+    @UnmodifiableView List<MapEntry> getAvailableMaps() {
+        return Collections.unmodifiableList(this.mapPool.getAvailableMaps());
+    }
 
-	public static MapProvider create(@NotNull Path path, @NotNull InstanceContainer instance) {
-		return new MapProvider(path, instance);
-	}
+    public static MapProvider create(@NotNull Path path, @NotNull InstanceContainer instance) {
+        return new MapProvider(path, instance);
+    }
 
-	public static MapProvider create(@NotNull Path path, @NotNull InstanceContainer instance,
-			Function<Stream<Path>, List<MapEntry>> filterMaps) {
-		return new MapProvider(path, instance, filterMaps);
-	}
+    public static MapProvider create(@NotNull Path path, @NotNull InstanceContainer instance, Function<Stream<Path>, List<MapEntry>> filterMaps) {
+        return new MapProvider(path, instance, filterMaps);
+    }
 }

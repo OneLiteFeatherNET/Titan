@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,22 +26,20 @@ import java.io.File;
 
 public final class SingletonFeatureManagerProvider implements FeatureManagerProvider {
 
-	private static FeatureManager featureManager;
-	private static final File FLAGS = new File("flags.properties");
+    private static FeatureManager featureManager;
+    private static final File FLAGS = new File("flags.properties");
 
-	@Override
-	public FeatureManager getFeatureManager() {
-		if (featureManager == null) {
-			featureManager = new FeatureManagerBuilder().featureEnum(TitanFeatures.class)
-					.stateRepository(new FileBasedStateRepository(FLAGS)).userProvider(new ThreadLocalUserProvider())
-					.activationStrategyProvider(new DefaultActivationStrategyProvider()).build();
-		}
+    @Override
+    public FeatureManager getFeatureManager() {
+        if (featureManager == null) {
+            featureManager = new FeatureManagerBuilder().featureEnum(TitanFeatures.class).stateRepository(new FileBasedStateRepository(FLAGS)).userProvider(new ThreadLocalUserProvider()).activationStrategyProvider(new DefaultActivationStrategyProvider()).build();
+        }
 
-		return featureManager;
-	}
+        return featureManager;
+    }
 
-	@Override
-	public int priority() {
-		return 30;
-	}
+    @Override
+    public int priority() {
+        return 30;
+    }
 }

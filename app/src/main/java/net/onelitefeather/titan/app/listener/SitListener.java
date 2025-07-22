@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,18 +25,18 @@ import java.util.function.Consumer;
 
 public final class SitListener implements Consumer<PlayerBlockInteractEvent> {
 
-	private final AppConfig appConfig;
-	private final List<Key> allowedBlocks;
+    private final AppConfig appConfig;
+    private final List<Key> allowedBlocks;
 
-	public SitListener(AppConfig appConfig) {
-		this.appConfig = appConfig;
-		this.allowedBlocks = appConfig.allowedSitBlocks();
-	}
+    public SitListener(AppConfig appConfig) {
+        this.appConfig = appConfig;
+        this.allowedBlocks = appConfig.allowedSitBlocks();
+    }
 
-	@Override
-	public void accept(PlayerBlockInteractEvent event) {
-		if (this.allowedBlocks.stream().anyMatch(block -> event.getBlock().key().equals(block))) {
-			SitHelper.sitPlayer(event.getPlayer(), event.getBlockPosition(), this.appConfig);
-		}
-	}
+    @Override
+    public void accept(PlayerBlockInteractEvent event) {
+        if (this.allowedBlocks.stream().anyMatch(block -> event.getBlock().key().equals(block))) {
+            SitHelper.sitPlayer(event.getPlayer(), event.getBlockPosition(), this.appConfig);
+        }
+    }
 }

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,16 +24,15 @@ import java.util.function.Consumer;
 
 public final class PlayerConfigurationListener implements Consumer<AsyncPlayerConfigurationEvent> {
 
-	private final MapProvider mapProvider;
+    private final MapProvider mapProvider;
 
-	public PlayerConfigurationListener(MapProvider mapProvider) {
-		this.mapProvider = mapProvider;
-	}
+    public PlayerConfigurationListener(MapProvider mapProvider) {
+        this.mapProvider = mapProvider;
+    }
 
-	@Override
-	public void accept(AsyncPlayerConfigurationEvent event) {
-		Optional.ofNullable(this.mapProvider).map(MapProvider::getInstance).ifPresent(event::setSpawningInstance);
-		Optional.of(this.mapProvider).map(MapProvider::getActiveLobby).map(LobbyMap::getSpawn)
-				.ifPresent(event.getPlayer()::setRespawnPoint);
-	}
+    @Override
+    public void accept(AsyncPlayerConfigurationEvent event) {
+        Optional.ofNullable(this.mapProvider).map(MapProvider::getInstance).ifPresent(event::setSpawningInstance);
+        Optional.of(this.mapProvider).map(MapProvider::getActiveLobby).map(LobbyMap::getSpawn).ifPresent(event.getPlayer()::setRespawnPoint);
+    }
 }

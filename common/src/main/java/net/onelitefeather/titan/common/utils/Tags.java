@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -30,11 +30,11 @@ import java.util.UUID;
  **/
 public final class Tags {
 
-	public static final Tag<Long> TICKLE_COOLDOWN = Tag.Long("tickle_cooldown");
-	public static final Tag<UUID> SIT_ARROW = Tag.UUID("SIT_ARROW");
-	public static final Tag<Pos> SIT_PLAYER = Tag.Structure("SIT_PLAYER", Pos.class);
+    public static final Tag<Long> TICKLE_COOLDOWN = Tag.Long("tickle_cooldown");
+    public static final Tag<UUID> SIT_ARROW = Tag.UUID("SIT_ARROW");
+    public static final Tag<Pos> SIT_PLAYER = Tag.Structure("SIT_PLAYER", Pos.class);
 
-	private Tags() {
-		throw new UnsupportedOperationException("This class cannot be instantiated");
-	}
+    private Tags() {
+        throw new UnsupportedOperationException("This class cannot be instantiated");
+    }
 }

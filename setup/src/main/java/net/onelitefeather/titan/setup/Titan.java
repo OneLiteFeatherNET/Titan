@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -36,40 +36,39 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public final class Titan {
-	private final Path path;
-	private final EventNode<Event> eventNode = EventNode.all("titan");
-	private final MapProvider mapProvider;
-	private final AppConfigProvider appConfigProvider;
+    private final Path path;
+    private final EventNode<Event> eventNode = EventNode.all("titan");
+    private final MapProvider mapProvider;
+    private final AppConfigProvider appConfigProvider;
 
-	private Titan() {
-		this.path = Path.of("");
-		InstanceContainer instance = MinecraftServer.getInstanceManager().createInstanceContainer();
-		MinecraftServer.getInstanceManager().registerInstance(instance);
-		this.mapProvider = MapProvider.create(this.path, instance, Titan::defaultFilter);
-		this.appConfigProvider = AppConfigProvider.create(this.path);
-		BlockHandlerHelper.registerAll();
+    private Titan() {
+        this.path = Path.of("");
+        InstanceContainer instance = MinecraftServer.getInstanceManager().createInstanceContainer();
+        MinecraftServer.getInstanceManager().registerInstance(instance);
+        this.mapProvider = MapProvider.create(this.path, instance, Titan::defaultFilter);
+        this.appConfigProvider = AppConfigProvider.create(this.path);
+        BlockHandlerHelper.registerAll();
 
-		initCommands();
-		initListeners();
-	}
+        initCommands();
+        initListeners();
+    }
 
-	private void initListeners() {
-		eventNode.addListener(AsyncPlayerConfigurationEvent.class, new PlayerConfigurationListener(this.mapProvider));
-		eventNode.addListener(PlayerSpawnEvent.class,
-				new PlayerSpawnListener(this.appConfigProvider.getAppConfig(), this.mapProvider));
-		eventNode.addListener(InventoryPreClickEvent.class, Cancelable::cancel);
-		MinecraftServer.getGlobalEventHandler().addChild(eventNode);
-	}
+    private void initListeners() {
+        eventNode.addListener(AsyncPlayerConfigurationEvent.class, new PlayerConfigurationListener(this.mapProvider));
+        eventNode.addListener(PlayerSpawnEvent.class, new PlayerSpawnListener(this.appConfigProvider.getAppConfig(), this.mapProvider));
+        eventNode.addListener(InventoryPreClickEvent.class, Cancelable::cancel);
+        MinecraftServer.getGlobalEventHandler().addChild(eventNode);
+    }
 
-	private void initCommands() {
-		MinecraftServer.getCommandManager().register(new SetupCommand(this.appConfigProvider, this.mapProvider));
-	}
+    private void initCommands() {
+        MinecraftServer.getCommandManager().register(new SetupCommand(this.appConfigProvider, this.mapProvider));
+    }
 
-	private static List<MapEntry> defaultFilter(Stream<Path> pathStream) {
-		return pathStream.map(MapEntry::new).toList();
-	}
+    private static List<MapEntry> defaultFilter(Stream<Path> pathStream) {
+        return pathStream.map(MapEntry::new).toList();
+    }
 
-	public static Titan instance() {
-		return new Titan();
-	}
+    public static Titan instance() {
+        return new Titan();
+    }
 }

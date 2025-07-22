@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -34,20 +34,19 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MicrotusExtension.class)
 class RespawnListenerTest {
 
-	@DisplayName("test if the player gets the items after respawn")
-	@Test
-	void testRespawnListener(Env env) {
-		Instance flatInstance = env.createFlatInstance();
-		TestConnection connection = env.createConnection();
-		Player player = connection.connect(flatInstance);
+    @DisplayName("test if the player gets the items after respawn")
+    @Test
+    void testRespawnListener(Env env) {
+        Instance flatInstance = env.createFlatInstance();
+        TestConnection connection = env.createConnection();
+        Player player = connection.connect(flatInstance);
 
-		NavigationHelper navigationHelper = mock(NavigationHelper.class);
+        NavigationHelper navigationHelper = mock(NavigationHelper.class);
 
-		MinecraftServer.getGlobalEventHandler().addListener(PlayerRespawnEvent.class,
-				new RespawnListener(navigationHelper));
-		MinecraftServer.getGlobalEventHandler().call(new PlayerRespawnEvent(player));
+        MinecraftServer.getGlobalEventHandler().addListener(PlayerRespawnEvent.class, new RespawnListener(navigationHelper));
+        MinecraftServer.getGlobalEventHandler().call(new PlayerRespawnEvent(player));
 
-		verify(navigationHelper).setItems(eq(player));
-	}
+        verify(navigationHelper).setItems(eq(player));
+    }
 
 }
