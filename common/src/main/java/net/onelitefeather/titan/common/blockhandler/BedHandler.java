@@ -25,16 +25,17 @@ import java.util.List;
 
 public final class BedHandler implements BlockHandler {
 
-    private static final @NotNull Key NAMESPACE_ID = Key.key("minecraft:bed");
-    private static final List<Tag<?>> TAG_LIST = List.of(Tag.Boolean("IsPlaying"), Tag.String("RecordItem"), Tag.Integer("RecordStartTick"), Tag.Integer("TickCount"));
+	private static final @NotNull Key NAMESPACE_ID = Key.key("minecraft:bed");
+	private static final List<Tag<?>> TAG_LIST = List.of(Tag.Boolean("IsPlaying"), Tag.String("RecordItem"),
+			Tag.Integer("RecordStartTick"), Tag.Integer("TickCount"));
 
-    @Override
-    public @NotNull Key getKey() {
-        return NAMESPACE_ID;
-    }
+	@Override
+	public @NotNull Key getKey() {
+		return NAMESPACE_ID;
+	}
 
-    @Override
-    public @NotNull Collection<Tag<?>> getBlockEntityTags() {
-        return TAG_LIST;
-    }
+	@Override
+	public @NotNull Collection<Tag<?>> getBlockEntityTags() {
+		return TAG_LIST;
+	}
 }

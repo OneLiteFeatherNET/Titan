@@ -16,7 +16,6 @@
 package net.onelitefeather.titan.app.listener;
 
 import net.minestom.server.MinecraftServer;
-import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.player.PlayerRespawnEvent;
 import net.minestom.server.instance.Instance;
@@ -35,19 +34,20 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MicrotusExtension.class)
 class RespawnListenerTest {
 
-    @DisplayName("test if the player gets the items after respawn")
-    @Test
-    void testRespawnListener(Env env) {
-        Instance flatInstance = env.createFlatInstance();
-        TestConnection connection = env.createConnection();
-        Player player = connection.connect(flatInstance);
+	@DisplayName("test if the player gets the items after respawn")
+	@Test
+	void testRespawnListener(Env env) {
+		Instance flatInstance = env.createFlatInstance();
+		TestConnection connection = env.createConnection();
+		Player player = connection.connect(flatInstance);
 
-        NavigationHelper navigationHelper = mock(NavigationHelper.class);
+		NavigationHelper navigationHelper = mock(NavigationHelper.class);
 
-        MinecraftServer.getGlobalEventHandler().addListener(PlayerRespawnEvent.class, new RespawnListener(navigationHelper));
-        MinecraftServer.getGlobalEventHandler().call(new PlayerRespawnEvent(player));
+		MinecraftServer.getGlobalEventHandler().addListener(PlayerRespawnEvent.class,
+				new RespawnListener(navigationHelper));
+		MinecraftServer.getGlobalEventHandler().call(new PlayerRespawnEvent(player));
 
-        verify(navigationHelper).setItems(eq(player));
-    }
+		verify(navigationHelper).setItems(eq(player));
+	}
 
 }

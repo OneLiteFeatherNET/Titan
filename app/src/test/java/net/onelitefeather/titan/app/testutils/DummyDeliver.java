@@ -20,12 +20,12 @@ import net.onelitefeather.deliver.DeliverComponent;
 import net.onelitefeather.titan.api.deliver.Deliver;
 
 public final class DummyDeliver implements Deliver {
-    @Override
-    public void sendPlayer(Player player, DeliverComponent component) {
+	@Override
+	public void sendPlayer(Player player, DeliverComponent component) {
 
-    }
+	}
 
-    public static Deliver instance() {
-        return new DummyDeliver();
-    }
+	public static Deliver instance() {
+		return new DummyDeliver();
+	}
 }

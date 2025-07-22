@@ -25,18 +25,18 @@ import java.util.function.Consumer;
 
 public final class SitListener implements Consumer<PlayerBlockInteractEvent> {
 
-    private final AppConfig appConfig;
-    private final List<Key> allowedBlocks;
+	private final AppConfig appConfig;
+	private final List<Key> allowedBlocks;
 
-    public SitListener(AppConfig appConfig) {
-        this.appConfig = appConfig;
-        this.allowedBlocks = appConfig.allowedSitBlocks();
-    }
+	public SitListener(AppConfig appConfig) {
+		this.appConfig = appConfig;
+		this.allowedBlocks = appConfig.allowedSitBlocks();
+	}
 
-    @Override
-    public void accept(PlayerBlockInteractEvent event) {
-        if (this.allowedBlocks.stream().anyMatch(block -> event.getBlock().key().equals(block))) {
-            SitHelper.sitPlayer(event.getPlayer(), event.getBlockPosition(), this.appConfig);
-        }
-    }
+	@Override
+	public void accept(PlayerBlockInteractEvent event) {
+		if (this.allowedBlocks.stream().anyMatch(block -> event.getBlock().key().equals(block))) {
+			SitHelper.sitPlayer(event.getPlayer(), event.getBlockPosition(), this.appConfig);
+		}
+	}
 }

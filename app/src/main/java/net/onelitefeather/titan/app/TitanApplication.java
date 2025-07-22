@@ -21,13 +21,13 @@ import net.minestom.server.MinecraftServer;
 
 public class TitanApplication {
 
-    public static void main(String[] args) {
-        MinecraftServer minecraftServer = MinecraftServer.init();
+	public static void main(String[] args) {
+		MinecraftServer minecraftServer = MinecraftServer.init();
 
-        Titan titan = new Titan();
-        titan.initialize();
-        InjectionLayer.ext().instance(MinestomBridgeExtension.class).onLoad();
+		Titan titan = new Titan();
+		titan.initialize();
+		InjectionLayer.ext().instance(MinestomBridgeExtension.class).onLoad();
 
-        minecraftServer.start("localhost", 25565);
-    }
+		minecraftServer.start("localhost", 25565);
+	}
 }

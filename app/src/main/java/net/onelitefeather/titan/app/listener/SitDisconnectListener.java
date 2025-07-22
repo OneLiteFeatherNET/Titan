@@ -21,8 +21,8 @@ import net.onelitefeather.titan.common.helper.SitHelper;
 import java.util.function.Consumer;
 
 public final class SitDisconnectListener implements Consumer<PlayerDisconnectEvent> {
-    @Override
-    public void accept(PlayerDisconnectEvent event) {
-        SitHelper.removePlayer(event.getPlayer());
-    }
+	@Override
+	public void accept(PlayerDisconnectEvent event) {
+		SitHelper.removePlayer(event.getPlayer());
+	}
 }

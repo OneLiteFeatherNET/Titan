@@ -29,28 +29,23 @@ import java.util.Arrays;
 import java.util.function.Supplier;
 
 public enum BlockHandlerHelper {
-    BED_HANDLER(BedHandler::new),
-    JUKEBOX_HANDLER(JukeboxHandler::new),
-    BEACON_HANDLER(BeaconHandler::new),
-    SIGN_HANDLER(SignHandler::new),
-    BANNER_HANDLER(BannerHandler::new),
-    SKULL_HANDLER(SkullHandler::new),
-    CANDLE_HANDLER(CandleHandler::new)
-    ;
+	BED_HANDLER(BedHandler::new), JUKEBOX_HANDLER(JukeboxHandler::new), BEACON_HANDLER(
+			BeaconHandler::new), SIGN_HANDLER(SignHandler::new), BANNER_HANDLER(
+					BannerHandler::new), SKULL_HANDLER(SkullHandler::new), CANDLE_HANDLER(CandleHandler::new);
 
-    private final Supplier<BlockHandler> blockHandler;
-    private static final BlockHandlerHelper[] VALUES = values();
+	private final Supplier<BlockHandler> blockHandler;
+	private static final BlockHandlerHelper[] VALUES = values();
 
-    BlockHandlerHelper(final Supplier<BlockHandler> blockHandler) {
-        this.blockHandler = blockHandler;
-    }
+	BlockHandlerHelper(final Supplier<BlockHandler> blockHandler) {
+		this.blockHandler = blockHandler;
+	}
 
-    private void register() {
-        final var handler = this.blockHandler.get();
-        MinecraftServer.getBlockManager().registerHandler(handler.getKey(), this.blockHandler);
-    }
+	private void register() {
+		final var handler = this.blockHandler.get();
+		MinecraftServer.getBlockManager().registerHandler(handler.getKey(), this.blockHandler);
+	}
 
-    public static void registerAll() {
-        Arrays.stream(VALUES).forEach(BlockHandlerHelper::register);
-    }
+	public static void registerAll() {
+		Arrays.stream(VALUES).forEach(BlockHandlerHelper::register);
+	}
 }

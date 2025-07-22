@@ -25,49 +25,50 @@ import java.util.function.Consumer;
 
 public final class ElytraBoostListener implements Consumer<PlayerUseItemEvent> {
 
-    private final AppConfig appConfig;
-    private final Random random = new Random();
+	private final AppConfig appConfig;
+	private final Random random = new Random();
 
-    public ElytraBoostListener(AppConfig appConfig) {
-        this.appConfig = appConfig;
-    }
+	public ElytraBoostListener(AppConfig appConfig) {
+		this.appConfig = appConfig;
+	}
 
-    @Override
-    public void accept(PlayerUseItemEvent event) {
-        var itemStack = event.getItemStack();
-        if (itemStack.isSimilar(Items.PLAYER_FIREWORK) && event.getPlayer().isFlyingWithElytra()) {
-            // In vanilla Minecraft, firework power affects boost strength
-            // Since we don't have power levels in our firework, we'll use the config multiplier
-            // as a base and implement the vanilla-like boost logic
+	@Override
+	public void accept(PlayerUseItemEvent event) {
+		var itemStack = event.getItemStack();
+		if (itemStack.isSimilar(Items.PLAYER_FIREWORK) && event.getPlayer().isFlyingWithElytra()) {
+			// In vanilla Minecraft, firework power affects boost strength
+			// Since we don't have power levels in our firework, we'll use the config
+			// multiplier
+			// as a base and implement the vanilla-like boost logic
 
-            // Get player's current direction and velocity
-            Vec playerDirection = event.getPlayer().getPosition().direction();
-            Vec playerVelocity = event.getPlayer().getVelocity();
+			// Get player's current direction and velocity
+			Vec playerDirection = event.getPlayer().getPosition().direction();
+			Vec playerVelocity = event.getPlayer().getVelocity();
 
-            // Calculate the boost vector based on vanilla Minecraft mechanics
-            // 1. Add a boost in the player's looking direction
-            double baseBoost = this.appConfig.elytraBoostMultiplier();
-            Vec boostVector = playerDirection.mul(baseBoost);
+			// Calculate the boost vector based on vanilla Minecraft mechanics
+			// 1. Add a boost in the player's looking direction
+			double baseBoost = this.appConfig.elytraBoostMultiplier();
+			Vec boostVector = playerDirection.mul(baseBoost);
 
-            // 2. Add a small random component for natural movement (vanilla-like)
-            double randomX = (random.nextDouble() - 0.5) * 0.05;
-            double randomY = (random.nextDouble() - 0.5) * 0.05;
-            double randomZ = (random.nextDouble() - 0.5) * 0.05;
-            Vec randomComponent = new Vec(randomX, randomY, randomZ);
+			// 2. Add a small random component for natural movement (vanilla-like)
+			double randomX = (random.nextDouble() - 0.5) * 0.05;
+			double randomY = (random.nextDouble() - 0.5) * 0.05;
+			double randomZ = (random.nextDouble() - 0.5) * 0.05;
+			Vec randomComponent = new Vec(randomX, randomY, randomZ);
 
-            // 3. Apply the boost
-            // In vanilla, if player is looking down, boost has more upward component
-            if (playerDirection.y() < 0) {
-                // Add a slight upward boost when looking down to prevent crashing
-                double upwardCorrection = -playerDirection.y() * 0.3;
-                boostVector = boostVector.add(0, upwardCorrection, 0);
-            }
+			// 3. Apply the boost
+			// In vanilla, if player is looking down, boost has more upward component
+			if (playerDirection.y() < 0) {
+				// Add a slight upward boost when looking down to prevent crashing
+				double upwardCorrection = -playerDirection.y() * 0.3;
+				boostVector = boostVector.add(0, upwardCorrection, 0);
+			}
 
-            // Combine all components and apply to player
-            Vec finalVelocity = playerVelocity.add(boostVector).add(randomComponent);
+			// Combine all components and apply to player
+			Vec finalVelocity = playerVelocity.add(boostVector).add(randomComponent);
 
-            // Apply the velocity
-            event.getPlayer().setVelocity(finalVelocity);
-        }
-    }
+			// Apply the velocity
+			event.getPlayer().setVelocity(finalVelocity);
+		}
+	}
 }

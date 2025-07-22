@@ -35,17 +35,19 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MicrotusExtension.class)
 class NavigationListenerTest {
 
-    @Test
-    @DisplayName("Test has the navigator is opened when the player uses the player teleporter")
-    void testNavigationListenerForClicked(Env env) {
-        NavigationHelper navigationHelper = spy(NavigationHelper.instance(DummyDeliver.instance()));
-        Instance flatInstance = env.createFlatInstance();
-        Player player = env.createPlayer(flatInstance);
-        MinecraftServer.getGlobalEventHandler().addListener(PlayerUseItemEvent.class, new NavigationListener(navigationHelper));
-        PlayerUseItemEvent playerUseItemEvent = new PlayerUseItemEvent(player, PlayerHand.MAIN, Items.PLAYER_TELEPORTER, 1);
-        MinecraftServer.getGlobalEventHandler().call(playerUseItemEvent);
+	@Test
+	@DisplayName("Test has the navigator is opened when the player uses the player teleporter")
+	void testNavigationListenerForClicked(Env env) {
+		NavigationHelper navigationHelper = spy(NavigationHelper.instance(DummyDeliver.instance()));
+		Instance flatInstance = env.createFlatInstance();
+		Player player = env.createPlayer(flatInstance);
+		MinecraftServer.getGlobalEventHandler().addListener(PlayerUseItemEvent.class,
+				new NavigationListener(navigationHelper));
+		PlayerUseItemEvent playerUseItemEvent = new PlayerUseItemEvent(player, PlayerHand.MAIN, Items.PLAYER_TELEPORTER,
+				1);
+		MinecraftServer.getGlobalEventHandler().call(playerUseItemEvent);
 
-        verify(navigationHelper).openNavigator(player);
-    }
+		verify(navigationHelper).openNavigator(player);
+	}
 
 }

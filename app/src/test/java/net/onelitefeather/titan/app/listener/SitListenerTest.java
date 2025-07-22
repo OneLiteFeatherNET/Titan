@@ -15,14 +15,9 @@
  */
 package net.onelitefeather.titan.app.listener;
 
-import net.kyori.adventure.key.Key;
-import net.minestom.server.MinecraftServer;
-import net.minestom.server.coordinate.Point;
 import net.minestom.server.coordinate.Pos;
-import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
-import net.minestom.server.instance.block.Block;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.common.config.AppConfig;
@@ -33,60 +28,62 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.util.List;
-
 /**
  * Test for SitListener functionality.
  * 
- * Note: Direct testing with PlayerBlockInteractEvent is challenging due to constructor compatibility issues.
- * Instead, we test the core functionality by directly calling SitHelper.sitPlayer().
+ * Note: Direct testing with PlayerBlockInteractEvent is challenging due to
+ * constructor compatibility issues. Instead, we test the core functionality by
+ * directly calling SitHelper.sitPlayer().
  */
 @ExtendWith(MicrotusExtension.class)
 class SitListenerTest {
 
-    @DisplayName("Test if player sits when using SitHelper directly")
-    @Test
-    void testPlayerSitsWithSitHelper(Env env) {
-        // Create a real instance and player
-        Instance flatInstance = env.createFlatInstance();
-        Player player = env.createPlayer(flatInstance);
+	@DisplayName("Test if player sits when using SitHelper directly")
+	@Test
+	void testPlayerSitsWithSitHelper(Env env) {
+		// Create a real instance and player
+		Instance flatInstance = env.createFlatInstance();
+		Player player = env.createPlayer(flatInstance);
 
-        // Use the default AppConfig which has all required values set
-        AppConfig appConfig = InternalAppConfig.defaultConfig();
+		// Use the default AppConfig which has all required values set
+		AppConfig appConfig = InternalAppConfig.defaultConfig();
 
-        // Create block position
-        Pos blockPos = new Pos(0, 0, 0);
+		// Create block position
+		Pos blockPos = new Pos(0, 0, 0);
 
-        // Call SitHelper directly
-        SitHelper.sitPlayer(player, blockPos, appConfig);
+		// Call SitHelper directly
+		SitHelper.sitPlayer(player, blockPos, appConfig);
 
-        // Verify that the player is now sitting
-        Assertions.assertTrue(SitHelper.isSitting(player), "Player should be sitting after calling SitHelper.sitPlayer()");
-    }
+		// Verify that the player is now sitting
+		Assertions.assertTrue(SitHelper.isSitting(player),
+				"Player should be sitting after calling SitHelper.sitPlayer()");
+	}
 
-    @DisplayName("Test if player can be removed from sitting position")
-    @Test
-    void testPlayerRemovedFromSittingPosition(Env env) {
-        // Create a real instance and player
-        Instance flatInstance = env.createFlatInstance();
-        Player player = env.createPlayer(flatInstance);
+	@DisplayName("Test if player can be removed from sitting position")
+	@Test
+	void testPlayerRemovedFromSittingPosition(Env env) {
+		// Create a real instance and player
+		Instance flatInstance = env.createFlatInstance();
+		Player player = env.createPlayer(flatInstance);
 
-        // Use the default AppConfig which has all required values set
-        AppConfig appConfig = InternalAppConfig.defaultConfig();
+		// Use the default AppConfig which has all required values set
+		AppConfig appConfig = InternalAppConfig.defaultConfig();
 
-        // Create block position
-        Pos blockPos = new Pos(0, 0, 0);
+		// Create block position
+		Pos blockPos = new Pos(0, 0, 0);
 
-        // Make the player sit
-        SitHelper.sitPlayer(player, blockPos, appConfig);
+		// Make the player sit
+		SitHelper.sitPlayer(player, blockPos, appConfig);
 
-        // Verify that the player is sitting
-        Assertions.assertTrue(SitHelper.isSitting(player), "Player should be sitting after calling SitHelper.sitPlayer()");
+		// Verify that the player is sitting
+		Assertions.assertTrue(SitHelper.isSitting(player),
+				"Player should be sitting after calling SitHelper.sitPlayer()");
 
-        // Remove the player from sitting position
-        SitHelper.removePlayer(player);
+		// Remove the player from sitting position
+		SitHelper.removePlayer(player);
 
-        // Verify that the player is no longer sitting
-        Assertions.assertFalse(SitHelper.isSitting(player), "Player should not be sitting after calling SitHelper.removePlayer()");
-    }
+		// Verify that the player is no longer sitting
+		Assertions.assertFalse(SitHelper.isSitting(player),
+				"Player should not be sitting after calling SitHelper.removePlayer()");
+	}
 }

@@ -32,31 +32,31 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(MicrotusExtension.class)
 class SitDisconnectListenerTest {
 
-    @DisplayName("Test if player is removed from sitting position on disconnect")
-    @Test
-    void testPlayerRemovedFromSittingPositionOnDisconnect(Env env) {
-        // Create a real instance and player
-        Instance flatInstance = env.createFlatInstance();
-        Player player = env.createPlayer(flatInstance);
-        
-        // Create a real AppConfig
-        var appConfig = InternalAppConfig.defaultConfig();
-        
-        // Register the listener
-        MinecraftServer.getGlobalEventHandler().addListener(PlayerDisconnectEvent.class, new SitDisconnectListener());
-        
-        // Make the player sit
-        Pos blockPos = new Pos(0, 0, 0);
-        SitHelper.sitPlayer(player, blockPos, appConfig);
-        
-        // Verify that the player is sitting
-        Assertions.assertTrue(SitHelper.isSitting(player));
-        
-        // Trigger a disconnect event
-        PlayerDisconnectEvent disconnectEvent = new PlayerDisconnectEvent(player);
-        MinecraftServer.getGlobalEventHandler().call(disconnectEvent);
-        
-        // Verify that the player is no longer sitting
-        Assertions.assertFalse(SitHelper.isSitting(player));
-    }
+	@DisplayName("Test if player is removed from sitting position on disconnect")
+	@Test
+	void testPlayerRemovedFromSittingPositionOnDisconnect(Env env) {
+		// Create a real instance and player
+		Instance flatInstance = env.createFlatInstance();
+		Player player = env.createPlayer(flatInstance);
+
+		// Create a real AppConfig
+		var appConfig = InternalAppConfig.defaultConfig();
+
+		// Register the listener
+		MinecraftServer.getGlobalEventHandler().addListener(PlayerDisconnectEvent.class, new SitDisconnectListener());
+
+		// Make the player sit
+		Pos blockPos = new Pos(0, 0, 0);
+		SitHelper.sitPlayer(player, blockPos, appConfig);
+
+		// Verify that the player is sitting
+		Assertions.assertTrue(SitHelper.isSitting(player));
+
+		// Trigger a disconnect event
+		PlayerDisconnectEvent disconnectEvent = new PlayerDisconnectEvent(player);
+		MinecraftServer.getGlobalEventHandler().call(disconnectEvent);
+
+		// Verify that the player is no longer sitting
+		Assertions.assertFalse(SitHelper.isSitting(player));
+	}
 }

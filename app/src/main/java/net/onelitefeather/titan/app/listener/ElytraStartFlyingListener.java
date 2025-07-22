@@ -24,9 +24,9 @@ import java.util.function.Consumer;
 
 public final class ElytraStartFlyingListener implements Consumer<PlayerStartFlyingWithElytraEvent> {
 
-    @Override
-    public void accept(@NotNull PlayerStartFlyingWithElytraEvent event) {
-        Player player = event.getPlayer();
-        player.setItemInOffHand(Items.PLAYER_FIREWORK);
-    }
+	@Override
+	public void accept(@NotNull PlayerStartFlyingWithElytraEvent event) {
+		Player player = event.getPlayer();
+		player.setItemInOffHand(Items.PLAYER_FIREWORK);
+	}
 }
