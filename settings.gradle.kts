@@ -28,7 +28,7 @@ dependencyResolutionManagement {
             version("aonyx-bom", "0.5.0")
             version("mycelium-bom", "1.4.2")
             version("cloudnet", "4.0.0-RC14-SNAPSHOT")
-            version("butterfly", "1.0.0")
+            version("butterfly", "1.0.2")
 
             version("togglz", "4.4.0")
             version("caffeine", "3.2.2")
