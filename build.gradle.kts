@@ -3,7 +3,7 @@ import info.solidsoft.gradle.pitest.PitestPluginExtension
 
 plugins {
     id("info.solidsoft.pitest") version "1.15.0" apply false
-    id("com.diffplug.spotless") version "7.1.0" apply false
+    id("com.diffplug.spotless") version "7.2.1" apply false
     id("jacoco")
 }
 
