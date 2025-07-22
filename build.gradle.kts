@@ -11,7 +11,7 @@ subprojects {
         java {
             licenseHeaderFile("${rootDir}/header.java")
             removeUnusedImports()
-            eclipse()
+            eclipse().configFile("${rootDir}/Default.xml")
         }
     }
 }
