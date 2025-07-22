@@ -25,14 +25,14 @@ import java.util.function.Consumer;
 
 public final class SitLeavePacketListener implements Consumer<PlayerPacketEvent> {
 
-    @Override
-    public void accept(@NotNull PlayerPacketEvent event) {
-        if (event.getPacket() instanceof ClientInputPacket(byte flags)) {
-            var ridingEntity = event.getPlayer().getVehicle();
-            if (flags == 2 && ridingEntity != null) {
-                var entityDismountEvent = new EntityDismountEvent(event.getPlayer(), ridingEntity);
-                EventDispatcher.call(entityDismountEvent);
-            }
-        }
-    }
+	@Override
+	public void accept(@NotNull PlayerPacketEvent event) {
+		if (event.getPacket() instanceof ClientInputPacket(byte flags)) {
+			var ridingEntity = event.getPlayer().getVehicle();
+			if (flags == 2 && ridingEntity != null) {
+				var entityDismountEvent = new EntityDismountEvent(event.getPlayer(), ridingEntity);
+				EventDispatcher.call(entityDismountEvent);
+			}
+		}
+	}
 }

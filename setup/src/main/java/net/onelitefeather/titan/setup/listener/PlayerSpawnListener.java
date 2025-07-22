@@ -27,20 +27,19 @@ import java.util.function.Consumer;
 
 public class PlayerSpawnListener implements Consumer<PlayerSpawnEvent> {
 
-    private final CachedPacket simulatedDistancePacket;
-    private final MapProvider mapProvider;
+	private final CachedPacket simulatedDistancePacket;
+	private final MapProvider mapProvider;
 
-    public PlayerSpawnListener(AppConfig appConfig, MapProvider mapProvider) {
-        this.simulatedDistancePacket = new CachedPacket(new UpdateSimulationDistancePacket(appConfig.simulationDistance()));
-        this.mapProvider = mapProvider;
-    }
+	public PlayerSpawnListener(AppConfig appConfig, MapProvider mapProvider) {
+		this.simulatedDistancePacket = new CachedPacket(
+				new UpdateSimulationDistancePacket(appConfig.simulationDistance()));
+		this.mapProvider = mapProvider;
+	}
 
-    @Override
-    public void accept(PlayerSpawnEvent event) {
-        event.getPlayer().sendPacket(this.simulatedDistancePacket);
-        Optional.of(this.mapProvider)
-                .map(MapProvider::getActiveLobby)
-                .map(LobbyMap::getSpawn)
-                .ifPresent(event.getPlayer()::teleport);
-    }
+	@Override
+	public void accept(PlayerSpawnEvent event) {
+		event.getPlayer().sendPacket(this.simulatedDistancePacket);
+		Optional.of(this.mapProvider).map(MapProvider::getActiveLobby).map(LobbyMap::getSpawn)
+				.ifPresent(event.getPlayer()::teleport);
+	}
 }

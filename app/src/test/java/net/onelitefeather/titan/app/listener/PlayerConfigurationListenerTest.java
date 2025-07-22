@@ -33,22 +33,22 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MicrotusExtension.class)
 class PlayerConfigurationListenerTest {
 
-    @DisplayName("Test set spawning instance")
-    @Test
-    void testSetSpawningInstance(Env env) {
-        MapProvider mapProvider = mock(MapProvider.class);
+	@DisplayName("Test set spawning instance")
+	@Test
+	void testSetSpawningInstance(Env env) {
+		MapProvider mapProvider = mock(MapProvider.class);
 
+		MinecraftServer.getGlobalEventHandler().addListener(AsyncPlayerConfigurationEvent.class,
+				new PlayerConfigurationListener(mapProvider));
+		InstanceContainer instance = (InstanceContainer) env.createFlatInstance();
 
-        MinecraftServer.getGlobalEventHandler().addListener(AsyncPlayerConfigurationEvent.class, new PlayerConfigurationListener(mapProvider));
-        InstanceContainer instance = (InstanceContainer) env.createFlatInstance();
+		when(mapProvider.getInstance()).thenReturn(instance);
+		Player player = env.createPlayer(instance);
+		AsyncPlayerConfigurationEvent event = new AsyncPlayerConfigurationEvent(player, true);
+		MinecraftServer.getGlobalEventHandler().call(event);
 
-        when(mapProvider.getInstance()).thenReturn(instance);
-        Player player = env.createPlayer(instance);
-        AsyncPlayerConfigurationEvent event = new AsyncPlayerConfigurationEvent(player, true);
-        MinecraftServer.getGlobalEventHandler().call(event);
-
-        Mockito.verify(mapProvider, atLeastOnce()).getInstance();
-        assertEquals(instance, event.getSpawningInstance());
-    }
+		Mockito.verify(mapProvider, atLeastOnce()).getInstance();
+		assertEquals(instance, event.getSpawningInstance());
+	}
 
 }

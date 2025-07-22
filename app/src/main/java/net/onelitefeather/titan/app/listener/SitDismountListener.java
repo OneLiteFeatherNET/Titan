@@ -22,10 +22,10 @@ import net.onelitefeather.titan.common.helper.SitHelper;
 import java.util.function.Consumer;
 
 public final class SitDismountListener implements Consumer<EntityDismountEvent> {
-    @Override
-    public void accept(EntityDismountEvent event) {
-        if (event.rider() instanceof Player player && SitHelper.isSitting(player)) {
-            SitHelper.removePlayer(player);
-        }
-    }
+	@Override
+	public void accept(EntityDismountEvent event) {
+		if (event.rider() instanceof Player player && SitHelper.isSitting(player)) {
+			SitHelper.removePlayer(player);
+		}
+	}
 }

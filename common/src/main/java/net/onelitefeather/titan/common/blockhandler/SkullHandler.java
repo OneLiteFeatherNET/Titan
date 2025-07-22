@@ -25,19 +25,17 @@ import java.util.List;
 
 public final class SkullHandler implements BlockHandler {
 
-    private static final @NotNull Key NAMESPACE_ID = Key.key("minecraft","skull");
-    private static final List<Tag<?>> TAG_LIST = List.of(
-            Tag.String("custom_name"),
-            Tag.String("note_block_sound"),
-            Tag.NBT("profile"));
+	private static final @NotNull Key NAMESPACE_ID = Key.key("minecraft", "skull");
+	private static final List<Tag<?>> TAG_LIST = List.of(Tag.String("custom_name"), Tag.String("note_block_sound"),
+			Tag.NBT("profile"));
 
-    @Override
-    public @NotNull Key getKey() {
-        return NAMESPACE_ID;
-    }
+	@Override
+	public @NotNull Key getKey() {
+		return NAMESPACE_ID;
+	}
 
-    @Override
-    public @NotNull Collection<Tag<?>> getBlockEntityTags() {
-        return TAG_LIST;
-    }
+	@Override
+	public @NotNull Collection<Tag<?>> getBlockEntityTags() {
+		return TAG_LIST;
+	}
 }

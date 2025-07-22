@@ -26,25 +26,22 @@ import java.io.File;
 
 public final class SingletonFeatureManagerProvider implements FeatureManagerProvider {
 
-    private static FeatureManager featureManager;
-    private static final File FLAGS = new File("flags.properties");
+	private static FeatureManager featureManager;
+	private static final File FLAGS = new File("flags.properties");
 
-    @Override
-    public FeatureManager getFeatureManager() {
-        if (featureManager == null) {
-            featureManager = new FeatureManagerBuilder()
-                    .featureEnum(TitanFeatures.class)
-                    .stateRepository(new FileBasedStateRepository(FLAGS))
-                    .userProvider(new ThreadLocalUserProvider())
-                    .activationStrategyProvider(new DefaultActivationStrategyProvider())
-                    .build();
-        }
+	@Override
+	public FeatureManager getFeatureManager() {
+		if (featureManager == null) {
+			featureManager = new FeatureManagerBuilder().featureEnum(TitanFeatures.class)
+					.stateRepository(new FileBasedStateRepository(FLAGS)).userProvider(new ThreadLocalUserProvider())
+					.activationStrategyProvider(new DefaultActivationStrategyProvider()).build();
+		}
 
-        return featureManager;
-    }
+		return featureManager;
+	}
 
-    @Override
-    public int priority() {
-        return 30;
-    }
+	@Override
+	public int priority() {
+		return 30;
+	}
 }

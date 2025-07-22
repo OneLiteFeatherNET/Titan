@@ -38,56 +38,61 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MicrotusExtension.class)
 class PlayerSpawnListenerTest {
 
-    @DisplayName("Test if simulation cached packet is sent")
-    @Test
-    void testSendSimulationCachedPacket(Env env) {
-        Instance flatInstance = env.createFlatInstance();
-        TestConnection connection = env.createConnection();
-        Player player = connection.connect(flatInstance);
+	@DisplayName("Test if simulation cached packet is sent")
+	@Test
+	void testSendSimulationCachedPacket(Env env) {
+		Instance flatInstance = env.createFlatInstance();
+		TestConnection connection = env.createConnection();
+		Player player = connection.connect(flatInstance);
 
-        LobbyMap lobbyMap = mock(LobbyMap.class);
-        NavigationHelper navigationHelper = mock(NavigationHelper.class);
-        Collector<UpdateSimulationDistancePacket> updateSimulationDistancePacketCollector = connection.trackIncoming(UpdateSimulationDistancePacket.class);
+		LobbyMap lobbyMap = mock(LobbyMap.class);
+		NavigationHelper navigationHelper = mock(NavigationHelper.class);
+		Collector<UpdateSimulationDistancePacket> updateSimulationDistancePacketCollector = connection
+				.trackIncoming(UpdateSimulationDistancePacket.class);
 
-        MinecraftServer.getGlobalEventHandler().addListener(PlayerSpawnEvent.class, new PlayerSpawnListener(InternalAppConfig.defaultConfig(), lobbyMap, navigationHelper));
-        MinecraftServer.getGlobalEventHandler().call(new PlayerSpawnEvent(player, flatInstance, true));
+		MinecraftServer.getGlobalEventHandler().addListener(PlayerSpawnEvent.class,
+				new PlayerSpawnListener(InternalAppConfig.defaultConfig(), lobbyMap, navigationHelper));
+		MinecraftServer.getGlobalEventHandler().call(new PlayerSpawnEvent(player, flatInstance, true));
 
-        updateSimulationDistancePacketCollector.assertSingle();
-        Assertions.assertEquals(InternalAppConfig.defaultConfig().simulationDistance(), updateSimulationDistancePacketCollector.collect().getFirst().simulationDistance());
-    }
+		updateSimulationDistancePacketCollector.assertSingle();
+		Assertions.assertEquals(InternalAppConfig.defaultConfig().simulationDistance(),
+				updateSimulationDistancePacketCollector.collect().getFirst().simulationDistance());
+	}
 
-    @DisplayName("Test if player is teleported to lobby map spawn")
-    @Test
-    void testPlayerTeleport(Env env) {
-        Instance flatInstance = env.createFlatInstance();
-        TestConnection connection = env.createConnection();
-        Player player = spy(connection.connect(flatInstance));
+	@DisplayName("Test if player is teleported to lobby map spawn")
+	@Test
+	void testPlayerTeleport(Env env) {
+		Instance flatInstance = env.createFlatInstance();
+		TestConnection connection = env.createConnection();
+		Player player = spy(connection.connect(flatInstance));
 
-        LobbyMap lobbyMap = mock(LobbyMap.class);
-        var lobbyMapSpawn = new Pos(1, 2, 3);
-        when(lobbyMap.getSpawn()).thenReturn(lobbyMapSpawn);
-        NavigationHelper navigationHelper = mock(NavigationHelper.class);
+		LobbyMap lobbyMap = mock(LobbyMap.class);
+		var lobbyMapSpawn = new Pos(1, 2, 3);
+		when(lobbyMap.getSpawn()).thenReturn(lobbyMapSpawn);
+		NavigationHelper navigationHelper = mock(NavigationHelper.class);
 
-        MinecraftServer.getGlobalEventHandler().addListener(PlayerSpawnEvent.class, new PlayerSpawnListener(InternalAppConfig.defaultConfig(), lobbyMap, navigationHelper));
-        MinecraftServer.getGlobalEventHandler().call(new PlayerSpawnEvent(player, flatInstance, true));
+		MinecraftServer.getGlobalEventHandler().addListener(PlayerSpawnEvent.class,
+				new PlayerSpawnListener(InternalAppConfig.defaultConfig(), lobbyMap, navigationHelper));
+		MinecraftServer.getGlobalEventHandler().call(new PlayerSpawnEvent(player, flatInstance, true));
 
-        verify(player, times(1)).teleport(eq(lobbyMapSpawn));
-    }
+		verify(player, times(1)).teleport(eq(lobbyMapSpawn));
+	}
 
-    @DisplayName("Test if player items are set")
-    @Test
-    void testPlayerItemsSet(Env env) {
-        Instance flatInstance = env.createFlatInstance();
-        TestConnection connection = env.createConnection();
-        Player player = connection.connect(flatInstance);
+	@DisplayName("Test if player items are set")
+	@Test
+	void testPlayerItemsSet(Env env) {
+		Instance flatInstance = env.createFlatInstance();
+		TestConnection connection = env.createConnection();
+		Player player = connection.connect(flatInstance);
 
-        LobbyMap lobbyMap = mock(LobbyMap.class);
-        NavigationHelper navigationHelper = mock(NavigationHelper.class);
+		LobbyMap lobbyMap = mock(LobbyMap.class);
+		NavigationHelper navigationHelper = mock(NavigationHelper.class);
 
-        MinecraftServer.getGlobalEventHandler().addListener(PlayerSpawnEvent.class, new PlayerSpawnListener(InternalAppConfig.defaultConfig(), lobbyMap, navigationHelper));
-        MinecraftServer.getGlobalEventHandler().call(new PlayerSpawnEvent(player, flatInstance, true));
+		MinecraftServer.getGlobalEventHandler().addListener(PlayerSpawnEvent.class,
+				new PlayerSpawnListener(InternalAppConfig.defaultConfig(), lobbyMap, navigationHelper));
+		MinecraftServer.getGlobalEventHandler().call(new PlayerSpawnEvent(player, flatInstance, true));
 
-        verify(navigationHelper, times(1)).setItems(eq(player));
-    }
+		verify(navigationHelper, times(1)).setItems(eq(player));
+	}
 
 }

@@ -37,102 +37,96 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MicrotusExtension.class)
 class SitLeavePacketListenerTest {
 
-    @DisplayName("Test if EntityDismountEvent is dispatched when player sends dismount input packet")
-    @Test
-    void testEntityDismountEventDispatchedOnDismountInput(Env env) {
-        // Create a real instance and player
-        Instance flatInstance = env.createFlatInstance();
-        Player player = env.createPlayer(flatInstance);
+	@DisplayName("Test if EntityDismountEvent is dispatched when player sends dismount input packet")
+	@Test
+	void testEntityDismountEventDispatchedOnDismountInput(Env env) {
+		// Create a real instance and player
+		Instance flatInstance = env.createFlatInstance();
+		Player player = env.createPlayer(flatInstance);
 
-        // Make the player sit
-        Pos blockPos = new Pos(0, 0, 0);
-        SitHelper.sitPlayer(player, blockPos, InternalAppConfig.defaultConfig());
+		// Make the player sit
+		Pos blockPos = new Pos(0, 0, 0);
+		SitHelper.sitPlayer(player, blockPos, InternalAppConfig.defaultConfig());
 
-        // Verify that the player is sitting
-        Assertions.assertTrue(SitHelper.isSitting(player), "Player should be sitting before test");
+		// Verify that the player is sitting
+		Assertions.assertTrue(SitHelper.isSitting(player), "Player should be sitting before test");
 
-        // Create the listener
-        SitLeavePacketListener listener = new SitLeavePacketListener();
+		// Create the listener
+		SitLeavePacketListener listener = new SitLeavePacketListener();
 
-        // Register the listener
-        MinecraftServer.getGlobalEventHandler().addListener(PlayerPacketEvent.class, listener);
+		// Register the listener
+		MinecraftServer.getGlobalEventHandler().addListener(PlayerPacketEvent.class, listener);
 
-        // Create and call the event with a dismount input packet (flags = 2)
-        ClientInputPacket inputPacket = new ClientInputPacket((byte) 2);
-        PlayerPacketEvent packetEvent = new PlayerPacketEvent(player, inputPacket);
+		// Create and call the event with a dismount input packet (flags = 2)
+		ClientInputPacket inputPacket = new ClientInputPacket((byte) 2);
+		PlayerPacketEvent packetEvent = new PlayerPacketEvent(player, inputPacket);
 
-        // Use a spy to verify the event is dispatched
-        EventDispatcher eventDispatcherSpy = spy(EventDispatcher.class);
+		// Use a spy to verify the event is dispatched
+		EventDispatcher eventDispatcherSpy = spy(EventDispatcher.class);
 
-        // Call the listener directly to avoid mocking static methods
-        listener.accept(packetEvent);
+		// Call the listener directly to avoid mocking static methods
+		listener.accept(packetEvent);
 
-        // Verify that the player's vehicle is not null (they are riding something)
-        Assertions.assertNotNull(player.getVehicle(), "Player should be riding an entity");
-    }
+		// Verify that the player's vehicle is not null (they are riding something)
+		Assertions.assertNotNull(player.getVehicle(), "Player should be riding an entity");
+	}
 
-    @DisplayName("Test if EntityDismountEvent is not dispatched when player sends non-dismount input packet")
-    @Test
-    void testEntityDismountEventNotDispatchedOnNonDismountInput(Env env) {
-        // Create a real instance and player
-        Instance flatInstance = env.createFlatInstance();
-        Player player = env.createPlayer(flatInstance);
+	@DisplayName("Test if EntityDismountEvent is not dispatched when player sends non-dismount input packet")
+	@Test
+	void testEntityDismountEventNotDispatchedOnNonDismountInput(Env env) {
+		// Create a real instance and player
+		Instance flatInstance = env.createFlatInstance();
+		Player player = env.createPlayer(flatInstance);
 
-        // Make the player sit
-        Pos blockPos = new Pos(0, 0, 0);
-        SitHelper.sitPlayer(player, blockPos, InternalAppConfig.defaultConfig());
+		// Make the player sit
+		Pos blockPos = new Pos(0, 0, 0);
+		SitHelper.sitPlayer(player, blockPos, InternalAppConfig.defaultConfig());
 
-        // Verify that the player is sitting
-        Assertions.assertTrue(SitHelper.isSitting(player), "Player should be sitting before test");
+		// Verify that the player is sitting
+		Assertions.assertTrue(SitHelper.isSitting(player), "Player should be sitting before test");
 
-        // Create the listener
-        SitLeavePacketListener listener = new SitLeavePacketListener();
+		// Create the listener
+		SitLeavePacketListener listener = new SitLeavePacketListener();
 
-        // Register the listener
-        MinecraftServer.getGlobalEventHandler().addListener(PlayerPacketEvent.class, listener);
+		// Register the listener
+		MinecraftServer.getGlobalEventHandler().addListener(PlayerPacketEvent.class, listener);
 
-        // Create a mock EventDispatcher to verify the event is not dispatched
-        try (var mockedStatic = mockStatic(EventDispatcher.class)) {
-            // Create and call the event with a non-dismount input packet (flags = 1)
-            ClientInputPacket inputPacket = new ClientInputPacket((byte) 1);
-            PlayerPacketEvent packetEvent = new PlayerPacketEvent(player, inputPacket);
-            MinecraftServer.getGlobalEventHandler().call(packetEvent);
+		// Create a mock EventDispatcher to verify the event is not dispatched
+		try (var mockedStatic = mockStatic(EventDispatcher.class)) {
+			// Create and call the event with a non-dismount input packet (flags = 1)
+			ClientInputPacket inputPacket = new ClientInputPacket((byte) 1);
+			PlayerPacketEvent packetEvent = new PlayerPacketEvent(player, inputPacket);
+			MinecraftServer.getGlobalEventHandler().call(packetEvent);
 
-            // Verify that EventDispatcher.call was not called with an EntityDismountEvent
-            mockedStatic.verify(() -> 
-                EventDispatcher.call(argThat(event -> 
-                    event instanceof EntityDismountEvent
-                )), never()
-            );
-        }
-    }
+			// Verify that EventDispatcher.call was not called with an EntityDismountEvent
+			mockedStatic.verify(() -> EventDispatcher.call(argThat(event -> event instanceof EntityDismountEvent)),
+					never());
+		}
+	}
 
-    @DisplayName("Test if EntityDismountEvent is not dispatched when player is not riding an entity")
-    @Test
-    void testEntityDismountEventNotDispatchedWhenNotRiding(Env env) {
-        // Create a real instance and player
-        Instance flatInstance = env.createFlatInstance();
-        Player player = env.createPlayer(flatInstance);
+	@DisplayName("Test if EntityDismountEvent is not dispatched when player is not riding an entity")
+	@Test
+	void testEntityDismountEventNotDispatchedWhenNotRiding(Env env) {
+		// Create a real instance and player
+		Instance flatInstance = env.createFlatInstance();
+		Player player = env.createPlayer(flatInstance);
 
-        // Create the listener
-        SitLeavePacketListener listener = new SitLeavePacketListener();
+		// Create the listener
+		SitLeavePacketListener listener = new SitLeavePacketListener();
 
-        // Register the listener
-        MinecraftServer.getGlobalEventHandler().addListener(PlayerPacketEvent.class, listener);
+		// Register the listener
+		MinecraftServer.getGlobalEventHandler().addListener(PlayerPacketEvent.class, listener);
 
-        // Create a mock EventDispatcher to verify the event is not dispatched
-        try (var mockedStatic = mockStatic(EventDispatcher.class)) {
-            // Create and call the event with a dismount input packet (flags = 2)
-            ClientInputPacket inputPacket = new ClientInputPacket((byte) 2);
-            PlayerPacketEvent packetEvent = new PlayerPacketEvent(player, inputPacket);
-            MinecraftServer.getGlobalEventHandler().call(packetEvent);
+		// Create a mock EventDispatcher to verify the event is not dispatched
+		try (var mockedStatic = mockStatic(EventDispatcher.class)) {
+			// Create and call the event with a dismount input packet (flags = 2)
+			ClientInputPacket inputPacket = new ClientInputPacket((byte) 2);
+			PlayerPacketEvent packetEvent = new PlayerPacketEvent(player, inputPacket);
+			MinecraftServer.getGlobalEventHandler().call(packetEvent);
 
-            // Verify that EventDispatcher.call was not called with an EntityDismountEvent
-            mockedStatic.verify(() -> 
-                EventDispatcher.call(argThat(event -> 
-                    event instanceof EntityDismountEvent
-                )), never()
-            );
-        }
-    }
+			// Verify that EventDispatcher.call was not called with an EntityDismountEvent
+			mockedStatic.verify(() -> EventDispatcher.call(argThat(event -> event instanceof EntityDismountEvent)),
+					never());
+		}
+	}
 }

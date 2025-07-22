@@ -23,24 +23,25 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 public final class PlayerMoveListener implements Consumer<PlayerMoveEvent> {
-    private final AppConfig appConfig;
-    private final LobbyMap lobbyMap;
+	private final AppConfig appConfig;
+	private final LobbyMap lobbyMap;
 
-    public PlayerMoveListener(AppConfig appConfig, LobbyMap lobbyMap) {
-        this.appConfig = appConfig;
-        this.lobbyMap = lobbyMap;
-    }
+	public PlayerMoveListener(AppConfig appConfig, LobbyMap lobbyMap) {
+		this.appConfig = appConfig;
+		this.lobbyMap = lobbyMap;
+	}
 
-    @Override
-    public void accept(PlayerMoveEvent playerMoveEvent) {
-        var player = playerMoveEvent.getPlayer();
-        if (player.getInstance() == null) return;
-        if (player.getPosition().y() < appConfig.minHeightBeforeTeleport()) {
-            Optional.ofNullable(this.lobbyMap).map(LobbyMap::getSpawn).ifPresent(player::teleport);
-            return;
-        }
-        if (player.getPosition().y() > appConfig.maxHeightBeforeTeleport()) {
-            Optional.ofNullable(this.lobbyMap).map(LobbyMap::getSpawn).ifPresent(player::teleport);
-        }
-    }
+	@Override
+	public void accept(PlayerMoveEvent playerMoveEvent) {
+		var player = playerMoveEvent.getPlayer();
+		if (player.getInstance() == null)
+			return;
+		if (player.getPosition().y() < appConfig.minHeightBeforeTeleport()) {
+			Optional.ofNullable(this.lobbyMap).map(LobbyMap::getSpawn).ifPresent(player::teleport);
+			return;
+		}
+		if (player.getPosition().y() > appConfig.maxHeightBeforeTeleport()) {
+			Optional.ofNullable(this.lobbyMap).map(LobbyMap::getSpawn).ifPresent(player::teleport);
+		}
+	}
 }

@@ -35,31 +35,33 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MicrotusExtension.class)
 class DeathListenerTest {
 
-    @DisplayName("Test if the DeathListener sets the death text to empty")
-    @Test
-    void testDeathListenerForEmptyDeathText(Env env) {
-        Instance flatInstance = env.createFlatInstance();
-        Player player = env.createPlayer(flatInstance);
-        MinecraftServer.getGlobalEventHandler().addListener(PlayerDeathEvent.class, new DeathListener());
-        Collector<PlayerDeathEvent> playerDeathEventCollector = env.trackEvent(PlayerDeathEvent.class, EventFilter.PLAYER, player);
-        player.kill();
-        PlayerDeathEvent first = playerDeathEventCollector.collect().getFirst();
+	@DisplayName("Test if the DeathListener sets the death text to empty")
+	@Test
+	void testDeathListenerForEmptyDeathText(Env env) {
+		Instance flatInstance = env.createFlatInstance();
+		Player player = env.createPlayer(flatInstance);
+		MinecraftServer.getGlobalEventHandler().addListener(PlayerDeathEvent.class, new DeathListener());
+		Collector<PlayerDeathEvent> playerDeathEventCollector = env.trackEvent(PlayerDeathEvent.class,
+				EventFilter.PLAYER, player);
+		player.kill();
+		PlayerDeathEvent first = playerDeathEventCollector.collect().getFirst();
 
-        playerDeathEventCollector.assertSingle();
-        Assertions.assertEquals(Component.empty(), first.getDeathText());
-    }
+		playerDeathEventCollector.assertSingle();
+		Assertions.assertEquals(Component.empty(), first.getDeathText());
+	}
 
-    @DisplayName("Test if the DeathListener call respawn on the player")
-    @Test
-    void testDeathListenerForRespawnCall(Env env) {
-        Instance flatInstance = env.createFlatInstance();
-        Player player = spy(env.createPlayer(flatInstance));
-        MinecraftServer.getGlobalEventHandler().addListener(PlayerDeathEvent.class, new DeathListener());
-        Collector<PlayerDeathEvent> playerDeathEventCollector = env.trackEvent(PlayerDeathEvent.class, EventFilter.PLAYER, player);
-        player.kill();
+	@DisplayName("Test if the DeathListener call respawn on the player")
+	@Test
+	void testDeathListenerForRespawnCall(Env env) {
+		Instance flatInstance = env.createFlatInstance();
+		Player player = spy(env.createPlayer(flatInstance));
+		MinecraftServer.getGlobalEventHandler().addListener(PlayerDeathEvent.class, new DeathListener());
+		Collector<PlayerDeathEvent> playerDeathEventCollector = env.trackEvent(PlayerDeathEvent.class,
+				EventFilter.PLAYER, player);
+		player.kill();
 
-        playerDeathEventCollector.assertSingle();
-        verify(player).respawn();
-    }
+		playerDeathEventCollector.assertSingle();
+		verify(player).respawn();
+	}
 
 }

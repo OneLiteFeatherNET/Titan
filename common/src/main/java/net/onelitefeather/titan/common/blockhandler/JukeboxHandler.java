@@ -21,10 +21,10 @@ import org.jetbrains.annotations.NotNull;
 
 public final class JukeboxHandler implements BlockHandler {
 
-    private static final @NotNull Key NAMESPACE_ID = Key.key("minecraft:jukebox");
+	private static final @NotNull Key NAMESPACE_ID = Key.key("minecraft:jukebox");
 
-    @Override
-    public @NotNull Key getKey() {
-        return NAMESPACE_ID;
-    }
+	@Override
+	public @NotNull Key getKey() {
+		return NAMESPACE_ID;
+	}
 }

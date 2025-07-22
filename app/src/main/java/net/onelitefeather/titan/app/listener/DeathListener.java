@@ -22,9 +22,9 @@ import java.util.function.Consumer;
 
 public final class DeathListener implements Consumer<PlayerDeathEvent> {
 
-    @Override
-    public void accept(PlayerDeathEvent event) {
-        event.setDeathText(Component.empty());
-        event.getPlayer().respawn();
-    }
+	@Override
+	public void accept(PlayerDeathEvent event) {
+		event.setDeathText(Component.empty());
+		event.getPlayer().respawn();
+	}
 }
