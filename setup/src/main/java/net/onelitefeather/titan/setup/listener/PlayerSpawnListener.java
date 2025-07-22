@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,19 +27,18 @@ import java.util.function.Consumer;
 
 public class PlayerSpawnListener implements Consumer<PlayerSpawnEvent> {
 
-	private final CachedPacket simulatedDistancePacket;
-	private final MapProvider mapProvider;
+    private final CachedPacket simulatedDistancePacket;
+    private final MapProvider mapProvider;
 
-	public PlayerSpawnListener(AppConfig appConfig, MapProvider mapProvider) {
-		this.simulatedDistancePacket = new CachedPacket(
-				new UpdateSimulationDistancePacket(appConfig.simulationDistance()));
-		this.mapProvider = mapProvider;
-	}
+    public PlayerSpawnListener(AppConfig appConfig, MapProvider mapProvider) {
+        this.simulatedDistancePacket = new CachedPacket(
+                new UpdateSimulationDistancePacket(appConfig.simulationDistance()));
+        this.mapProvider = mapProvider;
+    }
 
-	@Override
-	public void accept(PlayerSpawnEvent event) {
-		event.getPlayer().sendPacket(this.simulatedDistancePacket);
-		Optional.of(this.mapProvider).map(MapProvider::getActiveLobby).map(LobbyMap::getSpawn)
-				.ifPresent(event.getPlayer()::teleport);
-	}
+    @Override
+    public void accept(PlayerSpawnEvent event) {
+        event.getPlayer().sendPacket(this.simulatedDistancePacket);
+        Optional.of(this.mapProvider).map(MapProvider::getActiveLobby).map(LobbyMap::getSpawn).ifPresent(event.getPlayer()::teleport);
+    }
 }

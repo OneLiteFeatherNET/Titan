@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -33,22 +33,21 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MicrotusExtension.class)
 class ElytraStopFlyingListenerTest {
 
-	@DisplayName("Test if the is air item is set in the offhand when the player stops flying with the elytra")
-	@Disabled
-	@Test
-	void testElytraStopFlyingListener(Env env) {
-		Instance flatInstance = env.createFlatInstance();
-		var realPlayer = env.createPlayer(flatInstance);
-		var realInventory = realPlayer.getInventory();
-		Player player = spy(realPlayer);
-		doReturn(spy(realInventory)).when(player).getInventory();
-		env.tick();
-		MinecraftServer.getGlobalEventHandler().addListener(PlayerStopFlyingWithElytraEvent.class,
-				new ElytraStopFlyingListener());
-		MinecraftServer.getGlobalEventHandler().call(new PlayerStopFlyingWithElytraEvent(player));
+    @DisplayName("Test if the is air item is set in the offhand when the player stops flying with the elytra")
+    @Disabled
+    @Test
+    void testElytraStopFlyingListener(Env env) {
+        Instance flatInstance = env.createFlatInstance();
+        var realPlayer = env.createPlayer(flatInstance);
+        var realInventory = realPlayer.getInventory();
+        Player player = spy(realPlayer);
+        doReturn(spy(realInventory)).when(player).getInventory();
+        env.tick();
+        MinecraftServer.getGlobalEventHandler().addListener(PlayerStopFlyingWithElytraEvent.class, new ElytraStopFlyingListener());
+        MinecraftServer.getGlobalEventHandler().call(new PlayerStopFlyingWithElytraEvent(player));
 
-		Assertions.assertEquals(ItemStack.AIR, player.getItemInOffHand());
-		verify(player.getInventory(), atLeastOnce()).update();
-	}
+        Assertions.assertEquals(ItemStack.AIR, player.getItemInOffHand());
+        verify(player.getInventory(), atLeastOnce()).update();
+    }
 
 }

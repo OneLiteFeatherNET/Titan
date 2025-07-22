@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,11 +19,11 @@ import net.minestom.server.event.trait.CancellableEvent;
 
 public final class Cancelable {
 
-	private Cancelable() {
-		throw new UnsupportedOperationException("This class cannot be instantiated");
-	}
+    private Cancelable() {
+        throw new UnsupportedOperationException("This class cannot be instantiated");
+    }
 
-	public static void cancel(CancellableEvent event) {
-		event.setCancelled(true);
-	}
+    public static void cancel(CancellableEvent event) {
+        event.setCancelled(true);
+    }
 }

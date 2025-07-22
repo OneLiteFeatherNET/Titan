@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -33,86 +33,85 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MicrotusExtension.class)
 class NavigationHelperTest {
 
-	@DisplayName("Test if the NavigationHelper is set with the correct items")
-	@Test
-	void testNavigationHelperIsItemsSet(Env env) {
-		NavigationHelper helper = NavigationHelper.instance(DummyDeliver.instance());
+    @DisplayName("Test if the NavigationHelper is set with the correct items")
+    @Test
+    void testNavigationHelperIsItemsSet(Env env) {
+        NavigationHelper helper = NavigationHelper.instance(DummyDeliver.instance());
 
-		Instance flatInstance = env.createFlatInstance();
-		Player realPlayer = env.createPlayer(flatInstance);
-		PlayerInventory realInventory = realPlayer.getInventory();
-		Player player = spy(realPlayer);
-		doReturn(spy(realInventory)).when(player).getInventory();
+        Instance flatInstance = env.createFlatInstance();
+        Player realPlayer = env.createPlayer(flatInstance);
+        PlayerInventory realInventory = realPlayer.getInventory();
+        Player player = spy(realPlayer);
+        doReturn(spy(realInventory)).when(player).getInventory();
 
-		helper.setItems(player);
+        helper.setItems(player);
 
-		verify(player.getInventory(), atLeastOnce()).clear();
-		verify(player.getInventory(), atLeastOnce()).setItemStack(4, Items.PLAYER_TELEPORTER);
-		verify(player.getInventory(), atLeastOnce()).setEquipment(EquipmentSlot.CHESTPLATE,
-				(byte) EquipmentSlot.CHESTPLATE.armorSlot(), Items.PLAYER_ELYTRA);
-	}
+        verify(player.getInventory(), atLeastOnce()).clear();
+        verify(player.getInventory(), atLeastOnce()).setItemStack(4, Items.PLAYER_TELEPORTER);
+        verify(player.getInventory(), atLeastOnce()).setEquipment(EquipmentSlot.CHESTPLATE, (byte) EquipmentSlot.CHESTPLATE.armorSlot(), Items.PLAYER_ELYTRA);
+    }
 
-	@DisplayName("Test if the NavigationHelper open the navigation gui")
-	@Test
-	void testNavigationHelperOpenNavigationGui(Env env) {
-		NavigationHelper helper = NavigationHelper.instance(DummyDeliver.instance());
+    @DisplayName("Test if the NavigationHelper open the navigation gui")
+    @Test
+    void testNavigationHelperOpenNavigationGui(Env env) {
+        NavigationHelper helper = NavigationHelper.instance(DummyDeliver.instance());
 
-		Instance flatInstance = env.createFlatInstance();
-		Player realPlayer = env.createPlayer(flatInstance);
+        Instance flatInstance = env.createFlatInstance();
+        Player realPlayer = env.createPlayer(flatInstance);
 
-		helper.openNavigator(realPlayer);
+        helper.openNavigator(realPlayer);
 
-		Assertions.assertNotNull(realPlayer.getOpenInventory());
-	}
+        Assertions.assertNotNull(realPlayer.getOpenInventory());
+    }
 
-	// @Disabled
-	// @DisplayName("Test if clicked on the teleporter item the navigation gui is
-	// opened")
-	// @Test
-	// void testNavigationHelperOpenNavigationGuiByClick(Env env) {
-	// Deliver deliver = spy(DummyDeliver.instance());
-	// NavigationHelper helper = NavigationHelper.instance(deliver);
-	//
-	// Instance flatInstance = env.createFlatInstance();
-	// Player realPlayer = env.createPlayer(flatInstance);
-	//
-	// helper.setItems(realPlayer);
-	// helper.openNavigator(realPlayer);
-	// System.out.println(realPlayer.getOpenInventory().getWindowId());
-	//
-	// leftClickOpenInventory(realPlayer, 0, Items.NAVIGATOR_ELYTRA_ITEM_STACK);
-	// verify(deliver, atLeastOnce()).sendPlayer(any(), any());
-	// leftClickOpenInventory(realPlayer, 3, Items.NAVIGATOR_SLENDER_ITEM_STACK);
-	// leftClickOpenInventory(realPlayer, 4, Items.NAVIGATOR_SURVIVAL_ITEM_STACK);
-	// leftClickOpenInventory(realPlayer, 5, Items.NAVIGATOR_SLENDER_ITEM_STACK);
-	// leftClickOpenInventory(realPlayer, 8, Items.NAVIGATOR_CREATIVE_ITEM_STACK);
-	// env.tick();
-	//
-	//
-	// }
-	//
-	// private void leftClickOpenInventory(Player player, int slot, ItemStack
-	// clickedItem) {
-	// _leftClick(player.getOpenInventory(), true, player, slot, clickedItem);
-	// }
-	// private void _leftClick(AbstractInventory openInventory, boolean
-	// clickOpenInventory, Player player, int slot, ItemStack clickedItem) {
-	// final byte windowId = openInventory != null ? openInventory.getWindowId() :
-	// 0;
-	// if (clickOpenInventory) {
-	// assert openInventory != null;
-	// // Do not touch slot
-	// } else {
-	// int offset = openInventory != null ? openInventory.getInnerSize() : 0;
-	// slot = PlayerInventoryUtils.convertMinestomSlotToPlayerInventorySlot(slot);
-	// if (openInventory != null) {
-	// slot = slot - 9 + offset;
-	// }
-	// }
-	// player.addPacketToQueue(new ClientClickWindowPacket(windowId, 0, (short)
-	// slot, (byte) 0,
-	// ClientClickWindowPacket.ClickType.PICKUP, Map.of(), clickedItem));
-	// player.interpretPacketQueue();
-	// }
+    // @Disabled
+    // @DisplayName("Test if clicked on the teleporter item the navigation gui is
+    // opened")
+    // @Test
+    // void testNavigationHelperOpenNavigationGuiByClick(Env env) {
+    // Deliver deliver = spy(DummyDeliver.instance());
+    // NavigationHelper helper = NavigationHelper.instance(deliver);
+    //
+    // Instance flatInstance = env.createFlatInstance();
+    // Player realPlayer = env.createPlayer(flatInstance);
+    //
+    // helper.setItems(realPlayer);
+    // helper.openNavigator(realPlayer);
+    // System.out.println(realPlayer.getOpenInventory().getWindowId());
+    //
+    // leftClickOpenInventory(realPlayer, 0, Items.NAVIGATOR_ELYTRA_ITEM_STACK);
+    // verify(deliver, atLeastOnce()).sendPlayer(any(), any());
+    // leftClickOpenInventory(realPlayer, 3, Items.NAVIGATOR_SLENDER_ITEM_STACK);
+    // leftClickOpenInventory(realPlayer, 4, Items.NAVIGATOR_SURVIVAL_ITEM_STACK);
+    // leftClickOpenInventory(realPlayer, 5, Items.NAVIGATOR_SLENDER_ITEM_STACK);
+    // leftClickOpenInventory(realPlayer, 8, Items.NAVIGATOR_CREATIVE_ITEM_STACK);
+    // env.tick();
+    //
+    //
+    // }
+    //
+    // private void leftClickOpenInventory(Player player, int slot, ItemStack
+    // clickedItem) {
+    // _leftClick(player.getOpenInventory(), true, player, slot, clickedItem);
+    // }
+    // private void _leftClick(AbstractInventory openInventory, boolean
+    // clickOpenInventory, Player player, int slot, ItemStack clickedItem) {
+    // final byte windowId = openInventory != null ? openInventory.getWindowId() :
+    // 0;
+    // if (clickOpenInventory) {
+    // assert openInventory != null;
+    // // Do not touch slot
+    // } else {
+    // int offset = openInventory != null ? openInventory.getInnerSize() : 0;
+    // slot = PlayerInventoryUtils.convertMinestomSlotToPlayerInventorySlot(slot);
+    // if (openInventory != null) {
+    // slot = slot - 9 + offset;
+    // }
+    // }
+    // player.addPacketToQueue(new ClientClickWindowPacket(windowId, 0, (short)
+    // slot, (byte) 0,
+    // ClientClickWindowPacket.ClickType.PICKUP, Map.of(), clickedItem));
+    // player.interpretPacketQueue();
+    // }
 
 }

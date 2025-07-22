@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,9 +18,9 @@ package net.onelitefeather.titan.setup;
 import net.minestom.server.MinecraftServer;
 
 public class TitanLauncher {
-	public static void main(String[] args) {
-		var minecraftServer = MinecraftServer.init();
-		Titan.instance();
-		minecraftServer.start("0.0.0.0", 25565);
-	}
+    public static void main(String[] args) {
+        var minecraftServer = MinecraftServer.init();
+        Titan.instance();
+        minecraftServer.start("0.0.0.0", 25565);
+    }
 }

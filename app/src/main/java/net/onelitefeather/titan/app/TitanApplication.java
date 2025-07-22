@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,13 +21,13 @@ import net.minestom.server.MinecraftServer;
 
 public class TitanApplication {
 
-	public static void main(String[] args) {
-		MinecraftServer minecraftServer = MinecraftServer.init();
+    public static void main(String[] args) {
+        MinecraftServer minecraftServer = MinecraftServer.init();
 
-		Titan titan = new Titan();
-		titan.initialize();
-		InjectionLayer.ext().instance(MinestomBridgeExtension.class).onLoad();
+        Titan titan = new Titan();
+        titan.initialize();
+        InjectionLayer.ext().instance(MinestomBridgeExtension.class).onLoad();
 
-		minecraftServer.start("localhost", 25565);
-	}
+        minecraftServer.start("localhost", 25565);
+    }
 }

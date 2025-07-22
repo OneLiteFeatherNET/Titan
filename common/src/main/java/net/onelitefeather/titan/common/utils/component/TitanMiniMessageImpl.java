@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,20 +24,18 @@ import org.jetbrains.annotations.NotNull;
 import java.util.function.Consumer;
 
 public class TitanMiniMessageImpl implements MiniMessage.Provider {
-	@Override
-	public @NotNull MiniMessage miniMessage() {
-		return MiniMessage.builder().tags(TagResolver.resolver(TagResolver.standard(),
-				Placeholder.component("prefix", TitanMiniMessageImpl::prefix))).build();
-	}
+    @Override
+    public @NotNull MiniMessage miniMessage() {
+        return MiniMessage.builder().tags(TagResolver.resolver(TagResolver.standard(), Placeholder.component("prefix", TitanMiniMessageImpl::prefix))).build();
+    }
 
-	private static @NotNull Component prefix() {
-		return MiniMessage.builder().tags(TagResolver.resolver(TagResolver.standard())).build()
-				.deserialize("<gradient:#00ddff:#ffffff>Titan</gradient>");
-	}
+    private static @NotNull Component prefix() {
+        return MiniMessage.builder().tags(TagResolver.resolver(TagResolver.standard())).build().deserialize("<gradient:#00ddff:#ffffff>Titan</gradient>");
+    }
 
-	@Override
-	public @NotNull Consumer<MiniMessage.Builder> builder() {
-		return builder -> {
-		};
-	}
+    @Override
+    public @NotNull Consumer<MiniMessage.Builder> builder() {
+        return builder -> {
+        };
+    }
 }

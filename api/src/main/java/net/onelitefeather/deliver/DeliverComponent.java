@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,48 +20,49 @@ import net.minestom.server.entity.Player;
 import java.util.UUID;
 
 public sealed interface DeliverComponent permits DeliverComponent.TaskComponent,
-		DeliverComponent.ServerDeliverComponent, TaskComponentImpl, ServerDeliverComponentImpl {
-	/**
-	 * The type of deliver component
-	 * 
-	 * @return the type
-	 */
-	DeliverType type();
+        DeliverComponent.ServerDeliverComponent, TaskComponentImpl, ServerDeliverComponentImpl {
+    /**
+     * The type of deliver component
+     * 
+     * @return the type
+     */
+    DeliverType type();
 
-	UUID playerId();
+    UUID playerId();
 
-	static TaskBuilder taskBuilder() {
-		return new TaskBuilderImpl();
-	}
+    static TaskBuilder taskBuilder() {
+        return new TaskBuilderImpl();
+    }
 
-	static ServerBuilder serverBuilder() {
-		return new ServerBuilderImpl();
-	}
+    static ServerBuilder serverBuilder() {
+        return new ServerBuilderImpl();
+    }
 
-	sealed interface TaskComponent extends DeliverComponent permits TaskComponentImpl {
-		String taskName();
-	}
+    sealed interface TaskComponent extends DeliverComponent permits TaskComponentImpl {
+        String taskName();
+    }
 
-	sealed interface ServerDeliverComponent extends DeliverComponent permits ServerDeliverComponentImpl {
-		String gameServer();
-	}
+    sealed interface ServerDeliverComponent extends DeliverComponent permits
+            ServerDeliverComponentImpl {
+        String gameServer();
+    }
 
-	sealed interface Builder<T extends Builder<T>> {
+    sealed interface Builder<T extends Builder<T>> {
 
-		T playerId(UUID playerId);
+        T playerId(UUID playerId);
 
-		default T player(Player player) {
-			return playerId(player.getUuid());
-		}
+        default T player(Player player) {
+            return playerId(player.getUuid());
+        }
 
-		DeliverComponent build();
-	}
+        DeliverComponent build();
+    }
 
-	sealed interface TaskBuilder extends Builder<TaskBuilder> permits TaskBuilderImpl {
-		TaskBuilder taskName(String taskName);
-	}
+    sealed interface TaskBuilder extends Builder<TaskBuilder> permits TaskBuilderImpl {
+        TaskBuilder taskName(String taskName);
+    }
 
-	sealed interface ServerBuilder extends Builder<ServerBuilder> permits ServerBuilderImpl {
-		ServerBuilder serverName(String serverName);
-	}
+    sealed interface ServerBuilder extends Builder<ServerBuilder> permits ServerBuilderImpl {
+        ServerBuilder serverName(String serverName);
+    }
 }
