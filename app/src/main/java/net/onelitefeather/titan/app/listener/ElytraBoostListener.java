@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -37,7 +37,8 @@ public final class ElytraBoostListener implements Consumer<PlayerUseItemEvent> {
         var itemStack = event.getItemStack();
         if (itemStack.isSimilar(Items.PLAYER_FIREWORK) && event.getPlayer().isFlyingWithElytra()) {
             // In vanilla Minecraft, firework power affects boost strength
-            // Since we don't have power levels in our firework, we'll use the config multiplier
+            // Since we don't have power levels in our firework, we'll use the config
+            // multiplier
             // as a base and implement the vanilla-like boost logic
 
             // Get player's current direction and velocity

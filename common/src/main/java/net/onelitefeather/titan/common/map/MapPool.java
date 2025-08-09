@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -32,9 +32,10 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
- * The map pool is responsible for managing the available maps. It will load all maps data from the given path and store them.
- * It would not load the map itself over a {@link net.minestom.server.instance.anvil.AnvilLoader} instance.
- * This behavior is handled by another class.
+ * The map pool is responsible for managing the available maps. It will load all
+ * maps data from the given path and store them. It would not load the map
+ * itself over a {@link net.minestom.server.instance.anvil.AnvilLoader}
+ * instance. This behavior is handled by another class.
  *
  * @author theEvilReaper
  * @version 1.0.0
@@ -49,11 +50,13 @@ public final class MapPool {
     private final Function<Stream<Path>, List<MapEntry>> filterMaps;
 
     /**
-     * Creates a new instance of the map pool. It will load all maps from the given path.
+     * Creates a new instance of the map pool. It will load all maps from the given
+     * path.
      *
-     * @param path the path where the maps are stored
+     * @param path
+     *             the path where the maps are stored
      */
-    public MapPool(@NotNull Path path,@NotNull Function<Stream<Path>, List<MapEntry>> filterMaps) {
+    public MapPool(@NotNull Path path, @NotNull Function<Stream<Path>, List<MapEntry>> filterMaps) {
         this.filterMaps = filterMaps;
         this.referenceList = loadMapsEntries(path);
         this.peekMap();
@@ -69,9 +72,11 @@ public final class MapPool {
     }
 
     /**
-     * Loads all maps from the given path. It will filter all directories and create a new {@link MapEntry} instance.
+     * Loads all maps from the given path. It will filter all directories and create
+     * a new {@link MapEntry} instance.
      *
-     * @param path the path where the maps are stored
+     * @param path
+     *             the path where the maps are stored
      * @return a list with all available maps
      */
     private @NotNull List<MapEntry> loadMapsEntries(@NotNull Path path) {
@@ -95,7 +100,8 @@ public final class MapPool {
     }
 
     /**
-     * Removes the selected map from the list. If the list is empty it will throw an exception.
+     * Removes the selected map from the list. If the list is empty it will throw an
+     * exception.
      */
     public void clear() {
         this.referenceList.clear();
@@ -107,7 +113,8 @@ public final class MapPool {
      *
      * @return an unmodifiable list with all available maps
      */
-    public @NotNull @UnmodifiableView List<MapEntry> getAvailableMaps() {
+    public @NotNull
+    @UnmodifiableView List<MapEntry> getAvailableMaps() {
         return Collections.unmodifiableList(this.referenceList);
     }
 }

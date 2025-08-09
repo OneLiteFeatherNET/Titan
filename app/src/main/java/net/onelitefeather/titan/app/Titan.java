@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,6 +24,7 @@ import net.minestom.server.event.item.ItemDropEvent;
 import net.minestom.server.event.item.PickupItemEvent;
 import net.minestom.server.event.player.*;
 import net.minestom.server.instance.InstanceContainer;
+import net.onelitefeather.butterfly.minestom.Butterfly;
 import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.app.commands.EndCommand;
 import net.onelitefeather.titan.app.helper.NavigationHelper;
@@ -54,15 +55,15 @@ public final class Titan {
         this.mapProvider = MapProvider.create(this.path, instance);
         this.appConfigProvider = AppConfigProvider.create(this.path);
         this.navigationHelper = NavigationHelper.instance(this.deliver);
-
-
     }
 
     public void initialize() {
         initListeners();
         initCommands();
-
+        Butterfly butterfly = Butterfly.create();
+        butterfly.load();
         MinecraftServer.getSchedulerManager().buildShutdownTask(this::terminate);
+        MinecraftServer.getSchedulerManager().buildShutdownTask(butterfly::terminate);
     }
 
     public void terminate() {
@@ -100,7 +101,8 @@ public final class Titan {
         this.eventNode.addListener(PlayerMoveEvent.class, new PlayerMoveListener(this.appConfigProvider.getAppConfig(), this.mapProvider.getActiveLobby()));
 
         this.eventNode.addListener(AsyncPlayerConfigurationEvent.class, new PlayerConfigurationListener(this.mapProvider));
-        this.eventNode.addListener(PlayerSpawnEvent.class, new PlayerSpawnListener(this.appConfigProvider.getAppConfig(), this.mapProvider.getActiveLobby(), this.navigationHelper));
+        this.eventNode.addListener(PlayerSpawnEvent.class, new PlayerSpawnListener(
+                this.appConfigProvider.getAppConfig(), this.mapProvider.getActiveLobby(), this.navigationHelper));
 
         MinecraftServer.getGlobalEventHandler().addChild(eventNode);
     }

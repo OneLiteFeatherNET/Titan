@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -52,10 +52,7 @@ public final class MapProvider {
         this.mapPool = new MapPool(path.resolve(MAP_PATH), filterMaps);
         this.instance = instance;
         var typeAdapter = new PositionGsonAdapter();
-        this.gson = new Gson().newBuilder()
-                .registerTypeAdapter(Pos.class, typeAdapter)
-                .registerTypeAdapter(Vec.class, typeAdapter)
-                .create();
+        this.gson = new Gson().newBuilder().registerTypeAdapter(Pos.class, typeAdapter).registerTypeAdapter(Vec.class, typeAdapter).create();
         this.fileHandler = new GsonFileHandler(this.gson);
         this.loadMapData();
     }
@@ -102,7 +99,8 @@ public final class MapProvider {
         return activeLobby;
     }
 
-    public @NotNull @UnmodifiableView List<MapEntry> getAvailableMaps() {
+    public @NotNull
+    @UnmodifiableView List<MapEntry> getAvailableMaps() {
         return Collections.unmodifiableList(this.mapPool.getAvailableMaps());
     }
 
