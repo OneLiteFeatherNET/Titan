@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,14 +15,9 @@
  */
 package net.onelitefeather.titan.app.listener;
 
-import net.kyori.adventure.key.Key;
-import net.minestom.server.MinecraftServer;
-import net.minestom.server.coordinate.Point;
 import net.minestom.server.coordinate.Pos;
-import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
-import net.minestom.server.instance.block.Block;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.common.config.AppConfig;
@@ -33,13 +28,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.util.List;
-
 /**
  * Test for SitListener functionality.
  * 
- * Note: Direct testing with PlayerBlockInteractEvent is challenging due to constructor compatibility issues.
- * Instead, we test the core functionality by directly calling SitHelper.sitPlayer().
+ * Note: Direct testing with PlayerBlockInteractEvent is challenging due to
+ * constructor compatibility issues. Instead, we test the core functionality by
+ * directly calling SitHelper.sitPlayer().
  */
 @ExtendWith(MicrotusExtension.class)
 class SitListenerTest {

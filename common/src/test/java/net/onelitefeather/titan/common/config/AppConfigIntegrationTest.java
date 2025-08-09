@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -33,16 +33,7 @@ class AppConfigIntegrationTest {
     @DisplayName("Test full configuration lifecycle")
     void testFullConfigurationLifecycle() {
         // Create initial configuration
-        AppConfig initialConfig = AppConfig.builder()
-                .tickleDuration(1000L)
-                .sitOffset(new Vec(0, 1.5, 0))
-                .allowedSitBlocks(new ArrayList<>())
-                .simulationDistance(10)
-                .fireworkBoostSlot(8)
-                .elytraBoostMultiplier(1.5)
-                .minHeightBeforeTeleport(-64)
-                .maxHeightBeforeTeleport(320)
-                .build();
+        AppConfig initialConfig = AppConfig.builder().tickleDuration(1000L).sitOffset(new Vec(0, 1.5, 0)).allowedSitBlocks(new ArrayList<>()).simulationDistance(10).fireworkBoostSlot(8).elytraBoostMultiplier(1.5).minHeightBeforeTeleport(-64).maxHeightBeforeTeleport(320).build();
 
         // Verify initial configuration
         assertEquals(1000L, initialConfig.tickleDuration());
@@ -55,10 +46,7 @@ class AppConfigIntegrationTest {
         assertEquals(320, initialConfig.maxHeightBeforeTeleport());
 
         // Modify configuration by adding sit blocks
-        AppConfig configWithBlocks = AppConfig.builder(initialConfig)
-                .addAllowedSitBlock(Material.OAK_STAIRS)
-                .addAllowedSitBlock(Material.STONE_STAIRS)
-                .build();
+        AppConfig configWithBlocks = AppConfig.builder(initialConfig).addAllowedSitBlock(Material.OAK_STAIRS).addAllowedSitBlock(Material.STONE_STAIRS).build();
 
         // Verify modified configuration
         assertEquals(initialConfig.tickleDuration(), configWithBlocks.tickleDuration());
@@ -68,9 +56,7 @@ class AppConfigIntegrationTest {
         assertTrue(configWithBlocks.allowedSitBlocks().contains(Key.key("minecraft:stone_stairs")));
 
         // Modify configuration by removing a sit block
-        AppConfig configWithOneBlock = AppConfig.builder(configWithBlocks)
-                .removeAllowedSitBlock(Material.STONE_STAIRS)
-                .build();
+        AppConfig configWithOneBlock = AppConfig.builder(configWithBlocks).removeAllowedSitBlock(Material.STONE_STAIRS).build();
 
         // Verify modified configuration
         assertEquals(1, configWithOneBlock.allowedSitBlocks().size());
@@ -86,27 +72,10 @@ class AppConfigIntegrationTest {
     @DisplayName("Test configuration with multiple changes")
     void testConfigurationWithMultipleChanges() {
         // Create initial configuration
-        AppConfig initialConfig = AppConfig.builder()
-                .tickleDuration(1000L)
-                .sitOffset(new Vec(0, 1.5, 0))
-                .allowedSitBlocks(List.of(Key.key("minecraft:oak_stairs")))
-                .simulationDistance(10)
-                .fireworkBoostSlot(8)
-                .elytraBoostMultiplier(1.5)
-                .minHeightBeforeTeleport(-64)
-                .maxHeightBeforeTeleport(320)
-                .build();
+        AppConfig initialConfig = AppConfig.builder().tickleDuration(1000L).sitOffset(new Vec(0, 1.5, 0)).allowedSitBlocks(List.of(Key.key("minecraft:oak_stairs"))).simulationDistance(10).fireworkBoostSlot(8).elytraBoostMultiplier(1.5).minHeightBeforeTeleport(-64).maxHeightBeforeTeleport(320).build();
 
         // Make multiple changes
-        AppConfig modifiedConfig = AppConfig.builder(initialConfig)
-                .tickleDuration(2000L)
-                .sitOffset(new Vec(0, 2.0, 0))
-                .simulationDistance(15)
-                .fireworkBoostSlot(9)
-                .elytraBoostMultiplier(2.0)
-                .minHeightBeforeTeleport(-128)
-                .maxHeightBeforeTeleport(384)
-                .build();
+        AppConfig modifiedConfig = AppConfig.builder(initialConfig).tickleDuration(2000L).sitOffset(new Vec(0, 2.0, 0)).simulationDistance(15).fireworkBoostSlot(9).elytraBoostMultiplier(2.0).minHeightBeforeTeleport(-128).maxHeightBeforeTeleport(384).build();
 
         // Verify all changes were applied
         assertEquals(2000L, modifiedConfig.tickleDuration());

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,7 +17,6 @@ package net.onelitefeather.titan.app.listener;
 
 import net.kyori.adventure.text.Component;
 import net.minestom.server.MinecraftServer;
-import net.minestom.server.entity.Entity;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.entity.EntityAttackEvent;
 import net.minestom.server.instance.Instance;
@@ -34,9 +33,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import static org.mockito.Mockito.*;
@@ -54,9 +51,7 @@ class TickleListenerTest {
 
         // Create a custom AppConfig with a specific tickle duration
         long tickleDuration = 2000L; // 2 seconds
-        AppConfig customConfig = AppConfig.builder()
-                .tickleDuration(tickleDuration)
-                .build();
+        AppConfig customConfig = AppConfig.builder().tickleDuration(tickleDuration).build();
 
         // Create the listener with our test configuration
         TickleListener listener = new TickleListener(customConfig);
@@ -103,9 +98,7 @@ class TickleListenerTest {
 
         // Create a custom AppConfig with a specific tickle duration
         long tickleDuration = 2000L; // 2 seconds
-        AppConfig customConfig = AppConfig.builder()
-                .tickleDuration(tickleDuration)
-                .build();
+        AppConfig customConfig = AppConfig.builder().tickleDuration(tickleDuration).build();
 
         // Create the listener with our test configuration
         TickleListener listener = new TickleListener(customConfig);
@@ -146,9 +139,7 @@ class TickleListenerTest {
 
         // Create a custom AppConfig with a specific tickle duration
         long tickleDuration = 2000L; // 2 seconds
-        AppConfig customConfig = AppConfig.builder()
-                .tickleDuration(tickleDuration)
-                .build();
+        AppConfig customConfig = AppConfig.builder().tickleDuration(tickleDuration).build();
 
         // Create the listener with our test configuration
         TickleListener listener = new TickleListener(customConfig);

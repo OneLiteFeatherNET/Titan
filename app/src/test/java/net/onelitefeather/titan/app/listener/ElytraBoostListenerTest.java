@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -44,7 +44,6 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MicrotusExtension.class)
 class ElytraBoostListenerTest {
 
-
     @DisplayName("Test if the ElytraBoostListener call setVelocity on the player")
     @Test
     void testIsVelocitySet(Env env) {
@@ -73,7 +72,6 @@ class ElytraBoostListenerTest {
         verify(player, times(0)).setVelocity(any());
     }
 
-
     @DisplayName("Test if the ElytraBoostListener does not call setVelocity on the player because the player use a different item")
     @Test
     void testPlayerIsNotFlyingHasFireworkInHand(Env env) {
@@ -93,9 +91,7 @@ class ElytraBoostListenerTest {
     void testBoostVectorCalculation(Env env) {
         // Create a custom AppConfig with a specific boost multiplier
         double boostMultiplier = 2.5;
-        AppConfig customConfig = AppConfig.builder()
-                .elytraBoostMultiplier(boostMultiplier)
-                .build();
+        AppConfig customConfig = AppConfig.builder().elytraBoostMultiplier(boostMultiplier).build();
 
         // Create the listener with the custom config
         ElytraBoostListener listener = new ElytraBoostListener(customConfig);
@@ -132,24 +128,24 @@ class ElytraBoostListenerTest {
 
         // Calculate the expected velocity
         // Initial velocity + (direction * boostMultiplier) + random component
-        // Since we can't predict the random component exactly, we'll check if the velocity is in the expected range
+        // Since we can't predict the random component exactly, we'll check if the
+        // velocity is in the expected range
 
-        // The direction vector when looking straight ahead (pitch=0, yaw=0) is (0, 0, 1)
+        // The direction vector when looking straight ahead (pitch=0, yaw=0) is (0, 0,
+        // 1)
         Vec expectedDirectionBoost = new Vec(0, 0, boostMultiplier);
 
         // Expected velocity without random component
         Vec expectedBaseVelocity = initialVelocity.add(expectedDirectionBoost);
 
-        // Check if the captured velocity is close to the expected velocity (allowing for the random component)
+        // Check if the captured velocity is close to the expected velocity (allowing
+        // for the random component)
         double tolerance = 0.1; // Tolerance for the random component
 
         // Check each component
-        assertTrue(Math.abs(capturedVelocity.x() - expectedBaseVelocity.x()) <= tolerance,
-                "X component of velocity should be within tolerance of expected value");
-        assertTrue(Math.abs(capturedVelocity.y() - expectedBaseVelocity.y()) <= tolerance,
-                "Y component of velocity should be within tolerance of expected value");
-        assertTrue(Math.abs(capturedVelocity.z() - expectedBaseVelocity.z()) <= tolerance,
-                "Z component of velocity should be within tolerance of expected value");
+        assertTrue(Math.abs(capturedVelocity.x() - expectedBaseVelocity.x()) <= tolerance, "X component of velocity should be within tolerance of expected value");
+        assertTrue(Math.abs(capturedVelocity.y() - expectedBaseVelocity.y()) <= tolerance, "Y component of velocity should be within tolerance of expected value");
+        assertTrue(Math.abs(capturedVelocity.z() - expectedBaseVelocity.z()) <= tolerance, "Z component of velocity should be within tolerance of expected value");
     }
 
     @DisplayName("Test the random component of the boost")
@@ -180,9 +176,7 @@ class ElytraBoostListenerTest {
     void testUpwardCorrectionWhenLookingDown(Env env) {
         // Create a custom AppConfig with a specific boost multiplier
         double boostMultiplier = 2.0;
-        AppConfig customConfig = AppConfig.builder()
-                .elytraBoostMultiplier(boostMultiplier)
-                .build();
+        AppConfig customConfig = AppConfig.builder().elytraBoostMultiplier(boostMultiplier).build();
 
         // Create the listener with the custom config
         ElytraBoostListener listener = new ElytraBoostListener(customConfig);
@@ -205,7 +199,6 @@ class ElytraBoostListenerTest {
         // Create the event
         ClientUseItemPacket packet = new ClientUseItemPacket(PlayerHand.MAIN, 42, 0f, 0f);
         UseItemListener.useItemListener(packet, player);
-
 
         playerUseItemEventCollector.assertSingle();
 

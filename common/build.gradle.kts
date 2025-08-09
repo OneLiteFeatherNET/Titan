@@ -1,6 +1,6 @@
 plugins {
    java
-    id("com.diffplug.spotless") version "7.1.0" apply true
+    jacoco
 }
 
 dependencies {

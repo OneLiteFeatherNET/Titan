@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -46,9 +46,7 @@ class SitHelperTest {
 
         // Create a custom AppConfig with a specific sit offset
         Vec sitOffset = new Vec(0, 0.3, 0);
-        AppConfig customConfig = AppConfig.builder()
-                .sitOffset(sitOffset)
-                .build();
+        AppConfig customConfig = AppConfig.builder().sitOffset(sitOffset).build();
 
         // Make the player sit
         Pos sitLocation = new Pos(0, 64, 0);
@@ -82,9 +80,7 @@ class SitHelperTest {
 
         // Create a custom AppConfig with a specific sit offset
         Vec sitOffset = new Vec(0, 0.3, 0);
-        AppConfig customConfig = AppConfig.builder()
-                .sitOffset(sitOffset)
-                .build();
+        AppConfig customConfig = AppConfig.builder().sitOffset(sitOffset).build();
 
         // Make the player sit
         Pos sitLocation = new Pos(0, 64, 0);
@@ -125,9 +121,7 @@ class SitHelperTest {
 
         // Create a custom AppConfig with a specific sit offset
         Vec sitOffset = new Vec(0, 0.3, 0);
-        AppConfig customConfig = AppConfig.builder()
-                .sitOffset(sitOffset)
-                .build();
+        AppConfig customConfig = AppConfig.builder().sitOffset(sitOffset).build();
 
         // Make the player sit
         Pos sitLocation = new Pos(0, 64, 0);
@@ -156,9 +150,7 @@ class SitHelperTest {
 
         // Create a custom AppConfig with a specific sit offset
         Vec sitOffset = new Vec(0, 0.3, 0);
-        AppConfig customConfig = AppConfig.builder()
-                .sitOffset(sitOffset)
-                .build();
+        AppConfig customConfig = AppConfig.builder().sitOffset(sitOffset).build();
 
         // Make the player sit
         Pos sitLocation = new Pos(0, 64, 0);
@@ -204,7 +196,6 @@ class SitHelperTest {
         Assertions.assertFalse(SitHelper.isSitting(player), "Player should still not be sitting");
     }
 
-
     @DisplayName("Test if the Arrow entity ticks correctly")
     @Test
     void testArrowTicking(Env env) {
@@ -218,9 +209,7 @@ class SitHelperTest {
 
         // Create a custom AppConfig with a specific sit offset
         Vec sitOffset = new Vec(0, 0.3, 0);
-        AppConfig customConfig = AppConfig.builder()
-                .sitOffset(sitOffset)
-                .build();
+        AppConfig customConfig = AppConfig.builder().sitOffset(sitOffset).build();
 
         // Make the player sit
         Pos sitLocation = new Pos(0, 64, 0);
@@ -262,9 +251,7 @@ class SitHelperTest {
 
         // Create a custom AppConfig with a specific sit offset
         Vec sitOffset = new Vec(0, 0.3, 0);
-        AppConfig customConfig = AppConfig.builder()
-                .sitOffset(sitOffset)
-                .build();
+        AppConfig customConfig = AppConfig.builder().sitOffset(sitOffset).build();
 
         // Make the player sit
         Pos sitLocation = new Pos(0, 64, 0);
@@ -297,7 +284,8 @@ class SitHelperTest {
     @DisplayName("Test edge case: trying to sit a player with a null instance")
     @Test
     void testSitPlayerNullInstance(Env env) {
-        // Since we can't easily create a Player with a null instance in the test environment,
+        // Since we can't easily create a Player with a null instance in the test
+        // environment,
         // we'll verify the behavior by checking the code in SitHelper.java
 
         // The SitHelper.sitPlayer method has this check at line 42:
@@ -316,7 +304,8 @@ class SitHelperTest {
         // Verify that the player is not sitting initially
         Assertions.assertFalse(SitHelper.isSitting(player), "Player should not be sitting initially");
 
-        // Also verify that the SitHelper.removePlayer method handles a player who is not sitting
+        // Also verify that the SitHelper.removePlayer method handles a player who is
+        // not sitting
         SitHelper.removePlayer(player);
 
         // The player should still not be sitting
@@ -336,9 +325,7 @@ class SitHelperTest {
 
         // Create a custom AppConfig with a specific sit offset
         Vec sitOffset = new Vec(0, 0.3, 0);
-        AppConfig customConfig = AppConfig.builder()
-                .sitOffset(sitOffset)
-                .build();
+        AppConfig customConfig = AppConfig.builder().sitOffset(sitOffset).build();
 
         // Initially, the player should not be sitting
         Assertions.assertFalse(SitHelper.isSitting(player), "Player should not be sitting initially");

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -55,12 +55,14 @@ public class MapCommand extends Command {
     private void setName(@NotNull CommandSender commandSender, @NotNull CommandContext commandContext) {
         var name = commandContext.get(MAP_NAME);
         this.mapProvider.saveMap(LobbyMap.lobbyMapBuilder(this.mapProvider.getActiveLobby()).name(name).build());
-        commandSender.sendMessage(MiniMessage.miniMessage().deserialize("<prefix> <green><name> set!", Placeholder.parsed("name", name)));
+        commandSender.sendMessage(
+                MiniMessage.miniMessage().deserialize("<prefix> <green><name> set!", Placeholder.parsed("name", name)));
     }
 
     private void setSpawn(@NotNull CommandSender commandSender, @NotNull CommandContext commandContext) {
         if (commandSender instanceof Player player) {
-            this.mapProvider.saveMap(LobbyMap.lobbyMapBuilder(this.mapProvider.getActiveLobby()).spawn(player.getPosition()).build());
+            this.mapProvider.saveMap(
+                    LobbyMap.lobbyMapBuilder(this.mapProvider.getActiveLobby()).spawn(player.getPosition()).build());
             commandSender.sendMessage(MiniMessage.miniMessage().deserialize("<prefix> <green>Spawn set!"));
         }
     }

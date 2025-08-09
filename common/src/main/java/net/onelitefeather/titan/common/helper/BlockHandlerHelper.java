@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -29,14 +29,9 @@ import java.util.Arrays;
 import java.util.function.Supplier;
 
 public enum BlockHandlerHelper {
-    BED_HANDLER(BedHandler::new),
-    JUKEBOX_HANDLER(JukeboxHandler::new),
-    BEACON_HANDLER(BeaconHandler::new),
-    SIGN_HANDLER(SignHandler::new),
-    BANNER_HANDLER(BannerHandler::new),
-    SKULL_HANDLER(SkullHandler::new),
-    CANDLE_HANDLER(CandleHandler::new)
-    ;
+    BED_HANDLER(BedHandler::new), JUKEBOX_HANDLER(JukeboxHandler::new), BEACON_HANDLER(
+            BeaconHandler::new), SIGN_HANDLER(SignHandler::new), BANNER_HANDLER(
+                    BannerHandler::new), SKULL_HANDLER(SkullHandler::new), CANDLE_HANDLER(CandleHandler::new);
 
     private final Supplier<BlockHandler> blockHandler;
     private static final BlockHandlerHelper[] VALUES = values();

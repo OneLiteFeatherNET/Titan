@@ -2,9 +2,7 @@ plugins {
     java
     application
     id("com.gradleup.shadow") version "8.3.8"
-    id("info.solidsoft.pitest") apply true
     `maven-publish`
-    id("com.diffplug.spotless") version "7.1.0" apply true
 }
 
 dependencies {
@@ -17,6 +15,7 @@ dependencies {
     implementation(libs.adventure.minimessage)
     implementation(libs.caffeine)
     implementation(libs.minestom)
+    implementation(libs.butterfly.minestom)
 
     implementation(platform(libs.cloudnet.bom))
     implementation(libs.cloudnet.jvm.wrapper)

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -38,24 +38,24 @@ class SitDisconnectListenerTest {
         // Create a real instance and player
         Instance flatInstance = env.createFlatInstance();
         Player player = env.createPlayer(flatInstance);
-        
+
         // Create a real AppConfig
         var appConfig = InternalAppConfig.defaultConfig();
-        
+
         // Register the listener
         MinecraftServer.getGlobalEventHandler().addListener(PlayerDisconnectEvent.class, new SitDisconnectListener());
-        
+
         // Make the player sit
         Pos blockPos = new Pos(0, 0, 0);
         SitHelper.sitPlayer(player, blockPos, appConfig);
-        
+
         // Verify that the player is sitting
         Assertions.assertTrue(SitHelper.isSitting(player));
-        
+
         // Trigger a disconnect event
         PlayerDisconnectEvent disconnectEvent = new PlayerDisconnectEvent(player);
         MinecraftServer.getGlobalEventHandler().call(disconnectEvent);
-        
+
         // Verify that the player is no longer sitting
         Assertions.assertFalse(SitHelper.isSitting(player));
     }

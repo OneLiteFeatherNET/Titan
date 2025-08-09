@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -43,16 +43,7 @@ class AppConfigImplTest {
         int maxHeightBeforeTeleport = 320;
 
         // Act
-        AppConfigImpl appConfig = new AppConfigImpl(
-                tickleDuration,
-                sitOffset,
-                allowedSitBlocks,
-                simulationDistance,
-                fireworkBoostSlot,
-                elytraBoostMultiplier,
-                minHeightBeforeTeleport,
-                maxHeightBeforeTeleport
-        );
+        AppConfigImpl appConfig = new AppConfigImpl(tickleDuration, sitOffset, allowedSitBlocks, simulationDistance, fireworkBoostSlot, elytraBoostMultiplier, minHeightBeforeTeleport, maxHeightBeforeTeleport);
 
         // Assert
         assertEquals(tickleDuration, appConfig.tickleDuration());
@@ -69,16 +60,7 @@ class AppConfigImplTest {
     @DisplayName("Test displayConfig method returns non-null Component")
     void testDisplayConfig() {
         // Arrange
-        AppConfigImpl appConfig = new AppConfigImpl(
-                1000L,
-                new Vec(0, 1.5, 0),
-                List.of(Key.key("minecraft:oak_stairs")),
-                10,
-                8,
-                1.5,
-                -64,
-                320
-        );
+        AppConfigImpl appConfig = new AppConfigImpl(1000L, new Vec(0, 1.5, 0), List.of(Key.key("minecraft:oak_stairs")), 10, 8, 1.5, -64, 320);
 
         // Act
         Component displayComponent = appConfig.displayConfig();
@@ -91,43 +73,17 @@ class AppConfigImplTest {
     @DisplayName("Test equals and hashCode methods")
     void testEqualsAndHashCode() {
         // Arrange
-        AppConfigImpl appConfig1 = new AppConfigImpl(
-                1000L,
-                new Vec(0, 1.5, 0),
-                List.of(Key.key("minecraft:oak_stairs")),
-                10,
-                8,
-                1.5,
-                -64,
-                320
-        );
+        AppConfigImpl appConfig1 = new AppConfigImpl(1000L, new Vec(0, 1.5, 0), List.of(Key.key("minecraft:oak_stairs")), 10, 8, 1.5, -64, 320);
 
-        AppConfigImpl appConfig2 = new AppConfigImpl(
-                1000L,
-                new Vec(0, 1.5, 0),
-                List.of(Key.key("minecraft:oak_stairs")),
-                10,
-                8,
-                1.5,
-                -64,
-                320
-        );
+        AppConfigImpl appConfig2 = new AppConfigImpl(1000L, new Vec(0, 1.5, 0), List.of(Key.key("minecraft:oak_stairs")), 10, 8, 1.5, -64, 320);
 
-        AppConfigImpl appConfig3 = new AppConfigImpl(
-                2000L, // Different value
-                new Vec(0, 1.5, 0),
-                List.of(Key.key("minecraft:oak_stairs")),
-                10,
-                8,
-                1.5,
-                -64,
-                320
-        );
+        AppConfigImpl appConfig3 = new AppConfigImpl(2000L, // Different value
+                new Vec(0, 1.5, 0), List.of(Key.key("minecraft:oak_stairs")), 10, 8, 1.5, -64, 320);
 
         // Assert
         assertEquals(appConfig1, appConfig2);
         assertEquals(appConfig1.hashCode(), appConfig2.hashCode());
-        
+
         assertNotEquals(appConfig1, appConfig3);
         assertNotEquals(appConfig1.hashCode(), appConfig3.hashCode());
     }

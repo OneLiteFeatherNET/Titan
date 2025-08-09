@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -33,13 +33,17 @@ public final class SitHelper {
     /**
      * Sits the player at the given location.
      *
-     * @param player the player to sit
-     * @param sitLocation the location to sit at
-     * @param config the app config
+     * @param player
+     *                    the player to sit
+     * @param sitLocation
+     *                    the location to sit at
+     * @param config
+     *                    the app config
      */
     public static void sitPlayer(Player player, Point sitLocation, AppConfig config) {
         var instance = player.getInstance();
-        if (instance == null) return;
+        if (instance == null)
+            return;
         if (player.getTag(Tags.SIT_ARROW) != null) {
             removePlayer(player);
         }
@@ -53,22 +57,22 @@ public final class SitHelper {
         arrow.addPassenger(player);
         player.setTag(Tags.SIT_ARROW, arrow.getUuid());
     }
+
     /**
      * Removes the player from the sitting position.
      *
-     * @param player the player to remove
+     * @param player
+     *               the player to remove
      */
     public static void removePlayer(Player player) {
-        Optional.ofNullable(player.getTag(Tags.SIT_ARROW))
-                .map(player.getInstance()::getEntityByUuid)
-                .ifPresent(arrow -> {
-                    player.removeTag(Tags.SIT_ARROW);
-                    Optional.ofNullable(player.getTag(Tags.SIT_PLAYER)).ifPresent(player::teleport);
-                    arrow.removePassenger(player);
-                    if (arrow.getPassengers().isEmpty()) {
-                        arrow.remove();
-                    }
-                });
+        Optional.ofNullable(player.getTag(Tags.SIT_ARROW)).map(player.getInstance()::getEntityByUuid).ifPresent(arrow -> {
+            player.removeTag(Tags.SIT_ARROW);
+            Optional.ofNullable(player.getTag(Tags.SIT_PLAYER)).ifPresent(player::teleport);
+            arrow.removePassenger(player);
+            if (arrow.getPassengers().isEmpty()) {
+                arrow.remove();
+            }
+        });
     }
 
     static class ArrowEntity extends Entity {
@@ -88,7 +92,8 @@ public final class SitHelper {
     /**
      * Checks if the player is sitting.
      *
-     * @param player the player to check
+     * @param player
+     *               the player to check
      * @return true if the player is sitting, false otherwise
      */
     public static boolean isSitting(Player player) {

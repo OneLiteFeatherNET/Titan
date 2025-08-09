@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -83,10 +83,7 @@ class ArgumentMaterialTypeIntegrationTest {
             assertEquals(materialKey, result);
 
             // We should be able to convert back to a Material
-            Material parsedMaterial = Material.values().stream()
-                    .filter(m -> m.key().asString().equals(result))
-                    .findFirst()
-                    .orElse(null);
+            Material parsedMaterial = Material.values().stream().filter(m -> m.key().asString().equals(result)).findFirst().orElse(null);
 
             assertNotNull(parsedMaterial);
             assertEquals(material, parsedMaterial);

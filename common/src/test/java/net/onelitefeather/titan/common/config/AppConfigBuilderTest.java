@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -43,16 +43,7 @@ class AppConfigBuilderTest {
         int maxHeightBeforeTeleport = 320;
 
         // Act
-        AppConfig appConfig = AppConfig.builder()
-                .tickleDuration(tickleDuration)
-                .sitOffset(sitOffset)
-                .allowedSitBlocks(allowedSitBlocks)
-                .simulationDistance(simulationDistance)
-                .fireworkBoostSlot(fireworkBoostSlot)
-                .elytraBoostMultiplier(elytraBoostMultiplier)
-                .minHeightBeforeTeleport(minHeightBeforeTeleport)
-                .maxHeightBeforeTeleport(maxHeightBeforeTeleport)
-                .build();
+        AppConfig appConfig = AppConfig.builder().tickleDuration(tickleDuration).sitOffset(sitOffset).allowedSitBlocks(allowedSitBlocks).simulationDistance(simulationDistance).fireworkBoostSlot(fireworkBoostSlot).elytraBoostMultiplier(elytraBoostMultiplier).minHeightBeforeTeleport(minHeightBeforeTeleport).maxHeightBeforeTeleport(maxHeightBeforeTeleport).build();
 
         // Assert
         assertEquals(tickleDuration, appConfig.tickleDuration());
@@ -69,20 +60,10 @@ class AppConfigBuilderTest {
     @DisplayName("Test builder with existing AppConfig")
     void testBuilderWithExistingAppConfig() {
         // Arrange
-        AppConfig originalConfig = AppConfig.builder()
-                .tickleDuration(1000L)
-                .sitOffset(new Vec(0, 1.5, 0))
-                .allowedSitBlocks(List.of(Key.key("minecraft:oak_stairs")))
-                .simulationDistance(10)
-                .fireworkBoostSlot(8)
-                .elytraBoostMultiplier(1.5)
-                .minHeightBeforeTeleport(-64)
-                .maxHeightBeforeTeleport(320)
-                .build();
+        AppConfig originalConfig = AppConfig.builder().tickleDuration(1000L).sitOffset(new Vec(0, 1.5, 0)).allowedSitBlocks(List.of(Key.key("minecraft:oak_stairs"))).simulationDistance(10).fireworkBoostSlot(8).elytraBoostMultiplier(1.5).minHeightBeforeTeleport(-64).maxHeightBeforeTeleport(320).build();
 
         // Act
-        AppConfig newConfig = AppConfig.builder(originalConfig)
-                .tickleDuration(2000L) // Change one value
+        AppConfig newConfig = AppConfig.builder(originalConfig).tickleDuration(2000L) // Change one value
                 .build();
 
         // Assert
@@ -100,15 +81,12 @@ class AppConfigBuilderTest {
         // Arrange
         List<Key> initialBlocks = new ArrayList<>();
         initialBlocks.add(Key.key("minecraft:oak_stairs"));
-        
+
         Key stoneStairsKey = Key.key("minecraft:stone_stairs");
         Key brickStairsKey = Key.key("minecraft:brick_stairs");
 
         // Act
-        AppConfig appConfig = AppConfig.builder()
-                .allowedSitBlocks(initialBlocks)
-                .addAllowedSitBlock(stoneStairsKey)
-                .addAllowedSitBlock(Material.BRICK_STAIRS) // Test the Material overload
+        AppConfig appConfig = AppConfig.builder().allowedSitBlocks(initialBlocks).addAllowedSitBlock(stoneStairsKey).addAllowedSitBlock(Material.BRICK_STAIRS) // Test the Material overload
                 .build();
 
         // Assert - Both blocks should be added
@@ -119,9 +97,7 @@ class AppConfigBuilderTest {
         assertEquals(3, allowedBlocks.size());
 
         // Act - Remove a block
-        AppConfig updatedConfig = AppConfig.builder(appConfig)
-                .removeAllowedSitBlock(stoneStairsKey)
-                .removeAllowedSitBlock(Material.BRICK_STAIRS) // Test the Material overload
+        AppConfig updatedConfig = AppConfig.builder(appConfig).removeAllowedSitBlock(stoneStairsKey).removeAllowedSitBlock(Material.BRICK_STAIRS) // Test the Material overload
                 .build();
 
         // Assert - Blocks should be removed
