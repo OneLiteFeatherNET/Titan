@@ -22,7 +22,6 @@ import net.minestom.server.instance.InstanceContainer;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.common.map.MapProvider;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,7 +34,6 @@ import static org.mockito.Mockito.*;
 class PlayerConfigurationListenerTest {
 
     @DisplayName("Test set spawning instance")
-    @Disabled("This test is broken, thanks to minestom quality")
     @Test
     void testSetSpawningInstance(Env env) {
         MapProvider mapProvider = mock(MapProvider.class);
@@ -46,7 +44,9 @@ class PlayerConfigurationListenerTest {
         when(mapProvider.getInstance()).thenReturn(instance);
         Player player = env.createPlayer(instance);
         AsyncPlayerConfigurationEvent event = new AsyncPlayerConfigurationEvent(player, true);
-        MinecraftServer.getGlobalEventHandler().call(event);
+
+        // This solution is not the best but standard Minestom moment
+        Thread.startVirtualThread(() -> MinecraftServer.getGlobalEventHandler().call(event));
 
         Mockito.verify(mapProvider, atLeastOnce()).getInstance();
         assertEquals(instance, event.getSpawningInstance());
