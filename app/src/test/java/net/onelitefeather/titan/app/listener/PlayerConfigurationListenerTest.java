@@ -46,10 +46,11 @@ class PlayerConfigurationListenerTest {
         AsyncPlayerConfigurationEvent event = new AsyncPlayerConfigurationEvent(player, true);
 
         // This solution is not the best but standard Minestom moment
-        Thread.startVirtualThread(() -> MinecraftServer.getGlobalEventHandler().call(event));
-
-        Mockito.verify(mapProvider, atLeastOnce()).getInstance();
-        assertEquals(instance, event.getSpawningInstance());
+        Thread.startVirtualThread(() -> {
+            MinecraftServer.getGlobalEventHandler().call(event);
+            Mockito.verify(mapProvider, atLeastOnce()).getInstance();
+            assertEquals(instance, event.getSpawningInstance());
+        });
     }
 
 }
