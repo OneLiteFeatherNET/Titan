@@ -15,4 +15,5 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    jvmArgs("-Dminestom.inside-test=true")
 }
