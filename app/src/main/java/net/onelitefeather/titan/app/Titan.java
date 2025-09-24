@@ -29,6 +29,7 @@ import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.app.commands.EndCommand;
 import net.onelitefeather.titan.app.helper.NavigationHelper;
 import net.onelitefeather.titan.app.listener.*;
+import net.onelitefeather.titan.app.player.TitanPlayer;
 import net.onelitefeather.titan.common.config.AppConfigProvider;
 import net.onelitefeather.titan.common.deliver.MessageChannelDeliver;
 import net.onelitefeather.titan.common.event.EntityDismountEvent;
@@ -48,6 +49,7 @@ public final class Titan {
     private final NavigationHelper navigationHelper;
 
     public Titan() {
+        MinecraftServer.getConnectionManager().setPlayerProvider(TitanPlayer::new);
         this.path = Path.of("");
         BlockHandlerHelper.registerAll();
         InstanceContainer instance = MinecraftServer.getInstanceManager().createInstanceContainer();

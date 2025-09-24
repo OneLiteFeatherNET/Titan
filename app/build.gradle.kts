@@ -6,6 +6,7 @@ plugins {
 }
 
 dependencies {
+    compileOnly(libs.luckperms.api)
     implementation(project(":api"))
     implementation(project(":common"))
     implementation(platform(libs.mycelium.bom))
