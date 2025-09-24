@@ -30,6 +30,8 @@ dependencyResolutionManagement {
             version("cloudnet", "4.0.0-RC15-SNAPSHOT")
             version("butterfly", "1.0.10")
 
+            version("luckperms.api", "5.5")
+
             version("togglz", "4.4.0")
             version("caffeine", "3.2.2")
 
@@ -61,6 +63,7 @@ dependencyResolutionManagement {
             library("junit.params", "org.junit.jupiter", "junit-jupiter-params").withoutVersion()
             library("junit.platform.launcher", "org.junit.platform", "junit-platform-launcher").withoutVersion()
 
+            library("luckperms.api", "net.luckperms", "api").versionRef("luckperms.api")
 
             library("cyano", "net.onelitefeather", "cyano").withoutVersion()
             library("mockito", "org.mockito", "mockito-core").versionRef("mockito")
