@@ -28,7 +28,7 @@ dependencyResolutionManagement {
             version("aonyx-bom", "0.6.0")
             version("mycelium-bom", "1.5.0")
             version("cloudnet", "4.0.0-RC15-SNAPSHOT")
-            version("butterfly", "1.0.14")
+            version("butterfly", "1.0.15")
 
             version("luckperms.api", "5.5")
 
