@@ -65,7 +65,10 @@ dependencyResolutionManagement {
             library("junit.platform.launcher", "org.junit.platform", "junit-platform-launcher").withoutVersion()
 
             library("luckperms.api", "net.luckperms", "api").versionRef("luckperms")
-            library("luckperms.minestom.loader", "net.luckperms", "minestom-loader").versionRef("luckperms")
+            library("luckperms.minestom", "net.luckperms", "minestom").versionRef("luckperms")
+            library("luckperms.minestom.app", "net.luckperms", "minestom-app").versionRef("luckperms")
+            library("luckperms.common", "net.luckperms", "common").versionRef("luckperms")
+            library("luckperms.common.loader.utils", "net.luckperms", "loader-utils").versionRef("luckperms")
 
             library("cyano", "net.onelitefeather", "cyano").withoutVersion()
             library("mockito", "org.mockito", "mockito-core").versionRef("mockito")
