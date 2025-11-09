@@ -18,6 +18,8 @@ dependencies {
     implementation(libs.minestom)
     implementation(libs.butterfly.minestom)
 
+    implementation(libs.luckperms.minestom.loader)
+
     implementation(platform(libs.cloudnet.bom))
     implementation(libs.cloudnet.jvm.wrapper)
     implementation(libs.cloudnet.bridge)
@@ -37,6 +39,12 @@ dependencies {
 }
 application {
     mainClass.set("net.onelitefeather.titan.app.TitanApplication")
+}
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(25))
+    }
 }
 
 tasks {

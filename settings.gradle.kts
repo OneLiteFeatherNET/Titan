@@ -6,6 +6,7 @@ dependencyResolutionManagement {
         mavenCentral()
         maven("https://central.sonatype.com/repository/maven-snapshots/")
         maven("https://repository.derklaro.dev/snapshots/")
+        maven("https://repository.derklaro.dev/releases/")
         maven {
             name = "OneLiteFeatherRepository"
             url = uri("https://repo.onelitefeather.dev/onelitefeather")
@@ -30,7 +31,7 @@ dependencyResolutionManagement {
             version("cloudnet", "4.0.0-RC15-SNAPSHOT")
             version("butterfly", "1.0.15")
 
-            version("luckperms.api", "5.5")
+            version("luckperms", "5.6-SNAPSHOT")
 
             version("togglz", "4.4.0")
             version("caffeine", "3.2.3")
@@ -63,7 +64,8 @@ dependencyResolutionManagement {
             library("junit.params", "org.junit.jupiter", "junit-jupiter-params").withoutVersion()
             library("junit.platform.launcher", "org.junit.platform", "junit-platform-launcher").withoutVersion()
 
-            library("luckperms.api", "net.luckperms", "api").versionRef("luckperms.api")
+            library("luckperms.api", "net.luckperms", "api").versionRef("luckperms")
+            library("luckperms.minestom.loader", "net.luckperms", "minestom-loader").versionRef("luckperms")
 
             library("cyano", "net.onelitefeather", "cyano").withoutVersion()
             library("mockito", "org.mockito", "mockito-core").versionRef("mockito")
