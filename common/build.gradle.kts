@@ -31,3 +31,9 @@ tasks {
         jvmArgs("-Dminestom.inside-test=true")
     }
 }
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(25))
+    }
+}

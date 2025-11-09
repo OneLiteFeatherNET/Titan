@@ -27,6 +27,12 @@ application {
     applicationDefaultJvmArgs = listOf("-DTITAN_LOBBY_MAP=halloween")
 }
 
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(25))
+    }
+}
+
 tasks {
     jar {
         archiveClassifier.set("unshaded")

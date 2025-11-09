@@ -26,7 +26,7 @@ import net.minestom.server.network.player.GameProfile;
 import net.minestom.server.network.player.PlayerConnection;
 import org.jetbrains.annotations.NotNull;
 
-public class TitanPlayer extends Player implements PermissionChecker {
+public final class TitanPlayer extends Player implements PermissionChecker {
 
     private final @NotNull Pointers pointers = TitanPlayer.super.pointers().toBuilder().withDynamic(PermissionChecker.POINTER, this::getPermissionChecker).build();
 
@@ -40,7 +40,7 @@ public class TitanPlayer extends Player implements PermissionChecker {
 
     @Override
     public Pointers pointers() {
-        return super.pointers();
+        return this.pointers;
     }
 
 
@@ -48,6 +48,9 @@ public class TitanPlayer extends Player implements PermissionChecker {
     public @NotNull TriState value(@NotNull String permission) {
         QueryOptions queryOptions = LuckPermsProvider.get().getContextManager().getQueryOptions(this);
         User user = LuckPermsProvider.get().getUserManager().getUser(this.getUuid());
+        if (user == null) {
+            return TriState.FALSE;
+        }
         return CompatibilityUtil.convertTriState(user.getCachedData().getPermissionData(queryOptions).checkPermission(permission));
     }
 }
