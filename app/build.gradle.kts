@@ -18,7 +18,10 @@ dependencies {
     implementation(libs.minestom)
     implementation(libs.butterfly.minestom)
 
-    implementation(libs.luckperms.minestom.loader)
+    implementation(libs.luckperms.common)
+    implementation(libs.luckperms.common.loader.utils)
+    implementation(libs.luckperms.minestom.app)
+    implementation(libs.luckperms.minestom)
 
     implementation(platform(libs.cloudnet.bom))
     implementation(libs.cloudnet.jvm.wrapper)

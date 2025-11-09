@@ -17,8 +17,8 @@ package net.onelitefeather.titan.app;
 
 import eu.cloudnetservice.driver.inject.InjectionLayer;
 import eu.cloudnetservice.modules.bridge.impl.platform.minestom.MinestomBridgeExtension;
-import me.lucko.luckperms.minestom.loader.MinestomLoader;
 import net.minestom.server.MinecraftServer;
+import net.onelitefeather.titan.app.luckperms.MinestomLoader;
 
 public class TitanApplication {
 
