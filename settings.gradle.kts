@@ -38,7 +38,7 @@ dependencyResolutionManagement {
 
             version("tomcat-annotations-api", "6.0.53")
 
-            version("mockito", "5.20.0")
+            version("mockito", "5.21.0")
 
             // Minestom
             library("aonyx-bom", "net.onelitefeather", "aonyx-bom").versionRef("aonyx-bom")
