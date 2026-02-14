@@ -33,7 +33,7 @@ dependencyResolutionManagement {
 
             version("luckperms", "5.6-SNAPSHOT")
 
-            version("togglz", "4.4.0")
+            version("togglz", "4.6.1")
             version("caffeine", "3.2.3")
 
             version("tomcat-annotations-api", "6.0.53")
