@@ -29,7 +29,7 @@ dependencyResolutionManagement {
             version("aonyx-bom", "0.7.0")
             version("mycelium-bom", "1.6.1")
             version("cloudnet", "4.0.0-RC17-SNAPSHOT")
-            version("butterfly", "1.0.20")
+            version("butterfly", "1.0.21")
 
             version("luckperms", "5.6-SNAPSHOT")
 
