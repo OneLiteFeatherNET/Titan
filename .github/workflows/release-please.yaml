@@ -1,0 +1,12 @@
+name: release-please
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release:
+    uses: OneLiteFeatherNET/workflows/.github/workflows/release-please.yml@v2.0.0
