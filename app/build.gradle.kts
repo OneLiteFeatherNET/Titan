@@ -61,6 +61,11 @@ tasks {
         archiveClassifier.set("")
         archiveFileName.set("app-titan.jar")
         mergeServiceFiles()
+        // LuckPerms `common` pulls signed and multi-release jars that break a
+        // relocation-free application fat jar; drop signatures and module-info.
+        exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
+        exclude("module-info.class", "META-INF/versions/**/module-info.class")
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     }
     test {
         useJUnitPlatform()
