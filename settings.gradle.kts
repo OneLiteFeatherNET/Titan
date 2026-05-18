@@ -29,7 +29,7 @@ dependencyResolutionManagement {
             version("aonyx-bom", "0.7.1")
             version("mycelium-bom", "1.6.4")
             version("cloudnet", "4.0.0-RC17-SNAPSHOT")
-            version("butterfly", "1.0.21")
+            version("butterfly", "1.0.23")
 
             version("luckperms", "5.6-SNAPSHOT")
 
@@ -43,7 +43,7 @@ dependencyResolutionManagement {
             // Minestom
             library("aonyx-bom", "net.onelitefeather", "aonyx-bom").versionRef("aonyx-bom")
             library("mycelium-bom", "net.onelitefeather", "mycelium-bom").versionRef("mycelium-bom")
-            library("minestom","net.minestom", "minestom").withoutVersion()
+            library("minestom","net.minestom", "minestom").version("2026.05.17-1.21.11")
             library("aves", "net.theevilreaper", "aves").version("1.9.0")
             library("adventure.minimessage", "net.kyori", "adventure-text-minimessage").withoutVersion()
             library("butterfly-minestom", "net.onelitefeather", "butterfly-minestom").versionRef("butterfly")
