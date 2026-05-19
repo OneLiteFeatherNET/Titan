@@ -18,7 +18,7 @@ dependencies {
     implementation(libs.minestom)
     implementation(libs.butterfly.minestom)
 
-    runtimeOnly(libs.luckperms.minestom.loader)
+    implementation(libs.luckperms.minestom.loader)
 
     implementation(platform(libs.cloudnet.bom))
     implementation(libs.cloudnet.jvm.wrapper)
