@@ -69,6 +69,7 @@ dependencyResolutionManagement {
             library("luckperms.minestom.app", "net.luckperms", "minestom-app").versionRef("luckperms")
             library("luckperms.common", "net.luckperms", "common").versionRef("luckperms")
             library("luckperms.common.loader.utils", "net.luckperms", "loader-utils").versionRef("luckperms")
+            library("luckperms.minestom.loader", "net.luckperms", "minestom-loader").versionRef("luckperms")
 
             library("cyano", "net.onelitefeather", "cyano").withoutVersion()
             library("mockito", "org.mockito", "mockito-core").versionRef("mockito")

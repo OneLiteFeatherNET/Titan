@@ -6,7 +6,7 @@ plugins {
 }
 
 dependencies {
-    compileOnly(libs.luckperms.api)
+    implementation(libs.luckperms.api)
     implementation(project(":api"))
     implementation(project(":common"))
     implementation(platform(libs.mycelium.bom))
@@ -18,10 +18,7 @@ dependencies {
     implementation(libs.minestom)
     implementation(libs.butterfly.minestom)
 
-    implementation(libs.luckperms.common)
-    implementation(libs.luckperms.common.loader.utils)
-    implementation(libs.luckperms.minestom.app)
-    implementation(libs.luckperms.minestom)
+    runtimeOnly(libs.luckperms.minestom.loader)
 
     implementation(platform(libs.cloudnet.bom))
     implementation(libs.cloudnet.jvm.wrapper)
@@ -61,7 +58,7 @@ tasks {
         archiveClassifier.set("")
         archiveFileName.set("app-titan.jar")
         mergeServiceFiles()
-        // LuckPerms `common` pulls signed and multi-release jars that break a
+        // Shaded deps ship signed and multi-release jars that break a
         // relocation-free application fat jar; drop signatures and module-info.
         exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
         exclude("module-info.class", "META-INF/versions/**/module-info.class")
