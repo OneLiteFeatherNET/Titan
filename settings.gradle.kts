@@ -44,7 +44,7 @@ dependencyResolutionManagement {
             library("aonyx-bom", "net.onelitefeather", "aonyx-bom").versionRef("aonyx-bom")
             library("mycelium-bom", "net.onelitefeather", "mycelium-bom").versionRef("mycelium-bom")
             library("minestom","net.minestom", "minestom").withoutVersion()
-            library("aves", "net.theevilreaper", "aves").version("1.9.0")
+            library("aves", "net.theevilreaper", "aves").version("1.14.0")
             library("adventure.minimessage", "net.kyori", "adventure-text-minimessage").withoutVersion()
             library("butterfly-minestom", "net.onelitefeather", "butterfly-minestom").versionRef("butterfly")
 
