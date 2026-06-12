@@ -26,7 +26,7 @@ dependencyResolutionManagement {
 
     versionCatalogs {
         create("libs") {
-            version("aonyx-bom", "0.7.1")
+            version("aonyx-bom", "0.7.3")
             version("mycelium-bom", "1.6.7")
             version("cloudnet", "4.0.0-RC17-SNAPSHOT")
             version("butterfly", "1.0.23")
