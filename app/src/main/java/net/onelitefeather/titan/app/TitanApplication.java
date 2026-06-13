@@ -40,5 +40,20 @@ public class TitanApplication {
         }
 
         minecraftServer.start("localhost", 25565);
+
+        // AOT training aid: when -Dtitan.aot.trainSeconds=<n> is set, shut down
+        // cleanly after the server has started so the JVM exit writes the AOT
+        // configuration/cache. No effect in normal operation.
+        Long aotTrainSeconds = Long.getLong("titan.aot.trainSeconds");
+        if (aotTrainSeconds != null) {
+            Thread.ofVirtual().name("titan-aot-trainer").start(() -> {
+                try {
+                    Thread.sleep(aotTrainSeconds * 1000L);
+                } catch (InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
+                }
+                System.exit(0);
+            });
+        }
     }
 }
