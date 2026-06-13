@@ -19,6 +19,9 @@ import eu.cloudnetservice.driver.inject.InjectionLayer;
 import eu.cloudnetservice.modules.bridge.impl.platform.minestom.MinestomBridgeExtension;
 import net.minestom.server.MinecraftServer;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 
 public class TitanApplication {
 
@@ -27,7 +30,14 @@ public class TitanApplication {
         me.lucko.luckperms.minestom.loader.MinestomLoader.get().load().registerShutdownHook().start();
         Titan titan = new Titan();
         titan.initialize();
-        InjectionLayer.ext().instance(MinestomBridgeExtension.class).onLoad();
+
+        // CloudNet only provides its runtime when the service is launched through
+        // its wrapper, which creates a ".wrapper" directory in the working
+        // directory. When running standalone (local, tests, AOT training) there
+        // is no CloudNet to bind to, so skip the bridge to avoid failing startup.
+        if (Files.isDirectory(Path.of(".wrapper"))) {
+            InjectionLayer.ext().instance(MinestomBridgeExtension.class).onLoad();
+        }
 
         minecraftServer.start("localhost", 25565);
     }
