@@ -11,8 +11,7 @@ dependencies {
     }
     implementation(project(":api"))
     implementation(project(":common"))
-    implementation(platform(libs.mycelium.bom))
-    // implementation(platform(libs.aonyx.bom))
+    implementation(platform(libs.aonyx.bom))
     implementation(libs.togglz)
     implementation(libs.aves)
     implementation(libs.adventure.minimessage)
@@ -35,7 +34,7 @@ dependencies {
     implementation(libs.cloudnet.driver.impl)
     implementation(libs.cloudnet.platform.inject)
 
-    // testImplementation(platform(libs.aonyx.bom))
+    testImplementation(platform(libs.aonyx.bom))
     testImplementation(libs.minestom)
     testImplementation(libs.aves)
     testImplementation(libs.cyano)
@@ -44,6 +43,15 @@ dependencies {
     testImplementation(libs.junit.api)
     testImplementation(libs.junit.platform.launcher)
     testRuntimeOnly(libs.junit.engine)
+}
+
+// The LuckPerms minestom-loader is a JarInJar bootstrap that bundles an
+// unrelocated, outdated Gson. Tests don't load LuckPerms, but as a runtimeOnly
+// dependency the loader leaks into the test runtime classpath where its bundled
+// Gson shadows the real one and breaks Minestom's registry init
+// (GsonBuilder.disableJdkUnsafe NoSuchMethodError). Keep it off the test path.
+configurations.testRuntimeClasspath {
+    exclude(group = "net.luckperms", module = "minestom-loader")
 }
 application {
     mainClass.set("net.onelitefeather.titan.app.TitanApplication")
