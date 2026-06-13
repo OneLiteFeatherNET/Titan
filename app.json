@@ -7,8 +7,8 @@
   },
   "allowedSitBlocks": [
     {
-      "domain": "minecraft",
-      "path": "spruce_stairs"
+      "namespace": "minecraft",
+      "value": "spruce_stairs"
     }
   ],
   "simulationDistance": 2,

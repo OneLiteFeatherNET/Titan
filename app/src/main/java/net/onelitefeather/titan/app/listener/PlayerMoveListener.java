@@ -37,11 +37,11 @@ public final class PlayerMoveListener implements Consumer<PlayerMoveEvent> {
         if (player.getInstance() == null)
             return;
         if (player.getPosition().y() < appConfig.minHeightBeforeTeleport()) {
-            Optional.ofNullable(this.lobbyMap).map(LobbyMap::getSpawn).ifPresent(player::teleport);
+            Optional.ofNullable(this.lobbyMap).map(LobbyMap::spawn).ifPresent(player::teleport);
             return;
         }
         if (player.getPosition().y() > appConfig.maxHeightBeforeTeleport()) {
-            Optional.ofNullable(this.lobbyMap).map(LobbyMap::getSpawn).ifPresent(player::teleport);
+            Optional.ofNullable(this.lobbyMap).map(LobbyMap::spawn).ifPresent(player::teleport);
         }
     }
 }

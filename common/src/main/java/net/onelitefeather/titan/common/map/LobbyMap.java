@@ -18,21 +18,27 @@ package net.onelitefeather.titan.common.map;
 import net.minestom.server.coordinate.Pos;
 import net.theevilreaper.aves.map.BaseMap;
 
+import java.util.List;
+
 public final class LobbyMap extends BaseMap {
+
+    public LobbyMap(String name, Pos spawn, List<String> builders) {
+        super(name, spawn, builders);
+    }
 
     public static Builder lobbyMapBuilder(LobbyMap map) {
         var builder = lobbyMapBuilder();
         if (map == null) {
             return builder;
         }
-        if (map.getSpawn() != null) {
-            builder.spawn(map.getSpawn());
+        if (map.spawn() != null) {
+            builder.spawn(map.spawn());
         }
-        if (map.getName() != null) {
-            builder.name(map.getName());
+        if (map.name() != null) {
+            builder.name(map.name());
         }
-        if (map.getBuilders() != null) {
-            builder.author(map.getBuilders());
+        if (map.builders() != null) {
+            builder.author(map.builders().toArray(new String[0]));
         }
         return builder;
     }

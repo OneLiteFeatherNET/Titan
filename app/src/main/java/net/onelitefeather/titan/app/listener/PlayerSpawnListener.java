@@ -40,7 +40,7 @@ public final class PlayerSpawnListener implements Consumer<PlayerSpawnEvent> {
     @Override
     public void accept(PlayerSpawnEvent event) {
         event.getPlayer().sendPacket(this.simulatedDistancePacket);
-        Optional.ofNullable(this.lobbyMap).map(LobbyMap::getSpawn).ifPresent(event.getPlayer()::teleport);
+        Optional.ofNullable(this.lobbyMap).map(LobbyMap::spawn).ifPresent(event.getPlayer()::teleport);
         this.navigationHelper.setItems(event.getPlayer());
     }
 }

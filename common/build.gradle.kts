@@ -5,7 +5,6 @@ plugins {
 
 dependencies {
     implementation(project(":api"))
-    implementation(enforcedPlatform(libs.mycelium.bom))
     implementation(platform(libs.aonyx.bom))
     implementation(libs.minestom)
     implementation(libs.togglz)
