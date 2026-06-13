@@ -1,7 +1,11 @@
 name: Publish JAR
 on:
   push:
-    tags: ["v*"]
+    tags:
+      # release-please tags releases without a leading "v" (e.g. 1.10.17);
+      # also keep matching legacy "v"-prefixed tags.
+      - "[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+"
 
 jobs:
   publish:
