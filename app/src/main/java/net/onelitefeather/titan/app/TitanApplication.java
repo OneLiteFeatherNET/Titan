@@ -18,13 +18,13 @@ package net.onelitefeather.titan.app;
 import eu.cloudnetservice.driver.inject.InjectionLayer;
 import eu.cloudnetservice.modules.bridge.impl.platform.minestom.MinestomBridgeExtension;
 import net.minestom.server.MinecraftServer;
-import me.lucko.luckperms.minestom.loader.MinestomLoader;
+
 
 public class TitanApplication {
 
     public static void main(String[] args) {
         MinecraftServer minecraftServer = MinecraftServer.init();
-        MinestomLoader.get().load().registerShutdownHook().start();
+        me.lucko.luckperms.minestom.loader.MinestomLoader.get().load().registerShutdownHook().start();
         Titan titan = new Titan();
         titan.initialize();
         InjectionLayer.ext().instance(MinestomBridgeExtension.class).onLoad();
