@@ -76,8 +76,8 @@ public final class MapProvider {
         try {
             this.activeLobby = lobbyData.orElse(LobbyMap.lobbyMapBuilder().build());
 
-            if (this.activeLobby.getSpawn() != null) {
-                loadChunk(this.instance, this.activeLobby.getSpawn());
+            if (this.activeLobby.spawn() != null) {
+                loadChunk(this.instance, this.activeLobby.spawn());
             }
         } catch (NoSuchElementException noSuchElementException) {
             LOGGER.error("Failed to load the lobby data");

@@ -36,7 +36,7 @@ public class PlayerConfigurationListener implements Consumer<AsyncPlayerConfigur
     public void accept(AsyncPlayerConfigurationEvent event) {
         event.setSpawningInstance(this.mapProvider.getInstance());
         event.getPlayer().setGameMode(GameMode.CREATIVE);
-        Pos pos = Optional.of(this.mapProvider).map(MapProvider::getActiveLobby).map(LobbyMap::getSpawn).orElse(null);
+        Pos pos = Optional.of(this.mapProvider).map(MapProvider::getActiveLobby).map(LobbyMap::spawn).orElse(null);
         if (pos == null)
             return;
         event.getPlayer().setRespawnPoint(pos);
