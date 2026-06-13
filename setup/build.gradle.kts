@@ -9,7 +9,6 @@ plugins {
 dependencies {
     implementation(project(":common"))
     implementation(project(":api"))
-    implementation(enforcedPlatform(libs.mycelium.bom))
     implementation(platform(libs.aonyx.bom))
     implementation(libs.minestom)
     implementation(libs.togglz)
@@ -17,7 +16,7 @@ dependencies {
     implementation(libs.adventure.minimessage)
     implementation(libs.caffeine)
 
-    testImplementation(platform(libs.mycelium.bom))
+    testImplementation(platform(libs.aonyx.bom))
     testImplementation(libs.junit.api)
     testImplementation(libs.junit.platform.launcher)
     testRuntimeOnly(libs.junit.engine)

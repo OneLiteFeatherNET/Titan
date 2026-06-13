@@ -17,6 +17,8 @@ package net.onelitefeather.titan.common.map;
 
 import net.minestom.server.coordinate.Pos;
 
+import java.util.List;
+
 final class LobbyMapBuilder implements LobbyMap.Builder {
 
     private Pos spawn;
@@ -43,18 +45,7 @@ final class LobbyMapBuilder implements LobbyMap.Builder {
 
     @Override
     public LobbyMap build() {
-        LobbyMap lobbyMap = new LobbyMap();
-        if (spawn != null) {
-            lobbyMap.setSpawn(spawn);
-        }
-        lobbyMap.setSpawn(spawn);
-        if (name != null) {
-            lobbyMap.setName(name);
-            ;
-        }
-        if (author != null) {
-            lobbyMap.setBuilders(author);
-        }
-        return lobbyMap;
+        List<String> builders = author == null ? null : List.of(author);
+        return new LobbyMap(name, spawn, builders);
     }
 }

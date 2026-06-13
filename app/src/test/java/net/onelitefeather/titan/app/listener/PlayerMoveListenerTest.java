@@ -43,9 +43,8 @@ class PlayerMoveListenerTest {
         var appConfig = InternalAppConfig.defaultConfig();
 
         // Create a real LobbyMap with a spawn point
-        var lobbyMap = LobbyMap.lobbyMapBuilder().build();
         Pos spawnPos = new Pos(10, 100, 10);
-        lobbyMap.setSpawn(spawnPos);
+        var lobbyMap = LobbyMap.lobbyMapBuilder().spawn(spawnPos).build();
 
         // Create the listener with real objects
         PlayerMoveListener listener = new PlayerMoveListener(appConfig, lobbyMap);
@@ -76,9 +75,8 @@ class PlayerMoveListenerTest {
         var appConfig = InternalAppConfig.defaultConfig();
 
         // Create a real LobbyMap with a spawn point
-        var lobbyMap = LobbyMap.lobbyMapBuilder().build();
         Pos spawnPos = new Pos(10, 100, 10);
-        lobbyMap.setSpawn(spawnPos);
+        var lobbyMap = LobbyMap.lobbyMapBuilder().spawn(spawnPos).build();
 
         // Create the listener with real objects
         PlayerMoveListener listener = new PlayerMoveListener(appConfig, lobbyMap);
@@ -109,9 +107,8 @@ class PlayerMoveListenerTest {
         var appConfig = InternalAppConfig.defaultConfig();
 
         // Create a real LobbyMap with a spawn point
-        var lobbyMap = LobbyMap.lobbyMapBuilder().build();
         Pos spawnPos = new Pos(10, 100, 10);
-        lobbyMap.setSpawn(spawnPos);
+        var lobbyMap = LobbyMap.lobbyMapBuilder().spawn(spawnPos).build();
 
         // Create the listener with real objects
         PlayerMoveListener listener = new PlayerMoveListener(appConfig, lobbyMap);

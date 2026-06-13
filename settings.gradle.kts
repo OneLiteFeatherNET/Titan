@@ -26,8 +26,7 @@ dependencyResolutionManagement {
 
     versionCatalogs {
         create("libs") {
-            version("aonyx-bom", "0.7.1")
-            version("mycelium-bom", "1.6.7")
+            version("aonyx-bom", "0.7.3")
             version("cloudnet", "4.0.0-RC17-SNAPSHOT")
             version("butterfly", "1.0.23")
 
@@ -42,9 +41,8 @@ dependencyResolutionManagement {
 
             // Minestom
             library("aonyx-bom", "net.onelitefeather", "aonyx-bom").versionRef("aonyx-bom")
-            library("mycelium-bom", "net.onelitefeather", "mycelium-bom").versionRef("mycelium-bom")
             library("minestom","net.minestom", "minestom").withoutVersion()
-            library("aves", "net.theevilreaper", "aves").version("1.9.0")
+            library("aves", "net.theevilreaper", "aves").version("1.14.1")
             library("adventure.minimessage", "net.kyori", "adventure-text-minimessage").withoutVersion()
             library("butterfly-minestom", "net.onelitefeather", "butterfly-minestom").versionRef("butterfly")
 
@@ -65,10 +63,7 @@ dependencyResolutionManagement {
             library("junit.platform.launcher", "org.junit.platform", "junit-platform-launcher").withoutVersion()
 
             library("luckperms.api", "net.luckperms", "api").versionRef("luckperms")
-            library("luckperms.minestom", "net.luckperms", "minestom").versionRef("luckperms")
-            library("luckperms.minestom.app", "net.luckperms", "minestom-app").versionRef("luckperms")
-            library("luckperms.common", "net.luckperms", "common").versionRef("luckperms")
-            library("luckperms.common.loader.utils", "net.luckperms", "loader-utils").versionRef("luckperms")
+            library("luckperms.minestom.loader", "net.luckperms", "minestom-loader").versionRef("luckperms")
 
             library("cyano", "net.onelitefeather", "cyano").withoutVersion()
             library("mockito", "org.mockito", "mockito-core").versionRef("mockito")

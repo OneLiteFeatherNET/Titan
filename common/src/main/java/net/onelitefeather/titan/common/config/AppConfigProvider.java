@@ -16,9 +16,11 @@
 package net.onelitefeather.titan.common.config;
 
 import com.google.gson.Gson;
+import net.kyori.adventure.key.Key;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
 import net.theevilreaper.aves.file.GsonFileHandler;
+import net.theevilreaper.aves.file.gson.KeyGsonAdapter;
 import net.theevilreaper.aves.file.gson.PositionGsonAdapter;
 import org.jetbrains.annotations.NotNull;
 
@@ -35,7 +37,7 @@ public final class AppConfigProvider {
     private AppConfigProvider(Path path) {
         this.path = path;
         var typeAdapter = new PositionGsonAdapter();
-        this.gson = new Gson().newBuilder().registerTypeAdapter(Pos.class, typeAdapter).registerTypeAdapter(Vec.class, typeAdapter).create();
+        this.gson = new Gson().newBuilder().registerTypeAdapter(Pos.class, typeAdapter).registerTypeAdapter(Vec.class, typeAdapter).registerTypeHierarchyAdapter(Key.class, KeyGsonAdapter.create()).create();
         this.fileHandler = new GsonFileHandler(this.gson);
         this.loadConfig();
     }
