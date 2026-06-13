@@ -65,7 +65,7 @@ class PlayerSpawnListenerTest {
 
         LobbyMap lobbyMap = mock(LobbyMap.class);
         var lobbyMapSpawn = new Pos(1, 2, 3);
-        when(lobbyMap.getSpawn()).thenReturn(lobbyMapSpawn);
+        when(lobbyMap.spawn()).thenReturn(lobbyMapSpawn);
         NavigationHelper navigationHelper = mock(NavigationHelper.class);
 
         MinecraftServer.getGlobalEventHandler().addListener(PlayerSpawnEvent.class, new PlayerSpawnListener(InternalAppConfig.defaultConfig(), lobbyMap, navigationHelper));
