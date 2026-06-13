@@ -1,3 +1,5 @@
+import java.nio.file.Files
+
 plugins {
     java
     application
@@ -85,9 +87,61 @@ tasks {
         jvmArgs("-Dminestom.inside-test=true")
     }
 }
+
+// ---- Ahead-of-Time cache (JDK 25 / JEP 514) for faster lobby startup ----
+// A training run boots the shaded lobby once and records a portable AOT cache.
+// Trained with the relative classpath "app-titan.jar" so the cache stays valid
+// for any deployment launched as:
+//   java -XX:AOTCache=app-titan.aot -jar app-titan.jar
+// (Cache is tied to the JDK 25 build and this jar; regenerated on every build.)
+val aotTrainSeconds = providers.gradleProperty("titan.aot.trainSeconds").orElse("20")
+val aotRunDir = layout.buildDirectory.dir("aot")
+val aotCacheFile = layout.buildDirectory.file("aot/app-titan.aot")
+
+val generateAotCache = tasks.register<Exec>("generateAotCache") {
+    group = "build"
+    description = "Generates a JDK 25 AOT cache (app-titan.aot) for faster lobby startup."
+
+    val shadowJarTask = tasks.named("shadowJar")
+    dependsOn(shadowJarTask)
+    val jarProvider = shadowJarTask.flatMap { (it as Jar).archiveFile }
+    val worldsDir = rootProject.layout.projectDirectory.dir("worlds")
+    inputs.file(jarProvider)
+    inputs.dir(worldsDir)
+    outputs.file(aotCacheFile)
+
+    val launcher = javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(25)) }
+    val runDir = aotRunDir.get().asFile
+    val rootDir = rootProject.projectDir
+    val trainSeconds = aotTrainSeconds
+    workingDir = runDir
+
+    doFirst {
+        runDir.deleteRecursively()
+        runDir.mkdirs()
+        // Relative classpath: the cache records "app-titan.jar", matching the
+        // deployment launch command above.
+        jarProvider.get().asFile.copyTo(runDir.resolve("app-titan.jar"), overwrite = true)
+        // The lobby loads worlds/ (+ app.json) relative to the CWD while booting.
+        Files.createSymbolicLink(runDir.resolve("worlds").toPath(), rootDir.resolve("worlds").toPath())
+        rootDir.resolve("app.json").takeIf { it.exists() }?.copyTo(runDir.resolve("app.json"), overwrite = true)
+        executable = launcher.get().executablePath.asFile.absolutePath
+        args(
+            "-Dtitan.aot.trainSeconds=${trainSeconds.get()}",
+            "-XX:AOTCacheOutput=app-titan.aot",
+            "-jar", "app-titan.jar"
+        )
+    }
+}
 publishing {
     publications.create<MavenPublication>("maven") {
         artifact(project.tasks.getByName("shadowJar"))
+        // AOT cache shipped alongside the jar for faster startup; see generateAotCache.
+        artifact(aotCacheFile) {
+            classifier = "aot"
+            extension = "aot"
+            builtBy(generateAotCache)
+        }
         version = rootProject.version as String
         artifactId = "titan-app"
         groupId = rootProject.group as String
