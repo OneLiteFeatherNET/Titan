@@ -2,15 +2,18 @@ plugins {
     java
     application
     id("com.gradleup.shadow") version "9.4.1"
+
     `maven-publish`
 }
 
 dependencies {
-    implementation(libs.luckperms.api)
+    compileOnly(libs.luckperms.api) {
+        exclude(group = "net.kyori.adventure")
+    }
     implementation(project(":api"))
     implementation(project(":common"))
     implementation(platform(libs.mycelium.bom))
-    implementation(platform(libs.aonyx.bom))
+    // implementation(platform(libs.aonyx.bom))
     implementation(libs.togglz)
     implementation(libs.aves)
     implementation(libs.adventure.minimessage)
@@ -18,7 +21,13 @@ dependencies {
     implementation(libs.minestom)
     implementation(libs.butterfly.minestom)
 
-    implementation(libs.luckperms.minestom.loader)
+    runtimeOnly(libs.luckperms.minestom.loader) {
+        exclude(group = "net.kyori.adventure")
+    }
+    compileOnly(libs.luckperms.minestom.loader) {
+        exclude(group = "net.kyori.adventure")
+    }
+
 
     implementation(platform(libs.cloudnet.bom))
     implementation(libs.cloudnet.jvm.wrapper)
@@ -27,7 +36,7 @@ dependencies {
     implementation(libs.cloudnet.driver.impl)
     implementation(libs.cloudnet.platform.inject)
 
-    testImplementation(platform(libs.aonyx.bom))
+    // testImplementation(platform(libs.aonyx.bom))
     testImplementation(libs.minestom)
     testImplementation(libs.aves)
     testImplementation(libs.cyano)
