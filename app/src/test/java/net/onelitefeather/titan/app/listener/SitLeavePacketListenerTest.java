@@ -57,8 +57,9 @@ class SitLeavePacketListenerTest {
         // Register the listener
         MinecraftServer.getGlobalEventHandler().addListener(PlayerPacketEvent.class, listener);
 
-        // Create and call the event with a dismount input packet (flags = 2)
-        ClientInputPacket inputPacket = new ClientInputPacket((byte) 2);
+        // Create and call the event with a sneak (shift) input packet
+        // (forward, backward, left, right, jump, shift, sprint)
+        ClientInputPacket inputPacket = new ClientInputPacket(false, false, false, false, false, true, false);
         PlayerPacketEvent packetEvent = new PlayerPacketEvent(player, inputPacket);
 
         // Use a spy to verify the event is dispatched
@@ -93,8 +94,8 @@ class SitLeavePacketListenerTest {
 
         // Create a mock EventDispatcher to verify the event is not dispatched
         try (var mockedStatic = mockStatic(EventDispatcher.class)) {
-            // Create and call the event with a non-dismount input packet (flags = 1)
-            ClientInputPacket inputPacket = new ClientInputPacket((byte) 1);
+            // Create and call the event with a non-sneak input packet (forward only, no shift)
+            ClientInputPacket inputPacket = new ClientInputPacket(true, false, false, false, false, false, false);
             PlayerPacketEvent packetEvent = new PlayerPacketEvent(player, inputPacket);
             MinecraftServer.getGlobalEventHandler().call(packetEvent);
 
@@ -118,8 +119,8 @@ class SitLeavePacketListenerTest {
 
         // Create a mock EventDispatcher to verify the event is not dispatched
         try (var mockedStatic = mockStatic(EventDispatcher.class)) {
-            // Create and call the event with a dismount input packet (flags = 2)
-            ClientInputPacket inputPacket = new ClientInputPacket((byte) 2);
+            // Create and call the event with a sneak (shift) input packet while not riding
+            ClientInputPacket inputPacket = new ClientInputPacket(false, false, false, false, false, true, false);
             PlayerPacketEvent packetEvent = new PlayerPacketEvent(player, inputPacket);
             MinecraftServer.getGlobalEventHandler().call(packetEvent);
 
