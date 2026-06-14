@@ -43,6 +43,9 @@ dependencyResolutionManagement {
 
             version("tomcat-annotations-api", "6.0.53")
 
+            version("guava", "33.4.0-jre")
+            version("kotlin", "2.2.0")
+
             version("mockito", "5.23.0")
 
             // Minestom
@@ -75,6 +78,11 @@ dependencyResolutionManagement {
 
             library("cyano", "net.onelitefeather", "cyano").withoutVersion()
             library("mockito", "org.mockito", "mockito-core").versionRef("mockito")
+
+            // Guava: unrelocated, expected by LuckPerms (was transitive via CloudNet).
+            library("guava", "com.google.guava", "guava").versionRef("guava")
+            // Kotlin stdlib: needed by minestom-ce-extensions' MavenRepository.kt.
+            library("kotlin-stdlib-jdk8", "org.jetbrains.kotlin", "kotlin-stdlib-jdk8").versionRef("kotlin")
         }
     }
 }
