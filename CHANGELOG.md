@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.20](https://github.com/OneLiteFeatherNET/Titan/compare/v1.10.19...v1.10.20) (2026-06-14)
+
+
+### Bug Fixes
+
+* cut a clean release after the version and publish fixes ([4939d3c](https://github.com/OneLiteFeatherNET/Titan/commit/4939d3cd2f9b6e66092c6ba18ca06e82a7042631))
+
 ## [1.10.19](https://github.com/OneLiteFeatherNET/Titan/compare/v1.10.18...v1.10.19) (2026-06-14)
 
 
