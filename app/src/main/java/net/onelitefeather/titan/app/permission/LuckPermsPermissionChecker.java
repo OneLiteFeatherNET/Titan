@@ -30,11 +30,7 @@ public final class LuckPermsPermissionChecker implements MinestomPermissionCheck
 
     @Override
     public boolean hasPermission(Player player, String permission) {
-        return LuckPermsProvider.get()
-                .getPlayerAdapter(Player.class)
-                .getPermissionData(player)
-                .checkPermission(permission)
-                .asBoolean();
+        return LuckPermsProvider.get().getPlayerAdapter(Player.class).getPermissionData(player).checkPermission(permission).asBoolean();
     }
 
     /**
@@ -44,8 +40,6 @@ public final class LuckPermsPermissionChecker implements MinestomPermissionCheck
      */
     public static void install() {
         InjectionLayer<Injector> layer = InjectionLayer.ext();
-        layer.install(layer.injector().createBindingBuilder()
-                .bind(MinestomPermissionChecker.class)
-                .toInstance(new LuckPermsPermissionChecker()));
+        layer.install(layer.injector().createBindingBuilder().bind(MinestomPermissionChecker.class).toInstance(new LuckPermsPermissionChecker()));
     }
 }
