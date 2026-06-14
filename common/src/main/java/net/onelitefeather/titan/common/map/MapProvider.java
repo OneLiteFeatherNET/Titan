@@ -20,6 +20,7 @@ import net.minestom.server.coordinate.Point;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.event.instance.InstanceChunkLoadEvent;
+import net.minestom.server.instance.Clock;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.LightingChunk;
 import net.minestom.server.instance.anvil.AnvilLoader;
@@ -85,7 +86,10 @@ public final class MapProvider {
         // Freeze the lobby at midday so it stays bright; otherwise the default
         // day/night cycle keeps advancing and the world renders dark.
         this.instance.setTime(6000);
-        this.instance.setTimeRate(0);
+        Clock clock = this.instance.defaultClock();
+        if (clock != null) {
+            clock.rate(0.0f);
+        }
         this.instance.setChunkLoader(new AnvilLoader(mapPool.getMapEntry().path()));
         try {
             this.activeLobby = lobbyData.orElse(LobbyMap.lobbyMapBuilder().build());
