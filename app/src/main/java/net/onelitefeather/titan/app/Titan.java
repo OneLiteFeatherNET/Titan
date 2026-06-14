@@ -27,6 +27,7 @@ import net.minestom.server.instance.InstanceContainer;
 import net.onelitefeather.butterfly.minestom.Butterfly;
 import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.app.commands.EndCommand;
+import net.onelitefeather.titan.app.commands.StopCommand;
 import net.onelitefeather.titan.app.helper.NavigationHelper;
 import net.onelitefeather.titan.app.listener.*;
 import net.onelitefeather.titan.app.player.TitanPlayer;
@@ -74,6 +75,7 @@ public final class Titan {
 
     private void initCommands() {
         MinecraftServer.getCommandManager().register(new EndCommand());
+        MinecraftServer.getCommandManager().register(new StopCommand());
     }
 
     private void initListeners() {

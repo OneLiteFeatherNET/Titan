@@ -20,11 +20,18 @@ import net.luckperms.api.LuckPermsProvider;
 import net.luckperms.api.model.user.User;
 import net.minestom.server.Auth;
 import net.minestom.server.MinecraftServer;
+import net.minestom.server.command.CommandManager;
 import net.onelitefeather.titan.common.permission.TitanPermissionBridge;
 
+import java.io.BufferedReader;
+import java.io.Console;
+import java.io.IOError;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.function.Supplier;
 
 
 public class TitanApplication {
@@ -60,6 +67,11 @@ public class TitanApplication {
         int bindPort = Integer.getInteger("service.bind.port", 25565);
         bootstrap.start(bindHost, bindPort);
 
+        // Read console input so commands typed locally - and the "stop" command CloudNet writes
+        // to the service's stdin on shutdown - reach the server. Without this the node can only
+        // kill the process after a timeout instead of stopping it cleanly. See StopCommand.
+        startConsole();
+
         // AOT training aid: when -Dtitan.aot.trainSeconds=<n> is set, shut down
         // cleanly after the server has started so the JVM exit writes the AOT
         // configuration/cache. No effect in normal operation.
@@ -74,6 +86,39 @@ public class TitanApplication {
                 System.exit(0);
             });
         }
+    }
+
+    /**
+     * Starts a daemon thread that forwards console input to the command manager's console sender,
+     * so locally typed commands and CloudNet's {@code stop} (written to stdin) are executed.
+     */
+    private static void startConsole() {
+        Supplier<String> lineReader = switch (System.console()) {
+            case Console console -> console::readLine;
+            case null -> {
+                var reader = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
+                yield () -> {
+                    try {
+                        return reader.readLine();
+                    } catch (IOException exception) {
+                        throw new IOError(exception);
+                    }
+                };
+            }
+        };
+
+        CommandManager commandManager = MinecraftServer.getCommandManager();
+        Thread.ofPlatform().name("titan-console").daemon(true).start(() -> {
+            while (MinecraftServer.isStarted()) {
+                String line = lineReader.get();
+                if (line == null) {
+                    break;
+                }
+                if (!line.isBlank()) {
+                    commandManager.execute(commandManager.getConsoleSender(), line.trim());
+                }
+            }
+        });
     }
 
     private static ExtensionBootstrap bootstrap() {
