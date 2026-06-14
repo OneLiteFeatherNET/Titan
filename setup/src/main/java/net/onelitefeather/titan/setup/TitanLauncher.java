@@ -21,6 +21,10 @@ public class TitanLauncher {
     public static void main(String[] args) {
         var minecraftServer = MinecraftServer.init();
         Titan.instance();
-        minecraftServer.start("0.0.0.0", 25565);
+        // CloudNet passes the bind address/port via -Dservice.bind.host /
+        // -Dservice.bind.port; fall back to the standalone defaults otherwise.
+        String bindHost = System.getProperty("service.bind.host", "0.0.0.0");
+        int bindPort = Integer.getInteger("service.bind.port", 25565);
+        minecraftServer.start(bindHost, bindPort);
     }
 }

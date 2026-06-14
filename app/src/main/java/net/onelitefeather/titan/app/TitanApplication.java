@@ -39,7 +39,11 @@ public class TitanApplication {
             InjectionLayer.ext().instance(MinestomBridgeExtension.class).onLoad();
         }
 
-        minecraftServer.start("localhost", 25565);
+        // CloudNet passes the bind address/port via -Dservice.bind.host /
+        // -Dservice.bind.port; fall back to the standalone defaults otherwise.
+        String bindHost = System.getProperty("service.bind.host", "localhost");
+        int bindPort = Integer.getInteger("service.bind.port", 25565);
+        minecraftServer.start(bindHost, bindPort);
 
         // AOT training aid: when -Dtitan.aot.trainSeconds=<n> is set, shut down
         // cleanly after the server has started so the JVM exit writes the AOT
