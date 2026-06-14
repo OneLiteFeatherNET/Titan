@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.13.0](https://github.com/OneLiteFeatherNET/Titan/compare/v1.12.1...v1.13.0) (2026-06-14)
+
+
+### Features
+
+* **app:** read the console so CloudNet can stop the service cleanly ([#169](https://github.com/OneLiteFeatherNET/Titan/issues/169)) ([ed63ba0](https://github.com/OneLiteFeatherNET/Titan/commit/ed63ba0abf5c06532fca76f55503cadffa4ceb3f))
+
+
+### Bug Fixes
+
+* **bridge:** route player server-switching through the bridge extension ([#166](https://github.com/OneLiteFeatherNET/Titan/issues/166)) ([48e59ba](https://github.com/OneLiteFeatherNET/Titan/commit/48e59ba3ee16b53d5252e08155d09bb500521b25))
+* **lobby:** stand up from a seat on sneak, not on backward ([#167](https://github.com/OneLiteFeatherNET/Titan/issues/167)) ([770d290](https://github.com/OneLiteFeatherNET/Titan/commit/770d290b8cb065dcd7c0adea0818a15a77911794))
+
 ## [1.12.1](https://github.com/OneLiteFeatherNET/Titan/compare/v1.12.0...v1.12.1) (2026-06-14)
 
 
