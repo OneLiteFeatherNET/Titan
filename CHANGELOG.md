@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.19](https://github.com/OneLiteFeatherNET/Titan/compare/v1.10.18...v1.10.19) (2026-06-14)
+
+
+### Bug Fixes
+
+* publish never runs after a release (chain it into release-please) ([#155](https://github.com/OneLiteFeatherNET/Titan/issues/155)) ([7dad32e](https://github.com/OneLiteFeatherNET/Titan/commit/7dad32efe131d3bedc096ff14e69413fe7490c40))
+
 ## [1.10.18](https://github.com/OneLiteFeatherNET/Titan/compare/v1.10.17...v1.10.18) (2026-06-14)
 
 
