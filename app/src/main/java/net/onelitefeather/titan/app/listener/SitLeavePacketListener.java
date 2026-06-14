@@ -27,9 +27,12 @@ public final class SitLeavePacketListener implements Consumer<PlayerPacketEvent>
 
     @Override
     public void accept(@NotNull PlayerPacketEvent event) {
-        if (event.getPacket() instanceof ClientInputPacket(byte flags)) {
+        // Stand up (dismount) when the sitting player presses sneak. Use the shift() accessor
+        // rather than testing the raw flags: the sneak bit is 0x20, not 0x02 (that is backward),
+        // and shift() also matches when other movement keys are held at the same time.
+        if (event.getPacket() instanceof ClientInputPacket input && input.shift()) {
             var ridingEntity = event.getPlayer().getVehicle();
-            if (flags == 2 && ridingEntity != null) {
+            if (ridingEntity != null) {
                 var entityDismountEvent = new EntityDismountEvent(event.getPlayer(), ridingEntity);
                 EventDispatcher.call(entityDismountEvent);
             }
