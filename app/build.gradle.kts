@@ -36,6 +36,11 @@ dependencies {
     // Guava was previously pulled in transitively by CloudNet; LuckPerms expects
     // it (unrelocated) on the classpath, so bundle it explicitly now.
     implementation("com.google.guava:guava:33.4.0-jre")
+    // minestom-ce-extensions loads extension dependencies via a Kotlin class
+    // (net.minestom.dependencies.maven.MavenRepository); without the Kotlin stdlib
+    // on the classpath ExtensionBootstrap init crashes with
+    // NoClassDefFoundError: kotlin/jvm/internal/Intrinsics. Bundle it.
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.2.0")
 
     testImplementation(platform(libs.aonyx.bom))
     testImplementation(libs.minestom)
