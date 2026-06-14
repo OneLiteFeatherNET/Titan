@@ -13,7 +13,7 @@
   ],
   "simulationDistance": 2,
   "fireworkBoostSlot": 45,
-  "elytraBoostMultiplier": 35.0,
+  "elytraBoostMultiplier": 1.0,
   "updateRateAgones": 2000,
   "maxHeightBeforeTeleport": 310,
   "minHeightBeforeTeleport": -64
