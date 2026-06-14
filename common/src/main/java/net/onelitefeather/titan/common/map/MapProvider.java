@@ -19,6 +19,7 @@ import com.google.gson.Gson;
 import net.minestom.server.coordinate.Point;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
+import net.minestom.server.event.instance.InstanceChunkLoadEvent;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.LightingChunk;
 import net.minestom.server.instance.anvil.AnvilLoader;
@@ -52,6 +53,10 @@ public final class MapProvider {
     private MapProvider(@NotNull Path path, @NotNull InstanceContainer instance, Function<Stream<Path>, List<MapEntry>> filterMaps) {
         this.mapPool = new MapPool(path.resolve(MAP_PATH), filterMaps);
         this.instance = instance;
+        // "Exploration" lighting: relight each chunk as it is loaded so regions
+        // light up while players explore into new map sections (anvil chunks
+        // otherwise stay dark until a block update triggers a relight).
+        this.instance.eventNode().addListener(InstanceChunkLoadEvent.class, event -> LightingChunk.relight(event.getInstance(), List.of(event.getChunk())));
         var typeAdapter = new PositionGsonAdapter();
         this.gson = new Gson().newBuilder().registerTypeAdapter(Pos.class, typeAdapter).registerTypeAdapter(Vec.class, typeAdapter).create();
         this.fileHandler = new GsonFileHandler(this.gson);
@@ -77,6 +82,10 @@ public final class MapProvider {
         // sky/block light. Plain DynamicChunks send no light, leaving the lobby
         // pitch black. Must be set before any chunk is loaded by the AnvilLoader.
         this.instance.setChunkSupplier(LightingChunk::new);
+        // Freeze the lobby at midday so it stays bright; otherwise the default
+        // day/night cycle keeps advancing and the world renders dark.
+        this.instance.setTime(6000);
+        this.instance.setTimeRate(0);
         this.instance.setChunkLoader(new AnvilLoader(mapPool.getMapEntry().path()));
         try {
             this.activeLobby = lobbyData.orElse(LobbyMap.lobbyMapBuilder().build());
