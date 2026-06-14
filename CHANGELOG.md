@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.0](https://github.com/OneLiteFeatherNET/Titan/compare/v1.11.0...v1.12.0) (2026-06-14)
+
+
+### Features
+
+* **bridge:** LuckPerms-backed CloudNet permission checker ([#162](https://github.com/OneLiteFeatherNET/Titan/issues/162)) ([5cbd9ed](https://github.com/OneLiteFeatherNET/Titan/commit/5cbd9ed8a89377e9451a1d1525d503d04ff7adde))
+
 ## [1.11.0](https://github.com/OneLiteFeatherNET/Titan/compare/v1.10.20...v1.11.0) (2026-06-14)
 
 
