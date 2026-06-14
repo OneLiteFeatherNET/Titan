@@ -13,18 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.setup;
+package net.onelitefeather.titan.common.deliver;
 
-import net.minestom.server.MinecraftServer;
+import net.minestom.server.entity.Player;
+import net.onelitefeather.deliver.DeliverComponent;
+import net.onelitefeather.titan.api.deliver.Deliver;
 
-public class TitanLauncher {
-    public static void main(String[] args) {
-        var minecraftServer = MinecraftServer.init();
-        Titan.instance();
-        // CloudNet passes the bind address/port via -Dservice.bind.host /
-        // -Dservice.bind.port; fall back to the standalone defaults otherwise.
-        String bindHost = System.getProperty("service.bind.host", "0.0.0.0");
-        int bindPort = Integer.getInteger("service.bind.port", 25565);
-        minecraftServer.start(bindHost, bindPort);
+/**
+ * No-op {@link Deliver} used when CloudNet is not available (standalone runs:
+ * local, tests, AOT training). Cross-server delivery simply does nothing.
+ */
+public final class NoopDeliver implements Deliver {
+
+    @Override
+    public void sendPlayer(Player player, DeliverComponent component) {
+        // No CloudNet runtime to delegate to; nothing to deliver.
     }
 }

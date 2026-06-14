@@ -4,6 +4,12 @@ rootProject.name = "titan"
 dependencyResolutionManagement {
     repositories {
         mavenCentral()
+        // minestom-ce-extensions pulls com.github.Minestom:DependencyGetter from JitPack;
+        // resolve it through the OneLiteFeather reposilite proxy that caches JitPack.
+        maven {
+            name = "reposiliteRepositoryOnelitefeatherProxy"
+            url = uri("https://repo.onelitefeather.dev/onelitefeather-proxy")
+        }
         maven("https://central.sonatype.com/repository/maven-snapshots/")
         maven("https://repository.derklaro.dev/snapshots/")
         maven("https://repository.derklaro.dev/releases/")
@@ -42,6 +48,7 @@ dependencyResolutionManagement {
             // Minestom
             library("aonyx-bom", "net.onelitefeather", "aonyx-bom").versionRef("aonyx-bom")
             library("minestom","net.minestom", "minestom").withoutVersion()
+            library("minestom-ce-extensions", "dev.hollowcube", "minestom-ce-extensions").version("1.2.0")
             library("aves", "net.theevilreaper", "aves").withoutVersion()
             library("adventure.minimessage", "net.kyori", "adventure-text-minimessage").withoutVersion()
             library("butterfly-minestom", "net.onelitefeather", "butterfly-minestom").versionRef("butterfly")

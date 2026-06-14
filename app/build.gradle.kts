@@ -19,6 +19,7 @@ dependencies {
     implementation(libs.adventure.minimessage)
     implementation(libs.caffeine)
     implementation(libs.minestom)
+    implementation(libs.minestom.ce.extensions)
     implementation(libs.butterfly.minestom)
 
     runtimeOnly(libs.luckperms.minestom.loader) {
@@ -29,12 +30,16 @@ dependencies {
     }
 
 
-    implementation(platform(libs.cloudnet.bom))
-    implementation(libs.cloudnet.jvm.wrapper)
-    implementation(libs.cloudnet.bridge)
-    implementation(libs.cloudnet.bridge.impl)
-    implementation(libs.cloudnet.driver.impl)
-    implementation(libs.cloudnet.platform.inject)
+    // CloudNet (driver, bridge, wrapper) is provided by the CloudNet wrapper at
+    // runtime and the bridge is loaded as a Minestom extension, so it is not
+    // bundled into the fat jar - compile against it only (for the bridge
+    // MinestomPermissionChecker binding) but never ship it.
+    compileOnly(platform(libs.cloudnet.bom))
+    compileOnly(libs.cloudnet.bridge.impl)
+    compileOnly(libs.cloudnet.driver.impl)
+    // Guava was previously pulled in transitively by CloudNet; LuckPerms expects
+    // it (unrelocated) on the classpath, so bundle it explicitly now.
+    implementation("com.google.guava:guava:33.4.0-jre")
 
     testImplementation(platform(libs.aonyx.bom))
     testImplementation(libs.minestom)
