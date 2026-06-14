@@ -8,5 +8,24 @@ permissions:
   pull-requests: write
 
 jobs:
-  release:
-    uses: OneLiteFeatherNET/workflows/.github/workflows/release-please.yml@v2.1.0
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - name: Run release-please
+        id: release
+        uses: googleapis/release-please-action@v5
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  # Tags created by release-please use the GITHUB_TOKEN, whose push event does
+  # NOT trigger other workflows (so publish.yaml never fired on a release).
+  # Chain the publish in the same run instead, only when a release was created.
+  publish:
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    uses: OneLiteFeatherNET/workflows/.github/workflows/gradle-publish.yml@v2.1.0
+    secrets: inherit
