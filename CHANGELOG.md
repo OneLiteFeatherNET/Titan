@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.0](https://github.com/OneLiteFeatherNET/Titan/compare/v1.10.20...v1.11.0) (2026-06-14)
+
+
+### Features
+
+* release CloudNet-extension bootstrap, lighting and AOT ([dcf5ea9](https://github.com/OneLiteFeatherNET/Titan/commit/dcf5ea9243069f6d486047f43b0629501f9ab1a0))
+
 ## [1.10.20](https://github.com/OneLiteFeatherNET/Titan/compare/v1.10.19...v1.10.20) (2026-06-14)
 
 
