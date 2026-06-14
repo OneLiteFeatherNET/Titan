@@ -16,32 +16,22 @@
 package net.onelitefeather.titan.common.deliver;
 
 import net.onelitefeather.titan.api.deliver.Deliver;
+import net.onelitefeather.titan.common.utils.CloudNetEnvironment;
 
 /**
- * Picks the {@link Deliver} implementation based on whether CloudNet is on the
- * classpath. CloudNet is no longer bundled into the fat jar (it is provided by
- * the CloudNet wrapper at runtime), so standalone runs fall back to a no-op.
+ * Picks the {@link Deliver} implementation based on whether the server runs as a
+ * CloudNet service. CloudNet is no longer bundled into the fat jar (it is provided
+ * by the CloudNet wrapper at runtime), so standalone runs fall back to a no-op.
  */
 public final class DeliverProvider {
-
-    private static final String CLOUDNET_MARKER_CLASS = "eu.cloudnetservice.driver.inject.InjectionLayer";
 
     private DeliverProvider() {
     }
 
     public static Deliver create() {
-        if (isCloudNetAvailable()) {
+        if (CloudNetEnvironment.isPresent()) {
             return new MessageChannelDeliver();
         }
         return new NoopDeliver();
-    }
-
-    private static boolean isCloudNetAvailable() {
-        try {
-            Class.forName(CLOUDNET_MARKER_CLASS, false, DeliverProvider.class.getClassLoader());
-            return true;
-        } catch (ClassNotFoundException | LinkageError exception) {
-            return false;
-        }
     }
 }
