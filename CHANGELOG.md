@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.1](https://github.com/OneLiteFeatherNET/Titan/compare/v1.12.0...v1.12.1) (2026-06-14)
+
+
+### Bug Fixes
+
+* **app:** bundle the Kotlin stdlib for minestom-ce extension loading ([#164](https://github.com/OneLiteFeatherNET/Titan/issues/164)) ([d99cb3c](https://github.com/OneLiteFeatherNET/Titan/commit/d99cb3c54386196ed1d5e7334c034cdb1eb185c6))
+
 ## [1.12.0](https://github.com/OneLiteFeatherNET/Titan/compare/v1.11.0...v1.12.0) (2026-06-14)
 
 
