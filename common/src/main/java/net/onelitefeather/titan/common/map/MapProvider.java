@@ -20,6 +20,7 @@ import net.minestom.server.coordinate.Point;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.instance.InstanceContainer;
+import net.minestom.server.instance.LightingChunk;
 import net.minestom.server.instance.anvil.AnvilLoader;
 import net.minestom.server.utils.chunk.ChunkUtils;
 import net.onelitefeather.titan.common.config.AppConfig;
@@ -72,6 +73,10 @@ public final class MapProvider {
 
     private void loadMapData() {
         var lobbyData = this.fileHandler.load(this.mapPool.getMapEntry().path().resolve(AppConfig.MAP_FILE_NAME), LobbyMap.class);
+        // Use LightingChunk so the world is actually lit: it computes and sends
+        // sky/block light. Plain DynamicChunks send no light, leaving the lobby
+        // pitch black. Must be set before any chunk is loaded by the AnvilLoader.
+        this.instance.setChunkSupplier(LightingChunk::new);
         this.instance.setChunkLoader(new AnvilLoader(mapPool.getMapEntry().path()));
         try {
             this.activeLobby = lobbyData.orElse(LobbyMap.lobbyMapBuilder().build());
