@@ -16,6 +16,7 @@
 package net.onelitefeather.titan.app.listener;
 
 import net.minestom.server.MinecraftServer;
+import net.minestom.server.ServerFlag;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.Player;
@@ -123,32 +124,32 @@ class ElytraBoostListenerTest {
         // Verify that setVelocity was called and capture the value
         verify(player).setVelocity(velocityCaptor.capture());
 
-        // Get the captured velocity
+        // Get the captured velocity (the first vanilla boost tick, applied synchronously)
         Vec capturedVelocity = velocityCaptor.getValue();
 
-        // Calculate the expected velocity
-        // Initial velocity + (direction * boostMultiplier) + random component
-        // Since we can't predict the random component exactly, we'll check if the
-        // velocity is in the expected range
+        // The first-tick boost is deterministic (randomness only affects the lifetime).
+        Vec expected = expectedFirstTick(initialVelocity, playerPos.direction(), boostMultiplier);
+        double tolerance = 1.0E-6;
 
-        // The direction vector when looking straight ahead (pitch=0, yaw=0) is (0, 0,
-        // 1)
-        Vec expectedDirectionBoost = new Vec(0, 0, boostMultiplier);
-
-        // Expected velocity without random component
-        Vec expectedBaseVelocity = initialVelocity.add(expectedDirectionBoost);
-
-        // Check if the captured velocity is close to the expected velocity (allowing
-        // for the random component)
-        double tolerance = 0.1; // Tolerance for the random component
-
-        // Check each component
-        assertTrue(Math.abs(capturedVelocity.x() - expectedBaseVelocity.x()) <= tolerance, "X component of velocity should be within tolerance of expected value");
-        assertTrue(Math.abs(capturedVelocity.y() - expectedBaseVelocity.y()) <= tolerance, "Y component of velocity should be within tolerance of expected value");
-        assertTrue(Math.abs(capturedVelocity.z() - expectedBaseVelocity.z()) <= tolerance, "Z component of velocity should be within tolerance of expected value");
+        assertTrue(Math.abs(capturedVelocity.x() - expected.x()) <= tolerance, "X component of velocity should match the vanilla first-tick boost");
+        assertTrue(Math.abs(capturedVelocity.y() - expected.y()) <= tolerance, "Y component of velocity should match the vanilla first-tick boost");
+        assertTrue(Math.abs(capturedVelocity.z() - expected.z()) <= tolerance, "Z component of velocity should match the vanilla first-tick boost");
     }
 
-    @DisplayName("Test the random component of the boost")
+    /**
+     * Replicates the first-tick velocity the listener applies: the vanilla per-tick formula
+     * {@code vel += look*0.1 + (look*1.5 - vel)*0.5} seeded from the current velocity, converted
+     * back to Minestom's per-second velocity and scaled by the boost multiplier.
+     */
+    private static Vec expectedFirstTick(Vec currentVelocity, Vec look, double multiplier) {
+        double tps = ServerFlag.SERVER_TICKS_PER_SECOND;
+        Vec velocity = currentVelocity.div(tps);
+        Vec next = velocity.add(
+                look.x() * 0.1 + (look.x() * 1.5 - velocity.x()) * 0.5, look.y() * 0.1 + (look.y() * 1.5 - velocity.y()) * 0.5, look.z() * 0.1 + (look.z() * 1.5 - velocity.z()) * 0.5);
+        return next.mul(tps * multiplier);
+    }
+
+    @DisplayName("Test the boost applies a velocity with the default config")
     @Test
     void testRandomComponent(Env env) {
         // Create the listener with the default config
@@ -171,7 +172,7 @@ class ElytraBoostListenerTest {
         verify(player).setVelocity(any(Vec.class));
     }
 
-    @DisplayName("Test the upward correction when looking down")
+    @DisplayName("Test the boost accelerates along the look direction when looking down")
     @Test
     void testUpwardCorrectionWhenLookingDown(Env env) {
         // Create a custom AppConfig with a specific boost multiplier
@@ -202,15 +203,11 @@ class ElytraBoostListenerTest {
 
         playerUseItemEventCollector.assertSingle();
 
-        Vec playerDirection = player.getPosition().direction();
-        Vec boost = playerDirection.mul(boostMultiplier);
-        if (playerDirection.y() < 0) {
-            boost = boost.add(0, -playerDirection.y() * 0.3, 0);
-        }
-        Vec expected = initialVelocity.add(boost);
-
+        // The boost points along the look direction (here: straight down), with no special
+        // "looking down" correction - just the vanilla first-tick acceleration.
+        Vec expected = expectedFirstTick(initialVelocity, player.getPosition().direction(), boostMultiplier);
         Vec actual = player.getVelocity();
-        double tolerance = 0.1;
+        double tolerance = 1.0E-3;
 
         assertTrue(Math.abs(actual.x() - expected.x()) <= tolerance);
         assertTrue(Math.abs(actual.y() - expected.y()) <= tolerance);
