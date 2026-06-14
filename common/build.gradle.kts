@@ -11,12 +11,9 @@ dependencies {
     implementation(libs.aves)
     implementation(libs.adventure.minimessage)
 
-    // CloudNet is provided by the CloudNet wrapper at runtime, so compile against
-    // it but do not bundle it into the fat jar (see DeliverProvider for the
-    // standalone no-op fallback).
-    compileOnly(platform(libs.cloudnet.bom))
-    compileOnly(libs.cloudnet.jvm.wrapper)
-    compileOnly(libs.cloudnet.bridge)
+    // No CloudNet here anymore: anything touching the CloudNet bridge lives in the
+    // :bridge extension; common only talks to it through the JDK-typed
+    // TitanServerConnector / TitanPermissionBridge holders.
 
     testImplementation(platform(libs.aonyx.bom))
     testImplementation(libs.minestom)

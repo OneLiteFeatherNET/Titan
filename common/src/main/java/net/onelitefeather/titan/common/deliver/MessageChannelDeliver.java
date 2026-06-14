@@ -15,14 +15,15 @@
  */
 package net.onelitefeather.titan.common.deliver;
 
-import eu.cloudnetservice.driver.inject.InjectionLayer;
-import eu.cloudnetservice.driver.registry.ServiceRegistry;
-import eu.cloudnetservice.modules.bridge.player.PlayerManager;
-import eu.cloudnetservice.modules.bridge.player.executor.ServerSelectorType;
 import net.minestom.server.entity.Player;
 import net.onelitefeather.deliver.DeliverComponent;
 import net.onelitefeather.titan.api.deliver.Deliver;
 
+/**
+ * Sends a player to another CloudNet service. The actual switch runs in the CloudNet bridge
+ * extension realm (the bridge {@code PlayerManager} is not on the application classpath); this
+ * class only forwards the request through {@link TitanServerConnector} using JDK types.
+ */
 public final class MessageChannelDeliver implements Deliver {
 
     @Override
@@ -32,24 +33,13 @@ public final class MessageChannelDeliver implements Deliver {
         if (component == null)
             return;
 
-        var serviceRegistry = InjectionLayer.ext().instance(ServiceRegistry.class);
-        if (serviceRegistry == null)
-            return;
-
-        var playerManager = serviceRegistry.registration(PlayerManager.class, "playerManager");
-        if (playerManager == null)
-            return;
-
-        var executor = playerManager.serviceInstance().playerExecutor(player.getUuid());
         switch (component) {
             case DeliverComponent.TaskComponent taskComponent ->
-                executor.connectToTask(taskComponent.taskName(), ServerSelectorType.LOWEST_PLAYERS);
+                TitanServerConnector.connectToTask(player.getUuid(), taskComponent.taskName());
             case DeliverComponent.ServerDeliverComponent serverDeliverComponent ->
-                executor.connect(serverDeliverComponent.gameServer());
+                TitanServerConnector.connectToServer(player.getUuid(), serverDeliverComponent.gameServer());
             case null, default ->
                 throw new IllegalStateException("Unexpected value: " + component.type());
         }
-        ;
-
     }
 }
