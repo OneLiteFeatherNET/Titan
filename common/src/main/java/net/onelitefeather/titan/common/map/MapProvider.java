@@ -56,8 +56,7 @@ public final class MapProvider {
         // "Exploration" lighting: relight each chunk as it is loaded so regions
         // light up while players explore into new map sections (anvil chunks
         // otherwise stay dark until a block update triggers a relight).
-        this.instance.eventNode().addListener(InstanceChunkLoadEvent.class, event ->
-                LightingChunk.relight(event.getInstance(), List.of(event.getChunk())));
+        this.instance.eventNode().addListener(InstanceChunkLoadEvent.class, event -> LightingChunk.relight(event.getInstance(), List.of(event.getChunk())));
         var typeAdapter = new PositionGsonAdapter();
         this.gson = new Gson().newBuilder().registerTypeAdapter(Pos.class, typeAdapter).registerTypeAdapter(Vec.class, typeAdapter).create();
         this.fileHandler = new GsonFileHandler(this.gson);
