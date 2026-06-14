@@ -16,9 +16,11 @@
 package net.onelitefeather.titan.app;
 
 import net.hollowcube.minestom.extensions.ExtensionBootstrap;
+import net.luckperms.api.LuckPermsProvider;
+import net.luckperms.api.model.user.User;
 import net.minestom.server.Auth;
 import net.minestom.server.MinecraftServer;
-import net.onelitefeather.titan.common.utils.CloudNetEnvironment;
+import net.onelitefeather.titan.common.permission.TitanPermissionBridge;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -37,15 +39,20 @@ public class TitanApplication {
         ExtensionBootstrap bootstrap = bootstrap();
 
         me.lucko.luckperms.minestom.loader.MinestomLoader.get().load().registerShutdownHook().start();
+
+        // Let the CloudNet bridge (running in a separate extension classloader, see the
+        // :bridge module) resolve permissions through LuckPerms. Only JDK types cross the
+        // classloader boundary via TitanPermissionBridge.
+        TitanPermissionBridge.setResolver((playerId, permission) -> {
+            User user = LuckPermsProvider.get().getUserManager().getUser(playerId);
+            if (user == null) {
+                return false;
+            }
+            return user.getCachedData().getPermissionData().checkPermission(permission).asBoolean();
+        });
+
         Titan titan = new Titan();
         titan.initialize();
-
-        // Make the CloudNet bridge use LuckPerms for permission checks. Must run
-        // before the bridge extension is started (below). Guarded so standalone
-        // runs (no CloudNet on the classpath) skip it.
-        if (CloudNetEnvironment.isPresent()) {
-            net.onelitefeather.titan.app.permission.LuckPermsPermissionChecker.install();
-        }
 
         // CloudNet passes the bind address/port via -Dservice.bind.host /
         // -Dservice.bind.port; fall back to the standalone defaults otherwise.
