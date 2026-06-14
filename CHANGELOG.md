@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.0](https://github.com/OneLiteFeatherNET/Titan/compare/v1.13.0...v1.14.0) (2026-06-14)
+
+
+### Features
+
+* **lobby:** make the elytra firework boost vanilla-accurate ([#171](https://github.com/OneLiteFeatherNET/Titan/issues/171)) ([81c053f](https://github.com/OneLiteFeatherNET/Titan/commit/81c053fc7c48b6b8ff3e0d4b7b07d797d6a005c7))
+
 ## [1.13.0](https://github.com/OneLiteFeatherNET/Titan/compare/v1.12.1...v1.13.0) (2026-06-14)
 
 
