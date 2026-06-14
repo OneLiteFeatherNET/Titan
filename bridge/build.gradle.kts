@@ -19,6 +19,7 @@ dependencies {
 
     compileOnly(platform(libs.cloudnet.bom))
     compileOnly(libs.cloudnet.driver.api)
+    compileOnly(libs.cloudnet.bridge)
     compileOnly(libs.cloudnet.bridge.impl)
 }
 
