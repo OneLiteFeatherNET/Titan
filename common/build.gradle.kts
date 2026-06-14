@@ -11,9 +11,12 @@ dependencies {
     implementation(libs.aves)
     implementation(libs.adventure.minimessage)
 
-    implementation(platform(libs.cloudnet.bom))
-    implementation(libs.cloudnet.jvm.wrapper)
-    implementation(libs.cloudnet.bridge)
+    // CloudNet is provided by the CloudNet wrapper at runtime, so compile against
+    // it but do not bundle it into the fat jar (see DeliverProvider for the
+    // standalone no-op fallback).
+    compileOnly(platform(libs.cloudnet.bom))
+    compileOnly(libs.cloudnet.jvm.wrapper)
+    compileOnly(libs.cloudnet.bridge)
 
     testImplementation(platform(libs.aonyx.bom))
     testImplementation(libs.minestom)
