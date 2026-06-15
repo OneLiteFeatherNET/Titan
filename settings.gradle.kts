@@ -43,7 +43,7 @@ dependencyResolutionManagement {
 
             version("tomcat-annotations-api", "6.0.53")
 
-            version("guava", "33.4.0-jre")
+            version("guava", "33.4.8-jre")
             version("kotlin", "2.2.0")
 
             version("mockito", "5.23.0")
