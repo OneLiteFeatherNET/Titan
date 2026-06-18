@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.14.1](https://github.com/OneLiteFeatherNET/Titan/compare/v1.14.0...v1.14.1) (2026-06-16)
+
+
+### Bug Fixes
+
+* **deps:** update guava monorepo to v33.4.8-jre ([#173](https://github.com/OneLiteFeatherNET/Titan/issues/173)) ([d2f621a](https://github.com/OneLiteFeatherNET/Titan/commit/d2f621abba86cf6bc3931c78771423550c15931c))
+* **deps:** update guava monorepo to v33.6.0-jre ([#176](https://github.com/OneLiteFeatherNET/Titan/issues/176)) ([cc146cd](https://github.com/OneLiteFeatherNET/Titan/commit/cc146cdbfd47047c3966268fd1ba1f18901b0d31))
+* **deps:** update kotlin monorepo to v2.2.21 ([#174](https://github.com/OneLiteFeatherNET/Titan/issues/174)) ([0a45343](https://github.com/OneLiteFeatherNET/Titan/commit/0a4534323962c9f20483a40657ecc411a5c245a6))
+* **deps:** update kotlin monorepo to v2.4.0 ([#177](https://github.com/OneLiteFeatherNET/Titan/issues/177)) ([df1f11d](https://github.com/OneLiteFeatherNET/Titan/commit/df1f11d952527c6e80bdc6b66a5a3a676af38ac8))
+
 ## [1.14.0](https://github.com/OneLiteFeatherNET/Titan/compare/v1.13.0...v1.14.0) (2026-06-14)
 
 
