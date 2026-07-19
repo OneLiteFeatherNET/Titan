@@ -3,7 +3,7 @@ import java.nio.file.Files
 plugins {
     java
     application
-    id("com.gradleup.shadow") version "9.4.3"
+    id("com.gradleup.shadow") version "9.6.0"
     `maven-publish`
 }
 
