@@ -1,7 +1,7 @@
 import com.diffplug.gradle.spotless.SpotlessExtension
 
 plugins {
-    id("com.diffplug.spotless") version "8.7.0" apply false
+    id("com.diffplug.spotless") version "8.8.0" apply false
 }
 
 // gradle.properties carries the release-please annotation inline
