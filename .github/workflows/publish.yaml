@@ -9,7 +9,7 @@ on:
 
 jobs:
   publish:
-    uses: OneLiteFeatherNET/workflows/.github/workflows/gradle-publish.yml@v2.1.0
+    uses: OneLiteFeatherNET/workflows/.github/workflows/gradle-publish.yml@v2.4.0
     # Pin the exact LTS JDK the lobby runs on: the published AOT cache is tied to
     # the precise HotSpot build, so it must be generated with the runtime's JDK
     # (Temurin 25.0.3 LTS) or the service fails with "Unable to map shared spaces".
