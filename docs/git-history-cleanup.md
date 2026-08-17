@@ -41,17 +41,73 @@ or closed, announced ahead of time to everyone with a clone.
    running it**:
 
    ```bash
-   scripts/cleanup-world-history.sh
+   scripts/cleanup-world-history.sh [work-directory]
    ```
 
    It needs `git-filter-repo` (`pacman -S git-filter-repo`,
    `apt install git-filter-repo`, or `pipx install git-filter-repo`) and aborts
    with installation instructions if it is missing. Do not fall back to
-   `git filter-branch`.
+   `git filter-branch` — it is far slower and mangles tags and merge commits.
 
-4. Inspect the rewritten mirror it reports: pack size should drop to roughly
-   1 MiB, `git log --all --oneline -- worlds test-server` must be empty, and the
-   ref count should match the original.
+   Two environment variables matter:
+
+   - `EXTRA_BRANCHES` — branches that exist only in your local clone. The mirror
+     is cloned from the remote, so a local-only branch would keep pointing at
+     pre-rewrite objects and its commits would be lost. List them here:
+
+     ```bash
+     EXTRA_BRANCHES="chore/remove-world-data" scripts/cleanup-world-history.sh
+     ```
+
+   - `FILTER_REPO_BIN` — path to a standalone `git-filter-repo` script, so no
+     system-wide install is needed (it is a single self-contained Python file):
+
+     ```bash
+     curl -fsSLo /tmp/git-filter-repo \
+       https://raw.githubusercontent.com/newren/git-filter-repo/v2.47.0/git-filter-repo
+     chmod +x /tmp/git-filter-repo
+     FILTER_REPO_BIN=/tmp/git-filter-repo scripts/cleanup-world-history.sh
+     ```
+
+   - `SOURCE` — `remote` (default) clones the mirror over the network. Pulling
+     ~80 MiB from GitHub can time out (`RPC failed; curl 56 Recv failure`); in
+     that case use `SOURCE=local`, which assembles the mirror from your clone's
+     remote-tracking refs and needs no bulk transfer. Local mode runs
+     `git fetch --tags --prune` first and aborts if that fails, so it cannot
+     silently rewrite a stale snapshot.
+
+     ```bash
+     SOURCE=local scripts/cleanup-world-history.sh
+     ```
+
+4. Inspect the rewritten mirror it reports. A verified dry run of this procedure
+   produced:
+
+   | | before | after |
+   |---|---|---|
+   | pack size | 81.15 MiB | **1.08 MiB** |
+   | refs (branches + tags) | 78 | 78 |
+   | commits | 672 | 664 |
+
+   The eight dropped commits are the ones that touched nothing but world data
+   (`[titan#14] Add test worlds`, `chore(worlds): upgrade lobby worlds to
+   Minecraft 1.21.11`, and similar) and became empty. Pre-existing empty commits
+   such as `build: trigger the release pipeline` are left alone.
+
+   Worth re-checking yourself before pushing:
+
+   ```bash
+   NEW=<rewritten-mirror>; OLD=<backup-mirror>
+   git -C "$NEW" log --all --oneline -- worlds test-server   # must be empty
+   git -C "$NEW" fsck --no-progress                          # must be clean
+
+   # every ref's content outside the world paths must be bit-identical
+   for ref in $(git -C "$OLD" for-each-ref --format='%(refname)' refs/heads refs/tags); do
+     a=$(git -C "$OLD" ls-tree -r "$ref" | grep -vE $'\t(worlds|test-server)/' | sha256sum)
+     b=$(git -C "$NEW" ls-tree -r "$ref" | grep -vE $'\t(worlds|test-server)/' | sha256sum)
+     [ "$a" = "$b" ] || echo "MISMATCH: $ref"
+   done
+   ```
 5. Publish:
 
    ```bash
