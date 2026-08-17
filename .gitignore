@@ -45,5 +45,11 @@ gradle-app.setting
 !gradle-wrapper.jar
 .gradletasknamecache
 run/
-/test-server/.bstats
 .idea/
+
+# Minecraft world data (Anvil regions, ~56 MB per copy) is deliberately kept out
+# of git - it dwarfed the code and every edit added another binary revision.
+# Provide it out-of-band in the working directory; see docs/world-conversion.md.
+/worlds/
+# Local server run directory (worlds + flags.properties + bStats state).
+/test-server/

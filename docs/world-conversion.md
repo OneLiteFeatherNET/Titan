@@ -17,7 +17,15 @@ targeted Minestom version.
 
 - A JDK matching the target Minecraft version (1.21.11 needs **Java 21+**;
   newer versions may need Java 25). `java -version` must satisfy it.
-- Run from the repo root. Worlds live in `worlds/` and `test-server/worlds/`.
+- Run from the repo root, with the world data placed in `worlds/`.
+
+> **World data is not part of this repository.** `worlds/` is gitignored — the
+> Anvil regions were ~56 MB per copy and dominated every clone. Obtain the
+> worlds out-of-band (from a server backup or a colleague) and drop them into
+> `worlds/` before running the steps below. `MapProvider` reads `worlds/`
+> relative to the working directory, so the same layout applies when launching
+> Titan locally: `worlds/<name>/` plus a `map.json` per playable lobby
+> (`MapPool` skips directories without one and refuses to boot if none remain).
 
 ## 1. Download the target server jar
 
@@ -59,18 +67,17 @@ upgrade_world() {            # usage: upgrade_world <worlds-root> <world-name>
   echo "$W upgraded ($(grep -oE '[0-9]+% completed' "$C/convert.log" | tail -1))"
 }
 
-# all lobby worlds (+ the CloudNet test-server copies)
+# all lobby worlds
 for W in winter halloween world world_generic; do upgrade_world worlds "$W"; done
-for W in winter halloween world world_generic; do upgrade_world test-server/worlds "$W"; done
 ```
 
 ## 3. Drop server-generated cruft
 
-The server run creates extra files we do not want in the repo:
+The server run creates extra files that are not part of a world:
 
 ```bash
-git clean -fd worlds/ test-server/worlds/     # removes untracked data/*.dat, etc.
-git checkout -- worlds/*/data test-server/worlds/*/data   # if data/ was tracked/empty
+rm -rf worlds/*/DIM-1 worlds/*/DIM1 worlds/*/datapacks worlds/*/playerdata \
+       worlds/*/advancements worlds/*/stats worlds/*/logs worlds/*/data
 ```
 
 ## 4. Verify
@@ -104,7 +111,9 @@ Finally launch Titan and confirm the world loads without `Unknown block` errors
 - Source versions seen here: 1.19.4 (DataVersion 3120), 1.20.1 (3337),
   1.20.4 (3700) → upgraded to 1.21.11 (4671).
 - The server also writes empty `DIM-1`/`DIM1` (nether/end), `datapacks/`,
-  `playerdata/` and structure index files — do **not** commit those; the steps
-  above copy back only `region/`, `entities/`, `poi/` and `level.dat`.
+  `playerdata/` and structure index files — drop those; the steps above copy
+  back only `region/`, `entities/`, `poi/` and `level.dat`.
+- `worlds/` is gitignored, so an upgraded world must be redistributed
+  out-of-band; there is nothing to commit here.
 - After bumping the targeted Minecraft/Minestom version, re-run this whole
   process with the new `MC_VERSION`.

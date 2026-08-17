@@ -104,6 +104,15 @@ val aotTrainSeconds = providers.gradleProperty("titan.aot.trainSeconds").orElse(
 val aotRunDir = layout.buildDirectory.dir("aot")
 val aotCacheFile = layout.buildDirectory.file("aot/app-titan.aot")
 
+// World data is no longer tracked in git (see .gitignore), so the training run
+// can only happen where a worlds/ directory was provided out-of-band. MapPool
+// refuses to boot without at least one world carrying a map.json, so the task is
+// skipped - not failed - when no world data is available. Point at a different
+// location with -Ptitan.worlds.dir=<path> (relative to the repository root).
+val worldsDirectory = providers.gradleProperty("titan.worlds.dir").orElse("worlds")
+    .map { rootProject.file(it) }.get()
+val worldDataAvailable = worldsDirectory.isDirectory
+
 val generateAotCache = tasks.register<Exec>("generateAotCache") {
     group = "build"
     description = "Generates a JDK 25 AOT cache (app-titan.aot) for faster lobby startup."
@@ -111,10 +120,13 @@ val generateAotCache = tasks.register<Exec>("generateAotCache") {
     val shadowJarTask = tasks.named("shadowJar")
     dependsOn(shadowJarTask)
     val jarProvider = shadowJarTask.flatMap { (it as Jar).archiveFile }
-    val worldsDir = rootProject.layout.projectDirectory.dir("worlds")
+    val worldsDir = worldsDirectory
     inputs.file(jarProvider)
-    inputs.dir(worldsDir)
+    if (worldDataAvailable) {
+        inputs.dir(worldsDir)
+    }
     outputs.file(aotCacheFile)
+    onlyIf("world data is present at ${worldsDir.path}") { worldsDir.isDirectory }
 
     val launcher = javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(25)) }
     val runDir = aotRunDir.get().asFile
@@ -129,7 +141,7 @@ val generateAotCache = tasks.register<Exec>("generateAotCache") {
         // deployment launch command above.
         jarProvider.get().asFile.copyTo(runDir.resolve("app-titan.jar"), overwrite = true)
         // The lobby loads worlds/ (+ app.json) relative to the CWD while booting.
-        Files.createSymbolicLink(runDir.resolve("worlds").toPath(), rootDir.resolve("worlds").toPath())
+        Files.createSymbolicLink(runDir.resolve("worlds").toPath(), worldsDir.toPath())
         rootDir.resolve("app.json").takeIf { it.exists() }?.copyTo(runDir.resolve("app.json"), overwrite = true)
         executable = launcher.get().executablePath.asFile.absolutePath
         args(
@@ -143,10 +155,15 @@ publishing {
     publications.create<MavenPublication>("maven") {
         artifact(project.tasks.getByName("shadowJar"))
         // AOT cache shipped alongside the jar for faster startup; see generateAotCache.
-        artifact(aotCacheFile) {
-            classifier = "aot"
-            extension = "aot"
-            builtBy(generateAotCache)
+        // The training run needs world data, which is no longer part of the repository,
+        // so the artifact is only published when a worlds/ directory is available -
+        // otherwise `publish` would fail on a task that cannot possibly succeed.
+        if (worldDataAvailable) {
+            artifact(aotCacheFile) {
+                classifier = "aot"
+                extension = "aot"
+                builtBy(generateAotCache)
+            }
         }
         version = rootProject.version as String
         artifactId = "titan-app"
