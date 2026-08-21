@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.14.1](https://github.com/OneLiteFeatherNET/Titan/compare/v1.14.0...v1.14.1) (2026-08-21)
+
+
+### Bug Fixes
+
+* **deps:** update dependency com.google.guava:guava to v33.7.0-android ([#193](https://github.com/OneLiteFeatherNET/Titan/issues/193)) ([496b657](https://github.com/OneLiteFeatherNET/Titan/commit/496b657f4c76545dbc37307e73a4bef2ab7ed640))
+* **deps:** update dependency com.google.guava:guava to v33.7.0-jre ([#194](https://github.com/OneLiteFeatherNET/Titan/issues/194)) ([363a4ab](https://github.com/OneLiteFeatherNET/Titan/commit/363a4abfd0a9f165e695c67baec0efc83c3943cc))
+* **deps:** update dependency com.google.guava:guava to v33.7.1-android ([#197](https://github.com/OneLiteFeatherNET/Titan/issues/197)) ([5aaed03](https://github.com/OneLiteFeatherNET/Titan/commit/5aaed03fc4c730556c94ff8fe51cd4a30e49a1d3))
+* **deps:** update dependency com.google.guava:guava to v33.7.1-jre ([#200](https://github.com/OneLiteFeatherNET/Titan/issues/200)) ([416096f](https://github.com/OneLiteFeatherNET/Titan/commit/416096ffd796281715b103e7b87a98f52bb241cd))
+* **deps:** update dependency eu.cloudnetservice.cloudnet:bom to v4.0.0-rc17 ([#189](https://github.com/OneLiteFeatherNET/Titan/issues/189)) ([670c986](https://github.com/OneLiteFeatherNET/Titan/commit/670c986082681fb995b7a3d8c34a951a5c02de43))
+* **deps:** update dependency eu.cloudnetservice.cloudnet:bom to v4.0.0-rc18-snapshot ([#198](https://github.com/OneLiteFeatherNET/Titan/issues/198)) ([eb25a81](https://github.com/OneLiteFeatherNET/Titan/commit/eb25a81fd029dbdde60c979393e63608d9d60582))
+* **deps:** update dependency org.jetbrains.kotlin:kotlin-stdlib-jdk8 to v2.4.10 ([#190](https://github.com/OneLiteFeatherNET/Titan/issues/190)) ([9d984c7](https://github.com/OneLiteFeatherNET/Titan/commit/9d984c7622bbfc892064ee605cdd6bdf58e90b74))
+* **deps:** update dependency org.togglz:togglz-core to v4.6.3 ([#191](https://github.com/OneLiteFeatherNET/Titan/issues/191)) ([ad7e55a](https://github.com/OneLiteFeatherNET/Titan/commit/ad7e55a16a599e72329dd1b80a07b828d738f219))
+* **deps:** update dependency org.togglz:togglz-core to v4.6.4 ([#202](https://github.com/OneLiteFeatherNET/Titan/issues/202)) ([4a580cb](https://github.com/OneLiteFeatherNET/Titan/commit/4a580cb321510bf50abf6b5621097e49c75c0c77))
+* **deps:** update guava monorepo to v33.4.8-jre ([#173](https://github.com/OneLiteFeatherNET/Titan/issues/173)) ([686c728](https://github.com/OneLiteFeatherNET/Titan/commit/686c728a11cd983d2f4906b82909e2cc85d9df9c))
+* **deps:** update guava monorepo to v33.6.0-jre ([#176](https://github.com/OneLiteFeatherNET/Titan/issues/176)) ([7cce9b7](https://github.com/OneLiteFeatherNET/Titan/commit/7cce9b78208c8a11f9a3b93ad6d4bd9d62914957))
+* **deps:** update kotlin monorepo to v2.2.21 ([#174](https://github.com/OneLiteFeatherNET/Titan/issues/174)) ([8135f20](https://github.com/OneLiteFeatherNET/Titan/commit/8135f203217bb6a5c77437996a2f8397623fd12e))
+* **deps:** update kotlin monorepo to v2.4.0 ([#177](https://github.com/OneLiteFeatherNET/Titan/issues/177)) ([3d395fe](https://github.com/OneLiteFeatherNET/Titan/commit/3d395fe58cc86de6dc4770c12f6e560405b48295))
+
 ## [1.14.0](https://github.com/OneLiteFeatherNET/Titan/compare/v1.13.0...v1.14.0) (2026-06-14)
 
 
