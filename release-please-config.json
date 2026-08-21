@@ -3,14 +3,17 @@
   "release-type": "simple",
   "include-component-in-tag": false,
   "include-v-in-tag": true,
-  "bootstrap-sha": "HEAD",
+  "bootstrap-sha": "65f87a55acadb7565fa64bbcad885bbd462dfe12",
   "pull-request-header": "",
   "packages": {
     ".": {
       "package-name": "titan",
       "changelog-path": "CHANGELOG.md",
       "extra-files": [
-        "gradle.properties"
+        {
+          "type": "generic",
+          "path": "build.gradle.kts"
+        }
       ]
     }
   }
