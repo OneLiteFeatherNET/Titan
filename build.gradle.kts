@@ -9,7 +9,7 @@ plugins {
 // comment in .properties files, so Gradle reads it as part of the version -
 // strip it (for every project) so the published artifact version is clean.
 allprojects {
-    version = (version as String).substringBefore('#').trim()
+    version = "1.14.0" // x-release-please-version
 }
 
 subprojects {
