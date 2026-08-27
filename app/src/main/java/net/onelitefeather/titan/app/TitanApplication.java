@@ -40,7 +40,7 @@ public class TitanApplication {
     private static final Path VELOCITY_SECRET_FILE = Path.of("forwarding.secret");
 
     public static void main(String[] args) {
-        // minestom-ce-extensions loads platform extensions (the CloudNet bridge among
+        // minestom-extensions loads platform extensions (the CloudNet bridge among
         // them) from the extensions/ folder; running standalone simply loads none.
         // This replaces the manual MinestomBridgeExtension wiring + .wrapper guard.
         ExtensionBootstrap bootstrap = bootstrap();
@@ -127,16 +127,10 @@ public class TitanApplication {
             // No proxy secret: ExtensionBootstrap initialises Minestom with default auth.
             return ExtensionBootstrap.init();
         }
-        // Velocity modern forwarding: initialise Minestom with the secret, then wrap it
-        // in the extension bootstrap (whose static init() cannot accept an Auth).
-        MinecraftServer server = MinecraftServer.init(new Auth.Velocity(secret));
-        try {
-            var constructor = ExtensionBootstrap.class.getDeclaredConstructor(MinecraftServer.class);
-            constructor.setAccessible(true);
-            return constructor.newInstance(server);
-        } catch (ReflectiveOperationException exception) {
-            throw new IllegalStateException("Failed to initialise the extension bootstrap", exception);
-        }
+        // Velocity modern forwarding. init(Auth) is the only point at which forwarding can
+        // still be turned on - Minestom binds the Auth to the process in MinecraftServer.init
+        // and offers no way to switch it afterwards.
+        return ExtensionBootstrap.init(new Auth.Velocity(secret));
     }
 
     /**

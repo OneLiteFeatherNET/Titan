@@ -19,7 +19,8 @@ dependencies {
     implementation(libs.adventure.minimessage)
     implementation(libs.caffeine)
     implementation(libs.minestom)
-    implementation(libs.minestom.ce.extensions)
+    implementation(platform(libs.minestom.extensions.bom))
+    implementation(libs.minestom.extensions)
     implementation(libs.butterfly.minestom)
 
     runtimeOnly(libs.luckperms.minestom.loader) {
@@ -36,11 +37,6 @@ dependencies {
     // Guava was previously pulled in transitively by CloudNet; LuckPerms expects
     // it (unrelocated) on the classpath, so bundle it explicitly now.
     implementation(libs.guava)
-    // minestom-ce-extensions loads extension dependencies via a Kotlin class
-    // (net.minestom.dependencies.maven.MavenRepository); without the Kotlin stdlib
-    // on the classpath ExtensionBootstrap init crashes with
-    // NoClassDefFoundError: kotlin/jvm/internal/Intrinsics. Bundle it.
-    implementation(libs.kotlin.stdlib.jdk8)
 
     testImplementation(platform(libs.aonyx.bom))
     testImplementation(libs.minestom)
