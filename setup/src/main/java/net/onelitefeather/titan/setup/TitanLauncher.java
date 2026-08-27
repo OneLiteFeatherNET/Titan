@@ -16,10 +16,15 @@
 package net.onelitefeather.titan.setup;
 
 import net.minestom.server.MinecraftServer;
+import net.onelitefeather.titan.common.observability.TitanObservability;
 
 public class TitanLauncher {
     public static void main(String[] args) {
+        // First statement: anything logged before this reaches the console but not Sentry.
+        TitanObservability.bootstrap();
         var minecraftServer = MinecraftServer.init();
+        // Needs an initialised MinecraftServer, which the line above provides.
+        TitanObservability.installExceptionHandler();
         Titan.instance();
         // CloudNet passes the bind address/port via -Dservice.bind.host /
         // -Dservice.bind.port; fall back to the standalone defaults otherwise.

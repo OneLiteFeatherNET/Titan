@@ -15,6 +15,12 @@ dependencies {
     implementation(libs.adventure.minimessage)
     implementation(libs.caffeine)
 
+    // Logging. See :app - the setup server had the same silent-logger problem.
+    implementation(libs.slf4j.api)
+    runtimeOnly(libs.logback.classic)
+    runtimeOnly(platform(libs.sentry.bom))
+    runtimeOnly(libs.sentry.logback)
+
     testImplementation(platform(libs.aonyx.bom))
     testImplementation(libs.junit.api)
     testImplementation(libs.junit.platform.launcher)

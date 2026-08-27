@@ -21,6 +21,7 @@ import net.luckperms.api.model.user.User;
 import net.minestom.server.Auth;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.command.CommandManager;
+import net.onelitefeather.titan.common.observability.TitanObservability;
 import net.onelitefeather.titan.common.permission.TitanPermissionBridge;
 
 import java.io.BufferedReader;
@@ -40,10 +41,17 @@ public class TitanApplication {
     private static final Path VELOCITY_SECRET_FILE = Path.of("forwarding.secret");
 
     public static void main(String[] args) {
+        // First statement: anything logged before this reaches the console but not Sentry.
+        TitanObservability.bootstrap();
+
         // minestom-extensions loads platform extensions (the CloudNet bridge among
         // them) from the extensions/ folder; running standalone simply loads none.
         // This replaces the manual MinestomBridgeExtension wiring + .wrapper guard.
         ExtensionBootstrap bootstrap = bootstrap();
+
+        // Needs an initialised MinecraftServer, which the line above provides. Replaces
+        // Minestom's Throwable::printStackTrace default with SLF4J logging.
+        TitanObservability.installExceptionHandler();
 
         me.lucko.luckperms.minestom.loader.MinestomLoader.get().load().registerShutdownHook().start();
 
