@@ -1,8 +1,8 @@
 import org.apache.tools.ant.filters.ReplaceTokens
 
 plugins {
-    java
-    `maven-publish`
+    id("titan.java-conventions")
+    id("titan.publish-conventions")
 }
 
 // Minestom extension that bridges CloudNet permission checks to LuckPerms. It is
@@ -23,12 +23,6 @@ dependencies {
     compileOnly(libs.cloudnet.bridge.impl)
 }
 
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(25))
-    }
-}
-
 // Stamp the project version into extension.json (@version@ placeholder).
 tasks.processResources {
     val tokens = mapOf("version" to project.version.toString())
@@ -38,50 +32,11 @@ tasks.processResources {
     }
 }
 
-publishing {
-    publications.create<MavenPublication>("maven") {
-        artifact(tasks.named("jar"))
-        version = rootProject.version as String
-        artifactId = "titan-bridge"
-        groupId = rootProject.group as String
-        pom {
-            name = "Titan Bridge"
-            description = "CloudNet bridge extension that resolves permissions through LuckPerms"
-            url = "https://github.com/OneLiteFeatherNET/titan"
-            licenses {
-                license {
-                    name = "The Apache License, Version 2.0"
-                    url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
-                }
-            }
-            developers {
-                developer {
-                    id = "themeinerlp"
-                    name = "Phillipp Glanz"
-                    email = "p.glanz@madfix.me"
-                }
-            }
-            scm {
-                connection = "scm:git:git://github.com:OneLiteFeatherNET/Titan.git"
-                developerConnection = "scm:git:ssh://git@github.com:OneLiteFeatherNET/Titan.git"
-                url = "https://github.com/OneLiteFeatherNET/titan"
-            }
-        }
-    }
-
-    repositories {
-        maven {
-            authentication {
-                credentials(PasswordCredentials::class) {
-                    username = System.getenv("ONELITEFEATHER_MAVEN_USERNAME")
-                    password = System.getenv("ONELITEFEATHER_MAVEN_PASSWORD")
-                }
-            }
-
-            name = "OneLiteFeatherRepository"
-            val releasesRepoUrl = uri("https://repo.onelitefeather.dev/onelitefeather-releases")
-            val snapshotsRepoUrl = uri("https://repo.onelitefeather.dev/onelitefeather-snapshots")
-            url = if (version.toString().contains("SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl
-        }
+publishing.publications.named<MavenPublication>("maven") {
+    artifactId = "titan-bridge"
+    artifact(tasks.named("jar"))
+    pom {
+        name = "Titan Bridge"
+        description = "CloudNet bridge extension that resolves permissions through LuckPerms"
     }
 }

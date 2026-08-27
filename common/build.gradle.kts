@@ -1,6 +1,5 @@
 plugins {
-   java
-    jacoco
+    id("titan.java-conventions")
 }
 
 dependencies {
@@ -22,17 +21,4 @@ dependencies {
     testImplementation(libs.junit.api)
     testImplementation(libs.junit.platform.launcher)
     testRuntimeOnly(libs.junit.engine)
-}
-
-tasks {
-    test {
-        useJUnitPlatform()
-        jvmArgs("-Dminestom.inside-test=true")
-    }
-}
-
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(25))
-    }
 }
