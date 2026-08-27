@@ -1,7 +1,0 @@
-{
-  "name": "TitanCloudNetPermissions",
-  "version": "@version@",
-  "entrypoint": "net.onelitefeather.titan.bridge.TitanBridgePermissionExtension",
-  "authors": ["OneLiteFeather"],
-  "dependencies": ["CloudNet_Bridge"]
-}

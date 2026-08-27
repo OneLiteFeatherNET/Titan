@@ -1,5 +1,3 @@
-import org.apache.tools.ant.filters.ReplaceTokens
-
 plugins {
     id("titan.java-conventions")
     id("titan.publish-conventions")
@@ -12,9 +10,14 @@ plugins {
 // and bridge by the CloudNet wrapper / bridge extension, Minestom and our
 // TitanPermissionBridge holder by the application classloader.
 dependencies {
+    annotationProcessor(platform(libs.minestom.extensions.bom))
+    annotationProcessor(libs.minestom.extensions.processor)
+
     compileOnly(platform(libs.aonyx.bom))
     compileOnly(libs.minestom)
-    compileOnly(libs.minestom.ce.extensions)
+    compileOnly(platform(libs.minestom.extensions.bom))
+    compileOnly(libs.minestom.extensions)
+    compileOnly(libs.minestom.extensions.processor)
     compileOnly(project(":common"))
 
     compileOnly(platform(libs.cloudnet.bom))
@@ -23,13 +26,11 @@ dependencies {
     compileOnly(libs.cloudnet.bridge.impl)
 }
 
-// Stamp the project version into extension.json (@version@ placeholder).
-tasks.processResources {
-    val tokens = mapOf("version" to project.version.toString())
-    inputs.properties(tokens)
-    filesMatching("extension.json") {
-        filter<ReplaceTokens>("tokens" to tokens)
-    }
+// The annotation processor generates extension.json but cannot know the project version.
+// Subprojects do not inherit the root version, so read it from the root project - the same
+// source the publications use.
+tasks.compileJava {
+    options.compilerArgs.add("-Aminestom.extension.version=${rootProject.version}")
 }
 
 publishing.publications.named<MavenPublication>("maven") {
