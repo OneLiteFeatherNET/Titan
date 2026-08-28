@@ -13,6 +13,10 @@ dependencies {
     // Falco replaces Minestom's AnvilLoader and light engine (US-1.01 - US-1.03).
     implementation(libs.falco.anvil)
     implementation(libs.falco.light)
+    // Runtime only for us: nothing here names a falco-instance type, but linking
+    // ChunkLightScheduler resolves FalcoLightingChunk and its FalcoChunk supertype. See the
+    // version catalog for the details.
+    runtimeOnly(libs.falco.instance)
 
     // No CloudNet here anymore: anything touching the CloudNet bridge lives in the
     // :bridge extension; common only talks to it through the JDK-typed
@@ -22,6 +26,7 @@ dependencies {
     testImplementation(libs.minestom)
     testImplementation(libs.falco.anvil)
     testImplementation(libs.falco.light)
+    testRuntimeOnly(libs.falco.instance)
     testImplementation(libs.cyano)
     testImplementation(libs.aves)
     testImplementation(libs.junit.api)

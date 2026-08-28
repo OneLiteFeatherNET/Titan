@@ -71,6 +71,13 @@ dependencyResolutionManagement {
             // Falco
             library("falco-anvil", "net.onelitefeather", "falco-anvil").versionRef("falco")
             library("falco-light", "net.onelitefeather", "falco-light").versionRef("falco")
+            // falco-instance is not used directly, but falco-light's ChunkLightScheduler cannot be
+            // loaded without it: the class carries the lambda body of supplier(), which returns a
+            // FalcoLightingChunk, and the verifier resolves that type - and its FalcoChunk
+            // supertype, which lives here - while linking the scheduler, not when the lambda runs.
+            // Without this line the very first `new ChunkLightScheduler(...)` dies with a
+            // NoClassDefFoundError. falco-light declares no dependency on it, so we do.
+            library("falco-instance", "net.onelitefeather", "falco-instance").versionRef("falco")
 
             library("togglz", "org.togglz", "togglz-core").versionRef("togglz")
             library("caffeine", "com.github.ben-manes.caffeine", "caffeine").versionRef("caffeine")
