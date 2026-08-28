@@ -1,0 +1,39 @@
+{
+  "id": "example-lantern-nights",
+  "enabled": false,
+  "priority": 100,
+  "stage": "internal",
+  "world": "lantern-nights",
+  "window": {
+    "from": "2026-12-01",
+    "to": "2026-12-27",
+    "zone": "Europe/Berlin"
+  },
+  "effects": [
+    {
+      "type": "place_decoration",
+      "position": { "x": 0.5, "y": 65, "z": 0.5 },
+      "block": "minecraft:jack_o_lantern"
+    },
+    {
+      "type": "place_display",
+      "position": { "x": 0.5, "y": 66.5, "z": 0.5 },
+      "text": "<gold>Lantern Nights"
+    },
+    {
+      "type": "ambient_sound",
+      "position": { "x": 0.5, "y": 65, "z": 0.5 },
+      "sound": "minecraft:block.campfire.crackle",
+      "periodSeconds": 30
+    },
+    {
+      "type": "replace_icon",
+      "destination": "Survival",
+      "material": "minecraft:carved_pumpkin"
+    },
+    {
+      "type": "message_prefix",
+      "prefix": "<gold>[Lantern Nights] "
+    }
+  ]
+}
