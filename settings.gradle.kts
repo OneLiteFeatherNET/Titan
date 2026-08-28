@@ -39,6 +39,10 @@ dependencyResolutionManagement {
             version("luckperms", "5.6-SNAPSHOT")
 
             version("togglz", "4.6.2")
+            // Coris: shape/area management for Minestom. Not carried by aonyx-bom
+            // (which only manages aves, guira, xerus and the falco/mycelium boms),
+            // so the version is pinned here until the bom picks it up.
+            version("coris", "0.7.1")
             version("caffeine", "3.2.4")
 
             version("tomcat-annotations-api", "6.0.53")
@@ -57,6 +61,7 @@ dependencyResolutionManagement {
             library("butterfly-minestom", "net.onelitefeather", "butterfly-minestom").versionRef("butterfly")
 
             library("togglz", "org.togglz", "togglz-core").versionRef("togglz")
+            library("coris", "net.onelitefeather", "coris").versionRef("coris")
             library("caffeine", "com.github.ben-manes.caffeine", "caffeine").versionRef("caffeine")
             library("tomcat-annotations-api", "org.apache.tomcat", "annotations-api").versionRef("tomcat-annotations-api")
 

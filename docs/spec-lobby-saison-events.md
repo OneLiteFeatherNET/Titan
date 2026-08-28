@@ -221,10 +221,24 @@ Bewusst grob gehalten. Ausspezifizierung erst, wenn Stufe 1–4 stehen.
 
 | ID | Story | Akzeptanzkriterium (EARS) | Schnittstelle | Priorität | Status |
 |---|---|---|---|---|---|
-| US-7.01 | Als Spieler möchte ich durch ein Portal auf einen anderen Server wechseln, statt einen Navigator zu öffnen. | When ein Spieler einen als Portal definierten Bereich betritt, shall die Lobby ihn an den hinterlegten Zielserver weiterleiten. | `Deliver`, Bereichsprüfung | Could | offen |
-| US-7.02 | Als Betreiber möchte ich Portale ohne Codeänderung definieren. | The Portale shall aus einer Konfigurationsdatei mit Bereich und Zielserver geladen werden. | JSON | Could | offen |
-| US-7.03 | Als Betreiber möchte ich, dass ein Portal mit unerreichbarem Ziel den Spieler nicht ins Leere schickt. | If der Zielserver eines Portals nicht erreichbar ist, then shall die Lobby den Spieler an Ort und Stelle lassen und ihm eine Meldung anzeigen. | `Deliver` | Could | offen |
-| US-7.04 | Als Betreiber möchte ich, dass Portale denselben Berechtigungsregeln folgen wie der Navigator. | Where ein Portal ein berechtigungspflichtiges Ziel hat, shall dieselbe Prüfung gelten wie für das entsprechende Navigator-Ziel. | `FeatureGate` | Could | offen |
+| US-7.01 | Als Spieler möchte ich durch ein Portal auf einen anderen Server wechseln, statt einen Navigator zu öffnen. | When ein Spieler einen als Portal definierten Bereich betritt, shall die Lobby ihn an den hinterlegten Zielserver weiterleiten. | `Deliver`, Bereichsprüfung | Could | umgesetzt |
+| US-7.02 | Als Betreiber möchte ich Portale ohne Codeänderung definieren. | The Portale shall aus einer Konfigurationsdatei mit Bereich und Zielserver geladen werden. | JSON | Could | umgesetzt |
+| US-7.03 | Als Betreiber möchte ich, dass ein Portal mit unerreichbarem Ziel den Spieler nicht ins Leere schickt. | If der Zielserver eines Portals nicht erreichbar ist, then shall die Lobby den Spieler an Ort und Stelle lassen und ihm eine Meldung anzeigen. | `Deliver` | Could | umgesetzt (Erreichbarkeit über die Bridge-Extension) |
+| US-7.04 | Als Betreiber möchte ich, dass Portale denselben Berechtigungsregeln folgen wie der Navigator. | Where ein Portal ein berechtigungspflichtiges Ziel hat, shall dieselbe Prüfung gelten wie für das entsprechende Navigator-Ziel. | `FeatureGate` | Could | umgesetzt |
+
+Portale liegen in `portals.json` (Bereich, Zielserver, optional das
+Navigator-Feature, das dasselbe Ziel absichert). Die Bereichsprüfung nutzt
+Coris-`CuboidShape`; die Zuordnung Position → Portal läuft über einen Index
+nach Chunk-Spalte, damit `PlayerMoveEvent` nicht jedes Portal einzeln prüft.
+Ein Portal löst beim *Betreten* aus, nicht beim Darinstehen — sonst würde ein
+Spieler, dessen Wechsel abgelehnt wurde, bei jedem Bewegungspaket erneut
+auslösen.
+
+**Einschränkung zu US-7.03:** Ob ein Ziel erreichbar ist, weiß nur CloudNet.
+Die Antwort kommt daher aus der Bridge-Extension (`ServiceAvailability`,
+denselben Weg wie `ServerConnector`). Ohne geladene Bridge gilt kein Ziel als
+erreichbar — dieselbe fehlende Bridge würde die Auslieferung ohnehin ins Leere
+laufen lassen, und eine Meldung ist dann die ehrlichere Antwort.
 
 ---
 
