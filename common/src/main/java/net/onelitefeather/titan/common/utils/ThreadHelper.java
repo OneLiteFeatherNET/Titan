@@ -18,6 +18,21 @@ package net.onelitefeather.titan.common.utils;
 
 import java.util.function.Supplier;
 
+/**
+ * Runs a {@link java.util.ServiceLoader}-backed lookup with the context classloader temporarily
+ * pointed at the classloader of the caller, so an SPI shipped by this jar is found even when the
+ * calling thread carries an unrelated context classloader.
+ *
+ * <p>This type stays in {@code common/utils} on purpose. It is not Titan code that lost its home
+ * (OLF-L3-02): it is the fourth byte-identical copy of the same helper in the OneLiteFeather
+ * estate (Titan, Butterfly Minestom, Butterfly Bukkit, ManisGame) and its destination is
+ * Butterfly, not another Titan package (OLF-L2-04, open point 4 of the OLF standard). Moving it
+ * inside Titan first would only make the eventual deletion harder to spot.
+ *
+ * @author TheMeinerLP
+ * @version 1.0.0
+ * @since 1.0.0
+ */
 public interface ThreadHelper {
     default void syncThreadForServiceLoader(Runnable runnable) {
         Thread currentThread = Thread.currentThread();

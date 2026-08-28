@@ -25,14 +25,19 @@ import net.minestom.server.event.item.ItemDropEvent;
 import net.minestom.server.event.item.PickupItemEvent;
 import net.minestom.server.event.player.*;
 import net.minestom.server.instance.InstanceContainer;
+import net.minestom.server.timer.TaskSchedule;
 import net.onelitefeather.butterfly.minestom.Butterfly;
 import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.app.commands.EndCommand;
+import net.onelitefeather.titan.app.commands.SeasonCommand;
 import net.onelitefeather.titan.app.commands.StopCommand;
+import net.onelitefeather.titan.app.feature.LuckPermsFeatureAudience;
 import net.onelitefeather.titan.app.helper.NavigationHelper;
 import net.onelitefeather.titan.app.listener.*;
 import net.onelitefeather.titan.app.player.TitanPlayer;
 import net.onelitefeather.titan.common.config.AppConfigProvider;
+import net.onelitefeather.titan.common.feature.FeatureGate;
+import net.onelitefeather.titan.common.feature.SeasonWindowActivationStrategy;
 import net.onelitefeather.titan.common.deliver.DeliverProvider;
 import net.onelitefeather.titan.common.event.EntityDismountEvent;
 import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
@@ -40,6 +45,8 @@ import net.onelitefeather.titan.common.map.MapProvider;
 import net.onelitefeather.titan.common.utils.Cancelable;
 
 import java.nio.file.Path;
+import java.time.Clock;
+import java.time.ZoneId;
 
 public final class Titan {
 
@@ -49,8 +56,20 @@ public final class Titan {
     private final MapProvider mapProvider;
     private final AppConfigProvider appConfigProvider;
     private final NavigationHelper navigationHelper;
+    private final FeatureGate featureGate;
 
     public Titan() {
+        this(Clock.system(SeasonWindowActivationStrategy.DEFAULT_ZONE), SeasonWindowActivationStrategy.DEFAULT_ZONE);
+    }
+
+    /**
+     * Creates the lobby with an explicit time source, so seasons and release windows can be tested
+     * without waiting for real time (NFR-007).
+     *
+     * @param clock the time source release windows are evaluated against
+     * @param zone  the zone seasons are planned in
+     */
+    public Titan(Clock clock, ZoneId zone) {
         MinecraftServer.getConnectionManager().setPlayerProvider(TitanPlayer::new);
         this.path = Path.of("");
         BlockHandlerHelper.registerAll();
@@ -58,7 +77,8 @@ public final class Titan {
         MinecraftServer.getInstanceManager().registerInstance(instance);
         this.mapProvider = MapProvider.create(this.path, instance);
         this.appConfigProvider = AppConfigProvider.create(this.path);
-        this.navigationHelper = NavigationHelper.instance(this.deliver);
+        this.featureGate = FeatureGate.create(LuckPermsFeatureAudience.create(), clock, zone);
+        this.navigationHelper = NavigationHelper.instance(this.deliver, this.featureGate);
     }
 
     public void initialize() {
@@ -66,6 +86,11 @@ public final class Titan {
         initCommands();
         Butterfly butterfly = Butterfly.create();
         butterfly.load();
+        // Stages live in a flag file that is reloaded in the background, so a stage change is a
+        // difference between two observations rather than an event. Walk the features once a
+        // second so a transition is logged even while nobody is online (US-3.09).
+        MinecraftServer.getSchedulerManager().scheduleTask(
+                this.featureGate::pollStageTransitions, TaskSchedule.seconds(1), TaskSchedule.seconds(1));
         MinecraftServer.getSchedulerManager().buildShutdownTask(this::terminate);
         MinecraftServer.getSchedulerManager().buildShutdownTask(butterfly::terminate);
     }
@@ -79,6 +104,7 @@ public final class Titan {
     private void initCommands() {
         MinecraftServer.getCommandManager().register(new EndCommand());
         MinecraftServer.getCommandManager().register(new StopCommand());
+        MinecraftServer.getCommandManager().register(new SeasonCommand(this.featureGate));
     }
 
     private void initListeners() {

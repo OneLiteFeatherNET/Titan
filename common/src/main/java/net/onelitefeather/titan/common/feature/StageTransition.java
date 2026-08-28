@@ -14,16 +14,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-package net.onelitefeather.titan.common.utils;
+package net.onelitefeather.titan.common.feature;
 
-import org.togglz.core.Feature;
-import org.togglz.core.context.FeatureContext;
+import java.time.ZonedDateTime;
 
-public enum TitanFeatures implements Feature, ThreadHelper {
-    NAVIGATOR_CREATIVE, NAVIGATOR_SLENDER, NAVIGATOR_MANIS, NAVIGATOR_SURVIVAL, NAVIGATOR_ELYTRA,;
-
-    @Override
-    public boolean isActive() {
-        return syncThreadForServiceLoader(() -> FeatureContext.getFeatureManager().isActive(this));
-    }
+/**
+ * A single observed change of a feature's release stage — the record US-3.09 asks for, and the
+ * material for a new line in {@code docs/rollout-log.md}.
+ *
+ * @param feature name of the Togglz feature that moved
+ * @param from    the stage the feature was on before
+ * @param to      the stage the feature is on now
+ * @param at      the moment the change was observed
+ * @author TheMeinerLP
+ * @version 1.0.0
+ * @since 1.15.0
+ */
+public record StageTransition(String feature, ReleaseStage from, ReleaseStage to,
+                              ZonedDateTime at) {
 }

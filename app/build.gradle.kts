@@ -43,6 +43,12 @@ dependencies {
     implementation(libs.kotlin.stdlib.jdk8)
 
     testImplementation(platform(libs.aonyx.bom))
+    // compileOnly does not reach the test classpath, and LuckPermsFeatureAudienceTest needs the
+    // API types to stand in for a running LuckPerms. Same adventure exclude as the main source
+    // set: the API artifact pulls an adventure version Minestom does not agree with.
+    testImplementation(libs.luckperms.api) {
+        exclude(group = "net.kyori.adventure")
+    }
     testImplementation(libs.minestom)
     testImplementation(libs.aves)
     testImplementation(libs.cyano)
@@ -87,6 +93,23 @@ tasks {
         exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
         exclude("module-info.class", "META-INF/versions/**/module-info.class")
         duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+        // EXCLUDE keeps the first copy of every duplicate path and pre-empts
+        // mergeServiceFiles(), so a service file shipped by two jars would lose all but
+        // one set of entries. Titan and togglz-core both ship
+        // META-INF/services/org.togglz.core.spi.ActivationStrategy (the season window here,
+        // the built-in strategies there) and both must survive - let those paths through so
+        // the merge transformer sees every copy.
+        // ServiceFileTransformer, which mergeServiceFiles() installs, deliberately does NOT
+        // handle META-INF/services/org.codehaus.groovy.runtime.ExtensionModule - that descriptor
+        // is not a service file and is merged by GroovyExtensionModuleTransformer instead. Letting
+        // it through as INCLUDE would concatenate two copies verbatim into an unparsable file. No
+        // Groovy is on the classpath today, so keep the exception narrow and explicit rather than
+        // widening the pattern above.
+        filesMatching("META-INF/services/**") {
+            if (path != "META-INF/services/org.codehaus.groovy.runtime.ExtensionModule") {
+                duplicatesStrategy = DuplicatesStrategy.INCLUDE
+            }
+        }
     }
     test {
         useJUnitPlatform()
