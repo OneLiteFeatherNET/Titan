@@ -16,10 +16,8 @@
  */
 package net.onelitefeather.titan.common.map;
 
-import net.minestom.server.instance.Chunk;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.InstanceContainer;
-import net.minestom.server.instance.LightingChunk;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.falco.anvil.FalcoAnvilLoader;
@@ -76,16 +74,9 @@ class MapProviderIntegrationTest {
         }
     }
 
-    @Test
-    @DisplayName("The chunks of the lobby carry light")
-    void testTheLobbyChunksCarryLight(Env env, @TempDir Path root) throws IOException {
-        try (MapProvider provider = provider(env, root, "world")) {
-            InstanceContainer instance = provider.getInstance();
-
-            Chunk chunk = instance.getChunkSupplier().createChunk(instance, 0, 0);
-            assertInstanceOf(LightingChunk.class, chunk);
-        }
-    }
+    // What the lobby does about light is asserted in MapProviderLightingTest, by loading chunks out
+    // of a region file and reading light levels back. The test that used to stand here asked the
+    // chunk supplier for a chunk and checked its type, which every one of the light defects passed.
 
     @Test
     @DisplayName("Closing the provider closes the chunk loader")
