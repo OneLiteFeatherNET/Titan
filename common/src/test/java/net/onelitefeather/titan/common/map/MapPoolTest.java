@@ -157,11 +157,38 @@ class MapPoolTest {
     @Test
     @DisplayName("The warning names the searched world and the found ones (US-1.04)")
     void testTheWarningNamesTheSearchedAndTheFoundWorlds() {
-        String message = MapPool.describeMissingMap("halloewen", List.of("world", "winter"));
+        String message = MapPool.describeMissingMap("halloewen", List.of("world", "winter"), MapPool.DEFAULT_MAP_NAME);
 
         assertTrue(message.contains("halloewen"), message);
         assertTrue(message.contains("world"), message);
         assertTrue(message.contains("winter"), message);
         assertTrue(message.contains(MapPool.LOBBY_MAP_PROPERTY), message);
+        assertTrue(message.contains("the default world 'world'"), message);
+    }
+
+    @Test
+    @DisplayName("The warning names the world that was really taken, not the default one")
+    void testTheWarningNamesTheWorldThatWasReallyTaken() {
+        // The message used to announce the default world in this case as well, while the code went
+        // on with the first world it found. Saying one thing and doing another is the one thing a
+        // warning like this must not do.
+        String message = MapPool.describeMissingMap("halloween", List.of("winter"), "winter");
+
+        assertTrue(message.contains("the world 'winter'"), message);
+        assertFalse(message.contains("Falling back to the default world"), message);
+    }
+
+    @Test
+    @DisplayName("Clearing the pool leaves an empty list rather than none")
+    void testClearingThePoolLeavesAnEmptyList(@TempDir Path root) throws IOException {
+        // The package is @NotNullByDefault and the field used to be set to null here, which turned
+        // every later read of the pool into a NullPointerException.
+        Path worlds = worlds(root, "world", "winter");
+        MapPool pool = new MapPool(worlds, MapPoolTest::allDirectories);
+
+        pool.clear();
+
+        assertTrue(pool.getAvailableMaps().isEmpty());
+        assertTrue(pool.availableMapNames().isEmpty());
     }
 }

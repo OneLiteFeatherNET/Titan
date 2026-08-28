@@ -65,7 +65,7 @@ public final class MapPool {
 
     private final String requestedMapName;
     private boolean requestedMapSelected;
-    private List<MapEntry> referenceList;
+    private final List<MapEntry> referenceList;
     private MapEntry selectedMap;
     private final Function<Stream<Path>, List<MapEntry>> filterMaps;
 
@@ -82,7 +82,9 @@ public final class MapPool {
         // class load, which is both untestable and a source of surprises when the property is set
         // from code rather than the command line.
         this.requestedMapName = System.getProperty(LOBBY_MAP_PROPERTY, DEFAULT_MAP_NAME);
-        this.referenceList = loadMapsEntries(path);
+        // Copied because the filter decides what it returns and one of them hands back an immutable
+        // list, which the pool has to be able to empty.
+        this.referenceList = new ArrayList<>(loadMapsEntries(path));
         this.peekMap();
     }
 
@@ -106,35 +108,45 @@ public final class MapPool {
             return;
         }
 
-        LOGGER.warn(describeMissingMap(this.requestedMapName, availableMapNames()));
+        // Neither refusing to start nor picking blindly: the default world first, and if that is
+        // not there either the first world that was found, because leaving the lobby down over a
+        // naming question would be the worse outcome. The warning is written afterwards so that it
+        // can name the world that was actually taken rather than the one the rule prefers.
+        this.selectedMap = findMap(DEFAULT_MAP_NAME).orElseGet(this.referenceList::getFirst);
+        LOGGER.warn(describeMissingMap(this.requestedMapName, availableMapNames(), selectedMapName()));
+    }
 
-        Optional<MapEntry> fallback = findMap(DEFAULT_MAP_NAME);
-        if (fallback.isPresent()) {
-            this.selectedMap = fallback.get();
-            return;
-        }
-
-        // Neither the named world nor the default one is there. Refusing to start would leave the
-        // lobby down over a naming question, so the first world that was found is used and the
-        // situation is reported loudly enough to be fixed.
-        this.selectedMap = this.referenceList.getFirst();
-        LOGGER.warn("The default world '{}' does not exist either. Falling back to '{}'.", DEFAULT_MAP_NAME, this.selectedMap.path().getFileName().toString());
+    /**
+     * Gets the name of the world directory that was selected.
+     *
+     * @return the name of the selected world
+     */
+    private String selectedMapName() {
+        return this.selectedMap.path().getFileName().toString();
     }
 
     /**
      * Builds the warning that reports a world which the property named but which is not there.
      * <p>
-     * The message is built rather than formatted into the log call so that the rule behind it —
-     * both the searched name and the found ones have to appear — is one a test can hold the code
-     * to.
+     * The message is built rather than formatted into the log call so that the rules behind it —
+     * the searched name, the found ones and the world that was taken instead all have to appear —
+     * are ones a test can hold the code to.
+     * </p>
+     * <p>
+     * The fallback is named rather than assumed. The message used to announce the default world
+     * unconditionally, including in the case where the default world was missing as well and the
+     * code went on with the first world it had found: it said one thing and did another, which is
+     * the one failure mode a warning of this kind must not have.
      * </p>
      *
      * @param requested the name of the world that was searched for
      * @param found     the names of the worlds that are present
+     * @param fallback  the name of the world that was selected instead
      * @return the warning to log
      */
-    static String describeMissingMap(String requested, List<String> found) {
-        return "The world '" + requested + "' named by the system property " + LOBBY_MAP_PROPERTY + " does not exist. Found worlds: " + String.join(", ", found) + ". Falling back to the default world '" + DEFAULT_MAP_NAME + "'.";
+    static String describeMissingMap(String requested, List<String> found, String fallback) {
+        String target = DEFAULT_MAP_NAME.equalsIgnoreCase(fallback) ? "the default world '" + fallback + "'" : "the world '" + fallback + "', because the default world '" + DEFAULT_MAP_NAME + "' is not there either";
+        return "The world '" + requested + "' named by the system property " + LOBBY_MAP_PROPERTY + " does not exist. Found worlds: " + String.join(", ", found) + ". Falling back to " + target + ".";
     }
 
     /**
@@ -208,12 +220,16 @@ public final class MapPool {
     }
 
     /**
-     * Removes the selected map from the list. If the list is empty it will throw an
-     * exception.
+     * Forgets every world the pool found.
+     * <p>
+     * The list is emptied rather than replaced by null. This package is
+     * {@code @NotNullByDefault}, so a null there was a promise the class broke against itself, and
+     * it turned every later call of {@link #getAvailableMaps()} into a
+     * {@link NullPointerException} instead of an empty list.
+     * </p>
      */
     public void clear() {
         this.referenceList.clear();
-        this.referenceList = null;
     }
 
     /**
