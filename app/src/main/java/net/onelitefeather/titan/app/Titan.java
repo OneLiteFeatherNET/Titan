@@ -77,8 +77,8 @@ public final class Titan {
         MinecraftServer.getInstanceManager().registerInstance(instance);
         this.mapProvider = MapProvider.create(this.path, instance);
         this.appConfigProvider = AppConfigProvider.create(this.path);
-        this.navigationHelper = NavigationHelper.instance(this.deliver);
         this.featureGate = FeatureGate.create(LuckPermsFeatureAudience.create(), clock, zone);
+        this.navigationHelper = NavigationHelper.instance(this.deliver, this.featureGate);
     }
 
     public void initialize() {

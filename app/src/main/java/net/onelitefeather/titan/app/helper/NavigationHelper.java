@@ -27,13 +27,13 @@ import net.minestom.server.inventory.click.Click;
 import net.minestom.server.item.ItemStack;
 import net.onelitefeather.deliver.DeliverComponent;
 import net.onelitefeather.titan.api.deliver.Deliver;
+import net.onelitefeather.titan.common.feature.FeatureGate;
 import net.onelitefeather.titan.common.utils.Items;
+import net.onelitefeather.titan.common.utils.TitanFeatures;
 import net.theevilreaper.aves.inventory.InventoryLayout;
 import net.theevilreaper.aves.inventory.PersonalInventoryBuilder;
 import net.theevilreaper.aves.inventory.click.ClickHolder;
 import net.theevilreaper.aves.inventory.util.LayoutCalculator;
-import org.togglz.core.user.SimpleFeatureUser;
-import org.togglz.core.user.thread.ThreadLocalUserProvider;
 
 import java.time.Duration;
 import java.util.UUID;
@@ -43,16 +43,20 @@ public class NavigationHelper {
 
     private final String inventoryName = "<yellow>Navigator";
     private final Deliver deliver;
+    private final FeatureGate featureGate;
 
     private final LoadingCache<UUID, PersonalInventoryBuilder> inventoryBuilderLoadingCache = Caffeine.newBuilder().maximumSize(10000).expireAfterWrite(Duration.ofMinutes(5)).refreshAfterWrite(Duration.ofMinutes(1)).build(key -> createPersonalInventoryBuilder(
             MinecraftServer.getConnectionManager().getOnlinePlayerByUuid(key)));
 
-    private NavigationHelper(Deliver deliver) {
+    private NavigationHelper(Deliver deliver, FeatureGate featureGate) {
         this.deliver = deliver;
+        this.featureGate = featureGate;
     }
 
     public void openNavigator(Player player) {
         PersonalInventoryBuilder personalInventoryBuilder = inventoryBuilderLoadingCache.get(player.getUuid());
+        // The builder is cached per player, the layout is not: invalidating it runs the data
+        // layout function again, so a flag changed since the last open takes effect on this open.
         personalInventoryBuilder.invalidateDataLayout();
         personalInventoryBuilder.open();
     }
@@ -73,20 +77,28 @@ public class NavigationHelper {
             InventoryLayout finalLayout = layout != null ? layout : InventoryLayout.fromType(InventoryType.CHEST_1_ROW);
 
             finalLayout.setItems(LayoutCalculator.fillRow(InventoryType.CHEST_1_ROW), Items.NAVIGATOR_BLANK_ITEM_STACK);
-            ThreadLocalUserProvider.bind(toUser(player));
-            finalLayout.setItem(0, Items.NAVIGATOR_ELYTRA_ITEM_STACK, this::clickElytra);
-            finalLayout.setItem(4, Items.NAVIGATOR_SURVIVAL_ITEM_STACK, this::clickSurvival);
-            finalLayout.setItem(5, Items.NAVIGATOR_SLENDER_ITEM_STACK, this::clickSlender);
-            finalLayout.setItem(8, Items.NAVIGATOR_CREATIVE_ITEM_STACK, this::clickCreative);
-            ThreadLocalUserProvider.release();
+            // Every destination is gated (US-3.01 to US-3.04, US-3.06). A denied entry is not
+            // written, so its slot keeps the filler pane the whole row was just filled with.
+            if (isVisible(TitanFeatures.NAVIGATOR_ELYTRA, player)) {
+                finalLayout.setItem(0, Items.NAVIGATOR_ELYTRA_ITEM_STACK, this::clickElytra);
+            }
+            if (isVisible(TitanFeatures.NAVIGATOR_SURVIVAL, player)) {
+                finalLayout.setItem(4, Items.NAVIGATOR_SURVIVAL_ITEM_STACK, this::clickSurvival);
+            }
+            if (isVisible(TitanFeatures.NAVIGATOR_SLENDER, player)) {
+                finalLayout.setItem(5, Items.NAVIGATOR_SLENDER_ITEM_STACK, this::clickSlender);
+            }
+            if (isVisible(TitanFeatures.NAVIGATOR_CREATIVE, player)) {
+                finalLayout.setItem(8, Items.NAVIGATOR_CREATIVE_ITEM_STACK, this::clickCreative);
+            }
             return finalLayout;
         });
         inventoryBuilder.register();
         return inventoryBuilder;
     }
 
-    private SimpleFeatureUser toUser(Player player) {
-        return new SimpleFeatureUser(player.getUsername());
+    private boolean isVisible(TitanFeatures feature, Player player) {
+        return this.featureGate.isVisibleTo(feature, player.getUuid());
     }
 
     private void clickElytra(Player player, int slot, Click click, ItemStack itemStack, Consumer<ClickHolder> result) {
@@ -109,8 +121,8 @@ public class NavigationHelper {
         result.accept(ClickHolder.cancelClick());
     }
 
-    public static NavigationHelper instance(Deliver deliver) {
-        return new NavigationHelper(deliver);
+    public static NavigationHelper instance(Deliver deliver, FeatureGate featureGate) {
+        return new NavigationHelper(deliver, featureGate);
     }
 
 }

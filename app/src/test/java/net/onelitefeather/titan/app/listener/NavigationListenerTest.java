@@ -25,6 +25,7 @@ import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.app.helper.NavigationHelper;
 import net.onelitefeather.titan.app.testutils.DummyDeliver;
+import net.onelitefeather.titan.app.testutils.TestFeatureGate;
 import net.onelitefeather.titan.common.utils.Items;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,7 +40,7 @@ class NavigationListenerTest {
     @Test
     @DisplayName("Test has the navigator is opened when the player uses the player teleporter")
     void testNavigationListenerForClicked(Env env) {
-        NavigationHelper navigationHelper = spy(NavigationHelper.instance(DummyDeliver.instance()));
+        NavigationHelper navigationHelper = spy(NavigationHelper.instance(DummyDeliver.instance(), TestFeatureGate.create().gate()));
         Instance flatInstance = env.createFlatInstance();
         Player player = env.createPlayer(flatInstance);
         MinecraftServer.getGlobalEventHandler().addListener(PlayerUseItemEvent.class, new NavigationListener(navigationHelper));
