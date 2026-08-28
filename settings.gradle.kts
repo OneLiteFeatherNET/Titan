@@ -11,6 +11,12 @@ dependencyResolutionManagement {
             url = uri("https://repo.onelitefeather.dev/onelitefeather-proxy")
         }
         maven("https://central.sonatype.com/repository/maven-snapshots/")
+        // Falco (chunk loader and light engine) is published to the public
+        // OneLiteFeather release repository.
+        maven {
+            name = "OneLiteFeatherReleases"
+            url = uri("https://repo.onelitefeather.dev/releases")
+        }
         maven("https://repository.derklaro.dev/snapshots/")
         maven("https://repository.derklaro.dev/releases/")
         maven {
@@ -36,6 +42,12 @@ dependencyResolutionManagement {
             version("cloudnet", "4.0.0-RC17-SNAPSHOT")
             version("butterfly", "1.0.23")
 
+            // Falco: the OneLiteFeather chunk loader and light engine. 0.3.0 is the
+            // version the lobby spec names, but it predates Minestom 26.1; 2.1.0 is
+            // the current release and the first that resolves against the Minestom
+            // version the aonyx BOM pins.
+            version("falco", "2.1.0")
+
             version("luckperms", "5.6-SNAPSHOT")
 
             version("togglz", "4.6.2")
@@ -55,6 +67,10 @@ dependencyResolutionManagement {
             library("aves", "net.theevilreaper", "aves").withoutVersion()
             library("adventure.minimessage", "net.kyori", "adventure-text-minimessage").withoutVersion()
             library("butterfly-minestom", "net.onelitefeather", "butterfly-minestom").versionRef("butterfly")
+
+            // Falco
+            library("falco-anvil", "net.onelitefeather", "falco-anvil").versionRef("falco")
+            library("falco-light", "net.onelitefeather", "falco-light").versionRef("falco")
 
             library("togglz", "org.togglz", "togglz-core").versionRef("togglz")
             library("caffeine", "com.github.ben-manes.caffeine", "caffeine").versionRef("caffeine")
