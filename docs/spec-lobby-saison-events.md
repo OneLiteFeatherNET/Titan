@@ -206,16 +206,36 @@ Abschnitt 6a.
 | US-5.03 | Als Betreiber möchte ich, dass die Berechtigung auch beim Wechsel geprüft wird, damit ein manipulierter Klick nichts bewirkt. | When ein Wechsel zu einem Build-Server angefordert wird, shall die Lobby die Berechtigung erneut prüfen, bevor sie den Spieler weiterleitet. | `Deliver` | Must | offen |
 | US-5.04 | Als Teammitglied möchte ich sehen, welche Build-Server gerade laufen, damit ich nicht auf einen gestoppten klicke. | The Navigator shall nur Build-Server anzeigen, die zum Zeitpunkt des Öffnens als erreichbar gemeldet sind. | CloudNet-Dienstliste | Should | offen |
 
-### Stufe 6 — Resource Packs (später)
+### Stufe 6 — Resource Packs
 
-Bewusst grob gehalten. Ausspezifizierung erst, wenn Stufe 1–4 stehen.
+Konfiguriert über `resource-packs.json` neben dem Server. Ohne diese Datei
+registriert die Lobby keinen der Listener und sendet kein einziges Paket-Paket —
+Rollout-Stand daher überall `aus`, siehe [`rollout-log.md`](rollout-log.md).
 
 | ID | Story | Akzeptanzkriterium (EARS) | Schnittstelle | Priorität | Status |
 |---|---|---|---|---|---|
-| US-6.01 | Als Spieler möchte ich saisonale Texturen sehen, ohne bei jedem Serverwechsel neu zu laden. | The Lobby shall ein Basis-Paket und ein Saison-Paket mit getrennten Kennungen ausliefern. | `resource_pack_push` | Could | offen |
-| US-6.02 | Als Betreiber möchte ich beim Saisonwechsel nur das Saison-Paket tauschen. | When die Saison wechselt, shall die Lobby ausschließlich das Saison-Paket entfernen und ersetzen, nicht alle Pakete. | `resource_pack_pop(uuid)` | Could | offen |
-| US-6.03 | Als Betreiber möchte ich, dass ein hängender Client den Verbindungsaufbau nicht blockiert. | If ein Client nicht innerhalb einer konfigurierten Frist auf die Paketanfrage antwortet, then shall die Lobby fortfahren statt zu warten. | eigener Timeout | Could | offen |
-| US-6.04 | Als Betreiber möchte ich Bedrock-Spieler korrekt behandeln, weil deren gemeldeter Status nicht zutrifft. | If ein Spieler über Geyser verbunden ist, then shall die Lobby ihn nicht anhand des gemeldeten Paketstatus bewerten. | Bedrock-Erkennung | Could | offen |
+| US-6.01 | Als Spieler möchte ich saisonale Texturen sehen, ohne bei jedem Serverwechsel neu zu laden. | The Lobby shall ein Basis-Paket und ein Saison-Paket mit getrennten Kennungen ausliefern. | `resource_pack_push` | Could | umgesetzt |
+| US-6.02 | Als Betreiber möchte ich beim Saisonwechsel nur das Saison-Paket tauschen. | When die Saison wechselt, shall die Lobby ausschließlich das Saison-Paket entfernen und ersetzen, nicht alle Pakete. | `resource_pack_pop(uuid)` | Could | umgesetzt |
+| US-6.03 | Als Betreiber möchte ich, dass ein hängender Client den Verbindungsaufbau nicht blockiert. | If ein Client nicht innerhalb einer konfigurierten Frist auf die Paketanfrage antwortet, then shall die Lobby fortfahren statt zu warten. | eigener Timeout | Could | umgesetzt |
+| US-6.04 | Als Betreiber möchte ich Bedrock-Spieler korrekt behandeln, weil deren gemeldeter Status nicht zutrifft. | If ein Spieler über Geyser verbunden ist, then shall die Lobby ihn nicht anhand des gemeldeten Paketstatus bewerten. | Bedrock-Erkennung | Could | umgesetzt |
+
+**Auslöser für US-6.02:** `ResourcePackSeasonWatcher` liest `resource-packs.json`
+alle fünf Sekunden neu und ruft bei geändertem Saison-Eintrag
+`ResourcePackService.applySeason(…)` auf — auf dem Tick-Thread, damit die
+Paket-Buchführung von Minestom nicht nebenläufig beschrieben wird. Ein Wechsel
+erreicht damit auch die Spieler, die bereits online sind, ohne Neustart. Das
+Basis-Paket, der Timeout und die Bedrock-Einstellung werden bewusst **nicht**
+nachgeladen: das große Basis-Paket unter einer vollen Lobby zu tauschen ist eine
+Neustart-Entscheidung.
+
+**Zum Timeout (US-6.03):** Die Wache ist an ihre Anfrage gebunden (konkretes
+Future plus die Paket-Kennungen dieser Anfrage) und beantwortet die Anfrage
+stellvertretend, statt das Future von außen abzuschließen. Nur so räumt Minestom
+seine eigene Buchführung auf; ein von außen abgeschlossenes Future bleibt im
+Spielerobjekt stehen und jede spätere Konfigurationsphase wartet dann auf gar
+kein Paket mehr. Für ein als `required` konfiguriertes Paket bedeutet die
+stellvertretende Antwort einen Kick — dieselbe Regel, die Minestom auf jede
+andere endgültige Antwort anwendet.
 
 ### Stufe 7 — Portale (optional)
 

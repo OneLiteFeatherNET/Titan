@@ -18,11 +18,19 @@ Zeilen bleiben stehen — der Verlauf ist der Zweck.
 Der Notausschalter schlägt jede Stufe und jedes Zeitfenster. Die Prüfreihenfolge
 ist in US-3.07 festgelegt: erst Notausschalter, dann Stufe, dann Zeitfenster.
 
+**Nicht jedes Feature hängt an einem Togglz-Flag.** Die Resource-Pack-Auslieferung
+(Stufe 6) wird über die Datei `resource-packs.json` neben dem Server geschaltet:
+ohne Datei ist sie `aus` und registriert nicht einmal ihre Listener, mit Datei ist
+sie `ga` — eine Zwischenstufe für einzelne Spielergruppen gibt es dort nicht, weil
+ein Paket an den Client geht oder nicht. Für den Nachweis nach NFR-011 zählt
+derselbe Eintrag wie bei einem Flag: Datum, Übergang, Grund, verantwortliche
+Person.
+
 ## Verlauf
 
 | Datum | Feature | von → nach | Grund | Verantwortlich |
 |---|---|---|---|---|
-| — | — | — | noch kein Eintrag | — |
+| 2026-08-28 | Resource Packs (Stufe 6) | — → `aus` | Auslieferung, Saisonwechsel, Timeout-Wache und Bedrock-Erkennung sind implementiert und getestet (`:common` und `:app`). Auf keiner Lobby liegt eine `resource-packs.json`, das Feature ist damit überall abgeschaltet und hat noch keinen Spieler erreicht. | @TheMeinerLP |
 
 ## Wie ein Eintrag entsteht
 
