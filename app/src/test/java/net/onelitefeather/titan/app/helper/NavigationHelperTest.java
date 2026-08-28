@@ -33,12 +33,16 @@ import net.onelitefeather.titan.common.feature.ReleaseStage;
 import net.onelitefeather.titan.common.feature.TitanFeatures;
 import net.onelitefeather.titan.common.navigator.BuildServerAccess;
 import net.onelitefeather.titan.common.navigator.BuildServerDirectory;
+import net.onelitefeather.titan.common.season.SeasonDefinition;
+import net.onelitefeather.titan.common.season.SeasonDirector;
+import net.onelitefeather.titan.common.season.SeasonLoader;
 import net.onelitefeather.titan.common.utils.Items;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -242,6 +246,52 @@ class NavigationHelperTest {
         features.killSwitch(TitanFeatures.NAVIGATOR_ELYTRA);
 
         Assertions.assertFalse(openedMaterials(env, helper, player).contains(Material.ELYTRA), "the second open must reflect the flag change");
+    }
+
+    @DisplayName("A running season re-skins a navigator icon and leaves the rest of the menu alone")
+    @Test
+    void aRunningSeasonReskinsAnIcon(Env env) {
+        TestFeatureGate features = allReleased();
+        NavigationHelper helper = navigatorWith(features, season("live", "2026-10-01", "2026-11-05"));
+        Player player = env.createPlayer(env.createFlatInstance());
+
+        Set<Material> shown = openedMaterials(env, helper, player);
+
+        Assertions.assertTrue(shown.contains(Material.CARVED_PUMPKIN), "the season's icon should have replaced the survival one");
+        Assertions.assertFalse(shown.contains(Material.GRASS_BLOCK), "and the ordinary icon should be gone, not shown alongside it");
+        Assertions.assertTrue(shown.contains(Material.ELYTRA), "a season must not touch a destination it did not name");
+        Assertions.assertTrue(shown.contains(Material.WOODEN_AXE), "a season must not touch a destination it did not name");
+    }
+
+    @DisplayName("A season whose window has not opened is shown to a preview holder and to nobody else")
+    @Test
+    void previewHolderSeesNextSeasonsIcon(Env env) {
+        TestFeatureGate features = allReleased();
+        NavigationHelper helper = navigatorWith(features, season("future", "2026-12-01", "2026-12-27"));
+        Instance instance = env.createFlatInstance();
+        Player ordinary = env.createPlayer(instance);
+        Player team = env.createPlayer(instance);
+        features.grant(team.getUuid(), FeatureGate.PREVIEW_PERMISSION);
+
+        Assertions.assertTrue(openedMaterials(env, helper, ordinary).contains(Material.GRASS_BLOCK), "a player sees this month's menu");
+        Assertions.assertFalse(openedMaterials(env, helper, ordinary).contains(Material.CARVED_PUMPKIN), "and never next month's");
+        Assertions.assertTrue(openedMaterials(env, helper, team).contains(Material.CARVED_PUMPKIN), "the team sees next month's, which is what the preview permission is for");
+    }
+
+    /** A season that swaps the survival icon for a pumpkin between the two given dates. */
+    private static SeasonDefinition season(String id, String from, String to) {
+        return SeasonLoader.create(ZoneId.of("Europe/Berlin")).parse(id, """
+                {
+                  "id": "%s",
+                  "stage": "ga",
+                  "window": { "from": "%s", "to": "%s", "zone": "Europe/Berlin" },
+                  "effects": [ { "type": "replace_icon", "destination": "Survival", "material": "minecraft:carved_pumpkin" } ]
+                }
+                """.formatted(id, from, to));
+    }
+
+    private static NavigationHelper navigatorWith(TestFeatureGate features, SeasonDefinition... seasons) {
+        return NavigationHelper.instance(DummyDeliver.instance(), features.gate(), SeasonDirector.of(features.gate(), List.of(seasons)));
     }
 
     /** A fixture in which every navigator destination is generally released. */

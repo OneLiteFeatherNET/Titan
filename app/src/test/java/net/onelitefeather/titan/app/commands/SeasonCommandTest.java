@@ -31,6 +31,9 @@ import net.onelitefeather.titan.common.feature.FeatureGate;
 import net.onelitefeather.titan.common.feature.ReleaseStage;
 import net.onelitefeather.titan.common.feature.SeasonWindowActivationStrategy;
 import net.onelitefeather.titan.common.feature.TitanFeatures;
+import net.onelitefeather.titan.common.season.SeasonDefinition;
+import net.onelitefeather.titan.common.season.SeasonDirector;
+import net.onelitefeather.titan.common.season.SeasonLoader;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -65,6 +68,7 @@ class SeasonCommandTest {
     private static final Instant NOW = Instant.parse("2026-10-15T12:00:00Z");
 
     private InMemoryStateRepository repository;
+    private FeatureGate gate;
     private SeasonCommand command;
 
     @BeforeEach
@@ -72,7 +76,8 @@ class SeasonCommandTest {
         this.repository = new InMemoryStateRepository();
         FeatureManager featureManager = new FeatureManagerBuilder().featureEnum(TitanFeatures.class).stateRepository(this.repository).userProvider(new NoOpUserProvider()).activationStrategyProvider(new DefaultActivationStrategyProvider()).build();
         FeatureGate gate = FeatureGate.with(featureManager, FeatureAudience.denyAll(), Clock.fixed(NOW, ZoneOffset.UTC), BERLIN);
-        this.command = new SeasonCommand(gate);
+        this.gate = gate;
+        this.command = new SeasonCommand(gate, SeasonDirector.of(gate, List.of()));
     }
 
     private static String plain(Component component) {
@@ -87,6 +92,41 @@ class SeasonCommandTest {
         Player player = spy(env.createPlayer(instance));
         doReturn(PermissionChecker.always(permitted ? TriState.TRUE : TriState.FALSE)).when(player).getOrDefault(eq(PermissionChecker.POINTER), any());
         return player;
+    }
+
+    @Test
+    @DisplayName("the season list names every loaded season and whether it is live")
+    void seasonListNamesEverySeasonAndWhetherItIsLive() {
+        SeasonLoader loader = SeasonLoader.create(BERLIN);
+        SeasonDefinition open = loader.parse("open", """
+                { "id": "open", "priority": 5, "stage": "ga", "world": "lantern-nights",
+                  "window": { "from": "2026-10-01", "to": "2026-11-05", "zone": "Europe/Berlin" } }
+                """);
+        SeasonDefinition later = loader.parse("later", """
+                { "id": "later", "priority": 9, "stage": "internal",
+                  "window": { "from": "2026-12-01", "to": "2026-12-27", "zone": "Europe/Berlin" } }
+                """);
+        SeasonCommand listing = new SeasonCommand(this.gate, SeasonDirector.of(this.gate, List.of(later, open)));
+
+        List<String> lines = listing.seasonLines().stream().map(SeasonCommandTest::plain).toList();
+
+        assertEquals(3, lines.size());
+        assertTrue(lines.getFirst().contains("Seasons (2)"), lines.getFirst());
+        assertTrue(lines.get(1).startsWith("open"), "lowest priority first, whatever order they were handed over in: " + lines);
+        assertTrue(lines.get(1).contains("priority 5"), lines.get(1));
+        assertTrue(lines.get(1).contains("world lantern-nights"), lines.get(1));
+        assertTrue(lines.get(1).endsWith("live"), lines.get(1));
+        assertTrue(lines.get(2).startsWith("later"), lines.get(2));
+        assertTrue(lines.get(2).endsWith("not live"), lines.get(2));
+    }
+
+    @Test
+    @DisplayName("a lobby with no seasons says so instead of printing an empty list")
+    void seasonListSaysWhenNoSeasonIsInstalled() {
+        List<String> lines = this.command.seasonLines().stream().map(SeasonCommandTest::plain).toList();
+
+        assertEquals(2, lines.size());
+        assertTrue(lines.get(1).contains("No seasons are installed"), lines.get(1));
     }
 
     @Test

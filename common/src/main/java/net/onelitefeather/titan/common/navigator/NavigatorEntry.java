@@ -17,6 +17,7 @@
 package net.onelitefeather.titan.common.navigator;
 
 import net.minestom.server.item.ItemStack;
+import net.minestom.server.item.Material;
 import net.onelitefeather.deliver.DeliverComponent;
 import net.onelitefeather.deliver.DeliverType;
 import net.onelitefeather.titan.common.feature.FeatureAudience;
@@ -38,7 +39,7 @@ import java.util.UUID;
  * @param destination the task or service name a click connects to
  * @param permission  the permission required to see this entry, or {@code null} when it is public
  * @author TheMeinerLP
- * @version 1.0.0
+ * @version 1.1.0
  * @since 1.15.0
  */
 public record NavigatorEntry(ItemStack icon, DeliverType type, String destination,
@@ -68,6 +69,21 @@ public record NavigatorEntry(ItemStack icon, DeliverType type, String destinatio
     @Contract(value = "_, _, _ -> new", pure = true)
     public static NavigatorEntry restrictedServer(ItemStack icon, String serviceName, String permission) {
         return new NavigatorEntry(icon, DeliverType.SERVER, serviceName, permission);
+    }
+
+    /**
+     * Returns this entry with its icon changed to another material, keeping the name and everything
+     * else about the item.
+     *
+     * <p>Used by seasonal content to re-skin a destination without knowing anything about what the
+     * icon says or which permission guards the entry.
+     *
+     * @param material the material the icon takes on
+     * @return a copy of this entry with the new icon material
+     */
+    @Contract(value = "_ -> new", pure = true)
+    public NavigatorEntry withIconMaterial(Material material) {
+        return new NavigatorEntry(this.icon.withMaterial(material), this.type, this.destination, this.permission);
     }
 
     /**
