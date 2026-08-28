@@ -174,14 +174,14 @@ Abschnitt 6a.
 
 | ID | Story | Akzeptanzkriterium (EARS) | Schnittstelle | Priorität | Status |
 |---|---|---|---|---|---|
-| US-3.01 | Als Entwickler möchte ich ein Feature zuerst nur intern sehen, damit wir es prüfen können, bevor es jemand anders sieht. | Where ein Feature auf Stufe „intern" steht, shall die Lobby es ausschließlich Spielern mit der Berechtigung `titan.feature.internal` zeigen. | `FeatureGate`, LuckPerms | Must | **Mechanik gebaut, NICHT verdrahtet** |
-| US-3.02 | Als Betreiber möchte ich ein Feature auf Lite-Spieler ausweiten, damit wir es unter Last prüfen und Lite einen Vorteil hat. | Where ein Feature auf Stufe „lite" steht, shall die Lobby es Spielern der LuckPerms-Gruppe `lite` **und** Spielern mit `titan.feature.internal` zeigen. | `FeatureGate`, LuckPerms-Gruppe `lite` | Must | **Mechanik gebaut, NICHT verdrahtet** |
-| US-3.03 | Als Betreiber möchte ich ein Feature allgemein freigeben, damit alle es sehen. | Where ein Feature auf Stufe „ga" steht, shall die Lobby es allen Spielern zeigen. | `FeatureGate` | Must | **Mechanik gebaut, NICHT verdrahtet** |
-| US-3.04 | Als Betreiber möchte ich ein Feature sofort abschalten können, damit ein Fehler nicht bis zum nächsten Deployment sichtbar bleibt. | If der Notausschalter eines Features gesetzt ist, then shall die Lobby es unabhängig von Stufe und Zeitfenster niemandem zeigen. | Togglz-Flag | Must | **Mechanik gebaut, NICHT verdrahtet** |
+| US-3.01 | Als Entwickler möchte ich ein Feature zuerst nur intern sehen, damit wir es prüfen können, bevor es jemand anders sieht. | Where ein Feature auf Stufe „intern" steht, shall die Lobby es ausschließlich Spielern mit der Berechtigung `titan.feature.internal` zeigen. | `FeatureGate`, LuckPerms | Must | umgesetzt (Navigator) |
+| US-3.02 | Als Betreiber möchte ich ein Feature auf Lite-Spieler ausweiten, damit wir es unter Last prüfen und Lite einen Vorteil hat. | Where ein Feature auf Stufe „lite" steht, shall die Lobby es Spielern der LuckPerms-Gruppe `lite` **und** Spielern mit `titan.feature.internal` zeigen. | `FeatureGate`, LuckPerms-Gruppe `lite` | Must | umgesetzt (Navigator) |
+| US-3.03 | Als Betreiber möchte ich ein Feature allgemein freigeben, damit alle es sehen. | Where ein Feature auf Stufe „ga" steht, shall die Lobby es allen Spielern zeigen. | `FeatureGate` | Must | umgesetzt (Navigator) |
+| US-3.04 | Als Betreiber möchte ich ein Feature sofort abschalten können, damit ein Fehler nicht bis zum nächsten Deployment sichtbar bleibt. | If der Notausschalter eines Features gesetzt ist, then shall die Lobby es unabhängig von Stufe und Zeitfenster niemandem zeigen. | Togglz-Flag | Must | umgesetzt (Navigator) |
 | US-3.05 | Als Betreiber möchte ich, dass die Abschaltung ohne Neustart wirkt, damit die Reaktionszeit kurz ist. | When die Flag-Datei geändert wird, shall die Änderung innerhalb von zwei Sekunden wirksam sein. | `FileBasedStateRepository` | Must | umgesetzt |
-| US-3.06 | Als Betreiber möchte ich Freigaben zeitlich planen, damit ein Event ohne Nachtschicht startet. | Where für ein Feature ein Zeitfenster konfiguriert ist, shall die Lobby es nur innerhalb dieses Fensters aktivieren. | eigene `ActivationStrategy` | Must | **Mechanik gebaut, NICHT verdrahtet** |
+| US-3.06 | Als Betreiber möchte ich Freigaben zeitlich planen, damit ein Event ohne Nachtschicht startet. | Where für ein Feature ein Zeitfenster konfiguriert ist, shall die Lobby es nur innerhalb dieses Fensters aktivieren. | eigene `ActivationStrategy` | Must | umgesetzt (Navigator) |
 | US-3.07 | Als Entwickler möchte ich, dass die Prüfreihenfolge festgelegt ist, damit das Verhalten vorhersagbar bleibt. | The Freigabeprüfung shall in dieser Reihenfolge auswerten: Notausschalter, dann Berechtigungsstufe, dann Zeitfenster. | `FeatureGate` | Must | umgesetzt |
-| US-3.08 | Als Betreiber möchte ich den aktuellen Stand im Spiel abfragen, damit ich nicht ins Log schauen muss. | When ein berechtigtes Teammitglied `/season status` ausführt, shall die Lobby je Feature Stufe, Zeitfenster und Notausschalter-Zustand ausgeben. | Command | Should | teilweise — Ausgabe widerspricht dem Gate bei unlesbarer Konfiguration |
+| US-3.08 | Als Betreiber möchte ich den aktuellen Stand im Spiel abfragen, damit ich nicht ins Log schauen muss. | When ein berechtigtes Teammitglied `/season status` ausführt, shall die Lobby je Feature Stufe, Zeitfenster und Notausschalter-Zustand ausgeben. | Command | Should | umgesetzt |
 | US-3.09 | Als Betreiber möchte ich jeden Stufenwechsel dokumentiert haben, damit nachvollziehbar ist, wann was freigegeben wurde. | When ein Feature die Stufe wechselt, shall der Wechsel mit Zeitpunkt, alter und neuer Stufe protokolliert werden. | Log + `docs/rollout-log.md` | Must | umgesetzt |
 
 ### Stufe 4 — Saison-Pakete
@@ -353,8 +353,8 @@ bekommen den Zeitpunkt übergeben, statt selbst auf die Uhr zu sehen. Die
 - [ ] Ein falsch gesetztes `TITAN_LOBBY_MAP` startet die Lobby mit der Standardwelt und protokolliert den gesuchten Namen.
 - [ ] Die Tageszeit der Lobby entspricht der Uhrzeit in Berlin, auch über eine Sommerzeitumstellung hinweg.
 - [ ] Die Zeitsteuerung ist mit einer festen `Clock` testbar; ein Test prüft Winter im Sommer.
-- [ ] Ein Feature lässt sich nacheinander auf intern, lite und ga stellen, ohne dass Code geändert wird.
-- [ ] Der Notausschalter wirkt innerhalb von zwei Sekunden und schlägt Stufe und Zeitfenster.
+- [x] Ein Feature lässt sich nacheinander auf intern, lite und ga stellen, ohne dass Code geändert wird.
+- [x] Der Notausschalter wirkt innerhalb von zwei Sekunden und schlägt Stufe und Zeitfenster.
 - [ ] Ein Spieler ohne `titan.navigator.buildserver` sieht die Build-Server nicht und kann sie auch durch einen manipulierten Klick nicht erreichen.
 - [ ] Die Lobby startet ohne Saison-Paket vollständig funktionsfähig.
 - [ ] Ein Saison-Paket lässt sich entfernen, ohne dass Reste in der Welt zurückbleiben.

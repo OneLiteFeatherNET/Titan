@@ -48,7 +48,11 @@ ISO-Zeitangabe (`2026-10-01T18:00`); `zone` ist optional und steht sonst auf
 `Europe/Berlin`. Ein unlesbarer Wert schaltet das Feature ab, statt es zu öffnen.
 
 Den aktuellen Stand zeigt `/season status` im Spiel — je Feature Stufe,
-Zeitfenster und Notausschalter. Die Togglz-Adminkonsole ist ein Servlet und in
+Zeitfenster und Notausschalter. Unlesbare Konfiguration wird als solche
+ausgewiesen (`window unreadable: from='1. Oktober' …`, `stage internal
+('intern' is not internal, lite or ga)`) und nicht als „kein Zeitfenster"
+beschönigt: das Gate sperrt in dem Fall alle aus, und die Anzeige muss auf den
+Tippfehler zeigen statt auf ein unbegrenzt laufendes Feature. Die Togglz-Adminkonsole ist ein Servlet und in
 einem Minestom-Prozess nicht verfügbar; der Befehl ersetzt sie.
 
 ## Verlauf
