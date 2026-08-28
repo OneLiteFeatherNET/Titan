@@ -37,6 +37,9 @@ import net.onelitefeather.titan.common.deliver.DeliverProvider;
 import net.onelitefeather.titan.common.event.EntityDismountEvent;
 import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
 import net.onelitefeather.titan.common.map.MapProvider;
+import net.onelitefeather.titan.common.resourcepack.ResourcePackService;
+import net.onelitefeather.titan.common.resourcepack.ResourcePackSettings;
+import net.onelitefeather.titan.common.resourcepack.ResourcePackSettingsProvider;
 import net.onelitefeather.titan.common.utils.Cancelable;
 
 import java.nio.file.Path;
@@ -49,6 +52,7 @@ public final class Titan {
     private final MapProvider mapProvider;
     private final AppConfigProvider appConfigProvider;
     private final NavigationHelper navigationHelper;
+    private final ResourcePackService resourcePackService;
 
     public Titan() {
         MinecraftServer.getConnectionManager().setPlayerProvider(TitanPlayer::new);
@@ -59,6 +63,10 @@ public final class Titan {
         this.mapProvider = MapProvider.create(this.path, instance);
         this.appConfigProvider = AppConfigProvider.create(this.path);
         this.navigationHelper = NavigationHelper.instance(this.deliver);
+        // Without a resource-packs.json this stays disabled and no listener is registered
+        // below, so a lobby without a pack server behaves exactly as it did before.
+        ResourcePackSettings resourcePackSettings = ResourcePackSettingsProvider.load(this.path);
+        this.resourcePackService = ResourcePackService.create(resourcePackSettings);
     }
 
     public void initialize() {
@@ -71,7 +79,7 @@ public final class Titan {
     }
 
     public void terminate() {
-
+        this.resourcePackService.close();
     }
 
     private void initCommands() {
@@ -109,7 +117,32 @@ public final class Titan {
         this.eventNode.addListener(PlayerSpawnEvent.class, new PlayerSpawnListener(
                 this.appConfigProvider.getAppConfig(), this.mapProvider.getActiveLobby(), this.navigationHelper));
 
+        initResourcePackListeners();
+
         MinecraftServer.getGlobalEventHandler().addChild(eventNode);
+    }
+
+    /**
+     * Registers the resource pack listeners - but only when a pack is actually configured. An
+     * unconfigured lobby registers nothing at all and therefore cannot send a single pack packet.
+     */
+    private void initResourcePackListeners() {
+        if (!this.resourcePackService.enabled()) {
+            return;
+        }
+        this.eventNode.addListener(AsyncPlayerConfigurationEvent.class, new ResourcePackConfigurationListener(this.resourcePackService));
+        this.eventNode.addListener(PlayerResourcePackStatusEvent.class, new ResourcePackStatusListener(this.resourcePackService));
+        this.eventNode.addListener(PlayerDisconnectEvent.class, new ResourcePackDisconnectListener(this.resourcePackService));
+    }
+
+    /**
+     * The resource pack delivery of this lobby. A season change calls
+     * {@code applySeason} on it.
+     *
+     * @return the resource pack service
+     */
+    public ResourcePackService resourcePackService() {
+        return this.resourcePackService;
     }
 
     public static Titan instance() {
