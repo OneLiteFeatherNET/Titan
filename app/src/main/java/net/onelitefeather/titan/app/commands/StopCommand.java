@@ -22,7 +22,6 @@ import net.minestom.server.MinecraftServer;
 import net.minestom.server.command.CommandSender;
 import net.minestom.server.command.builder.Command;
 import net.minestom.server.entity.Player;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -49,7 +48,7 @@ public final class StopCommand extends Command {
         }));
     }
 
-    private boolean canStop(@NotNull CommandSender sender, @Nullable String commandString) {
+    private boolean canStop(CommandSender sender, @Nullable String commandString) {
         if (!(sender instanceof Player)) {
             return true;
         }
