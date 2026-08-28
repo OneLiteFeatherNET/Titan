@@ -155,8 +155,8 @@ Abschnitt 6a.
 
 | ID | Story | Akzeptanzkriterium (EARS) | Schnittstelle | Priorität | Status |
 |---|---|---|---|---|---|
-| US-2.01 | Als Spieler möchte ich, dass die Lobby-Tageszeit meiner echten Tageszeit entspricht, damit sich die Welt lebendig anfühlt. | While die Lobby läuft, shall die Tageszeit der Instanz der aktuellen Uhrzeit in `Europe/Berlin` entsprechen. | `Instance#setTime`, `setTimeRate(0)` | Must | offen |
-| US-2.02 | Als Entwickler möchte ich, dass der eingebaute Tageszyklus abgeschaltet ist, damit unsere Zeitsteuerung nicht gegen Minestom arbeitet. | The Lobby shall die Zeitrate der Instanz auf 0 setzen und die Zeit ausschließlich selbst setzen. | `Instance#setTimeRate` | Must | offen |
+| US-2.01 | Als Spieler möchte ich, dass die Lobby-Tageszeit meiner echten Tageszeit entspricht, damit sich die Welt lebendig anfühlt. | While die Lobby läuft, shall die Tageszeit der Instanz der aktuellen Uhrzeit in `Europe/Berlin` entsprechen. | `Instance#setTime`, `Instance#defaultClock()` | Must | offen |
+| US-2.02 | Als Entwickler möchte ich, dass der eingebaute Tageszyklus abgeschaltet ist, damit unsere Zeitsteuerung nicht gegen Minestom arbeitet. | The Lobby shall die Zeitrate der Instanz auf 0 setzen und die Zeit ausschließlich selbst setzen. | `Instance#defaultClock().rate(0f)` | Must | offen |
 | US-2.03 | Als Entwickler möchte ich die Zeitquelle austauschen können, damit Tests deterministisch sind. | The Zeitsteuerung shall ihre Zeit aus einer injizierten `java.time.Clock` beziehen und nicht aus `Instant.now()`. | `java.time.Clock` | Must | offen |
 | US-2.04 | Als Betreiber möchte ich, dass Sommerzeit korrekt behandelt wird, damit im Oktober nichts um eine Stunde verrutscht. | When die Sommerzeitumstellung in `Europe/Berlin` stattfindet, shall die Lobby-Tageszeit ohne Neustart korrekt weiterlaufen. | `ZoneId.of("Europe/Berlin")` | Must | offen |
 | US-2.05 | Als Entwickler möchte ich die Uhrzeit-Abbildung austauschen können, damit wir lineare und astronomische Variante vergleichen können, ohne den Aufrufcode zu ändern. | The Zeitsteuerung shall die Abbildung von Realzeit auf Spielzeit über eine austauschbare Strategie beziehen. | `DayTimeStrategy` | Must | offen |
@@ -255,7 +255,7 @@ gegeneinander testen, und die aufwendigere kommt später — ohne Umbau.
  *
  * @author TheMeinerLP
  * @version 1.0.0
- * @since 1.11.0
+ * @since 1.15.0
  */
 public interface DayTimeStrategy {
 
@@ -296,7 +296,7 @@ injizierte `Clock` ist, braucht kein Test reale Zeit.
  *
  * @author TheMeinerLP
  * @version 1.0.0
- * @since 1.11.0
+ * @since 1.15.0
  */
 public interface SeasonBoundaryStrategy {
 
