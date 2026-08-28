@@ -9,6 +9,12 @@ dependencies {
     implementation(libs.minestom)
     implementation(libs.togglz)
     implementation(libs.aves)
+    // Coris ships no runtime dependency of its own except mycelium-bom, whose
+    // constraints would outrank the aonyx-bom line Titan pins (it moves Minestom a
+    // release forward). Keep the bom out; the jar is all we want.
+    implementation(libs.coris) {
+        exclude(group = "net.onelitefeather", module = "mycelium-bom")
+    }
     implementation(libs.adventure.minimessage)
 
     // No CloudNet here anymore: anything touching the CloudNet bridge lives in the
@@ -19,7 +25,11 @@ dependencies {
     testImplementation(libs.minestom)
     testImplementation(libs.cyano)
     testImplementation(libs.aves)
+    testImplementation(libs.coris) {
+        exclude(group = "net.onelitefeather", module = "mycelium-bom")
+    }
     testImplementation(libs.junit.api)
+    testImplementation(libs.junit.params)
     testImplementation(libs.junit.platform.launcher)
     testRuntimeOnly(libs.junit.engine)
 }
