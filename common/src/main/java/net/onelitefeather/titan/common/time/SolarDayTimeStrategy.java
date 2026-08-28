@@ -45,19 +45,46 @@ import java.time.ZoneId;
  * <h2>The calculation and its limits</h2>
  *
  * Sunrise and sunset come from the low-precision sunrise equation in its published closed form (the
- * form the NOAA solar calculator is derived from). Checked against the Berlin values for the 2026
- * solstices and equinoxes it agrees to within about one minute; the equation's own stated bound is
- * a
- * few minutes. One Minecraft tick is worth 3.6 real seconds in a 24-hour cycle, so the error is
- * visible in principle — this is a lighting effect, not an ephemeris.
+ * form the NOAA solar calculator is derived from). Measured for Berlin on twelve dates spread
+ * across 2026, against the rise, set and upper-transit times the US Naval Observatory publishes and
+ * against a full-precision ephemeris that reproduces every one of those published minutes:
+ *
+ * <table border="1">
+ * <caption>Largest deviation over the twelve dates</caption>
+ * <tr><th></th><th>vs USNO (printed to the minute)</th><th>vs full-precision ephemeris</th></tr>
+ * <tr><td>solar noon</td><td>41 s</td><td>17 s</td></tr>
+ * <tr><td>sunrise</td><td>56 s</td><td>39 s</td></tr>
+ * <tr><td>sunset</td><td>96 s</td><td>102 s</td></tr>
+ * </table>
+ *
+ * <p>Up to 30 seconds of the USNO column is the table's own rounding, which is why the two columns
+ * differ; the ephemeris column is the honest one. So: <b>solar noon inside 20 seconds, sunrise
+ * inside 40, sunset inside two minutes</b>. One figure for all three would have to be the worst of
+ * them, so this class does not quote one.
+ *
+ * <p>Solar noon — the midpoint of the computed sunrise and sunset — is the accurate part because it
+ * depends only on the time scale and the equation of time. Sunrise and sunset carry the error of
+ * the half-day length on top of that, and that error is the larger one; see the third bullet below
+ * for where it comes from. One Minecraft tick is worth 3.6 real seconds in a 24-hour cycle, so all
+ * of this is visible in principle — this is a lighting effect, not an ephemeris.
  *
  * <p>Known limits, stated rather than hidden:
  *
  * <ul>
  * <li>The horizon is the conventional -0.833°, which folds in mean refraction and the solar
  * radius. Local terrain, air pressure and temperature are not modelled.
- * <li>The equation returns UT without a &#916;T correction. At roughly 70 seconds that stays well
- * inside the equation's own error.
+ * <li>No &#916;T reduction is applied, and none is needed: the day count fed into the equation is
+ * measured in UT days from 2000-01-01 12:00 UT, so the transit it returns is already UT. (The
+ * {@code +0.0008} that appears in the published form sits inside a {@code ceil} that rounds the
+ * date to a whole day. This class needs no such rounding — it starts from the exact integer
+ * epoch day — so the term is dropped with the {@code ceil}. Carrying it over as a standalone
+ * summand would shift every result by 69 seconds.)
+ * <li>The argument of perihelion is the fixed J2000 value of 102.9372°. It advances by roughly
+ * 0.017° a year, so by 2026 the computed ecliptic longitude of the sun lags the true one by
+ * about 0.45°. Near an equinox that is worth some 0.18° of declination and about a minute of
+ * half-day length — the dominant term in the sunrise and sunset residual above, and the reason
+ * it is largest away from the solstices. The bound therefore widens by roughly ten seconds a
+ * decade; refitting the constant is the fix when it stops being good enough.
  * <li>Above the polar circles there are dates without a sunrise or a sunset. For those this class
  * falls back to {@link LinearDayTimeStrategy} instead of inventing a boundary. Berlin never
  * reaches that case; a future position might.
@@ -85,9 +112,6 @@ public final class SolarDayTimeStrategy implements DayTimeStrategy {
 
     /** Julian date of J2000.0. */
     private static final double J2000_JULIAN_DATE = 2_451_545.0;
-
-    /** Leap second and clock correction of the sunrise equation, in days. */
-    private static final double MEAN_SOLAR_TIME_CORRECTION = 0.0009;
 
     /** Obliquity of the ecliptic in degrees. */
     private static final double EARTH_OBLIQUITY = 23.4397;
@@ -224,8 +248,11 @@ public final class SolarDayTimeStrategy implements DayTimeStrategy {
      */
     private @Nullable SolarDay solarDay(LocalDate date) {
         double days = date.toEpochDay() - J2000_EPOCH_DAY;
-        // Mean solar time at this longitude, in days since J2000.0.
-        double meanSolarTime = days + MEAN_SOLAR_TIME_CORRECTION + (-this.longitude) / 360.0;
+        // Mean solar time at this longitude, in days since J2000.0. The published form writes this
+        // as ceil(J - 2451545.0 + 0.0008); the epoch day is already the exact whole day that ceil
+        // is there to produce, so both the ceil and the 0.0008 it rounds with fall away. See the
+        // class javadoc: keeping the 0.0008 as a summand would put every event 69 seconds late.
+        double meanSolarTime = days + (-this.longitude) / 360.0;
         double meanAnomalyDegrees = (357.5291 + 0.98560028 * meanSolarTime) % 360.0;
         double meanAnomaly = Math.toRadians(meanAnomalyDegrees);
         double equationOfCentre = 1.9148 * Math.sin(meanAnomaly) + 0.0200 * Math.sin(2.0 * meanAnomaly) + 0.0003 * Math.sin(3.0 * meanAnomaly);

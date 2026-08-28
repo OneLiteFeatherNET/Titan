@@ -39,12 +39,28 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * The solar mapping's own behaviour, and the evidence that its astronomy is right.
  *
- * <p>The sunrise and sunset assertions are held against the published Berlin times with a tolerance
- * of five minutes. That is wide enough to absorb both the low-precision equation's own error and
- * the
- * fact that published tables round to the minute, and narrow enough that a sign error, a wrong
- * longitude convention or a lost daylight saving offset — the mistakes that actually happen here —
- * fail the test by an hour or more.
+ * <h2>Where the expected times come from</h2>
+ *
+ * Every expected time below is the value the US Naval Observatory publishes for 52.520008° N,
+ * 13.404954° E — rise, set and upper transit — converted from UT to Berlin local time. One source,
+ * quoted rather than fitted: an expectation copied off this implementation's own output would make
+ * the test agree with whatever the implementation does, which is the one thing it must not do.
+ *
+ * <p>USNO prints whole minutes, so each expectation carries up to 30 seconds of rounding of its
+ * own. The tolerances are set just above the largest residual actually measured against that
+ * source, not at a round number picked for comfort:
+ *
+ * <ul>
+ * <li>solar noon, {@link #NOON_TOLERANCE}: largest measured deviation 18 seconds.
+ * <li>sunrise and sunset, {@link #EVENT_TOLERANCE}: largest measured deviation 83 seconds, on the
+ * September sunset, which is where the equation's fixed J2000 perihelion argument costs the most
+ * half-day length.
+ * </ul>
+ *
+ * <p>The solar noon case is the sharp one. It is nearly free of the half-day-length error that
+ * dominates sunrise and sunset, so it pins the time scale directly: any constant offset bolted onto
+ * the mean solar time — the mistake this test exists to catch — moves it by the full amount and
+ * fails here long before the rise and set assertions notice.
  *
  * @author TheMeinerLP
  * @version 1.0.0
@@ -52,14 +68,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class SolarDayTimeStrategyTest {
 
-    private static final Duration TOLERANCE = Duration.ofMinutes(5);
+    private static final Duration EVENT_TOLERANCE = Duration.ofSeconds(120);
+
+    private static final Duration NOON_TOLERANCE = Duration.ofSeconds(45);
 
     private final SolarDayTimeStrategy strategy = SolarDayTimeStrategy.berlin();
 
     @ParameterizedTest(name = "{0}: sunrise {1}, sunset {2} Berlin local")
     @CsvSource({
-            // Published Berlin times; the two solstices and the two equinoxes of 2026.
-            "2026-03-20, 06:11, 18:19", "2026-06-21, 04:43, 21:33", "2026-09-23, 06:55, 19:06", "2026-12-21, 08:15, 15:53",
+            // USNO rise and set for Berlin, in local time; the two solstices and the two equinoxes
+            // of 2026.
+            "2026-03-20, 06:09, 18:19", "2026-06-21, 04:43, 21:33", "2026-09-23, 06:54, 19:03", "2026-12-21, 08:15, 15:54",
     })
     @DisplayName("Sunrise and sunset match the published Berlin times")
     void sunriseAndSunsetMatchPublishedBerlinTimes(LocalDate date, LocalTime sunrise, LocalTime sunset) {
@@ -71,8 +90,28 @@ class SolarDayTimeStrategyTest {
 
         assertNotNull(actualSunrise);
         assertNotNull(actualSunset);
-        assertWithin(expectedSunrise, actualSunrise, "sunrise on " + date);
-        assertWithin(expectedSunset, actualSunset, "sunset on " + date);
+        assertWithin(expectedSunrise, actualSunrise, EVENT_TOLERANCE, "sunrise on " + date);
+        assertWithin(expectedSunset, actualSunset, EVENT_TOLERANCE, "sunset on " + date);
+    }
+
+    @ParameterizedTest(name = "{0}: solar noon {1} Berlin local")
+    @CsvSource({
+            // USNO upper transit of the sun over Berlin, in local time.
+            "2026-03-20, 12:14", "2026-06-21, 13:08", "2026-09-23, 12:59", "2026-12-21, 12:04",
+    })
+    @DisplayName("Solar noon matches the published Berlin upper transit to well under a minute")
+    void solarNoonMatchesThePublishedBerlinTransit(LocalDate date, LocalTime noon) {
+        Instant expected = LocalDateTime.of(date, noon).atZone(BERLIN).toInstant();
+
+        Instant sunrise = this.strategy.sunrise(date);
+        Instant sunset = this.strategy.sunset(date);
+        assertNotNull(sunrise);
+        assertNotNull(sunset);
+        // The mapping puts noon exactly halfway between the two events, so this is the transit the
+        // implementation actually believes in, not a separately computed one.
+        Instant actual = sunrise.plus(Duration.between(sunrise, sunset).dividedBy(2));
+
+        assertWithin(expected, actual, NOON_TOLERANCE, "solar noon on " + date);
     }
 
     @ParameterizedTest(name = "{0}")
@@ -169,8 +208,8 @@ class SolarDayTimeStrategyTest {
         return Duration.between(sunrise, sunset);
     }
 
-    private static void assertWithin(Instant expected, Instant actual, String what) {
+    private static void assertWithin(Instant expected, Instant actual, Duration tolerance, String what) {
         Duration off = Duration.between(expected, actual).abs();
-        assertTrue(off.compareTo(TOLERANCE) <= 0, what + ": expected around " + expected + " but was " + actual + " (" + off.toSeconds() + "s off)");
+        assertTrue(off.compareTo(tolerance) <= 0, what + ": expected around " + expected + " but was " + actual + " (" + off.toSeconds() + "s off, tolerance " + tolerance.toSeconds() + "s)");
     }
 }
