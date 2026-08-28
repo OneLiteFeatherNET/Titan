@@ -19,7 +19,7 @@ package net.onelitefeather.titan.app.testutils;
 import net.onelitefeather.titan.common.feature.FeatureAudience;
 import net.onelitefeather.titan.common.feature.FeatureGate;
 import net.onelitefeather.titan.common.feature.ReleaseStage;
-import net.onelitefeather.titan.common.utils.TitanFeatures;
+import net.onelitefeather.titan.common.feature.TitanFeatures;
 import org.togglz.core.activation.DefaultActivationStrategyProvider;
 import org.togglz.core.manager.FeatureManager;
 import org.togglz.core.manager.FeatureManagerBuilder;

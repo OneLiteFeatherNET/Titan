@@ -30,7 +30,7 @@ import net.onelitefeather.titan.common.feature.FeatureAudience;
 import net.onelitefeather.titan.common.feature.FeatureGate;
 import net.onelitefeather.titan.common.feature.ReleaseStage;
 import net.onelitefeather.titan.common.feature.SeasonWindowActivationStrategy;
-import net.onelitefeather.titan.common.utils.TitanFeatures;
+import net.onelitefeather.titan.common.feature.TitanFeatures;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

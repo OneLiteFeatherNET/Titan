@@ -14,11 +14,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-package net.onelitefeather.titan.common.utils;
+package net.onelitefeather.titan.common.feature;
 
+import net.onelitefeather.titan.common.utils.ThreadHelper;
 import org.togglz.core.Feature;
 import org.togglz.core.context.FeatureContext;
 
+/**
+ * The feature flags Titan knows. The enum is the single source of truth for the flag names, and
+ * {@link SingletonFeatureManagerProvider} builds the ambient
+ * {@link org.togglz.core.manager.FeatureManager} from exactly this enum.
+ *
+ * <p>Release stages and time windows are configuration on an existing flag, not new flags
+ * (NFR-009); {@link FeatureGate} reads them from the feature state.
+ *
+ * @author TheMeinerLP
+ * @version 1.0.0
+ * @since 1.15.0
+ */
 public enum TitanFeatures implements Feature, ThreadHelper {
     NAVIGATOR_CREATIVE, NAVIGATOR_SLENDER, NAVIGATOR_MANIS, NAVIGATOR_SURVIVAL, NAVIGATOR_ELYTRA,;
 

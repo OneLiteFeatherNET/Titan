@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-package net.onelitefeather.titan.common.utils;
+package net.onelitefeather.titan.common.feature;
 
 import org.togglz.core.activation.DefaultActivationStrategyProvider;
 import org.togglz.core.manager.FeatureManager;

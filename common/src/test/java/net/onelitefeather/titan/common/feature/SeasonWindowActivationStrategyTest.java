@@ -16,7 +16,6 @@
  */
 package net.onelitefeather.titan.common.feature;
 
-import net.onelitefeather.titan.common.utils.TitanFeatures;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.togglz.core.activation.DefaultActivationStrategyProvider;
