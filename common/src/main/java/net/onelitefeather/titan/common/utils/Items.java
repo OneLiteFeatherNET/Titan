@@ -18,6 +18,7 @@ package net.onelitefeather.titan.common.utils;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.minestom.server.component.DataComponents;
 import net.minestom.server.item.ItemStack;
@@ -45,4 +46,16 @@ public final class Items {
     public static final ItemStack NAVIGATOR_SURVIVAL_ITEM_STACK = ItemStack.builder(Material.GRASS_BLOCK).customName(MiniMessage.miniMessage().deserialize("<!i><green>Survival")).build();
 
     public static final ItemStack NAVIGATOR_CREATIVE_ITEM_STACK = ItemStack.builder(Material.WOODEN_AXE).customName(MiniMessage.miniMessage().deserialize("<!i><rainbow>Creative</rainbow>")).build();
+
+    /**
+     * Builds the navigator icon for one reachable build server. The service name is put in as
+     * plain text rather than through MiniMessage, so a service named with tag-like characters
+     * cannot inject formatting into the menu.
+     *
+     * @param serviceName the CloudNet service name, for example {@code Build-1}
+     * @return the icon shown for that build server
+     */
+    public static ItemStack navigatorBuildServer(String serviceName) {
+        return ItemStack.builder(Material.SCAFFOLDING).customName(Component.text(serviceName, NamedTextColor.GOLD).decoration(TextDecoration.ITALIC, false)).build();
+    }
 }

@@ -932,7 +932,11 @@ setzt voraus, dass eine spätere bereits begonnen wurde.
 ### Phase 3 — Reuse statt Eigenbau
 
 - `common/utils` und `common/helper` fachlich auflösen (OLF-L3-02, Tabelle in
-  Abschnitt 3)
+  Abschnitt 3). **Anmerkung:** `Items` hat in Stufe 5 die Factory
+  `navigatorBuildServer(...)` dazubekommen und liegt damit weiter in `utils`.
+  Bewusst nicht vorgezogen: die Methode gehört zu den `NAVIGATOR_*`-Konstanten
+  daneben, ein Einzelumzug würde die Navigator-Icons auf zwei Pakete verteilen.
+  Sie zieht mit der ganzen Klasse nach `common/item`.
 - `app/listener` nach Fachlichkeit untergliedern (OLF-L3-03)
 - `ThreadHelper` und `SingletonFeatureManagerProvider` in Titan löschen und aus
   Butterfly beziehen (OLF-L2-04). **Vorbedingung:** Butterfly muss sie als

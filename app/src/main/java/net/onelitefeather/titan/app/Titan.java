@@ -36,9 +36,13 @@ import net.onelitefeather.titan.app.helper.NavigationHelper;
 import net.onelitefeather.titan.app.listener.*;
 import net.onelitefeather.titan.app.player.TitanPlayer;
 import net.onelitefeather.titan.common.config.AppConfigProvider;
+import net.onelitefeather.titan.common.feature.FeatureAudience;
 import net.onelitefeather.titan.common.feature.FeatureGate;
 import net.onelitefeather.titan.common.feature.SeasonWindowActivationStrategy;
 import net.onelitefeather.titan.common.deliver.DeliverProvider;
+import net.onelitefeather.titan.common.navigator.BuildServerAccess;
+import net.onelitefeather.titan.common.navigator.GuardedDeliver;
+import net.onelitefeather.titan.common.navigator.TitanBuildServerDirectory;
 import net.onelitefeather.titan.common.event.EntityDismountEvent;
 import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
 import net.onelitefeather.titan.common.map.MapProvider;
@@ -52,7 +56,7 @@ public final class Titan {
 
     private final Path path;
     private final EventNode<Event> eventNode = EventNode.all("titan");
-    private final Deliver deliver = DeliverProvider.create();
+    private final Deliver deliver;
     private final MapProvider mapProvider;
     private final AppConfigProvider appConfigProvider;
     private final NavigationHelper navigationHelper;
@@ -77,8 +81,17 @@ public final class Titan {
         MinecraftServer.getInstanceManager().registerInstance(instance);
         this.mapProvider = MapProvider.create(this.path, instance);
         this.appConfigProvider = AppConfigProvider.create(this.path);
-        this.featureGate = FeatureGate.create(LuckPermsFeatureAudience.create(), clock, zone);
-        this.navigationHelper = NavigationHelper.instance(this.deliver, this.featureGate);
+        FeatureAudience audience = LuckPermsFeatureAudience.create();
+        BuildServerAccess buildServerAccess = BuildServerAccess.defaults();
+        // Every path to another server runs through this Deliver, so the build server permission
+        // is checked here once more when a switch is requested - a click is a packet, not a proof
+        // that the menu ever offered the destination (US-5.03).
+        this.deliver = GuardedDeliver.wrap(DeliverProvider.create(), audience, buildServerAccess);
+        // The gate is built first: the navigator asks it whether a destination is released at all
+        // before the build server permission narrows the list any further.
+        this.featureGate = FeatureGate.create(audience, clock, zone);
+        this.navigationHelper = NavigationHelper.instance(
+                this.deliver, audience, this.featureGate, TitanBuildServerDirectory::reachableServices, buildServerAccess);
     }
 
     public void initialize() {

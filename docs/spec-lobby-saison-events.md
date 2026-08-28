@@ -201,10 +201,10 @@ Abschnitt 6a.
 
 | ID | Story | Akzeptanzkriterium (EARS) | Schnittstelle | Priorität | Status |
 |---|---|---|---|---|---|
-| US-5.01 | Als Teammitglied möchte ich die Build-Server im Navigator sehen, damit ich ohne Befehl dorthin komme. | Where ein Spieler die Berechtigung `titan.navigator.buildserver` hat, shall der Navigator die verfügbaren Build-Server als Ziele anzeigen. | `NavigationHelper` | Should | offen |
-| US-5.02 | Als Betreiber möchte ich, dass Spieler ohne Berechtigung diese Ziele gar nicht sehen, damit ihre Existenz nicht verrät, dass es sie gibt. | If ein Spieler die Berechtigung nicht hat, then shall der Navigator die Build-Server-Einträge weder anzeigen noch ihren Platz freihalten. | `NavigationHelper` | Must | offen |
-| US-5.03 | Als Betreiber möchte ich, dass die Berechtigung auch beim Wechsel geprüft wird, damit ein manipulierter Klick nichts bewirkt. | When ein Wechsel zu einem Build-Server angefordert wird, shall die Lobby die Berechtigung erneut prüfen, bevor sie den Spieler weiterleitet. | `Deliver` | Must | offen |
-| US-5.04 | Als Teammitglied möchte ich sehen, welche Build-Server gerade laufen, damit ich nicht auf einen gestoppten klicke. | The Navigator shall nur Build-Server anzeigen, die zum Zeitpunkt des Öffnens als erreichbar gemeldet sind. | CloudNet-Dienstliste | Should | offen |
+| US-5.01 | Als Teammitglied möchte ich die Build-Server im Navigator sehen, damit ich ohne Befehl dorthin komme. | Where ein Spieler die Berechtigung `titan.navigator.buildserver` hat, shall der Navigator die verfügbaren Build-Server als Ziele anzeigen. | `NavigationHelper` | Should | umgesetzt |
+| US-5.02 | Als Betreiber möchte ich, dass Spieler ohne Berechtigung diese Ziele gar nicht sehen, damit ihre Existenz nicht verrät, dass es sie gibt. | If ein Spieler die Berechtigung nicht hat, then shall der Navigator die Build-Server-Einträge weder anzeigen noch ihren Platz freihalten. | `NavigationHelper` | Must | umgesetzt |
+| US-5.03 | Als Betreiber möchte ich, dass die Berechtigung auch beim Wechsel geprüft wird, damit ein manipulierter Klick nichts bewirkt. | When ein Wechsel zu einem Build-Server angefordert wird, shall die Lobby die Berechtigung erneut prüfen, bevor sie den Spieler weiterleitet. | `Deliver` | Must | umgesetzt |
+| US-5.04 | Als Teammitglied möchte ich sehen, welche Build-Server gerade laufen, damit ich nicht auf einen gestoppten klicke. | The Navigator shall nur Build-Server anzeigen, die zum Zeitpunkt des Öffnens als erreichbar gemeldet sind. | CloudNet-Dienstliste | Should | umgesetzt |
 
 ### Stufe 6 — Resource Packs (später)
 
@@ -354,8 +354,8 @@ bekommen den Zeitpunkt übergeben, statt selbst auf die Uhr zu sehen. Die
 - [ ] Die Tageszeit der Lobby entspricht der Uhrzeit in Berlin, auch über eine Sommerzeitumstellung hinweg.
 - [ ] Die Zeitsteuerung ist mit einer festen `Clock` testbar; ein Test prüft Winter im Sommer.
 - [x] Ein Feature lässt sich nacheinander auf intern, lite und ga stellen, ohne dass Code geändert wird.
-- [x] Der Notausschalter wirkt innerhalb von zwei Sekunden und schlägt Stufe und Zeitfenster. — *Einschränkung: die Prüfung erfolgt beim Zeichnen des Menüs. Wer den Navigator bereits offen hat, sieht das alte Bild bis zum nächsten Öffnen. Ein abgelehnter Eintrag bekommt keinen Klick-Handler, und `InventoryPreClickEvent` wird global abgebrochen — das Fenster ist also eng, aber vorhanden. Eine Prüfung zur Klickzeit gehört zu `NavigatorEntry` aus Stufe 5.*
-- [ ] Ein Spieler ohne `titan.navigator.buildserver` sieht die Build-Server nicht und kann sie auch durch einen manipulierten Klick nicht erreichen.
+- [x] Der Notausschalter wirkt innerhalb von zwei Sekunden und schlägt Stufe und Zeitfenster. — *Einschränkung: die Prüfung erfolgt beim Zeichnen des Menüs. Wer den Navigator bereits offen hat, sieht das alte Bild bis zum nächsten Öffnen. Ein abgelehnter Eintrag bekommt keinen Klick-Handler, und `InventoryPreClickEvent` wird global abgebrochen — das Fenster ist also eng, aber vorhanden. Die Prüfung zur Klickzeit ist mit Stufe 5 in `GuardedDeliver` nachgezogen, greift dort aber nur für die Berechtigung eines Eintrags, nicht für den Notausschalter.*
+- [x] Ein Spieler ohne `titan.navigator.buildserver` sieht die Build-Server nicht und kann sie auch durch einen manipulierten Klick nicht erreichen.
 - [ ] Die Lobby startet ohne Saison-Paket vollständig funktionsfähig.
 - [ ] Ein Saison-Paket lässt sich entfernen, ohne dass Reste in der Welt zurückbleiben.
 - [ ] Der Rollout-Stand jedes Features ist in `docs/rollout-log.md` nachvollziehbar.
