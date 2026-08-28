@@ -91,7 +91,14 @@ Code coverage reports are generated using JaCoCo and can be found in `build/repo
 
 ## License
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **GNU Affero General Public License v3.0** —
+see the [LICENSE](LICENSE) file for details.
+
+Titan builds on [Falco](https://github.com/OneLiteFeatherNET/Falco), OneLiteFeather's
+Anvil chunk loader and light engine, which is itself AGPL-3.0. Because a Minecraft
+server is a network service, AGPL section 13 applies: anyone who runs a modified
+version of Titan and lets others connect to it must offer those users the
+corresponding source code.
 
 ## Credits
 

@@ -47,3 +47,9 @@ gradle-app.setting
 run/
 /test-server/.bstats
 .idea/
+# Local agent/tooling artefacts
+.claude/
+.serena/
+
+# LuckPerms runtime directory created next to the process
+data/
