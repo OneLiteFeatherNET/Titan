@@ -24,18 +24,22 @@ import java.util.UUID;
 
 /**
  * Fixture standing in for LuckPerms: a fixed set of granted permissions and group memberships.
+ *
+ * <p>Public because the portal tests need the same fixture: a portal is gated by the same
+ * {@link FeatureGate} as the navigator entry to the same destination, so it has to be tested
+ * against the same audience rather than against a second copy of it.
  */
-final class TestFeatureAudience implements FeatureAudience {
+public final class TestFeatureAudience implements FeatureAudience {
 
     private final Set<String> permissions = new HashSet<>();
     private final Set<String> groups = new HashSet<>();
 
-    TestFeatureAudience grantPermission(UUID playerId, String permission) {
+    public TestFeatureAudience grantPermission(UUID playerId, String permission) {
         this.permissions.add(key(playerId, permission));
         return this;
     }
 
-    TestFeatureAudience joinGroup(UUID playerId, String group) {
+    public TestFeatureAudience joinGroup(UUID playerId, String group) {
         this.groups.add(key(playerId, group.toLowerCase(Locale.ROOT)));
         return this;
     }

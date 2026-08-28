@@ -35,6 +35,22 @@ public final class Tags {
     public static final Tag<UUID> SIT_ARROW = Tag.UUID("SIT_ARROW");
     public static final Tag<Pos> SIT_PLAYER = Tag.Structure("SIT_PLAYER", Pos.class);
 
+    /**
+     * Id of the portal the player is currently standing in, or absent when they are standing in
+     * none. A portal fires on the transition into this tag, not while it is set - that is what
+     * keeps a player who stayed behind (a refused or failed switch) from triggering the portal
+     * again on their next movement packet.
+     *
+     * <p>Transient: this is session state, and it must not survive into the player's NBT.
+     */
+    public static final Tag<String> PORTAL_INSIDE = Tag.Transient("portal_inside");
+
+    /**
+     * Epoch milliseconds before which no portal reacts to this player again. Debounces a player
+     * stepping out of a portal and straight back in.
+     */
+    public static final Tag<Long> PORTAL_COOLDOWN = Tag.Transient("portal_cooldown");
+
     private Tags() {
         throw new UnsupportedOperationException("This class cannot be instantiated");
     }

@@ -42,6 +42,8 @@ import net.onelitefeather.titan.common.deliver.DeliverProvider;
 import net.onelitefeather.titan.common.event.EntityDismountEvent;
 import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
 import net.onelitefeather.titan.common.map.MapProvider;
+import net.onelitefeather.titan.common.portal.PortalConfigProvider;
+import net.onelitefeather.titan.common.portal.PortalService;
 import net.onelitefeather.titan.common.utils.Cancelable;
 
 import java.nio.file.Path;
@@ -57,6 +59,7 @@ public final class Titan {
     private final AppConfigProvider appConfigProvider;
     private final NavigationHelper navigationHelper;
     private final FeatureGate featureGate;
+    private final PortalService portalService;
 
     public Titan() {
         this(Clock.system(SeasonWindowActivationStrategy.DEFAULT_ZONE), SeasonWindowActivationStrategy.DEFAULT_ZONE);
@@ -79,6 +82,10 @@ public final class Titan {
         this.appConfigProvider = AppConfigProvider.create(this.path);
         this.featureGate = FeatureGate.create(LuckPermsFeatureAudience.create(), clock, zone);
         this.navigationHelper = NavigationHelper.instance(this.deliver, this.featureGate);
+        // Portals share the navigator's gate and the navigator's delivery route on purpose: a
+        // destination that is gated in the navigator is gated in the portal by the same check
+        // (US-7.04), and there is one way out of the lobby, not two.
+        this.portalService = PortalService.create(PortalConfigProvider.create(this.path).getPortalConfig(), this.deliver, this.featureGate);
     }
 
     public void initialize() {
@@ -130,6 +137,7 @@ public final class Titan {
 
         this.eventNode.addListener(PlayerRespawnEvent.class, new RespawnListener(this.navigationHelper));
         this.eventNode.addListener(PlayerMoveEvent.class, new PlayerMoveListener(this.appConfigProvider.getAppConfig(), this.mapProvider.getActiveLobby()));
+        this.eventNode.addListener(PlayerMoveEvent.class, new PortalListener(this.portalService));
 
         this.eventNode.addListener(AsyncPlayerConfigurationEvent.class, new PlayerConfigurationListener(this.mapProvider));
         this.eventNode.addListener(PlayerSpawnEvent.class, new PlayerSpawnListener(
