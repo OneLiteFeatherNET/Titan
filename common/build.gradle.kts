@@ -20,6 +20,7 @@ dependencies {
     testImplementation(libs.cyano)
     testImplementation(libs.aves)
     testImplementation(libs.junit.api)
+    testImplementation(libs.junit.params)
     testImplementation(libs.junit.platform.launcher)
     testRuntimeOnly(libs.junit.engine)
 }
