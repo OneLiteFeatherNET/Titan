@@ -151,9 +151,18 @@ Layout und Auswahl der Welten sind in
 die von dieser Spec abweichen und beim Review bekannt sein sollten:
 
 - **Falco-Version.** Die Spec nennt 0.3.0. Aufgelöst wird **2.1.0** — 0.3.0
-  stammt aus der Zeit vor Minestom 26.1. Falco bringt `mycelium-bom` 1.7.2 mit,
-  `aonyx-bom` 0.8.0 bringt 1.7.1, wodurch Minestom von `2026.06.05-26.1.2` auf
-  `2026.06.20-26.1.2` steigt (gleiche Protokollversion).
+  stammt aus der Zeit vor Minestom 26.1. Jedes falco-Artefakt bringt
+  `mycelium-bom` 1.7.2 als Plattform-Abhängigkeit mit, `aonyx-bom` 0.8.0 bringt
+  1.7.1; ohne Gegenmaßnahme hebt „highest wins" Minestom damit still von
+  `2026.06.05-26.1.2` auf `2026.06.20-26.1.2`. Genau das verbietet NFR-001, und
+  zwar unabhängig davon, ob der konkrete Sprung harmlos ist: die nächste
+  falco-Version würde ihn wiederholen, ohne dass es jemand merkt. `:common`
+  schließt `mycelium-bom` aus allen drei falco-Abhängigkeiten aus. Verifiziert
+  über die aufgelösten Klassenpfade: jedes Modul (`:common`, `:app`, `:setup`,
+  `:bridge`) löst `net.minestom:minestom:2026.06.05-26.1.2` auf — die Version,
+  die `aonyx-bom` vorgibt. Damit ist auch die frühere Abweichung weg, bei der
+  `:bridge` gegen `2026.06.05` kompilierte, während `:app` auf `2026.06.20`
+  lief.
 - **Licht.** Block- **und** Himmelslicht laufen über den
   `ChunkLightScheduler`; `LightingChunk` bleibt der Chunktyp, weil er das Licht
   versendet. Ein früherer Stand berechnete das Licht direkt beim Laden über

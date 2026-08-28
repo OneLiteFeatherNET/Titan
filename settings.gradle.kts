@@ -44,8 +44,12 @@ dependencyResolutionManagement {
 
             // Falco: the OneLiteFeather chunk loader and light engine. 0.3.0 is the
             // version the lobby spec names, but it predates Minestom 26.1; 2.1.0 is
-            // the current release and the first that resolves against the Minestom
-            // version the aonyx BOM pins.
+            // the current release and the first that builds against Minestom 26.1.
+            // It does not resolve against the Minestom version aonyx-bom pins - it
+            // would override it, because every falco artifact carries mycelium-bom
+            // as a platform dependency and that one is a release ahead. The falco
+            // dependencies of :common exclude that BOM, so the Minestom version
+            // stays the one aonyx-bom prescribes (NFR-001).
             version("falco", "2.1.0")
 
             version("luckperms", "5.6-SNAPSHOT")
