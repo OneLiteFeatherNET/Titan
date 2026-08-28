@@ -27,8 +27,8 @@ import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.common.deliver.ServiceAvailability;
 import net.onelitefeather.titan.common.deliver.TitanServiceAvailability;
 import net.onelitefeather.titan.common.feature.FeatureGate;
+import net.onelitefeather.titan.common.feature.TitanFeatures;
 import net.onelitefeather.titan.common.utils.Tags;
-import net.onelitefeather.titan.common.utils.TitanFeatures;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -149,6 +149,7 @@ public final class PortalService {
         player.setTag(Tags.PORTAL_INSIDE, portal.id());
         long now = this.clock.millis();
         Long blockedUntil = player.getTag(Tags.PORTAL_COOLDOWN);
+        // Per player, not per portal - see the limitation noted on Tags#PORTAL_COOLDOWN.
         if (blockedUntil != null && now < blockedUntil) {
             return PortalOutcome.COOLING_DOWN;
         }

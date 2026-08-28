@@ -19,7 +19,7 @@ package net.onelitefeather.titan.common.portal;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
 import net.onelitefeather.deliver.DeliverType;
-import net.onelitefeather.titan.common.utils.TitanFeatures;
+import net.onelitefeather.titan.common.feature.TitanFeatures;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

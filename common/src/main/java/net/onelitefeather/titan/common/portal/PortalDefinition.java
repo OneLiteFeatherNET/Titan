@@ -20,7 +20,7 @@ import net.minestom.server.coordinate.Point;
 import net.minestom.server.coordinate.Vec;
 import net.onelitefeather.coris.shape.CuboidShape;
 import net.onelitefeather.deliver.DeliverType;
-import net.onelitefeather.titan.common.utils.TitanFeatures;
+import net.onelitefeather.titan.common.feature.TitanFeatures;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

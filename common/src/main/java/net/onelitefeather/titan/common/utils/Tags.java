@@ -48,6 +48,13 @@ public final class Tags {
     /**
      * Epoch milliseconds before which no portal reacts to this player again. Debounces a player
      * stepping out of a portal and straight back in.
+     *
+     * <p><b>Known limitation (US-7.03):</b> the window is per player, not per portal. A player who
+     * is refused by one portal and walks straight into the one next to it gets no message from the
+     * neighbour until the window has run out - the switch is still refused, only the explanation
+     * is missing. Making it per portal means keeping an expiry per portal id per player, with the
+     * eviction that comes with it; a single tag was judged the better trade while portals are far
+     * enough apart that walking between two of them takes longer than the window.
      */
     public static final Tag<Long> PORTAL_COOLDOWN = Tag.Transient("portal_cooldown");
 

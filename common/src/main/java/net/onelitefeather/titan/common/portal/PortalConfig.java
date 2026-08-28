@@ -73,7 +73,9 @@ public sealed interface PortalConfig permits PortalConfigImpl {
      * <p>This is a debounce, not the re-entry guard: standing still in a portal is already handled
      * by the latch in {@link PortalService}. The cooldown covers the player who walks out and
      * straight back in - without it, a portal whose target is down would repeat its message as
-     * fast as the player can step across the edge.
+     * fast as the player can step across the edge. The window covers the player rather than the
+     * portal, which also silences a neighbouring portal for its duration - see
+     * {@link net.onelitefeather.titan.common.utils.Tags#PORTAL_COOLDOWN}.
      *
      * <p>A value of {@code 0} - which is also what a file that omits the key deserialises to -
      * turns the debounce off and leaves the latch as the only guard, which is enough to stop a

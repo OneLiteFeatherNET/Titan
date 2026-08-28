@@ -19,7 +19,7 @@ package net.onelitefeather.titan.common.portal;
 import net.minestom.server.coordinate.Point;
 import net.onelitefeather.coris.shape.Shape;
 import net.onelitefeather.deliver.DeliverType;
-import net.onelitefeather.titan.common.utils.TitanFeatures;
+import net.onelitefeather.titan.common.feature.TitanFeatures;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,6 +34,13 @@ import org.jetbrains.annotations.Nullable;
  * <p>The region is a Coris {@link Shape}: containment, normalisation of the two corners and the
  * block-inclusive bounds all come from the org's shape library rather than from a bounding box
  * written here (OLF-L2-04).
+ *
+ * <p><b>Known exposure:</b> Coris marks {@code Shape}
+ * {@link org.jetbrains.annotations.ApiStatus.Experimental},
+ * and it sits in the public signature of {@link #region()}. A Coris minor bump that changes
+ * {@code Shape} therefore changes Titan's own API with it. Accepted for now, because Coris is an
+ * in-house library released by the same team; if that stops holding, hide the region behind a
+ * Titan-owned type - {@link #contains(Point)} is already the only thing portal code asks of it.
  *
  * @param id      the operator-facing id, used in logs and to recognise re-entry
  * @param region  the area a player has to be standing in

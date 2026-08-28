@@ -31,7 +31,7 @@ import net.onelitefeather.titan.common.deliver.ServiceAvailability;
 import net.onelitefeather.titan.common.feature.FeatureGate;
 import net.onelitefeather.titan.common.feature.ReleaseStage;
 import net.onelitefeather.titan.common.feature.TestFeatureAudience;
-import net.onelitefeather.titan.common.utils.TitanFeatures;
+import net.onelitefeather.titan.common.feature.TitanFeatures;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
