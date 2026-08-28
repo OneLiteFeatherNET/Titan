@@ -39,6 +39,8 @@ import java.util.ServiceLoader;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SeasonWindowActivationStrategyTest {
@@ -100,6 +102,22 @@ class SeasonWindowActivationStrategyTest {
     void unreadableParametersFailClosed() {
         assertFalse(this.strategy.isWithinWindow(state().setParameter(SeasonWindowActivationStrategy.PARAM_FROM, "1. Oktober")));
         assertFalse(this.strategy.isWithinWindow(state().setParameter(SeasonWindowActivationStrategy.PARAM_ZONE, "Mars/Olympus")));
+    }
+
+    @Test
+    @DisplayName("an unreadable bound is named, a readable one reports no problem")
+    void windowProblemNamesTheOffendingParameter() {
+        assertNull(this.strategy.windowProblem(state()));
+        assertNull(this.strategy.windowProblem(state().setParameter(SeasonWindowActivationStrategy.PARAM_FROM, "2026-10-01").setParameter(SeasonWindowActivationStrategy.PARAM_TO, "2026-11-05T04:00")));
+
+        String badFrom = this.strategy.windowProblem(state().setParameter(SeasonWindowActivationStrategy.PARAM_FROM, "1. Oktober"));
+        assertNotNull(badFrom);
+        assertTrue(badFrom.contains(SeasonWindowActivationStrategy.PARAM_FROM), badFrom);
+        assertTrue(badFrom.contains("1. Oktober"), badFrom);
+
+        String badZone = this.strategy.windowProblem(state().setParameter(SeasonWindowActivationStrategy.PARAM_ZONE, "Mars/Olympus"));
+        assertNotNull(badZone);
+        assertTrue(badZone.contains("Mars/Olympus"), badZone);
     }
 
     @Test

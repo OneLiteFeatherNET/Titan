@@ -79,6 +79,10 @@ class SeasonCommandTest {
         return PlainTextComponentSerializer.plainText().serialize(component);
     }
 
+    private String lineFor(TitanFeatures feature) {
+        return this.command.statusLines().stream().map(SeasonCommandTest::plain).filter(candidate -> candidate.startsWith(feature.name())).findFirst().orElseThrow();
+    }
+
     private static Player playerWith(Env env, Instance instance, boolean permitted) {
         Player player = spy(env.createPlayer(instance));
         doReturn(PermissionChecker.always(permitted ? TriState.TRUE : TriState.FALSE)).when(player).getOrDefault(eq(PermissionChecker.POINTER), any());
@@ -115,6 +119,31 @@ class SeasonCommandTest {
         assertTrue(elytra.contains("stage lite"), elytra);
         assertTrue(elytra.contains("2026-10-01 00:00 to 2026-11-05 00:00 (Europe/Berlin, open)"), elytra);
         assertTrue(elytra.contains("kill switch off"), elytra);
+    }
+
+    @Test
+    @DisplayName("an unreadable window is printed as unreadable, not as 'always'")
+    void unreadableWindowIsPrintedAsUnreadable() {
+        this.repository.setFeatureState(new FeatureState(TitanFeatures.NAVIGATOR_ELYTRA, true).setStrategyId(SeasonWindowActivationStrategy.ID).setParameter(FeatureGate.STAGE_PARAMETER, ReleaseStage.GA.id()).setParameter(SeasonWindowActivationStrategy.PARAM_FROM, "1. Oktober"));
+
+        String line = lineFor(TitanFeatures.NAVIGATOR_ELYTRA);
+
+        // The gate denies everyone; the status has to point at the typo instead of claiming the
+        // feature runs unbounded.
+        assertTrue(line.contains("window unreadable"), line);
+        assertTrue(line.contains("1. Oktober"), line);
+        assertFalse(line.contains("window always"), line);
+    }
+
+    @Test
+    @DisplayName("an unknown stage id is printed next to the stage that was applied instead")
+    void unknownStageIsPrinted() {
+        this.repository.setFeatureState(new FeatureState(TitanFeatures.NAVIGATOR_ELYTRA, true).setParameter(FeatureGate.STAGE_PARAMETER, "intern"));
+
+        String line = lineFor(TitanFeatures.NAVIGATOR_ELYTRA);
+
+        assertTrue(line.contains("stage internal"), line);
+        assertTrue(line.contains("'intern' is not internal, lite or ga"), line);
     }
 
     @Test

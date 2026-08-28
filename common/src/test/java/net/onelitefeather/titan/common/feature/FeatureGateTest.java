@@ -41,7 +41,9 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FeatureGateTest {
@@ -213,6 +215,54 @@ class FeatureGateTest {
         assertEquals(ReleaseStage.LITE, status.stage());
         assertEquals(BERLIN, status.zone());
         assertTrue(status.withinWindow());
+    }
+
+    @Test
+    @DisplayName("an unreadable window is reported as unreadable, never as no window at all")
+    void statusReportsAnUnreadableWindow() {
+        this.repository.setFeatureState(new FeatureState(FEATURE, true).setStrategyId(SeasonWindowActivationStrategy.ID).setParameter(FeatureGate.STAGE_PARAMETER, ReleaseStage.GA.id()).setParameter(SeasonWindowActivationStrategy.PARAM_FROM, "1. Oktober"));
+
+        FeatureStatus status = this.gate.status(FEATURE);
+
+        // The gate denies everyone here, so the status must not suggest the feature runs unbounded.
+        assertEquals(FeatureDecision.DENIED_WINDOW, this.gate.decide(FEATURE, ANYONE));
+        assertFalse(status.windowReadable());
+        assertNotNull(status.windowProblem());
+        assertFalse(status.withinWindow());
+        assertFalse(status.hasWindow());
+    }
+
+    @Test
+    @DisplayName("an unknown stage id is reported alongside the stage that was used instead")
+    void statusReportsAnUnknownStageId() {
+        // "intern" is the German spelling the rollout log used to use - a plausible typo, and one
+        // that silently narrows the audience to internal.
+        this.repository.setFeatureState(new FeatureState(FEATURE, true).setParameter(FeatureGate.STAGE_PARAMETER, "intern"));
+
+        FeatureStatus status = this.gate.status(FEATURE);
+
+        assertEquals(ReleaseStage.INTERNAL, status.stage());
+        assertFalse(status.stageReadable());
+        assertEquals("intern", status.unknownStage());
+    }
+
+    @Test
+    @DisplayName("a readable configuration reports no problems")
+    void statusReportsNoProblemsForAReadableConfiguration() {
+        configure(true, ReleaseStage.GA, OPEN_FROM, OPEN_TO);
+
+        FeatureStatus status = this.gate.status(FEATURE);
+
+        assertTrue(status.windowReadable());
+        assertTrue(status.stageReadable());
+        assertNull(status.windowProblem());
+        assertNull(status.unknownStage());
+    }
+
+    @Test
+    @DisplayName("a status can never claim an unreadable window is open")
+    void anUnreadableWindowCanNeverBeOpen() {
+        assertThrows(IllegalArgumentException.class, () -> new FeatureStatus("F", false, ReleaseStage.GA, null, null, null, BERLIN, true, "from='nonsense' is not a date"));
     }
 
     @Test

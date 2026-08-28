@@ -32,6 +32,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.Optional;
 
 /**
@@ -139,18 +140,39 @@ public final class SeasonWindowActivationStrategy implements ActivationStrategy 
      * @return whether now is inside the window; {@code false} when a parameter cannot be read
      */
     public boolean isWithinWindow(FeatureState featureState) {
+        Window window;
         try {
-            ZoneId zone = zoneOf(featureState);
-            LocalDateTime from = parse(featureState.getParameter(PARAM_FROM));
-            LocalDateTime to = parse(featureState.getParameter(PARAM_TO));
-            ZonedDateTime now = ZonedDateTime.ofInstant(this.clock.instant(), zone);
-            if (from != null && now.isBefore(from.atZone(zone))) {
-                return false;
-            }
-            return to == null || now.isBefore(to.atZone(zone));
-        } catch (DateTimeException exception) {
-            LOGGER.warn("Feature {} has an unreadable season window (from={}, to={}, zone={}); treating it as inactive", featureState.getFeature().name(), featureState.getParameter(PARAM_FROM), featureState.getParameter(PARAM_TO), featureState.getParameter(PARAM_ZONE), exception);
+            window = readWindow(featureState);
+        } catch (IllegalArgumentException exception) {
+            LOGGER.warn("Feature {} has an unreadable season window ({}); treating it as inactive", featureState.getFeature().name(), exception.getMessage());
             return false;
+        }
+        ZonedDateTime now = ZonedDateTime.ofInstant(this.clock.instant(), window.zone());
+        if (window.from() != null && now.isBefore(window.from().atZone(window.zone()))) {
+            return false;
+        }
+        return window.to() == null || now.isBefore(window.to().atZone(window.zone()));
+    }
+
+    /**
+     * Describes what makes the window configuration of this feature unreadable.
+     *
+     * <p>{@link #isWithinWindow(FeatureState)} fails closed on an unreadable window, which is the
+     * safe answer but an opaque one: the feature is off and nothing on the feature state says why.
+     * This method names the offending parameter and its value so {@code /season status} can report
+     * broken configuration as broken instead of as "no window configured".
+     *
+     * @param featureState the state to inspect
+     * @return {@code null} when every configured parameter can be read, otherwise a description of
+     *         the first parameter that cannot
+     */
+    @Contract(pure = true)
+    public @Nullable String windowProblem(FeatureState featureState) {
+        try {
+            readWindow(featureState);
+            return null;
+        } catch (IllegalArgumentException exception) {
+            return exception.getMessage();
         }
     }
 
@@ -162,7 +184,7 @@ public final class SeasonWindowActivationStrategy implements ActivationStrategy 
      */
     @Contract(pure = true)
     public Optional<LocalDateTime> from(FeatureState featureState) {
-        return parseQuietly(featureState.getParameter(PARAM_FROM));
+        return bound(featureState, PARAM_FROM);
     }
 
     /**
@@ -173,7 +195,7 @@ public final class SeasonWindowActivationStrategy implements ActivationStrategy 
      */
     @Contract(pure = true)
     public Optional<LocalDateTime> to(FeatureState featureState) {
-        return parseQuietly(featureState.getParameter(PARAM_TO));
+        return bound(featureState, PARAM_TO);
     }
 
     /**
@@ -181,30 +203,47 @@ public final class SeasonWindowActivationStrategy implements ActivationStrategy 
      *
      * @param featureState the state to read from
      * @return the configured zone, or the fallback zone when none is set
-     * @throws DateTimeException when the configured zone id is not a known zone
+     * @throws IllegalArgumentException when the configured zone id is not a known zone
      */
     @Contract(pure = true)
     public ZoneId zoneOf(FeatureState featureState) {
-        String zone = featureState.getParameter(PARAM_ZONE);
-        return zone == null || zone.isBlank() ? this.fallbackZone : ZoneId.of(zone.trim());
+        String raw = featureState.getParameter(PARAM_ZONE);
+        if (raw == null || raw.isBlank()) {
+            return this.fallbackZone;
+        }
+        try {
+            return ZoneId.of(raw.trim());
+        } catch (DateTimeException exception) {
+            throw new IllegalArgumentException(PARAM_ZONE + "='" + raw.trim() + "' is not a known time zone");
+        }
     }
 
-    private Optional<LocalDateTime> parseQuietly(@Nullable String raw) {
+    private static Optional<LocalDateTime> bound(FeatureState featureState, String parameter) {
         try {
-            return Optional.ofNullable(parse(raw));
-        } catch (DateTimeException exception) {
+            return Optional.ofNullable(readBound(featureState, parameter));
+        } catch (IllegalArgumentException exception) {
             return Optional.empty();
         }
     }
 
-    private static @Nullable LocalDateTime parse(@Nullable String raw) {
+    private Window readWindow(FeatureState featureState) {
+        return new Window(zoneOf(featureState), readBound(featureState, PARAM_FROM), readBound(featureState, PARAM_TO));
+    }
+
+    private static @Nullable LocalDateTime readBound(FeatureState featureState, String parameter) {
+        String raw = featureState.getParameter(parameter);
         if (raw == null || raw.isBlank()) {
             return null;
         }
         String value = raw.trim();
-        if (value.indexOf('T') < 0) {
-            return LocalDate.parse(value).atStartOfDay();
+        try {
+            return value.indexOf('T') < 0 ? LocalDate.parse(value).atStartOfDay() : LocalDateTime.parse(value);
+        } catch (DateTimeParseException exception) {
+            throw new IllegalArgumentException(parameter + "='" + value + "' is not a date (2026-10-01) or a date-time (2026-10-01T18:00)");
         }
-        return LocalDateTime.parse(value);
+    }
+
+    /** The three window parameters, once they have been read successfully. */
+    private record Window(ZoneId zone, @Nullable LocalDateTime from, @Nullable LocalDateTime to) {
     }
 }

@@ -73,17 +73,33 @@ public final class SeasonCommand extends Command {
      * @return the line shown to the sender
      */
     static Component describe(FeatureStatus status) {
-        Component line = Component.text(status.feature(), NamedTextColor.WHITE).append(Component.text(" | stage ", NamedTextColor.DARK_GRAY)).append(Component.text(status.stage().id(), stageColor(status.stage()))).append(Component.text(" | window ", NamedTextColor.DARK_GRAY)).append(describeWindow(status));
+        Component line = Component.text(status.feature(), NamedTextColor.WHITE).append(Component.text(" | stage ", NamedTextColor.DARK_GRAY)).append(describeStage(status)).append(Component.text(" | window ", NamedTextColor.DARK_GRAY)).append(describeWindow(status));
         return line.append(Component.text(" | kill switch ", NamedTextColor.DARK_GRAY)).append(status.killSwitchEngaged() ? Component.text("engaged", NamedTextColor.RED) : Component.text("off", NamedTextColor.GREEN));
     }
 
+    private static Component describeStage(FeatureStatus status) {
+        Component stage = Component.text(status.stage().id(), stageColor(status.stage()));
+        if (status.stageReadable()) {
+            return stage;
+        }
+        // The gate fell back to the narrowest stage. Say so, and name the value that was written:
+        // "intern" and "premium" are both plausible typos for the ids this project actually uses.
+        return stage.append(Component.text(" (unreadable: '" + status.unknownStage() + "' is not internal, lite or ga)", NamedTextColor.RED));
+    }
+
     private static Component describeWindow(FeatureStatus status) {
+        if (!status.windowReadable()) {
+            // Never print "always" here: the gate is denying everyone, and a status that says the
+            // feature runs unbounded would send the operator looking in the wrong place.
+            return Component.text("unreadable: " + status.windowProblem(), NamedTextColor.RED);
+        }
         if (!status.hasWindow()) {
             return Component.text("always", NamedTextColor.GRAY);
         }
         String from = status.from() == null ? "-∞" : WINDOW_FORMAT.format(status.from());
         String to = status.to() == null ? "∞" : WINDOW_FORMAT.format(status.to());
-        return Component.text(from + " to " + to + " (" + status.zone().getId() + ", ", status.withinWindow() ? NamedTextColor.GREEN : NamedTextColor.GOLD).append(Component.text(status.withinWindow() ? "open)" : "closed)", status.withinWindow() ? NamedTextColor.GREEN : NamedTextColor.GOLD));
+        NamedTextColor color = status.withinWindow() ? NamedTextColor.GREEN : NamedTextColor.GOLD;
+        return Component.text(from + " to " + to + " (" + status.zone().getId() + ", ", color).append(Component.text(status.withinWindow() ? "open)" : "closed)", color));
     }
 
     private static NamedTextColor stageColor(ReleaseStage stage) {

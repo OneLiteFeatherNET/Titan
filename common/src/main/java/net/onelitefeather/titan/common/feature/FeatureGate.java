@@ -151,13 +151,17 @@ public final class FeatureGate {
     public FeatureStatus status(Feature feature) {
         FeatureState state = state(feature);
         if (state == null) {
-            return new FeatureStatus(feature.name(), true, ReleaseStage.DEFAULT, null, null, SeasonWindowActivationStrategy.DEFAULT_ZONE, false);
+            return new FeatureStatus(feature.name(), true, ReleaseStage.DEFAULT, null, null, null, SeasonWindowActivationStrategy.DEFAULT_ZONE, false, null);
         }
         ReleaseStage stage = stageOf(state);
         this.transitions.observe(feature.name(), stage);
+        String windowProblem = this.window.windowProblem(state);
         LocalDateTime from = this.window.from(state).orElse(null);
         LocalDateTime to = this.window.to(state).orElse(null);
-        return new FeatureStatus(feature.name(), !state.isEnabled(), stage, from, to, zoneOf(state), this.window.isWithinWindow(state));
+        // An unreadable window is never an open one - keep the two answers from contradicting
+        // each other rather than relying on isWithinWindow to fail closed on its own.
+        boolean open = windowProblem == null && this.window.isWithinWindow(state);
+        return new FeatureStatus(feature.name(), !state.isEnabled(), stage, unknownStageOf(state), from, to, zoneOf(state), open, windowProblem);
     }
 
     /**
@@ -200,6 +204,19 @@ public final class FeatureGate {
             LOGGER.warn("Feature {} is configured with the unknown release stage '{}'; falling back to {}", state.getFeature().name(), configured, ReleaseStage.DEFAULT.id());
         }
         return stage.orElse(ReleaseStage.DEFAULT);
+    }
+
+    /**
+     * Returns the configured stage id when it is not one of the three known ones. The gate itself
+     * falls back to {@link ReleaseStage#DEFAULT}, but an operator who wrote {@code intern} instead
+     * of {@code internal} needs to see the typo rather than a stage they did not configure.
+     */
+    private static @Nullable String unknownStageOf(FeatureState state) {
+        String configured = state.getParameter(STAGE_PARAMETER);
+        if (configured == null || configured.isBlank()) {
+            return null;
+        }
+        return ReleaseStage.fromId(configured).isPresent() ? null : configured.trim();
     }
 
     private ZoneId zoneOf(FeatureState state) {
