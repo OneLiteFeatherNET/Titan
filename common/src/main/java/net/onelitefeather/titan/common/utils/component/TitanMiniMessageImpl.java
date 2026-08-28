@@ -16,10 +16,10 @@
  */
 package net.onelitefeather.titan.common.utils.component;
 
-import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.minimessage.tag.Tag;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import net.onelitefeather.titan.common.season.SeasonPrefix;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Consumer;
@@ -27,11 +27,19 @@ import java.util.function.Consumer;
 public class TitanMiniMessageImpl implements MiniMessage.Provider {
     @Override
     public @NotNull MiniMessage miniMessage() {
-        return MiniMessage.builder().tags(TagResolver.resolver(TagResolver.standard(), Placeholder.component("prefix", TitanMiniMessageImpl::prefix))).build();
+        return MiniMessage.builder().tags(TagResolver.resolver(TagResolver.standard(), prefixResolver())).build();
     }
 
-    private static @NotNull Component prefix() {
-        return MiniMessage.builder().tags(TagResolver.resolver(TagResolver.standard())).build().deserialize("<gradient:#00ddff:#ffffff>Titan</gradient>");
+    /**
+     * Resolves {@code <prefix>} when the tag is used rather than when this resolver is built.
+     *
+     * <p>Adventure caches the {@link MiniMessage} instance a provider returns, and
+     * {@code Placeholder.component} resolves its value eagerly - so a placeholder built here would
+     * freeze the prefix at the first message the process ever sends. A running season needs it to
+     * be read every time; see {@link SeasonPrefix}.
+     */
+    private static @NotNull TagResolver prefixResolver() {
+        return TagResolver.resolver("prefix", (arguments, context) -> Tag.selfClosingInserting(SeasonPrefix.current()));
     }
 
     @Override

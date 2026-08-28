@@ -46,13 +46,21 @@ import net.onelitefeather.titan.common.navigator.TitanBuildServerDirectory;
 import net.onelitefeather.titan.common.event.EntityDismountEvent;
 import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
 import net.onelitefeather.titan.common.map.MapProvider;
+import net.onelitefeather.titan.common.season.MinestomSeasonCanvas;
+import net.onelitefeather.titan.common.season.SeasonCanvas;
+import net.onelitefeather.titan.common.season.SeasonDirector;
+import net.onelitefeather.titan.common.season.SeasonLoader;
 import net.onelitefeather.titan.common.utils.Cancelable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.ZoneId;
 
 public final class Titan {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(Titan.class);
 
     private final Path path;
     private final EventNode<Event> eventNode = EventNode.all("titan");
@@ -61,6 +69,8 @@ public final class Titan {
     private final AppConfigProvider appConfigProvider;
     private final NavigationHelper navigationHelper;
     private final FeatureGate featureGate;
+    private final SeasonDirector seasons;
+    private final SeasonCanvas seasonCanvas;
 
     public Titan() {
         this(Clock.system(SeasonWindowActivationStrategy.DEFAULT_ZONE), SeasonWindowActivationStrategy.DEFAULT_ZONE);
@@ -90,8 +100,14 @@ public final class Titan {
         // The gate is built first: the navigator asks it whether a destination is released at all
         // before the build server permission narrows the list any further.
         this.featureGate = FeatureGate.create(audience, clock, zone);
+        // Seasons are files, not code: whatever is in seasons/ is what the lobby can run. A missing
+        // directory is a lobby with no seasonal content and is not an error (NFR-003), while a file
+        // that cannot be read stops the boot with the file and the value named - a season is looked
+        // at once a year, and a typo tolerated here is one nobody finds until it is live.
+        this.seasons = SeasonDirector.load(this.featureGate, this.path.resolve(SeasonLoader.DIRECTORY), zone);
+        this.seasonCanvas = MinestomSeasonCanvas.of(instance);
         this.navigationHelper = NavigationHelper.instance(
-                this.deliver, audience, this.featureGate, TitanBuildServerDirectory::reachableServices, buildServerAccess);
+                this.deliver, audience, this.featureGate, TitanBuildServerDirectory::reachableServices, buildServerAccess, this.seasons);
     }
 
     public void initialize() {
@@ -104,18 +120,28 @@ public final class Titan {
         // second so a transition is logged even while nobody is online (US-3.09).
         MinecraftServer.getSchedulerManager().scheduleTask(
                 this.featureGate::pollStageTransitions, TaskSchedule.seconds(1), TaskSchedule.seconds(1));
+        // Put the seasons that are live into the world now, and look again every five seconds so a
+        // window that opens or a kill switch that is thrown takes effect without a restart
+        // (NFR-004). synchronize() does nothing when the live set has not changed.
+        this.seasons.synchronize(this.seasonCanvas);
+        MinecraftServer.getSchedulerManager().scheduleTask(
+                () -> this.seasons.synchronize(this.seasonCanvas), TaskSchedule.seconds(5), TaskSchedule.seconds(5));
+        this.seasons.world().ifPresent(world -> LOGGER.info(
+                "The winning season asks for the world '{}'; world selection is wired in spec stage 1", world));
         MinecraftServer.getSchedulerManager().buildShutdownTask(this::terminate);
         MinecraftServer.getSchedulerManager().buildShutdownTask(butterfly::terminate);
     }
 
     public void terminate() {
-
+        // A lobby that stops mid-season must not leave its decoration in the world files: the same
+        // undo the end of a season runs, run once more on the way out (US-4.02).
+        this.seasons.deactivateAll();
     }
 
     private void initCommands() {
         MinecraftServer.getCommandManager().register(new EndCommand());
         MinecraftServer.getCommandManager().register(new StopCommand());
-        MinecraftServer.getCommandManager().register(new SeasonCommand(this.featureGate));
+        MinecraftServer.getCommandManager().register(new SeasonCommand(this.featureGate, this.seasons));
     }
 
     private void initListeners() {

@@ -55,6 +55,28 @@ beschönigt: das Gate sperrt in dem Fall alle aus, und die Anzeige muss auf den
 Tippfehler zeigen statt auf ein unbegrenzt laufendes Feature. Die Togglz-Adminkonsole ist ein Servlet und in
 einem Minestom-Prozess nicht verfügbar; der Befehl ersetzt sie.
 
+## Saisons
+
+Eine Saison ist keine Konstante in `TitanFeatures`, sondern eine Datei in
+`seasons/` neben dem Prozess — Zeitfenster, Freigabestufe und Notausschalter
+stehen darin und werden von demselben `FeatureGate` ausgewertet wie ein Flag.
+Der Aufbau der Datei steht in [`seasons/README.md`](../seasons/README.md).
+
+Den Stand zeigt `/season list`: je Saison Priorität, Freigabestufe,
+Zeitfenster, Welt, Notausschalter und ob sie gerade läuft.
+
+**Vorschau.** Wer `titan.season.preview` hält, sieht die spielerbezogenen
+Inhalte einer Saison — heute die Navigator-Icons — auch außerhalb ihres
+Zeitfensters. Die Berechtigung weitet nur das Zeitfenster: sie hebt keinen
+Notausschalter auf und lässt niemanden an einer Freigabestufe vorbei. Weltdeko
+kann sie nicht vorab zeigen; ein Block liegt in der gemeinsamen Welt oder nicht.
+
+**Ablauf einer Saison.** Endet das Zeitfenster oder wird der Notausschalter
+gezogen, nimmt die Lobby innerhalb von fünf Sekunden alles zurück, was die
+Saison gesetzt hat — Blöcke auf den zuvor gelesenen Zustand, Anzeigen entfernt,
+geplante Aufgaben abgebrochen. Das geschieht auch beim Herunterfahren, damit
+eine mitten in der Saison gestoppte Lobby keine Deko in den Weltdateien lässt.
+
 ## Verlauf
 
 | Datum | Feature | von → nach | Grund | Verantwortlich |

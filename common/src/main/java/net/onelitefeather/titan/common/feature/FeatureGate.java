@@ -50,22 +50,38 @@ import java.util.function.Supplier;
  * {@code lite} additionally admits the {@value ReleaseStage#LITE_GROUP} group, {@code ga}
  * admits everyone. The stage is the feature-state parameter {@value #STAGE_PARAMETER}; a
  * feature without it is treated as {@link ReleaseStage#DEFAULT}.</li>
+ * <li><b>preview</b> — a holder of {@value #PREVIEW_PERMISSION} passes the window step
+ * unconditionally and is told so, by {@link FeatureDecision#ALLOWED_PREVIEW} rather than
+ * {@link FeatureDecision#ALLOWED} (US-4.07). Preview widens the window and nothing else: it
+ * never revives a killed feature and never admits somebody the release stage excludes, because
+ * "let me look at it early" and "let me see what I am not cleared for" are different
+ * requests.</li>
  * <li><b>time window</b> — evaluated by {@link SeasonWindowActivationStrategy}. A feature with
  * no window is always within it.</li>
  * </ol>
  *
- * <p>The three steps form a conjunction, so the order does not change the answer — it decides
- * which step is reported as the reason, and it is what {@code /season status} and the tests rely
- * on.
+ * <p>The steps form a conjunction, so the order does not change the answer — it decides which step
+ * is reported as the reason, and it is what {@code /season status} and the tests rely on.
+ *
+ * <p>Seasons are evaluated by the very same code even though their window lives in a JSON file
+ * rather than in the Togglz repository: {@link #decide(FeatureState, UUID)} takes the state
+ * directly, and a season builds one from its configuration. There is deliberately no second
+ * permission check anywhere for seasonal content.
  *
  * @author TheMeinerLP
- * @version 1.0.0
+ * @version 1.1.0
  * @since 1.15.0
  */
 public final class FeatureGate {
 
     /** Feature-state parameter holding the release stage of a feature. */
     public static final String STAGE_PARAMETER = "stage";
+
+    /**
+     * Permission that lets a team member see seasonal content before its window opens and after it
+     * closes (US-4.07). Held by the team, never by players.
+     */
+    public static final String PREVIEW_PERMISSION = "titan.season.preview";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureGate.class);
 
@@ -128,7 +144,19 @@ public final class FeatureGate {
      * @return the decision, naming the step that denied the feature when it is not allowed
      */
     public FeatureDecision decide(Feature feature, UUID playerId) {
-        FeatureState state = state(feature);
+        return decide(state(feature), playerId);
+    }
+
+    /**
+     * Evaluates a feature state for a player. The state does not have to come from the Togglz
+     * repository — a season builds one from its own configuration file and gets exactly the
+     * evaluation a flagged feature gets.
+     *
+     * @param state    the state to evaluate, {@code null} when the feature is unknown
+     * @param playerId the player's unique id
+     * @return the decision, naming the step that denied the feature when it is not allowed
+     */
+    public FeatureDecision decide(@Nullable FeatureState state, UUID playerId) {
         if (state == null || !state.isEnabled()) {
             return FeatureDecision.DENIED_KILL_SWITCH;
         }
@@ -136,9 +164,30 @@ public final class FeatureGate {
             return FeatureDecision.DENIED_STAGE;
         }
         if (!this.window.isWithinWindow(state)) {
-            return FeatureDecision.DENIED_WINDOW;
+            // Preview is the last word on the window and only on the window. Asking it here rather
+            // than earlier is what keeps it from widening the release stage as a side effect.
+            return this.audience.hasPermission(playerId, PREVIEW_PERMISSION) ? FeatureDecision.ALLOWED_PREVIEW : FeatureDecision.DENIED_WINDOW;
         }
         return FeatureDecision.ALLOWED;
+    }
+
+    /**
+     * Evaluates a feature state without a player, for the decisions the server takes on everyone's
+     * behalf at once — a season painting decoration into the shared world above all.
+     *
+     * <p>Only the kill switch and the window are asked. The other two steps are questions about a
+     * person and have no answer here: a block is in the world or it is not, and a release stage
+     * cannot hide it from half the lobby. That is also why preview does not apply — see
+     * {@code SeasonDirector} for what a preview holder does and does not get to see early.
+     *
+     * @param state the state to evaluate, {@code null} when the feature is unknown
+     * @return {@link FeatureDecision#ALLOWED}, or the step that denied it
+     */
+    public FeatureDecision decideForServer(@Nullable FeatureState state) {
+        if (state == null || !state.isEnabled()) {
+            return FeatureDecision.DENIED_KILL_SWITCH;
+        }
+        return this.window.isWithinWindow(state) ? FeatureDecision.ALLOWED : FeatureDecision.DENIED_WINDOW;
     }
 
     /**

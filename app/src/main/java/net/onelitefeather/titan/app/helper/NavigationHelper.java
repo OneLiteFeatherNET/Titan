@@ -31,6 +31,8 @@ import net.onelitefeather.titan.common.navigator.BuildServerAccess;
 import net.onelitefeather.titan.common.navigator.BuildServerDirectory;
 import net.onelitefeather.titan.common.navigator.NavigatorEntry;
 import net.onelitefeather.titan.common.navigator.NavigatorLayout;
+import net.onelitefeather.titan.common.season.SeasonDirector;
+import net.onelitefeather.titan.common.season.SeasonPresentation;
 import net.onelitefeather.titan.common.utils.Items;
 import net.theevilreaper.aves.inventory.InventoryLayout;
 import net.theevilreaper.aves.inventory.PersonalInventoryBuilder;
@@ -57,8 +59,13 @@ import java.util.UUID;
  * drawn, not when the helper is created, so a menu opened a second time reflects a stopped server
  * or a withdrawn permission (US-5.04).
  *
+ * <p>A running season may re-skin a destination's icon (US-4.03). That is done here rather than in
+ * the entry list, and per player rather than once, because which seasons a player may see is a
+ * question for the gate: a holder of {@code titan.season.preview} sees next month's icons while
+ * everybody else still sees this month's.
+ *
  * @author TheMeinerLP
- * @version 2.0.0
+ * @version 2.1.0
  * @since 1.15.0
  */
 public class NavigationHelper {
@@ -88,16 +95,18 @@ public class NavigationHelper {
     private final FeatureGate featureGate;
     private final BuildServerDirectory buildServers;
     private final BuildServerAccess access;
+    private final SeasonDirector seasons;
 
     private final LoadingCache<UUID, PersonalInventoryBuilder> inventoryBuilderLoadingCache = Caffeine.newBuilder().maximumSize(10000).expireAfterWrite(Duration.ofMinutes(5)).refreshAfterWrite(Duration.ofMinutes(1)).build(key -> createPersonalInventoryBuilder(
             MinecraftServer.getConnectionManager().getOnlinePlayerByUuid(key)));
 
-    private NavigationHelper(Deliver deliver, FeatureAudience audience, FeatureGate featureGate, BuildServerDirectory buildServers, BuildServerAccess access) {
+    private NavigationHelper(Deliver deliver, FeatureAudience audience, FeatureGate featureGate, BuildServerDirectory buildServers, BuildServerAccess access, SeasonDirector seasons) {
         this.deliver = deliver;
         this.audience = audience;
         this.featureGate = featureGate;
         this.buildServers = buildServers;
         this.access = access;
+        this.seasons = seasons;
     }
 
     public void openNavigator(Player player) {
@@ -164,10 +173,14 @@ public class NavigationHelper {
      * @return the public entries, followed by the reachable build servers in a stable order
      */
     private List<NavigatorEntry> entriesFor(UUID playerId) {
+        // Read once per menu: the seasons this player may see, which is not necessarily the ones
+        // that are live. The gate has already decided that; nothing is checked a second time here.
+        SeasonPresentation presentation = this.seasons.presentationFor(playerId);
         List<NavigatorEntry> entries = new ArrayList<>(PUBLIC_ENTRIES.size());
         for (GatedEntry gated : PUBLIC_ENTRIES) {
             if (this.featureGate.isVisibleTo(gated.feature(), playerId)) {
-                entries.add(gated.entry());
+                NavigatorEntry entry = gated.entry();
+                entries.add(presentation.icon(entry.destination()).map(entry::withIconMaterial).orElse(entry));
             }
         }
         if (!this.audience.hasPermission(playerId, this.access.permission())) {
@@ -189,6 +202,19 @@ public class NavigationHelper {
     }
 
     /**
+     * Creates a navigator that offers the public entries only, unchanged by any season. Used where
+     * no permission backend is available.
+     *
+     * @param deliver     the delivery used to move a player on click
+     * @param featureGate the gate deciding which destinations are released
+     * @param seasons     the seasons that may re-skin an icon
+     * @return a navigator without build servers
+     */
+    public static NavigationHelper instance(Deliver deliver, FeatureGate featureGate, SeasonDirector seasons) {
+        return instance(deliver, FeatureAudience.denyAll(), featureGate, BuildServerDirectory.empty(), BuildServerAccess.defaults(), seasons);
+    }
+
+    /**
      * Creates a navigator that can also offer the build servers.
      *
      * @param deliver      the delivery used to move a player on click
@@ -198,7 +224,22 @@ public class NavigationHelper {
      * @return the navigator
      */
     public static NavigationHelper instance(Deliver deliver, FeatureAudience audience, FeatureGate featureGate, BuildServerDirectory buildServers, BuildServerAccess access) {
-        return new NavigationHelper(deliver, audience, featureGate, buildServers, access);
+        return instance(deliver, audience, featureGate, buildServers, access, SeasonDirector.of(featureGate, List.of()));
+    }
+
+    /**
+     * Creates a navigator that can also offer the build servers and be re-skinned by a season.
+     *
+     * @param deliver      the delivery used to move a player on click
+     * @param audience     the source of permission answers, asked every time the menu is drawn
+     * @param featureGate  the gate deciding which destinations are released
+     * @param buildServers the currently reachable build servers
+     * @param access       which destinations are build servers and what they require
+     * @param seasons      the seasons that may re-skin an icon
+     * @return the navigator
+     */
+    public static NavigationHelper instance(Deliver deliver, FeatureAudience audience, FeatureGate featureGate, BuildServerDirectory buildServers, BuildServerAccess access, SeasonDirector seasons) {
+        return new NavigationHelper(deliver, audience, featureGate, buildServers, access, seasons);
     }
 
 }
