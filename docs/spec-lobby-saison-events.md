@@ -147,19 +147,31 @@ und 3.
 
 **Umsetzungsstand Stufe 1 (28.08.2026).** US-1.01 bis US-1.06 sind umgesetzt;
 Layout und Auswahl der Welten sind in
-[`lobby-world-selection.md`](lobby-world-selection.md) dokumentiert. Drei Punkte,
+[`lobby-world-selection.md`](lobby-world-selection.md) dokumentiert. Vier Punkte,
 die von dieser Spec abweichen und beim Review bekannt sein sollten:
 
 - **Falco-Version.** Die Spec nennt 0.3.0. Aufgelöst wird **2.1.0** — 0.3.0
   stammt aus der Zeit vor Minestom 26.1. Falco bringt `mycelium-bom` 1.7.2 mit,
   `aonyx-bom` 0.8.0 bringt 1.7.1, wodurch Minestom von `2026.06.05-26.1.2` auf
   `2026.06.20-26.1.2` steigt (gleiche Protokollversion).
-- **Licht.** Der Blocklichtpfad läuft über `ChunkLightService`; `LightingChunk`
-  bleibt der Chunktyp, weil er das Licht versendet und den Himmelspass hält.
-  Der vollständigere Weg über `ChunkLightScheduler.supplier()` ist **nicht**
-  gangbar: dessen `FalcoLightingChunk` erbt in falco-light 2.1.0 von
-  `FalcoChunk` aus `falco-instance`, einem Modul, das das Artefakt weder
-  mitliefert noch deklariert. Nachziehen, sobald Falco das behoben hat.
+- **Licht.** Block- **und** Himmelslicht laufen über den
+  `ChunkLightScheduler`; `LightingChunk` bleibt der Chunktyp, weil er das Licht
+  versendet. Ein früherer Stand berechnete das Licht direkt beim Laden über
+  `ChunkLightService.calculateWithNeighbours(...)` — das war in drei Punkten
+  falsch: der zuerst geladene Chunk behielt seinen Rand dauerhaft dunkel (die
+  Schreiboperation löscht das Update-Flag der Section, niemand rechnet erneut),
+  parallel geladene Nachbarchunks belichteten sich gegenseitig (Falcos eigenes
+  Javadoc verbietet überlappende Nachbarschaften), und Himmelslicht wurde
+  überhaupt nicht berechnet, weil eine frische Minestom-`Light` sich selbst als
+  gültig meldet und `LightingChunk` den Himmelspass deshalb überspringt.
+- **`falco-instance` ist Pflicht.** Ein früherer Stand hielt den
+  `ChunkLightScheduler` für unbenutzbar, weil `FalcoLightingChunk` von
+  `FalcoChunk` aus `falco-instance` erbt und falco-light das Modul nicht
+  deklariert. Der Schluss war zu weit: nur `supplier()` nennt diese Klasse. Die
+  Verifikation der Klasse löst den Typ allerdings beim Linken auf, nicht erst
+  beim Ausführen des Lambdas — `new ChunkLightScheduler(...)` scheitert ohne das
+  Modul mit `NoClassDefFoundError`. Titan deklariert `falco-instance` deshalb
+  selbst als Laufzeitabhängigkeit.
 - **US-1.06** war bereits erfüllt und ist nur verifiziert und dokumentiert
   worden, nicht geändert.
 

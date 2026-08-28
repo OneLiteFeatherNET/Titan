@@ -66,9 +66,17 @@ The world 'halloewen' named by the system property TITAN_LOBBY_MAP does not
 exist. Found worlds: world, winter. Falling back to the default world 'world'.
 ```
 
-If the default world is missing as well, the first world that was found is used
-and a second warning says so. Only a `worlds/` directory without any world at
-all stops the start, because there is then nothing left to serve.
+If the default world is missing as well, the first world that was found is used,
+and the same warning says so instead — it names the world that was really taken:
+
+```
+The world 'halloween' named by the system property TITAN_LOBBY_MAP does not
+exist. Found worlds: winter. Falling back to the world 'winter', because the
+default world 'world' is not there either.
+```
+
+Only a `worlds/` directory without any world at all stops the start, because
+there is then nothing left to serve.
 
 Whether the requested world was the one that got selected is readable from
 `MapPool#isRequestedMapSelected()`, so the fallback is observable from code and
@@ -83,12 +91,21 @@ absent, the server then generates a fresh chunk in its place, and the next save
 writes that over the built world. Falco's loader reports the failure instead.
 
 The loader keeps region files open for as long as it lives, so it is created
-once per world root and closed on shutdown through `MapProvider#close()`.
+once per world root and closed on shutdown through `MapProvider#close()` — in
+`:app` and in `:setup`, which is the module that actually changes worlds and
+therefore the one that must not drop a region handle unflushed. Closing also
+takes the closed loader off the instance and removes the listeners of the
+provider, so a player who is still moving during the shutdown gets an empty
+chunk rather than the `IllegalStateException` of a loader that was closed
+underneath them. A closed provider refuses `saveMap`; it does not build a fresh
+loader and reopen what the shutdown has just closed.
 
-Block light is computed by `falco-light`'s `ChunkLightService`, which lights a
-loaded chunk together with the ring around it. `LightingChunk` stays the chunk
-type of the instance: writing the light clears the update flag of the section,
-so Minestom does not recompute what Falco just calculated, and it keeps doing
-the part Falco is not asked for here — sending the light and the sky pass. See
-[`exploration-lighting.md`](exploration-lighting.md) for what this is the
-foundation of.
+Light — block **and** sky — is computed by `falco-light`, driven by a
+`ChunkLightScheduler`: a chunk that arrives is marked together with the eight
+around it, and the pass runs once per instance tick over areas that do not
+overlap. That is what keeps the chunk which loaded first from staying dark along
+the border once its neighbours arrive, and what keeps two parallel loads from
+lighting each other's chunks. `LightingChunk` stays the chunk type of the
+instance for the part Falco does not do: sending the light. See
+[`exploration-lighting.md`](exploration-lighting.md) for the mechanics and for
+what this is the foundation of.
