@@ -188,14 +188,45 @@ Abschnitt 6a.
 
 | ID | Story | Akzeptanzkriterium (EARS) | Schnittstelle | Priorität | Status |
 |---|---|---|---|---|---|
-| US-4.01 | Als Betreiber möchte ich eine Saison als eigenes Paket ausliefern, damit sie ohne Kernänderung kommt und geht. | The Lobby shall Saison-Inhalte aus einem separat deploybaren Paket laden. | `SeasonalContent`-Contract | Should | offen |
-| US-4.02 | Als Entwickler möchte ich, dass ein Paket sich vollständig zurückbaut, damit nach Saisonende keine Reste bleiben. | When ein Saison-Paket deaktiviert wird, shall es alle von ihm gesetzten Blöcke, Anzeigen und geplanten Aufgaben entfernen. | `SeasonalContent#deactivate` | Must | offen |
-| US-4.03 | Als Betreiber möchte ich saisonale Werte ohne Neubau ändern, damit Textänderungen kein Deployment brauchen. | The Saison-Inhalte shall Materialien, Texte, Positionen und Zeitfenster aus einer Konfigurationsdatei beziehen. | JSON im Paket | Should | offen |
-| US-4.04 | Als Entwickler möchte ich, dass ein unbekannter Effekt-Typ beim Übersetzen auffällt, nicht im Betrieb. | If eine Saison-Konfiguration einen unbekannten Effekt-Typ enthält, then shall das Laden mit einer benannten Fehlermeldung fehlschlagen. | `sealed interface SeasonEffect` | Should | offen |
-| US-4.05 | Als Betreiber möchte ich bei zwei gleichzeitigen Paketen eine feste Reihenfolge, damit das Ergebnis nicht von der Ladereihenfolge abhängt. | Where mehrere Saison-Pakete gleichzeitig aktiv sind, shall die Lobby sie nach einem im Paket hinterlegten Prioritätswert anwenden. | Paket-Manifest | Should | offen |
-| US-4.06 | Als Betreiber möchte ich, dass ein Paket nicht ein anderes voraussetzt, damit Deployment-Reihenfolgen egal sind. | The Saison-Pakete shall einander nicht direkt referenzieren. | ArchUnit-Regel | Must | offen |
-| US-4.07 | Als Betreiber möchte ich vor dem Livegang sehen, wie es aussieht, ohne dass Spieler es sehen. | Where ein Spieler die Berechtigung `titan.season.preview` hat, shall die Lobby ihm Saison-Inhalte auch außerhalb des Zeitfensters zeigen. | `FeatureGate` | Should | offen |
-| US-4.08 | Als Betreiber möchte ich beim Reaktivieren einer alten Saison Gewissheit, dass sie noch funktioniert. | Before eine Saison erneut aktiviert wird, shall ein Testlauf ihrer Kernpfade erfolgreich durchlaufen sein. | Testfall je Paket | Should | offen |
+| US-4.01 | Als Betreiber möchte ich eine Saison als eigenes Paket ausliefern, damit sie ohne Kernänderung kommt und geht. | The Lobby shall Saison-Inhalte aus einem separat deploybaren Paket laden. | `SeasonalContent`-Contract | Should | umgesetzt |
+| US-4.02 | Als Entwickler möchte ich, dass ein Paket sich vollständig zurückbaut, damit nach Saisonende keine Reste bleiben. | When ein Saison-Paket deaktiviert wird, shall es alle von ihm gesetzten Blöcke, Anzeigen und geplanten Aufgaben entfernen. | `SeasonalContent#deactivate` | Must | umgesetzt |
+| US-4.03 | Als Betreiber möchte ich saisonale Werte ohne Neubau ändern, damit Textänderungen kein Deployment brauchen. | The Saison-Inhalte shall Materialien, Texte, Positionen und Zeitfenster aus einer Konfigurationsdatei beziehen. | JSON im Paket | Should | umgesetzt |
+| US-4.04 | Als Entwickler möchte ich, dass ein unbekannter Effekt-Typ beim Übersetzen auffällt, nicht im Betrieb. | If eine Saison-Konfiguration einen unbekannten Effekt-Typ enthält, then shall das Laden mit einer benannten Fehlermeldung fehlschlagen. | `sealed interface SeasonEffect` | Should | umgesetzt |
+| US-4.05 | Als Betreiber möchte ich bei zwei gleichzeitigen Paketen eine feste Reihenfolge, damit das Ergebnis nicht von der Ladereihenfolge abhängt. | Where mehrere Saison-Pakete gleichzeitig aktiv sind, shall die Lobby sie nach einem im Paket hinterlegten Prioritätswert anwenden. | Paket-Manifest | Should | umgesetzt |
+| US-4.06 | Als Betreiber möchte ich, dass ein Paket nicht ein anderes voraussetzt, damit Deployment-Reihenfolgen egal sind. | The Saison-Pakete shall einander nicht direkt referenzieren. | ArchUnit-Regel | Must | umgesetzt |
+| US-4.07 | Als Betreiber möchte ich vor dem Livegang sehen, wie es aussieht, ohne dass Spieler es sehen. | Where ein Spieler die Berechtigung `titan.season.preview` hat, shall die Lobby ihm Saison-Inhalte auch außerhalb des Zeitfensters zeigen. | `FeatureGate` | Should | teilweise |
+
+**Zu US-4.01 — das „Paket" ist eine Datei, kein Jar.** Der Plan
+([`event-modi-plan.md`](event-modi-plan.md), Abschnitt 2) sah ein
+Extension-Jar je Saison vor. Umgesetzt ist die Datenhälfte davon: eine
+JSON-Datei in `seasons/` plus, falls gewünscht, ein Weltverzeichnis. Der Grund
+steht im Research selbst — dekorative Saisons bewegen die Spielerzahl
+messbar nicht, also muss eine Saison nahezu kostenlos hinzuzufügen sein. Ein
+Jar je Saison heißt Build, Review und Deployment je Saison; das ist genau der
+Aufwand, den die Zahlen nicht rechtfertigen. Sobald eine Saison ein *Verb*
+braucht statt eines *Werts*, ist der Weg über einen neuen `SeasonEffect` im
+Kern — nicht über ein Jar, das niemand mehr anfasst.
+
+**Zu US-4.06 — statt einer ArchUnit-Regel.** Die Spalte nennt ArchUnit, und
+bei einer Saison je Jar wäre das richtig gewesen. Bei Saisons als Daten gibt es
+keine Klassen je Saison, die eine Regel einschränken könnte; eine Regel über
+die vorhandenen Klassen wäre grün, ohne je rot werden zu können. Geprüft wird
+stattdessen die Eigenschaft selbst, auf der Ebene, auf der eine Saison lebt:
+`SeasonIsolationTest` stellt per Reflection fest, dass weder
+`SeasonDefinition` noch ein `SeasonEffect` ein Feld hat, in dem eine Saison
+eine andere nennen könnte (ein solches Feld lässt den Test fehlschlagen), und
+dass das Entfernen einer beliebigen Datei die übrigen unberührt lädt.
+
+**Zu US-4.07 — was Vorschau kann und was nicht.** Die Prüfung sitzt in
+`FeatureGate` und nirgends sonst: eine zweite Berechtigungsprüfung für
+saisonale Inhalte gibt es nicht. Wirksam ist sie für alles, was beim Anzeigen
+pro Spieler entschieden wird — heute die Navigator-Icons. Deko, Anzeigen und
+Klänge stehen dagegen in der gemeinsamen Welt; ein Block liegt dort oder nicht,
+und keine Berechtigung kann ihn für einen einzelnen Spieler verbergen. Für
+Weltinhalte heißt Vorschau deshalb: eine Lobby mit geöffnetem Zeitfenster
+starten, deren Freigabestufe sie beim Team hält. Das ist eine Eigenschaft von
+Blöcken, nicht des Gates.
+| US-4.08 | Als Betreiber möchte ich beim Reaktivieren einer alten Saison Gewissheit, dass sie noch funktioniert. | Before eine Saison erneut aktiviert wird, shall ein Testlauf ihrer Kernpfade erfolgreich durchlaufen sein. | Testfall je Paket | Should | umgesetzt |
 
 ### Stufe 5 — Build-Server im Navigator
 
@@ -356,8 +387,8 @@ bekommen den Zeitpunkt übergeben, statt selbst auf die Uhr zu sehen. Die
 - [x] Ein Feature lässt sich nacheinander auf intern, lite und ga stellen, ohne dass Code geändert wird.
 - [x] Der Notausschalter wirkt innerhalb von zwei Sekunden und schlägt Stufe und Zeitfenster. — *Einschränkung: die Prüfung erfolgt beim Zeichnen des Menüs. Wer den Navigator bereits offen hat, sieht das alte Bild bis zum nächsten Öffnen. Ein abgelehnter Eintrag bekommt keinen Klick-Handler, und `InventoryPreClickEvent` wird global abgebrochen — das Fenster ist also eng, aber vorhanden. Die Prüfung zur Klickzeit ist mit Stufe 5 in `GuardedDeliver` nachgezogen, greift dort aber nur für die Berechtigung eines Eintrags, nicht für den Notausschalter.*
 - [x] Ein Spieler ohne `titan.navigator.buildserver` sieht die Build-Server nicht und kann sie auch durch einen manipulierten Klick nicht erreichen.
-- [ ] Die Lobby startet ohne Saison-Paket vollständig funktionsfähig.
-- [ ] Ein Saison-Paket lässt sich entfernen, ohne dass Reste in der Welt zurückbleiben.
+- [x] Die Lobby startet ohne Saison-Paket vollständig funktionsfähig. Fehlt das Verzeichnis `seasons/`, läuft die Lobby ohne saisonalen Inhalt weiter; eine unlesbare Saison-Datei bricht dagegen den Start ab und nennt Datei und Wert.
+- [x] Ein Saison-Paket lässt sich entfernen, ohne dass Reste in der Welt zurückbleiben. — *Nachgewiesen gegen eine laufende Welt: `SeasonWorldTest` und `SeasonSmokeTest` vergleichen den Weltzustand vor und nach der Deaktivierung, nicht den Aufruf der Methode. Wiederhergestellt wird der Block, der tatsächlich gelesen wurde, kein angenommener. Nicht abgedeckt: was ein Bauteam während einer laufenden Saison an derselben Position ändert — dessen Änderung wird beim Saisonende überschrieben.*
 - [ ] Der Rollout-Stand jedes Features ist in `docs/rollout-log.md` nachvollziehbar.
 
 ---

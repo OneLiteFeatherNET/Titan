@@ -40,7 +40,7 @@ running all year.
 | `place_display` | `position`, `text` (MiniMessage) | Spawns a floating text display. | Removes the display. |
 | `ambient_sound` | `position`, `sound`, `periodSeconds` | Plays a sound on a loop. | Cancels the scheduled task. |
 | `replace_icon` | `destination`, `material` | Swaps a navigator icon. | Nothing to undo — computed per viewer, never written down. |
-| `message_prefix` | `prefix` (MiniMessage) | Puts a prefix in front of lobby messages. | Nothing to undo — same reason. |
+| `message_prefix` | `prefix` (MiniMessage) | Replaces what the `<prefix>` tag resolves to in every message the lobby writes. | Puts back the prefix that was in force before, which is Titan's own unless another season set one. |
 
 A `type` that is not in this table makes the lobby refuse to start, with the
 unknown type and the file name in the message. That is deliberate: a season is
@@ -49,10 +49,14 @@ finds until the season is live.
 
 ## Preview
 
-A holder of `titan.season.preview` sees the per-player half — icons and prefixes
-— outside the window. Decoration is a block in a world everybody shares, so no
-permission can show it to one player; previewing that means opening the window on
-a lobby whose release stage keeps it to the team.
+A holder of `titan.season.preview` sees the per-player half — today, the
+navigator icons — outside the window, and `/season list` shows which seasons are
+loaded and which are live.
+
+Everything else is in the world everybody shares: a block is there or it is not,
+and no permission can show it to one player. Previewing decoration means opening
+the window on a lobby whose release stage keeps it to the team, not walking into
+the live lobby and seeing pumpkins nobody else sees.
 
 ## Rollout
 
