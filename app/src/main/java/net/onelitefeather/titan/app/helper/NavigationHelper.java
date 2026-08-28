@@ -37,8 +37,6 @@ import net.theevilreaper.aves.inventory.PersonalInventoryBuilder;
 import net.theevilreaper.aves.inventory.click.ClickHolder;
 import net.theevilreaper.aves.inventory.util.LayoutCalculator;
 import org.jetbrains.annotations.Nullable;
-import org.togglz.core.user.SimpleFeatureUser;
-import org.togglz.core.user.thread.ThreadLocalUserProvider;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -126,7 +124,6 @@ public class NavigationHelper {
             // Blank the whole row first: every slot that no visible entry claims is filler, and
             // filler is what a slot holding a hidden entry would have to look like anyway.
             finalLayout.setItems(LayoutCalculator.fillRow(NAVIGATOR_TYPE), Items.NAVIGATOR_BLANK_ITEM_STACK);
-            ThreadLocalUserProvider.bind(toUser(player));
             for (NavigatorLayout.Placement placement : layoutFor(player.getUuid())) {
                 NavigatorEntry entry = placement.entry();
                 finalLayout.setItem(placement.slot(), entry.icon(), (clicker, slot, click, itemStack, result) -> {
@@ -134,7 +131,6 @@ public class NavigationHelper {
                     result.accept(ClickHolder.cancelClick());
                 });
             }
-            ThreadLocalUserProvider.release();
             return finalLayout;
         });
         inventoryBuilder.register();
@@ -179,10 +175,6 @@ public class NavigationHelper {
         }
         this.buildServers.reachableServices().stream().sorted().map(service -> NavigatorEntry.restrictedServer(Items.navigatorBuildServer(service), service, this.access.permission())).forEach(entries::add);
         return List.copyOf(entries);
-    }
-
-    private SimpleFeatureUser toUser(Player player) {
-        return new SimpleFeatureUser(player.getUsername());
     }
 
     /**
