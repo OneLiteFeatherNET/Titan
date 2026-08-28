@@ -132,6 +132,23 @@ class NavigationHelperTest {
         }
     }
 
+    @DisplayName("A build server whose name does not follow the assumed pattern is still offered")
+    @Test
+    void testBuildServersAreNotSecondGuessedByName(Env env) {
+        Instance flatInstance = env.createFlatInstance();
+        Player player = env.createPlayer(flatInstance);
+        TestAudience audience = new TestAudience().grant(player.getUuid(), BuildServerAccess.PERMISSION);
+
+        // CloudNet was asked for the services of the build task by name and answered with these,
+        // so these are build servers - whatever splitter the task happens to use (a task set to
+        // "_" produces Build_1). Re-deriving membership from the name here would drop every one
+        // of them and leave a team member staring at an empty list with no explanation.
+        ItemStack[] contents = openWith(env, player, audience, "Build_1", "Build_2");
+
+        Assertions.assertTrue(contains(contents, Items.navigatorBuildServer("Build_1")), "The directory is the authority on which services belong to the task");
+        Assertions.assertTrue(contains(contents, Items.navigatorBuildServer("Build_2")));
+    }
+
     @DisplayName("A build server that stopped is dropped from the menu on the next open")
     @Test
     void testOnlyReachableBuildServersAreShown(Env env) {

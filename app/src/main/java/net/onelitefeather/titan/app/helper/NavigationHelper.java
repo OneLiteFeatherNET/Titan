@@ -156,6 +156,14 @@ public class NavigationHelper {
      * looked up for a player who holds the permission — a player who does not is not a reason to
      * ask CloudNet anything, and their menu must not depend on the answer.
      *
+     * <p>What the directory reports is taken as it stands. CloudNet is asked for the services of
+     * the build task by name ({@code servicesByTask}) and is the authority on which those are;
+     * re-deriving the membership from the service name here could only ever subtract from that
+     * answer, and would subtract everything for a task whose {@code nameSplitter} is not the one
+     * Titan is configured with. Deriving membership from a name is still what
+     * {@link BuildServerAccess} does for the guard, where it has to be a name, because the guard
+     * must also recognise a build server that is not in this list any more.
+     *
      * @param playerId the player the menu is drawn for
      * @return the public entries, followed by the reachable build servers in a stable order
      */
@@ -169,7 +177,7 @@ public class NavigationHelper {
         if (!this.audience.hasPermission(playerId, this.access.permission())) {
             return List.copyOf(entries);
         }
-        this.buildServers.reachableServices().stream().filter(this.access::covers).sorted().map(service -> NavigatorEntry.restrictedServer(Items.navigatorBuildServer(service), service, this.access.permission())).forEach(entries::add);
+        this.buildServers.reachableServices().stream().sorted().map(service -> NavigatorEntry.restrictedServer(Items.navigatorBuildServer(service), service, this.access.permission())).forEach(entries::add);
         return List.copyOf(entries);
     }
 

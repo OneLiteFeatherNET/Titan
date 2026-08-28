@@ -42,7 +42,51 @@ class BuildServerAccessTest {
     void testForeignServiceNames() {
         Assertions.assertFalse(this.access.covers("Lobby-1"));
         Assertions.assertFalse(this.access.covers("BuildBattle-1"), "A different task with the same prefix is not the build task");
+        Assertions.assertFalse(this.access.covers("Build-"), "A name with no service id behind the splitter is no service");
         Assertions.assertFalse(this.access.covers(""));
+    }
+
+    @DisplayName("A different task whose name starts with the build task is not the build task")
+    @Test
+    void testTaskWhoseNameStartsWithTheBuildTask() {
+        // CloudNet names a service <task><splitter><number>, so the tail behind the splitter is
+        // the deciding evidence: 'Test-1' is not a number, therefore 'Build-Test-1' belongs to a
+        // task called Build-Test and must not be guarded as if it were a build server.
+        Assertions.assertFalse(this.access.covers("Build-Test"));
+        Assertions.assertFalse(this.access.covers("Build-Test-1"));
+        Assertions.assertFalse(this.access.covers(server("Build-Test-1")));
+    }
+
+    @DisplayName("A task that splits its service names differently is recognised once it is configured")
+    @Test
+    void testConfiguredNameSplitter() {
+        // The splitter is a per-task CloudNet setting (ServiceTask.nameSplitter, default "-"), so
+        // a Build task set to "_" produces Build_1 and the rule has to be told about it.
+        BuildServerAccess underscore = new BuildServerAccess("Build", "_", BuildServerAccess.PERMISSION);
+
+        Assertions.assertTrue(underscore.covers("Build_1"));
+        Assertions.assertTrue(underscore.covers(server("Build_9")), "A stopped one is guarded just the same");
+        Assertions.assertFalse(underscore.covers("Build-1"), "A splitter the task does not use names no service of it");
+        Assertions.assertFalse(this.access.covers("Build_1"), "The default rule expects CloudNet's default splitter");
+    }
+
+    @DisplayName("The name splitter can be overridden per deployment")
+    @Test
+    void testNameSplitterOverride() {
+        String previous = System.getProperty(BuildServerAccess.SPLITTER_PROPERTY);
+        try {
+            System.setProperty(BuildServerAccess.SPLITTER_PROPERTY, "_");
+            BuildServerAccess overridden = BuildServerAccess.defaults();
+
+            Assertions.assertEquals("_", overridden.nameSplitter());
+            Assertions.assertTrue(overridden.covers("Build_1"));
+        } finally {
+            if (previous == null) {
+                System.clearProperty(BuildServerAccess.SPLITTER_PROPERTY);
+            } else {
+                System.setProperty(BuildServerAccess.SPLITTER_PROPERTY, previous);
+            }
+        }
     }
 
     @DisplayName("A stopped build server is still a build server")
@@ -88,6 +132,7 @@ class BuildServerAccessTest {
         BuildServerAccess defaults = BuildServerAccess.defaults();
 
         Assertions.assertEquals(BuildServerAccess.DEFAULT_TASK, defaults.taskName());
+        Assertions.assertEquals(BuildServerAccess.DEFAULT_NAME_SPLITTER, defaults.nameSplitter());
         Assertions.assertEquals("titan.navigator.buildserver", defaults.permission());
     }
 

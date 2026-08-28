@@ -28,6 +28,12 @@ import java.util.List;
  * the same rule {@code net.onelitefeather.titan.common.deliver.ServerConnector} and
  * {@code net.onelitefeather.titan.common.permission.TitanPermissionBridge} follow.
  *
+ * <p>An implementation reports build servers and nothing else — it is asked to select them, not
+ * merely to list services for someone else to filter. The navigator therefore offers what it
+ * receives unchanged, which is why the production implementation queries CloudNet by task name
+ * instead of by a name pattern. {@link BuildServerAccess} answers the other question, the one the
+ * guard asks about a destination that may no longer be in this list at all.
+ *
  * @author TheMeinerLP
  * @version 1.0.0
  * @since 1.15.0
