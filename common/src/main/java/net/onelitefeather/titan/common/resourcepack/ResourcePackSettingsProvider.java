@@ -56,25 +56,40 @@ public final class ResourcePackSettingsProvider {
      *         is absent or cannot be read
      */
     public static ResourcePackSettings load(Path directory) {
+        return reload(directory).orElseGet(ResourcePackSettings::disabled);
+    }
+
+    /**
+     * Reads the settings and reports whether the file could be read at all.
+     *
+     * <p>{@link #load(Path)} cannot tell "the operator configured no pack" from "the file is
+     * missing or broken" - both end up disabled. A reload has to tell them apart: a lobby that
+     * is already serving packs must not strip them from every player because someone saved a
+     * half-written file. So an absent or unreadable file yields an empty result here, and only
+     * a file that actually parsed yields settings - even when those settings configure nothing.
+     *
+     * @param directory the directory the server runs in
+     * @return the parsed settings, or empty when the file is absent or cannot be read
+     */
+    public static Optional<ResourcePackSettings> reload(Path directory) {
         Path file = directory.resolve(FILE_NAME);
         ResourcePackSettings settings;
         try {
-            Optional<ResourcePackSettings> loaded = new ModernGsonFileHandler().load(file, TYPE);
-            settings = loaded.orElse(null);
+            settings = new ModernGsonFileHandler().load(file, TYPE).orElse(null);
         } catch (RuntimeException exception) {
-            LOGGER.warn("Unable to read {} - resource packs stay disabled", file, exception);
-            return ResourcePackSettings.disabled();
+            LOGGER.warn("Unable to read {} - keeping the resource packs that are in effect", file, exception);
+            return Optional.empty();
         }
         if (settings == null) {
-            LOGGER.debug("No {} found - resource packs stay disabled", file);
-            return ResourcePackSettings.disabled();
+            LOGGER.debug("No {} found - keeping the resource packs that are in effect", file);
+            return Optional.empty();
         }
         if (!settings.enabled()) {
-            LOGGER.info("{} configures no pack - resource packs stay disabled", file);
-            return settings;
+            LOGGER.info("{} configures no pack", file);
+            return Optional.of(settings);
         }
         warnAboutCaching(settings);
-        return settings;
+        return Optional.of(settings);
     }
 
     /**

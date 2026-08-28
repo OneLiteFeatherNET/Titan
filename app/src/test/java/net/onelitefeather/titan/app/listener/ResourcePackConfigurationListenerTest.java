@@ -42,6 +42,8 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -49,7 +51,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ResourcePackConfigurationListenerTest {
 
     private static final String HASH = "4444444444444444444444444444444444444444";
+    private static final String OPTIONAL_HASH = "5555555555555555555555555555555555555555";
     private static final ResourcePackDefinition REQUIRED_PACK = new ResourcePackDefinition(UUID.fromString("00000000-0000-4000-8000-0000000000aa"), "https://packs.invalid/pack-" + HASH + ".zip", HASH, true, null);
+    private static final ResourcePackDefinition OPTIONAL_PACK = new ResourcePackDefinition(UUID.fromString("00000000-0000-4000-8000-0000000000bb"), "https://packs.invalid/pack-" + OPTIONAL_HASH + ".zip", OPTIONAL_HASH, false, null);
 
     @Test
     @DisplayName("A client that never answers does not park the configuration thread forever")
@@ -71,7 +75,31 @@ class ResourcePackConfigurationListenerTest {
             List<ResourcePackPushPacket> pushed = pushes.collect();
             assertEquals(1, pushed.size());
             assertTrue(pushed.getFirst().forced());
-            assertTrue(service.registry().holds(player.getUuid(), PackSlot.BASE, REQUIRED_PACK.id()));
+            // The guard answers on the silent client's behalf, so Minestom clears its own
+            // bookkeeping instead of being left with a pack that is pending forever. For this
+            // pack that answer also means a kick, because the configuration marks it required.
+            assertNull(player.getResourcePackFuture(), "The expired request must not stay in the player's future field");
+            assertFalse(service.registry().holds(player.getUuid(), PackSlot.BASE, REQUIRED_PACK.id()), "A pack that timed out is not held");
+        }
+    }
+
+    @Test
+    @DisplayName("An optional pack that times out lets the player in without it")
+    void testSilentClientKeepsAnOptionalPack(Env env) {
+        ResourcePackSettings settings = new ResourcePackSettings(OPTIONAL_PACK, null, 250L, false, ".");
+        try (DaemonPackTimeoutScheduler scheduler = new DaemonPackTimeoutScheduler()) {
+            ResourcePackService service = new ResourcePackService(settings, new HeldPackRegistry(), BedrockDetector.never(), scheduler);
+            MinecraftServer.getGlobalEventHandler().addListener(AsyncPlayerConfigurationEvent.class, new ResourcePackConfigurationListener(service));
+
+            Instance instance = env.createFlatInstance();
+            TestConnection connection = env.createConnection();
+            Collector<ResourcePackPushPacket> pushes = connection.trackIncoming(ResourcePackPushPacket.class);
+
+            Player player = assertTimeoutPreemptively(Duration.ofSeconds(15), () -> connection.connect(instance));
+
+            pushes.assertSingle(packet -> assertFalse(packet.forced()));
+            assertTrue(player.isOnline(), "An optional pack that timed out must not cost the player their session");
+            assertNull(player.getResourcePackFuture(), "The expired request must not stay in the player's future field");
         }
     }
 

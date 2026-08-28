@@ -24,8 +24,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -47,8 +49,8 @@ import java.util.concurrent.CompletableFuture;
  * pop-all-then-push: the client drops every pack and reloads twice.</li>
  * <li>{@code ConnectionManager.doConfiguration()} calls {@code packFuture.join()} with no
  * timeout before it sends {@code FinishConfigurationPacket}. A client that never answers parks
- * that configuration thread forever, so every push arms {@linkplain #armTimeout a guard} that
- * completes the future and lets the server proceed.</li>
+ * that configuration thread forever, so every push arms {@linkplain #armTimeout a guard} bound
+ * to that request which answers on the client's behalf and lets the server proceed.</li>
  * <li>Geyser answers on a Bedrock player's behalf and reports success for a pack the player
  * never received. Bedrock players are therefore recognised up front and, by default, excluded
  * from delivery; their reported status is never evaluated.</li>
@@ -160,13 +162,14 @@ public final class ResourcePackService implements AutoCloseable {
             LOGGER.debug("Skipping resource packs for the bedrock player {} - geyser would report success without delivering anything", player.getUsername());
             return;
         }
-        boolean pushed = false;
+        List<UUID> pushed = new ArrayList<>(PackSlot.values().length);
         for (PackSlot slot : PackSlot.values()) {
-            pushed |= this.push(player, slot, current.packFor(slot), bedrock);
+            ResourcePackDefinition definition = current.packFor(slot);
+            if (this.push(player, slot, definition, bedrock)) {
+                pushed.add(definition.id());
+            }
         }
-        if (pushed) {
-            this.armTimeout(player, current.responseTimeout());
-        }
+        this.armTimeout(player, current.responseTimeout(), pushed);
     }
 
     /**
@@ -194,7 +197,7 @@ public final class ResourcePackService implements AutoCloseable {
                 this.registry.forget(playerId, PackSlot.SEASON);
             }
             if (this.push(player, PackSlot.SEASON, season, bedrock)) {
-                this.armTimeout(player, current.responseTimeout());
+                this.armTimeout(player, current.responseTimeout(), List.of(season.id()));
             }
         }
     }
@@ -272,33 +275,74 @@ public final class ResourcePackService implements AutoCloseable {
      * Arms the guard against a client that never answers.
      *
      * <p>{@code ConnectionManager.doConfiguration()} joins the player's pack future without a
-     * timeout, so nothing else can unblock that thread. The guard completes the future itself
-     * once the configured time has passed; configuration then continues and the player enters
-     * the lobby without the pack, which is the outcome the requirement asks for. A late answer
-     * from the client is still processed afterwards - it just no longer holds anything up.
+     * timeout, so nothing else can unblock that thread. The guard releases it once the
+     * configured time has passed; configuration then continues and a late answer from the
+     * client is still processed afterwards - it just no longer holds anything up.
+     *
+     * <p>The guard is bound to the request it was armed for: it captures the exact future that
+     * is outstanding right now, together with the packs this request pushed. Without that
+     * binding a queued guard would later fetch <em>whatever</em> future the player happens to
+     * have and release a request the client has not answered yet.
      *
      * @param player  the player that was pushed to
      * @param timeout how long to wait; a non-positive value disables the guard
+     * @param packIds the packs this request pushed; empty means nothing was sent
      */
-    private void armTimeout(Player player, Duration timeout) {
-        if (timeout.isZero() || timeout.isNegative()) {
+    private void armTimeout(Player player, Duration timeout, List<UUID> packIds) {
+        if (packIds.isEmpty() || timeout.isZero() || timeout.isNegative()) {
             return;
         }
-        this.timeoutScheduler.schedule(() -> this.expireTimeout(player), timeout);
-    }
-
-    /**
-     * Completes the player's pending pack future so a parked configuration thread proceeds.
-     *
-     * @param player the player whose future is released
-     */
-    private void expireTimeout(Player player) {
         CompletableFuture<Void> future = player.getResourcePackFuture();
         if (future == null || future.isDone()) {
             return;
         }
+        this.timeoutScheduler.schedule(() -> this.expireTimeout(player, future, packIds), timeout);
+    }
+
+    /**
+     * Releases the request this guard was armed for, and only that one.
+     *
+     * <p>Completing the future from the outside is not enough. Minestom clears
+     * {@code Player#resourcePackFuture} only inside {@code onResourcePackStatus}, once every
+     * pending pack has answered; a future completed behind its back stays in the field forever.
+     * {@code sendResourcePacks} then finds a non-null future and never creates a new one, so
+     * every later configuration pass joins an already-completed future and stops waiting for
+     * packs altogether.
+     *
+     * <p>So the guard hands Minestom the terminal answer the silent client owes it, pack by
+     * pack. Minestom drops each pack from its pending map and, once that map runs empty,
+     * completes and clears the future itself - the same path a real answer takes, leaving no
+     * stale state behind. The status used is {@link ResourcePackStatus#DISCARDED}, which is what
+     * actually happened: the pack was never loaded.
+     *
+     * <p>Note that this makes Minestom kick a player whose <em>required</em> pack timed out,
+     * exactly as it does for any other terminal status on a required pack. That is the meaning
+     * of {@code required}, and it is the only outcome that leaves no half-state behind.
+     *
+     * @param player  the player whose request is released
+     * @param future  the future that was outstanding when the guard was armed
+     * @param packIds the packs that request pushed
+     */
+    private void expireTimeout(Player player, CompletableFuture<Void> future, List<UUID> packIds) {
+        if (future.isDone() || player.getResourcePackFuture() != future) {
+            // Either the client answered, or a newer request owns the player's future by now.
+            return;
+        }
         LOGGER.warn("{} did not answer the resource pack request in time - continuing without it", player.getUsername());
-        future.complete(null);
+        UUID playerId = player.getUuid();
+        for (UUID packId : packIds) {
+            PackSlot slot = this.registry.slotOf(playerId, packId);
+            if (slot != null) {
+                this.registry.forget(playerId, slot);
+            }
+            player.onResourcePackStatus(packId, ResourcePackStatus.DISCARDED);
+        }
+        if (!future.isDone()) {
+            // A pack from outside this request is still pending, so Minestom did not release the
+            // future. The configuration thread must not stay parked for it either.
+            LOGGER.warn("Releasing the pack future of {} with packs from an earlier request still pending", player.getUsername());
+            future.complete(null);
+        }
     }
 
     /**

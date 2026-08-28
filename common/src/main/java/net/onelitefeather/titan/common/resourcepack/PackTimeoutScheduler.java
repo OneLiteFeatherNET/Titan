@@ -41,12 +41,23 @@ public interface PackTimeoutScheduler {
     void schedule(Runnable task, Duration delay);
 
     /**
-     * A scheduler that runs the task immediately on the calling thread. Only meaningful in
-     * tests, where it turns the timeout into a synchronous call.
+     * A scheduler that runs the task immediately on the calling thread, as though the client had
+     * already fallen silent. Only meaningful in tests.
      *
      * @return an immediate scheduler
      */
     static PackTimeoutScheduler immediate() {
         return (task, delay) -> task.run();
+    }
+
+    /**
+     * A scheduler that never runs the task, as though every client answered in time. Useful in
+     * tests that are about delivery rather than about the guard.
+     *
+     * @return a scheduler that drops every guard
+     */
+    static PackTimeoutScheduler never() {
+        return (task, delay) -> {
+        };
     }
 }
