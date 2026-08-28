@@ -16,16 +16,26 @@
  */
 package net.onelitefeather.titan.bridge;
 
+import eu.cloudnetservice.driver.inject.InjectionLayer;
+import eu.cloudnetservice.driver.provider.CloudServiceProvider;
 import eu.cloudnetservice.driver.registry.ServiceRegistry;
+import eu.cloudnetservice.driver.service.ServiceInfoSnapshot;
+import eu.cloudnetservice.driver.service.ServiceLifeCycle;
 import eu.cloudnetservice.modules.bridge.impl.platform.minestom.MinestomPermissionChecker;
 import eu.cloudnetservice.modules.bridge.player.PlayerManager;
 import eu.cloudnetservice.modules.bridge.player.executor.PlayerExecutor;
 import eu.cloudnetservice.modules.bridge.player.executor.ServerSelectorType;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import net.minestom.server.extensions.Extension;
 import net.onelitefeather.titan.common.deliver.ServerConnector;
 import net.onelitefeather.titan.common.deliver.TitanServerConnector;
+import net.onelitefeather.titan.common.navigator.BuildServerAccess;
+import net.onelitefeather.titan.common.navigator.TitanBuildServerDirectory;
 import net.onelitefeather.titan.common.permission.TitanPermissionBridge;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Minestom extension that wires the CloudNet bridge to Titan across the classloader boundary.
@@ -45,12 +55,20 @@ import net.onelitefeather.titan.common.permission.TitanPermissionBridge;
  * <li><b>Server switching:</b> installs a {@link ServerConnector} (used by
  * {@code MessageChannelDeliver}) that connects players through the bridge
  * {@link PlayerManager} / {@link PlayerExecutor}.
+ * <li><b>Build servers:</b> installs the directory of reachable build servers the navigator
+ * reads (US-5.04). The CloudNet service list is only available here; the application receives
+ * nothing but a {@code List<String>} of service names.
  * </ul>
  */
 public final class TitanBridgePermissionExtension extends Extension {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(TitanBridgePermissionExtension.class);
+
     @Override
     public void initialize() {
+        String buildServerTask = BuildServerAccess.defaults().taskName();
+        TitanBuildServerDirectory.setDirectory(() -> reachableBuildServers(buildServerTask));
+
         MinestomPermissionChecker checker = (player, permission) -> TitanPermissionBridge.hasPermission(player.getUuid(), permission);
         ServiceRegistry.registry().registerProvider(MinestomPermissionChecker.class, "titan-luckperms", checker).markAsDefaultService();
 
@@ -71,6 +89,30 @@ public final class TitanBridgePermissionExtension extends Extension {
                 }
             }
         });
+    }
+
+    /**
+     * Lists the services of the build task that are running and connected right now. Anything
+     * that cannot be answered - no driver, a failed lookup - is reported as "no build servers"
+     * rather than as a stale list, because the navigator promises reachability (US-5.04).
+     *
+     * @param taskName the CloudNet task the build servers run under
+     * @return the reachable service names
+     */
+    private static List<String> reachableBuildServers(String taskName) {
+        try {
+            CloudServiceProvider provider = InjectionLayer.boot().instance(CloudServiceProvider.class);
+            List<String> names = new ArrayList<>();
+            for (ServiceInfoSnapshot snapshot : provider.servicesByTask(taskName)) {
+                if (snapshot.lifeCycle() == ServiceLifeCycle.RUNNING && snapshot.connected()) {
+                    names.add(snapshot.name());
+                }
+            }
+            return List.copyOf(names);
+        } catch (RuntimeException exception) {
+            LOGGER.warn("Could not read the CloudNet service list for task {}; reporting no build servers", taskName, exception);
+            return List.of();
+        }
     }
 
     private static PlayerExecutor playerExecutor(UUID playerId) {
