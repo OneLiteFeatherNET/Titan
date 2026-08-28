@@ -354,7 +354,7 @@ bekommen den Zeitpunkt übergeben, statt selbst auf die Uhr zu sehen. Die
 - [ ] Die Tageszeit der Lobby entspricht der Uhrzeit in Berlin, auch über eine Sommerzeitumstellung hinweg.
 - [ ] Die Zeitsteuerung ist mit einer festen `Clock` testbar; ein Test prüft Winter im Sommer.
 - [x] Ein Feature lässt sich nacheinander auf intern, lite und ga stellen, ohne dass Code geändert wird.
-- [x] Der Notausschalter wirkt innerhalb von zwei Sekunden und schlägt Stufe und Zeitfenster.
+- [x] Der Notausschalter wirkt innerhalb von zwei Sekunden und schlägt Stufe und Zeitfenster. — *Einschränkung: die Prüfung erfolgt beim Zeichnen des Menüs. Wer den Navigator bereits offen hat, sieht das alte Bild bis zum nächsten Öffnen. Ein abgelehnter Eintrag bekommt keinen Klick-Handler, und `InventoryPreClickEvent` wird global abgebrochen — das Fenster ist also eng, aber vorhanden. Eine Prüfung zur Klickzeit gehört zu `NavigatorEntry` aus Stufe 5.*
 - [ ] Ein Spieler ohne `titan.navigator.buildserver` sieht die Build-Server nicht und kann sie auch durch einen manipulierten Klick nicht erreichen.
 - [ ] Die Lobby startet ohne Saison-Paket vollständig funktionsfähig.
 - [ ] Ein Saison-Paket lässt sich entfernen, ohne dass Reste in der Welt zurückbleiben.
