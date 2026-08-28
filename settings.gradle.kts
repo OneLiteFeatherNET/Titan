@@ -11,6 +11,12 @@ dependencyResolutionManagement {
             url = uri("https://repo.onelitefeather.dev/onelitefeather-proxy")
         }
         maven("https://central.sonatype.com/repository/maven-snapshots/")
+        // Falco (chunk loader and light engine) is published to the public
+        // OneLiteFeather release repository.
+        maven {
+            name = "OneLiteFeatherReleases"
+            url = uri("https://repo.onelitefeather.dev/releases")
+        }
         maven("https://repository.derklaro.dev/snapshots/")
         maven("https://repository.derklaro.dev/releases/")
         maven {
@@ -36,6 +42,16 @@ dependencyResolutionManagement {
             version("cloudnet", "4.0.0-RC17-SNAPSHOT")
             version("butterfly", "1.0.23")
 
+            // Falco: the OneLiteFeather chunk loader and light engine. 0.3.0 is the
+            // version the lobby spec names, but it predates Minestom 26.1; 2.1.0 is
+            // the current release and the first that builds against Minestom 26.1.
+            // It does not resolve against the Minestom version aonyx-bom pins - it
+            // would override it, because every falco artifact carries mycelium-bom
+            // as a platform dependency and that one is a release ahead. The falco
+            // dependencies of :common exclude that BOM, so the Minestom version
+            // stays the one aonyx-bom prescribes (NFR-001).
+            version("falco", "2.1.0")
+
             version("luckperms", "5.6-SNAPSHOT")
 
             version("togglz", "4.6.2")
@@ -55,6 +71,17 @@ dependencyResolutionManagement {
             library("aves", "net.theevilreaper", "aves").withoutVersion()
             library("adventure.minimessage", "net.kyori", "adventure-text-minimessage").withoutVersion()
             library("butterfly-minestom", "net.onelitefeather", "butterfly-minestom").versionRef("butterfly")
+
+            // Falco
+            library("falco-anvil", "net.onelitefeather", "falco-anvil").versionRef("falco")
+            library("falco-light", "net.onelitefeather", "falco-light").versionRef("falco")
+            // falco-instance is not used directly, but falco-light's ChunkLightScheduler cannot be
+            // loaded without it: the class carries the lambda body of supplier(), which returns a
+            // FalcoLightingChunk, and the verifier resolves that type - and its FalcoChunk
+            // supertype, which lives here - while linking the scheduler, not when the lambda runs.
+            // Without this line the very first `new ChunkLightScheduler(...)` dies with a
+            // NoClassDefFoundError. falco-light declares no dependency on it, so we do.
+            library("falco-instance", "net.onelitefeather", "falco-instance").versionRef("falco")
 
             library("togglz", "org.togglz", "togglz-core").versionRef("togglz")
             library("caffeine", "com.github.ben-manes.caffeine", "caffeine").versionRef("caffeine")

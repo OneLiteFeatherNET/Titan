@@ -138,12 +138,51 @@ und 3.
 
 | ID | Story | Akzeptanzkriterium (EARS) | Schnittstelle | Priorität | Status |
 |---|---|---|---|---|---|
-| US-1.01 | Als Betreiber möchte ich Welten über Falco laden, damit wir unsere eigene Engine nutzen und Ladefehler nicht als „Chunk fehlt" durchgehen. | When eine Instanz erzeugt wird, shall die Lobby einen `FalcoAnvilLoader` als `ChunkLoader` setzen statt Minestoms `AnvilLoader`. | `net.onelitefeather.falco.anvil.FalcoAnvilLoader(Path, Key)` | Must | offen |
-| US-1.02 | Als Betreiber möchte ich, dass ein Lesefehler den Chunk nicht stillschweigend neu generiert, damit gebaute Welten nicht überschrieben werden. | If ein Chunk nicht gelesen werden kann, then shall der Ladevorgang eine Ausnahme werfen und der Chunk shall nicht neu generiert werden. | `AnvilFault`, `ChunkDataException` | Must | offen |
-| US-1.03 | Als Betreiber möchte ich Licht über `falco-light` steuern, damit die Lobby vollständig ausgeleuchtet ist und die Tageszeit später korrekt wirkt. | When ein Chunk geladen wird, shall die Lobby dessen Licht über `ChunkLightService` berechnen. | `ChunkLightService`, `ChunkLightScheduler` | Must | offen |
-| US-1.04 | Als Betreiber möchte ich bei falsch gesetzter Welt-Property eine verständliche Meldung, damit ein Tippfehler kein Rätsel ist. | If die über `TITAN_LOBBY_MAP` benannte Welt nicht existiert, then shall die Lobby den gesuchten Namen und die gefundenen Welten protokollieren und mit der Standardwelt starten. | `MapPool.peekMap()` | Must | offen |
-| US-1.05 | Als Entwickler möchte ich, dass die Welt-Property immer gilt, damit sich lokal und in Produktion nichts unterschiedlich verhält. | The Welt-Auswahl shall die Property unabhängig von der Anzahl vorhandener Welten auswerten. | `MapPool.peekMap()` | Must | offen |
-| US-1.06 | Als Betreiber möchte ich Welten pro Saison als eigenes Verzeichnis ablegen, damit der Wechsel ohne Codeänderung möglich ist. | The Lobby shall die aktive Welt aus einem Verzeichnis unter `worlds/` laden, dessen Name konfigurierbar ist. | `worlds/<name>/` | Must | offen |
+| US-1.01 | Als Betreiber möchte ich Welten über Falco laden, damit wir unsere eigene Engine nutzen und Ladefehler nicht als „Chunk fehlt" durchgehen. | When eine Instanz erzeugt wird, shall die Lobby einen `FalcoAnvilLoader` als `ChunkLoader` setzen statt Minestoms `AnvilLoader`. | `net.onelitefeather.falco.anvil.FalcoAnvilLoader(Path, Key)` | Must | umgesetzt |
+| US-1.02 | Als Betreiber möchte ich, dass ein Lesefehler den Chunk nicht stillschweigend neu generiert, damit gebaute Welten nicht überschrieben werden. | If ein Chunk nicht gelesen werden kann, then shall der Ladevorgang eine Ausnahme werfen und der Chunk shall nicht neu generiert werden. | `AnvilFault`, `ChunkDataException` | Must | umgesetzt |
+| US-1.03 | Als Betreiber möchte ich Licht über `falco-light` steuern, damit die Lobby vollständig ausgeleuchtet ist und die Tageszeit später korrekt wirkt. | When ein Chunk geladen wird, shall die Lobby dessen Licht über `ChunkLightService` berechnen. | `ChunkLightService`, `ChunkLightScheduler` | Must | umgesetzt |
+| US-1.04 | Als Betreiber möchte ich bei falsch gesetzter Welt-Property eine verständliche Meldung, damit ein Tippfehler kein Rätsel ist. | If die über `TITAN_LOBBY_MAP` benannte Welt nicht existiert, then shall die Lobby den gesuchten Namen und die gefundenen Welten protokollieren und mit der Standardwelt starten. | `MapPool.peekMap()` | Must | umgesetzt |
+| US-1.05 | Als Entwickler möchte ich, dass die Welt-Property immer gilt, damit sich lokal und in Produktion nichts unterschiedlich verhält. | The Welt-Auswahl shall die Property unabhängig von der Anzahl vorhandener Welten auswerten. | `MapPool.peekMap()` | Must | umgesetzt |
+| US-1.06 | Als Betreiber möchte ich Welten pro Saison als eigenes Verzeichnis ablegen, damit der Wechsel ohne Codeänderung möglich ist. | The Lobby shall die aktive Welt aus einem Verzeichnis unter `worlds/` laden, dessen Name konfigurierbar ist. | `worlds/<name>/` | Must | umgesetzt |
+
+**Umsetzungsstand Stufe 1 (28.08.2026).** US-1.01 bis US-1.06 sind umgesetzt;
+Layout und Auswahl der Welten sind in
+[`lobby-world-selection.md`](lobby-world-selection.md) dokumentiert. Vier Punkte,
+die von dieser Spec abweichen und beim Review bekannt sein sollten:
+
+- **Falco-Version.** Die Spec nennt 0.3.0. Aufgelöst wird **2.1.0** — 0.3.0
+  stammt aus der Zeit vor Minestom 26.1. Jedes falco-Artefakt bringt
+  `mycelium-bom` 1.7.2 als Plattform-Abhängigkeit mit, `aonyx-bom` 0.8.0 bringt
+  1.7.1; ohne Gegenmaßnahme hebt „highest wins" Minestom damit still von
+  `2026.06.05-26.1.2` auf `2026.06.20-26.1.2`. Genau das verbietet NFR-001, und
+  zwar unabhängig davon, ob der konkrete Sprung harmlos ist: die nächste
+  falco-Version würde ihn wiederholen, ohne dass es jemand merkt. `:common`
+  schließt `mycelium-bom` aus allen drei falco-Abhängigkeiten aus. Verifiziert
+  über die aufgelösten Klassenpfade: jedes Modul (`:common`, `:app`, `:setup`,
+  `:bridge`) löst `net.minestom:minestom:2026.06.05-26.1.2` auf — die Version,
+  die `aonyx-bom` vorgibt. Damit ist auch die frühere Abweichung weg, bei der
+  `:bridge` gegen `2026.06.05` kompilierte, während `:app` auf `2026.06.20`
+  lief.
+- **Licht.** Block- **und** Himmelslicht laufen über den
+  `ChunkLightScheduler`; `LightingChunk` bleibt der Chunktyp, weil er das Licht
+  versendet. Ein früherer Stand berechnete das Licht direkt beim Laden über
+  `ChunkLightService.calculateWithNeighbours(...)` — das war in drei Punkten
+  falsch: der zuerst geladene Chunk behielt seinen Rand dauerhaft dunkel (die
+  Schreiboperation löscht das Update-Flag der Section, niemand rechnet erneut),
+  parallel geladene Nachbarchunks belichteten sich gegenseitig (Falcos eigenes
+  Javadoc verbietet überlappende Nachbarschaften), und Himmelslicht wurde
+  überhaupt nicht berechnet, weil eine frische Minestom-`Light` sich selbst als
+  gültig meldet und `LightingChunk` den Himmelspass deshalb überspringt.
+- **`falco-instance` ist Pflicht.** Ein früherer Stand hielt den
+  `ChunkLightScheduler` für unbenutzbar, weil `FalcoLightingChunk` von
+  `FalcoChunk` aus `falco-instance` erbt und falco-light das Modul nicht
+  deklariert. Der Schluss war zu weit: nur `supplier()` nennt diese Klasse. Die
+  Verifikation der Klasse löst den Typ allerdings beim Linken auf, nicht erst
+  beim Ausführen des Lambdas — `new ChunkLightScheduler(...)` scheitert ohne das
+  Modul mit `NoClassDefFoundError`. Titan deklariert `falco-instance` deshalb
+  selbst als Laufzeitabhängigkeit.
+- **US-1.06** war bereits erfüllt und ist nur verifiziert und dokumentiert
+  worden, nicht geändert.
 
 ### Stufe 2 — Jahreszeiten und Echtzeit-Tageszeit
 
@@ -348,9 +387,9 @@ bekommen den Zeitpunkt übergeben, statt selbst auf die Uhr zu sehen. Die
 
 - [x] Die Lizenzfrage Falco ↔ Titan ist entschieden: Titan steht unter AGPL-3.0 (21.08.2026).
 - [ ] Die Zustimmung der Mitautoren zum Lizenzwechsel liegt schriftlich vor und ist im Repository abgelegt.
-- [ ] Die Lobby lädt Welten über `FalcoAnvilLoader`; Minestoms `AnvilLoader` wird nicht mehr verwendet.
-- [ ] Ein Lesefehler an einem Chunk führt zu einer Ausnahme, nicht zu einem neu generierten Chunk.
-- [ ] Ein falsch gesetztes `TITAN_LOBBY_MAP` startet die Lobby mit der Standardwelt und protokolliert den gesuchten Namen.
+- [x] Die Lobby lädt Welten über `FalcoAnvilLoader`; Minestoms `AnvilLoader` wird nicht mehr verwendet.
+- [x] Ein Lesefehler an einem Chunk führt zu einer Ausnahme, nicht zu einem neu generierten Chunk.
+- [x] Ein falsch gesetztes `TITAN_LOBBY_MAP` startet die Lobby mit der Standardwelt und protokolliert den gesuchten Namen.
 - [ ] Die Tageszeit der Lobby entspricht der Uhrzeit in Berlin, auch über eine Sommerzeitumstellung hinweg.
 - [ ] Die Zeitsteuerung ist mit einer festen `Clock` testbar; ein Test prüft Winter im Sommer.
 - [ ] Ein Feature lässt sich nacheinander auf intern, lite und ga stellen, ohne dass Code geändert wird.

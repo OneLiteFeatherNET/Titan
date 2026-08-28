@@ -71,7 +71,9 @@ public final class Titan {
     }
 
     public void terminate() {
-
+        // The Falco chunk loader keeps region files open for as long as it lives, so the shutdown
+        // is where they are flushed and closed.
+        this.mapProvider.close();
     }
 
     private void initCommands() {

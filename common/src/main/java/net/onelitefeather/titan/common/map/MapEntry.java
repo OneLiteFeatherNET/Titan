@@ -17,18 +17,36 @@
 package net.onelitefeather.titan.common.map;
 
 import net.onelitefeather.titan.common.config.AppConfig;
-import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public record MapEntry(@NotNull Path path) {
+/**
+ * The {@link MapEntry} record points at one world directory below {@code worlds} and answers
+ * whether that directory carries map data.
+ *
+ * @param path the root directory of the world
+ * @author theEvilReaper
+ * @version 1.0.0
+ * @since 1.0.0
+ */
+public record MapEntry(Path path) {
 
+    /**
+     * Checks whether the world directory carries the map data file.
+     *
+     * @return true if the file exists, otherwise false
+     */
     public boolean hasMapFile() {
         return Files.exists(path.resolve(AppConfig.MAP_FILE_NAME));
     }
 
-    public @NotNull Path getMapFile() {
+    /**
+     * Gets the map data file of this world, whether it exists or not.
+     *
+     * @return the path of the map data file
+     */
+    public Path getMapFile() {
         return path.resolve(AppConfig.MAP_FILE_NAME);
     }
 }

@@ -18,7 +18,6 @@ package net.onelitefeather.titan.common.map;
 
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.utils.validate.Check;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.UnmodifiableView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,24 +28,44 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
  * The map pool is responsible for managing the available maps. It will load all
  * maps data from the given path and store them. It would not load the map
- * itself over a {@link net.minestom.server.instance.anvil.AnvilLoader}
- * instance. This behavior is handled by another class.
+ * itself over a chunk loader instance. This behavior is handled by another class.
+ * <p>
+ * Which of the maps is the active one is decided by the system property
+ * {@value #LOBBY_MAP_PROPERTY}, and it is decided by that property alone: the amount of worlds
+ * below the map directory does not change how the property is read. A world that is named there but
+ * is not present is a typo and not a reason to refuse the start, so it is reported by name, next to
+ * the names that were actually found, and the pool falls back to {@value #DEFAULT_MAP_NAME}.
+ * </p>
  *
  * @author theEvilReaper
- * @version 1.0.0
+ * @author TheMeinerLP
+ * @version 1.1.0
  * @since 1.0.0
  **/
 public final class MapPool {
     private static final Logger LOGGER = LoggerFactory.getLogger(MapPool.class);
-    private static final String LOBBY_MAP_NAME = System.getProperty("TITAN_LOBBY_MAP", "world");
 
-    private List<MapEntry> referenceList;
+    /**
+     * The system property that names the world the lobby starts with.
+     */
+    public static final String LOBBY_MAP_PROPERTY = "TITAN_LOBBY_MAP";
+
+    /**
+     * The name of the world the pool falls back to when the named one is absent.
+     */
+    public static final String DEFAULT_MAP_NAME = "world";
+
+    private final String requestedMapName;
+    private boolean requestedMapSelected;
+    private final List<MapEntry> referenceList;
     private MapEntry selectedMap;
     private final Function<Stream<Path>, List<MapEntry>> filterMaps;
 
@@ -54,22 +73,99 @@ public final class MapPool {
      * Creates a new instance of the map pool. It will load all maps from the given
      * path.
      *
-     * @param path
-     *             the path where the maps are stored
+     * @param path       the path where the maps are stored
+     * @param filterMaps the filter that decides which directories count as a world
      */
-    public MapPool(@NotNull Path path, @NotNull Function<Stream<Path>, List<MapEntry>> filterMaps) {
+    public MapPool(Path path, Function<Stream<Path>, List<MapEntry>> filterMaps) {
         this.filterMaps = filterMaps;
-        this.referenceList = loadMapsEntries(path);
+        // Read per instance rather than once per class: a static field would freeze the value at
+        // class load, which is both untestable and a source of surprises when the property is set
+        // from code rather than the command line.
+        this.requestedMapName = System.getProperty(LOBBY_MAP_PROPERTY, DEFAULT_MAP_NAME);
+        // Copied because the filter decides what it returns and one of them hands back an immutable
+        // list, which the pool has to be able to empty.
+        this.referenceList = new ArrayList<>(loadMapsEntries(path));
         this.peekMap();
     }
 
+    /**
+     * Selects the world the lobby starts with.
+     * <p>
+     * The property wins whenever the world it names exists. When it does not, the searched name and
+     * the found names are logged together — the two halves that make a typo obvious — and the
+     * default world is used instead. Only a pool without any world at all is fatal, because there
+     * is
+     * then nothing left to start with.
+     * </p>
+     */
     private void peekMap() {
         Check.argCondition(this.referenceList.isEmpty(), "The map list is empty");
-        if (this.referenceList.size() == 1) {
-            this.selectedMap = this.referenceList.getFirst();
+
+        Optional<MapEntry> requested = findMap(this.requestedMapName);
+        if (requested.isPresent()) {
+            this.selectedMap = requested.get();
+            this.requestedMapSelected = true;
             return;
         }
-        this.selectedMap = this.referenceList.stream().filter(mapEntry -> mapEntry.path().getFileName().toString().equalsIgnoreCase(LOBBY_MAP_NAME)).findFirst().orElseThrow();
+
+        // Neither refusing to start nor picking blindly: the default world first, and if that is
+        // not there either the first world that was found, because leaving the lobby down over a
+        // naming question would be the worse outcome. The warning is written afterwards so that it
+        // can name the world that was actually taken rather than the one the rule prefers.
+        this.selectedMap = findMap(DEFAULT_MAP_NAME).orElseGet(this.referenceList::getFirst);
+        LOGGER.warn(describeMissingMap(this.requestedMapName, availableMapNames(), selectedMapName()));
+    }
+
+    /**
+     * Gets the name of the world directory that was selected.
+     *
+     * @return the name of the selected world
+     */
+    private String selectedMapName() {
+        return this.selectedMap.path().getFileName().toString();
+    }
+
+    /**
+     * Builds the warning that reports a world which the property named but which is not there.
+     * <p>
+     * The message is built rather than formatted into the log call so that the rules behind it —
+     * the searched name, the found ones and the world that was taken instead all have to appear —
+     * are ones a test can hold the code to.
+     * </p>
+     * <p>
+     * The fallback is named rather than assumed. The message used to announce the default world
+     * unconditionally, including in the case where the default world was missing as well and the
+     * code went on with the first world it had found: it said one thing and did another, which is
+     * the one failure mode a warning of this kind must not have.
+     * </p>
+     *
+     * @param requested the name of the world that was searched for
+     * @param found     the names of the worlds that are present
+     * @param fallback  the name of the world that was selected instead
+     * @return the warning to log
+     */
+    static String describeMissingMap(String requested, List<String> found, String fallback) {
+        String target = DEFAULT_MAP_NAME.equalsIgnoreCase(fallback) ? "the default world '" + fallback + "'" : "the world '" + fallback + "', because the default world '" + DEFAULT_MAP_NAME + "' is not there either";
+        return "The world '" + requested + "' named by the system property " + LOBBY_MAP_PROPERTY + " does not exist. Found worlds: " + String.join(", ", found) + ". Falling back to " + target + ".";
+    }
+
+    /**
+     * Looks up a world by the name of its directory, ignoring case.
+     *
+     * @param name the name of the world directory
+     * @return the entry of that world, or empty when no world carries the name
+     */
+    private Optional<MapEntry> findMap(String name) {
+        return this.referenceList.stream().filter(mapEntry -> mapEntry.path().getFileName().toString().equalsIgnoreCase(name)).findFirst();
+    }
+
+    /**
+     * Gets the names of every world the pool found, for a log line that has to name them.
+     *
+     * @return the names of the found worlds
+     */
+    List<String> availableMapNames() {
+        return this.referenceList.stream().map(mapEntry -> mapEntry.path().getFileName().toString()).collect(Collectors.toList());
     }
 
     /**
@@ -80,7 +176,7 @@ public final class MapPool {
      *             the path where the maps are stored
      * @return a list with all available maps
      */
-    private @NotNull List<MapEntry> loadMapsEntries(@NotNull Path path) {
+    private List<MapEntry> loadMapsEntries(Path path) {
         List<MapEntry> mapEntries = new ArrayList<>();
         try (Stream<Path> stream = Files.list(path)) {
             mapEntries = this.filterMaps.apply(stream.filter(Files::isDirectory));
@@ -92,21 +188,48 @@ public final class MapPool {
     }
 
     /**
+     * Gets the name of the world the system property asked for, which is
+     * {@value #DEFAULT_MAP_NAME} when the property is not set.
+     *
+     * @return the name of the requested world
+     */
+    public String getRequestedMapName() {
+        return this.requestedMapName;
+    }
+
+    /**
+     * Answers whether the world the property named is the one that was selected.
+     * <p>
+     * A false here is the fallback case: the named world was not found and the pool went on with
+     * another one rather than refusing to start.
+     * </p>
+     *
+     * @return true if the requested world was found, otherwise false
+     */
+    public boolean isRequestedMapSelected() {
+        return this.requestedMapSelected;
+    }
+
+    /**
      * Gets the selected map entry.
      *
      * @return the selected map entry
      */
-    public @NotNull MapEntry getMapEntry() {
+    public MapEntry getMapEntry() {
         return this.selectedMap;
     }
 
     /**
-     * Removes the selected map from the list. If the list is empty it will throw an
-     * exception.
+     * Forgets every world the pool found.
+     * <p>
+     * The list is emptied rather than replaced by null. This package is
+     * {@code @NotNullByDefault}, so a null there was a promise the class broke against itself, and
+     * it turned every later call of {@link #getAvailableMaps()} into a
+     * {@link NullPointerException} instead of an empty list.
+     * </p>
      */
     public void clear() {
         this.referenceList.clear();
-        this.referenceList = null;
     }
 
     /**
@@ -114,8 +237,7 @@ public final class MapPool {
      *
      * @return an unmodifiable list with all available maps
      */
-    public @NotNull
-    @UnmodifiableView List<MapEntry> getAvailableMaps() {
+    public @UnmodifiableView List<MapEntry> getAvailableMaps() {
         return Collections.unmodifiableList(this.referenceList);
     }
 }

@@ -52,6 +52,17 @@ public final class Titan {
 
         initCommands();
         initListeners();
+        // The setup server is the one that changes worlds, so it is the one that must not drop its
+        // region handles unflushed. The Falco chunk loader keeps them open for as long as it lives
+        // and MapProvider#close() is the only thing that closes them.
+        MinecraftServer.getSchedulerManager().buildShutdownTask(this::terminate);
+    }
+
+    /**
+     * Closes the map provider and with it every region file the setup server holds open.
+     */
+    public void terminate() {
+        this.mapProvider.close();
     }
 
     private void initListeners() {
