@@ -16,7 +16,11 @@
  */
 package net.onelitefeather.titan.bridge;
 
+import eu.cloudnetservice.driver.inject.InjectionLayer;
+import eu.cloudnetservice.driver.provider.CloudServiceProvider;
 import eu.cloudnetservice.driver.registry.ServiceRegistry;
+import eu.cloudnetservice.driver.service.ServiceInfoSnapshot;
+import eu.cloudnetservice.driver.service.ServiceLifeCycle;
 import eu.cloudnetservice.modules.bridge.impl.platform.minestom.MinestomPermissionChecker;
 import eu.cloudnetservice.modules.bridge.player.PlayerManager;
 import eu.cloudnetservice.modules.bridge.player.executor.PlayerExecutor;
@@ -24,7 +28,9 @@ import eu.cloudnetservice.modules.bridge.player.executor.ServerSelectorType;
 import java.util.UUID;
 import net.minestom.server.extensions.Extension;
 import net.onelitefeather.titan.common.deliver.ServerConnector;
+import net.onelitefeather.titan.common.deliver.ServiceAvailability;
 import net.onelitefeather.titan.common.deliver.TitanServerConnector;
+import net.onelitefeather.titan.common.deliver.TitanServiceAvailability;
 import net.onelitefeather.titan.common.permission.TitanPermissionBridge;
 
 /**
@@ -45,6 +51,9 @@ import net.onelitefeather.titan.common.permission.TitanPermissionBridge;
  * <li><b>Server switching:</b> installs a {@link ServerConnector} (used by
  * {@code MessageChannelDeliver}) that connects players through the bridge
  * {@link PlayerManager} / {@link PlayerExecutor}.
+ * <li><b>Reachability:</b> installs a {@link ServiceAvailability} over the CloudNet service
+ * list. Portals ask it before switching a player, because the switch itself reports nothing
+ * back (US-7.03).
  * </ul>
  */
 public final class TitanBridgePermissionExtension extends Extension {
@@ -71,6 +80,47 @@ public final class TitanBridgePermissionExtension extends Extension {
                 }
             }
         });
+        installServiceAvailability();
+    }
+
+    private static void installServiceAvailability() {
+        TitanServiceAvailability.setAvailability(new ServiceAvailability() {
+
+            @Override
+            public boolean isTaskReachable(String taskName) {
+                CloudServiceProvider provider = serviceProvider();
+                if (provider == null) {
+                    return false;
+                }
+                return provider.servicesByTask(taskName).stream().anyMatch(TitanBridgePermissionExtension::joinable);
+            }
+
+            @Override
+            public boolean isServerReachable(String serviceName) {
+                CloudServiceProvider provider = serviceProvider();
+                if (provider == null) {
+                    return false;
+                }
+                return joinable(provider.serviceByName(serviceName));
+            }
+        });
+    }
+
+    /**
+     * Resolves the service list lazily and never lets a resolution failure escape: this runs on a
+     * player walking into a portal, and an exception there would leave them with neither a switch
+     * nor a message.
+     */
+    private static CloudServiceProvider serviceProvider() {
+        try {
+            return InjectionLayer.ext().instance(CloudServiceProvider.class);
+        } catch (RuntimeException exception) {
+            return null;
+        }
+    }
+
+    private static boolean joinable(ServiceInfoSnapshot snapshot) {
+        return snapshot != null && snapshot.lifeCycle() == ServiceLifeCycle.RUNNING && snapshot.connected();
     }
 
     private static PlayerExecutor playerExecutor(UUID playerId) {
