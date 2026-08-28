@@ -48,6 +48,10 @@ dependencyResolutionManagement {
 
             version("mockito", "5.23.0")
 
+            version("slf4j", "2.0.18")
+            version("logback", "1.5.20")
+            version("sentry", "8.30.0")
+
             // Minestom
             library("aonyx-bom", "net.onelitefeather", "aonyx-bom").versionRef("aonyx-bom")
             library("minestom","net.minestom", "minestom").withoutVersion()
@@ -89,6 +93,19 @@ dependencyResolutionManagement {
 
             // Guava: unrelocated, expected by LuckPerms (was transitive via CloudNet).
             library("guava", "com.google.guava", "guava").versionRef("guava")
+
+            // Logging. slf4j-api used to arrive transitively through Minestom and no binding was
+            // ever declared, so the shipped fat jars logged nothing at all ("No SLF4J providers
+            // were found"). Declare both explicitly: the API where code compiles against it, the
+            // Logback binding as runtimeOnly in the two application modules.
+            library("slf4j-api", "org.slf4j", "slf4j-api").versionRef("slf4j")
+            library("logback-classic", "ch.qos.logback", "logback-classic").versionRef("logback")
+
+            // Error reporting. sentry-logback is the appender referenced from logback.xml; it
+            // pulls io.sentry:sentry, which TitanObservability compiles against.
+            library("sentry-bom", "io.sentry", "sentry-bom").versionRef("sentry")
+            library("sentry", "io.sentry", "sentry").withoutVersion()
+            library("sentry-logback", "io.sentry", "sentry-logback").withoutVersion()
         }
     }
 }

@@ -36,9 +36,12 @@ import net.onelitefeather.titan.common.deliver.DeliverProvider;
 import net.onelitefeather.titan.common.event.EntityDismountEvent;
 import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
 import net.onelitefeather.titan.common.map.MapProvider;
+import net.onelitefeather.titan.common.observability.TitanObservability;
 import net.onelitefeather.titan.common.utils.Cancelable;
 
 import java.nio.file.Path;
+
+import static net.onelitefeather.titan.common.observability.TitanObservability.guard;
 
 public final class Titan {
 
@@ -78,35 +81,41 @@ public final class Titan {
         MinecraftServer.getCommandManager().register(new StopCommand());
     }
 
+    /**
+     * Registers every listener through {@link TitanObservability#guard}, so a listener that throws
+     * leaves behind which player the event belonged to before Minestom's exception handler reports
+     * it. The wrapper only acts on the failure path; a listener that returns normally is
+     * unaffected.
+     */
     private void initListeners() {
 
-        this.eventNode.addListener(PickupItemEvent.class, Cancelable::cancel);
-        this.eventNode.addListener(InventoryPreClickEvent.class, Cancelable::cancel);
-        this.eventNode.addListener(PlayerBlockBreakEvent.class, Cancelable::cancel);
-        this.eventNode.addListener(PlayerBlockPlaceEvent.class, Cancelable::cancel);
-        this.eventNode.addListener(PlayerSwapItemEvent.class, Cancelable::cancel);
-        this.eventNode.addListener(ItemDropEvent.class, Cancelable::cancel);
+        this.eventNode.addListener(PickupItemEvent.class, guard(Cancelable::cancel));
+        this.eventNode.addListener(InventoryPreClickEvent.class, guard(Cancelable::cancel));
+        this.eventNode.addListener(PlayerBlockBreakEvent.class, guard(Cancelable::cancel));
+        this.eventNode.addListener(PlayerBlockPlaceEvent.class, guard(Cancelable::cancel));
+        this.eventNode.addListener(PlayerSwapItemEvent.class, guard(Cancelable::cancel));
+        this.eventNode.addListener(ItemDropEvent.class, guard(Cancelable::cancel));
 
-        this.eventNode.addListener(PlayerDeathEvent.class, new DeathListener());
-        this.eventNode.addListener(EntityAttackEvent.class, new TickleListener(this.appConfigProvider.getAppConfig()));
+        this.eventNode.addListener(PlayerDeathEvent.class, guard(new DeathListener()));
+        this.eventNode.addListener(EntityAttackEvent.class, guard(new TickleListener(this.appConfigProvider.getAppConfig())));
 
-        this.eventNode.addListener(PlayerBlockInteractEvent.class, new SitListener(this.appConfigProvider.getAppConfig()));
-        this.eventNode.addListener(PlayerPacketEvent.class, new SitLeavePacketListener());
-        this.eventNode.addListener(EntityDismountEvent.class, new SitDismountListener());
-        this.eventNode.addListener(PlayerDisconnectEvent.class, new SitDisconnectListener());
+        this.eventNode.addListener(PlayerBlockInteractEvent.class, guard(new SitListener(this.appConfigProvider.getAppConfig())));
+        this.eventNode.addListener(PlayerPacketEvent.class, guard(new SitLeavePacketListener()));
+        this.eventNode.addListener(EntityDismountEvent.class, guard(new SitDismountListener()));
+        this.eventNode.addListener(PlayerDisconnectEvent.class, guard(new SitDisconnectListener()));
 
-        this.eventNode.addListener(PlayerUseItemEvent.class, new NavigationListener(this.navigationHelper));
+        this.eventNode.addListener(PlayerUseItemEvent.class, guard(new NavigationListener(this.navigationHelper)));
 
-        this.eventNode.addListener(PlayerStartFlyingWithElytraEvent.class, new ElytraStartFlyingListener());
-        this.eventNode.addListener(PlayerStopFlyingWithElytraEvent.class, new ElytraStopFlyingListener());
-        this.eventNode.addListener(PlayerUseItemEvent.class, new ElytraBoostListener(this.appConfigProvider.getAppConfig()));
+        this.eventNode.addListener(PlayerStartFlyingWithElytraEvent.class, guard(new ElytraStartFlyingListener()));
+        this.eventNode.addListener(PlayerStopFlyingWithElytraEvent.class, guard(new ElytraStopFlyingListener()));
+        this.eventNode.addListener(PlayerUseItemEvent.class, guard(new ElytraBoostListener(this.appConfigProvider.getAppConfig())));
 
-        this.eventNode.addListener(PlayerRespawnEvent.class, new RespawnListener(this.navigationHelper));
-        this.eventNode.addListener(PlayerMoveEvent.class, new PlayerMoveListener(this.appConfigProvider.getAppConfig(), this.mapProvider.getActiveLobby()));
+        this.eventNode.addListener(PlayerRespawnEvent.class, guard(new RespawnListener(this.navigationHelper)));
+        this.eventNode.addListener(PlayerMoveEvent.class, guard(new PlayerMoveListener(this.appConfigProvider.getAppConfig(), this.mapProvider.getActiveLobby())));
 
-        this.eventNode.addListener(AsyncPlayerConfigurationEvent.class, new PlayerConfigurationListener(this.mapProvider));
-        this.eventNode.addListener(PlayerSpawnEvent.class, new PlayerSpawnListener(
-                this.appConfigProvider.getAppConfig(), this.mapProvider.getActiveLobby(), this.navigationHelper));
+        this.eventNode.addListener(AsyncPlayerConfigurationEvent.class, guard(new PlayerConfigurationListener(this.mapProvider)));
+        this.eventNode.addListener(PlayerSpawnEvent.class, guard(new PlayerSpawnListener(
+                this.appConfigProvider.getAppConfig(), this.mapProvider.getActiveLobby(), this.navigationHelper)));
 
         MinecraftServer.getGlobalEventHandler().addChild(eventNode);
     }

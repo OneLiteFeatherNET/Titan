@@ -38,6 +38,13 @@ dependencies {
     // it (unrelocated) on the classpath, so bundle it explicitly now.
     implementation(libs.guava)
 
+    // Logging. Without a binding every log call in the shipped jar answered "No SLF4J providers
+    // were found" and was dropped; sentry-logback is the appender logback.xml refers to.
+    implementation(libs.slf4j.api)
+    runtimeOnly(libs.logback.classic)
+    runtimeOnly(platform(libs.sentry.bom))
+    runtimeOnly(libs.sentry.logback)
+
     testImplementation(platform(libs.aonyx.bom))
     testImplementation(libs.minestom)
     testImplementation(libs.aves)

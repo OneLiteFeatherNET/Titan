@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  One configuration for both server processes. It lives in :common rather than being copied into
+  :app and :setup because both fat jars bundle :common, so a single file reaches both - and Logback
+  reads exactly one logback.xml from the class path anyway.
+
+  The Sentry appender is a no-op until TitanObservability.bootstrap() has initialised the SDK, which
+  it only does when TITAN_SENTRY_DSN is set. Without a DSN this file behaves as if the appender were
+  not here, so the same jar runs with and without a Sentry instance.
+-->
+<configuration>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="SENTRY" class="io.sentry.logback.SentryAppender">
+        <!-- An empty DSN here is deliberate. The appender is constructed while the first logger is
+             created, which is necessarily before TitanObservability.bootstrap() can call
+             Sentry.init - and an appender that finds no DSN at that moment logs "DSN is required"
+             at WARN, which in turn makes Logback dump its whole configuration status on every
+             start. Declaring the DSN empty is the documented way to say "disabled for now"; the
+             appender reports through the global SDK state, so bootstrap() enabling Sentry a few
+             statements later is what decides whether anything is actually sent. -->
+        <options>
+            <dsn>${TITAN_SENTRY_DSN:-}</dsn>
+        </options>
+        <!-- Errors become Sentry issues; everything above DEBUG rides along as breadcrumbs so an
+             issue carries the log lines that led up to it. -->
+        <minimumEventLevel>ERROR</minimumEventLevel>
+        <minimumBreadcrumbLevel>INFO</minimumBreadcrumbLevel>
+    </appender>
+
+    <!-- Minestom's registry loading and Netty are chatty at DEBUG and say nothing an operator
+         needs during normal operation. -->
+    <logger name="io.netty" level="WARN"/>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="SENTRY"/>
+    </root>
+
+</configuration>
