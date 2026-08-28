@@ -37,9 +37,13 @@ import net.onelitefeather.titan.common.deliver.DeliverProvider;
 import net.onelitefeather.titan.common.event.EntityDismountEvent;
 import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
 import net.onelitefeather.titan.common.map.MapProvider;
+import net.onelitefeather.titan.common.time.SeasonService;
+import net.onelitefeather.titan.common.time.TitanTime;
+import net.onelitefeather.titan.common.time.WorldTimeService;
 import net.onelitefeather.titan.common.utils.Cancelable;
 
 import java.nio.file.Path;
+import java.time.Clock;
 
 public final class Titan {
 
@@ -49,6 +53,8 @@ public final class Titan {
     private final MapProvider mapProvider;
     private final AppConfigProvider appConfigProvider;
     private final NavigationHelper navigationHelper;
+    private final WorldTimeService worldTimeService;
+    private final SeasonService seasonService;
 
     public Titan() {
         MinecraftServer.getConnectionManager().setPlayerProvider(TitanPlayer::new);
@@ -59,6 +65,11 @@ public final class Titan {
         this.mapProvider = MapProvider.create(this.path, instance);
         this.appConfigProvider = AppConfigProvider.create(this.path);
         this.navigationHelper = NavigationHelper.instance(this.deliver);
+        // The lobby tells its time in Berlin, whatever zone the host machine is set to.
+        Clock clock = Clock.system(TitanTime.EDITORIAL_ZONE);
+        this.worldTimeService = WorldTimeService.create(clock);
+        this.seasonService = SeasonService.create(clock);
+        this.worldTimeService.bind(instance);
     }
 
     public void initialize() {
@@ -71,7 +82,25 @@ public final class Titan {
     }
 
     public void terminate() {
+        this.worldTimeService.unbind();
+    }
 
+    /**
+     * Returns the service that drives the lobby's day time from real time.
+     *
+     * @return the world time service
+     */
+    public WorldTimeService worldTimeService() {
+        return this.worldTimeService;
+    }
+
+    /**
+     * Returns the service that tells which season the lobby is in.
+     *
+     * @return the season service
+     */
+    public SeasonService seasonService() {
+        return this.seasonService;
     }
 
     private void initCommands() {
