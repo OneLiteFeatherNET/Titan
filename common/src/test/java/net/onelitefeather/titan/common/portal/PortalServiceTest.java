@@ -16,6 +16,7 @@
  */
 package net.onelitefeather.titan.common.portal;
 
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.Player;
@@ -50,6 +51,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -238,6 +240,36 @@ class PortalServiceTest {
         assertEquals(PortalOutcome.NO_PORTAL, fixture.move(new Pos(42.5, 66, 42.5)));
     }
 
+    @Test
+    @DisplayName("the shipped messages arrive rendered: no MiniMessage tag reaches the player verbatim")
+    void rendersTheShippedMessages(Env env) {
+        PortalConfig shipped = PortalConfig.defaultConfig();
+
+        Fixture unreachable = new Fixture(env, shipped, ungated());
+        unreachable.reachable = false;
+        assertEquals(PortalOutcome.TARGET_UNREACHABLE, unreachable.move(INSIDE));
+        assertRendered(unreachable.chat);
+
+        Fixture denied = new Fixture(env, shipped, gated());
+        assertEquals(PortalOutcome.DENIED_FEATURE, denied.move(INSIDE));
+        assertRendered(denied.chat);
+    }
+
+    /**
+     * Asserts the single message the player got carries no leftover MiniMessage tag. {@code
+     * <prefix>} is not a standard tag - it only resolves because {@code TitanMiniMessageImpl} is
+     * registered as the {@code MiniMessage.Provider} - so an unregistered provider, or a service
+     * file that a shaded jar dropped, shows the player the tag instead of the server name.
+     */
+    private static void assertRendered(Collector<SystemChatPacket> chat) {
+        chat.assertSingle(packet -> {
+            String rendered = PlainTextComponentSerializer.plainText().serialize(packet.message());
+            assertFalse(rendered.contains("<prefix>"), "the prefix tag was not resolved: " + rendered);
+            assertFalse(rendered.contains("<red>"), "the colour tag was not resolved: " + rendered);
+            assertTrue(rendered.startsWith("Titan "), "the resolved prefix opens the message: " + rendered);
+        });
+    }
+
     private static PortalDefinition ungated() {
         return new PortalDefinition("survival", "task", "Survival", null, MIN, MAX);
     }
@@ -260,9 +292,13 @@ class PortalServiceTest {
         private boolean reachable = true;
 
         private Fixture(Env env, PortalDefinition... portals) {
+            this(env, PortalConfig.of(List.of(portals), COOLDOWN, "<red>unreachable <target>", "<red>denied <portal>"), portals);
+        }
+
+        private Fixture(Env env, PortalConfig messages, PortalDefinition... portals) {
             FeatureManager featureManager = new FeatureManagerBuilder().featureEnum(TitanFeatures.class).stateRepository(this.repository).userProvider(new NoOpUserProvider()).activationStrategyProvider(new DefaultActivationStrategyProvider()).build();
             this.gate = FeatureGate.with(featureManager, this.audience, this.clock, BERLIN);
-            PortalConfig config = PortalConfig.of(List.of(portals), COOLDOWN, "<red>unreachable <target>", "<red>denied <portal>");
+            PortalConfig config = PortalConfig.of(List.of(portals), COOLDOWN, messages.unreachableMessage(), messages.deniedMessage());
             ServiceAvailability availability = new ServiceAvailability() {
 
                 @Override
