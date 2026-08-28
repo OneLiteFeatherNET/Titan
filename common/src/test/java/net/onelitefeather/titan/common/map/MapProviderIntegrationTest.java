@@ -16,6 +16,7 @@
  */
 package net.onelitefeather.titan.common.map;
 
+import net.minestom.server.instance.ChunkLoader;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.testing.Env;
@@ -34,7 +35,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -87,5 +92,58 @@ class MapProviderIntegrationTest {
         provider.close();
 
         assertThrows(IllegalStateException.class, () -> loader.loadChunk(provider.getInstance(), 0, 0), "a closed loader refuses further work instead of reporting the chunk as absent");
+    }
+
+    @Test
+    @DisplayName("Closing the provider takes the closed loader off the instance")
+    void testClosingTheProviderUnwiresTheLoader(Env env, @TempDir Path root) throws IOException {
+        MapProvider provider = provider(env, root, "world");
+        InstanceContainer instance = provider.getInstance();
+        ChunkLoader closed = instance.getChunkLoader();
+
+        provider.close();
+
+        assertNotSame(closed, instance.getChunkLoader(), "the closed loader is not the loader of the instance any more");
+        // A player who is still walking around while the server shuts down must not fall over the
+        // IllegalStateException of a loader that was closed underneath the instance.
+        assertDoesNotThrow(() -> instance.loadChunk(0, 0).join(), "a chunk request after the shutdown is answered rather than thrown at");
+    }
+
+    @Test
+    @DisplayName("A closed provider refuses to save instead of reopening the world")
+    void testAClosedProviderRefusesToSave(Env env, @TempDir Path root) throws IOException {
+        MapProvider provider = provider(env, root, "world");
+        ChunkLoader closed = provider.getInstance().getChunkLoader();
+
+        provider.close();
+
+        // Saving reads the map data back, which used to reinstall a chunk loader: the same-root
+        // check compares against a field that close() had just nulled, so it built a fresh loader
+        // and reopened the region files the shutdown had closed.
+        assertThrows(IllegalStateException.class, () -> provider.saveMap(LobbyMap.lobbyMapBuilder().name("late").build()));
+        assertNotSame(closed, provider.getInstance().getChunkLoader(), "no new loader was installed");
+        assertSame(ChunkLoader.noop(), provider.getInstance().getChunkLoader(), "the instance keeps the no-op loader the shutdown left it with");
+    }
+
+    @Test
+    @DisplayName("A closed provider stops asking for light")
+    void testAClosedProviderStopsSchedulingLight(Env env, @TempDir Path root) throws IOException {
+        MapProvider provider = provider(env, root, "world");
+        provider.close();
+
+        provider.getInstance().loadChunk(0, 0).join();
+
+        assertFalse(provider.isLightPending(0, 0), "the chunk load listener is gone with the provider");
+    }
+
+    @Test
+    @DisplayName("Closing twice is harmless")
+    void testClosingTwiceIsHarmless(Env env, @TempDir Path root) throws IOException {
+        MapProvider provider = provider(env, root, "world");
+
+        provider.close();
+
+        assertDoesNotThrow(provider::close);
+        assertTrue(provider.isClosed());
     }
 }
