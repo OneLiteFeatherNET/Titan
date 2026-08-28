@@ -43,6 +43,12 @@ dependencies {
     implementation(libs.kotlin.stdlib.jdk8)
 
     testImplementation(platform(libs.aonyx.bom))
+    // compileOnly does not reach the test classpath, and LuckPermsFeatureAudienceTest needs the
+    // API types to stand in for a running LuckPerms. Same adventure exclude as the main source
+    // set: the API artifact pulls an adventure version Minestom does not agree with.
+    testImplementation(libs.luckperms.api) {
+        exclude(group = "net.kyori.adventure")
+    }
     testImplementation(libs.minestom)
     testImplementation(libs.aves)
     testImplementation(libs.cyano)
