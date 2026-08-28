@@ -87,6 +87,15 @@ tasks {
         exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
         exclude("module-info.class", "META-INF/versions/**/module-info.class")
         duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+        // EXCLUDE keeps the first copy of every duplicate path and pre-empts
+        // mergeServiceFiles(), so a service file shipped by two jars would lose all but
+        // one set of entries. Titan and togglz-core both ship
+        // META-INF/services/org.togglz.core.spi.ActivationStrategy (the season window here,
+        // the built-in strategies there) and both must survive - let those paths through so
+        // the merge transformer sees every copy.
+        filesMatching("META-INF/services/**") {
+            duplicatesStrategy = DuplicatesStrategy.INCLUDE
+        }
     }
     test {
         useJUnitPlatform()
