@@ -93,8 +93,16 @@ tasks {
         // META-INF/services/org.togglz.core.spi.ActivationStrategy (the season window here,
         // the built-in strategies there) and both must survive - let those paths through so
         // the merge transformer sees every copy.
+        // ServiceFileTransformer, which mergeServiceFiles() installs, deliberately does NOT
+        // handle META-INF/services/org.codehaus.groovy.runtime.ExtensionModule - that descriptor
+        // is not a service file and is merged by GroovyExtensionModuleTransformer instead. Letting
+        // it through as INCLUDE would concatenate two copies verbatim into an unparsable file. No
+        // Groovy is on the classpath today, so keep the exception narrow and explicit rather than
+        // widening the pattern above.
         filesMatching("META-INF/services/**") {
-            duplicatesStrategy = DuplicatesStrategy.INCLUDE
+            if (path != "META-INF/services/org.codehaus.groovy.runtime.ExtensionModule") {
+                duplicatesStrategy = DuplicatesStrategy.INCLUDE
+            }
         }
     }
     test {
