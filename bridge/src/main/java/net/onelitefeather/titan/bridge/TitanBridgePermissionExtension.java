@@ -22,6 +22,7 @@ import eu.cloudnetservice.modules.bridge.player.executor.PlayerExecutor;
 import eu.cloudnetservice.modules.bridge.player.executor.ServerSelectorType;
 import java.util.UUID;
 import net.minestom.server.extensions.Extension;
+import net.onelitefeather.minestom.extensions.processor.ExtensionInfo;
 import net.onelitefeather.titan.common.deliver.ServerConnector;
 import net.onelitefeather.titan.common.deliver.TitanServerConnector;
 import net.onelitefeather.titan.common.permission.TitanPermissionBridge;
@@ -45,7 +46,13 @@ import net.onelitefeather.titan.common.permission.TitanPermissionBridge;
  * {@code MessageChannelDeliver}) that connects players through the bridge
  * {@link PlayerManager} / {@link PlayerExecutor}.
  * </ul>
+ *
+ * <p>{@link ExtensionInfo} generates {@code extension.json} at compile time; the version is
+ * supplied by the build through {@code -Aminestom.extension.version}.
  */
+@ExtensionInfo(
+        name = "TitanCloudNetPermissions", authors = "OneLiteFeather", dependencies = "CloudNet_Bridge"
+)
 public final class TitanBridgePermissionExtension extends Extension {
 
     @Override

@@ -4,11 +4,11 @@ rootProject.name = "titan"
 dependencyResolutionManagement {
     repositories {
         mavenCentral()
-        // minestom-ce-extensions pulls com.github.Minestom:DependencyGetter from JitPack;
-        // resolve it through the OneLiteFeather reposilite proxy that caches JitPack.
+        // minestom-extensions is published here and, unlike the onelitefeather repository
+        // below, needs no credentials - keep it separate so a fresh clone resolves it.
         maven {
-            name = "reposiliteRepositoryOnelitefeatherProxy"
-            url = uri("https://repo.onelitefeather.dev/onelitefeather-proxy")
+            name = "OneLiteFeatherReleases"
+            url = uri("https://repo.onelitefeather.dev/releases")
         }
         maven("https://central.sonatype.com/repository/maven-snapshots/")
         maven("https://repository.derklaro.dev/snapshots/")
@@ -44,14 +44,26 @@ dependencyResolutionManagement {
             version("tomcat-annotations-api", "6.0.53")
 
             version("guava", "33.7.1-jre")
-            version("kotlin", "2.4.10")
+            version("minestom-extensions", "2.2.0")
 
             version("mockito", "5.23.0")
+
+            version("slf4j", "2.0.18")
+            version("logback", "1.5.20")
+            version("sentry", "8.30.0")
 
             // Minestom
             library("aonyx-bom", "net.onelitefeather", "aonyx-bom").versionRef("aonyx-bom")
             library("minestom","net.minestom", "minestom").withoutVersion()
-            library("minestom-ce-extensions", "dev.hollowcube", "minestom-ce-extensions").version("1.2.0")
+            // OneLiteFeather fork of the archived hollow-cube/minestom-ce-extensions. Same
+            // packages (net.hollowcube.minestom.extensions, net.minestom.server.extensions), but
+            // extension dependencies resolve through Maven Resolver instead of the Kotlin-based
+            // DependencyGetter, so no Kotlin stdlib is needed on the class path anymore.
+            library("minestom-extensions-bom", "net.onelitefeather", "minestom-extensions-bom").versionRef("minestom-extensions")
+            library("minestom-extensions", "net.onelitefeather", "minestom-extensions").withoutVersion()
+            // Generates extension.json from @ExtensionInfo at compile time; source retention, so
+            // the annotation itself never reaches the extension jar.
+            library("minestom-extensions-processor", "net.onelitefeather", "minestom-extensions-processor").withoutVersion()
             library("aves", "net.theevilreaper", "aves").withoutVersion()
             library("adventure.minimessage", "net.kyori", "adventure-text-minimessage").withoutVersion()
             library("butterfly-minestom", "net.onelitefeather", "butterfly-minestom").versionRef("butterfly")
@@ -81,8 +93,19 @@ dependencyResolutionManagement {
 
             // Guava: unrelocated, expected by LuckPerms (was transitive via CloudNet).
             library("guava", "com.google.guava", "guava").versionRef("guava")
-            // Kotlin stdlib: needed by minestom-ce-extensions' MavenRepository.kt.
-            library("kotlin-stdlib-jdk8", "org.jetbrains.kotlin", "kotlin-stdlib-jdk8").versionRef("kotlin")
+
+            // Logging. slf4j-api used to arrive transitively through Minestom and no binding was
+            // ever declared, so the shipped fat jars logged nothing at all ("No SLF4J providers
+            // were found"). Declare both explicitly: the API where code compiles against it, the
+            // Logback binding as runtimeOnly in the two application modules.
+            library("slf4j-api", "org.slf4j", "slf4j-api").versionRef("slf4j")
+            library("logback-classic", "ch.qos.logback", "logback-classic").versionRef("logback")
+
+            // Error reporting. sentry-logback is the appender referenced from logback.xml; it
+            // pulls io.sentry:sentry, which TitanObservability compiles against.
+            library("sentry-bom", "io.sentry", "sentry-bom").versionRef("sentry")
+            library("sentry", "io.sentry", "sentry").withoutVersion()
+            library("sentry-logback", "io.sentry", "sentry-logback").withoutVersion()
         }
     }
 }

@@ -13,6 +13,15 @@ java {
     }
 }
 
+// TitanObservability reports this as the Sentry release, so an issue can be traced back to the
+// deploy that introduced it. Package.getImplementationVersion() reads it from the jar the classes
+// were loaded from, which for both server processes is the shaded jar.
+tasks.withType<Jar>().configureEach {
+    manifest {
+        attributes("Implementation-Version" to rootProject.version.toString())
+    }
+}
+
 tasks.withType<JavaCompile>().configureEach {
     options.release.set(25)
     options.encoding = "UTF-8"
