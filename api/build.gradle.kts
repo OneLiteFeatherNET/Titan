@@ -1,7 +1,8 @@
 plugins {
-    java
+    id("titan.java-conventions")
     `java-library`
 }
+
 dependencies {
     implementation(platform(libs.aonyx.bom))
     api(libs.minestom)
@@ -10,15 +11,4 @@ dependencies {
     testImplementation(libs.junit.api)
     testImplementation(libs.junit.platform.launcher)
     testRuntimeOnly(libs.junit.engine)
-}
-
-tasks.test {
-    useJUnitPlatform()
-    jvmArgs("-Dminestom.inside-test=true")
-}
-
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(25))
-    }
 }
