@@ -14,7 +14,7 @@ There are two distinct behaviours, and they must not be confused:
 
 1. **Lobby = complete relight (now).** The whole lobby is lit. Maps are large
    (~18–20k populated chunks each), so we do **not** pre-load and relight every
-   chunk at boot. Instead `MapProvider` relights each chunk as it is loaded, so
+   chunk at boot. Instead `MapProvider` lights each chunk as it is loaded, so
    everything is lit by the time it is visible — no dark areas, no visible
    reveal.
 2. **Special maps = deliberate darkening + per-player reveal (later).** Some
@@ -27,9 +27,17 @@ There are two distinct behaviours, and they must not be confused:
 `MapProvider` does an **instance-wide** relight:
 
 - The world instance uses `LightingChunk` (`instance.setChunkSupplier(LightingChunk::new)`).
-- An `InstanceChunkLoadEvent` listener relights every chunk as it is loaded
-  (`LightingChunk.relight(instance, List.of(chunk))`), because anvil chunks
-  otherwise stay dark until a block update triggers a relight.
+- An `InstanceChunkLoadEvent` listener lights every chunk as it is loaded,
+  because anvil chunks otherwise stay dark until a block update triggers a
+  relight. Since US-1.03 the block light comes from `falco-light`'s
+  `ChunkLightService.calculateWithNeighbours(...)` instead of
+  `LightingChunk.relight(...)`. Falco writes its result through `Light#set`,
+  which clears the update flag of the section, so Minestom does not recompute
+  it; the cached packets of the chunk are dropped afterwards and a resend is
+  scheduled, because the load event is dispatched after the loading future
+  completes.
+- `LightingChunk` stays the chunk type: it is what sends the light, and it still
+  owns the sky pass, which `calculateWithNeighbours` does not cover.
 - Lobby time is frozen at midday (`setTime(6000)` + `setTimeRate(0)`) so lit
   chunks render bright.
 
@@ -102,4 +110,5 @@ per-player we override the light **on the wire**, per player:
 3. Add per-player discovered-chunk tracking on `TitanPlayer`.
 4. Implement the dark-light override on chunk send + reveal `UpdateLightPacket`
    on discovery (only for maps with the dark/reveal flag set).
-5. Keep the instance-level `LightingChunk` relight as the real-light source.
+5. Keep the instance-level lighting (Falco block light, `LightingChunk` sky
+   light and sending) as the real-light source.
