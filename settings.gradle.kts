@@ -49,7 +49,7 @@ dependencyResolutionManagement {
             version("mockito", "5.23.0")
 
             version("slf4j", "2.0.18")
-            version("logback", "1.5.37")
+            version("logback", "1.5.38")
             version("sentry", "8.31.0")
 
             // Minestom
