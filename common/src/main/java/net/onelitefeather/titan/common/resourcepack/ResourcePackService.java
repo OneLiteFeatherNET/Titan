@@ -18,6 +18,7 @@ package net.onelitefeather.titan.common.resourcepack;
 
 import net.kyori.adventure.resource.ResourcePackStatus;
 import net.minestom.server.entity.Player;
+import net.onelitefeather.titan.common.utils.TitanFeatures;
 import net.theevilreaper.aves.resourcepack.ResourcePackCondition;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -33,6 +34,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BooleanSupplier;
 
 /**
  * Delivers the lobby's resource pack stack and keeps track of what every player holds.
@@ -61,6 +63,11 @@ import java.util.concurrent.CompletableFuture;
  * <p>With no pack configured the service is inert: every entry point returns without sending
  * anything.
  *
+ * <p>Whether a pack configured {@code required} is enforced - the client being disconnected
+ * when it declines the pack or lets the timeout run out - is not fixed in code. It is the flag
+ * {@link TitanFeatures#RESOURCE_PACK_REQUIRED_KICK}, enforced by default and read once per
+ * push.
+ *
  * @author TheMeinerLP
  * @version 1.0.0
  * @since 1.15.0
@@ -69,15 +76,23 @@ public final class ResourcePackService implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ResourcePackService.class);
 
+    /**
+     * The answer used when no gate is wired in: a pack configured {@code required} is enforced.
+     * This is the same direction {@link TitanFeatures#RESOURCE_PACK_REQUIRED_KICK} defaults to,
+     * so a service built without a gate behaves like one whose flag was never written.
+     */
+    private static final BooleanSupplier ENFORCE_REQUIRED_PACKS = () -> true;
+
     private final HeldPackRegistry registry;
     private final BedrockDetector bedrockDetector;
     private final PackTimeoutScheduler timeoutScheduler;
+    private final BooleanSupplier requiredPackKick;
     private final Map<PackSlot, ResourcePackCondition> conditions = new EnumMap<>(PackSlot.class);
     private volatile ResourcePackSettings settings;
 
     /**
-     * Creates a service with explicit collaborators. Tests use this to substitute the detector
-     * and the scheduler.
+     * Creates a service with explicit collaborators that always enforces a required pack. Tests
+     * use this to substitute the detector and the scheduler.
      *
      * @param settings         the settings to start with
      * @param registry         the book of packs the players hold
@@ -85,21 +100,38 @@ public final class ResourcePackService implements AutoCloseable {
      * @param timeoutScheduler runs the timeout guard
      */
     public ResourcePackService(ResourcePackSettings settings, HeldPackRegistry registry, BedrockDetector bedrockDetector, PackTimeoutScheduler timeoutScheduler) {
+        this(settings, registry, bedrockDetector, timeoutScheduler, ENFORCE_REQUIRED_PACKS);
+    }
+
+    /**
+     * Creates a service with explicit collaborators, the enforcement of required packs included.
+     *
+     * @param settings         the settings to start with
+     * @param registry         the book of packs the players hold
+     * @param bedrockDetector  recognises players whose reported status must be ignored
+     * @param timeoutScheduler runs the timeout guard
+     * @param requiredPackKick whether a pack configured {@code required} is enforced right now;
+     *                         asked once per push, see
+     *                         {@link TitanFeatures#RESOURCE_PACK_REQUIRED_KICK}
+     */
+    public ResourcePackService(ResourcePackSettings settings, HeldPackRegistry registry, BedrockDetector bedrockDetector, PackTimeoutScheduler timeoutScheduler, BooleanSupplier requiredPackKick) {
         this.settings = Objects.requireNonNull(settings, "The resource pack settings must not be null");
         this.registry = Objects.requireNonNull(registry, "The held pack registry must not be null");
         this.bedrockDetector = Objects.requireNonNull(bedrockDetector, "The bedrock detector must not be null");
         this.timeoutScheduler = Objects.requireNonNull(timeoutScheduler, "The timeout scheduler must not be null");
+        this.requiredPackKick = Objects.requireNonNull(requiredPackKick, "The required pack kick switch must not be null");
     }
 
     /**
      * Creates the service Titan runs with: a fresh registry, Floodgate detection using the
-     * configured prefix and a daemon-thread timeout scheduler.
+     * configured prefix, a daemon-thread timeout scheduler and the enforcement of required packs
+     * read from {@link TitanFeatures#RESOURCE_PACK_REQUIRED_KICK}.
      *
      * @param settings the loaded settings
      * @return the service
      */
     public static ResourcePackService create(ResourcePackSettings settings) {
-        return new ResourcePackService(settings, new HeldPackRegistry(), BedrockDetector.floodgate(settings.bedrockNamePrefix()), new DaemonPackTimeoutScheduler());
+        return new ResourcePackService(settings, new HeldPackRegistry(), BedrockDetector.floodgate(settings.bedrockNamePrefix()), new DaemonPackTimeoutScheduler(), TitanFeatures.RESOURCE_PACK_REQUIRED_KICK::isActive);
     }
 
     /**
@@ -262,10 +294,12 @@ public final class ResourcePackService implements AutoCloseable {
         if (this.registry.holds(playerId, slot, definition.id())) {
             return false;
         }
-        // A required pack makes Minestom kick on any terminal status other than success. For a
-        // bedrock player that verdict would rest on Geyser's invented answer, so the requirement
-        // is dropped for them.
-        boolean required = definition.required() && !bedrock;
+        // A required pack makes Minestom kick on any terminal status other than success. Two
+        // things soften that requirement, and both have to be decided here rather than when the
+        // answer arrives, because Minestom stores the bit at push time and reads it back later.
+        // For a bedrock player the verdict would rest on Geyser's invented answer. And
+        // RESOURCE_PACK_REQUIRED_KICK is the operator's switch for the behaviour as a whole.
+        boolean required = definition.required() && !bedrock && this.requiredPackKick.getAsBoolean();
         player.sendResourcePacks(definition.toRequest(required));
         this.registry.markSent(playerId, slot, definition.id());
         return true;
@@ -317,7 +351,10 @@ public final class ResourcePackService implements AutoCloseable {
      *
      * <p>Note that this makes Minestom kick a player whose <em>required</em> pack timed out,
      * exactly as it does for any other terminal status on a required pack. That is the meaning
-     * of {@code required}, and it is the only outcome that leaves no half-state behind.
+     * of {@code required}, and it is the only outcome that leaves no half-state behind. Whether
+     * a pack was pushed as required at all is decided in {@link #push} from
+     * {@link TitanFeatures#RESOURCE_PACK_REQUIRED_KICK}; with that flag inactive the same
+     * answer is given, the same bookkeeping is cleaned up and nobody is disconnected.
      *
      * @param player  the player whose request is released
      * @param future  the future that was outstanding when the guard was armed

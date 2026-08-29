@@ -218,6 +218,7 @@ Rollout-Stand daher überall `aus`, siehe [`rollout-log.md`](rollout-log.md).
 | US-6.02 | Als Betreiber möchte ich beim Saisonwechsel nur das Saison-Paket tauschen. | When die Saison wechselt, shall die Lobby ausschließlich das Saison-Paket entfernen und ersetzen, nicht alle Pakete. | `resource_pack_pop(uuid)` | Could | umgesetzt |
 | US-6.03 | Als Betreiber möchte ich, dass ein hängender Client den Verbindungsaufbau nicht blockiert. | If ein Client nicht innerhalb einer konfigurierten Frist auf die Paketanfrage antwortet, then shall die Lobby fortfahren statt zu warten. | eigener Timeout | Could | umgesetzt |
 | US-6.04 | Als Betreiber möchte ich Bedrock-Spieler korrekt behandeln, weil deren gemeldeter Status nicht zutrifft. | If ein Spieler über Geyser verbunden ist, then shall die Lobby ihn nicht anhand des gemeldeten Paketstatus bewerten. | Bedrock-Erkennung | Could | umgesetzt |
+| US-6.05 | Als Betreiber möchte ich das Trennen wegen eines Pflichtpakets abschalten können, ohne die Paketauslieferung anzufassen. | Where das Flag `RESOURCE_PACK_REQUIRED_KICK` inaktiv ist, shall die Lobby ein als `required` konfiguriertes Paket als optional ausliefern und keinen Spieler wegen dieses Pakets trennen. | `TitanFeatures`, `flags.properties` | Could | umgesetzt |
 
 **Auslöser für US-6.02:** `ResourcePackSeasonWatcher` liest `resource-packs.json`
 alle fünf Sekunden neu und ruft bei geändertem Saison-Eintrag
@@ -236,6 +237,32 @@ Spielerobjekt stehen und jede spätere Konfigurationsphase wartet dann auf gar
 kein Paket mehr. Für ein als `required` konfiguriertes Paket bedeutet die
 stellvertretende Antwort einen Kick — dieselbe Regel, die Minestom auf jede
 andere endgültige Antwort anwendet.
+
+**Zum Notausschalter (US-6.05):** Ob ein Pflichtpaket überhaupt erzwungen wird,
+hängt am Togglz-Flag `RESOURCE_PACK_REQUIRED_KICK`. Es ist **ein reiner
+Notausschalter**: gelesen wird ausschließlich der An/Aus-Zustand, weder eine
+Freigabestufe noch eine Berechtigung des Spielers. Eine Stufe würde bedeuten,
+dass derselbe stumme Client je nach Gruppe getrennt oder eingelassen wird — im
+laufenden Zwischenfall nicht beherrschbar; und ausgerechnet das Team ist die
+unbrauchbarste Stichprobe für die Frage, ob normale Clients das Paket rechtzeitig
+laden. **Wer das Flag im `/season status` sieht, ignoriert bei ihm die Spalten
+Stufe und Zeitfenster.**
+
+Das Flag deckt bewusst beide endgültigen Antworten ab, nicht nur den Timeout:
+Minestom merkt sich das `required`-Bit beim Senden des Pakets und wertet es erst
+bei der Antwort aus. Ein Paket lässt sich damit nicht gegen ein Ablehnen, aber
+gegen einen Timeout erzwingen. Ist das Flag aus, wird dasselbe Paket als optional
+gesendet — sonst zeigte der Client einen Pflicht-Dialog, den der Server nicht
+einlöst.
+
+**Voreinstellung: aktiv.** Ohne `flags.properties` — oder wenn die Datei nicht
+lesbar ist — verhält sich die Lobby wie vor Einführung des Flags und löst das
+Versprechen ein, das der Betreiber mit `"required": true` gegeben hat. Andersherum
+würde eine fehlende Datei eine ausdrückliche Konfiguration stillschweigend zur
+Empfehlung herabstufen. Ein Kick ist außerdem der wiederherstellbare der beiden
+Ausgänge: der Spieler verbindet sich neu, während eine Lobby, die ihr Pflichtpaket
+klammheimlich nicht mehr durchsetzt, erst auffällt, wenn die Texturen bei allen
+falsch sind.
 
 ### Stufe 7 — Portale (optional)
 

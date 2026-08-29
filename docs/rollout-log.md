@@ -26,11 +26,27 @@ ein Paket an den Client geht oder nicht. Für den Nachweis nach NFR-011 zählt
 derselbe Eintrag wie bei einem Flag: Datum, Übergang, Grund, verantwortliche
 Person.
 
+**Und nicht jedes Flag hat eine Stufe.** `RESOURCE_PACK_REQUIRED_KICK` (Stufe 6,
+US-6.05) ist ein reiner Notausschalter: er entscheidet, ob die Lobby einen Spieler
+trennt, der ein als `required` konfiguriertes Paket nicht lädt — sei es, weil er
+ablehnt, sei es, weil er gar nicht antwortet und die Timeout-Wache
+stellvertretend antwortet. Gelesen wird nur der An/Aus-Zustand. Eine Stufe hätte
+zur Folge, dass derselbe stumme Client je nach Gruppe getrennt oder eingelassen
+wird, und das Team wäre die unbrauchbarste Stichprobe für die eigentliche Frage,
+nämlich ob normale Clients das Paket rechtzeitig laden. In der Ausgabe von
+`/season status` erscheint das Flag trotzdem mit den Spalten Stufe und
+Zeitfenster — **bei diesem Flag sind beide bedeutungslos**, nur „an" oder „aus"
+zählt. Die Voreinstellung ist **an** (`@EnabledByDefault`): ohne
+`flags.properties`, oder wenn die Datei nicht lesbar ist, bleibt es beim
+bisherigen Verhalten und beim Versprechen, das `"required": true` gibt. Für
+diesen Schalter gilt derselbe Nachweis wie für jede Stufe: eine Zeile im Verlauf.
+
 ## Verlauf
 
 | Datum | Feature | von → nach | Grund | Verantwortlich |
 |---|---|---|---|---|
 | 2026-08-28 | Resource Packs (Stufe 6) | — → `aus` | Auslieferung, Saisonwechsel, Timeout-Wache und Bedrock-Erkennung sind implementiert und getestet (`:common` und `:app`). Auf keiner Lobby liegt eine `resource-packs.json`, das Feature ist damit überall abgeschaltet und hat noch keinen Spieler erreicht. | @TheMeinerLP |
+| 2026-08-29 | `RESOURCE_PACK_REQUIRED_KICK` (Stufe 6) | — → `an` | Neuer Notausschalter für das Trennen wegen eines Pflichtpakets, siehe US-6.05. Er startet an, weil das genau dem Verhalten entspricht, das bereits im Code stand: ein Flag einzuführen darf für sich genommen nichts ändern. Erreicht bisher ohnehin keinen Spieler, da nirgends eine `resource-packs.json` liegt. | @TheMeinerLP |
 
 ## Wie ein Eintrag entsteht
 

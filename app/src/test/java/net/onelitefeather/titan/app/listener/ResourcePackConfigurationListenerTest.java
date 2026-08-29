@@ -104,6 +104,53 @@ class ResourcePackConfigurationListenerTest {
     }
 
     @Test
+    @DisplayName("With the kick flag active a required pack that times out costs the session")
+    void testRequiredPackKickFlagActiveDisconnectsTheSilentClient(Env env) {
+        ResourcePackSettings settings = new ResourcePackSettings(REQUIRED_PACK, null, 250L, false, ".");
+        try (DaemonPackTimeoutScheduler scheduler = new DaemonPackTimeoutScheduler()) {
+            ResourcePackService service = new ResourcePackService(settings, new HeldPackRegistry(), BedrockDetector.never(), scheduler, () -> true);
+            MinecraftServer.getGlobalEventHandler().addListener(AsyncPlayerConfigurationEvent.class, new ResourcePackConfigurationListener(service));
+
+            Instance instance = env.createFlatInstance();
+            TestConnection connection = env.createConnection();
+            Collector<ResourcePackPushPacket> pushes = connection.trackIncoming(ResourcePackPushPacket.class);
+
+            Player player = assertTimeoutPreemptively(Duration.ofSeconds(15), () -> connection.connect(instance));
+
+            pushes.assertSingle(packet -> assertTrue(packet.forced(), "An enforced pack is pushed with the forced bit set"));
+            assertFalse(player.isOnline(), "A silent client must lose its session while the kick flag is active");
+        }
+    }
+
+    @Test
+    @DisplayName("With the kick flag inactive the same pack lets the silent client in, and still leaves no stale state")
+    void testRequiredPackKickFlagInactiveAdmitsTheSilentClient(Env env) {
+        // The very same REQUIRED_PACK as the test above - only the flag differs.
+        ResourcePackSettings settings = new ResourcePackSettings(REQUIRED_PACK, null, 250L, false, ".");
+        try (DaemonPackTimeoutScheduler scheduler = new DaemonPackTimeoutScheduler()) {
+            ResourcePackService service = new ResourcePackService(settings, new HeldPackRegistry(), BedrockDetector.never(), scheduler, () -> false);
+            MinecraftServer.getGlobalEventHandler().addListener(AsyncPlayerConfigurationEvent.class, new ResourcePackConfigurationListener(service));
+
+            Instance instance = env.createFlatInstance();
+            TestConnection connection = env.createConnection();
+            Collector<ResourcePackPushPacket> pushes = connection.trackIncoming(ResourcePackPushPacket.class);
+
+            Player player = assertTimeoutPreemptively(Duration.ofSeconds(15), () -> connection.connect(instance));
+
+            // A pack the lobby will not enforce is not advertised as forced either, so the
+            // client's accept dialog does not promise something the server does not do.
+            pushes.assertSingle(packet -> assertFalse(packet.forced(), "An unenforced pack must not be pushed as forced"));
+            assertTrue(player.isOnline(), "With the kick flag inactive a silent client keeps its session");
+            // The reason the guard exists in the first place has to survive the flag being off.
+            // Minestom nulls the future field only after emptying its own pending map, so a null
+            // future here is proof that the pack is gone from that map as well - and that a later
+            // configuration pass gets a fresh future instead of an already-completed one.
+            assertNull(player.getResourcePackFuture(), "The expired request must not stay in the player's future field");
+            assertFalse(service.registry().holds(player.getUuid(), PackSlot.BASE, REQUIRED_PACK.id()), "A pack that timed out is not held");
+        }
+    }
+
+    @Test
     @DisplayName("A disconnect makes the lobby forget which packs the player held")
     void testDisconnectListenerClearsTheBook(Env env) {
         ResourcePackSettings settings = new ResourcePackSettings(REQUIRED_PACK, null, -1L, false, ".");
