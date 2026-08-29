@@ -160,14 +160,14 @@ Abschnitt 6a.
 | US-2.03 | Als Entwickler möchte ich die Zeitquelle austauschen können, damit Tests deterministisch sind. | The Zeitsteuerung shall ihre Zeit aus einer injizierten `java.time.Clock` beziehen und nicht aus `Instant.now()`. | `java.time.Clock` | Must | offen |
 | US-2.04 | Als Betreiber möchte ich, dass Sommerzeit korrekt behandelt wird, damit im Oktober nichts um eine Stunde verrutscht. | When die Sommerzeitumstellung in `Europe/Berlin` stattfindet, shall die Lobby-Tageszeit ohne Neustart korrekt weiterlaufen. | `ZoneId.of("Europe/Berlin")` | Must | offen |
 | US-2.05 | Als Entwickler möchte ich die Uhrzeit-Abbildung austauschen können, damit wir lineare und astronomische Variante vergleichen können, ohne den Aufrufcode zu ändern. | The Zeitsteuerung shall die Abbildung von Realzeit auf Spielzeit über eine austauschbare Strategie beziehen. | `DayTimeStrategy` | Must | offen |
-| US-2.06 | Als Betreiber möchte ich die lineare Abbildung als Standard, damit die Stufe ohne astronomische Berechnung nutzbar ist. | The Lobby shall ohne abweichende Konfiguration die lineare Abbildung verwenden. | `LinearDayTimeStrategy` | Must | offen |
-| US-2.07 | Als Betreiber möchte ich später auf die astronomische Abbildung wechseln können, damit im Dezember spät hell wird. | Where die astronomische Strategie konfiguriert ist, shall die Lobby Sonnenauf- und -untergang für Berlin auf die Spielzeit abbilden. | `SolarDayTimeStrategy` | Could | offen |
+| US-2.06 | Als Betreiber möchte ich die lineare Abbildung als Standard, damit die Stufe ohne astronomische Berechnung nutzbar ist. | The Lobby shall ohne abweichende Konfiguration die lineare Abbildung verwenden. | `LinearDayTimeStrategy` | Must | umgesetzt |
+| US-2.07 | Als Betreiber möchte ich später auf die astronomische Abbildung wechseln können, damit im Dezember spät hell wird. | Where die astronomische Strategie konfiguriert ist, shall die Lobby Sonnenauf- und -untergang für Berlin auf die Spielzeit abbilden. | `SolarDayTimeStrategy` | Could | umgesetzt |
 | US-2.08 | Als Entwickler möchte ich beide Abbildungen gegen dieselben Testfälle prüfen, damit der Vergleich belastbar ist. | The Testsuite shall beide Strategien gegen denselben Satz fester Zeitpunkte prüfen. | Testfall je Strategie | Should | offen |
 | US-2.09 | Als Spieler möchte ich, dass die Lobby die aktuelle Jahreszeit widerspiegelt, damit sie sich über das Jahr verändert. | The Lobby shall die aktuelle Jahreszeit aus dem Datum in `Europe/Berlin` ableiten und als Zustand bereitstellen. | `Season`-Enum | Must | offen |
 | US-2.10 | Als Entwickler möchte ich die Jahreszeitgrenzen austauschen können, damit wir meteorologische und astronomische Grenzen vergleichen können. | The Jahreszeit-Ermittlung shall über eine austauschbare Strategie erfolgen. | `SeasonBoundaryStrategy` | Must | offen |
-| US-2.11 | Als Betreiber möchte ich meteorologische Grenzen als Standard, weil sie auf feste Monatsanfänge fallen und keine Berechnung brauchen. | The Lobby shall ohne abweichende Konfiguration meteorologische Jahreszeitgrenzen verwenden (1.3., 1.6., 1.9., 1.12.). | `MeteorologicalSeasonStrategy` | Must | offen |
-| US-2.12 | Als Betreiber möchte ich auf astronomische Grenzen wechseln können, damit die Jahreszeit zu den Sonnenwenden passt. | Where die astronomische Strategie konfiguriert ist, shall die Lobby die Jahreszeit anhand von Tagundnachtgleichen und Sonnenwenden bestimmen. | `AstronomicalSeasonStrategy` | Could | offen |
-| US-2.13 | Als Betreiber möchte ich eine Jahreszeit fest vorgeben können, damit ein Event unabhängig vom Kalender laufen kann. | Where eine Jahreszeit fest konfiguriert ist, shall die Lobby diese verwenden und keine Strategie befragen. | `FixedSeasonStrategy` | Should | offen |
+| US-2.11 | Als Betreiber möchte ich meteorologische Grenzen als Standard, weil sie auf feste Monatsanfänge fallen und keine Berechnung brauchen. | The Lobby shall ohne abweichende Konfiguration meteorologische Jahreszeitgrenzen verwenden (1.3., 1.6., 1.9., 1.12.). | `MeteorologicalSeasonStrategy` | Must | umgesetzt |
+| US-2.12 | Als Betreiber möchte ich auf astronomische Grenzen wechseln können, damit die Jahreszeit zu den Sonnenwenden passt. | Where die astronomische Strategie konfiguriert ist, shall die Lobby die Jahreszeit anhand von Tagundnachtgleichen und Sonnenwenden bestimmen. | `AstronomicalSeasonStrategy` | Could | umgesetzt |
+| US-2.13 | Als Betreiber möchte ich eine Jahreszeit fest vorgeben können, damit ein Event unabhängig vom Kalender laufen kann. | Where eine Jahreszeit fest konfiguriert ist, shall die Lobby diese verwenden und keine Strategie befragen. | `FixedSeasonStrategy` | Should | umgesetzt |
 | US-2.14 | Als Betreiber möchte ich, dass die Zeitaktualisierung günstig ist, damit sie den Tick nicht belastet. | The Zeitsteuerung shall die Tageszeit höchstens einmal pro Sekunde aktualisieren. | Scheduler | Should | offen |
 
 ### Stufe 3 — Freigabe-Stufen
@@ -275,7 +275,7 @@ public interface DayTimeStrategy {
 | Ausprägung | Verhalten | Stufe |
 |---|---|---|
 | `LinearDayTimeStrategy` | 24 reale Stunden gleichmäßig auf 24 000 Ticks; 12:00 Uhr ergibt Mittag | **Standard**, Stufe 2 |
-| `SolarDayTimeStrategy` | Sonnenauf- und -untergang für Berlin auf die Spielzeit gelegt; im Dezember spät hell | Could, später |
+| `SolarDayTimeStrategy` | Sonnenauf- und -untergang für Berlin auf die Spielzeit gelegt; im Dezember spät hell | Could, über `time.json` wählbar |
 
 Die lineare Variante ist bewusst der Standard: Sie liefert den Nutzen fast
 vollständig und hat keinen Berechnungsfehler, den man übersehen könnte. Die
@@ -312,8 +312,8 @@ public interface SeasonBoundaryStrategy {
 | Ausprägung | Grenzen | Stufe |
 |---|---|---|
 | `MeteorologicalSeasonStrategy` | feste Monatsanfänge: 1.3., 1.6., 1.9., 1.12. | **Standard**, Stufe 2 |
-| `AstronomicalSeasonStrategy` | Tagundnachtgleichen und Sonnenwenden (um den 20./21.) | Could, später |
-| `FixedSeasonStrategy` | gibt immer dieselbe Jahreszeit zurück | Should — Tests, Vorschau, Events außerhalb des Kalenders |
+| `AstronomicalSeasonStrategy` | Tagundnachtgleichen und Sonnenwenden (um den 20./21.) | Could, über `time.json` wählbar |
+| `FixedSeasonStrategy` | gibt immer dieselbe Jahreszeit zurück | Should, über `time.json` wählbar — Tests, Vorschau, Events außerhalb des Kalenders |
 
 Meteorologisch ist der Standard, weil die Grenzen auf feste Kalendertage fallen
 und keine Berechnung brauchen. Der Unterschied zur astronomischen Variante
@@ -322,6 +322,40 @@ ziehen.
 
 `FixedSeasonStrategy` ist nicht nur ein Testhilfsmittel: Sie ist der Weg, ein
 Winter-Event im August vorzuführen, ohne an der Systemuhr zu drehen.
+
+### Welche Ausprägung läuft: `time.json`
+
+Die Strategie wählt nicht der Code, sondern die Konfiguration. Neben `app.json`
+liegt `time.json`:
+
+```json
+{
+  "dayTimeStrategy": "linear",
+  "seasonStrategy": "meteorological"
+}
+```
+
+| Schlüssel | Werte | Fehlt der Schlüssel |
+|---|---|---|
+| `dayTimeStrategy` | `linear`, `solar` | `linear` (US-2.06) |
+| `seasonStrategy` | `meteorological`, `astronomical`, `fixed` | `meteorological` (US-2.11) |
+| `fixedSeason` | `spring`, `summer`, `autumn`, `winter` | nur bei `seasonStrategy: fixed` nötig |
+
+Existiert die Datei nicht, schreibt die Lobby sie beim Start mit genau diesen
+Standardwerten — so sieht der nächste Betreiber die Schlüssel, statt sie raten zu
+müssen. Groß-/Kleinschreibung und Leerzeichen sind egal.
+
+**Ein unbekannter Wert bricht den Start ab.** Ein stiller Rückfall auf den
+Standard wäre der schlimmere Fehler: Er sieht aus wie ein normaler Start und die
+Lobby liefe bis zu einen Monat lang in der falschen Jahreszeit. Die Meldung nennt
+den abgelehnten Wert und die zulässigen — `Unknown seasonStrategy "sommer" in
+time.json; valid values are: meteorological, astronomical, fixed`. Dasselbe gilt
+für eine Datei, die sich nicht als JSON lesen lässt.
+
+Die `Clock` steht ausdrücklich **nicht** in der Datei. Sie wird weiterhin von
+`Titan` in `TimeConfigProvider#createWorldTimeService` bzw.
+`#createSeasonService` hineingereicht (US-2.03); die Konfiguration entscheidet
+nur, welche Strategie diese Uhr befragt.
 
 ### Warum Strategy und nicht Konfigurationsschalter
 
