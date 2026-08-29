@@ -38,6 +38,7 @@ import net.onelitefeather.titan.common.event.EntityDismountEvent;
 import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
 import net.onelitefeather.titan.common.map.MapProvider;
 import net.onelitefeather.titan.common.time.SeasonService;
+import net.onelitefeather.titan.common.time.TimeConfigProvider;
 import net.onelitefeather.titan.common.time.TitanTime;
 import net.onelitefeather.titan.common.time.WorldTimeService;
 import net.onelitefeather.titan.common.utils.Cancelable;
@@ -67,8 +68,12 @@ public final class Titan {
         this.navigationHelper = NavigationHelper.instance(this.deliver);
         // The lobby tells its time in Berlin, whatever zone the host machine is set to.
         Clock clock = Clock.system(TitanTime.EDITORIAL_ZONE);
-        this.worldTimeService = WorldTimeService.create(clock);
-        this.seasonService = SeasonService.create(clock);
+        // Which mapping and which season boundaries run is a question for time.json, not for this
+        // file: it names no strategy at all (US-2.07, US-2.12, US-2.13). A value the file gets
+        // wrong stops the boot here rather than running a strategy nobody chose.
+        TimeConfigProvider timeConfigProvider = TimeConfigProvider.create(this.path, TitanTime.EDITORIAL_ZONE);
+        this.worldTimeService = timeConfigProvider.createWorldTimeService(clock);
+        this.seasonService = timeConfigProvider.createSeasonService(clock);
         this.worldTimeService.bind(instance);
     }
 
