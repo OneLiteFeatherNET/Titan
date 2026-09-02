@@ -27,7 +27,7 @@ import net.minestom.server.item.ItemStack;
 import net.onelitefeather.deliver.DeliverComponent;
 import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.common.utils.Items;
-import net.theevilreaper.aves.inventory.InventoryLayout;
+import net.theevilreaper.aves.inventory.layout.InventoryLayout;
 import net.theevilreaper.aves.inventory.PersonalInventoryBuilder;
 import net.theevilreaper.aves.inventory.click.ClickHolder;
 import net.theevilreaper.aves.inventory.util.LayoutCalculator;
