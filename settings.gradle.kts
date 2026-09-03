@@ -50,7 +50,7 @@ dependencyResolutionManagement {
 
             version("slf4j", "2.0.18")
             version("logback", "1.6.3")
-            version("sentry", "8.49.0")
+            version("sentry", "8.50.0")
 
             // Minestom
             library("aonyx-bom", "net.onelitefeather", "aonyx-bom").versionRef("aonyx-bom")
