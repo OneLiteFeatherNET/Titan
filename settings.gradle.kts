@@ -32,7 +32,7 @@ dependencyResolutionManagement {
 
     versionCatalogs {
         create("libs") {
-            version("aonyx-bom", "0.8.4")
+            version("aonyx-bom", "0.8.5")
             version("cloudnet", "4.0.0-RC18-SNAPSHOT")
             version("butterfly", "1.0.23")
 
