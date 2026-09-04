@@ -36,7 +36,7 @@ dependencyResolutionManagement {
             version("cloudnet", "4.0.0-RC18-SNAPSHOT")
             version("butterfly", "1.0.23")
 
-            version("luckperms", "5.6-SNAPSHOT")
+            version("luckperms", "6.0.1")
 
             version("togglz", "4.6.4")
             version("caffeine", "3.2.4")
