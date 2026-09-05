@@ -1,7 +1,7 @@
 import com.diffplug.gradle.spotless.SpotlessExtension
 
 plugins {
-    id("com.diffplug.spotless") version "8.10.1" apply false
+    id("com.diffplug.spotless") version "8.10.2" apply false
     // Declared once here so :app and :setup can apply it without repeating the version.
     id("com.gradleup.shadow") version "9.6.1" apply false
 }
