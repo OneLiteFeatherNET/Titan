@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.2](https://github.com/OneLiteFeatherNET/Titan/compare/v1.14.1...v1.14.2) (2026-09-11)
+
+
+### Bug Fixes
+
+* **deps:** update dependency io.sentry:sentry-bom to v8.56.0 ([#283](https://github.com/OneLiteFeatherNET/Titan/issues/283)) ([0836117](https://github.com/OneLiteFeatherNET/Titan/commit/08361172f1d9fb79b9ac79ebcc272ad9417f3b0d))
+
 ## [1.14.1](https://github.com/OneLiteFeatherNET/Titan/compare/v1.14.0...v1.14.1) (2026-09-06)
 
 
