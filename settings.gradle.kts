@@ -48,7 +48,7 @@ dependencyResolutionManagement {
 
             version("mockito", "5.23.0")
 
-            version("slf4j", "2.0.19")
+            version("slf4j", "2.0.20")
             version("logback", "1.6.3")
             version("sentry", "8.57.0")
 
