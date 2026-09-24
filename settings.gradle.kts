@@ -45,12 +45,12 @@ dependencyResolutionManagement {
             version("guava", "33.7.1-jre")
             version("minestom-extensions", "2.2.0")
 
-            version("mockito", "5.23.0")
+            version("mockito", "5.24.0")
             version("archunit", "1.5.0")
 
             version("slf4j", "2.0.20")
             version("logback", "1.6.3")
-            version("sentry", "8.57.0")
+            version("sentry", "8.58.0")
 
             // Minestom
             library("aonyx-bom", "net.onelitefeather", "aonyx-bom").versionRef("aonyx-bom")
