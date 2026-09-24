@@ -38,12 +38,14 @@ import net.onelitefeather.titan.common.utils.Cancelable;
  * <p>Cancelling an event does not stop it from reaching listeners registered elsewhere: Minestom
  * keeps walking the rest of the listener chain regardless of {@link
  * net.minestom.server.event.trait.CancellableEvent#isCancelled()}. What a cancellation does affect
- * is any single {@code Consumer}-based listener (the kind {@link ModuleContext#listen} registers)
- * for a cancellable event type - such a listener checks {@code isCancelled()} right before running
- * and skips its own body if the event is already cancelled by the time it is invoked. In practice
- * that means another module wanting to react to {@link InventoryPreClickEvent} regardless of this
- * module's cancellation (the navigator module's own menu, for instance) must be registered so its
- * listener runs before this module's - e.g. by being enabled earlier - not after.
+ * is any single {@code Consumer}-based listener registered through {@link ModuleContext#listen} for
+ * a cancellable event type - such a listener checks {@code isCancelled()} right before running and
+ * skips its own body if the event is already cancelled by the time it is invoked. A module that
+ * must react to {@link InventoryPreClickEvent} (or any other cancellable event) regardless of this
+ * module's cancellation - the navigator module's own menu, for instance - therefore uses
+ * {@link ModuleContext#listenIncludingCancelled} instead of {@link ModuleContext#listen} for that
+ * listener, which keeps the two modules independent of each other's enable order (see
+ * {@code lobby-modules} spec, "Module sind voneinander unabhängig").
  */
 public final class ProtectionModule implements LobbyModule {
 

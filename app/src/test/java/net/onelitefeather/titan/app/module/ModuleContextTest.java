@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import net.minestom.server.command.CommandManager;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
+import net.minestom.server.event.trait.CancellableEvent;
 import net.minestom.server.timer.Scheduler;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -39,6 +40,24 @@ import org.junit.jupiter.api.Test;
 class ModuleContextTest {
 
     private record TestEvent() implements Event {
+    }
+
+    /**
+     * A minimal cancellable event, for exercising {@link ModuleContext#listenIncludingCancelled}.
+     */
+    private static final class TestCancellableEvent implements CancellableEvent {
+
+        private boolean cancelled;
+
+        @Override
+        public boolean isCancelled() {
+            return this.cancelled;
+        }
+
+        @Override
+        public void setCancelled(boolean cancel) {
+            this.cancelled = cancel;
+        }
     }
 
     @DisplayName("moduleId() returns the id the context was created for")
@@ -91,5 +110,63 @@ class ModuleContextTest {
         context.runCleanupHooks();
 
         Assertions.assertEquals(List.of(3, 2, 1), order);
+    }
+
+    @DisplayName("listen() skips a listener once the event is already cancelled")
+    @Test
+    void listenSkipsAnAlreadyCancelledEvent() {
+        ModuleContext context = new ModuleContext("skip-cancelled", ModulePlatformFixture.create(Scheduler.newScheduler(), new CommandManager()));
+        List<TestCancellableEvent> received = new ArrayList<>();
+        context.listen(TestCancellableEvent.class, received::add);
+        TestCancellableEvent event = new TestCancellableEvent();
+        event.setCancelled(true);
+
+        context.node().call(event);
+
+        Assertions.assertTrue(received.isEmpty(), "listen() must not deliver an event that is already cancelled");
+    }
+
+    @DisplayName("listenIncludingCancelled() still delivers an already cancelled event")
+    @Test
+    void listenIncludingCancelledDeliversAnAlreadyCancelledEvent() {
+        ModuleContext context = new ModuleContext("include-cancelled", ModulePlatformFixture.create(Scheduler.newScheduler(), new CommandManager()));
+        List<TestCancellableEvent> received = new ArrayList<>();
+        context.listenIncludingCancelled(TestCancellableEvent.class, received::add);
+        TestCancellableEvent event = new TestCancellableEvent();
+        event.setCancelled(true);
+
+        context.node().call(event);
+
+        Assertions.assertEquals(List.of(event), received, "listenIncludingCancelled() must still deliver an event that is already cancelled");
+    }
+
+    @DisplayName("listenIncludingCancelled() still delivers a not-yet-cancelled event")
+    @Test
+    void listenIncludingCancelledDeliversANotYetCancelledEvent() {
+        ModuleContext context = new ModuleContext("include-not-cancelled", ModulePlatformFixture.create(Scheduler.newScheduler(), new CommandManager()));
+        List<TestCancellableEvent> received = new ArrayList<>();
+        context.listenIncludingCancelled(TestCancellableEvent.class, received::add);
+        TestCancellableEvent event = new TestCancellableEvent();
+
+        context.node().call(event);
+
+        Assertions.assertEquals(List.of(event), received);
+    }
+
+    @DisplayName("Calling listenIncludingCancelled() after enable() has returned throws IllegalStateException")
+    @Test
+    void listenIncludingCancelledAfterEnableReturnedThrows() {
+        EventNode<Event> parent = EventNode.all("test-context-late-listen-including-cancelled");
+        AtomicReference<ModuleContext> captured = new AtomicReference<>();
+        RecordingModule module = new RecordingModule("late-including-cancelled", new ArrayList<>(), captured::set, () -> {
+        });
+        ModuleRegistry registry = ModuleRegistry.builder().parent(parent).scheduler(Scheduler.newScheduler()).commandManager(new CommandManager()).modules(module).build();
+
+        registry.enableAll();
+        ModuleContext context = captured.get();
+
+        IllegalStateException thrown = Assertions.assertThrows(IllegalStateException.class, () -> context.listenIncludingCancelled(TestCancellableEvent.class, event -> {
+        }));
+        Assertions.assertTrue(thrown.getMessage().contains("late-including-cancelled"), "the message must name the offending module");
     }
 }

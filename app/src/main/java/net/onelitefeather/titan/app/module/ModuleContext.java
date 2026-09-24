@@ -19,6 +19,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.function.Consumer;
 import net.minestom.server.event.Event;
+import net.minestom.server.event.EventListener;
 import net.minestom.server.event.EventNode;
 import net.onelitefeather.titan.app.module.item.ModuleItems;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
@@ -84,6 +85,13 @@ public final class ModuleContext {
      * this module's own event node and is removed as a whole - along with the node itself - when
      * the module is disabled.
      *
+     * <p>For a {@link net.minestom.server.event.trait.CancellableEvent}, {@code listener} is
+     * skipped
+     * once the event is already cancelled by the time it reaches this module's node - Minestom's
+     * usual behaviour for a {@code Consumer}-based listener. A module that must react regardless of
+     * an earlier module's cancellation (e.g. to close an inventory or forward a click even though
+     * another module cancelled it) needs {@link #listenIncludingCancelled} instead.
+     *
      * @param type     the event type to listen for
      * @param listener the listener
      * @param <E>      the event type
@@ -92,10 +100,51 @@ public final class ModuleContext {
      *                               response to a player joining, opening a menu and so on
      */
     public <E extends Event> void listen(Class<E> type, Consumer<E> listener) {
+        registerListener(type, listener, false);
+    }
+
+    /**
+     * Registers {@code listener} for {@code type}, exactly like {@link #listen}, except the
+     * listener
+     * still runs even if the event is already cancelled by the time it reaches this module's node.
+     *
+     * <p>This exists so that two modules reacting to the same
+     * {@link net.minestom.server.event.trait.CancellableEvent} - one of which unconditionally
+     * cancels it, such as {@code feature.protection.ProtectionModule} - never end up coupled to
+     * each
+     * other's enable order: the built-in "cancelled events are skipped" behaviour that
+     * {@link #listen} relies on would otherwise silently swallow this module's listener whenever
+     * the
+     * cancelling module happened to be enabled first. Use this only for a listener that genuinely
+     * needs to run no matter what an earlier module did to the event - it still sees (and may
+     * itself
+     * check) {@link net.minestom.server.event.trait.CancellableEvent#isCancelled()}.
+     *
+     * <p>Implemented via {@link EventListener#builder(Class)} with
+     * {@link EventListener.Builder#ignoreCancelled(boolean) ignoreCancelled(false)}, wrapped in the
+     * same {@link TitanObservability#guard(String, Consumer)} as {@link #listen}.
+     *
+     * @param type     the event type to listen for
+     * @param listener the listener
+     * @param <E>      the event type
+     * @throws IllegalStateException if called after {@link LobbyModule#enable} has returned, for
+     *                               the
+     *                               same reason as {@link #listen}
+     */
+    public <E extends Event> void listenIncludingCancelled(Class<E> type, Consumer<E> listener) {
+        registerListener(type, listener, true);
+    }
+
+    private <E extends Event> void registerListener(Class<E> type, Consumer<E> listener, boolean includeCancelled) {
         if (this.listeningClosed) {
             throw new IllegalStateException("Module '" + this.moduleId + "' tried to register a listener for " + type.getSimpleName() + " after enable() returned. Listeners must be registered while enable() runs.");
         }
-        this.node.addListener(type, TitanObservability.guard(this.moduleId, listener));
+        Consumer<E> guarded = TitanObservability.guard(this.moduleId, listener);
+        if (includeCancelled) {
+            this.node.addListener(EventListener.builder(type).ignoreCancelled(false).handler(guarded).build());
+        } else {
+            this.node.addListener(type, guarded);
+        }
     }
 
     /**

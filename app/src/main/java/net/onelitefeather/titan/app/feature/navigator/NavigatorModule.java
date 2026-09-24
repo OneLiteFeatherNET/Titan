@@ -48,6 +48,15 @@ import net.onelitefeather.titan.app.module.navigator.NavigatorEntry;
  * because {@link ModuleContext#navigator()} only exposes the narrow, add-only
  * {@link NavigatorEntries.View} - this module needs to read back every module's entries at open
  * time, not just add its own.
+ *
+ * <p>The {@link InventoryPreClickEvent} listener is registered through
+ * {@link ModuleContext#listenIncludingCancelled} rather than {@link ModuleContext#listen}: another
+ * module - {@code feature.protection.ProtectionModule} - unconditionally cancels every
+ * {@link InventoryPreClickEvent}, and {@link ModuleContext#listen}'s listener is skipped once an
+ * event is already cancelled by the time it reaches this module's node. Using
+ * {@link ModuleContext#listenIncludingCancelled} means this module's click handling works no matter
+ * which of the two is enabled first - see {@code lobby-modules} spec, "Module sind voneinander
+ * unabhängig".
  */
 public final class NavigatorModule implements LobbyModule {
 
@@ -86,7 +95,7 @@ public final class NavigatorModule implements LobbyModule {
         ItemStack feather = ItemStack.builder(Material.FEATHER).customName(MiniMessage.miniMessage().deserialize("<!i><aqua>Navigator")).build();
         context.items().register(new LobbyItem(ITEM_KEY, feather, ItemSlot.hotbar(HOTBAR_SLOT), (player, event) -> player.openInventory(this.sharedInventory.current())));
 
-        context.listen(InventoryPreClickEvent.class, this::onClick);
+        context.listenIncludingCancelled(InventoryPreClickEvent.class, this::onClick);
     }
 
     private void onClick(InventoryPreClickEvent event) {
