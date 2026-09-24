@@ -23,6 +23,8 @@ import net.minestom.server.MinecraftServer;
 import net.minestom.server.command.CommandManager;
 import net.onelitefeather.titan.common.observability.TitanObservability;
 import net.onelitefeather.titan.common.permission.TitanPermissionBridge;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.Console;
@@ -36,6 +38,8 @@ import java.util.function.Supplier;
 
 
 public class TitanApplication {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(TitanApplication.class);
 
     /** Velocity modern-forwarding secret file, read like Velocity's own forwarding.secret. */
     private static final Path VELOCITY_SECRET_FILE = Path.of("forwarding.secret");
@@ -66,8 +70,20 @@ public class TitanApplication {
             return user.getCachedData().getPermissionData().checkPermission(permission).asBoolean();
         });
 
-        Titan titan = new Titan();
-        titan.initialize();
+        // A module's app.json section rejecting a value (ConfigException) or two modules
+        // conflicting over an item slot / navigator slot surfaces here as an unchecked exception
+        // from ModuleRegistry#enableAll (see Titan#initialize). Startup must abort with a clear
+        // log line instead of leaving the process half-started or hanging on LuckPerms'/the
+        // extension bootstrap's already-running threads (see lobby-module-config spec, "Ungültige
+        // Werte verhindern den Start").
+        try {
+            Titan titan = new Titan();
+            titan.initialize();
+        } catch (RuntimeException exception) {
+            LOGGER.error("Titan failed to start: {}", exception.getMessage(), exception);
+            System.exit(1);
+            return;
+        }
 
         // CloudNet passes the bind address/port via -Dservice.bind.host /
         // -Dservice.bind.port; fall back to the standalone defaults otherwise.
