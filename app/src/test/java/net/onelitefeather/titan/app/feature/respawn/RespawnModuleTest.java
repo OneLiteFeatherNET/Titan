@@ -39,8 +39,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Env integration coverage for {@link RespawnModule}: a real death must produce no message and an
- * immediate respawn, and a real respawn must hand the player back exactly the platform's currently
+ * Env integration coverage for {@link RespawnModule}: a real death must produce no message and a
+ * respawn by the next tick (see the class Javadoc on {@link RespawnModule} for why it cannot be
+ * synchronous), and a real respawn must hand the player back exactly the platform's currently
  * registered loadout. Closing the harness must leave the player untouched by further events.
  */
 @ExtendWith(MicrotusExtension.class)
@@ -82,28 +83,35 @@ class RespawnModuleTest {
         }
     }
 
-    @DisplayName("A player's death triggers an immediate respawn")
+    @DisplayName("A real death triggers a respawn - with the platform's loadout back on - by the next tick")
     @Test
-    void deathTriggersAnImmediateRespawn(Env env) {
+    void deathTriggersARespawnWithLoadoutByTheNextTick(Env env) {
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
-        // Puts the player into the state every PlayerDeathEvent RespawnModule reacts to is meant
-        // for - Player#respawn() (which RespawnModule#onDeath calls) is a no-op while
-        // Player#isDead() is false, and Player#kill() itself only flips isDead() to true *after*
-        // dispatching PlayerDeathEvent. Killed here, before the harness (and so before
-        // RespawnModule) exists, so this preparation step itself triggers no module reaction.
-        player.kill();
-        Assertions.assertTrue(player.isDead(), "test setup: the player must be dead before the death event below is fired");
 
-        try (ModuleHarness harness = ModuleHarness.start(env, new RespawnModule())) {
+        try (ModuleHarness harness = ModuleHarness.start(env, new RespawnModule(), new ItemRegisteringModule())) {
+            Collector<PlayerDeathEvent> deathCollector = env.trackEvent(PlayerDeathEvent.class, EventFilter.PLAYER, player);
             Collector<PlayerRespawnEvent> respawnCollector = env.trackEvent(PlayerRespawnEvent.class, EventFilter.PLAYER, player);
-            PlayerDeathEvent deathEvent = new PlayerDeathEvent(player, Component.text("You died"), Component.text(player.getUsername() + " died"));
 
-            env.process().eventHandler().call(deathEvent);
+            // Player#kill() dispatches PlayerDeathEvent *before* Player#isDead() flips to true,
+            // and Player#respawn() is a no-op while isDead() is still false - so calling respawn()
+            // straight from the PlayerDeathEvent listener (the bug this test guards against) would
+            // silently do nothing. RespawnModule must defer the respawn to a later tick instead, so
+            // right after kill() returns the player must still be dead.
+            player.kill();
+            Assertions.assertTrue(player.isDead(), "the respawn must not happen synchronously inside the death event - only once a later tick runs");
 
-            Assertions.assertEquals(Component.empty(), deathEvent.getDeathText(), "the death text must be blanked");
+            // Drives the deferred respawn - scheduled on the player's own per-tick scheduler - to
+            // completion. Collector#collect() (used by every assert below) unmaps its underlying
+            // listener as a side effect, so it must not be called before the tick that produces the
+            // event under test.
+            env.tick();
+
+            deathCollector.assertSingle();
+            Assertions.assertEquals(Component.empty(), deathCollector.collect().getFirst().getDeathText(), "the death text must be blanked");
             respawnCollector.assertSingle();
-            Assertions.assertFalse(player.isDead(), "the player must be alive again immediately after death, without waiting for a respawn screen");
+            Assertions.assertFalse(player.isDead(), "the player must be alive again after the next tick, without waiting for a respawn screen");
+            Assertions.assertEquals(Material.FEATHER, player.getInventory().getItemStack(0).material(), "the registered item must be placed again once the player respawns");
         }
     }
 
