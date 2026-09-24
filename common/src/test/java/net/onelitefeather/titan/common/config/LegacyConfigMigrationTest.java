@@ -34,6 +34,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -87,6 +88,24 @@ class LegacyConfigMigrationTest {
         assertFalse(migrated.has("fireworkBoostSlot"));
         assertFalse(migrated.has("updateRateAgones"));
         assertFalse(migrated.has("tickleDuration"), "legacy flat keys must not survive migration");
+    }
+
+    @Test
+    @DisplayName("A legacy allowedSitBlocks entry missing 'value' fails with a clear ConfigException instead of NPE-ing")
+    void allowedBlocksEntryMissingValueFailsClearly(@TempDir Path tempDir) throws IOException {
+        Path file = tempDir.resolve("app.json");
+        Files.writeString(file, """
+                {
+                  "allowedSitBlocks": [ {"namespace": "minecraft"} ]
+                }
+                """);
+
+        ConfigException exception = assertThrows(ConfigException.class, () -> ConfigStore.open(file));
+
+        assertEquals("sit", exception.section());
+        assertEquals("allowedBlocks", exception.field());
+        assertTrue(exception.reason() != null && exception.reason().toLowerCase().contains("value"), "reason should mention the missing 'value' key: " + exception.reason());
+        assertTrue(exception.getMessage().contains("app.json"), "message should name the file: " + exception.getMessage());
     }
 
     private static void copyLegacyFixture(Path target) throws IOException {

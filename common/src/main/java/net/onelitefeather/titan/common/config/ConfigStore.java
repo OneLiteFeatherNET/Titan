@@ -21,16 +21,21 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import net.kyori.adventure.key.Key;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
 import net.theevilreaper.aves.file.gson.PositionGsonAdapter;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.io.Writer;
+import java.lang.reflect.RecordComponent;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Map;
 
 /**
@@ -141,7 +146,9 @@ public final class ConfigStore {
      * @param defaults a fully populated default instance
      * @param <R>      the config record type
      * @return the section deserialized into {@code type}, with defaults applied for missing values
-     * @throws ConfigException if the merged section fails the record's own validation
+     * @throws ConfigException if the merged section fails the record's own validation, or if a
+     *                         value in the file does not match its field's type (e.g. a string
+     *                         where a {@code long} is expected)
      */
     public <R extends Record> R section(String id, Class<R> type, R defaults) {
         JsonElement defaultElement = GSON.toJsonTree(defaults, type);
@@ -156,7 +163,7 @@ public final class ConfigStore {
             if (configException != null) {
                 throw configException.withSection(id).withFile(fileName);
             }
-            throw e;
+            throw typeMismatch(fileName, id, type, merged, e);
         }
 
         document.add(id, merged);
@@ -193,6 +200,12 @@ public final class ConfigStore {
     /**
      * Writes the whole document to disk, pretty-printed, with {@code configVersion} as the first
      * key. Every other section is written back exactly as it currently is in memory.
+     * <p>
+     * The document is first written to a sibling temporary file and only then moved into place
+     * with {@link StandardCopyOption#ATOMIC_MOVE} (falling back to a plain {@link
+     * StandardCopyOption#REPLACE_EXISTING} move only if the file system does not support an atomic
+     * move), so a reader never observes a half-written file and a failure while writing never
+     * corrupts the previous, still-valid file.
      */
     public void save() {
         JsonObject output = new JsonObject();
@@ -205,18 +218,39 @@ public final class ConfigStore {
         }
 
         Path parent = file.getParent();
+        Path directory = parent != null ? parent : Path.of("").toAbsolutePath();
+        Path tempFile = null;
         try {
             if (parent != null) {
                 Files.createDirectories(parent);
             }
-            try (Writer writer = Files.newBufferedWriter(file)) {
+            tempFile = Files.createTempFile(directory, fileName + ".", ".tmp");
+            try (Writer writer = Files.newBufferedWriter(tempFile)) {
                 GSON.toJson(output, writer);
             }
+            moveIntoPlace(tempFile, file);
+            tempFile = null;
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to write config file " + file, e);
+        } finally {
+            if (tempFile != null) {
+                try {
+                    Files.deleteIfExists(tempFile);
+                } catch (IOException ignored) {
+                    // best-effort cleanup; the original file was never touched
+                }
+            }
         }
 
         this.document = output;
+    }
+
+    private static void moveIntoPlace(Path tempFile, Path target) throws IOException {
+        try {
+            Files.move(tempFile, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        } catch (AtomicMoveNotSupportedException e) {
+            Files.move(tempFile, target, StandardCopyOption.REPLACE_EXISTING);
+        }
     }
 
     /**
@@ -248,6 +282,130 @@ public final class ConfigStore {
         Throwable root = e.getCause() != null ? e.getCause() : e;
         String message = root.getMessage();
         return message != null ? message : root.getClass().getSimpleName();
+    }
+
+    /**
+     * Turns a raw Gson deserialization failure (a JSON value that does not match its record
+     * component's type, e.g. a string where a {@code long} is expected) into a {@link
+     * ConfigException} naming the file and the section. Gson itself does not attach a field name
+     * to this kind of failure, so the merged section is checked field by field against {@code
+     * type}'s own record components; the first component whose value cannot represent that
+     * component's type is reported as the offending field. When no such field can be found, the
+     * exception falls back to a section-level message built from the original failure.
+     */
+    private static ConfigException typeMismatch(String fileName, String id, Class<? extends Record> type, JsonElement merged, RuntimeException cause) {
+        RecordComponent mismatched = findMismatchedComponent(type, merged);
+        if (mismatched != null) {
+            JsonElement value = merged.getAsJsonObject().get(mismatched.getName());
+            return ConfigException.invalid(mismatched.getName(), mismatchReason(mismatched.getType(), value)).withSection(id).withFile(fileName);
+        }
+        String detail = cause.getMessage() != null ? cause.getMessage() : cause.getClass().getSimpleName();
+        return ConfigException.malformed(fileName, "could not be read as '" + type.getSimpleName() + "': " + detail).withSection(id);
+    }
+
+    /**
+     * Finds the first record component of {@code type} whose value in {@code merged} cannot
+     * represent that component's declared type. Only simple, unambiguous mismatches (numeric and
+     * boolean components) are detected; strings, nested records, collections and the custom {@link
+     * Key}/{@link Vec}/{@link Pos} adapters are left to Gson's own error, which is reported as a
+     * section-level message instead.
+     */
+    private static @Nullable RecordComponent findMismatchedComponent(Class<? extends Record> type, JsonElement merged) {
+        if (!merged.isJsonObject()) {
+            return null;
+        }
+        JsonObject object = merged.getAsJsonObject();
+        for (RecordComponent component : type.getRecordComponents()) {
+            JsonElement value = object.get(component.getName());
+            if (value != null && isTypeMismatch(component.getType(), value)) {
+                return component;
+            }
+        }
+        return null;
+    }
+
+    private static boolean isTypeMismatch(Class<?> componentType, JsonElement value) {
+        if (value.isJsonNull()) {
+            return false;
+        }
+        if (isIntegerType(componentType)) {
+            return !isParsableAsLong(value);
+        }
+        if (isDecimalType(componentType)) {
+            return !isParsableAsDouble(value);
+        }
+        if (isBooleanType(componentType)) {
+            return !isParsableAsBoolean(value);
+        }
+        return false;
+    }
+
+    private static boolean isIntegerType(Class<?> type) {
+        return type == long.class || type == Long.class || type == int.class || type == Integer.class || type == short.class || type == Short.class || type == byte.class || type == Byte.class;
+    }
+
+    private static boolean isDecimalType(Class<?> type) {
+        return type == double.class || type == Double.class || type == float.class || type == Float.class;
+    }
+
+    private static boolean isBooleanType(Class<?> type) {
+        return type == boolean.class || type == Boolean.class;
+    }
+
+    private static boolean isParsableAsLong(JsonElement value) {
+        if (!value.isJsonPrimitive()) {
+            return false;
+        }
+        try {
+            Long.parseLong(value.getAsJsonPrimitive().getAsString());
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    private static boolean isParsableAsDouble(JsonElement value) {
+        if (!value.isJsonPrimitive()) {
+            return false;
+        }
+        try {
+            Double.parseDouble(value.getAsJsonPrimitive().getAsString());
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    private static boolean isParsableAsBoolean(JsonElement value) {
+        if (!value.isJsonPrimitive()) {
+            return false;
+        }
+        JsonPrimitive primitive = value.getAsJsonPrimitive();
+        return primitive.isBoolean() || "true".equalsIgnoreCase(primitive.getAsString()) || "false".equalsIgnoreCase(primitive.getAsString());
+    }
+
+    private static String mismatchReason(Class<?> componentType, JsonElement value) {
+        String expected;
+        if (isIntegerType(componentType)) {
+            expected = "a whole number";
+        } else if (isDecimalType(componentType)) {
+            expected = "a number";
+        } else if (isBooleanType(componentType)) {
+            expected = "true or false";
+        } else {
+            expected = componentType.getSimpleName();
+        }
+        return "must be " + expected + ", was " + describeValue(value);
+    }
+
+    private static String describeValue(JsonElement value) {
+        if (value.isJsonNull()) {
+            return "null";
+        }
+        if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isString()) {
+            return "\"" + value.getAsString() + "\"";
+        }
+        return value.toString();
     }
 
     /**

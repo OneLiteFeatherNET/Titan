@@ -99,6 +99,7 @@ final class LegacyConfigMigration {
      */
     static JsonObject migrate(Path file, JsonObject legacy) {
         backUp(file);
+        String fileName = file.getFileName() != null ? file.getFileName().toString() : file.toString();
 
         JsonObject migrated = new JsonObject();
         migrated.addProperty("configVersion", TARGET_CONFIG_VERSION);
@@ -112,7 +113,7 @@ final class LegacyConfigMigration {
         JsonObject sit = new JsonObject();
         moveIfPresent(legacy, "sitOffset", sit, "offset");
         if (legacy.has("allowedSitBlocks")) {
-            sit.add("allowedBlocks", migrateAllowedBlocks(legacy.getAsJsonArray("allowedSitBlocks")));
+            sit.add("allowedBlocks", migrateAllowedBlocks(legacy.getAsJsonArray("allowedSitBlocks"), fileName));
         }
         addIfNotEmpty(migrated, "sit", sit);
 
@@ -154,12 +155,21 @@ final class LegacyConfigMigration {
      * Converts the legacy {@code allowedSitBlocks} array to the new string form. Each element may
      * already be a plain string (new form, tolerated on repeated migration attempts) or a legacy
      * {@code {"namespace":..,"value":..}} object.
+     *
+     * @param legacyBlocks the legacy array to convert
+     * @param fileName     the name of the file being migrated, used only to complete a thrown
+     *                     {@link ConfigException}
+     * @throws ConfigException if a legacy {@code {"namespace":..,"value":..}} object is missing
+     *                         its {@code value} key
      */
-    private static JsonArray migrateAllowedBlocks(JsonArray legacyBlocks) {
+    private static JsonArray migrateAllowedBlocks(JsonArray legacyBlocks, String fileName) {
         JsonArray migrated = new JsonArray();
         for (JsonElement element : legacyBlocks) {
             if (element.isJsonObject()) {
                 JsonObject block = element.getAsJsonObject();
+                if (!block.has("value")) {
+                    throw ConfigException.invalid("allowedBlocks", "a legacy allowedSitBlocks entry is missing 'value': " + block).withSection("sit").withFile(fileName);
+                }
                 String namespace = block.has("namespace") ? block.get("namespace").getAsString() : "minecraft";
                 String value = block.get("value").getAsString();
                 migrated.add(namespace + ":" + value);
