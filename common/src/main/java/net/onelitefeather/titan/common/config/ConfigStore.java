@@ -27,6 +27,8 @@ import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
 import net.theevilreaper.aves.file.gson.PositionGsonAdapter;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -36,7 +38,11 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * A sectioned configuration store backed by a single JSON document, e.g. {@code app.json}.
@@ -69,6 +75,8 @@ public final class ConfigStore {
      * The version written to {@code configVersion} by {@link #save()}.
      */
     public static final int CURRENT_CONFIG_VERSION = LegacyConfigMigration.TARGET_CONFIG_VERSION;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConfigStore.class);
 
     private static final String CONFIG_VERSION_KEY = "configVersion";
 
@@ -153,6 +161,7 @@ public final class ConfigStore {
     public <R extends Record> R section(String id, Class<R> type, R defaults) {
         JsonElement defaultElement = GSON.toJsonTree(defaults, type);
         JsonElement existing = document.has(id) ? document.get(id) : null;
+        warnAboutUnknownKeys(id, type, existing);
         JsonElement merged = deepMerge(existing, defaultElement);
 
         R value;
@@ -168,6 +177,37 @@ public final class ConfigStore {
 
         document.add(id, merged);
         return value;
+    }
+
+    /**
+     * Logs one warning naming every key {@code existing} has that {@code type}'s record components
+     * do not declare - e.g. a leftover {@code elytra.boostMultiplier} in a section that used to
+     * have it. Never changes {@code existing} itself: an unknown key is not this store's business
+     * to drop or rewrite, only to flag, so a later {@link #save()} still writes it back exactly as
+     * read (the same behaviour {@link #deepMerge} already had before this warning existed).
+     *
+     * @param id       the section id, used only for the log line
+     * @param type     the config record type the section is about to be deserialized into
+     * @param existing the section's raw value as read from the document, or {@code null} if the
+     *                 section is missing entirely
+     */
+    private void warnAboutUnknownKeys(String id, Class<? extends Record> type, @Nullable JsonElement existing) {
+        if (existing == null || !existing.isJsonObject()) {
+            return;
+        }
+        Set<String> declared = new HashSet<>();
+        for (RecordComponent component : type.getRecordComponents()) {
+            declared.add(component.getName());
+        }
+        List<String> unknown = new ArrayList<>();
+        for (String key : existing.getAsJsonObject().keySet()) {
+            if (!declared.contains(key)) {
+                unknown.add(key);
+            }
+        }
+        if (!unknown.isEmpty()) {
+            LOGGER.warn("{}: {} contains unknown keys {} - they are ignored", this.fileName, id, unknown);
+        }
     }
 
     /**
