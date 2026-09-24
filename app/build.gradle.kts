@@ -53,6 +53,7 @@ dependencies {
 
     testImplementation(libs.junit.api)
     testImplementation(libs.junit.platform.launcher)
+    testImplementation(libs.archunit)
     testRuntimeOnly(libs.junit.engine)
 }
 

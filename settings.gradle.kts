@@ -47,6 +47,7 @@ dependencyResolutionManagement {
             version("minestom-extensions", "2.2.0")
 
             version("mockito", "5.23.0")
+            version("archunit", "1.5.0")
 
             version("slf4j", "2.0.20")
             version("logback", "1.6.3")
@@ -90,6 +91,7 @@ dependencyResolutionManagement {
 
             library("cyano", "net.onelitefeather", "cyano").withoutVersion()
             library("mockito", "org.mockito", "mockito-core").versionRef("mockito")
+            library("archunit", "com.tngtech.archunit", "archunit-junit5").versionRef("archunit")
 
             // Guava: unrelocated, expected by LuckPerms (was transitive via CloudNet).
             library("guava", "com.google.guava", "guava").versionRef("guava")
