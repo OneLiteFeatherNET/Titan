@@ -17,7 +17,6 @@ dependencies {
     implementation(libs.togglz)
     implementation(libs.aves)
     implementation(libs.adventure.minimessage)
-    implementation(libs.caffeine)
     implementation(libs.minestom)
     implementation(platform(libs.minestom.extensions.bom))
     implementation(libs.minestom.extensions)

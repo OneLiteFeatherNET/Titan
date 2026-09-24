@@ -39,7 +39,6 @@ dependencyResolutionManagement {
             version("luckperms", "5.6-SNAPSHOT")
 
             version("togglz", "4.6.4")
-            version("caffeine", "3.3.0")
 
             version("tomcat-annotations-api", "6.0.53")
 
@@ -70,7 +69,6 @@ dependencyResolutionManagement {
             library("butterfly-minestom", "net.onelitefeather", "butterfly-minestom").versionRef("butterfly")
 
             library("togglz", "org.togglz", "togglz-core").versionRef("togglz")
-            library("caffeine", "com.github.ben-manes.caffeine", "caffeine").versionRef("caffeine")
             library("tomcat-annotations-api", "org.apache.tomcat", "annotations-api").versionRef("tomcat-annotations-api")
 
             library("cloudnet-bom", "eu.cloudnetservice.cloudnet", "bom").versionRef("cloudnet")
