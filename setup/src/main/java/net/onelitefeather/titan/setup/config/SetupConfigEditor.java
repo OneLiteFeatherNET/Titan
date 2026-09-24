@@ -21,6 +21,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import net.kyori.adventure.key.Key;
 import net.minestom.server.coordinate.Vec;
+import net.onelitefeather.titan.common.config.ConfigException;
 import net.onelitefeather.titan.common.config.ConfigStore;
 
 import java.util.LinkedHashSet;
@@ -138,18 +139,47 @@ public final class SetupConfigEditor {
 
     /**
      * Sets {@code elytra.burnDurationTicks}, leaving {@code elytra.cooldownTicks} untouched.
+     *
+     * @throws ConfigException if the resulting pair - this new {@code burnDurationTicks} together
+     *                         with the current {@code cooldownTicks} - is one the lobby's own
+     *                         {@code ElytraConfig} would refuse to load; nothing is written to
+     *                         {@code app.json} in that case
      */
     public void setElytraBurnDurationTicks(int burnDurationTicks) {
-        store.set(ELYTRA_SECTION, "burnDurationTicks", new JsonPrimitive(burnDurationTicks));
+        ElytraSectionConfig resultingPair = validatedElytra(burnDurationTicks, elytra().cooldownTicks());
+        store.set(ELYTRA_SECTION, "burnDurationTicks", new JsonPrimitive(resultingPair.burnDurationTicks()));
         store.save();
     }
 
     /**
      * Sets {@code elytra.cooldownTicks}, leaving {@code elytra.burnDurationTicks} untouched.
+     *
+     * @throws ConfigException if the resulting pair - the current {@code burnDurationTicks}
+     *                         together with this new {@code cooldownTicks} - is one the lobby's
+     *                         own {@code ElytraConfig} would refuse to load; nothing is written
+     *                         to {@code app.json} in that case
      */
     public void setElytraCooldownTicks(int cooldownTicks) {
-        store.set(ELYTRA_SECTION, "cooldownTicks", new JsonPrimitive(cooldownTicks));
+        ElytraSectionConfig resultingPair = validatedElytra(elytra().burnDurationTicks(), cooldownTicks);
+        store.set(ELYTRA_SECTION, "cooldownTicks", new JsonPrimitive(resultingPair.cooldownTicks()));
         store.save();
+    }
+
+    /**
+     * Validates {@code burnDurationTicks}/{@code cooldownTicks} against the same rule the lobby's
+     * own {@code net.onelitefeather.titan.app.feature.elytra.ElytraConfig} enforces, by
+     * constructing an {@link ElytraSectionConfig} - whose compact constructor carries that same
+     * rule, mirrored because the setup server does not depend on {@code app} -
+     * <strong>before</strong>
+     * either {@link #setElytraBurnDurationTicks} or {@link #setElytraCooldownTicks} writes
+     * anything, so a pair the lobby would refuse to load is rejected here instead of committed to
+     * {@code app.json}.
+     *
+     * @throws ConfigException naming the offending field and the reason, unchanged from {@link
+     *                         ElytraSectionConfig}'s own compact constructor
+     */
+    private static ElytraSectionConfig validatedElytra(int burnDurationTicks, int cooldownTicks) {
+        return new ElytraSectionConfig(burnDurationTicks, cooldownTicks);
     }
 
     /**

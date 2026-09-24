@@ -19,6 +19,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.kyori.adventure.key.Key;
 import net.minestom.server.coordinate.Vec;
+import net.onelitefeather.titan.common.config.ConfigException;
 import net.onelitefeather.titan.common.config.ConfigStore;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -158,6 +160,56 @@ class SetupConfigEditorTest {
 
         assertEquals(50, editor.elytra().cooldownTicks());
         assertEquals(ElytraSectionConfig.DEFAULTS.burnDurationTicks(), editor.elytra().burnDurationTicks());
+    }
+
+    @Test
+    @DisplayName("Setting the elytra burn duration to at least the current cooldown is rejected and writes nothing")
+    void settingElytraBurnDurationNotShorterThanTheCooldownIsRejected(@TempDir Path tempDir) throws IOException {
+        Path file = tempDir.resolve("app.json");
+        ConfigStore seed = ConfigStore.open(file);
+        seed.setSection("elytra", new ElytraSectionConfig(20, 50));
+        seed.flush();
+        String fileContentBeforeRejection = Files.readString(file);
+        SetupConfigEditor editor = new SetupConfigEditor(ConfigStore.open(file));
+
+        ConfigException exception = assertThrows(ConfigException.class, () -> editor.setElytraBurnDurationTicks(50));
+
+        assertTrue(exception.getMessage().contains("cooldownTicks"), "the message must name the rejected field: " + exception.getMessage());
+        assertEquals(fileContentBeforeRejection, Files.readString(file), "a rejected change must not write app.json at all");
+        SetupConfigEditor verify = new SetupConfigEditor(ConfigStore.open(file));
+        assertEquals(20, verify.elytra().burnDurationTicks(), "the rejected value must not be visible to a fresh read either");
+        assertEquals(50, verify.elytra().cooldownTicks());
+    }
+
+    @Test
+    @DisplayName("Setting the elytra burn duration to zero is rejected and writes nothing")
+    void settingElytraBurnDurationToZeroIsRejected(@TempDir Path tempDir) {
+        Path file = tempDir.resolve("app.json");
+        SetupConfigEditor editor = new SetupConfigEditor(ConfigStore.open(file));
+
+        ConfigException exception = assertThrows(ConfigException.class, () -> editor.setElytraBurnDurationTicks(0));
+
+        assertTrue(exception.getMessage().contains("burnDurationTicks"), "the message must name the rejected field: " + exception.getMessage());
+        assertFalse(Files.exists(file), "a rejected change on a file that did not exist yet must not create one");
+    }
+
+    @Test
+    @DisplayName("Setting the elytra cooldown to no more than the current burn duration is rejected and writes nothing")
+    void settingElytraCooldownNotLongerThanTheBurnDurationIsRejected(@TempDir Path tempDir) throws IOException {
+        Path file = tempDir.resolve("app.json");
+        ConfigStore seed = ConfigStore.open(file);
+        seed.setSection("elytra", new ElytraSectionConfig(20, 50));
+        seed.flush();
+        String fileContentBeforeRejection = Files.readString(file);
+        SetupConfigEditor editor = new SetupConfigEditor(ConfigStore.open(file));
+
+        ConfigException exception = assertThrows(ConfigException.class, () -> editor.setElytraCooldownTicks(20));
+
+        assertTrue(exception.getMessage().contains("cooldownTicks"), "the message must name the rejected field: " + exception.getMessage());
+        assertEquals(fileContentBeforeRejection, Files.readString(file), "a rejected change must not write app.json at all");
+        SetupConfigEditor verify = new SetupConfigEditor(ConfigStore.open(file));
+        assertEquals(20, verify.elytra().burnDurationTicks());
+        assertEquals(50, verify.elytra().cooldownTicks(), "the rejected value must not be visible to a fresh read either");
     }
 
     @Test

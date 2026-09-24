@@ -27,6 +27,7 @@ import net.minestom.server.command.builder.suggestion.SuggestionEntry;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.item.Material;
 import net.onelitefeather.titan.common.argument.ArgumentMaterialType;
+import net.onelitefeather.titan.common.config.ConfigException;
 import net.onelitefeather.titan.setup.config.ElytraSectionConfig;
 import net.onelitefeather.titan.setup.config.SetupConfigEditor;
 import net.onelitefeather.titan.setup.config.SitSectionConfig;
@@ -112,16 +113,36 @@ public class AppCommand extends Command {
 
     private void updateElytraBurnDurationTicks(@NotNull CommandSender commandSender, @NotNull CommandContext commandContext) {
         Integer burnDurationTicks = commandContext.get(ELYTRA_BURN_DURATION_TICKS);
-        this.configEditor.setElytraBurnDurationTicks(burnDurationTicks);
+        try {
+            this.configEditor.setElytraBurnDurationTicks(burnDurationTicks);
+        } catch (ConfigException exception) {
+            sendElytraRejection(commandSender, exception);
+            return;
+        }
         commandSender.sendMessage(MiniMessage.miniMessage().deserialize(
                 "<prefix> Elytra burn duration has been updated to <ticks> ticks", Placeholder.parsed("ticks", String.valueOf(burnDurationTicks))));
     }
 
     private void updateElytraCooldownTicks(@NotNull CommandSender commandSender, @NotNull CommandContext commandContext) {
         Integer cooldownTicks = commandContext.get(ELYTRA_COOLDOWN_TICKS);
-        this.configEditor.setElytraCooldownTicks(cooldownTicks);
+        try {
+            this.configEditor.setElytraCooldownTicks(cooldownTicks);
+        } catch (ConfigException exception) {
+            sendElytraRejection(commandSender, exception);
+            return;
+        }
         commandSender.sendMessage(MiniMessage.miniMessage().deserialize(
                 "<prefix> Elytra cooldown has been updated to <ticks> ticks", Placeholder.parsed("ticks", String.valueOf(cooldownTicks))));
+    }
+
+    /**
+     * Tells {@code commandSender} why an elytra timing change was rejected - the lobby's own
+     * {@code ElytraConfig} would have refused to load the resulting pair, so {@link
+     * net.onelitefeather.titan.setup.config.SetupConfigEditor} rejected it first and wrote
+     * nothing to {@code app.json}.
+     */
+    private static void sendElytraRejection(@NotNull CommandSender commandSender, ConfigException exception) {
+        commandSender.sendMessage(MiniMessage.miniMessage().deserialize("<prefix> <red>Elytra timings not updated: <reason>", Placeholder.parsed("reason", exception.getMessage())));
     }
 
     private void display(@NotNull CommandSender commandSender, @NotNull CommandContext commandContext) {
