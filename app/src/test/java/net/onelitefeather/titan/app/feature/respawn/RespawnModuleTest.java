@@ -38,10 +38,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
 /**
  * Env integration coverage for {@link RespawnModule}: a real death must produce no message and an
  * immediate respawn, and a real respawn must hand the player back exactly the platform's currently
@@ -90,15 +86,24 @@ class RespawnModuleTest {
     @Test
     void deathTriggersAnImmediateRespawn(Env env) {
         Instance instance = env.createFlatInstance();
-        Player player = spy(env.createPlayer(instance));
+        Player player = env.createPlayer(instance);
+        // Puts the player into the state every PlayerDeathEvent RespawnModule reacts to is meant
+        // for - Player#respawn() (which RespawnModule#onDeath calls) is a no-op while
+        // Player#isDead() is false, and Player#kill() itself only flips isDead() to true *after*
+        // dispatching PlayerDeathEvent. Killed here, before the harness (and so before
+        // RespawnModule) exists, so this preparation step itself triggers no module reaction.
+        player.kill();
+        Assertions.assertTrue(player.isDead(), "test setup: the player must be dead before the death event below is fired");
 
         try (ModuleHarness harness = ModuleHarness.start(env, new RespawnModule())) {
-            Collector<PlayerDeathEvent> collector = env.trackEvent(PlayerDeathEvent.class, EventFilter.PLAYER, player);
+            Collector<PlayerRespawnEvent> respawnCollector = env.trackEvent(PlayerRespawnEvent.class, EventFilter.PLAYER, player);
+            PlayerDeathEvent deathEvent = new PlayerDeathEvent(player, Component.text("You died"), Component.text(player.getUsername() + " died"));
 
-            player.kill();
+            env.process().eventHandler().call(deathEvent);
 
-            collector.assertSingle();
-            verify(player).respawn();
+            Assertions.assertEquals(Component.empty(), deathEvent.getDeathText(), "the death text must be blanked");
+            respawnCollector.assertSingle();
+            Assertions.assertFalse(player.isDead(), "the player must be alive again immediately after death, without waiting for a respawn screen");
         }
     }
 
@@ -122,16 +127,18 @@ class RespawnModuleTest {
     @Test
     void moduleStopsReactingAfterHarnessCloses(Env env) {
         Instance instance = env.createFlatInstance();
-        Player player = spy(env.createPlayer(instance));
+        Player player = env.createPlayer(instance);
         ModuleHarness harness = ModuleHarness.start(env, new RespawnModule(), new ItemRegisteringModule());
         harness.close();
 
-        Collector<PlayerDeathEvent> collector = env.trackEvent(PlayerDeathEvent.class, EventFilter.PLAYER, player);
+        Collector<PlayerDeathEvent> deathCollector = env.trackEvent(PlayerDeathEvent.class, EventFilter.PLAYER, player);
+        Collector<PlayerRespawnEvent> respawnCollector = env.trackEvent(PlayerRespawnEvent.class, EventFilter.PLAYER, player);
         player.kill();
-        collector.assertSingle();
-        PlayerDeathEvent first = collector.collect().getFirst();
+        deathCollector.assertSingle();
+        PlayerDeathEvent first = deathCollector.collect().getFirst();
         Assertions.assertNotEquals(Component.empty(), first.getDeathText(), "the death text must be untouched once the module is closed");
-        verify(player, times(0)).respawn();
+        respawnCollector.assertEmpty();
+        Assertions.assertTrue(player.isDead(), "the player must stay dead once the module is closed");
 
         env.process().eventHandler().call(new PlayerRespawnEvent(player));
         Assertions.assertTrue(player.getInventory().getItemStack(0).isAir(), "equip must not run once the module is closed");

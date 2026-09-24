@@ -16,7 +16,6 @@
 package net.onelitefeather.titan.app.feature.navigator;
 
 import java.util.List;
-import java.util.UUID;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.PlayerHand;
 import net.minestom.server.event.Event;
@@ -27,7 +26,8 @@ import net.minestom.server.instance.Instance;
 import net.minestom.server.item.ItemStack;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
+import net.onelitefeather.titan.app.module.LobbyModule;
+import net.onelitefeather.titan.app.module.testing.ModuleHarness;
 import net.onelitefeather.titan.app.testutils.EventListenerCounter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -50,6 +50,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * (see its own Javadoc on why reflection is needed - Minestom has no public API for this), stays
  * exactly the same no matter how many times the navigator is opened or how many players pass
  * through it.
+ *
+ * <p>Started through {@link ModuleHarness}'s {@link ModuleHarness.ModuleFactory} overload, which
+ * hands the harness's own navigator entries to {@link NavigatorModule}'s constructor before the
+ * registry starts. Teardown always runs through try-with-resources, so a failed assertion can never
+ * leak the harness's listeners into a later test.
  */
 @ExtendWith(MicrotusExtension.class)
 class NavigatorModuleLeakTest {
@@ -60,8 +65,8 @@ class NavigatorModuleLeakTest {
     private static final int PLAYER_COUNT = 100;
     private static final int OPEN_CLOSE_COUNT = 50;
 
-    private static EventNode<Event> navigatorNode(EventNode<Event> parent) {
-        List<EventNode<Event>> children = parent.findChildren("titan/navigator");
+    private static EventNode<Event> navigatorNode(Env env) {
+        List<EventNode<Event>> children = env.process().eventHandler().findChildren("titan/navigator");
         Assertions.assertEquals(1, children.size(), "expected exactly one 'titan/navigator' child node");
         return children.get(0);
     }
@@ -69,48 +74,42 @@ class NavigatorModuleLeakTest {
     @DisplayName("Opening and closing the navigator 50 times registers no extra listeners")
     @Test
     void openingAndClosingRepeatedlyDoesNotLeakListeners(Env env) {
-        EventNode<Event> parent = EventNode.all("nav-leak-open-close-" + UUID.randomUUID());
-        NavigatorEntries entries = new NavigatorEntries();
-        NavigatorModule module = new NavigatorModule(new RecordingDeliver(), entries);
-        NavigatorModuleTestSupport.Started started = NavigatorModuleTestSupport.start(env, parent, entries, module);
-        Instance instance = env.createFlatInstance();
-        Player player = env.createPlayer(instance);
-        started.items().equip(player);
-        ItemStack feather = player.getInventory().getItemStack(4);
-        EventNode<Event> navigatorNode = navigatorNode(parent);
-        int listenersBefore = EventListenerCounter.countListeners(navigatorNode);
+        try (ModuleHarness harness = ModuleHarness.start(env, (navigator, items) -> new LobbyModule[]{new NavigatorModule(new RecordingDeliver(), navigator)})) {
+            Instance instance = env.createFlatInstance();
+            Player player = env.createPlayer(instance);
+            harness.items().equip(player);
+            ItemStack feather = player.getInventory().getItemStack(4);
+            EventNode<Event> navigatorNode = navigatorNode(env);
+            int listenersBefore = EventListenerCounter.countListeners(navigatorNode);
 
-        for (int i = 0; i < OPEN_CLOSE_COUNT; i++) {
-            parent.call(new PlayerUseItemEvent(player, PlayerHand.MAIN, feather, 0L));
-            player.closeInventory();
+            for (int i = 0; i < OPEN_CLOSE_COUNT; i++) {
+                env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, feather, 0L));
+                player.closeInventory();
+            }
+
+            Assertions.assertEquals(listenersBefore, EventListenerCounter.countListeners(navigatorNode), "opening and closing the navigator must never register another listener");
         }
-
-        Assertions.assertEquals(listenersBefore, EventListenerCounter.countListeners(navigatorNode), "opening and closing the navigator must never register another listener");
-        started.registry().disableAll();
     }
 
     @DisplayName("100 players joining, opening the navigator once and leaving leaves the listener count unchanged")
     @Test
     void manyPlayersJoinOpenAndLeaveWithoutLeakingListeners(Env env) {
-        EventNode<Event> parent = EventNode.all("nav-leak-players-" + UUID.randomUUID());
-        NavigatorEntries entries = new NavigatorEntries();
-        NavigatorModule module = new NavigatorModule(new RecordingDeliver(), entries);
-        NavigatorModuleTestSupport.Started started = NavigatorModuleTestSupport.start(env, parent, entries, module);
-        Instance instance = env.createFlatInstance();
-        EventNode<Event> navigatorNode = navigatorNode(parent);
-        int listenersBefore = EventListenerCounter.countListeners(navigatorNode);
+        try (ModuleHarness harness = ModuleHarness.start(env, (navigator, items) -> new LobbyModule[]{new NavigatorModule(new RecordingDeliver(), navigator)})) {
+            Instance instance = env.createFlatInstance();
+            EventNode<Event> navigatorNode = navigatorNode(env);
+            int listenersBefore = EventListenerCounter.countListeners(navigatorNode);
 
-        for (int i = 0; i < PLAYER_COUNT; i++) {
-            Player player = env.createPlayer(instance);
-            started.items().equip(player);
-            ItemStack feather = player.getInventory().getItemStack(4);
+            for (int i = 0; i < PLAYER_COUNT; i++) {
+                Player player = env.createPlayer(instance);
+                harness.items().equip(player);
+                ItemStack feather = player.getInventory().getItemStack(4);
 
-            parent.call(new PlayerUseItemEvent(player, PlayerHand.MAIN, feather, 0L));
-            player.closeInventory();
-            parent.call(new PlayerDisconnectEvent(player));
+                env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, feather, 0L));
+                player.closeInventory();
+                env.process().eventHandler().call(new PlayerDisconnectEvent(player));
+            }
+
+            Assertions.assertEquals(listenersBefore, EventListenerCounter.countListeners(navigatorNode), "100 players opening the navigator and leaving must not change the listener count");
         }
-
-        Assertions.assertEquals(listenersBefore, EventListenerCounter.countListeners(navigatorNode), "100 players opening the navigator and leaving must not change the listener count");
-        started.registry().disableAll();
     }
 }

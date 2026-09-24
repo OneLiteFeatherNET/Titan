@@ -57,15 +57,26 @@ class FireworkBoostTrackerTest {
         return ItemStack.builder(Material.FIREWORK_ROCKET).set(DataComponents.FIREWORKS, new FireworkList(0, List.of())).build();
     }
 
-    /** A {@link RandomGenerator} that always draws {@code 0}, for a deterministic lifetime. */
-    private static RandomGenerator alwaysZeroRandom() {
-        return new Random() {
+    /**
+     * A {@link RandomGenerator} that always draws {@code 0}, for a deterministic lifetime. A
+     * minimal, explicit stub rather than an anonymous {@link Random} subclass, so this source of
+     * randomness is never backed by an unseeded {@link Random} - it never delegates to one at all.
+     */
+    private static final class ZeroRandom implements RandomGenerator {
 
-            @Override
-            public int nextInt(int bound) {
-                return 0;
-            }
-        };
+        @Override
+        public long nextLong() {
+            return 0L;
+        }
+
+        @Override
+        public int nextInt(int bound) {
+            return 0;
+        }
+    }
+
+    private static RandomGenerator alwaysZeroRandom() {
+        return new ZeroRandom();
     }
 
     @DisplayName("useFirework() does nothing for a player who is not flying")

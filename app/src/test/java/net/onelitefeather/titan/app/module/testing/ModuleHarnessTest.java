@@ -32,8 +32,10 @@ import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.app.module.LobbyModule;
 import net.onelitefeather.titan.app.module.ModuleContext;
+import net.onelitefeather.titan.app.module.item.ItemRegistry;
 import net.onelitefeather.titan.app.module.item.ItemSlot;
 import net.onelitefeather.titan.app.module.item.LobbyItem;
+import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntry;
 import net.onelitefeather.titan.app.testutils.EventListenerCounter;
 import org.junit.jupiter.api.Assertions;
@@ -231,5 +233,45 @@ class ModuleHarnessTest {
         harness.close();
 
         Assertions.assertEquals(List.of("enabled", "disabled"), log);
+    }
+
+    /** A module whose constructor needs the harness's {@link NavigatorEntries} up front. */
+    private static final class NeedsNavigatorEntriesUpFront implements LobbyModule {
+
+        private final NavigatorEntries constructedWith;
+
+        NeedsNavigatorEntriesUpFront(NavigatorEntries constructedWith) {
+            this.constructedWith = constructedWith;
+        }
+
+        @Override
+        public String id() {
+            return "needs-navigator-entries";
+        }
+
+        @Override
+        public void enable(ModuleContext context) {
+            // Reading the entries back at enable time - the whole point of needing the exact
+            // instance up front, the way NavigatorModule does - rather than through the narrow,
+            // add-only ModuleContext#navigator() view.
+            this.constructedWith.add(this.id(), new NavigatorEntry(0, ItemStack.of(Material.COMPASS), Component.text("Test"), "test"));
+        }
+    }
+
+    @DisplayName("start(Env, ModuleFactory) hands the module the harness's own navigator entries and item registry before enable() runs")
+    @Test
+    void startWithAModuleFactoryHandsTheModuleTheHarnessOwnRegistries(Env env) {
+        AtomicReference<NavigatorEntries> seenByFactory = new AtomicReference<>();
+        AtomicReference<ItemRegistry> itemsSeenByFactory = new AtomicReference<>();
+
+        try (ModuleHarness harness = ModuleHarness.start(env, (navigator, items) -> {
+            seenByFactory.set(navigator);
+            itemsSeenByFactory.set(items);
+            return new LobbyModule[]{new NeedsNavigatorEntriesUpFront(navigator)};
+        })) {
+            Assertions.assertSame(harness.navigator(), seenByFactory.get(), "the factory must see the exact NavigatorEntries harness.navigator() later returns");
+            Assertions.assertSame(harness.items(), itemsSeenByFactory.get(), "the factory must see the exact ItemRegistry harness.items() later returns");
+            Assertions.assertEquals(1, harness.navigator().entries().size(), "the entry the module added through the instance it was constructed with must show up on harness.navigator()");
+        }
     }
 }

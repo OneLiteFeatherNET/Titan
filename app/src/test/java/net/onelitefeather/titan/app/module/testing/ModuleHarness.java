@@ -60,7 +60,7 @@ import org.jetbrains.annotations.Nullable;
  * <pre>{@code
  * @ExtendWith(MicrotusExtension.class)
  * class SitModuleTest {
- * 
+ *
  * @Test
  *       void sittingOnAStairEmitsASitEvent(Env env) {
  *       try (ModuleHarness harness = ModuleHarness.start(env, new SitModule())) {
@@ -70,8 +70,48 @@ import org.jetbrains.annotations.Nullable;
  *       }
  *       }
  *       }</pre>
+ *
+ *       <p>A module whose constructor needs the harness's own {@link NavigatorEntries} or
+ *       {@link ItemRegistry} up front - {@code NavigatorModule} reads every module's entries back
+ *       at open
+ *       time, not just its own, so it cannot go through the narrow, add-only view
+ *       {@code ModuleContext#navigator()} would give it - cannot be built before the harness exists
+ *       to
+ *       hand those instances out. The {@link ModuleFactory} overloads solve that: the harness
+ *       builds its
+ *       {@link NavigatorEntries} and {@link ItemRegistry} first, then calls the factory with those
+ *       exact
+ *       instances to build the module(s), and only then starts the registry - so
+ *       {@link #navigator()} and
+ *       {@link #items()} afterwards are the very instances a module built this way was constructed
+ *       with.
+ *
+ *       <pre>{@code
+ * try (ModuleHarness harness = ModuleHarness.start(env,
+ *         (navigator, items) -> new LobbyModule[] {new NavigatorModule(deliver, navigator)})) {
+ *     // harness.navigator() is the exact NavigatorEntries the NavigatorModule above was built with
+ * }
+ * }  </pre>
  */
 public final class ModuleHarness implements AutoCloseable {
+
+    /**
+     * Builds the module(s) a {@link ModuleHarness} should start, given the harness's own
+     * {@link NavigatorEntries} and {@link ItemRegistry} - for a module whose constructor needs
+     * either of them before {@code enable()} runs. See the class-level Javadoc's second example.
+     */
+    @FunctionalInterface
+    public interface ModuleFactory {
+
+        /**
+         * @param navigator the harness's navigator entry registry, later returned by
+         *                  {@link ModuleHarness#navigator()}
+         * @param items     the harness's item registry, later returned by
+         *                  {@link ModuleHarness#items()}
+         * @return the modules to start, in registration order
+         */
+        LobbyModule[] create(NavigatorEntries navigator, ItemRegistry items);
+    }
 
     private final @Nullable EventNode<Event> attachedTo;
     private final EventNode<Event> parent;
@@ -127,10 +167,57 @@ public final class ModuleHarness implements AutoCloseable {
      * @return a started harness; close it (or use try-with-resources) once the test is done
      */
     public static ModuleHarness start(Env env, @Nullable ConfigStore configStore, LobbyModule... modules) {
+        return start(env, configStore, (navigator, items) -> modules);
+    }
+
+    /**
+     * Starts the module(s) {@code factory} builds against {@code env}, with no {@link ConfigStore}
+     * configured. Use this instead of {@link #start(Env, LobbyModule...)} for a module whose
+     * constructor needs the harness's {@link NavigatorEntries} or {@link ItemRegistry} before
+     * {@code enable()} runs - see the class-level Javadoc.
+     *
+     * @param env     the Microtus environment to attach to and to take the scheduler and command
+     *                manager from
+     * @param factory builds the modules to start from the harness's own navigator entries and item
+     *                registry
+     * @return a started harness; close it (or use try-with-resources) once the test is done
+     */
+    public static ModuleHarness start(Env env, ModuleFactory factory) {
+        return start(env, (ConfigStore) null, factory);
+    }
+
+    /**
+     * Starts the module(s) {@code factory} builds against {@code env}, reading their configuration
+     * from the document at {@code configFile}. See {@link #start(Env, ModuleFactory)}.
+     *
+     * @param env        the Microtus environment to attach to and to take the scheduler and command
+     *                   manager from
+     * @param configFile the configuration document the started modules read their section from
+     * @param factory    builds the modules to start from the harness's own navigator entries and
+     *                   item registry
+     * @return a started harness; close it (or use try-with-resources) once the test is done
+     */
+    public static ModuleHarness start(Env env, Path configFile, ModuleFactory factory) {
+        return start(env, ConfigStore.open(configFile), factory);
+    }
+
+    /**
+     * Starts the module(s) {@code factory} builds against {@code env}, reading their configuration
+     * from {@code configStore}. See {@link #start(Env, ModuleFactory)}.
+     *
+     * @param env         the Microtus environment to attach to and to take the scheduler and
+     *                    command manager from
+     * @param configStore the {@link ConfigStore} the started modules read their section from, or
+     *                    {@code null} for none
+     * @param factory     builds the modules to start from the harness's own navigator entries and
+     *                    item registry
+     * @return a started harness; close it (or use try-with-resources) once the test is done
+     */
+    public static ModuleHarness start(Env env, @Nullable ConfigStore configStore, ModuleFactory factory) {
         EventNode<Event> globalNode = env.process().eventHandler();
         EventNode<Event> parent = EventNode.all("module-harness/" + UUID.randomUUID());
         globalNode.addChild(parent);
-        return start(globalNode, parent, env.process().scheduler(), env.process().command(), configStore, modules);
+        return start(globalNode, parent, env.process().scheduler(), env.process().command(), configStore, factory);
     }
 
     /**
@@ -167,13 +254,55 @@ public final class ModuleHarness implements AutoCloseable {
      * @return a started harness; close it (or use try-with-resources) once the test is done
      */
     public static ModuleHarness startStandalone(@Nullable ConfigStore configStore, LobbyModule... modules) {
-        EventNode<Event> parent = EventNode.all("module-harness/" + UUID.randomUUID());
-        return start(null, parent, Scheduler.newScheduler(), new CommandManager(), configStore, modules);
+        return startStandalone(configStore, (navigator, items) -> modules);
     }
 
-    private static ModuleHarness start(@Nullable EventNode<Event> attachedTo, EventNode<Event> parent, Scheduler scheduler, CommandManager commandManager, @Nullable ConfigStore configStore, LobbyModule... modules) {
+    /**
+     * Starts the module(s) {@code factory} builds, without a Microtus {@code Env} and with no
+     * {@link ConfigStore} configured. See {@link #start(Env, ModuleFactory)} for why a factory is
+     * needed instead of pre-built modules.
+     *
+     * @param factory builds the modules to start from the harness's own navigator entries and item
+     *                registry
+     * @return a started harness; close it (or use try-with-resources) once the test is done
+     */
+    public static ModuleHarness startStandalone(ModuleFactory factory) {
+        return startStandalone((ConfigStore) null, factory);
+    }
+
+    /**
+     * Starts the module(s) {@code factory} builds, without a Microtus {@code Env}, reading their
+     * configuration from the document at {@code configFile}. See
+     * {@link #startStandalone(ModuleFactory)}.
+     *
+     * @param configFile the configuration document the started modules read their section from
+     * @param factory    builds the modules to start from the harness's own navigator entries and
+     *                   item registry
+     * @return a started harness; close it (or use try-with-resources) once the test is done
+     */
+    public static ModuleHarness startStandalone(Path configFile, ModuleFactory factory) {
+        return startStandalone(ConfigStore.open(configFile), factory);
+    }
+
+    /**
+     * Starts the module(s) {@code factory} builds, without a Microtus {@code Env}, reading their
+     * configuration from {@code configStore}. See {@link #startStandalone(ModuleFactory)}.
+     *
+     * @param configStore the {@link ConfigStore} the started modules read their section from, or
+     *                    {@code null} for none
+     * @param factory     builds the modules to start from the harness's own navigator entries and
+     *                    item registry
+     * @return a started harness; close it (or use try-with-resources) once the test is done
+     */
+    public static ModuleHarness startStandalone(@Nullable ConfigStore configStore, ModuleFactory factory) {
+        EventNode<Event> parent = EventNode.all("module-harness/" + UUID.randomUUID());
+        return start(null, parent, Scheduler.newScheduler(), new CommandManager(), configStore, factory);
+    }
+
+    private static ModuleHarness start(@Nullable EventNode<Event> attachedTo, EventNode<Event> parent, Scheduler scheduler, CommandManager commandManager, @Nullable ConfigStore configStore, ModuleFactory factory) {
         ItemRegistry items = new ItemRegistry(parent);
         NavigatorEntries navigator = new NavigatorEntries();
+        LobbyModule[] modules = factory.create(navigator, items);
         ModuleRegistry.Builder builder = ModuleRegistry.builder().parent(parent).scheduler(scheduler).commandManager(commandManager).items(items).navigator(navigator).modules(modules);
         if (configStore != null) {
             builder.config(configStore);
