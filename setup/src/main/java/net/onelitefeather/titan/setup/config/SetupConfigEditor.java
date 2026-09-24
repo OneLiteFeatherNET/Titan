@@ -137,10 +137,18 @@ public final class SetupConfigEditor {
     }
 
     /**
-     * Sets {@code elytra.boostMultiplier}.
+     * Sets {@code elytra.burnDurationTicks}, leaving {@code elytra.cooldownTicks} untouched.
      */
-    public void setElytraBoostMultiplier(double boostMultiplier) {
-        store.set(ELYTRA_SECTION, "boostMultiplier", new JsonPrimitive(boostMultiplier));
+    public void setElytraBurnDurationTicks(int burnDurationTicks) {
+        store.set(ELYTRA_SECTION, "burnDurationTicks", new JsonPrimitive(burnDurationTicks));
+        store.save();
+    }
+
+    /**
+     * Sets {@code elytra.cooldownTicks}, leaving {@code elytra.burnDurationTicks} untouched.
+     */
+    public void setElytraCooldownTicks(int cooldownTicks) {
+        store.set(ELYTRA_SECTION, "cooldownTicks", new JsonPrimitive(cooldownTicks));
         store.save();
     }
 

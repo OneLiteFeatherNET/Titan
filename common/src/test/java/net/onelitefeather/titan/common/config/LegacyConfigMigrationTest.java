@@ -77,9 +77,9 @@ class LegacyConfigMigrationTest {
         assertEquals(List.of(Key.key("minecraft:spruce_stairs")), sit.allowedBlocks());
 
         ElytraTestConfig elytra = store.section("elytra", ElytraTestConfig.class, ElytraTestConfig.DEFAULTS);
-        assertEquals(35.0, elytra.boostMultiplier());
+        assertEquals(ElytraTestConfig.DEFAULTS.boostMultiplier(), elytra.boostMultiplier(), "elytraBoostMultiplier has no equivalent in the ported Voyager boost and is dropped, not migrated - the section falls back to its defaults");
 
-        boolean loggedDroppedKeys = CapturingLoggerFactory.messages().stream().anyMatch(message -> message.contains("fireworkBoostSlot") && message.contains("updateRateAgones"));
+        boolean loggedDroppedKeys = CapturingLoggerFactory.messages().stream().anyMatch(message -> message.contains("fireworkBoostSlot") && message.contains("updateRateAgones") && message.contains("elytraBoostMultiplier"));
         assertTrue(loggedDroppedKeys, "dropped legacy keys must be logged, log was: " + CapturingLoggerFactory.messages());
 
         store.flush();
@@ -87,6 +87,7 @@ class LegacyConfigMigrationTest {
         assertEquals(2, migrated.get("configVersion").getAsInt());
         assertFalse(migrated.has("fireworkBoostSlot"));
         assertFalse(migrated.has("updateRateAgones"));
+        assertFalse(migrated.has("elytraBoostMultiplier"));
         assertFalse(migrated.has("tickleDuration"), "legacy flat keys must not survive migration");
     }
 

@@ -26,34 +26,53 @@ import org.junit.jupiter.api.Test;
  */
 class ElytraConfigTest {
 
-    @DisplayName("DEFAULTS matches today's shipped boost multiplier (35.0, not vanilla's 1.0)")
+    @DisplayName("DEFAULTS matches Voyager's own deterministic burn and reference-map cooldown (30 / 40 ticks)")
     @Test
-    void defaultsMatchesTodaysShippedBoostMultiplier() {
-        Assertions.assertEquals(35.0, ElytraConfig.DEFAULTS.boostMultiplier());
+    void defaultsMatchesVoyagersOwnTuning() {
+        Assertions.assertEquals(30, ElytraConfig.DEFAULTS.burnDurationTicks());
+        Assertions.assertEquals(40, ElytraConfig.DEFAULTS.cooldownTicks());
     }
 
-    @DisplayName("A positive boost multiplier is accepted unchanged")
+    @DisplayName("A cooldown strictly longer than the burn is accepted unchanged")
     @Test
-    void aPositiveBoostMultiplierIsAccepted() {
-        ElytraConfig config = new ElytraConfig(2.5);
+    void aCooldownStrictlyLongerThanTheBurnIsAccepted() {
+        ElytraConfig config = new ElytraConfig(10, 15);
 
-        Assertions.assertEquals(2.5, config.boostMultiplier());
+        Assertions.assertEquals(10, config.burnDurationTicks());
+        Assertions.assertEquals(15, config.cooldownTicks());
     }
 
-    @DisplayName("A zero boost multiplier is rejected")
+    @DisplayName("A zero burn duration is rejected")
     @Test
-    void aZeroBoostMultiplierIsRejected() {
-        ConfigException exception = Assertions.assertThrows(ConfigException.class, () -> new ElytraConfig(0.0));
+    void aZeroBurnDurationIsRejected() {
+        ConfigException exception = Assertions.assertThrows(ConfigException.class, () -> new ElytraConfig(0, 10));
 
-        Assertions.assertEquals("boostMultiplier", exception.field());
-    }
-
-    @DisplayName("A negative boost multiplier is rejected")
-    @Test
-    void aNegativeBoostMultiplierIsRejected() {
-        ConfigException exception = Assertions.assertThrows(ConfigException.class, () -> new ElytraConfig(-1.0));
-
-        Assertions.assertEquals("boostMultiplier", exception.field());
+        Assertions.assertEquals("burnDurationTicks", exception.field());
         Assertions.assertEquals("must be positive", exception.reason());
+    }
+
+    @DisplayName("A negative burn duration is rejected")
+    @Test
+    void aNegativeBurnDurationIsRejected() {
+        ConfigException exception = Assertions.assertThrows(ConfigException.class, () -> new ElytraConfig(-1, 10));
+
+        Assertions.assertEquals("burnDurationTicks", exception.field());
+    }
+
+    @DisplayName("A cooldown equal to the burn duration is rejected")
+    @Test
+    void aCooldownEqualToTheBurnDurationIsRejected() {
+        ConfigException exception = Assertions.assertThrows(ConfigException.class, () -> new ElytraConfig(10, 10));
+
+        Assertions.assertEquals("cooldownTicks", exception.field());
+        Assertions.assertEquals("must be longer than burnDurationTicks", exception.reason());
+    }
+
+    @DisplayName("A cooldown shorter than the burn duration is rejected")
+    @Test
+    void aCooldownShorterThanTheBurnDurationIsRejected() {
+        ConfigException exception = Assertions.assertThrows(ConfigException.class, () -> new ElytraConfig(10, 5));
+
+        Assertions.assertEquals("cooldownTicks", exception.field());
     }
 }

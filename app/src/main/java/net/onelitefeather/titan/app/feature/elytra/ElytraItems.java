@@ -15,11 +15,13 @@
  */
 package net.onelitefeather.titan.app.feature.elytra;
 
+import java.util.List;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.minestom.server.component.DataComponents;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
+import net.minestom.server.item.component.FireworkList;
 import net.minestom.server.utils.Unit;
 
 /**
@@ -28,6 +30,13 @@ import net.minestom.server.utils.Unit;
  * decision 9 ("Tags/Items gehören dem Feature").
  */
 final class ElytraItems {
+
+    /**
+     * The flight duration written into the firework's own tooltip: three, the maximum a player can
+     * craft, matching Voyager's {@code Rockets.FLIGHT_DURATION} and the deterministic burn
+     * {@link ElytraConfig#DEFAULTS} runs ({@code 10 * 3 = 30} ticks).
+     */
+    private static final int FLIGHT_DURATION = 3;
 
     private ElytraItems() {
         throw new UnsupportedOperationException("This class cannot be instantiated");
@@ -38,6 +47,10 @@ final class ElytraItems {
      */
     static final ItemStack ELYTRA = ItemStack.builder(Material.ELYTRA).customName(Component.text("Elytra", NamedTextColor.DARK_PURPLE)).set(DataComponents.UNBREAKABLE, Unit.INSTANCE).build();
 
-    /** The firework rocket a flying player is handed into their offhand. */
-    static final ItemStack FIREWORK = ItemStack.builder(Material.FIREWORK_ROCKET).customName(Component.text("Firework Rocket")).build();
+    /**
+     * The firework rocket a flying player is handed into their offhand and that
+     * {@link FireworkRockets#fire} spawns as an entity. No explosions - ported from Voyager, the
+     * rocket exists to boost, not to burst into colour.
+     */
+    static final ItemStack FIREWORK = ItemStack.builder(Material.FIREWORK_ROCKET).customName(Component.text("Firework Rocket")).set(DataComponents.FIREWORKS, new FireworkList(FLIGHT_DURATION, List.of())).build();
 }

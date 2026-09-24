@@ -19,7 +19,8 @@
     "cooldownMillis": 4000
   },
   "elytra": {
-    "boostMultiplier": 35.0
+    "burnDurationTicks": 30,
+    "cooldownTicks": 40
   },
   "navigator": {
     "title": "<yellow>Navigator",

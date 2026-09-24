@@ -44,8 +44,11 @@ import java.util.Set;
  * <li>{@code simulationDistance} &rarr; {@code spawn.simulationDistance}</li>
  * <li>{@code minHeightBeforeTeleport} &rarr; {@code spawn.minHeight}</li>
  * <li>{@code maxHeightBeforeTeleport} &rarr; {@code spawn.maxHeight}</li>
- * <li>{@code elytraBoostMultiplier} &rarr; {@code elytra.boostMultiplier}</li>
- * <li>{@code fireworkBoostSlot} and {@code updateRateAgones} are dropped and logged</li>
+ * <li>{@code fireworkBoostSlot}, {@code updateRateAgones} and {@code elytraBoostMultiplier} are
+ * dropped and logged - the ported {@code elytra} boost (see {@code design.md}, decision 7 of the
+ * {@code lobby-feature-modules} change) has no multiplier to migrate it to. A migrated document
+ * therefore gets no {@code elytra} section at all, and the module starts with its own compiled-in
+ * defaults instead.</li>
  * </ul>
  * Before the migrated document is written, the original file is copied next to itself as
  * {@code <file>.v1.bak}.
@@ -65,8 +68,12 @@ final class LegacyConfigMigration {
 
     /**
      * Legacy keys that are no longer read by any module and are dropped during migration.
+     * {@code elytraBoostMultiplier} is dropped rather than migrated because the ported
+     * {@code elytra} boost (see {@code design.md}, decision 7 of the {@code lobby-feature-modules}
+     * change) has no multiplier - the impulse is Vanilla's own, applied client-side once a rocket
+     * is attached to the player.
      */
-    private static final List<String> DROPPED_KEYS = List.of("fireworkBoostSlot", "updateRateAgones");
+    private static final List<String> DROPPED_KEYS = List.of("fireworkBoostSlot", "updateRateAgones", "elytraBoostMultiplier");
 
     private LegacyConfigMigration() {
     }
@@ -120,10 +127,6 @@ final class LegacyConfigMigration {
         JsonObject tickle = new JsonObject();
         moveIfPresent(legacy, "tickleDuration", tickle, "cooldownMillis");
         addIfNotEmpty(migrated, "tickle", tickle);
-
-        JsonObject elytra = new JsonObject();
-        moveIfPresent(legacy, "elytraBoostMultiplier", elytra, "boostMultiplier");
-        addIfNotEmpty(migrated, "elytra", elytra);
 
         logDroppedKeys(file, legacy);
 

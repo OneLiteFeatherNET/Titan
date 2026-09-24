@@ -45,11 +45,11 @@ class SetupConfigEditorTest {
     void changingSitOffsetKeepsSpawnHeightsAndOtherSectionsUnchanged(@TempDir Path tempDir) {
         Path file = tempDir.resolve("app.json");
 
-        // Seed the file with non-default spawn heights and an elytra multiplier, the way the
-        // lobby itself would have written them.
+        // Seed the file with non-default spawn heights and elytra tuning, the way the lobby
+        // itself would have written them.
         ConfigStore seed = ConfigStore.open(file);
         seed.setSection("spawn", new SpawnSectionConfig(-32, 400, 4));
-        seed.setSection("elytra", new ElytraSectionConfig(50.0));
+        seed.setSection("elytra", new ElytraSectionConfig(20, 50));
         seed.flush();
 
         SetupConfigEditor editor = new SetupConfigEditor(ConfigStore.open(file));
@@ -60,7 +60,8 @@ class SetupConfigEditorTest {
         assertEquals(-32, verify.spawn().minHeight(), "the old copy-builder bug reset this to the default");
         assertEquals(400, verify.spawn().maxHeight(), "the old copy-builder bug reset this to the default");
         assertEquals(4, verify.spawn().simulationDistance());
-        assertEquals(50.0, verify.elytra().boostMultiplier(), "an unrelated section must stay untouched");
+        assertEquals(20, verify.elytra().burnDurationTicks(), "an unrelated section must stay untouched");
+        assertEquals(50, verify.elytra().cooldownTicks(), "an unrelated section must stay untouched");
     }
 
     @Test
@@ -136,14 +137,27 @@ class SetupConfigEditorTest {
     }
 
     @Test
-    @DisplayName("The elytra boost multiplier is written to elytra.boostMultiplier")
-    void elytraBoostMultiplierIsWrittenToBoostMultiplier(@TempDir Path tempDir) {
+    @DisplayName("The elytra burn duration is written to elytra.burnDurationTicks, leaving cooldownTicks untouched")
+    void elytraBurnDurationTicksIsWrittenToBurnDurationTicks(@TempDir Path tempDir) {
         Path file = tempDir.resolve("app.json");
         SetupConfigEditor editor = new SetupConfigEditor(ConfigStore.open(file));
 
-        editor.setElytraBoostMultiplier(12.5);
+        editor.setElytraBurnDurationTicks(20);
 
-        assertEquals(12.5, editor.elytra().boostMultiplier());
+        assertEquals(20, editor.elytra().burnDurationTicks());
+        assertEquals(ElytraSectionConfig.DEFAULTS.cooldownTicks(), editor.elytra().cooldownTicks());
+    }
+
+    @Test
+    @DisplayName("The elytra cooldown is written to elytra.cooldownTicks, leaving burnDurationTicks untouched")
+    void elytraCooldownTicksIsWrittenToCooldownTicks(@TempDir Path tempDir) {
+        Path file = tempDir.resolve("app.json");
+        SetupConfigEditor editor = new SetupConfigEditor(ConfigStore.open(file));
+
+        editor.setElytraCooldownTicks(50);
+
+        assertEquals(50, editor.elytra().cooldownTicks());
+        assertEquals(ElytraSectionConfig.DEFAULTS.burnDurationTicks(), editor.elytra().burnDurationTicks());
     }
 
     @Test
@@ -171,6 +185,9 @@ class SetupConfigEditorTest {
         assertEquals(6, editor.spawn().simulationDistance());
         assertEquals(-50, editor.spawn().minHeight());
         assertEquals(200, editor.spawn().maxHeight());
-        assertEquals(12.5, editor.elytra().boostMultiplier());
+        // elytraBoostMultiplier has no equivalent in the ported Voyager boost; it is dropped, not
+        // migrated, so the section falls back to its defaults.
+        assertEquals(ElytraSectionConfig.DEFAULTS.burnDurationTicks(), editor.elytra().burnDurationTicks());
+        assertEquals(ElytraSectionConfig.DEFAULTS.cooldownTicks(), editor.elytra().cooldownTicks());
     }
 }

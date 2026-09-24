@@ -20,21 +20,35 @@ import net.onelitefeather.titan.common.config.ConfigException;
 /**
  * The {@code elytra} module's own configuration section (see {@code lobby-module-config} spec).
  *
- * @param boostMultiplier scales the vanilla-equivalent firework boost applied by
- *                        {@link FireworkBoostTracker}. {@code 1.0} reproduces vanilla's own
- *                        boost exactly; a larger value boosts harder. Must be strictly positive.
+ * <p>Ported from Voyager's {@code net.elytrarace.voyager.api.race.BoostConfig}: the boost itself is
+ * Vanilla's own firework impulse, applied client-side once a rocket is attached to the flying
+ * player, so there is no speed or multiplier to tune here - only how long one rocket burns for and
+ * how long a player waits before the next one. See {@link FireworkBoostTracker} and
+ * {@link FireworkRockets}.
+ *
+ * @param burnDurationTicks how many ticks one rocket boosts for; the rocket entity is removed
+ *                          after exactly this many ticks. Must be strictly positive.
+ * @param cooldownTicks     how many ticks after a boost <em>starts</em> before another may be
+ *                          used. Measured from the burn's start, so it must be strictly longer
+ *                          than {@code burnDurationTicks} - otherwise two rockets could burn on
+ *                          the same player at once.
  */
-public record ElytraConfig(double boostMultiplier) {
+public record ElytraConfig(int burnDurationTicks, int cooldownTicks) {
 
     /**
-     * Today's shipped value - the lobby has run with a 35x vanilla boost since before this module
-     * existed, not the vanilla default of {@code 1.0}.
+     * Voyager's own deterministic burn for Vanilla's strongest craftable rocket
+     * ({@code 10 * flightDuration} with {@code flightDuration = 3}, i.e. 30 ticks - see
+     * {@code BoostConfig.VANILLA_BURN_TICKS}) paired with the cooldown Voyager's reference map
+     * ships (40 ticks, converted from the old tree's 2000 ms cooldown).
      */
-    public static final ElytraConfig DEFAULTS = new ElytraConfig(35.0);
+    public static final ElytraConfig DEFAULTS = new ElytraConfig(30, 40);
 
     public ElytraConfig {
-        if (boostMultiplier <= 0) {
-            throw ConfigException.invalid("boostMultiplier", "must be positive");
+        if (burnDurationTicks <= 0) {
+            throw ConfigException.invalid("burnDurationTicks", "must be positive");
+        }
+        if (cooldownTicks <= burnDurationTicks) {
+            throw ConfigException.invalid("cooldownTicks", "must be longer than burnDurationTicks");
         }
     }
 }

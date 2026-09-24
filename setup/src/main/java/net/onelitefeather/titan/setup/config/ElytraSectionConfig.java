@@ -19,15 +19,20 @@ package net.onelitefeather.titan.setup.config;
  * Setup-local mirror of the lobby's {@code elytra} config section (id {@code "elytra"}).
  * <p>
  * The setup server does not depend on {@code app}, so it cannot reuse the real feature module's
- * config record; this record duplicates the single field the {@code app} command edits.
+ * config record; this record duplicates the two fields the {@code app} command edits. The lobby's
+ * own {@code net.onelitefeather.titan.app.feature.elytra.ElytraConfig} was ported from Voyager
+ * ({@code net.elytrarace.voyager.api.race.BoostConfig}): the boost is Vanilla's own firework
+ * impulse, applied client-side, so there is no multiplier to tune, only how long one rocket burns
+ * and how long a player waits before the next one.
  *
- * @param boostMultiplier the multiplier applied to a player's elytra boost
+ * @param burnDurationTicks how many ticks one rocket boosts for
+ * @param cooldownTicks     how many ticks after a boost starts before another may be used
  */
-public record ElytraSectionConfig(double boostMultiplier) {
+public record ElytraSectionConfig(int burnDurationTicks, int cooldownTicks) {
 
     /**
      * The defaults used when {@code app.json} has no {@code elytra} section yet, matching the
-     * lobby's own defaults.
+     * lobby's own {@code ElytraConfig.DEFAULTS}.
      */
-    public static final ElytraSectionConfig DEFAULTS = new ElytraSectionConfig(35.0);
+    public static final ElytraSectionConfig DEFAULTS = new ElytraSectionConfig(30, 40);
 }
