@@ -132,4 +132,4 @@ Regeln für Welle C: Die Feature-Agents legen nur neue Pakete an und löschen ni
 
 ## 12. Pull Request
 
-- [ ] 12.1 Pull Request von `feat/lobby-feature-modules` nach `main` mit dem Titel `feat(app)!: rebuild the lobby around feature modules` öffnen. Die Beschreibung enthält den `BREAKING CHANGE`-Hinweis zu `app.json`, die Rollback-Anleitung aus design.md und die abgehakte Abnahme-Checkliste aus 11.1. Verifikation: Der PR existiert, und der CI-Lauf ist grün.
+- [x] 12.1 Pull Request von `feat/lobby-feature-modules` nach `main` mit dem Titel `feat(app)!: rebuild the lobby around feature modules` öffnen. Die Beschreibung enthält den `BREAKING CHANGE`-Hinweis zu `app.json`, die Rollback-Anleitung aus design.md und die abgehakte Abnahme-Checkliste aus 11.1. Verifikation: Der PR existiert, und der CI-Lauf ist grün.
