@@ -48,6 +48,7 @@ class TitanObservabilityTest {
     @AfterEach
     void clearRecordedIdentity() {
         TitanObservability.consumeFailingPlayer();
+        TitanObservability.consumeFailingModule();
     }
 
     @DisplayName("A listener that returns normally is passed through and records no player")
@@ -116,6 +117,80 @@ class TitanObservabilityTest {
         Assertions.assertThrows(IllegalStateException.class, () -> guarded.accept(new PlainEvent()));
 
         Assertions.assertNull(TitanObservability.consumeFailingPlayer());
+    }
+
+    @DisplayName("guard(moduleId, listener) still delegates to the wrapped listener on the healthy path")
+    @Test
+    void guardWithModuleIdDelegatesOnTheHealthyPath() {
+        // This module does not depend on an SLF4J binding, so the MDC calls guard(String, Consumer)
+        // makes are no-ops here; ModuleRegistryTest in :app exercises them against a real binding
+        // (logback-classic) and asserts the module id is actually visible in the MDC.
+        AtomicInteger calls = new AtomicInteger();
+        Consumer<PlainEvent> guarded = TitanObservability.guard("sit", event -> calls.incrementAndGet());
+
+        guarded.accept(new PlainEvent());
+
+        Assertions.assertEquals(1, calls.get(), "the wrapped listener must still be invoked");
+        Assertions.assertNull(TitanObservability.consumeFailingModule(), "a successful dispatch must not leave module context behind");
+    }
+
+    @DisplayName("A failing guard(moduleId, listener) records both the module and the player")
+    @Test
+    void guardWithModuleIdRecordsModuleAndPlayerOnFailure(Env env) {
+        Instance instance = env.createFlatInstance();
+        Player player = env.createPlayer(instance);
+        Consumer<PlayerBoundEvent> guarded = TitanObservability.guard("sit", event -> {
+            throw new IllegalStateException("listener broke");
+        });
+
+        Assertions.assertThrows(IllegalStateException.class, () -> guarded.accept(new PlayerBoundEvent(player)));
+
+        Assertions.assertEquals("sit", TitanObservability.consumeFailingModule(), "the failing module must be recorded");
+        TitanObservability.PlayerIdentity identity = TitanObservability.consumeFailingPlayer();
+        Assertions.assertNotNull(identity, "the failing player must still be recorded alongside the module");
+        Assertions.assertEquals(player.getUsername(), identity.name());
+    }
+
+    @DisplayName("A failure in guard(moduleId, listener) on an event without a player records the module but no player")
+    @Test
+    void guardWithModuleIdRecordsModuleWithoutAPlayer() {
+        Consumer<PlainEvent> guarded = TitanObservability.guard("sit", event -> {
+            throw new IllegalStateException("listener broke");
+        });
+
+        Assertions.assertThrows(IllegalStateException.class, () -> guarded.accept(new PlainEvent()));
+
+        Assertions.assertEquals("sit", TitanObservability.consumeFailingModule());
+        Assertions.assertNull(TitanObservability.consumeFailingPlayer());
+    }
+
+    @DisplayName("guard(moduleId, listener) rethrows the original throwable unchanged")
+    @Test
+    void guardWithModuleIdRethrowsTheOriginalThrowable() {
+        IllegalStateException failure = new IllegalStateException("listener broke");
+        Consumer<PlainEvent> guarded = TitanObservability.guard("sit", event -> {
+            throw failure;
+        });
+
+        IllegalStateException thrown = Assertions.assertThrows(IllegalStateException.class, () -> guarded.accept(new PlainEvent()));
+
+        Assertions.assertSame(failure, thrown);
+    }
+
+    @DisplayName("handleException logs and clears both module and player context without rethrowing")
+    @Test
+    void handleExceptionConsumesModuleAndPlayerWithoutRethrowing(Env env) {
+        Instance instance = env.createFlatInstance();
+        Player player = env.createPlayer(instance);
+        Consumer<PlayerBoundEvent> guarded = TitanObservability.guard("sit", event -> {
+            throw new IllegalStateException("listener broke");
+        });
+        Assertions.assertThrows(IllegalStateException.class, () -> guarded.accept(new PlayerBoundEvent(player)));
+
+        Assertions.assertDoesNotThrow(() -> TitanObservability.handleException(new IllegalStateException("listener broke")), "handleException must never propagate - the lobby keeps running");
+
+        Assertions.assertNull(TitanObservability.consumeFailingModule(), "handleException must consume the recorded module");
+        Assertions.assertNull(TitanObservability.consumeFailingPlayer(), "handleException must consume the recorded player");
     }
 
     @DisplayName("Without a DSN Sentry is never initialised")
