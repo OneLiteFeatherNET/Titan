@@ -18,17 +18,13 @@ package net.onelitefeather.titan.app.module;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.function.Consumer;
-import net.minestom.server.command.CommandManager;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
-import net.minestom.server.timer.Scheduler;
-import net.onelitefeather.titan.app.module.item.ItemRegistry;
 import net.onelitefeather.titan.app.module.item.ModuleItems;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
 import net.onelitefeather.titan.common.config.ConfigException;
 import net.onelitefeather.titan.common.config.ConfigStore;
 import net.onelitefeather.titan.common.observability.TitanObservability;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * A single module's handle to the platform, handed to {@link LobbyModule#enable(ModuleContext)}.
@@ -40,10 +36,16 @@ import org.jetbrains.annotations.Nullable;
  * having to remember what it registered. See {@code design.md}, decision 3.
  *
  * <p>{@link #listen} and {@link #config} only work while {@link LobbyModule#enable} is running;
- * {@link ModuleRegistry} closes them immediately afterwards. Later platform additions (items,
- * navigator entries) follow the same shape: a small public view here, backed by the
- * {@link #onDisable} cleanup hook, so neither this class nor {@link ModuleRegistry} needs to change
- * again for them.
+ * {@link ModuleRegistry} closes them immediately afterwards.
+ *
+ * <p>Built from a single {@link ModulePlatform}, the package-private parameter object every
+ * platform service ({@link ModulePlatform#scheduler()}, {@link ModulePlatform#commandManager()},
+ * {@link ModulePlatform#config()}, {@link ModulePlatform#items()},
+ * {@link ModulePlatform#navigator()})
+ * lives on. {@link ModulePlatform} itself is never exposed to a module - only the narrow,
+ * per-module
+ * views built from it here, each backed by the {@link #onDisable} cleanup hook, so adding another
+ * platform service never needs another {@link ModuleContext} constructor.
  */
 public final class ModuleContext {
 
@@ -51,36 +53,20 @@ public final class ModuleContext {
     private final EventNode<Event> node;
     private final ModuleTasksImpl tasks;
     private final ModuleCommandsImpl commands;
-    private final @Nullable ConfigStore configStore;
+    private final ModulePlatform platform;
     private final NavigatorEntries.View navigator;
     private final ModuleItems items;
     private final Deque<Runnable> cleanupHooks = new ArrayDeque<>();
     private volatile boolean listeningClosed;
 
-    ModuleContext(String moduleId, Scheduler scheduler, CommandManager commandManager) {
-        this(moduleId, scheduler, commandManager, null, new NavigatorEntries(), new ItemRegistry(EventNode.all("titan-item-registry-fallback/" + moduleId)));
-    }
-
-    ModuleContext(String moduleId, Scheduler scheduler, CommandManager commandManager, @Nullable ConfigStore configStore) {
-        this(moduleId, scheduler, commandManager, configStore, new NavigatorEntries(), new ItemRegistry(EventNode.all("titan-item-registry-fallback/" + moduleId)));
-    }
-
-    ModuleContext(String moduleId, Scheduler scheduler, CommandManager commandManager, NavigatorEntries navigatorEntries) {
-        this(moduleId, scheduler, commandManager, null, navigatorEntries, new ItemRegistry(EventNode.all("titan-item-registry-fallback/" + moduleId)));
-    }
-
-    ModuleContext(String moduleId, Scheduler scheduler, CommandManager commandManager, ItemRegistry itemRegistry) {
-        this(moduleId, scheduler, commandManager, null, new NavigatorEntries(), itemRegistry);
-    }
-
-    ModuleContext(String moduleId, Scheduler scheduler, CommandManager commandManager, @Nullable ConfigStore configStore, NavigatorEntries navigatorEntries, ItemRegistry itemRegistry) {
+    ModuleContext(String moduleId, ModulePlatform platform) {
         this.moduleId = moduleId;
         this.node = EventNode.all("titan/" + moduleId);
-        this.tasks = new ModuleTasksImpl(scheduler);
-        this.commands = new ModuleCommandsImpl(commandManager, this);
-        this.configStore = configStore;
-        this.navigator = navigatorEntries.forModule(moduleId, this::onDisable);
-        this.items = itemRegistry.contextView(moduleId, this::onDisable);
+        this.tasks = new ModuleTasksImpl(platform.scheduler());
+        this.commands = new ModuleCommandsImpl(platform.commandManager(), this);
+        this.platform = platform;
+        this.navigator = platform.navigator().forModule(moduleId, this::onDisable);
+        this.items = platform.items().contextView(moduleId, this::onDisable);
     }
 
     /**
@@ -146,10 +132,11 @@ public final class ModuleContext {
         if (this.listeningClosed) {
             throw new IllegalStateException("Module '" + this.moduleId + "' tried to read its config after enable() returned. Config must be read while enable() runs.");
         }
-        if (this.configStore == null) {
+        ConfigStore configStore = this.platform.config();
+        if (configStore == null) {
             return defaults;
         }
-        return this.configStore.section(this.moduleId, type, defaults);
+        return configStore.section(this.moduleId, type, defaults);
     }
 
     /**

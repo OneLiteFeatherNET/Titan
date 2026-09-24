@@ -54,21 +54,17 @@ import org.jetbrains.annotations.Nullable;
 public final class ModuleRegistry {
 
     private final EventNode<Event> parent;
-    private final Scheduler scheduler;
-    private final CommandManager commandManager;
-    private final @Nullable ConfigStore configStore;
-    private final NavigatorEntries navigatorEntries;
-    private final ItemRegistry itemRegistry;
+    private final ModulePlatform platform;
     private final List<LobbyModule> modules;
     private final List<ModuleContext> runningContexts = new ArrayList<>();
 
     private ModuleRegistry(Builder builder) {
         this.parent = builder.parent;
-        this.scheduler = builder.scheduler != null ? builder.scheduler : MinecraftServer.getSchedulerManager();
-        this.commandManager = builder.commandManager != null ? builder.commandManager : MinecraftServer.getCommandManager();
-        this.configStore = builder.configStore;
-        this.navigatorEntries = builder.navigatorEntries != null ? builder.navigatorEntries : new NavigatorEntries();
-        this.itemRegistry = builder.itemRegistry != null ? builder.itemRegistry : new ItemRegistry(this.parent);
+        Scheduler scheduler = builder.scheduler != null ? builder.scheduler : MinecraftServer.getSchedulerManager();
+        CommandManager commandManager = builder.commandManager != null ? builder.commandManager : MinecraftServer.getCommandManager();
+        NavigatorEntries navigatorEntries = builder.navigatorEntries != null ? builder.navigatorEntries : new NavigatorEntries();
+        ItemRegistry itemRegistry = builder.itemRegistry != null ? builder.itemRegistry : new ItemRegistry(this.parent);
+        this.platform = new ModulePlatform(scheduler, commandManager, builder.configStore, itemRegistry, navigatorEntries);
         this.modules = List.copyOf(builder.modules);
     }
 
@@ -101,7 +97,8 @@ public final class ModuleRegistry {
      *                                        that cause already names the offending section, field
      *                                        and reason. The failing module's own node, tasks and
      *                                        cleanup hooks are torn down before this is thrown;
-     *                                        modules enabled earlier in this call are left running -
+     *                                        modules enabled earlier in this call are left running
+     *                                        -
      *                                        it is on the caller to shut the whole registry down in
      *                                        response
      * @throws ItemPlacementConflictException if two modules registered an item for the same
@@ -112,7 +109,7 @@ public final class ModuleRegistry {
      */
     public void enableAll() {
         for (LobbyModule module : this.modules) {
-            ModuleContext context = new ModuleContext(module.id(), this.scheduler, this.commandManager, this.configStore, this.navigatorEntries, this.itemRegistry);
+            ModuleContext context = new ModuleContext(module.id(), this.platform);
             this.parent.addChild(context.node());
             try {
                 module.enable(context);
@@ -126,10 +123,11 @@ public final class ModuleRegistry {
             context.closeForListening();
             this.runningContexts.add(context);
         }
-        this.itemRegistry.validate();
-        this.navigatorEntries.validate();
-        if (this.configStore != null) {
-            this.configStore.flush();
+        this.platform.items().validate();
+        this.platform.navigator().validate();
+        ConfigStore configStore = this.platform.config();
+        if (configStore != null) {
+            configStore.flush();
         }
     }
 

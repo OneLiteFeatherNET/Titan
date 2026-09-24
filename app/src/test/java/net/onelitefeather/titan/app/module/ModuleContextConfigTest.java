@@ -21,10 +21,19 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import net.kyori.adventure.key.Key;
+import net.kyori.adventure.text.Component;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
+import net.minestom.server.item.ItemStack;
+import net.minestom.server.item.Material;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.app.module.item.ItemPlacementConflictException;
+import net.onelitefeather.titan.app.module.item.ItemSlot;
+import net.onelitefeather.titan.app.module.item.LobbyItem;
+import net.onelitefeather.titan.app.module.navigator.NavigatorConflictException;
+import net.onelitefeather.titan.app.module.navigator.NavigatorEntry;
 import net.onelitefeather.titan.common.config.ConfigException;
 import net.onelitefeather.titan.common.config.ConfigStore;
 import org.junit.jupiter.api.Assertions;
@@ -145,6 +154,53 @@ class ModuleContextConfigTest {
         Assertions.assertDoesNotThrow(registry::enableAll);
 
         Assertions.assertSame(TestConfig.DEFAULTS, captured.get(), "with no ConfigStore configured, config() must return the defaults unchanged");
+    }
+
+    @DisplayName("An item placement conflict aborts enableAll() before the config file is flushed")
+    @Test
+    void itemPlacementConflictAbortsEnableAllBeforeFlush(Env env, @TempDir Path dir) {
+        Path file = dir.resolve("app.json");
+        Assertions.assertFalse(Files.exists(file));
+        ConfigStore store = ConfigStore.open(file);
+        EventNode<Event> parent = EventNode.all("test-config-item-conflict-flush");
+        List<String> log = new ArrayList<>();
+        RecordingModule a = new RecordingModule("a", log, context -> {
+            context.config(TestConfig.class, TestConfig.DEFAULTS);
+            context.items().register(new LobbyItem(Key.key("titan:a"), ItemStack.of(Material.FEATHER), ItemSlot.hotbar(0), (player, event) -> {
+            }));
+        }, () -> {
+        });
+        RecordingModule b = new RecordingModule("b", log, context -> context.items().register(new LobbyItem(Key.key("titan:b"), ItemStack.of(Material.FEATHER), ItemSlot.hotbar(0), (player, event) -> {
+        })), () -> {
+        });
+        ModuleRegistry registry = builder(env, parent).config(store).modules(a, b).build();
+
+        Assertions.assertThrows(ItemPlacementConflictException.class, registry::enableAll);
+
+        Assertions.assertFalse(Files.exists(file), "an item placement conflict must abort before the config file is written");
+    }
+
+    @DisplayName("A navigator slot conflict aborts enableAll() before the config file is flushed")
+    @Test
+    void navigatorConflictAbortsEnableAllBeforeFlush(Env env, @TempDir Path dir) {
+        Path file = dir.resolve("app.json");
+        Assertions.assertFalse(Files.exists(file));
+        ConfigStore store = ConfigStore.open(file);
+        EventNode<Event> parent = EventNode.all("test-config-navigator-conflict-flush");
+        List<String> log = new ArrayList<>();
+        NavigatorEntry entry = new NavigatorEntry(4, ItemStack.of(Material.FEATHER), Component.text("Survival"), "survival");
+        RecordingModule a = new RecordingModule("a", log, context -> {
+            context.config(TestConfig.class, TestConfig.DEFAULTS);
+            context.navigator().add(entry);
+        }, () -> {
+        });
+        RecordingModule b = new RecordingModule("b", log, context -> context.navigator().add(entry), () -> {
+        });
+        ModuleRegistry registry = builder(env, parent).config(store).modules(a, b).build();
+
+        Assertions.assertThrows(NavigatorConflictException.class, registry::enableAll);
+
+        Assertions.assertFalse(Files.exists(file), "a navigator slot conflict must abort before the config file is written");
     }
 
     @DisplayName("Calling config() after enable() has returned throws IllegalStateException")

@@ -41,7 +41,7 @@ class ModuleContextTest {
     @DisplayName("moduleId() returns the id the context was created for")
     @Test
     void moduleIdReturnsTheConfiguredId(Env env) {
-        ModuleContext context = new ModuleContext("sit", env.process().scheduler(), env.process().command());
+        ModuleContext context = new ModuleContext("sit", ModulePlatformFixture.create(env.process().scheduler(), env.process().command()));
 
         Assertions.assertEquals("sit", context.moduleId());
     }
@@ -79,7 +79,7 @@ class ModuleContextTest {
     @DisplayName("Cleanup hooks run in the reverse order they were added")
     @Test
     void cleanupHooksRunInReverseOrder(Env env) {
-        ModuleContext context = new ModuleContext("cleanup", env.process().scheduler(), env.process().command());
+        ModuleContext context = new ModuleContext("cleanup", ModulePlatformFixture.create(env.process().scheduler(), env.process().command()));
         List<Integer> order = new ArrayList<>();
         context.onDisable(() -> order.add(1));
         context.onDisable(() -> order.add(2));
