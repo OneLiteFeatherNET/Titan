@@ -18,7 +18,6 @@ package net.onelitefeather.titan.setup.listener;
 import net.minestom.server.event.player.PlayerSpawnEvent;
 import net.minestom.server.network.packet.server.CachedPacket;
 import net.minestom.server.network.packet.server.play.UpdateSimulationDistancePacket;
-import net.onelitefeather.titan.common.config.AppConfig;
 import net.onelitefeather.titan.common.map.LobbyMap;
 import net.onelitefeather.titan.common.map.MapProvider;
 
@@ -30,9 +29,9 @@ public class PlayerSpawnListener implements Consumer<PlayerSpawnEvent> {
     private final CachedPacket simulatedDistancePacket;
     private final MapProvider mapProvider;
 
-    public PlayerSpawnListener(AppConfig appConfig, MapProvider mapProvider) {
+    public PlayerSpawnListener(int simulationDistance, MapProvider mapProvider) {
         this.simulatedDistancePacket = new CachedPacket(
-                new UpdateSimulationDistancePacket(appConfig.simulationDistance()));
+                new UpdateSimulationDistancePacket(simulationDistance));
         this.mapProvider = mapProvider;
     }
 
