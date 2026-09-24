@@ -57,7 +57,7 @@ public final class Titan {
         this.mapProvider = MapProvider.create(this.path, instance, Titan::defaultFilter);
         this.configStore = ConfigStore.open(this.path.resolve(APP_FILE_NAME));
         // Warm every section this server can edit so a freshly created or migrated app.json
-        // ends up with defaults for every section, matching the old AppConfigProvider behavior.
+        // ends up with defaults for every section.
         this.spawn = this.configStore.section("spawn", SpawnSectionConfig.class, SpawnSectionConfig.DEFAULTS);
         this.configStore.section("sit", SitSectionConfig.class, SitSectionConfig.DEFAULTS);
         this.configStore.section("tickle", TickleSectionConfig.class, TickleSectionConfig.DEFAULTS);

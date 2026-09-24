@@ -23,9 +23,9 @@ import net.minestom.server.entity.Player;
 import net.minestom.server.event.player.PlayerMoveEvent;
 
 /**
- * Teleports a player back to the lobby spawn once they leave the configured height bounds,
- * mirroring the lobby's former {@code PlayerMoveListener}. The actual bounds check is delegated to
- * {@link HeightBounds}, a pure rule this listener merely reacts to.
+ * Teleports a player back to the lobby spawn once they leave the configured height bounds. The
+ * actual bounds check is delegated to {@link HeightBounds}, a pure rule this listener merely
+ * reacts to.
  */
 final class SpawnBoundsListener implements Consumer<PlayerMoveEvent> {
 

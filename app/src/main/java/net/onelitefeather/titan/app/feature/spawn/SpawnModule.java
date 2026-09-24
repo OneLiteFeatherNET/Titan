@@ -28,18 +28,16 @@ import net.onelitefeather.titan.app.module.ModuleContext;
 /**
  * Puts a joining player into the lobby and keeps them inside its height bounds.
  *
- * <p>Three things, each mirroring one of the lobby's former hand-wired listeners:
+ * <p>Three things:
  * <ul>
- * <li>sets the spawning instance and respawn point while a player configures ({@code
- * PlayerConfigurationListener}),
+ * <li>sets the spawning instance and respawn point while a player configures,
  * <li>on spawn, sends the configured simulation distance, teleports the player to the lobby
- * spawn and equips the platform-wide standard loadout ({@code PlayerSpawnListener}),
- * <li>teleports a player back to spawn once they fall below or rise above the configured height
- * ({@code PlayerMoveListener}).
+ * spawn and equips the platform-wide standard loadout,
+ * <li>teleports a player back to spawn once they fall below or rise above the configured height.
  * </ul>
  *
  * <p>Depends on the lobby {@link Instance} and the current spawn position only - not the whole
- * {@code MapProvider} the lobby previously threaded through these listeners. A {@link Supplier} is
+ * {@code MapProvider}. A {@link Supplier} is
  * enough because the spawn position can change after this module is built (e.g. a map reload)
  * while the instance itself does not, and because {@code MapProvider} also carries unrelated
  * concerns (loading, saving and listing maps) this module has no business depending on. Keeping the

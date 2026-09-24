@@ -37,12 +37,9 @@ import net.onelitefeather.titan.app.module.navigator.NavigatorEntry;
  * own configured destinations and any other module's.
  *
  * <p>See {@code openspec/changes/lobby-feature-modules/design.md}, decision 8, and the
- * {@code lobby-navigator} spec. This replaces the old {@code NavigationHelper}: one shared
- * inventory ({@link SharedNavigatorInventory}), rebuilt only when
- * {@link NavigatorEntries#version()}
- * changes, and exactly one {@link InventoryPreClickEvent} listener, registered once in
- * {@link #enable}, instead of a per-player Caffeine cache of Aves inventory builders whose click
- * listeners were never unregistered on refresh.
+ * {@code lobby-navigator} spec. One shared inventory ({@link SharedNavigatorInventory}), rebuilt
+ * only when {@link NavigatorEntries#version()} changes, and exactly one
+ * {@link InventoryPreClickEvent} listener, registered once in {@link #enable}.
  *
  * <p>{@link #entries} is handed in through the constructor rather than read from {@code context},
  * because {@link ModuleContext#navigator()} only exposes the narrow, add-only

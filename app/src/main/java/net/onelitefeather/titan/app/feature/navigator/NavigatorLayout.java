@@ -38,10 +38,7 @@ final class NavigatorLayout {
     /** {@code CHEST_1_ROW} always has exactly nine slots, {@code 0}-{@code 8}. */
     static final int SLOT_COUNT = 9;
 
-    /**
-     * Fills every slot without an entry, reproduced exactly from the old
-     * {@code common.utils.Items}.
-     */
+    /** Fills every slot without an entry. */
     static final ItemStack BLANK = ItemStack.builder(Material.GRAY_STAINED_GLASS_PANE).customName(Component.empty()).build();
 
     private final Map<Integer, NavigatorEntry> bySlot;

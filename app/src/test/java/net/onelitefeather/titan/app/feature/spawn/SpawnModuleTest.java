@@ -43,10 +43,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * {@code Env} (Cyano/Microtus) coverage for {@link SpawnModule}, exercising it through
  * {@link ModuleHarness} exactly the way a real
  * {@link net.onelitefeather.titan.app.module.ModuleRegistry}
- * would start it. Covers the {@code lobby-modules}/{@code lobby-hotbar} scenarios task 6.2 carries
- * over from the former {@code PlayerConfigurationListener}, {@code PlayerSpawnListener} and {@code
- * PlayerMoveListener}: spawning instance and respawn point on configuration, teleport plus
- * simulation distance plus equipment on spawn, and the height-bounds teleport.
+ * would start it. Covers the {@code lobby-modules}/{@code lobby-hotbar} scenarios task 6.2 carries:
+ * spawning instance and respawn point on configuration, teleport plus simulation distance plus
+ * equipment on spawn, and the height-bounds teleport.
  */
 @ExtendWith(MicrotusExtension.class)
 class SpawnModuleTest {

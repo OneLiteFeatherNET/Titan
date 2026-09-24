@@ -32,11 +32,9 @@ import net.minestom.server.tag.Tag;
  * Reacts to a player attacking another player while holding a feather in either hand: applies the
  * tickle cooldown and broadcasts the tickle message to every player in the instance.
  *
- * <p>Moved here unchanged from {@code app.listener.TickleListener} (see
- * {@code openspec/changes/lobby-feature-modules}), other than reading "now" from an injected
- * {@link Clock} instead of {@link System#currentTimeMillis()} and parsing the tickle message once
- * per attack - sent to the {@linkplain Instance instance's} own audience - instead of once per
- * recipient.
+ * <p>Reads "now" from an injected {@link Clock} instead of {@link System#currentTimeMillis()} and
+ * parses the tickle message once per attack - sent to the {@linkplain Instance instance's} own
+ * audience - instead of once per recipient.
  *
  * <p>Keeps today's observable behaviour unchanged, including its two known bugs, tracked by the
  * follow-up change {@code tickle-cooldown} rather than fixed here: the {@link SetCooldownPacket}

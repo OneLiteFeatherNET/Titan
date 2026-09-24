@@ -42,9 +42,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * module's own event node.
  *
  * <p>{@link NavigatorModule} registers exactly one {@code InventoryPreClickEvent} listener, once,
- * in {@link NavigatorModule#enable}. Unlike the old {@code NavigationHelper} - a Caffeine cache of
- * one Aves {@code PersonalInventoryBuilder} per player, refreshed without ever unregistering the
- * replaced builder's click listener - nothing here registers a listener again after {@code
+ * in {@link NavigatorModule#enable}. Nothing here registers a listener again after {@code
  * enable()} returns, for any player, on any open. This test proves that structurally: the listener
  * count on the module's own {@code titan/navigator} node, read via {@link EventListenerCounter}
  * (see its own Javadoc on why reflection is needed - Minestom has no public API for this), stays

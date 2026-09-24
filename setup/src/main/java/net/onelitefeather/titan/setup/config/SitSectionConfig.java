@@ -34,7 +34,7 @@ public record SitSectionConfig(Vec offset, List<Key> allowedBlocks) {
 
     /**
      * The defaults used when {@code app.json} has no {@code sit} section yet, matching the
-     * lobby's own defaults (see {@code InternalAppConfig}).
+     * lobby's own defaults.
      */
     public static final SitSectionConfig DEFAULTS = new SitSectionConfig(new Vec(0.5, 0.25, 0.5), List.of(Material.SPRUCE_STAIRS.key()));
 

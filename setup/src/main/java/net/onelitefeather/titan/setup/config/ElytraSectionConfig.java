@@ -27,7 +27,7 @@ public record ElytraSectionConfig(double boostMultiplier) {
 
     /**
      * The defaults used when {@code app.json} has no {@code elytra} section yet, matching the
-     * lobby's own defaults (see {@code InternalAppConfig}).
+     * lobby's own defaults.
      */
     public static final ElytraSectionConfig DEFAULTS = new ElytraSectionConfig(35.0);
 }

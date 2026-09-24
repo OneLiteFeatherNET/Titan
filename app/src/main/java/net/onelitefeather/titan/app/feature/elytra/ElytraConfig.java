@@ -27,9 +27,8 @@ import net.onelitefeather.titan.common.config.ConfigException;
 public record ElytraConfig(double boostMultiplier) {
 
     /**
-     * Today's shipped value (see {@code AppConfig#elytraBoostMultiplier} / {@code
-     * InternalAppConfig#defaultConfig()} on {@code main}) - the lobby has run with a 35x vanilla
-     * boost since before this module existed, not the vanilla default of {@code 1.0}.
+     * Today's shipped value - the lobby has run with a 35x vanilla boost since before this module
+     * existed, not the vanilla default of {@code 1.0}.
      */
     public static final ElytraConfig DEFAULTS = new ElytraConfig(35.0);
 

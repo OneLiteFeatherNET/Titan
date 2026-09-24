@@ -37,9 +37,7 @@ public record NavigatorConfig(String title, List<Entry> entries) {
 
     /**
      * The four destinations the lobby has always shown - ElytraRace, Survival, Slender and
-     * Creative - reproduced exactly from the old
-     * {@code NavigationHelper}/{@code common.utils.Items}
-     * so migrating to this module changes nothing a player sees.
+     * Creative.
      */
     public static final NavigatorConfig DEFAULTS = new NavigatorConfig("<yellow>Navigator", List.of(new Entry(0, "minecraft:elytra", "<!i><gradient:#fcba03:#03fc8c>ElytraRace</gradient>", "ElytraRace"), new Entry(4, "minecraft:grass_block", "<!i><green>Survival", "Survival"), new Entry(5, "minecraft:enderman_spawn_egg", "<!i><gradient:#616161:#e80000c>Slender</gradient>", "cygnus"), new Entry(8, "minecraft:wooden_axe", "<!i><rainbow>Creative</rainbow>", "MemberBuild")));
 

@@ -23,8 +23,7 @@ import net.minestom.server.event.player.AsyncPlayerConfigurationEvent;
 import net.minestom.server.instance.Instance;
 
 /**
- * Sets a joining player's spawning instance and respawn point, mirroring the lobby's former
- * {@code PlayerConfigurationListener}.
+ * Sets a joining player's spawning instance and respawn point.
  *
  * <p>{@code spawnPosition} is read lazily, once per event, rather than captured once at
  * construction time - the lobby map's spawn point can change after the module was built (e.g. a

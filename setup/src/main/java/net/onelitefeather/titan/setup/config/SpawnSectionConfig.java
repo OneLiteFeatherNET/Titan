@@ -31,7 +31,7 @@ public record SpawnSectionConfig(int minHeight, int maxHeight, int simulationDis
 
     /**
      * The defaults used when {@code app.json} has no {@code spawn} section yet, matching the
-     * lobby's own defaults (see {@code InternalAppConfig}).
+     * lobby's own defaults.
      */
     public static final SpawnSectionConfig DEFAULTS = new SpawnSectionConfig(-64, 310, 2);
 }

@@ -32,11 +32,8 @@ import net.onelitefeather.titan.common.event.EntityDismountEvent;
  * Lets a player sit down on an allowed block and stand back up again, either by sneaking, by
  * dismounting some other way, or by disconnecting.
  *
- * <p>Ported from the old, hand-wired {@code app.listener.Sit*} listeners and {@code
- * common.helper.SitHelper} onto the {@link LobbyModule} platform; see {@code design.md}, decision
- * 11, and the {@code lobby-modules} spec, scenario "Sitzen und Aufstehen". The actual seating
- * logic lives in the package-private {@link Seats}, copied (not moved) from {@code SitHelper} -
- * the original stays in {@code common} until the wave that deletes it.
+ * <p>See {@code design.md}, decision 11, and the {@code lobby-modules} spec, scenario "Sitzen und
+ * Aufstehen". The actual seating logic lives in the package-private {@link Seats}.
  *
  * <p>Behaviour, in terms of the four listeners this module registers through
  * {@link ModuleContext#listen}:

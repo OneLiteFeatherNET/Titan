@@ -30,11 +30,8 @@ import net.minestom.server.tag.Tag;
 /**
  * Sits players down on an invisible, silent arrow entity and stands them back up.
  *
- * <p>This is the module's own copy of what used to be {@code common.helper.SitHelper} - same
- * behaviour, but non-static (the {@link #offset} a seat is placed at is fixed once, at
- * construction, instead of being threaded through every call) and using this feature's own,
- * namespaced tags instead of the ones {@code common.utils.Tags} used to own. See {@code
- * design.md}, decision 9.
+ * <p>The {@link #offset} a seat is placed at is fixed once, at construction, and every tag this
+ * class uses is namespaced to this feature. See {@code design.md}, decision 9.
  *
  * <p>Package-private: only {@link SitModule} constructs and uses this.
  */

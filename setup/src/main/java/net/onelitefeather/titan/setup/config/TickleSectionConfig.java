@@ -27,7 +27,7 @@ public record TickleSectionConfig(long cooldownMillis) {
 
     /**
      * The defaults used when {@code app.json} has no {@code tickle} section yet, matching the
-     * lobby's own defaults (see {@code InternalAppConfig}).
+     * lobby's own defaults.
      */
     public static final TickleSectionConfig DEFAULTS = new TickleSectionConfig(4000L);
 }

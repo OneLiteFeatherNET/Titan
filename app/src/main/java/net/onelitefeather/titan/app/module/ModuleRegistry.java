@@ -97,10 +97,10 @@ public final class ModuleRegistry {
      *                                        that cause already names the offending section, field
      *                                        and reason. The failing module's own node, tasks and
      *                                        cleanup hooks are torn down before this is thrown;
-     *                                        modules enabled earlier in this call are left running
-     *                                        -
-     *                                        it is on the caller to shut the whole registry down in
-     *                                        response
+     *                                        modules enabled earlier in this call are left running.
+     *                                        This registry does not shut itself down in response -
+     *                                        the only caller, {@code TitanApplication}, logs the
+     *                                        failure and exits the process instead
      * @throws ItemPlacementConflictException if two modules registered an item for the same
      *                                        placement; thrown after every module has enabled, so
      *                                        the message can name both of them

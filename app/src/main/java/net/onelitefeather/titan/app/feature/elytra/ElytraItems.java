@@ -34,14 +34,10 @@ final class ElytraItems {
     }
 
     /**
-     * An unbreakable elytra, worn on the chestplate - today's lobby look (dark purple "Elytra"),
-     * see {@code common.utils.Items#PLAYER_ELYTRA} on {@code main}.
+     * An unbreakable elytra, worn on the chestplate - today's lobby look (dark purple "Elytra").
      */
     static final ItemStack ELYTRA = ItemStack.builder(Material.ELYTRA).customName(Component.text("Elytra", NamedTextColor.DARK_PURPLE)).set(DataComponents.UNBREAKABLE, Unit.INSTANCE).build();
 
-    /**
-     * The firework rocket a flying player is handed into their offhand, see
-     * {@code common.utils.Items#PLAYER_FIREWORK} on {@code main}.
-     */
+    /** The firework rocket a flying player is handed into their offhand. */
     static final ItemStack FIREWORK = ItemStack.builder(Material.FIREWORK_ROCKET).customName(Component.text("Firework Rocket")).build();
 }

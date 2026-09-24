@@ -26,9 +26,8 @@ import net.minestom.server.network.packet.server.play.UpdateSimulationDistancePa
 import net.onelitefeather.titan.app.module.item.ModuleItems;
 
 /**
- * Reacts to a player spawning in the lobby, mirroring the lobby's former
- * {@code PlayerSpawnListener}: sends the configured simulation distance, teleports the player to
- * the lobby spawn, and equips them with the platform-wide standard loadout via
+ * Reacts to a player spawning in the lobby: sends the configured simulation distance, teleports
+ * the player to the lobby spawn, and equips them with the platform-wide standard loadout via
  * {@link ModuleItems#equip(Player)}.
  */
 final class SpawnJoinListener implements Consumer<PlayerSpawnEvent> {

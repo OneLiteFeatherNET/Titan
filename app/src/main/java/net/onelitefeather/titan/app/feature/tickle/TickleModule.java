@@ -25,11 +25,9 @@ import net.onelitefeather.titan.app.module.ModuleContext;
  * Lets a player tickle another player by attacking them while holding a feather in either hand:
  * broadcasts a message to the instance and applies a per-player cooldown.
  *
- * <p>Moved out of {@code app.listener.TickleListener} onto the module platform (see
- * {@code openspec/changes/lobby-feature-modules}); its observable behaviour - including today's two
- * known cooldown bugs - is unchanged. See {@link TickleAttackHandler} and
- * {@link TickleCooldownRule}
- * for the implementation, and {@link TickleConfig} for this module's {@code app.json} section.
+ * <p>Its observable behaviour - including today's two known cooldown bugs - is unchanged from
+ * before this module existed. See {@link TickleAttackHandler} and {@link TickleCooldownRule} for
+ * the implementation, and {@link TickleConfig} for this module's {@code app.json} section.
  */
 public final class TickleModule implements LobbyModule {
 

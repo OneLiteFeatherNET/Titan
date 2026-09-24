@@ -93,8 +93,10 @@ public final class Titan {
 
     /**
      * Starts every lobby feature module, registers the platform commands and loads Butterfly, then
-     * schedules a shutdown task that reverses all three (module shutdown last, so its cleanup runs
-     * while Butterfly and the platform commands are still available to it).
+     * schedules a shutdown task that disables the modules. Because
+     * {@link net.minestom.server.timer.SchedulerManager} runs shutdown tasks in the order they were
+     * registered, this task runs before Butterfly's own shutdown task, so module cleanup still runs
+     * while Butterfly is loaded.
      *
      * @throws net.onelitefeather.titan.common.config.ConfigException       if a module's
      *                                                                      {@code app.json}
