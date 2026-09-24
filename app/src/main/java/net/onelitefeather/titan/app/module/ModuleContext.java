@@ -22,7 +22,10 @@ import net.minestom.server.command.CommandManager;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.timer.Scheduler;
+import net.onelitefeather.titan.common.config.ConfigException;
+import net.onelitefeather.titan.common.config.ConfigStore;
 import net.onelitefeather.titan.common.observability.TitanObservability;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A single module's handle to the platform, handed to {@link LobbyModule#enable(ModuleContext)}.
@@ -33,10 +36,11 @@ import net.onelitefeather.titan.common.observability.TitanObservability;
  * instance - listeners, tasks, commands - is torn down by {@link ModuleRegistry} without the module
  * having to remember what it registered. See {@code design.md}, decision 3.
  *
- * <p>{@link #listen} only works while {@link LobbyModule#enable} is running; {@link ModuleRegistry}
- * closes it immediately afterwards. Later platform additions (config, items, navigator entries)
- * follow the same shape: a small public view here, backed by the {@link #onDisable} cleanup hook,
- * so neither this class nor {@link ModuleRegistry} needs to change again for them.
+ * <p>{@link #listen} and {@link #config} only work while {@link LobbyModule#enable} is running;
+ * {@link ModuleRegistry} closes them immediately afterwards. Later platform additions (items,
+ * navigator entries) follow the same shape: a small public view here, backed by the
+ * {@link #onDisable} cleanup hook, so neither this class nor {@link ModuleRegistry} needs to change
+ * again for them.
  */
 public final class ModuleContext {
 
@@ -44,14 +48,20 @@ public final class ModuleContext {
     private final EventNode<Event> node;
     private final ModuleTasksImpl tasks;
     private final ModuleCommandsImpl commands;
+    private final @Nullable ConfigStore configStore;
     private final Deque<Runnable> cleanupHooks = new ArrayDeque<>();
     private volatile boolean listeningClosed;
 
     ModuleContext(String moduleId, Scheduler scheduler, CommandManager commandManager) {
+        this(moduleId, scheduler, commandManager, null);
+    }
+
+    ModuleContext(String moduleId, Scheduler scheduler, CommandManager commandManager, @Nullable ConfigStore configStore) {
         this.moduleId = moduleId;
         this.node = EventNode.all("titan/" + moduleId);
         this.tasks = new ModuleTasksImpl(scheduler);
         this.commands = new ModuleCommandsImpl(commandManager, this);
+        this.configStore = configStore;
     }
 
     /**
@@ -81,6 +91,46 @@ public final class ModuleContext {
             throw new IllegalStateException("Module '" + this.moduleId + "' tried to register a listener for " + type.getSimpleName() + " after enable() returned. Listeners must be registered while enable() runs.");
         }
         this.node.addListener(type, TitanObservability.guard(this.moduleId, listener));
+    }
+
+    /**
+     * Returns this module's own configuration section, deserialized into {@code type}, using
+     * {@code defaults} for anything the section (or the whole section) does not set.
+     *
+     * <p>Backed by {@link ConfigStore#section(String, Class, Record)}, called with this module's
+     * own
+     * {@link #moduleId()} as the section id - there is no overload that takes a different id, so a
+     * module can only ever read its own section, never another module's (see {@code
+     * lobby-module-config} spec, "Ein Modul MUSS nur seinen eigenen Abschnitt lesen können").
+     *
+     * <p>Only works while {@link LobbyModule#enable} is running, for the same reason as
+     * {@link #listen}: a module reads its configuration once, up front, never in response to
+     * something happening later (a player joining, a command running, ...).
+     *
+     * <p>If no {@link ConfigStore} was configured on the owning {@link ModuleRegistry}, this
+     * returns
+     * {@code defaults} unchanged instead of throwing, so a test module - or a module under test in
+     * isolation - does not need to wire up a config file just to run.
+     *
+     * @param type     the config record type
+     * @param defaults a fully populated default instance
+     * @param <R>      the config record type
+     * @return this module's section, deserialized into {@code type}, or {@code defaults} if no
+     *         {@link ConfigStore} is configured
+     * @throws IllegalStateException if called after {@link LobbyModule#enable} has returned
+     * @throws ConfigException       if the section contains an invalid value; thrown by
+     *                               {@code type}'s own compact constructor and completed by the
+     *                               {@link ConfigStore} with this module's id as the section before
+     *                               it reaches the caller
+     */
+    public <R extends Record> R config(Class<R> type, R defaults) {
+        if (this.listeningClosed) {
+            throw new IllegalStateException("Module '" + this.moduleId + "' tried to read its config after enable() returned. Config must be read while enable() runs.");
+        }
+        if (this.configStore == null) {
+            return defaults;
+        }
+        return this.configStore.section(this.moduleId, type, defaults);
     }
 
     /**
@@ -118,7 +168,8 @@ public final class ModuleContext {
     }
 
     /**
-     * Stops accepting new listeners; called by {@link ModuleRegistry} once {@code enable} returns.
+     * Stops accepting new listeners and config reads; called by {@link ModuleRegistry} once
+     * {@code enable} returns.
      */
     void closeForListening() {
         this.listeningClosed = true;

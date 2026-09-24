@@ -23,6 +23,8 @@ import net.minestom.server.command.CommandManager;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.timer.Scheduler;
+import net.onelitefeather.titan.common.config.ConfigStore;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Starts and stops the lobby's {@link LobbyModule}s.
@@ -36,14 +38,15 @@ import net.minestom.server.timer.Scheduler;
  * {@code design.md}, decision 2, and the {@code lobby-modules} spec.
  *
  * <p>Built through {@link #builder()} rather than a public constructor, so a later wave can add
- * further platform services (a config store, an item registry, ...) to the builder without breaking
- * existing callers.
+ * further platform services (an item registry, ...) to the builder without breaking existing
+ * callers, the way {@link Builder#config(ConfigStore)} did.
  */
 public final class ModuleRegistry {
 
     private final EventNode<Event> parent;
     private final Scheduler scheduler;
     private final CommandManager commandManager;
+    private final @Nullable ConfigStore configStore;
     private final List<LobbyModule> modules;
     private final List<ModuleContext> runningContexts = new ArrayList<>();
 
@@ -51,6 +54,7 @@ public final class ModuleRegistry {
         this.parent = builder.parent;
         this.scheduler = builder.scheduler != null ? builder.scheduler : MinecraftServer.getSchedulerManager();
         this.commandManager = builder.commandManager != null ? builder.commandManager : MinecraftServer.getCommandManager();
+        this.configStore = builder.configStore;
         this.modules = List.copyOf(builder.modules);
     }
 
@@ -68,16 +72,28 @@ public final class ModuleRegistry {
      * that
      * module's context stops accepting new listeners.
      *
+     * Once every module is enabled, flushes the configured {@link ConfigStore} (if any), via
+     * {@link ConfigStore#flush()} - which is what makes a first start (no {@code app.json} yet, or
+     * a
+     * legacy one just migrated) end up with a section for every module a module asked for through
+     * {@link ModuleContext#config}, and does nothing on a run against an already up-to-date file.
+     * No
+     * flush happens if a module's {@code enable} throws, so a rejected value never gets written to
+     * disk.
+     *
      * @throws ModuleLifecycleException if a module's {@code enable} throws; the exception names the
      *                                  failing module and carries the original failure as its
-     *                                  cause. The failing module's own node, tasks and cleanup
+     *                                  cause - for a
+     *                                  {@link net.onelitefeather.titan.common.config.ConfigException},
+     *                                  that cause already names the offending section, field and
+     *                                  reason. The failing module's own node, tasks and cleanup
      *                                  hooks are torn down before this is thrown; modules enabled
      *                                  earlier in this call are left running - it is on the caller
      *                                  to shut the whole registry down in response
      */
     public void enableAll() {
         for (LobbyModule module : this.modules) {
-            ModuleContext context = new ModuleContext(module.id(), this.scheduler, this.commandManager);
+            ModuleContext context = new ModuleContext(module.id(), this.scheduler, this.commandManager, this.configStore);
             this.parent.addChild(context.node());
             try {
                 module.enable(context);
@@ -90,6 +106,9 @@ public final class ModuleRegistry {
             }
             context.closeForListening();
             this.runningContexts.add(context);
+        }
+        if (this.configStore != null) {
+            this.configStore.flush();
         }
     }
 
@@ -117,6 +136,7 @@ public final class ModuleRegistry {
         private EventNode<Event> parent;
         private Scheduler scheduler;
         private CommandManager commandManager;
+        private @Nullable ConfigStore configStore;
         private final List<LobbyModule> modules = new ArrayList<>();
 
         private Builder() {
@@ -154,6 +174,20 @@ public final class ModuleRegistry {
          */
         public Builder commandManager(CommandManager commandManager) {
             this.commandManager = commandManager;
+            return this;
+        }
+
+        /**
+         * The {@link ConfigStore} modules read their own section from, via
+         * {@link ModuleContext#config}. Optional: if never set, {@link ModuleContext#config}
+         * returns
+         * each module's defaults unchanged and {@link #enableAll()} has nothing to flush.
+         *
+         * @param configStore the config store
+         * @return this builder
+         */
+        public Builder config(ConfigStore configStore) {
+            this.configStore = configStore;
             return this;
         }
 
