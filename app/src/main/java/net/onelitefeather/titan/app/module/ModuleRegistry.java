@@ -23,6 +23,8 @@ import net.minestom.server.command.CommandManager;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.timer.Scheduler;
+import net.onelitefeather.titan.app.module.item.ItemPlacementConflictException;
+import net.onelitefeather.titan.app.module.item.ItemRegistry;
 import net.onelitefeather.titan.app.module.navigator.NavigatorConflictException;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
 import net.onelitefeather.titan.common.config.ConfigStore;
@@ -34,19 +36,20 @@ import org.jetbrains.annotations.Nullable;
  * <p>{@link #enableAll()} creates one {@link ModuleContext} per module, attaches its event node
  * under the shared {@code parent}, and calls {@link LobbyModule#enable}, in registration order.
  * {@link #disableAll()} reverses that: for each module, in the opposite order, it detaches the
- * node, cancels the module's tasks, runs its cleanup hooks (commands and navigator entries today;
- * items in a later change) and only then calls {@link LobbyModule#disable()} - so by the time a
- * module's own shutdown code runs, it can no longer receive events or run scheduled work. See
- * {@code design.md}, decision 2, and the {@code lobby-modules} spec.
+ * node, cancels the module's tasks, runs its cleanup hooks (commands, items and navigator entries)
+ * and only then calls {@link LobbyModule#disable()} - so by the time a module's own shutdown code
+ * runs, it can no longer receive events or run scheduled work. See {@code design.md}, decision 2,
+ * and the {@code lobby-modules} spec.
  *
- * <p>Once every module is up, {@link #enableAll()} calls {@link NavigatorEntries#validate()} on the
- * shared registry, so a slot two entries - from any combination of modules - both claim aborts
- * startup instead of silently shadowing one of them. See {@code design.md}, decision 8. Only after
- * that does it flush the configured {@link ConfigStore} (if any).
+ * <p>Once every module is up, {@link #enableAll()} validates the shared {@link ItemRegistry} and
+ * {@link NavigatorEntries}, so two modules claiming the same item placement or navigator slot
+ * aborts startup instead of silently shadowing one of them. See {@code design.md}, decisions 7 and
+ * 8. Only once both have validated cleanly does it flush the configured {@link ConfigStore} (if
+ * any).
  *
  * <p>Built through {@link #builder()} rather than a public constructor, so a later wave can add
- * further platform services (an item registry, ...) to the builder without breaking existing
- * callers, the way {@link Builder#config(ConfigStore)} did.
+ * further platform services to the builder without breaking existing callers, the way
+ * {@link Builder#config(ConfigStore)} did.
  */
 public final class ModuleRegistry {
 
@@ -55,6 +58,7 @@ public final class ModuleRegistry {
     private final CommandManager commandManager;
     private final @Nullable ConfigStore configStore;
     private final NavigatorEntries navigatorEntries;
+    private final ItemRegistry itemRegistry;
     private final List<LobbyModule> modules;
     private final List<ModuleContext> runningContexts = new ArrayList<>();
 
@@ -64,6 +68,7 @@ public final class ModuleRegistry {
         this.commandManager = builder.commandManager != null ? builder.commandManager : MinecraftServer.getCommandManager();
         this.configStore = builder.configStore;
         this.navigatorEntries = builder.navigatorEntries != null ? builder.navigatorEntries : new NavigatorEntries();
+        this.itemRegistry = builder.itemRegistry != null ? builder.itemRegistry : new ItemRegistry(this.parent);
         this.modules = List.copyOf(builder.modules);
     }
 
@@ -81,28 +86,33 @@ public final class ModuleRegistry {
      * that
      * module's context stops accepting new listeners.
      *
-     * <p>Once every module is enabled, validates the shared {@link NavigatorEntries}, then flushes
-     * the configured {@link ConfigStore} (if any), via {@link ConfigStore#flush()} - which is what
-     * makes a first start (no {@code app.json} yet, or a legacy one just migrated) end up with a
-     * section for every module a module asked for through {@link ModuleContext#config}, and does
-     * nothing on a run against an already up-to-date file. No flush happens if a module's
-     * {@code enable} throws, so a rejected value never gets written to disk.
+     * <p>Once every module is enabled, validates the shared {@link ItemRegistry}, then the shared
+     * {@link NavigatorEntries}, and only then flushes the configured {@link ConfigStore} (if any),
+     * via {@link ConfigStore#flush()} - which is what makes a first start (no {@code app.json} yet,
+     * or a legacy one just migrated) end up with a section for every module a module asked for
+     * through {@link ModuleContext#config}, and does nothing on a run against an already up-to-date
+     * file. No flush happens if a module's {@code enable} throws, or if either validation fails, so
+     * a rejected value never gets written to disk.
      *
-     * @throws ModuleLifecycleException   if a module's {@code enable} throws; the exception names
-     *                                    the failing module and carries the original failure as its
-     *                                    cause - for a
-     *                                    {@link net.onelitefeather.titan.common.config.ConfigException},
-     *                                    that cause already names the offending section, field and
-     *                                    reason. The failing module's own node, tasks and cleanup
-     *                                    hooks are torn down before this is thrown; modules enabled
-     *                                    earlier in this call are left running - it is on the
-     *                                    caller to shut the whole registry down in response
-     * @throws NavigatorConflictException if, once every module is enabled, two navigator entries
-     *                                    share a slot
+     * @throws ModuleLifecycleException       if a module's {@code enable} throws; the exception
+     *                                        names the failing module and carries the original
+     *                                        failure as its cause - for a
+     *                                        {@link net.onelitefeather.titan.common.config.ConfigException},
+     *                                        that cause already names the offending section, field
+     *                                        and reason. The failing module's own node, tasks and
+     *                                        cleanup hooks are torn down before this is thrown;
+     *                                        modules enabled earlier in this call are left running -
+     *                                        it is on the caller to shut the whole registry down in
+     *                                        response
+     * @throws ItemPlacementConflictException if two modules registered an item for the same
+     *                                        placement; thrown after every module has enabled, so
+     *                                        the message can name both of them
+     * @throws NavigatorConflictException     if, once every module is enabled, two navigator
+     *                                        entries share a slot
      */
     public void enableAll() {
         for (LobbyModule module : this.modules) {
-            ModuleContext context = new ModuleContext(module.id(), this.scheduler, this.commandManager, this.configStore, this.navigatorEntries);
+            ModuleContext context = new ModuleContext(module.id(), this.scheduler, this.commandManager, this.configStore, this.navigatorEntries, this.itemRegistry);
             this.parent.addChild(context.node());
             try {
                 module.enable(context);
@@ -116,6 +126,7 @@ public final class ModuleRegistry {
             context.closeForListening();
             this.runningContexts.add(context);
         }
+        this.itemRegistry.validate();
         this.navigatorEntries.validate();
         if (this.configStore != null) {
             this.configStore.flush();
@@ -148,6 +159,7 @@ public final class ModuleRegistry {
         private CommandManager commandManager;
         private @Nullable ConfigStore configStore;
         private NavigatorEntries navigatorEntries;
+        private ItemRegistry itemRegistry;
         private final List<LobbyModule> modules = new ArrayList<>();
 
         private Builder() {
@@ -211,6 +223,18 @@ public final class ModuleRegistry {
          */
         public Builder navigator(NavigatorEntries navigatorEntries) {
             this.navigatorEntries = navigatorEntries;
+            return this;
+        }
+
+        /**
+         * The platform-wide item registry modules register {@code LobbyItem}s through. Defaults to
+         * a fresh {@link ItemRegistry} attached to {@code parent}.
+         *
+         * @param itemRegistry the item registry
+         * @return this builder
+         */
+        public Builder items(ItemRegistry itemRegistry) {
+            this.itemRegistry = itemRegistry;
             return this;
         }
 

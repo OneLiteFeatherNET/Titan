@@ -22,6 +22,8 @@ import net.minestom.server.command.CommandManager;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.timer.Scheduler;
+import net.onelitefeather.titan.app.module.item.ItemRegistry;
+import net.onelitefeather.titan.app.module.item.ModuleItems;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
 import net.onelitefeather.titan.common.config.ConfigException;
 import net.onelitefeather.titan.common.config.ConfigStore;
@@ -51,28 +53,34 @@ public final class ModuleContext {
     private final ModuleCommandsImpl commands;
     private final @Nullable ConfigStore configStore;
     private final NavigatorEntries.View navigator;
+    private final ModuleItems items;
     private final Deque<Runnable> cleanupHooks = new ArrayDeque<>();
     private volatile boolean listeningClosed;
 
     ModuleContext(String moduleId, Scheduler scheduler, CommandManager commandManager) {
-        this(moduleId, scheduler, commandManager, null, new NavigatorEntries());
+        this(moduleId, scheduler, commandManager, null, new NavigatorEntries(), new ItemRegistry(EventNode.all("titan-item-registry-fallback/" + moduleId)));
     }
 
     ModuleContext(String moduleId, Scheduler scheduler, CommandManager commandManager, @Nullable ConfigStore configStore) {
-        this(moduleId, scheduler, commandManager, configStore, new NavigatorEntries());
+        this(moduleId, scheduler, commandManager, configStore, new NavigatorEntries(), new ItemRegistry(EventNode.all("titan-item-registry-fallback/" + moduleId)));
     }
 
     ModuleContext(String moduleId, Scheduler scheduler, CommandManager commandManager, NavigatorEntries navigatorEntries) {
-        this(moduleId, scheduler, commandManager, null, navigatorEntries);
+        this(moduleId, scheduler, commandManager, null, navigatorEntries, new ItemRegistry(EventNode.all("titan-item-registry-fallback/" + moduleId)));
     }
 
-    ModuleContext(String moduleId, Scheduler scheduler, CommandManager commandManager, @Nullable ConfigStore configStore, NavigatorEntries navigatorEntries) {
+    ModuleContext(String moduleId, Scheduler scheduler, CommandManager commandManager, ItemRegistry itemRegistry) {
+        this(moduleId, scheduler, commandManager, null, new NavigatorEntries(), itemRegistry);
+    }
+
+    ModuleContext(String moduleId, Scheduler scheduler, CommandManager commandManager, @Nullable ConfigStore configStore, NavigatorEntries navigatorEntries, ItemRegistry itemRegistry) {
         this.moduleId = moduleId;
         this.node = EventNode.all("titan/" + moduleId);
         this.tasks = new ModuleTasksImpl(scheduler);
         this.commands = new ModuleCommandsImpl(commandManager, this);
         this.configStore = configStore;
         this.navigator = navigatorEntries.forModule(moduleId, this::onDisable);
+        this.items = itemRegistry.contextView(moduleId, this::onDisable);
     }
 
     /**
@@ -167,8 +175,15 @@ public final class ModuleContext {
     }
 
     /**
-     * Queues {@code cleanup} to run when this module is disabled. Later registrars (commands and
-     * navigator entries today; items in a later change) call this instead of {@link ModuleRegistry}
+     * @return this module's own view of the platform-wide item registry
+     */
+    public ModuleItems items() {
+        return this.items;
+    }
+
+    /**
+     * Queues {@code cleanup} to run when this module is disabled. Later registrars (commands, items
+     * and navigator entries today) call this instead of {@link ModuleRegistry}
      * having to know about them individually. Hooks run in reverse of the order they were added,
      * mirroring how the module registered things in the first place.
      *
