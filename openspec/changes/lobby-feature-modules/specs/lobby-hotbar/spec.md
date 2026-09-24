@@ -47,8 +47,12 @@ Ein Modul MUSS ein Item auch ohne festen Platz anmelden können, sodass Benutzun
 - **THEN** ist die Nebenhand wieder leer
 
 #### Scenario: Boost beim Fliegen
-- **WHEN** ein fliegender Spieler die Feuerwerksrakete benutzt
-- **THEN** wird er in Blickrichtung beschleunigt, wie es im Spiel ohne Mod beim Feuerwerks-Boost passiert, skaliert mit dem konfigurierten Multiplikator
+- **WHEN** ein fliegender Spieler die Feuerwerksrakete benutzt und weder ein Boost noch dessen Abklingzeit gerade läuft
+- **THEN** feuert die Lobby eine Feuerwerksrakete ab, die für die konfigurierte Brenndauer (`elytra.burnDurationTicks`) auf ihn abgestimmt bleibt und ihn in Blickrichtung beschleunigt, genau wie im Spiel ohne Mod beim Feuerwerks-Boost - der Client wendet diesen Impuls selbst an, die Lobby setzt selbst keine Geschwindigkeit
+
+#### Scenario: Rakete während eines laufenden Boosts oder seiner Abklingzeit
+- **WHEN** ein fliegender Spieler die Feuerwerksrakete erneut benutzt, während der zuletzt gestartete Boost noch brennt oder dessen Abklingzeit (`elytra.cooldownTicks`, gemessen ab dem Start des Boosts) noch läuft
+- **THEN** wird keine weitere Rakete abgefeuert, und der laufende Boost läuft unverändert bis zu seinem eigenen Ende weiter
 
 ### Requirement: Lobby-Items sind geschützt
 Angemeldete Items DÜRFEN NICHT fallen gelassen, verschoben, zwischen den Händen getauscht oder aus dem Inventar genommen werden können.

@@ -201,6 +201,18 @@ Jedes Feature definiert seine Tags package-private mit Namespace, z.B. `Tag.UUID
 
 Bekannte Bugs außerhalb des Scopes (Tickle-Cooldown) werden **nicht** mit festgeschrieben. Der betroffene Test bekommt `@Disabled("siehe Folge-Change tickle-cooldown")` und prüft das *gewünschte* Verhalten.
 
+### 12. Feuerwerks-Boost aus Voyager portiert (Umfang: nur Boost, keine Flugsimulation; Portierung statt Abhängigkeit, da kein Artefakt veröffentlicht)
+
+Der bisherige Boost (`FireworkBoostPhysics` + `FireworkBoostTracker`, server-seitig per `setVelocity` mit zufälliger Lebensdauer und `elytra.boostMultiplier`) wird durch Voyagers Boost-Mechanik ersetzt: `net.elytrarace.voyager.platform.flight.FireworkBoostTracker` und `net.elytrarace.voyager.server.game.Rockets` (Repo `onelitefeather/Voyager`, Branch `main`).
+
+- **Nur der Boost, nicht die Flugsimulation:** Voyagers server-seitige Flugsimulation (`voyager/physics`, das Server-Schatten-Tracking für Rennauswertung) ist nicht Teil dieser Portierung. Übernommen wird ausschließlich, wie ein Boost entsteht und endet.
+- **Client-seitiger Impuls statt Server-`setVelocity`:** Wie im Spiel ohne Mod feuert die Lobby beim Benutzen der Feuerwerksrakete eine echte Raketen-Entität ab, die als `shooter` auf den Spieler zeigt (`FireworkRocketMeta#setShooter`), keine Schwerkraft/Physik hat und nach `elytra.burnDurationTicks` wieder entfernt wird. Der Client wendet den vanilla-Impuls selbst an; die Lobby setzt keine Geschwindigkeit mehr.
+- **Determinismus statt Würfelwurf:** Vanilla würfelt die Lebensdauer einer Rakete aus (`10 * flightDuration + random(6) + random(7)`); Voyager - und jetzt Titan - verwenden stattdessen feste Ticks (`elytra.burnDurationTicks`, `elytra.cooldownTicks`), damit zwei Boosts gleich stark sind. Kein `Random` mehr im Boost-Pfad.
+- **Zwei Zähler statt Physik-Nachrechnung:** `FireworkBoostTracker` (in `app.feature.elytra`, package-private) hält pro Spieler nur Brenn- und Abklingzeit-Ticks und wird einmal pro Server-Tick über `context.tasks()` in `ElytraModule#enable` fortgezählt (kein Listener, der erst zur Laufzeit registriert wird). Eine zweite Rakete während des Brennens oder der Abklingzeit wird abgelehnt; `ElytraConfig` erzwingt `cooldownTicks > burnDurationTicks`, damit zwei Raketen niemals gleichzeitig auf demselben Spieler brennen.
+- **Kein Multiplikator mehr:** Der Impuls ist vanilla-fest, keine Servergröße mehr. `elytra.boostMultiplier` entfällt ersatzlos; die Migration verwirft `elytraBoostMultiplier` (siehe `lobby-module-config` Spec).
+- **Portierung statt Abhängigkeit:** Voyager veröffentlicht kein Artefakt, das die Lobby einbinden könnte, und Titan bleibt Apache-2.0-only. Der Code wird deshalb kopiert/angepasst, nicht importiert; jede portierte Klasse trägt einen kurzen Javadoc-Hinweis „Ported from Voyager (…)“ und Titans Apache-Header.
+- **Getestet:** `FireworkBoostTrackerTest` portiert Voyagers gleichnamige Testklasse eins zu eins auf `ElytraConfig` - reine Zähler-Arithmetik ohne `Env`, F.I.R.S.T. entsprechend die unterste Stufe der Testpyramide. `ElytraModuleTest` deckt den Weg über `ModuleHarness`/`Env` ab: Rakete wird abgefeuert und trägt den Spieler als Shooter, verschwindet nach `burnDurationTicks`, eine zweite Nutzung während Brennen/Abklingzeit feuert nichts ab, und Landen setzt den Zustand zurück.
+
 ## Risks / Trade-offs
 
 - **[Risiko] Migration zerstört eine Betreiber-Config** → Die Altdatei wird vorher nach `.v1.bak` kopiert, eine kaputte Datei nie überschrieben. Ein Test migriert die echte `app.json` aus dem Repo und vergleicht das Verhalten.

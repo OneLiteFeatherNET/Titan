@@ -47,11 +47,11 @@ Enthält ein Abschnitt einen ungültigen Wert, MUSS die Lobby den Start abbreche
 - **THEN** startet die Lobby nicht, die Fehlermeldung nennt Datei und Position des Fehlers, und die Datei wird nicht überschrieben
 
 ### Requirement: Altes flaches Format wird automatisch migriert
-Liegt `app.json` im bisherigen flachen Format vor, MUSS die Lobby die Werte beim Start in die neuen Abschnitte übernehmen. Anschließend MUSS sie die Datei im neuen Format speichern und die alte Datei als Sicherung aufbewahren. Nicht mehr verwendete Schlüssel (`updateRateAgones`, `fireworkBoostSlot`) MÜSSEN verworfen und im Log genannt werden.
+Liegt `app.json` im bisherigen flachen Format vor, MUSS die Lobby die Werte beim Start in die neuen Abschnitte übernehmen. Anschließend MUSS sie die Datei im neuen Format speichern und die alte Datei als Sicherung aufbewahren. Nicht mehr verwendete Schlüssel (`updateRateAgones`, `fireworkBoostSlot`, `elytraBoostMultiplier`) MÜSSEN verworfen und im Log genannt werden. `elytraBoostMultiplier` hat kein Ziel mehr: Der aus Voyager portierte Feuerwerks-Boost (siehe `design.md`) verwendet den unveränderten Impuls des Spiels ohne Mod und kennt daher keinen Multiplikator; das Modul „elytra“ startet nach einer Migration stattdessen mit seinen eigenen Standardwerten.
 
 #### Scenario: Migration der bisherigen Datei
 - **WHEN** die Lobby mit einer flachen `app.json` startet, die `"tickleDuration": 4000`, `"elytraBoostMultiplier": 35.0` und `"updateRateAgones": 2000` enthält
-- **THEN** enthält die neue `app.json` `tickle.cooldownMillis = 4000` und `elytra.boostMultiplier = 35.0`, aber kein `updateRateAgones`, und die alte Datei liegt als Sicherung daneben
+- **THEN** enthält die neue `app.json` `tickle.cooldownMillis = 4000`, aber weder `elytraBoostMultiplier` noch `updateRateAgones`, und die alte Datei liegt als Sicherung daneben
 
 #### Scenario: Werte bleiben bei der Migration erhalten
 - **WHEN** eine flache `app.json` mit von den Standardwerten abweichenden Werten migriert wird
