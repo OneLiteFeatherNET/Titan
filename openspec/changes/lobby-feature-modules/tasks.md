@@ -128,7 +128,7 @@ Regeln für Welle C: Die Feature-Agents legen nur neue Pakete an und löschen ni
 ## 11. Gesamtabnahme
 
 - [ ] 11.1 Die Lobby lokal mit der migrierten `app.json` starten und im Client prüfen: Feder in Slot 4, Elytra, Navigator (4 Ziele), Sitzen, Kitzeln, Fliegen mit Boost, Höhen-Teleport, Tod und Respawn. Verifikation: Checkliste im PR abgehakt.
-- [ ] 11.2 `./gradlew build` inklusive aller Tests und ArchUnit ist grün, `openspec validate lobby-feature-modules` ist ohne Fehler. Verifikation: CI-Lauf grün.
+- [x] 11.2 `./gradlew build` inklusive aller Tests und ArchUnit ist grün, `openspec validate lobby-feature-modules` ist ohne Fehler. Verifikation: CI-Lauf grün.
 
 ## 13. Nachbesserungen aus der Abnahme
 
