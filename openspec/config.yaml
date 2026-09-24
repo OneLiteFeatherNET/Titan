@@ -1,0 +1,42 @@
+schema: spec-driven
+
+# Project context (optional)
+# This is shown to AI when creating artifacts.
+# Add your tech stack, conventions, style guides, domain knowledge, etc.
+# Example:
+#   context: |
+#     Tech stack: TypeScript, React, Node.js
+#     We use conventional commits
+#     Domain: e-commerce platform
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+#   operations:
+#     apply:
+#       guidance:
+#         - Keep test summaries concise
+#     archive:
+#       guidance:
+#         - Summarize the archive outcome before finishing
+
+operations:
+  apply:
+    guidance:
+      - Tasks werden nicht im Hauptkontext umgesetzt, sondern an Subagents delegiert (Agent-Tool mit isolation "worktree"). Der Hauptkontext orchestriert nur, merged und prüft.
+      - Subagents arbeiten ausschließlich mit model "sonnet" oder "haiku". Sonnet für Aufgaben mit Designentscheidungen, heiklen Tests oder Nebenläufigkeit; Haiku für mechanische Aufgaben (Verschieben, Löschen, Abhängigkeiten, Doku-Anpassungen).
+      - Unabhängige Tasks laufen parallel in einer Welle (mehrere Agent-Aufrufe in einer Nachricht). Wenn tasks.md einen Wellenplan enthält, gilt dieser.
+      - Vor jeder Welle ist der Stand der vorherigen Welle auf dem Integrations-Branch committet, damit neue Worktrees darauf aufsetzen. Nie direkt auf main arbeiten.
+      - Jeder Agent-Prompt nennt die Task-IDs, die betroffenen Pakete/Dateien, die Dateien, die er NICHT anfassen darf, und das Verifikationskommando. Der Agent committet im eigenen Worktree und meldet Branch und Testergebnis.
+      - Nach jeder Welle merged der Hauptkontext die Worktree-Branches in den Integrations-Branch, löst Konflikte, führt ./gradlew build aus und hakt erst dann die Tasks in tasks.md ab.
