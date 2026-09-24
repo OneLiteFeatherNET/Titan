@@ -22,6 +22,8 @@ import net.minestom.server.command.CommandManager;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.timer.Scheduler;
+import net.onelitefeather.titan.app.module.item.ItemRegistry;
+import net.onelitefeather.titan.app.module.item.ModuleItems;
 import net.onelitefeather.titan.common.observability.TitanObservability;
 
 /**
@@ -44,14 +46,26 @@ public final class ModuleContext {
     private final EventNode<Event> node;
     private final ModuleTasksImpl tasks;
     private final ModuleCommandsImpl commands;
+    private final ModuleItems items;
     private final Deque<Runnable> cleanupHooks = new ArrayDeque<>();
     private volatile boolean listeningClosed;
 
+    /**
+     * Package-private test convenience: builds a context with its own, unshared
+     * {@link ItemRegistry}. Production code always goes through
+     * {@link #ModuleContext(String, Scheduler, CommandManager, ItemRegistry)} via
+     * {@link ModuleRegistry}, so every module shares the one platform-wide registry.
+     */
     ModuleContext(String moduleId, Scheduler scheduler, CommandManager commandManager) {
+        this(moduleId, scheduler, commandManager, new ItemRegistry(EventNode.all("titan-item-registry-fallback/" + moduleId)));
+    }
+
+    ModuleContext(String moduleId, Scheduler scheduler, CommandManager commandManager, ItemRegistry itemRegistry) {
         this.moduleId = moduleId;
         this.node = EventNode.all("titan/" + moduleId);
         this.tasks = new ModuleTasksImpl(scheduler);
         this.commands = new ModuleCommandsImpl(commandManager, this);
+        this.items = itemRegistry.contextView(moduleId, this::onDisable);
     }
 
     /**
@@ -95,6 +109,13 @@ public final class ModuleContext {
      */
     public ModuleCommands commands() {
         return this.commands;
+    }
+
+    /**
+     * @return this module's own view of the platform-wide item registry
+     */
+    public ModuleItems items() {
+        return this.items;
     }
 
     /**

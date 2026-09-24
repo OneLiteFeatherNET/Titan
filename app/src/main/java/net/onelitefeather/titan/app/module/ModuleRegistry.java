@@ -23,6 +23,8 @@ import net.minestom.server.command.CommandManager;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.timer.Scheduler;
+import net.onelitefeather.titan.app.module.item.ItemPlacementConflictException;
+import net.onelitefeather.titan.app.module.item.ItemRegistry;
 
 /**
  * Starts and stops the lobby's {@link LobbyModule}s.
@@ -44,6 +46,7 @@ public final class ModuleRegistry {
     private final EventNode<Event> parent;
     private final Scheduler scheduler;
     private final CommandManager commandManager;
+    private final ItemRegistry itemRegistry;
     private final List<LobbyModule> modules;
     private final List<ModuleContext> runningContexts = new ArrayList<>();
 
@@ -51,6 +54,7 @@ public final class ModuleRegistry {
         this.parent = builder.parent;
         this.scheduler = builder.scheduler != null ? builder.scheduler : MinecraftServer.getSchedulerManager();
         this.commandManager = builder.commandManager != null ? builder.commandManager : MinecraftServer.getCommandManager();
+        this.itemRegistry = builder.itemRegistry != null ? builder.itemRegistry : new ItemRegistry(this.parent);
         this.modules = List.copyOf(builder.modules);
     }
 
@@ -68,16 +72,23 @@ public final class ModuleRegistry {
      * that
      * module's context stops accepting new listeners.
      *
-     * @throws ModuleLifecycleException if a module's {@code enable} throws; the exception names the
-     *                                  failing module and carries the original failure as its
-     *                                  cause. The failing module's own node, tasks and cleanup
-     *                                  hooks are torn down before this is thrown; modules enabled
-     *                                  earlier in this call are left running - it is on the caller
-     *                                  to shut the whole registry down in response
+     * @throws ModuleLifecycleException       if a module's {@code enable} throws; the exception
+     *                                        names the
+     *                                        failing module and carries the original failure as its
+     *                                        cause. The failing module's own node, tasks and
+     *                                        cleanup
+     *                                        hooks are torn down before this is thrown; modules
+     *                                        enabled
+     *                                        earlier in this call are left running - it is on the
+     *                                        caller
+     *                                        to shut the whole registry down in response
+     * @throws ItemPlacementConflictException if two modules registered an item for the same
+     *                                        placement; thrown after every module has enabled, so
+     *                                        the message can name both of them
      */
     public void enableAll() {
         for (LobbyModule module : this.modules) {
-            ModuleContext context = new ModuleContext(module.id(), this.scheduler, this.commandManager);
+            ModuleContext context = new ModuleContext(module.id(), this.scheduler, this.commandManager, this.itemRegistry);
             this.parent.addChild(context.node());
             try {
                 module.enable(context);
@@ -91,6 +102,7 @@ public final class ModuleRegistry {
             context.closeForListening();
             this.runningContexts.add(context);
         }
+        this.itemRegistry.validate();
     }
 
     /**
@@ -117,6 +129,7 @@ public final class ModuleRegistry {
         private EventNode<Event> parent;
         private Scheduler scheduler;
         private CommandManager commandManager;
+        private ItemRegistry itemRegistry;
         private final List<LobbyModule> modules = new ArrayList<>();
 
         private Builder() {
@@ -154,6 +167,18 @@ public final class ModuleRegistry {
          */
         public Builder commandManager(CommandManager commandManager) {
             this.commandManager = commandManager;
+            return this;
+        }
+
+        /**
+         * The platform-wide item registry modules register {@code LobbyItem}s through. Defaults to
+         * a fresh {@link ItemRegistry} attached to {@code parent}.
+         *
+         * @param itemRegistry the item registry
+         * @return this builder
+         */
+        public Builder items(ItemRegistry itemRegistry) {
+            this.itemRegistry = itemRegistry;
             return this;
         }
 
