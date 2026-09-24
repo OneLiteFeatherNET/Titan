@@ -85,24 +85,32 @@ Start - nie erst, wenn ein Spieler joint oder ein Menü öffnet.
 ### `listenIncludingCancelled` - trotzdem reagieren
 
 ```java
-context.listenIncludingCancelled(InventoryPreClickEvent.class, this::onClick);
+context.listenIncludingCancelled(SomeCancellableEvent.class, this::onEvent);
 ```
 
-(`NavigatorModule#enable`). Diese Variante liefert das Event auch dann, wenn
-es bereits abgebrochen ist. Sie ist nötig, wenn zwei Module auf dasselbe
-`CancellableEvent` reagieren und eines davon es bedingungslos abbricht -
-`feature.protection.ProtectionModule` bricht z. B. jedes
-`InventoryPreClickEvent` ab. Mit `listen` würde `NavigatorModule`s eigener
-Klick-Handler dann davon abhängen, welches der beiden Module zuerst
-eingeschaltet wurde; `listenIncludingCancelled` macht das Verhalten
-unabhängig von der Reihenfolge (s. `lobby-modules`-Spec, "Module sind
+Diese Variante liefert das Event auch dann, wenn es beim Erreichen des
+Moduls schon abgebrochen ist - anders als `listen`, das einen
+`Consumer`-Listener für ein bereits abgebrochenes `CancellableEvent`
+überspringt (Minestoms Standardverhalten für diese Art Listener). Sie ist die
+Plattform-Option für ein Modul, das auf ein `CancellableEvent` reagieren
+**muss**, egal was ein anderes Modul vorher damit gemacht hat - etwa
+`feature.protection.ProtectionModule`, das jedes `InventoryPreClickEvent`
+bedingungslos abbricht - und das dabei unabhängig von der Einschaltreihenfolge
+der beiden Module bleiben soll (s. `lobby-modules`-Spec, "Module sind
 voneinander unabhängig"). Der Handler sieht `isCancelled()` weiterhin selbst
-und kann - wie `NavigatorModule#onClick` - trotzdem `setCancelled(true)`
-setzen.
+und kann das Event zusätzlich selbst abbrechen.
+
+Kein heutiges Feature-Modul braucht das: Der Navigator etwa reagiert nicht
+über einen eigenen `InventoryPreClickEvent`-Listener auf Klicks, sondern über
+Aves' eigenen Click-Handler, den `NavigatorInventory` direkt auf dem gebauten
+Inventar registriert (s. `NavigatorInventory`, Javadoc, und
+`NavigatorProtectionOrderingTest`) - der läuft vor jedem regulären
+Event-Node und damit vor `ProtectionModule`s Abbruch, unabhängig von der
+Einschaltreihenfolge, ganz ohne `listenIncludingCancelled`.
 
 Faustregel: `listen`, solange ein anderes Modul das Event nicht schon
-abbrechen könnte; `listenIncludingCancelled` nur, wenn der Handler wirklich in
-jedem Fall laufen muss.
+abbrechen könnte; `listenIncludingCancelled` nur, wenn ein über
+`context.listen` angemeldeter Handler wirklich in jedem Fall laufen muss.
 
 ### `config` - den eigenen `app.json`-Abschnitt lesen
 
@@ -235,7 +243,7 @@ registriert wurde, läuft **auf dem Tick-Thread**. Daraus folgen vier Regeln:
 3. **Pakete/Components zwischenspeichern statt neu bauen.** `ExampleItems`
    baut die feste Rückmeldung `ON_COOLDOWN` einmal als `static final
    Component` statt bei jeder Benutzung neu - dasselbe Prinzip, in größerem
-   Maßstab, hinter `NavigatorModule`s `SharedNavigatorInventory`: Das geteilte
+   Maßstab, hinter `NavigatorModule`s `NavigatorInventory`: Das geteilte
    Inventar wird nur neu gebaut, wenn sich `NavigatorEntries.version()`
    geändert hat, nicht bei jedem Öffnen.
 4. **Spielerbezogener Zustand gehört aufgeräumt.** Zustand, der pro Spieler

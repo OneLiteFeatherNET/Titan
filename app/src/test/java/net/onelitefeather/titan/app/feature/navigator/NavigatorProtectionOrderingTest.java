@@ -37,15 +37,19 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * Proves {@link NavigatorModule} and {@link ProtectionModule} are independent of each other's
  * enable order (see {@code lobby-modules} spec, "Module sind voneinander unabhängig").
  *
- * <p>{@link ProtectionModule} unconditionally cancels every {@link InventoryPreClickEvent}, via the
- * default, cancellation-skipping {@code ModuleContext#listen}. Before
- * {@code ModuleContext#listenIncludingCancelled} existed, {@link NavigatorModule}'s own click
- * listener - registered the same way - only ran when {@link NavigatorModule} was enabled before
- * {@link ProtectionModule}: Minestom skips a plain {@code Consumer}-based listener for a
- * {@link net.minestom.server.event.trait.CancellableEvent} that is already cancelled by the time it
- * reaches that listener. {@link NavigatorModule} now registers that listener through
- * {@code ModuleContext#listenIncludingCancelled}, so a navigator click forwards through
- * {@code Deliver} no matter which module was enabled first - both orders are exercised here.
+ * <p>{@link ProtectionModule} unconditionally cancels every {@link InventoryPreClickEvent} it sees
+ * on its own, module-scoped event node, via the default, cancellation-skipping
+ * {@code ModuleContext#listen}. {@link NavigatorModule} registers no
+ * {@link InventoryPreClickEvent} listener of its own at all, on any node, so it is never in a race
+ * with {@link ProtectionModule} to begin with: its navigator inventory is built by Aves
+ * ({@code feature.navigator.NavigatorInventory}), whose click handler is mapped directly onto that
+ * inventory rather than hung off a regular {@link net.minestom.server.event.EventNode}, and
+ * Minestom dispatches a mapped inventory's handlers before it walks any event node's listener chain
+ * - including {@link ProtectionModule}'s. By the time {@link ProtectionModule}'s node could cancel
+ * the click, Aves' handler has already cancelled it, forwarded the click through {@code Deliver}
+ * and
+ * closed the inventory. Both enable orders are exercised here to demonstrate that this ordering
+ * never depended on which module started first.
  */
 @ExtendWith(MicrotusExtension.class)
 class NavigatorProtectionOrderingTest {

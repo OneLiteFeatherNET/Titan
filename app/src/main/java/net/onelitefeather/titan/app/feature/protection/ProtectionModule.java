@@ -41,11 +41,15 @@ import net.onelitefeather.titan.common.utils.Cancelable;
  * is any single {@code Consumer}-based listener registered through {@link ModuleContext#listen} for
  * a cancellable event type - such a listener checks {@code isCancelled()} right before running and
  * skips its own body if the event is already cancelled by the time it is invoked. A module that
- * must react to {@link InventoryPreClickEvent} (or any other cancellable event) regardless of this
- * module's cancellation - the navigator module's own menu, for instance - therefore uses
+ * must react to a cancellable event regardless of this module's cancellation uses
  * {@link ModuleContext#listenIncludingCancelled} instead of {@link ModuleContext#listen} for that
  * listener, which keeps the two modules independent of each other's enable order (see
- * {@code lobby-modules} spec, "Module sind voneinander unabhängig").
+ * {@code lobby-modules} spec, "Module sind voneinander unabhängig") - no feature module needs that
+ * today. The navigator's own menu, for one, never competes with this module's cancellation of
+ * {@link InventoryPreClickEvent} in the first place: its click handling runs through Aves, mapped
+ * directly onto the inventory it opens rather than through a listener on this module's or its own
+ * event node, and Minestom dispatches that mapped handler before any regular event node - including
+ * this module's - ever sees the click (see {@code feature.navigator.NavigatorInventory}'s Javadoc).
  */
 public final class ProtectionModule implements LobbyModule {
 

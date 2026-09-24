@@ -28,7 +28,7 @@ import net.onelitefeather.titan.app.module.navigator.NavigatorEntry;
  * Which item belongs in which slot of the shared navigator inventory: every {@link NavigatorEntry}
  * under its own slot, and a gray glass pane everywhere else.
  *
- * <p>Kept apart from {@link SharedNavigatorInventory} - which owns the actual Minestom
+ * <p>Kept apart from {@link NavigatorInventory} - which owns the actual Minestom
  * {@code Inventory} - so this placement logic is testable as plain data, the same way
  * {@code net.onelitefeather.titan.app.module.item.EquipPlan} is kept apart from applying itself to
  * a player.
