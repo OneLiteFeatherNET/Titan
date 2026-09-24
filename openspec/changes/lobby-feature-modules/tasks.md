@@ -35,30 +35,30 @@ Regeln für Welle C: Die Feature-Agents legen nur neue Pakete an und löschen ni
 
 ## 1. Absicherung vor dem Umbau (Charakterisierungstests)
 
-- [ ] 1.1 Fehlende Charakterisierungstests mit `Env` (Cyano) für das heutige Verhalten ergänzen:
+- [x] 1.1 Fehlende Charakterisierungstests mit `Env` (Cyano) für das heutige Verhalten ergänzen:
   - Schutz: Blockabbau, Blocksetzen, Drop, Hand-Tausch, Inventarklick und Aufheben werden abgebrochen.
   - Höhen-Teleport unter `min` und über `max`.
   - Tod ohne Nachricht mit sofortigem Respawn.
   - Standardausstattung nach Join und nach Respawn (Feder in Slot 4, Elytra auf dem Brustplatz, sonst leer).
 
   Verifikation: `./gradlew :app:test` ist grün.
-- [ ] 1.2 Charakterisierungstest für den Navigator ergänzen (Layout: ElytraRace 0, Survival 4, Slender 5, Creative 8, Glas auf den übrigen Plätzen; Klick leitet über `DummyDeliver` weiter). Verifikation: der Test ist grün gegen den heutigen `NavigationHelper`.
-- [ ] 1.3 Leak-Test für den Navigator schreiben (100 Spieler öffnen den Navigator und verlassen die Lobby, danach unveränderte Listener-Anzahl). Zählweise gemäß design.md, Open Questions. Verifikation: Der Test ist gegen den heutigen Code **rot** und belegt damit das Leck. Bis Gruppe 6 steht er auf `@Disabled` mit Verweis auf Task 6.4.
-- [ ] 1.4 Config-Rundlauftest für die heutige `app.json` aus dem Repo schreiben (laden, Sitz-Versatz ändern, speichern, neu laden; die Höhengrenzen müssen erhalten bleiben). Verifikation: Der Test ist gegen den heutigen `AppConfigBuilder` **rot** und belegt den Kopier-Bug. Bis Gruppe 3 steht er auf `@Disabled`.
+- [x] 1.2 Charakterisierungstest für den Navigator ergänzen (Layout: ElytraRace 0, Survival 4, Slender 5, Creative 8, Glas auf den übrigen Plätzen; Klick leitet über `DummyDeliver` weiter). Verifikation: der Test ist grün gegen den heutigen `NavigationHelper`.
+- [x] 1.3 Leak-Test für den Navigator schreiben (100 Spieler öffnen den Navigator und verlassen die Lobby, danach unveränderte Listener-Anzahl). Zählweise gemäß design.md, Open Questions. Verifikation: Der Test ist gegen den heutigen Code **rot** und belegt damit das Leck. Bis Gruppe 6 steht er auf `@Disabled` mit Verweis auf Task 6.4.
+- [x] 1.4 Config-Rundlauftest für die heutige `app.json` aus dem Repo schreiben (laden, Sitz-Versatz ändern, speichern, neu laden; die Höhengrenzen müssen erhalten bleiben). Verifikation: Der Test ist gegen den heutigen `AppConfigBuilder` **rot** und belegt den Kopier-Bug. Bis Gruppe 3 steht er auf `@Disabled`.
 
 ## 2. Plattform: Modul-Lebenszyklus
 
-- [ ] 2.1 `LobbyModule`, `ModuleContext`, `ModuleTasks` und `ModuleRegistry` in `app/.../module` anlegen: eigener Node `titan/<id>` pro Modul, Start in Reihenfolge, Herunterfahren rückwärts (Node abhängen → Tasks abbrechen → Anmeldungen entfernen → `disable()`). Verifikation: `ModuleRegistryTest` deckt die Szenarien aus der Spec `lobby-modules` zu Reihenfolge, „keine Events während des Abschaltens“ und „wiederkehrende Aufgaben enden“ ab.
-- [ ] 2.2 `ModuleContext.listen(Class, Consumer)` mit Guard implementieren. Ein Aufruf nach dem Ende von `enable` wirft `IllegalStateException`. Verifikation: Unit-Test für den späten Aufruf. Test „Listener sind nach dem Abschalten entfernt“ ist grün.
-- [ ] 2.3 `TitanObservability.guard` um die Modul-ID erweitern (MDC `module`). Verifikation: Ein Test löst in einem Test-Modul eine Ausnahme bei einem Spieler aus. Der geloggte Eintrag enthält Modul-ID und Spieler, die Lobby läuft weiter.
-- [ ] 2.4 `context.commands().register(Command)` mit Abmeldung beim Abschalten implementieren. Verifikation: Test „Befehle verschwinden“ ist grün.
+- [x] 2.1 `LobbyModule`, `ModuleContext`, `ModuleTasks` und `ModuleRegistry` in `app/.../module` anlegen: eigener Node `titan/<id>` pro Modul, Start in Reihenfolge, Herunterfahren rückwärts (Node abhängen → Tasks abbrechen → Anmeldungen entfernen → `disable()`). Verifikation: `ModuleRegistryTest` deckt die Szenarien aus der Spec `lobby-modules` zu Reihenfolge, „keine Events während des Abschaltens“ und „wiederkehrende Aufgaben enden“ ab.
+- [x] 2.2 `ModuleContext.listen(Class, Consumer)` mit Guard implementieren. Ein Aufruf nach dem Ende von `enable` wirft `IllegalStateException`. Verifikation: Unit-Test für den späten Aufruf. Test „Listener sind nach dem Abschalten entfernt“ ist grün.
+- [x] 2.3 `TitanObservability.guard` um die Modul-ID erweitern (MDC `module`). Verifikation: Ein Test löst in einem Test-Modul eine Ausnahme bei einem Spieler aus. Der geloggte Eintrag enthält Modul-ID und Spieler, die Lobby läuft weiter.
+- [x] 2.4 `context.commands().register(Command)` mit Abmeldung beim Abschalten implementieren. Verifikation: Test „Befehle verschwinden“ ist grün.
 
 ## 3. Plattform: Config
 
-- [ ] 3.1 `ConfigStore` und `ConfigException` in `common/config` anlegen: Dokument als `JsonObject`, Abschnitt per Modul-ID, Deep-Merge mit Defaults, abschnittsweises Speichern. Verifikation: `ConfigStoreTest` deckt die Szenarien „fehlender Abschnitt“, „fehlender Einzelwert“, „erster Start“ und „Rundlauf ohne Änderung“ ab.
+- [x] 3.1 `ConfigStore` und `ConfigException` in `common/config` anlegen: Dokument als `JsonObject`, Abschnitt per Modul-ID, Deep-Merge mit Defaults, abschnittsweises Speichern. Verifikation: `ConfigStoreTest` deckt die Szenarien „fehlender Abschnitt“, „fehlender Einzelwert“, „erster Start“ und „Rundlauf ohne Änderung“ ab.
 - [ ] 3.2 `context.config(Class<R>)` an den `ConfigStore` anbinden. Eine `ConfigException` aus dem Compact Constructor bricht den Start mit Modul, Feld und Grund ab. Verifikation: Tests „negative Dauer“ und „unmögliche Höhengrenzen“ an Beispiel-Records.
-- [ ] 3.3 Eine syntaktisch kaputte `app.json` führt zum Abbruch mit Datei und Position, die Datei wird nicht überschrieben. Verifikation: Test prüft Fehlermeldung und unveränderten Dateiinhalt.
-- [ ] 3.4 `LegacyConfigMigration` nach der Tabelle in design.md, Entscheidung 5 umsetzen: Sicherung `app.json.v1.bak`, verworfene Schlüssel im Log, `allowedSitBlocks` in beiden Formen lesbar. Verifikation: Test migriert die echte `app.json` aus dem Repo und prüft Zielwerte, Sicherungsdatei und Log-Eintrag.
+- [x] 3.3 Eine syntaktisch kaputte `app.json` führt zum Abbruch mit Datei und Position, die Datei wird nicht überschrieben. Verifikation: Test prüft Fehlermeldung und unveränderten Dateiinhalt.
+- [x] 3.4 `LegacyConfigMigration` nach der Tabelle in design.md, Entscheidung 5 umsetzen: Sicherung `app.json.v1.bak`, verworfene Schlüssel im Log, `allowedSitBlocks` in beiden Formen lesbar. Verifikation: Test migriert die echte `app.json` aus dem Repo und prüft Zielwerte, Sicherungsdatei und Log-Eintrag.
 
 ## 4. Plattform: Items und Hotbar
 
@@ -111,7 +111,7 @@ Regeln für Welle C: Die Feature-Agents legen nur neue Pakete an und löschen ni
 
 ## 9. Architekturregeln
 
-- [ ] 9.1 `archunit-junit5` in den Versionskatalog und als `testImplementation` in `app` aufnehmen. Verifikation: `./gradlew :app:dependencies` zeigt ArchUnit.
+- [x] 9.1 `archunit-junit5` in den Versionskatalog und als `testImplementation` in `app` aufnehmen. Verifikation: `./gradlew :app:dependencies` zeigt ArchUnit.
 - [ ] 9.2 `ArchitectureTest` mit den vier Regeln aus design.md, Entscheidung 10 anlegen. Verifikation: Die Tests sind grün. Eine absichtlich eingebaute Abhängigkeit `tickle → sit` lässt den Build lokal fehlschlagen (danach wieder entfernen).
 
 ## 10. Feature-Vorlage und Doku
