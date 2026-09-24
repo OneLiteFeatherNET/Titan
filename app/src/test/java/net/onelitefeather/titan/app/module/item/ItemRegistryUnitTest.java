@@ -74,6 +74,22 @@ class ItemRegistryUnitTest {
         Assertions.assertTrue(thrown.getMessage().contains("4"));
     }
 
+    @DisplayName("validate() aborts, naming the key and both modules, when two modules register the same item key")
+    @Test
+    void validateAbortsWhenTwoModulesRegisterTheSameKey(Env env) {
+        ItemRegistry registry = newRegistry(env, "test-validate-duplicate-key");
+        registry.contextView("navigator", cleanup -> {
+        }).register(item("titan:shared", ItemSlot.hotbar(0)));
+        registry.contextView("friends", cleanup -> {
+        }).register(item("titan:shared", ItemSlot.hotbar(1)));
+
+        DuplicateItemKeyException thrown = Assertions.assertThrows(DuplicateItemKeyException.class, registry::validate);
+
+        Assertions.assertTrue(thrown.getMessage().contains("navigator"));
+        Assertions.assertTrue(thrown.getMessage().contains("friends"));
+        Assertions.assertTrue(thrown.getMessage().contains("titan:shared"));
+    }
+
     @DisplayName("An item disappears from the equip plan once its module's cleanup hook runs")
     @Test
     void anItemDisappearsOnceItsModulesCleanupHookRuns(Env env) {

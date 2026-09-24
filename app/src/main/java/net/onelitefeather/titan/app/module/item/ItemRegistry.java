@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.app.module.item;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +41,19 @@ import net.onelitefeather.titan.common.observability.TitanObservability;
  *
  * <p>A module never talks to this class directly - it goes through the {@code ModuleItems} view
  * {@link #contextView} hands back, which ties every registration to that module's cleanup hooks.
+ *
+ * <p><b>Threading contract:</b> {@link #register}, {@link #unregister} and {@link #validate} run on
+ * the thread that enables or disables modules (typically the main/startup thread), while
+ * {@link #dispatch} runs on the tick thread for every {@link PlayerUseItemEvent} and
+ * {@link #currentPlan()} (via {@link #equip(Player)}) may be called from either. Every read or
+ * write
+ * of {@link #registrations} - including the lookup {@link #dispatch} does before handing off to a
+ * module's own handler - is {@code synchronized} on this instance, the same approach {@link
+ * net.onelitefeather.titan.app.module.navigator.NavigatorEntries} takes, so a read during dispatch
+ * never observes a registration or unregistration half-applied. A module's own handler itself runs
+ * outside that lock, so a slow or reentrant handler cannot block a concurrent register() or
+ * unregister(). The backing map stays a {@link LinkedHashMap} so {@link #currentPlan()} keeps
+ * building {@link EquipPlan} in registration order.
  */
 public final class ItemRegistry {
 
@@ -52,6 +66,8 @@ public final class ItemRegistry {
     public static final Tag<String> IDENTITY_TAG = Tag.String("titan:item");
 
     private final Map<String, Registration> registrations = new LinkedHashMap<>();
+    private final List<DuplicateItemKeyDetector.Claim> keyClaims = new ArrayList<>();
+    private final DuplicateItemKeyDetector duplicateKeyDetector = new DuplicateItemKeyDetector();
     private final SlotConflictDetector conflictDetector = new SlotConflictDetector();
 
     /**
@@ -77,10 +93,15 @@ public final class ItemRegistry {
      * modules claimed the same one. Called by {@code ModuleRegistry.enableAll()} once every module
      * has enabled.
      *
+     * @throws DuplicateItemKeyException      if two registrations - from any combination of
+     *                                        modules - claimed the same {@link LobbyItem#key()}
      * @throws ItemPlacementConflictException if two modules registered an item for the same
      *                                        {@link ItemSlot}
      */
-    public void validate() {
+    public synchronized void validate() {
+        this.duplicateKeyDetector.findConflict(this.keyClaims).ifPresent(conflict -> {
+            throw new DuplicateItemKeyException(conflict);
+        });
         List<SlotConflictDetector.Claim> claims = this.registrations.values().stream().map(registration -> new SlotConflictDetector.Claim(registration.moduleId(), registration.item().placement())).toList();
         this.conflictDetector.findConflict(claims).ifPresent(conflict -> {
             throw new ItemPlacementConflictException(conflict);
@@ -102,7 +123,8 @@ public final class ItemRegistry {
      * @param item     the item to register
      * @return the stamped stack a module hands out itself for an unplaced item
      */
-    ItemStack register(String moduleId, LobbyItem item) {
+    synchronized ItemStack register(String moduleId, LobbyItem item) {
+        this.keyClaims.add(new DuplicateItemKeyDetector.Claim(moduleId, item.key().asString()));
         ItemStack stamped = item.itemStack().withTag(IDENTITY_TAG, item.key().asString());
         LobbyItem stampedItem = new LobbyItem(item.key(), stamped, item.placement(), item.onUse());
         this.registrations.put(item.key().asString(), new Registration(moduleId, stampedItem));
@@ -112,7 +134,7 @@ public final class ItemRegistry {
     /**
      * @param key the registered item's key
      */
-    void unregister(Key key) {
+    synchronized void unregister(Key key) {
         this.registrations.remove(key.asString());
     }
 
@@ -120,7 +142,7 @@ public final class ItemRegistry {
      * @return the equip plan computed from every currently registered item, kept apart from
      *         {@link #equip(Player)} so the layout itself is testable without a {@link Player}
      */
-    EquipPlan currentPlan() {
+    synchronized EquipPlan currentPlan() {
         List<LobbyItem> items = this.registrations.values().stream().map(Registration::item).toList();
         return EquipPlan.from(items);
     }
@@ -130,7 +152,13 @@ public final class ItemRegistry {
         if (keyValue == null) {
             return;
         }
-        Registration registration = this.registrations.get(keyValue);
+        // Only the lookup itself needs the lock - running the module's own handler while holding
+        // it would block register()/unregister() on other threads for as long as that handler
+        // takes.
+        Registration registration;
+        synchronized (this) {
+            registration = this.registrations.get(keyValue);
+        }
         if (registration == null) {
             return;
         }
