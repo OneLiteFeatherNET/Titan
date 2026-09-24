@@ -15,18 +15,27 @@
  */
 package net.onelitefeather.titan.app.helper;
 
+import net.minestom.server.MinecraftServer;
 import net.minestom.server.entity.EquipmentSlot;
 import net.minestom.server.entity.Player;
+import net.minestom.server.event.inventory.InventoryPreClickEvent;
+import net.minestom.server.inventory.AbstractInventory;
+import net.minestom.server.inventory.Inventory;
+import net.minestom.server.inventory.InventoryType;
+import net.minestom.server.inventory.click.Click;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.inventory.PlayerInventory;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.app.testutils.DummyDeliver;
 import net.onelitefeather.titan.common.utils.Items;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import java.util.List;
 
 import static org.mockito.Mockito.*;
 
@@ -64,54 +73,53 @@ class NavigationHelperTest {
         Assertions.assertNotNull(realPlayer.getOpenInventory());
     }
 
-    // @Disabled
-    // @DisplayName("Test if clicked on the teleporter item the navigation gui is
-    // opened")
-    // @Test
-    // void testNavigationHelperOpenNavigationGuiByClick(Env env) {
-    // Deliver deliver = spy(DummyDeliver.instance());
-    // NavigationHelper helper = NavigationHelper.instance(deliver);
-    //
-    // Instance flatInstance = env.createFlatInstance();
-    // Player realPlayer = env.createPlayer(flatInstance);
-    //
-    // helper.setItems(realPlayer);
-    // helper.openNavigator(realPlayer);
-    // System.out.println(realPlayer.getOpenInventory().getWindowId());
-    //
-    // leftClickOpenInventory(realPlayer, 0, Items.NAVIGATOR_ELYTRA_ITEM_STACK);
-    // verify(deliver, atLeastOnce()).sendPlayer(any(), any());
-    // leftClickOpenInventory(realPlayer, 3, Items.NAVIGATOR_SLENDER_ITEM_STACK);
-    // leftClickOpenInventory(realPlayer, 4, Items.NAVIGATOR_SURVIVAL_ITEM_STACK);
-    // leftClickOpenInventory(realPlayer, 5, Items.NAVIGATOR_SLENDER_ITEM_STACK);
-    // leftClickOpenInventory(realPlayer, 8, Items.NAVIGATOR_CREATIVE_ITEM_STACK);
-    // env.tick();
-    //
-    //
-    // }
-    //
-    // private void leftClickOpenInventory(Player player, int slot, ItemStack
-    // clickedItem) {
-    // _leftClick(player.getOpenInventory(), true, player, slot, clickedItem);
-    // }
-    // private void _leftClick(AbstractInventory openInventory, boolean
-    // clickOpenInventory, Player player, int slot, ItemStack clickedItem) {
-    // final byte windowId = openInventory != null ? openInventory.getWindowId() :
-    // 0;
-    // if (clickOpenInventory) {
-    // assert openInventory != null;
-    // // Do not touch slot
-    // } else {
-    // int offset = openInventory != null ? openInventory.getInnerSize() : 0;
-    // slot = PlayerInventoryUtils.convertMinestomSlotToPlayerInventorySlot(slot);
-    // if (openInventory != null) {
-    // slot = slot - 9 + offset;
-    // }
-    // }
-    // player.addPacketToQueue(new ClientClickWindowPacket(windowId, 0, (short)
-    // slot, (byte) 0,
-    // ClientClickWindowPacket.ClickType.PICKUP, Map.of(), clickedItem));
-    // player.interpretPacketQueue();
-    // }
+    @DisplayName("Test the navigator layout: ElytraRace on 0, Survival on 4, Slender on 5, Creative on 8, blank glass panes on the rest")
+    @Test
+    void testNavigationHelperLayout(Env env) {
+        NavigationHelper helper = NavigationHelper.instance(DummyDeliver.instance());
+
+        Instance flatInstance = env.createFlatInstance();
+        Player player = env.createPlayer(flatInstance);
+
+        helper.openNavigator(player);
+        // Aves computes the per-slot navigator entries asynchronously (scheduled on the next
+        // server tick), so the layout is not populated yet when openNavigator() returns.
+        env.tick();
+
+        AbstractInventory openInventory = player.getOpenInventory();
+        Assertions.assertNotNull(openInventory);
+        Assertions.assertInstanceOf(Inventory.class, openInventory);
+        Assertions.assertEquals(InventoryType.CHEST_1_ROW, ((Inventory) openInventory).getInventoryType());
+
+        Assertions.assertEquals(Items.NAVIGATOR_ELYTRA_ITEM_STACK, openInventory.getItemStack(0));
+        Assertions.assertEquals(Items.NAVIGATOR_SURVIVAL_ITEM_STACK, openInventory.getItemStack(4));
+        Assertions.assertEquals(Items.NAVIGATOR_SLENDER_ITEM_STACK, openInventory.getItemStack(5));
+        Assertions.assertEquals(Items.NAVIGATOR_CREATIVE_ITEM_STACK, openInventory.getItemStack(8));
+
+        for (int slot : List.of(1, 2, 3, 6, 7)) {
+            Assertions.assertEquals(Items.NAVIGATOR_BLANK_ITEM_STACK, openInventory.getItemStack(slot), "Slot " + slot + " should be a blank glass pane");
+        }
+    }
+
+    @DisplayName("Test if clicking a navigator entry forwards the player through Deliver and closes the click")
+    @Test
+    void testNavigationHelperClickForwardsThroughDeliver(Env env) {
+        Deliver deliver = spy(DummyDeliver.instance());
+        NavigationHelper helper = NavigationHelper.instance(deliver);
+
+        Instance flatInstance = env.createFlatInstance();
+        Player player = env.createPlayer(flatInstance);
+
+        helper.openNavigator(player);
+        env.tick();
+        AbstractInventory openInventory = player.getOpenInventory();
+        Assertions.assertNotNull(openInventory);
+
+        InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(4));
+        MinecraftServer.getGlobalEventHandler().call(clickEvent);
+
+        verify(deliver, atLeastOnce()).sendPlayer(eq(player), any());
+        Assertions.assertTrue(clickEvent.isCancelled(), "The click on a navigator entry should be cancelled so the item stays in place");
+    }
 
 }

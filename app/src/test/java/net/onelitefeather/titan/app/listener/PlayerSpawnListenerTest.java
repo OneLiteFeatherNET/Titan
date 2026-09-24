@@ -17,17 +17,21 @@ package net.onelitefeather.titan.app.listener;
 
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.coordinate.Pos;
+import net.minestom.server.entity.EquipmentSlot;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.player.PlayerSpawnEvent;
 import net.minestom.server.instance.Instance;
+import net.minestom.server.inventory.PlayerInventory;
 import net.minestom.server.network.packet.server.play.UpdateSimulationDistancePacket;
 import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.TestConnection;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.app.helper.NavigationHelper;
+import net.onelitefeather.titan.app.testutils.DummyDeliver;
 import net.onelitefeather.titan.common.config.InternalAppConfig;
 import net.onelitefeather.titan.common.map.LobbyMap;
+import net.onelitefeather.titan.common.utils.Items;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -88,6 +92,31 @@ class PlayerSpawnListenerTest {
         MinecraftServer.getGlobalEventHandler().call(new PlayerSpawnEvent(player, flatInstance, true));
 
         verify(navigationHelper, times(1)).setItems(eq(player));
+    }
+
+    @DisplayName("Test if the player has the default equipment (navigator feather in hotbar slot 4, unbreakable elytra on the chestplate, rest empty) after join")
+    @Test
+    void testPlayerDefaultEquipmentAfterJoin(Env env) {
+        Instance flatInstance = env.createFlatInstance();
+        TestConnection connection = env.createConnection();
+        Player player = connection.connect(flatInstance);
+
+        LobbyMap lobbyMap = mock(LobbyMap.class);
+        NavigationHelper navigationHelper = NavigationHelper.instance(DummyDeliver.instance());
+
+        MinecraftServer.getGlobalEventHandler().addListener(PlayerSpawnEvent.class, new PlayerSpawnListener(InternalAppConfig.defaultConfig(), lobbyMap, navigationHelper));
+        MinecraftServer.getGlobalEventHandler().call(new PlayerSpawnEvent(player, flatInstance, true));
+
+        Assertions.assertEquals(Items.PLAYER_TELEPORTER, player.getInventory().getItemStack(4));
+        Assertions.assertEquals(Items.PLAYER_ELYTRA, player.getEquipment(EquipmentSlot.CHESTPLATE));
+
+        int chestplateSlot = EquipmentSlot.CHESTPLATE.armorSlot();
+        for (int slot = 0; slot < PlayerInventory.INVENTORY_SIZE; slot++) {
+            if (slot == 4 || slot == chestplateSlot) {
+                continue;
+            }
+            Assertions.assertTrue(player.getInventory().getItemStack(slot).isAir(), "Slot " + slot + " should be empty after join");
+        }
     }
 
 }
