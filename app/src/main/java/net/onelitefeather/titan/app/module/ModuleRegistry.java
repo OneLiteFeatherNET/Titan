@@ -23,6 +23,8 @@ import net.minestom.server.command.CommandManager;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.timer.Scheduler;
+import net.onelitefeather.titan.app.module.navigator.NavigatorConflictException;
+import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
 
 /**
  * Starts and stops the lobby's {@link LobbyModule}s.
@@ -30,10 +32,14 @@ import net.minestom.server.timer.Scheduler;
  * <p>{@link #enableAll()} creates one {@link ModuleContext} per module, attaches its event node
  * under the shared {@code parent}, and calls {@link LobbyModule#enable}, in registration order.
  * {@link #disableAll()} reverses that: for each module, in the opposite order, it detaches the
- * node, cancels the module's tasks, runs its cleanup hooks (commands today; items and navigator
- * entries in later changes) and only then calls {@link LobbyModule#disable()} - so by the time a
+ * node, cancels the module's tasks, runs its cleanup hooks (commands and navigator entries today;
+ * items in a later change) and only then calls {@link LobbyModule#disable()} - so by the time a
  * module's own shutdown code runs, it can no longer receive events or run scheduled work. See
  * {@code design.md}, decision 2, and the {@code lobby-modules} spec.
+ *
+ * <p>Once every module is up, {@link #enableAll()} calls {@link NavigatorEntries#validate()} on the
+ * shared registry, so a slot two entries - from any combination of modules - both claim aborts
+ * startup instead of silently shadowing one of them. See {@code design.md}, decision 8.
  *
  * <p>Built through {@link #builder()} rather than a public constructor, so a later wave can add
  * further platform services (a config store, an item registry, ...) to the builder without breaking
@@ -44,6 +50,7 @@ public final class ModuleRegistry {
     private final EventNode<Event> parent;
     private final Scheduler scheduler;
     private final CommandManager commandManager;
+    private final NavigatorEntries navigatorEntries;
     private final List<LobbyModule> modules;
     private final List<ModuleContext> runningContexts = new ArrayList<>();
 
@@ -51,6 +58,7 @@ public final class ModuleRegistry {
         this.parent = builder.parent;
         this.scheduler = builder.scheduler != null ? builder.scheduler : MinecraftServer.getSchedulerManager();
         this.commandManager = builder.commandManager != null ? builder.commandManager : MinecraftServer.getCommandManager();
+        this.navigatorEntries = builder.navigatorEntries != null ? builder.navigatorEntries : new NavigatorEntries();
         this.modules = List.copyOf(builder.modules);
     }
 
@@ -68,16 +76,20 @@ public final class ModuleRegistry {
      * that
      * module's context stops accepting new listeners.
      *
-     * @throws ModuleLifecycleException if a module's {@code enable} throws; the exception names the
-     *                                  failing module and carries the original failure as its
-     *                                  cause. The failing module's own node, tasks and cleanup
-     *                                  hooks are torn down before this is thrown; modules enabled
-     *                                  earlier in this call are left running - it is on the caller
-     *                                  to shut the whole registry down in response
+     * @throws ModuleLifecycleException   if a module's {@code enable} throws; the exception names
+     *                                    the
+     *                                    failing module and carries the original failure as its
+     *                                    cause. The failing module's own node, tasks and cleanup
+     *                                    hooks are torn down before this is thrown; modules enabled
+     *                                    earlier in this call are left running - it is on the
+     *                                    caller
+     *                                    to shut the whole registry down in response
+     * @throws NavigatorConflictException if, once every module is enabled, two navigator entries
+     *                                    share a slot
      */
     public void enableAll() {
         for (LobbyModule module : this.modules) {
-            ModuleContext context = new ModuleContext(module.id(), this.scheduler, this.commandManager);
+            ModuleContext context = new ModuleContext(module.id(), this.scheduler, this.commandManager, this.navigatorEntries);
             this.parent.addChild(context.node());
             try {
                 module.enable(context);
@@ -91,6 +103,7 @@ public final class ModuleRegistry {
             context.closeForListening();
             this.runningContexts.add(context);
         }
+        this.navigatorEntries.validate();
     }
 
     /**
@@ -117,6 +130,7 @@ public final class ModuleRegistry {
         private EventNode<Event> parent;
         private Scheduler scheduler;
         private CommandManager commandManager;
+        private NavigatorEntries navigatorEntries;
         private final List<LobbyModule> modules = new ArrayList<>();
 
         private Builder() {
@@ -154,6 +168,18 @@ public final class ModuleRegistry {
          */
         public Builder commandManager(CommandManager commandManager) {
             this.commandManager = commandManager;
+            return this;
+        }
+
+        /**
+         * The registry every module's navigator entries are collected in, shared by all modules
+         * built from this registry. Defaults to a fresh, empty {@link NavigatorEntries}.
+         *
+         * @param navigatorEntries the navigator entry registry
+         * @return this builder
+         */
+        public Builder navigator(NavigatorEntries navigatorEntries) {
+            this.navigatorEntries = navigatorEntries;
             return this;
         }
 

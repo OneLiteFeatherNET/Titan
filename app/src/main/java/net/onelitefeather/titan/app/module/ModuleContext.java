@@ -22,6 +22,7 @@ import net.minestom.server.command.CommandManager;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.timer.Scheduler;
+import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
 import net.onelitefeather.titan.common.observability.TitanObservability;
 
 /**
@@ -34,8 +35,8 @@ import net.onelitefeather.titan.common.observability.TitanObservability;
  * having to remember what it registered. See {@code design.md}, decision 3.
  *
  * <p>{@link #listen} only works while {@link LobbyModule#enable} is running; {@link ModuleRegistry}
- * closes it immediately afterwards. Later platform additions (config, items, navigator entries)
- * follow the same shape: a small public view here, backed by the {@link #onDisable} cleanup hook,
+ * closes it immediately afterwards. Later platform additions (config, items) follow the same shape
+ * as {@link #navigator()}: a small public view here, backed by the {@link #onDisable} cleanup hook,
  * so neither this class nor {@link ModuleRegistry} needs to change again for them.
  */
 public final class ModuleContext {
@@ -44,14 +45,26 @@ public final class ModuleContext {
     private final EventNode<Event> node;
     private final ModuleTasksImpl tasks;
     private final ModuleCommandsImpl commands;
+    private final NavigatorEntries.View navigator;
     private final Deque<Runnable> cleanupHooks = new ArrayDeque<>();
     private volatile boolean listeningClosed;
 
+    /**
+     * Creates a context backed by a fresh, module-local {@link NavigatorEntries} registry. Kept for
+     * callers - tests among them - that do not care about navigator entries at all;
+     * {@link ModuleRegistry} always uses {@link #ModuleContext(String, Scheduler, CommandManager,
+     * NavigatorEntries)} instead, so every module in a lobby shares the same registry.
+     */
     ModuleContext(String moduleId, Scheduler scheduler, CommandManager commandManager) {
+        this(moduleId, scheduler, commandManager, new NavigatorEntries());
+    }
+
+    ModuleContext(String moduleId, Scheduler scheduler, CommandManager commandManager, NavigatorEntries navigatorEntries) {
         this.moduleId = moduleId;
         this.node = EventNode.all("titan/" + moduleId);
         this.tasks = new ModuleTasksImpl(scheduler);
         this.commands = new ModuleCommandsImpl(commandManager, this);
+        this.navigator = navigatorEntries.forModule(moduleId, this::onDisable);
     }
 
     /**
@@ -98,8 +111,16 @@ public final class ModuleContext {
     }
 
     /**
-     * Queues {@code cleanup} to run when this module is disabled. Later registrars (commands today;
-     * items and navigator entries in later changes) call this instead of {@link ModuleRegistry}
+     * @return this module's own view of the platform's navigator entries; every entry added through
+     *         it disappears again once this module is disabled
+     */
+    public NavigatorEntries.View navigator() {
+        return this.navigator;
+    }
+
+    /**
+     * Queues {@code cleanup} to run when this module is disabled. Later registrars (commands and
+     * navigator entries today; items in a later change) call this instead of {@link ModuleRegistry}
      * having to know about them individually. Hooks run in reverse of the order they were added,
      * mirroring how the module registered things in the first place.
      *
