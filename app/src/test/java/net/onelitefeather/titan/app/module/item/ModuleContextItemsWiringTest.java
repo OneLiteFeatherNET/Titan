@@ -15,12 +15,16 @@
  */
 package net.onelitefeather.titan.app.module.item;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import net.kyori.adventure.key.Key;
 import net.minestom.server.entity.EquipmentSlot;
 import net.minestom.server.entity.Player;
+import net.minestom.server.entity.PlayerHand;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
+import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
@@ -109,5 +113,43 @@ class ModuleContextItemsWiringTest {
 
         Assertions.assertEquals(Material.FEATHER, player.getInventory().getItemStack(4).material());
         Assertions.assertEquals(Material.ELYTRA, player.getEquipment(EquipmentSlot.CHESTPLATE).material());
+    }
+
+    @DisplayName("A module's items are gone once the module is disabled: no longer equipped, and using the old stack no longer dispatches")
+    @Test
+    void itemsAreGoneAfterModuleDisabled(Env env) {
+        EventNode<Event> parent = EventNode.all("test-context-items-disable");
+        List<Player> handledFor = new ArrayList<>();
+        AtomicReference<ModuleItems> itemsView = new AtomicReference<>();
+        AtomicReference<ItemStack> stampedStack = new AtomicReference<>();
+        LobbyModule module = new LobbyModule() {
+
+            @Override
+            public String id() {
+                return "navigator";
+            }
+
+            @Override
+            public void enable(ModuleContext context) {
+                itemsView.set(context.items());
+                stampedStack.set(context.items().register(new LobbyItem(Key.key("titan:navigator"), ItemStack.of(Material.FEATHER), ItemSlot.hotbar(4), (usedBy, event) -> handledFor.add(usedBy))));
+            }
+        };
+        ModuleRegistry registry = builder(env, parent).modules(module).build();
+        registry.enableAll();
+        Instance instance = env.createFlatInstance();
+        Player player = env.createPlayer(instance);
+
+        itemsView.get().equip(player);
+        Assertions.assertEquals(Material.FEATHER, player.getInventory().getItemStack(4).material(), "the item must be equipped while the module is enabled");
+        parent.call(new PlayerUseItemEvent(player, PlayerHand.MAIN, stampedStack.get(), 0L));
+        Assertions.assertEquals(1, handledFor.size(), "using the item must reach its handler while the module is enabled");
+
+        registry.disableAll();
+
+        itemsView.get().equip(player);
+        Assertions.assertEquals(ItemStack.AIR, player.getInventory().getItemStack(4), "the item must no longer be equipped once the module is disabled");
+        parent.call(new PlayerUseItemEvent(player, PlayerHand.MAIN, stampedStack.get(), 0L));
+        Assertions.assertEquals(1, handledFor.size(), "using the old, still-stamped stack must not reach the handler once the module is disabled");
     }
 }

@@ -18,21 +18,24 @@ package net.onelitefeather.titan.app.module;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import net.minestom.server.command.CommandManager;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
-import net.minestom.testing.Env;
-import net.minestom.testing.extension.MicrotusExtension;
+import net.minestom.server.timer.Scheduler;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Unit-level coverage for {@link ModuleContext} that does not need a full {@link ModuleRegistry}
  * lifecycle: registering a listener after {@code enable()} has returned, and the order cleanup
  * hooks run in.
+ *
+ * <p>Plain unit test: none of this needs a {@link net.minestom.server.entity.Player} or
+ * {@link net.minestom.server.instance.Instance}, so it builds {@link ModulePlatformFixture} and
+ * {@link ModuleRegistry} from a standalone {@link Scheduler#newScheduler()} and
+ * {@link CommandManager} instead of booting a Microtus {@code Env}.
  */
-@ExtendWith(MicrotusExtension.class)
 class ModuleContextTest {
 
     private record TestEvent() implements Event {
@@ -40,20 +43,20 @@ class ModuleContextTest {
 
     @DisplayName("moduleId() returns the id the context was created for")
     @Test
-    void moduleIdReturnsTheConfiguredId(Env env) {
-        ModuleContext context = new ModuleContext("sit", ModulePlatformFixture.create(env.process().scheduler(), env.process().command()));
+    void moduleIdReturnsTheConfiguredId() {
+        ModuleContext context = new ModuleContext("sit", ModulePlatformFixture.create(Scheduler.newScheduler(), new CommandManager()));
 
         Assertions.assertEquals("sit", context.moduleId());
     }
 
     @DisplayName("Calling listen() after enable() has returned throws IllegalStateException")
     @Test
-    void listenAfterEnableReturnedThrows(Env env) {
+    void listenAfterEnableReturnedThrows() {
         EventNode<Event> parent = EventNode.all("test-context-late-listen");
         AtomicReference<ModuleContext> captured = new AtomicReference<>();
         RecordingModule module = new RecordingModule("late", new ArrayList<>(), captured::set, () -> {
         });
-        ModuleRegistry registry = ModuleRegistry.builder().parent(parent).scheduler(env.process().scheduler()).commandManager(env.process().command()).modules(module).build();
+        ModuleRegistry registry = ModuleRegistry.builder().parent(parent).scheduler(Scheduler.newScheduler()).commandManager(new CommandManager()).modules(module).build();
 
         registry.enableAll();
         ModuleContext context = captured.get();
@@ -65,21 +68,21 @@ class ModuleContextTest {
 
     @DisplayName("Listening still works while enable() is running")
     @Test
-    void listenWorksWhileEnableIsRunning(Env env) {
+    void listenWorksWhileEnableIsRunning() {
         EventNode<Event> parent = EventNode.all("test-context-listen-during-enable");
         List<String> log = new ArrayList<>();
         RecordingModule module = new RecordingModule("sit", log, context -> Assertions.assertDoesNotThrow(() -> context.listen(TestEvent.class, event -> {
         })), () -> {
         });
-        ModuleRegistry registry = ModuleRegistry.builder().parent(parent).scheduler(env.process().scheduler()).commandManager(env.process().command()).modules(module).build();
+        ModuleRegistry registry = ModuleRegistry.builder().parent(parent).scheduler(Scheduler.newScheduler()).commandManager(new CommandManager()).modules(module).build();
 
         Assertions.assertDoesNotThrow(registry::enableAll);
     }
 
     @DisplayName("Cleanup hooks run in the reverse order they were added")
     @Test
-    void cleanupHooksRunInReverseOrder(Env env) {
-        ModuleContext context = new ModuleContext("cleanup", ModulePlatformFixture.create(env.process().scheduler(), env.process().command()));
+    void cleanupHooksRunInReverseOrder() {
+        ModuleContext context = new ModuleContext("cleanup", ModulePlatformFixture.create(Scheduler.newScheduler(), new CommandManager()));
         List<Integer> order = new ArrayList<>();
         context.onDisable(() -> order.add(1));
         context.onDisable(() -> order.add(2));

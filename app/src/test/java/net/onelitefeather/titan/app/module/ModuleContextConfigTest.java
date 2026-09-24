@@ -23,10 +23,12 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
+import net.minestom.server.command.CommandManager;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
+import net.minestom.server.timer.Scheduler;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.app.module.item.ItemPlacementConflictException;
@@ -50,8 +52,14 @@ import org.junit.jupiter.api.io.TempDir;
  * another module's section, no-store-configured falling back to defaults, and {@code config} being
  * closed for use once {@code enable()} returns - mirroring {@link ModuleContextTest}'s coverage of
  * {@link ModuleContext#listen}.
+ *
+ * <p>Plain unit test: none of this needs a {@link net.minestom.server.entity.Player} or
+ * {@link net.minestom.server.instance.Instance}, so it builds {@link ModuleRegistry} from a
+ * standalone {@link Scheduler#newScheduler()} and {@link CommandManager} instead of booting a
+ * Microtus {@code Env}. One exception: {@code itemPlacementConflictAbortsEnableAllBeforeFlush}
+ * still needs the server, since stamping an item's identity tag resolves its {@code Material}
+ * through Minestom's registry data - see the comment on that method.
  */
-@ExtendWith(MicrotusExtension.class)
 class ModuleContextConfigTest {
 
     private record TestConfig(int value) {
@@ -72,13 +80,13 @@ class ModuleContextConfigTest {
         }
     }
 
-    private static ModuleRegistry.Builder builder(Env env, EventNode<Event> parent) {
-        return ModuleRegistry.builder().parent(parent).scheduler(env.process().scheduler()).commandManager(env.process().command());
+    private static ModuleRegistry.Builder builder(EventNode<Event> parent) {
+        return ModuleRegistry.builder().parent(parent).scheduler(Scheduler.newScheduler()).commandManager(new CommandManager());
     }
 
     @DisplayName("A module reads its own section, and never another module's")
     @Test
-    void moduleReadsItsOwnSectionOnly(Env env, @TempDir Path dir) throws IOException {
+    void moduleReadsItsOwnSectionOnly(@TempDir Path dir) throws IOException {
         Path file = dir.resolve("app.json");
         Files.writeString(file, "{\"configVersion\":2,\"sit\":{\"value\":42},\"navigator\":{\"label\":\"nav\"}}");
         ConfigStore store = ConfigStore.open(file);
@@ -90,7 +98,7 @@ class ModuleContextConfigTest {
         });
         RecordingModule navigator = new RecordingModule("navigator", log, context -> navigatorConfig.set(context.config(OtherConfig.class, OtherConfig.DEFAULTS)), () -> {
         });
-        ModuleRegistry registry = builder(env, parent).config(store).modules(sit, navigator).build();
+        ModuleRegistry registry = builder(parent).config(store).modules(sit, navigator).build();
 
         registry.enableAll();
 
@@ -100,7 +108,7 @@ class ModuleContextConfigTest {
 
     @DisplayName("A missing section falls back to defaults, and app.json is written after enableAll()")
     @Test
-    void missingSectionUsesDefaultsAndWritesFileOnFirstStart(Env env, @TempDir Path dir) {
+    void missingSectionUsesDefaultsAndWritesFileOnFirstStart(@TempDir Path dir) {
         Path file = dir.resolve("app.json");
         Assertions.assertFalse(Files.exists(file));
         ConfigStore store = ConfigStore.open(file);
@@ -109,7 +117,7 @@ class ModuleContextConfigTest {
         AtomicReference<TestConfig> captured = new AtomicReference<>();
         RecordingModule module = new RecordingModule("sit", log, context -> captured.set(context.config(TestConfig.class, TestConfig.DEFAULTS)), () -> {
         });
-        ModuleRegistry registry = builder(env, parent).config(store).modules(module).build();
+        ModuleRegistry registry = builder(parent).config(store).modules(module).build();
 
         registry.enableAll();
 
@@ -119,7 +127,7 @@ class ModuleContextConfigTest {
 
     @DisplayName("An invalid value aborts enableAll(), naming module, field and reason, without writing a file")
     @Test
-    void invalidValueAbortsEnableAllNamingModuleFieldAndReason(Env env, @TempDir Path dir) throws IOException {
+    void invalidValueAbortsEnableAllNamingModuleFieldAndReason(@TempDir Path dir) throws IOException {
         Path file = dir.resolve("app.json");
         Files.writeString(file, "{\"configVersion\":2,\"tickle\":{\"cooldownMillis\":-5}}");
         ConfigStore store = ConfigStore.open(file);
@@ -128,7 +136,7 @@ class ModuleContextConfigTest {
         List<String> log = new ArrayList<>();
         RecordingModule module = new RecordingModule("tickle", log, context -> context.config(ValidatedConfig.class, ValidatedConfig.DEFAULTS), () -> {
         });
-        ModuleRegistry registry = builder(env, parent).config(store).modules(module).build();
+        ModuleRegistry registry = builder(parent).config(store).modules(module).build();
 
         ModuleLifecycleException thrown = Assertions.assertThrows(ModuleLifecycleException.class, registry::enableAll);
 
@@ -143,22 +151,28 @@ class ModuleContextConfigTest {
 
     @DisplayName("Without a configured ConfigStore, config() returns the defaults")
     @Test
-    void noConfigStoreConfiguredReturnsDefaults(Env env) {
+    void noConfigStoreConfiguredReturnsDefaults() {
         EventNode<Event> parent = EventNode.all("test-config-no-store");
         List<String> log = new ArrayList<>();
         AtomicReference<TestConfig> captured = new AtomicReference<>();
         RecordingModule module = new RecordingModule("sit", log, context -> captured.set(context.config(TestConfig.class, TestConfig.DEFAULTS)), () -> {
         });
-        ModuleRegistry registry = builder(env, parent).modules(module).build();
+        ModuleRegistry registry = builder(parent).modules(module).build();
 
         Assertions.assertDoesNotThrow(registry::enableAll);
 
         Assertions.assertSame(TestConfig.DEFAULTS, captured.get(), "with no ConfigStore configured, config() must return the defaults unchanged");
     }
 
+    // Needs the server: ItemRegistry.register() stamps the identity tag via ItemStack.withTag(),
+    // which resolves the stack's Material through Minestom's registry data - unbound unless
+    // MinecraftServer has been initialized. The unused `env` parameter is what makes
+    // MicrotusExtension actually perform that initialization before the test runs. Every other
+    // test in this class stays a plain unit test.
     @DisplayName("An item placement conflict aborts enableAll() before the config file is flushed")
+    @ExtendWith(MicrotusExtension.class)
     @Test
-    void itemPlacementConflictAbortsEnableAllBeforeFlush(Env env, @TempDir Path dir) {
+    void itemPlacementConflictAbortsEnableAllBeforeFlush(@SuppressWarnings("unused") Env env, @TempDir Path dir) {
         Path file = dir.resolve("app.json");
         Assertions.assertFalse(Files.exists(file));
         ConfigStore store = ConfigStore.open(file);
@@ -173,7 +187,7 @@ class ModuleContextConfigTest {
         RecordingModule b = new RecordingModule("b", log, context -> context.items().register(new LobbyItem(Key.key("titan:b"), ItemStack.of(Material.FEATHER), ItemSlot.hotbar(0), (player, event) -> {
         })), () -> {
         });
-        ModuleRegistry registry = builder(env, parent).config(store).modules(a, b).build();
+        ModuleRegistry registry = builder(parent).config(store).modules(a, b).build();
 
         Assertions.assertThrows(ItemPlacementConflictException.class, registry::enableAll);
 
@@ -182,7 +196,7 @@ class ModuleContextConfigTest {
 
     @DisplayName("A navigator slot conflict aborts enableAll() before the config file is flushed")
     @Test
-    void navigatorConflictAbortsEnableAllBeforeFlush(Env env, @TempDir Path dir) {
+    void navigatorConflictAbortsEnableAllBeforeFlush(@TempDir Path dir) {
         Path file = dir.resolve("app.json");
         Assertions.assertFalse(Files.exists(file));
         ConfigStore store = ConfigStore.open(file);
@@ -196,7 +210,7 @@ class ModuleContextConfigTest {
         });
         RecordingModule b = new RecordingModule("b", log, context -> context.navigator().add(entry), () -> {
         });
-        ModuleRegistry registry = builder(env, parent).config(store).modules(a, b).build();
+        ModuleRegistry registry = builder(parent).config(store).modules(a, b).build();
 
         Assertions.assertThrows(NavigatorConflictException.class, registry::enableAll);
 
@@ -205,14 +219,14 @@ class ModuleContextConfigTest {
 
     @DisplayName("Calling config() after enable() has returned throws IllegalStateException")
     @Test
-    void configAfterEnableReturnedThrows(Env env, @TempDir Path dir) {
+    void configAfterEnableReturnedThrows(@TempDir Path dir) {
         Path file = dir.resolve("app.json");
         ConfigStore store = ConfigStore.open(file);
         EventNode<Event> parent = EventNode.all("test-config-late-read");
         AtomicReference<ModuleContext> captured = new AtomicReference<>();
         RecordingModule module = new RecordingModule("late", new ArrayList<>(), captured::set, () -> {
         });
-        ModuleRegistry registry = builder(env, parent).config(store).modules(module).build();
+        ModuleRegistry registry = builder(parent).config(store).modules(module).build();
 
         registry.enableAll();
         ModuleContext context = captured.get();

@@ -56,7 +56,7 @@ class ItemRegistryIntegrationTest {
         });
         ItemStack stamped = items.register(new LobbyItem(Key.key("titan:navigator"), ItemStack.of(Material.FEATHER), ItemSlot.hotbar(4), (usedBy, event) -> handledFor.add(usedBy)));
 
-        platformNode.call(new PlayerUseItemEvent(player, PlayerHand.MAIN, stamped, System.currentTimeMillis()));
+        platformNode.call(new PlayerUseItemEvent(player, PlayerHand.MAIN, stamped, 0L));
 
         Assertions.assertEquals(List.of(player), handledFor, "the navigator opens - and only the navigator's own handler runs");
     }
@@ -72,7 +72,7 @@ class ItemRegistryIntegrationTest {
         registry.contextView("navigator", cleanup -> {
         }).register(new LobbyItem(Key.key("titan:navigator"), ItemStack.of(Material.FEATHER), ItemSlot.hotbar(4), (usedBy, event) -> handledFor.add(usedBy)));
 
-        platformNode.call(new PlayerUseItemEvent(player, PlayerHand.MAIN, ItemStack.of(Material.FEATHER), System.currentTimeMillis()));
+        platformNode.call(new PlayerUseItemEvent(player, PlayerHand.MAIN, ItemStack.of(Material.FEATHER), 0L));
 
         Assertions.assertTrue(handledFor.isEmpty(), "same material, but not the registered stack - the navigator must not open");
     }

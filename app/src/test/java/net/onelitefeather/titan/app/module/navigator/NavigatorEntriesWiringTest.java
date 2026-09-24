@@ -17,19 +17,18 @@ package net.onelitefeather.titan.app.module.navigator;
 
 import java.util.List;
 import net.kyori.adventure.text.Component;
+import net.minestom.server.command.CommandManager;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
-import net.minestom.testing.Env;
-import net.minestom.testing.extension.MicrotusExtension;
+import net.minestom.server.timer.Scheduler;
 import net.onelitefeather.titan.app.module.LobbyModule;
 import net.onelitefeather.titan.app.module.ModuleContext;
 import net.onelitefeather.titan.app.module.ModuleRegistry;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Covers the {@code lobby-navigator} spec end to end through {@link ModuleRegistry} and
@@ -37,9 +36,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * entry
  * disappearing once the module is disabled, and two modules whose entries share a slot aborting
  * {@link ModuleRegistry#enableAll()}.
+ *
+ * <p>Plain unit test (renamed from {@code NavigatorEntriesIntegrationTest}): none of this needs a
+ * {@link net.minestom.server.entity.Player} or {@link net.minestom.server.instance.Instance}, so it
+ * builds {@link ModuleRegistry} from a standalone {@link Scheduler#newScheduler()} and
+ * {@link CommandManager} instead of booting a Microtus {@code Env}.
  */
-@ExtendWith(MicrotusExtension.class)
-class NavigatorEntriesIntegrationTest {
+class NavigatorEntriesWiringTest {
 
     private static final ItemStack ICON = ItemStack.of(Material.FEATHER);
 
@@ -69,13 +72,17 @@ class NavigatorEntriesIntegrationTest {
         }
     }
 
+    private static ModuleRegistry.Builder builder(EventNode<Event> parent, NavigatorEntries navigatorEntries) {
+        return ModuleRegistry.builder().parent(parent).scheduler(Scheduler.newScheduler()).commandManager(new CommandManager()).navigator(navigatorEntries);
+    }
+
     @DisplayName("A module's navigator entry appears in the shared registry")
     @Test
-    void moduleContributesAnEntry(Env env) {
+    void moduleContributesAnEntry() {
         EventNode<Event> parent = EventNode.all("test-navigator-contributes");
         NavigatorEntries navigatorEntries = new NavigatorEntries();
         NavigatorContributingModule module = new NavigatorContributingModule("teaser", entryAt(2, "Voyager"));
-        ModuleRegistry registry = ModuleRegistry.builder().parent(parent).scheduler(env.process().scheduler()).commandManager(env.process().command()).navigator(navigatorEntries).modules(module).build();
+        ModuleRegistry registry = builder(parent, navigatorEntries).modules(module).build();
 
         registry.enableAll();
 
@@ -84,11 +91,11 @@ class NavigatorEntriesIntegrationTest {
 
     @DisplayName("A module's navigator entry disappears once the module is disabled")
     @Test
-    void entryDisappearsAfterModuleDisabled(Env env) {
+    void entryDisappearsAfterModuleDisabled() {
         EventNode<Event> parent = EventNode.all("test-navigator-disable");
         NavigatorEntries navigatorEntries = new NavigatorEntries();
         NavigatorContributingModule module = new NavigatorContributingModule("teaser", entryAt(2, "Voyager"));
-        ModuleRegistry registry = ModuleRegistry.builder().parent(parent).scheduler(env.process().scheduler()).commandManager(env.process().command()).navigator(navigatorEntries).modules(module).build();
+        ModuleRegistry registry = builder(parent, navigatorEntries).modules(module).build();
         registry.enableAll();
         Assertions.assertFalse(navigatorEntries.entries().isEmpty(), "the entry must be present while the module is enabled");
 
@@ -99,12 +106,12 @@ class NavigatorEntriesIntegrationTest {
 
     @DisplayName("Two modules contributing entries on the same slot abort enableAll(), naming the slot and both modules")
     @Test
-    void conflictingSlotsAbortStartup(Env env) {
+    void conflictingSlotsAbortStartup() {
         EventNode<Event> parent = EventNode.all("test-navigator-conflict");
         NavigatorEntries navigatorEntries = new NavigatorEntries();
         NavigatorContributingModule survival = new NavigatorContributingModule("navigator", entryAt(4, "Survival"));
         NavigatorContributingModule teaser = new NavigatorContributingModule("teaser", entryAt(4, "Voyager"));
-        ModuleRegistry registry = ModuleRegistry.builder().parent(parent).scheduler(env.process().scheduler()).commandManager(env.process().command()).navigator(navigatorEntries).modules(survival, teaser).build();
+        ModuleRegistry registry = builder(parent, navigatorEntries).modules(survival, teaser).build();
 
         NavigatorConflictException thrown = Assertions.assertThrows(NavigatorConflictException.class, registry::enableAll);
 
