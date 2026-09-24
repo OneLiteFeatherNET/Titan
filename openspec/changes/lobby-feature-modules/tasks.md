@@ -56,19 +56,19 @@ Regeln für Welle C: Die Feature-Agents legen nur neue Pakete an und löschen ni
 ## 3. Plattform: Config
 
 - [x] 3.1 `ConfigStore` und `ConfigException` in `common/config` anlegen: Dokument als `JsonObject`, Abschnitt per Modul-ID, Deep-Merge mit Defaults, abschnittsweises Speichern. Verifikation: `ConfigStoreTest` deckt die Szenarien „fehlender Abschnitt“, „fehlender Einzelwert“, „erster Start“ und „Rundlauf ohne Änderung“ ab.
-- [ ] 3.2 `context.config(Class<R>)` an den `ConfigStore` anbinden. Eine `ConfigException` aus dem Compact Constructor bricht den Start mit Modul, Feld und Grund ab. Verifikation: Tests „negative Dauer“ und „unmögliche Höhengrenzen“ an Beispiel-Records.
+- [x] 3.2 `context.config(Class<R>)` an den `ConfigStore` anbinden. Eine `ConfigException` aus dem Compact Constructor bricht den Start mit Modul, Feld und Grund ab. Verifikation: Tests „negative Dauer“ und „unmögliche Höhengrenzen“ an Beispiel-Records.
 - [x] 3.3 Eine syntaktisch kaputte `app.json` führt zum Abbruch mit Datei und Position, die Datei wird nicht überschrieben. Verifikation: Test prüft Fehlermeldung und unveränderten Dateiinhalt.
 - [x] 3.4 `LegacyConfigMigration` nach der Tabelle in design.md, Entscheidung 5 umsetzen: Sicherung `app.json.v1.bak`, verworfene Schlüssel im Log, `allowedSitBlocks` in beiden Formen lesbar. Verifikation: Test migriert die echte `app.json` aus dem Repo und prüft Zielwerte, Sicherungsdatei und Log-Eintrag.
 
 ## 4. Plattform: Items und Hotbar
 
-- [ ] 4.1 `LobbyItem`, `ItemSlot` und `ItemRegistry` umsetzen: Identitäts-Tag `titan:item` und ein Dispatch-Listener für `PlayerUseItemEvent`. Verifikation: Tests „Navigator benutzen“ (mit Test-Item) und „gleiches Material, anderes Item“ sind grün.
-- [ ] 4.2 Die Konfliktprüfung nach `enableAll` bricht den Start ab und nennt Platz und beide Module. Verifikation: Test „Zwei Module wollen Slot 4“ ist grün.
-- [ ] 4.3 `items().equip(player)` umsetzen: Inventar leeren und alle Items mit festem Platz setzen (Hotbar und Ausrüstung). Einträge fallen weg, wenn ihr Modul abgeschaltet wird. Verifikation: Unit-Test mit zwei Test-Modulen, von denen eines abgeschaltet wird.
+- [x] 4.1 `LobbyItem`, `ItemSlot` und `ItemRegistry` umsetzen: Identitäts-Tag `titan:item` und ein Dispatch-Listener für `PlayerUseItemEvent`. Verifikation: Tests „Navigator benutzen“ (mit Test-Item) und „gleiches Material, anderes Item“ sind grün.
+- [x] 4.2 Die Konfliktprüfung nach `enableAll` bricht den Start ab und nennt Platz und beide Module. Verifikation: Test „Zwei Module wollen Slot 4“ ist grün.
+- [x] 4.3 `items().equip(player)` umsetzen: Inventar leeren und alle Items mit festem Platz setzen (Hotbar und Ausrüstung). Einträge fallen weg, wenn ihr Modul abgeschaltet wird. Verifikation: Unit-Test mit zwei Test-Modulen, von denen eines abgeschaltet wird.
 
 ## 5. Plattform: Navigator-Einträge
 
-- [ ] 5.1 `NavigatorEntry` und `NavigatorEntries` umsetzen: Einträge pro Modul, Versionszähler, Entfernen beim Abschalten, Konfliktprüfung doppelter Plätze beim Start. Verifikation: Tests „Modul abgeschaltet“ und „Zwei Ziele auf Platz 4“ sind grün.
+- [x] 5.1 `NavigatorEntry` und `NavigatorEntries` umsetzen: Einträge pro Modul, Versionszähler, Entfernen beim Abschalten, Konfliktprüfung doppelter Plätze beim Start. Verifikation: Tests „Modul abgeschaltet“ und „Zwei Ziele auf Platz 4“ sind grün.
 
 ## 6. Features in Module umziehen (je Feature: Test grün → Umzug → alte Klassen löschen)
 
@@ -96,7 +96,7 @@ Regeln für Welle C: Die Feature-Agents legen nur neue Pakete an und löschen ni
 
 ## 7. Setup-Server
 
-- [ ] 7.1 `setup/.../AppCommand` auf `ConfigStore.set(section, field, value)` umstellen. `fireworkBoostSlot` entfällt, die Anzeige der Config zeigt die Abschnitte. Verifikation: Test „Sitz-Versatz ändern“ (aus 1.4, jetzt aktiviert) ist grün, die Höhengrenzen bleiben erhalten.
+- [x] 7.1 `setup/.../AppCommand` auf `ConfigStore.set(section, field, value)` umstellen. `fireworkBoostSlot` entfällt, die Anzeige der Config zeigt die Abschnitte. Verifikation: Test „Sitz-Versatz ändern“ (aus 1.4, jetzt aktiviert) ist grün, die Höhengrenzen bleiben erhalten.
 - [ ] 7.2 Setup-Server lokal starten, einen Wert ändern und prüfen, dass die Lobby mit der gespeicherten `app.json` startet. Verifikation: manueller Durchlauf, im PR dokumentiert.
 
 ## 8. Aufräumen
