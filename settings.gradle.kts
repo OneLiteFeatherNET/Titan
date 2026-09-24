@@ -32,14 +32,14 @@ dependencyResolutionManagement {
 
     versionCatalogs {
         create("libs") {
-            version("aonyx-bom", "0.8.0")
+            version("aonyx-bom", "0.8.7")
             version("cloudnet", "4.0.0-RC18-SNAPSHOT")
             version("butterfly", "1.0.23")
 
             version("luckperms", "5.6-SNAPSHOT")
 
             version("togglz", "4.6.4")
-            version("caffeine", "3.2.4")
+            version("caffeine", "3.3.0")
 
             version("tomcat-annotations-api", "6.0.53")
 
@@ -47,10 +47,11 @@ dependencyResolutionManagement {
             version("minestom-extensions", "2.2.0")
 
             version("mockito", "5.23.0")
+            version("archunit", "1.5.0")
 
-            version("slf4j", "2.0.18")
-            version("logback", "1.5.35")
-            version("sentry", "8.30.0")
+            version("slf4j", "2.0.20")
+            version("logback", "1.6.3")
+            version("sentry", "8.57.0")
 
             // Minestom
             library("aonyx-bom", "net.onelitefeather", "aonyx-bom").versionRef("aonyx-bom")
@@ -90,6 +91,7 @@ dependencyResolutionManagement {
 
             library("cyano", "net.onelitefeather", "cyano").withoutVersion()
             library("mockito", "org.mockito", "mockito-core").versionRef("mockito")
+            library("archunit", "com.tngtech.archunit", "archunit-junit5").versionRef("archunit")
 
             // Guava: unrelocated, expected by LuckPerms (was transitive via CloudNet).
             library("guava", "com.google.guava", "guava").versionRef("guava")
