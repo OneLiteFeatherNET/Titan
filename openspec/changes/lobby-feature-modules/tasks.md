@@ -112,18 +112,18 @@ Regeln für Welle C: Die Feature-Agents legen nur neue Pakete an und löschen ni
 ## 9. Architekturregeln
 
 - [x] 9.1 `archunit-junit5` in den Versionskatalog und als `testImplementation` in `app` aufnehmen. Verifikation: `./gradlew :app:dependencies` zeigt ArchUnit.
-- [ ] 9.2 `ArchitectureTest` mit den vier Regeln aus design.md, Entscheidung 10 anlegen. Verifikation: Die Tests sind grün. Eine absichtlich eingebaute Abhängigkeit `tickle → sit` lässt den Build lokal fehlschlagen (danach wieder entfernen).
+- [x] 9.2 `ArchitectureTest` mit den vier Regeln aus design.md, Entscheidung 10 anlegen. Verifikation: Die Tests sind grün. Eine absichtlich eingebaute Abhängigkeit `tickle → sit` lässt den Build lokal fehlschlagen (danach wieder entfernen).
 
 ## 10. Feature-Vorlage und Doku
 
-- [ ] 10.1 `docs/lobby-modules.md` schreiben:
+- [x] 10.1 `docs/lobby-modules.md` schreiben:
   - Aufbau eines Moduls,
   - Andockpunkte (`listen`, `config`, `items`, `navigator`, `commands`, `tasks`),
   - Regeln für den Tick-Thread (keine Listener zur Laufzeit, kein IO im Handler),
   - Checkliste „neues Feature = neues Paket + eine Zeile“.
 
   Verifikation: Das Dokument verweist auf ein lauffähiges Beispiel aus 10.2.
-- [ ] 10.2 Test-only-Beispielmodul unter `app/src/test/.../feature/example` anlegen (Config-Record, `LobbyItem`, Befehl, Test mit `Env`). Es dient als Kopiervorlage. Verifikation: Sein Test ist grün, und außerhalb des Pakets braucht es keine Änderung (Szenario „Beispielmodul aus der Vorlage“).
+- [x] 10.2 Test-only-Beispielmodul unter `app/src/test/.../feature/example` anlegen (Config-Record, `LobbyItem`, Befehl, Test mit `Env`). Es dient als Kopiervorlage. Verifikation: Sein Test ist grün, und außerhalb des Pakets braucht es keine Änderung (Szenario „Beispielmodul aus der Vorlage“).
 
 ## 11. Gesamtabnahme
 
