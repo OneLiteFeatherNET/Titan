@@ -33,42 +33,86 @@ You can configure server properties like port, MOTD, and more in the generated c
 
 ## Configuration
 
-Configuration is done through the `app.json` file. Here are the available options:
+Configuration is done through the `app.json` file, one named section per lobby feature module
+(`configVersion: 2`). A module reads only its own section; a missing section or a missing field
+falls back to the documented default below, and `app.json` is created with every module's defaults
+on first start if it does not exist yet. A value that fails validation (e.g. a negative cooldown, or
+`minHeight` not less than `maxHeight`) aborts startup with a message naming the section, field and
+reason - the lobby never starts with a silently replaced value.
+
+An `app.json` from before this format (a flat document with no `configVersion`) is migrated
+automatically on the next start: the old file is kept alongside as `app.json.v1.bak`, and any key
+that no longer has a home (`updateRateAgones`, `fireworkBoostSlot`) is dropped and named in the log.
 
 ```json
 {
-  "tickleDuration": 4000,
-  "sitOffset": {
-    "x": 0.5,
-    "y": 0.25,
-    "z": 0.5
+  "configVersion": 2,
+  "spawn": {
+    "minHeight": -64,
+    "maxHeight": 310,
+    "simulationDistance": 2
   },
-  "allowedSitBlocks": [
-    {
-      "domain": "minecraft",
-      "path": "spruce_stairs"
-    }
-  ],
-  "simulationDistance": 2,
-  "fireworkBoostSlot": 45,
-  "elytraBoostMultiplier": 35.0,
-  "updateRateAgones": 2000,
-  "maxHeightBeforeTeleport": 310,
-  "minHeightBeforeTeleport": -64
+  "sit": {
+    "offset": {
+      "x": 0.5,
+      "y": 0.25,
+      "z": 0.5
+    },
+    "allowedBlocks": [
+      "minecraft:spruce_stairs"
+    ]
+  },
+  "tickle": {
+    "cooldownMillis": 4000
+  },
+  "elytra": {
+    "boostMultiplier": 35.0
+  },
+  "navigator": {
+    "title": "<yellow>Navigator",
+    "entries": [
+      {
+        "slot": 0,
+        "icon": "minecraft:elytra",
+        "displayName": "<!i><gradient:#fcba03:#03fc8c>ElytraRace</gradient>",
+        "destination": "ElytraRace"
+      },
+      {
+        "slot": 4,
+        "icon": "minecraft:grass_block",
+        "displayName": "<!i><green>Survival",
+        "destination": "Survival"
+      },
+      {
+        "slot": 5,
+        "icon": "minecraft:enderman_spawn_egg",
+        "displayName": "<!i><gradient:#616161:#e80000c>Slender</gradient>",
+        "destination": "cygnus"
+      },
+      {
+        "slot": 8,
+        "icon": "minecraft:wooden_axe",
+        "displayName": "<!i><rainbow>Creative</rainbow>",
+        "destination": "MemberBuild"
+      }
+    ]
+  }
 }
 ```
 
 ### Configuration Options Explained
 
-- `tickleDuration`: Duration of tickle cooldown in milliseconds
-- `sitOffset`: Offset for sitting position (x, y, z coordinates)
-- `allowedSitBlocks`: List of blocks that players can sit on
-- `simulationDistance`: Simulation distance for entities
-- `fireworkBoostSlot`: Inventory slot for firework boost
-- `elytraBoostMultiplier`: Multiplier for elytra boost
-- `updateRateAgones`: Update rate for Agones in milliseconds
-- `maxHeightBeforeTeleport`: Maximum height before player teleportation
-- `minHeightBeforeTeleport`: Minimum height before player teleportation
+- `spawn.minHeight` / `spawn.maxHeight`: height bounds a player is teleported back to spawn outside
+  of
+- `spawn.simulationDistance`: simulation distance sent to a player on spawn
+- `sit.offset`: offset from the clicked block's position to the seat (x, y, z)
+- `sit.allowedBlocks`: block keys players may sit down on, e.g. `minecraft:spruce_stairs`
+- `tickle.cooldownMillis`: duration of the tickle cooldown in milliseconds
+- `elytra.boostMultiplier`: multiplier applied to the vanilla-equivalent firework boost
+- `navigator.title`: the shared navigator inventory's title, as a MiniMessage string
+- `navigator.entries`: the navigator's destinations, each with a hotbar-chest slot (`0`-`8`), an
+  icon material key, a MiniMessage display name and the CloudNet task name a click delivers the
+  player to
 
 ## Development
 
