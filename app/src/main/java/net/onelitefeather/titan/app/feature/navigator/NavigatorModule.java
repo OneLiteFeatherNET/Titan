@@ -19,7 +19,8 @@ import java.util.Objects;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.minestom.server.event.inventory.InventoryPreClickEvent;
+import net.minestom.server.entity.Player;
+import net.minestom.server.inventory.Inventory;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
 import net.onelitefeather.deliver.DeliverComponent;
@@ -32,28 +33,26 @@ import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntry;
 
 /**
- * The lobby's navigator: a feather in hotbar slot 4 that opens one Minestom inventory shared by
+ * The lobby's navigator: a feather in hotbar slot 4 that opens one Aves-built inventory shared by
  * every player, listing every destination contributed to {@link NavigatorEntries} - this module's
  * own configured destinations and any other module's.
  *
  * <p>See {@code openspec/changes/lobby-feature-modules/design.md}, decision 8, and the
- * {@code lobby-navigator} spec. One shared inventory ({@link SharedNavigatorInventory}), rebuilt
- * only when {@link NavigatorEntries#version()} changes, and exactly one
- * {@link InventoryPreClickEvent} listener, registered once in {@link #enable}.
+ * {@code lobby-navigator} spec: inventories run through Aves project-wide. The shared inventory
+ * ({@link NavigatorInventory}) is built by one Aves {@code GlobalInventoryBuilder}, rebuilt only
+ * when {@link NavigatorEntries#version()} changes, with {@link NavigatorInventory#register()}
+ * called exactly once here in {@link #enable} and {@link NavigatorInventory#unregister()} exactly
+ * once in {@link #disable}. This module registers no {@code InventoryPreClickEvent} listener of its
+ * own - every entry slot carries its own Aves click handler that cancels the click, forwards
+ * through {@link Deliver} and closes the inventory; see {@link NavigatorInventory}'s Javadoc for
+ * why
+ * that also makes this module's click handling independent of whether
+ * {@code feature.protection.ProtectionModule} is enabled before or after it.
  *
  * <p>{@link #entries} is handed in through the constructor rather than read from {@code context},
  * because {@link ModuleContext#navigator()} only exposes the narrow, add-only
  * {@link NavigatorEntries.View} - this module needs to read back every module's entries at open
  * time, not just add its own.
- *
- * <p>The {@link InventoryPreClickEvent} listener is registered through
- * {@link ModuleContext#listenIncludingCancelled} rather than {@link ModuleContext#listen}: another
- * module - {@code feature.protection.ProtectionModule} - unconditionally cancels every
- * {@link InventoryPreClickEvent}, and {@link ModuleContext#listen}'s listener is skipped once an
- * event is already cancelled by the time it reaches this module's node. Using
- * {@link ModuleContext#listenIncludingCancelled} means this module's click handling works no matter
- * which of the two is enabled first - see {@code lobby-modules} spec, "Module sind voneinander
- * unabhängig".
  */
 public final class NavigatorModule implements LobbyModule {
 
@@ -63,7 +62,7 @@ public final class NavigatorModule implements LobbyModule {
 
     private final Deliver deliver;
     private final NavigatorEntries entries;
-    private SharedNavigatorInventory sharedInventory;
+    private NavigatorInventory navigatorInventory;
 
     /**
      * @param deliver the delivery service a navigator click forwards the player through
@@ -83,25 +82,36 @@ public final class NavigatorModule implements LobbyModule {
     public void enable(ModuleContext context) {
         NavigatorConfig config = context.config(NavigatorConfig.class, NavigatorConfig.DEFAULTS);
         Component title = MiniMessage.miniMessage().deserialize(config.title());
-        this.sharedInventory = new SharedNavigatorInventory(title, this.entries);
+        this.navigatorInventory = new NavigatorInventory(title, this.entries, this::onSelect);
 
         for (NavigatorConfig.Entry entry : config.entries()) {
             context.navigator().add(toNavigatorEntry(entry));
         }
 
         ItemStack feather = ItemStack.builder(Material.FEATHER).customName(MiniMessage.miniMessage().deserialize("<!i><aqua>Navigator")).build();
-        context.items().register(new LobbyItem(ITEM_KEY, feather, ItemSlot.hotbar(HOTBAR_SLOT), (player, event) -> player.openInventory(this.sharedInventory.current())));
+        context.items().register(new LobbyItem(ITEM_KEY, feather, ItemSlot.hotbar(HOTBAR_SLOT), (player, event) -> player.openInventory(this.navigatorInventory.current())));
 
-        context.listenIncludingCancelled(InventoryPreClickEvent.class, this::onClick);
+        this.navigatorInventory.register();
     }
 
-    private void onClick(InventoryPreClickEvent event) {
-        if (!this.sharedInventory.isCurrent(event.getInventory())) {
-            return;
-        }
-        event.setCancelled(true);
-        this.sharedInventory.entryAt(event.getSlot()).ifPresent(entry -> this.deliver.sendPlayer(event.getPlayer(), DeliverComponent.taskBuilder().taskName(entry.destination()).player(event.getPlayer()).build()));
-        event.getPlayer().closeInventory();
+    @Override
+    public void disable() {
+        this.navigatorInventory.unregister();
+    }
+
+    /**
+     * Test-only: the shared Aves inventory this module opens for every player, so a leak test can
+     * assert the listener count on the event node Aves registered on (not just this module's own
+     * node) stays constant across opens.
+     *
+     * @return the shared inventory
+     */
+    Inventory sharedInventory() {
+        return this.navigatorInventory.current();
+    }
+
+    private void onSelect(Player player, NavigatorEntry entry) {
+        this.deliver.sendPlayer(player, DeliverComponent.taskBuilder().taskName(entry.destination()).player(player).build());
     }
 
     private static NavigatorEntry toNavigatorEntry(NavigatorConfig.Entry entry) {

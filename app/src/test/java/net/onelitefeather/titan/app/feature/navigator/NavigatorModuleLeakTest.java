@@ -22,6 +22,7 @@ import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.event.player.PlayerUseItemEvent;
+import net.minestom.server.event.trait.InventoryEvent;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.item.ItemStack;
 import net.minestom.testing.Env;
@@ -38,14 +39,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * Re-points the idea of the old, {@code @Disabled}
  * {@code net.onelitefeather.titan.app.navigator.NavigatorListenerLeakTest} at {@link
  * NavigatorModule}: repeatedly opening and closing the shared navigator, and many players joining,
- * opening it once and leaving, must never change the number of listeners registered on the
- * module's own event node.
+ * opening it once and leaving, must never change the number of listeners registered - neither on
+ * the module's own event node, nor on the event node Aves registered its click listener on.
  *
- * <p>{@link NavigatorModule} registers exactly one {@code InventoryPreClickEvent} listener, once,
- * in {@link NavigatorModule#enable}. Nothing here registers a listener again after {@code
- * enable()} returns, for any player, on any open. This test proves that structurally: the listener
- * count on the module's own {@code titan/navigator} node, read via {@link EventListenerCounter}
- * (see its own Javadoc on why reflection is needed - Minestom has no public API for this), stays
+ * <p>{@link NavigatorModule} registers no listener of its own at all: {@link NavigatorInventory}
+ * calls Aves' {@code GlobalInventoryBuilder#register()} exactly once, in
+ * {@link NavigatorModule#enable}, which registers exactly one click listener on the built
+ * inventory's own event node - see {@link NavigatorModule#sharedInventory()}. Nothing here
+ * registers a listener again after {@code enable()} returns, for any player, on any open. This
+ * test proves that structurally: the listener counts on both the module's own {@code
+ * titan/navigator} node and the shared inventory's own node, read via {@link EventListenerCounter}
+ * (see its own Javadoc on why reflection is needed - Minestom has no public API for this), stay
  * exactly the same no matter how many times the navigator is opened or how many players pass
  * through it.
  *
@@ -72,30 +76,43 @@ class NavigatorModuleLeakTest {
     @DisplayName("Opening and closing the navigator 50 times registers no extra listeners")
     @Test
     void openingAndClosingRepeatedlyDoesNotLeakListeners(Env env) {
-        try (ModuleHarness harness = ModuleHarness.start(env, (navigator, items) -> new LobbyModule[]{new NavigatorModule(new RecordingDeliver(), navigator)})) {
+        NavigatorModule[] moduleHolder = new NavigatorModule[1];
+        try (ModuleHarness harness = ModuleHarness.start(env, (navigator, items) -> {
+            moduleHolder[0] = new NavigatorModule(new RecordingDeliver(), navigator);
+            return new LobbyModule[]{moduleHolder[0]};
+        })) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             harness.items().equip(player);
             ItemStack feather = player.getInventory().getItemStack(4);
             EventNode<Event> navigatorNode = navigatorNode(env);
-            int listenersBefore = EventListenerCounter.countListeners(navigatorNode);
+            EventNode<InventoryEvent> avesInventoryNode = moduleHolder[0].sharedInventory().eventNode();
+            int moduleListenersBefore = EventListenerCounter.countListeners(navigatorNode);
+            int avesListenersBefore = EventListenerCounter.countListeners(avesInventoryNode);
 
             for (int i = 0; i < OPEN_CLOSE_COUNT; i++) {
                 env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, feather, 0L));
                 player.closeInventory();
             }
 
-            Assertions.assertEquals(listenersBefore, EventListenerCounter.countListeners(navigatorNode), "opening and closing the navigator must never register another listener");
+            Assertions.assertEquals(moduleListenersBefore, EventListenerCounter.countListeners(navigatorNode), "opening and closing the navigator must never register another listener on the module's own node");
+            Assertions.assertEquals(avesListenersBefore, EventListenerCounter.countListeners(avesInventoryNode), "opening and closing the navigator must never register another listener on the shared inventory's node");
         }
     }
 
     @DisplayName("100 players joining, opening the navigator once and leaving leaves the listener count unchanged")
     @Test
     void manyPlayersJoinOpenAndLeaveWithoutLeakingListeners(Env env) {
-        try (ModuleHarness harness = ModuleHarness.start(env, (navigator, items) -> new LobbyModule[]{new NavigatorModule(new RecordingDeliver(), navigator)})) {
+        NavigatorModule[] moduleHolder = new NavigatorModule[1];
+        try (ModuleHarness harness = ModuleHarness.start(env, (navigator, items) -> {
+            moduleHolder[0] = new NavigatorModule(new RecordingDeliver(), navigator);
+            return new LobbyModule[]{moduleHolder[0]};
+        })) {
             Instance instance = env.createFlatInstance();
             EventNode<Event> navigatorNode = navigatorNode(env);
-            int listenersBefore = EventListenerCounter.countListeners(navigatorNode);
+            EventNode<InventoryEvent> avesInventoryNode = moduleHolder[0].sharedInventory().eventNode();
+            int moduleListenersBefore = EventListenerCounter.countListeners(navigatorNode);
+            int avesListenersBefore = EventListenerCounter.countListeners(avesInventoryNode);
 
             for (int i = 0; i < PLAYER_COUNT; i++) {
                 Player player = env.createPlayer(instance);
@@ -107,7 +124,8 @@ class NavigatorModuleLeakTest {
                 env.process().eventHandler().call(new PlayerDisconnectEvent(player));
             }
 
-            Assertions.assertEquals(listenersBefore, EventListenerCounter.countListeners(navigatorNode), "100 players opening the navigator and leaving must not change the listener count");
+            Assertions.assertEquals(moduleListenersBefore, EventListenerCounter.countListeners(navigatorNode), "100 players opening the navigator and leaving must not change the listener count on the module's own node");
+            Assertions.assertEquals(avesListenersBefore, EventListenerCounter.countListeners(avesInventoryNode), "100 players opening the navigator and leaving must not change the listener count on the shared inventory's node");
         }
     }
 }
