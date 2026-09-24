@@ -52,7 +52,12 @@ Ein Feature-Paket unter `app/feature/<name>` folgt einer festen Sichtbarkeit
 (s. `design.md`, Entscheidung 10, und `ArchitectureTest`, unten): nur die
 Klassen `<Name>Module` und `<Name>Config` sind `public`, alles andere -
 Handler, Vorlagen, Items, Tags - ist paketprivat. Das ist kein Stilwunsch,
-sondern wird im Build geprüft.
+sondern wird im Build geprüft - allerdings nur für Produktionscode unter
+`app/src/main`: `ArchitectureTest` analysiert mit
+`ImportOption.DoNotIncludeTests`, das test-only Vorlagemodul unter
+`app/src/test/.../feature/example/` läuft also nicht mit und hält diese
+Regel nur per Konvention ein. Erst ein echtes Feature, das aus der Vorlage
+nach `app/src/main` kopiert wird, wird von der Prüfung erfasst.
 
 ## Andockpunkte des `ModuleContext`
 
@@ -109,6 +114,9 @@ public record ExampleConfig(String greeting, long cooldownMillis) {
         if (greeting == null || greeting.isBlank()) {
             throw ConfigException.invalid("greeting", "must not be blank");
         }
+        if (!greeting.contains("%s")) {
+            throw ConfigException.invalid("greeting", "must contain a '%s' placeholder for the player's name");
+        }
         if (cooldownMillis < 0) {
             throw ConfigException.invalid("cooldownMillis", "must not be negative");
         }
@@ -130,6 +138,18 @@ Abschnitt (die Modul-`id()`); es gibt keine Überladung für einen anderen
 Abschnitt. Ohne konfigurierten `ConfigStore` (z. B. im
 `ModuleHarness.startStandalone`-Testaufbau) liefert `config` unverändert
 `defaults` zurück. Wie `listen` funktioniert `config` nur während `enable()`.
+
+`ConfigStore.flush()` (aufgerufen von `ModuleRegistry.enableAll()` nach dem
+Start aller Module) schreibt `app.json` nur, wenn die Datei bei
+`ConfigStore.open()` neu angelegt oder aus dem Legacy-Format migriert wurde
+(s. `ConfigStore#flush`/`#writeOnFlush`). Läuft ein neues Modul gegen ein
+bereits bestehendes, aktuelles `app.json`, bekommt es seine Defaults nur im
+Arbeitsspeicher - sein Abschnitt taucht in der Datei erst auf, sobald ihn
+jemand tatsächlich setzt (z. B. über den Setup-Server, der `ConfigStore.save()`
+explizit aufruft). Für ein neues Feature bedeutet das: seinen Abschnitt samt
+Defaults im README dokumentieren (s. Checkliste, Schritt 6) und, falls
+Betreiber ihn anpassen sollen, in derselben PR in `app.json` ergänzen -
+sonst bleibt er unsichtbar, bis jemand ihn über den Setup-Server anfasst.
 
 ### `items` - ein Hotbar- oder Ausrüstungsitem anmelden
 
@@ -331,8 +351,12 @@ prüft im Build, nicht nur per Konvention (s. `design.md`, Entscheidung 10):
    `ModuleRegistry.builder()`. Keine andere Datei, kein anderes Feature-Paket
    ändert sich dafür (s. `lobby-modules`-Spec, Szenario "Beispielmodul aus der
    Vorlage").
-6. Falls das Feature einen `app.json`-Abschnitt hat: die neuen Felder im
-   README unter "Configuration Options Explained" dokumentieren.
+6. Falls das Feature einen `app.json`-Abschnitt hat: die neuen Felder samt
+   Defaults im README unter "Configuration Options Explained" dokumentieren -
+   `ConfigStore.flush()` schreibt eine bestehende, aktuelle `app.json` nicht
+   automatisch neu (s. "config" oben), der Abschnitt läuft bis dahin nur mit
+   Defaults im Speicher. Sollen Betreiber ihn anpassen können, den Abschnitt
+   zusätzlich in derselben PR in `app.json` ergänzen.
 
 `ExampleModule` selbst bleibt test-only und taucht deshalb nicht in
 `Titan.java` auf - als reguläres Feature bräuchte es genau den einen Eintrag

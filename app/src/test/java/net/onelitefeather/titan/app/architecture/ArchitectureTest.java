@@ -42,6 +42,13 @@ import net.onelitefeather.titan.app.TitanApplication;
  * leak internals, the platform and shared libraries never depend on a feature, and only the
  * platform touches the raw Minestom event tree.
  *
+ * <p><strong>Test sources are not analyzed:</strong> {@link AnalyzeClasses} below is configured
+ * with {@link ImportOption.DoNotIncludeTests}, so these rules only check production code under
+ * {@code app/src/main}. The test-only template module under
+ * {@code app/src/test/.../feature/example/} (see {@code docs/lobby-modules.md}) is therefore
+ * never scanned; it follows the same rules by convention only. A real feature copied from that
+ * template into {@code app/src/main} is checked like any other feature.
+ *
  * <p><strong>Scope of {@link #onlyThePlatformRegistersListenersDirectly}:</strong> this class
  * analyzes the whole {@code net.onelitefeather.titan} codebase (see {@link AnalyzeClasses}
  * above), which also covers {@code common} and the separate {@code setup} artifact. Direct calls
