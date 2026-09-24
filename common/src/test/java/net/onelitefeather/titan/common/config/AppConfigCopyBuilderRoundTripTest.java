@@ -69,9 +69,7 @@ class AppConfigCopyBuilderRoundTripTest {
 
         AppConfig reloaded = provider.getAppConfig();
 
-        assertEquals(expectedMinHeight, reloaded.minHeightBeforeTeleport(),
-                "minHeightBeforeTeleport must survive an AppConfig.builder(existing) round trip");
-        assertEquals(expectedMaxHeight, reloaded.maxHeightBeforeTeleport(),
-                "maxHeightBeforeTeleport must survive an AppConfig.builder(existing) round trip");
+        assertEquals(expectedMinHeight, reloaded.minHeightBeforeTeleport(), "minHeightBeforeTeleport must survive an AppConfig.builder(existing) round trip");
+        assertEquals(expectedMaxHeight, reloaded.maxHeightBeforeTeleport(), "maxHeightBeforeTeleport must survive an AppConfig.builder(existing) round trip");
     }
 }

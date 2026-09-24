@@ -83,8 +83,7 @@ class ProtectionListenersTest {
         Player player = env.createPlayer(flatInstance);
         MinecraftServer.getGlobalEventHandler().addListener(PlayerBlockBreakEvent.class, Cancelable::cancel);
 
-        PlayerBlockBreakEvent event = new PlayerBlockBreakEvent(player, flatInstance, Block.STONE, Block.AIR,
-                new BlockVec(0, 64, 0), BlockFace.TOP);
+        PlayerBlockBreakEvent event = new PlayerBlockBreakEvent(player, flatInstance, Block.STONE, Block.AIR, new BlockVec(0, 64, 0), BlockFace.TOP);
         MinecraftServer.getGlobalEventHandler().call(event);
 
         Assertions.assertTrue(event.isCancelled());
@@ -97,8 +96,7 @@ class ProtectionListenersTest {
         Player player = env.createPlayer(flatInstance);
         MinecraftServer.getGlobalEventHandler().addListener(PlayerBlockPlaceEvent.class, Cancelable::cancel);
 
-        PlayerBlockPlaceEvent event = new PlayerBlockPlaceEvent(player, flatInstance, Block.STONE, BlockFace.TOP,
-                new BlockVec(0, 64, 0), new BlockVec(0, 64, 0), PlayerHand.MAIN);
+        PlayerBlockPlaceEvent event = new PlayerBlockPlaceEvent(player, flatInstance, Block.STONE, BlockFace.TOP, new BlockVec(0, 64, 0), new BlockVec(0, 64, 0), PlayerHand.MAIN);
         MinecraftServer.getGlobalEventHandler().call(event);
 
         Assertions.assertTrue(event.isCancelled());

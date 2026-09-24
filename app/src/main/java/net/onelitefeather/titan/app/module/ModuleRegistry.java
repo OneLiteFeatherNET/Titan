@@ -64,15 +64,16 @@ public final class ModuleRegistry {
     /**
      * Starts every registered module exactly once, in registration order. For each module this
      * attaches a fresh {@code titan/<id>} event node under {@code parent}, hands the module a new
-     * {@link ModuleContext}, and calls {@link LobbyModule#enable}. Once {@code enable} returns, that
+     * {@link ModuleContext}, and calls {@link LobbyModule#enable}. Once {@code enable} returns,
+     * that
      * module's context stops accepting new listeners.
      *
      * @throws ModuleLifecycleException if a module's {@code enable} throws; the exception names the
-     *                                   failing module and carries the original failure as its
-     *                                   cause. The failing module's own node, tasks and cleanup
-     *                                   hooks are torn down before this is thrown; modules enabled
-     *                                   earlier in this call are left running - it is on the caller
-     *                                   to shut the whole registry down in response
+     *                                  failing module and carries the original failure as its
+     *                                  cause. The failing module's own node, tasks and cleanup
+     *                                  hooks are torn down before this is thrown; modules enabled
+     *                                  earlier in this call are left running - it is on the caller
+     *                                  to shut the whole registry down in response
      */
     public void enableAll() {
         for (LobbyModule module : this.modules) {

@@ -113,12 +113,8 @@ class NavigatorListenerLeakTest {
         int staleListenersOnReplacedInventories = countAll(nodesBeforeRefresh);
         int listenersOnFreshInventories = countAll(nodesAfterRefresh);
 
-        assertEquals(0, staleListenersOnReplacedInventories,
-                "NavigationHelper never calls PersonalInventoryBuilder#unregister() on a replaced builder, "
-                        + "so the old, discarded inventory keeps its click listener (and the Player it captured) "
-                        + "registered forever");
-        assertEquals(listenersBeforeRefresh, listenersOnFreshInventories + staleListenersOnReplacedInventories,
-                "the total number of registered navigator click listeners must stay unchanged across a cache refresh");
+        assertEquals(0, staleListenersOnReplacedInventories, "NavigationHelper never calls PersonalInventoryBuilder#unregister() on a replaced builder, " + "so the old, discarded inventory keeps its click listener (and the Player it captured) " + "registered forever");
+        assertEquals(listenersBeforeRefresh, listenersOnFreshInventories + staleListenersOnReplacedInventories, "the total number of registered navigator click listeners must stay unchanged across a cache refresh");
     }
 
     private static int countAll(List<EventNode<InventoryEvent>> nodes) {

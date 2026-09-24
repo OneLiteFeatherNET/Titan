@@ -47,7 +47,9 @@ class ModuleRegistryTest {
     private record TestEvent() implements Event {
     }
 
-    /** A player-bound test event, for scenarios that exercise {@link TitanObservability} guarding. */
+    /**
+     * A player-bound test event, for scenarios that exercise {@link TitanObservability} guarding.
+     */
     private record PlayerTestEvent(Player player) implements PlayerEvent {
 
         @Override
