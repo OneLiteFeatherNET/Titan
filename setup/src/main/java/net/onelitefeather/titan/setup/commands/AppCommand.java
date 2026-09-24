@@ -44,7 +44,8 @@ import java.util.function.Predicate;
  */
 public class AppCommand extends Command {
 
-    private static final Argument<Double> ELYTRA_BOOST_MULTIPLIER = ArgumentType.Double("elytraBoostMultiplierValue").setDefaultValue(35.0);
+    private static final Argument<Integer> ELYTRA_BURN_DURATION_TICKS = ArgumentType.Integer("elytraBurnDurationTicksValue").setDefaultValue(30);
+    private static final Argument<Integer> ELYTRA_COOLDOWN_TICKS = ArgumentType.Integer("elytraCooldownTicksValue").setDefaultValue(40);
     private static final Argument<Integer> SIMULATION_DISTANCE = ArgumentType.Integer("simulationDistanceValue").setDefaultValue(2);
     private static final Argument<CommandContext> SIT_OFFSET = ArgumentType.Group("sitOffsetValue", ArgumentType.Double("x"), ArgumentType.Double("y"), ArgumentType.Double("z"));
     private static final Argument<Long> TICKLE_DURATION = ArgumentType.Long("tickleDurationValue").setDefaultValue(4000L);
@@ -57,7 +58,8 @@ public class AppCommand extends Command {
         super("app");
         this.configEditor = configEditor;
         addSyntax(this::display, ArgumentType.Literal("display"));
-        addSyntax(this::updateElytraMultiplier, ArgumentType.Literal("elytraBoostMultiplier"), ELYTRA_BOOST_MULTIPLIER);
+        addSyntax(this::updateElytraBurnDurationTicks, ArgumentType.Literal("elytraBurnDurationTicks"), ELYTRA_BURN_DURATION_TICKS);
+        addSyntax(this::updateElytraCooldownTicks, ArgumentType.Literal("elytraCooldownTicks"), ELYTRA_COOLDOWN_TICKS);
         addSyntax(this::updateSimulationDistance, ArgumentType.Literal("simulationDistance"), SIMULATION_DISTANCE);
         addSyntax(this::updateSitOffset, ArgumentType.Literal("sitOffset"), SIT_OFFSET);
         addSyntax(this::updateTickleDuration, ArgumentType.Literal("tickleDuration"), TICKLE_DURATION);
@@ -108,11 +110,18 @@ public class AppCommand extends Command {
                 MiniMessage.miniMessage().deserialize("<prefix> Simulation distance has been updated to <distance>", Placeholder.parsed("distance", String.valueOf(simulationDistance))));
     }
 
-    private void updateElytraMultiplier(@NotNull CommandSender commandSender, @NotNull CommandContext commandContext) {
-        Double elytraBoostMultiplier = commandContext.get(ELYTRA_BOOST_MULTIPLIER);
-        this.configEditor.setElytraBoostMultiplier(elytraBoostMultiplier);
+    private void updateElytraBurnDurationTicks(@NotNull CommandSender commandSender, @NotNull CommandContext commandContext) {
+        Integer burnDurationTicks = commandContext.get(ELYTRA_BURN_DURATION_TICKS);
+        this.configEditor.setElytraBurnDurationTicks(burnDurationTicks);
         commandSender.sendMessage(MiniMessage.miniMessage().deserialize(
-                "<prefix> Elytra boost multiplier has been updated to <multiplier>", Placeholder.parsed("multiplier", String.valueOf(elytraBoostMultiplier))));
+                "<prefix> Elytra burn duration has been updated to <ticks> ticks", Placeholder.parsed("ticks", String.valueOf(burnDurationTicks))));
+    }
+
+    private void updateElytraCooldownTicks(@NotNull CommandSender commandSender, @NotNull CommandContext commandContext) {
+        Integer cooldownTicks = commandContext.get(ELYTRA_COOLDOWN_TICKS);
+        this.configEditor.setElytraCooldownTicks(cooldownTicks);
+        commandSender.sendMessage(MiniMessage.miniMessage().deserialize(
+                "<prefix> Elytra cooldown has been updated to <ticks> ticks", Placeholder.parsed("ticks", String.valueOf(cooldownTicks))));
     }
 
     private void display(@NotNull CommandSender commandSender, @NotNull CommandContext commandContext) {
@@ -128,6 +137,7 @@ public class AppCommand extends Command {
                     <dark_aqua>sit.offset: <yellow><sit_offset>
                     <dark_aqua>sit.allowedBlocks: <yellow><allowed_sit_blocks>
                     <dark_aqua>tickle.cooldownMillis: <yellow><cooldown_millis>
-                    <dark_aqua>elytra.boostMultiplier: <yellow><elytra_boost_multiplier>""", Placeholder.parsed("min_height", String.valueOf(spawn.minHeight())), Placeholder.parsed("max_height", String.valueOf(spawn.maxHeight())), Placeholder.parsed("simulation_distance", String.valueOf(spawn.simulationDistance())), Placeholder.parsed("sit_offset", sit.offset().toString()), Placeholder.parsed("allowed_sit_blocks", sit.allowedBlocks().toString()), Placeholder.parsed("cooldown_millis", String.valueOf(tickle.cooldownMillis())), Placeholder.parsed("elytra_boost_multiplier", String.valueOf(elytra.boostMultiplier()))));
+                    <dark_aqua>elytra.burnDurationTicks: <yellow><elytra_burn_duration_ticks>
+                    <dark_aqua>elytra.cooldownTicks: <yellow><elytra_cooldown_ticks>""", Placeholder.parsed("min_height", String.valueOf(spawn.minHeight())), Placeholder.parsed("max_height", String.valueOf(spawn.maxHeight())), Placeholder.parsed("simulation_distance", String.valueOf(spawn.simulationDistance())), Placeholder.parsed("sit_offset", sit.offset().toString()), Placeholder.parsed("allowed_sit_blocks", sit.allowedBlocks().toString()), Placeholder.parsed("cooldown_millis", String.valueOf(tickle.cooldownMillis())), Placeholder.parsed("elytra_burn_duration_ticks", String.valueOf(elytra.burnDurationTicks())), Placeholder.parsed("elytra_cooldown_ticks", String.valueOf(elytra.cooldownTicks()))));
     }
 }

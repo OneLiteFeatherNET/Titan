@@ -66,7 +66,8 @@ that no longer has a home (`updateRateAgones`, `fireworkBoostSlot`) is dropped a
     "cooldownMillis": 4000
   },
   "elytra": {
-    "boostMultiplier": 35.0
+    "burnDurationTicks": 30,
+    "cooldownTicks": 40
   },
   "navigator": {
     "title": "<yellow>Navigator",
@@ -108,7 +109,13 @@ that no longer has a home (`updateRateAgones`, `fireworkBoostSlot`) is dropped a
 - `sit.offset`: offset from the clicked block's position to the seat (x, y, z)
 - `sit.allowedBlocks`: block keys players may sit down on, e.g. `minecraft:spruce_stairs`
 - `tickle.cooldownMillis`: duration of the tickle cooldown in milliseconds
-- `elytra.boostMultiplier`: multiplier applied to the vanilla-equivalent firework boost
+- `elytra.burnDurationTicks`: how many ticks a lit firework rocket boosts a flying player for -
+  the boost itself is Vanilla's own client-side firework impulse (ported from
+  [Voyager](https://github.com/onelitefeather/Voyager)'s `FireworkBoostTracker`/`Rockets`), not a
+  server-applied velocity, so there is no multiplier to configure
+- `elytra.cooldownTicks`: how many ticks after a boost starts before the player may use another
+  rocket; must be strictly greater than `elytra.burnDurationTicks`, since it is measured from the
+  burn's start
 - `navigator.title`: the shared navigator inventory's title, as a MiniMessage string
 - `navigator.entries`: the navigator's destinations, each with a hotbar-chest slot (`0`-`8`), an
   icon material key, a MiniMessage display name and the CloudNet task name a click delivers the
