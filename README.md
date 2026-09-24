@@ -133,6 +133,11 @@ Run tests using:
 
 Code coverage reports are generated using JaCoCo and can be found in `build/reports/jacoco/`.
 
+### Adding a Lobby Feature Module
+
+See [`docs/lobby-modules.md`](docs/lobby-modules.md) (German) for how a lobby feature module is
+built, including a copyable template module and its tests.
+
 ## License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
