@@ -72,19 +72,19 @@ Regeln für Welle C: Die Feature-Agents legen nur neue Pakete an und löschen ni
 
 ## 6. Features in Module umziehen (je Feature: Test grün → Umzug → alte Klassen löschen)
 
-- [ ] 6.1 `feature/protection`: das Abbrechen von Aufheben, Inventarklick, Blockabbau, Blocksetzen, Hand-Tausch und Drop. Verifikation: Tests aus 1.1 (Schutz) sind grün gegen das Modul.
-- [ ] 6.2 `feature/spawn` mit `SpawnConfig(minHeight, maxHeight, simulationDistance)`: Spawn-Instanz und Respawn-Punkt setzen, Simulationsdistanz-Paket senden, Teleport zum Spawn beim Join, `items().equip` beim Join, Höhen-Teleport. Verifikation: Tests aus 1.1 (Höhen-Teleport, Ausstattung nach Join) sind grün.
-- [ ] 6.3 `feature/respawn`: Tod ohne Nachricht, sofortiger Respawn, `items().equip` nach dem Respawn. Verifikation: Tests aus 1.1 (Tod, Ausstattung nach Respawn) sind grün.
-- [ ] 6.4 `feature/navigator` mit `NavigatorConfig(title, entries)`:
+- [x] 6.1 `feature/protection`: das Abbrechen von Aufheben, Inventarklick, Blockabbau, Blocksetzen, Hand-Tausch und Drop. Verifikation: Tests aus 1.1 (Schutz) sind grün gegen das Modul.
+- [x] 6.2 `feature/spawn` mit `SpawnConfig(minHeight, maxHeight, simulationDistance)`: Spawn-Instanz und Respawn-Punkt setzen, Simulationsdistanz-Paket senden, Teleport zum Spawn beim Join, `items().equip` beim Join, Höhen-Teleport. Verifikation: Tests aus 1.1 (Höhen-Teleport, Ausstattung nach Join) sind grün.
+- [x] 6.3 `feature/respawn`: Tod ohne Nachricht, sofortiger Respawn, `items().equip` nach dem Respawn. Verifikation: Tests aus 1.1 (Tod, Ausstattung nach Respawn) sind grün.
+- [x] 6.4 `feature/navigator` mit `NavigatorConfig(title, entries)`:
   - Feder als `LobbyItem` in Slot 4.
   - Die Standardziele kommen aus den Config-Defaults.
   - Ein geteiltes Inventar, ein Klick-Listener, Weiterleitung über `Deliver`.
   - `NavigationHelper` und die Caffeine-Abhängigkeit (falls sonst ungenutzt) entfernen.
 
   Verifikation: Test aus 1.2 grün. Leak-Test aus 1.3 aktiviert und grün. Test „zusätzliches Ziel per Konfiguration“ grün.
-- [ ] 6.5 `feature/sit` mit `SitConfig(offset, allowedBlocks)` und eigenen Tags (`titan:sit/*`): Sitzen, Aufstehen per Schleichen, Dismount, Aufräumen beim Disconnect. `SitHelper` aus `common` hierher verschieben. Verifikation: Die vorhandenen Sit-Tests sind grün, dazu Szenario „Sitzen und Aufstehen“ aus der Spec.
-- [ ] 6.6 `feature/tickle` mit `TickleConfig(cooldownMillis)` und eigenem Tag. Verifikation: Der vorhandene `TickleListenerTest` ist grün. Der Test für das gewünschte Cooldown-Verhalten steht auf `@Disabled` mit Verweis auf die Folge-Change.
-- [ ] 6.7 `feature/elytra` mit `ElytraConfig(boostMultiplier)`: Feuerwerk als `LobbyItem` ohne festen Platz, Nebenhand beim Start und Stopp des Flugs, Boost über den Item-Dispatch. Verifikation: Die vorhandenen Elytra-Tests sind grün, dazu die Szenarien „Feuerwerk beim Fliegen / nach dem Landen / Boost beim Fliegen“.
+- [x] 6.5 `feature/sit` mit `SitConfig(offset, allowedBlocks)` und eigenen Tags (`titan:sit/*`): Sitzen, Aufstehen per Schleichen, Dismount, Aufräumen beim Disconnect. `SitHelper` aus `common` hierher verschieben. Verifikation: Die vorhandenen Sit-Tests sind grün, dazu Szenario „Sitzen und Aufstehen“ aus der Spec.
+- [x] 6.6 `feature/tickle` mit `TickleConfig(cooldownMillis)` und eigenem Tag. Verifikation: Der vorhandene `TickleListenerTest` ist grün. Der Test für das gewünschte Cooldown-Verhalten steht auf `@Disabled` mit Verweis auf die Folge-Change.
+- [x] 6.7 `feature/elytra` mit `ElytraConfig(boostMultiplier)`: Feuerwerk als `LobbyItem` ohne festen Platz, Nebenhand beim Start und Stopp des Flugs, Boost über den Item-Dispatch. Verifikation: Die vorhandenen Elytra-Tests sind grün, dazu die Szenarien „Feuerwerk beim Fliegen / nach dem Landen / Boost beim Fliegen“.
 - [ ] 6.8 `Titan.java` auf die Composition Root reduzieren. Das bedeutet:
   - Abhängigkeiten bauen,
   - `ModuleRegistry.of(protection, spawn, respawn, navigator, sit, tickle, elytra)`,
