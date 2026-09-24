@@ -64,7 +64,8 @@ public final class ModuleContext {
     /**
      * Registers {@code listener} for {@code type}, wrapped in
      * {@link TitanObservability#guard(String, Consumer)} so a failure is attributed to this module
-     * (and, if the event carries one, its player) without stopping the lobby. The listener hangs off
+     * (and, if the event carries one, its player) without stopping the lobby. The listener hangs
+     * off
      * this module's own event node and is removed as a whole - along with the node itself - when
      * the module is disabled.
      *
@@ -72,8 +73,8 @@ public final class ModuleContext {
      * @param listener the listener
      * @param <E>      the event type
      * @throws IllegalStateException if called after {@link LobbyModule#enable} has returned - a
-     *                                module registers everything it needs up front, never in
-     *                                response to a player joining, opening a menu and so on
+     *                               module registers everything it needs up front, never in
+     *                               response to a player joining, opening a menu and so on
      */
     public <E extends Event> void listen(Class<E> type, Consumer<E> listener) {
         if (this.listeningClosed) {
@@ -116,7 +117,9 @@ public final class ModuleContext {
         return this.node;
     }
 
-    /** Stops accepting new listeners; called by {@link ModuleRegistry} once {@code enable} returns. */
+    /**
+     * Stops accepting new listeners; called by {@link ModuleRegistry} once {@code enable} returns.
+     */
     void closeForListening() {
         this.listeningClosed = true;
     }
