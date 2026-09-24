@@ -166,14 +166,17 @@ Vorbild ist mapmakers `ItemHandler`/`ItemRegistry`.
 - **Aufgaben des Navigator-Moduls:**
   - meldet die Feder als `LobbyItem` an,
   - trägt die Ziele aus seiner Config ein,
-  - baut **ein** Minestom-`Inventory` (`CHEST_1_ROW`) für alle Spieler, weil der Inhalt für alle gleich ist,
-  - baut das Inventar neu, wenn sich die Einträge geändert haben (Versionszähler der Registry),
-  - hat **einen** `InventoryPreClickEvent`-Listener, gefiltert auf dieses Inventar, der weiterleitet und das Inventar schließt.
-- **Weg fallen:** Caffeine-Cache, `PersonalInventoryBuilder` und Listener pro Spieler. Damit ist das Leck strukturell behoben.
+  - baut das Inventar mit **Aves** (Projektvorgabe: Inventare laufen über Aves), und zwar **einen** `GlobalInventoryBuilder` (`CHEST_1_ROW`) für alle Spieler, weil der Inhalt für alle gleich ist,
+  - ruft `register()` genau einmal in `enable()` auf und `unregister()` in `disable()`. Damit gibt es keine Listener-Anmeldung zur Laufzeit.
+  - aktualisiert das Layout über Aves (`invalidateDataLayout` bzw. neues Layout), wenn sich die Einträge geändert haben (Versionszähler der Registry),
+  - leitet Klicks über die Klick-Handler der Aves-Slots weiter und schließt das Inventar.
+- **Weg fallen:** Caffeine-Cache, `PersonalInventoryBuilder` pro Spieler und Listener pro Spieler. Damit ist das Leck strukturell behoben. Das Leck lag nicht an Aves, sondern daran, dass pro Spieler Builder angemeldet und nie abgemeldet wurden.
 - **Zwei Stellen für Einträge:** Die Einträge (Registry) sind Plattform, die Darstellung ist das Feature. Andere Module steuern Einträge bei, ohne vom Navigator-Modul abzuhängen. Ist das Navigator-Modul aus, bleiben die Einträge einfach ungenutzt.
 - **Weiterleitung:** über `Deliver` (`taskBuilder().taskName(destination)`) wie heute. Ohne CloudNet greift `NoopDeliver`.
 
-**Alternative:** Aves `GlobalInventoryBuilder`. Möglich, aber das eigene Inventar ist wenige Zeilen lang und vermeidet Aves' Listener-Anmeldung zur Laufzeit.
+**Alternative:** ein eigenes Minestom-`Inventory` mit eigenem Klick-Listener. Das war die ursprüngliche Wahl, wurde aber verworfen: Inventare laufen im Projekt einheitlich über Aves (Vorgabe des Maintainers). Zwei Inventar-Mechanismen nebeneinander widersprächen DRY und der Wartbarkeit.
+
+**Testbarkeit:** Unit-Test für die Berechnung des Layouts (Slot → Item), Integrationstest mit `Env` für Öffnen, Klick und Weiterleitung. Der Leak-Test (Anzahl der Listener bleibt bei vielen Spielern gleich) muss grün bleiben.
 
 **Später:** Ziele pro Spieler, etwa nach Permission, würden ein Inventar pro Öffnung erfordern, bei gleichem einzelnen Klick-Listener. Das ist nicht Teil dieser Change.
 

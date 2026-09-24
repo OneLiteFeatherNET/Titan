@@ -130,6 +130,11 @@ Regeln für Welle C: Die Feature-Agents legen nur neue Pakete an und löschen ni
 - [ ] 11.1 Die Lobby lokal mit der migrierten `app.json` starten und im Client prüfen: Feder in Slot 4, Elytra, Navigator (4 Ziele), Sitzen, Kitzeln, Fliegen mit Boost, Höhen-Teleport, Tod und Respawn. Verifikation: Checkliste im PR abgehakt.
 - [ ] 11.2 `./gradlew build` inklusive aller Tests und ArchUnit ist grün, `openspec validate lobby-feature-modules` ist ohne Fehler. Verifikation: CI-Lauf grün.
 
+## 13. Nachbesserungen aus der Abnahme
+
+- [ ] 13.1 Navigator auf Aves umstellen (design.md Entscheidung 8): ein `GlobalInventoryBuilder` für alle Spieler, `register()` in `enable()` und `unregister()` in `disable()`, Klicks über die Aves-Slot-Handler. Das eigene Minestom-`Inventory` und der eigene Klick-Listener entfallen. Test-first. Verifikation: `NavigatorModuleTest` und `NavigatorModuleLeakTest` sind grün, der Test für beide Reihenfolgen mit dem Schutz-Modul ist grün, ArchUnit ist grün.
+- [ ] 13.2 Elytra-Verhalten wieder an das Verhalten vor dem Umbau angleichen (Befund aus der Abnahme im Client). Zuerst ein roter Charakterisierungstest gegen die gefundene Abweichung, dann der Fix. Verifikation: Die Elytra-Tests sind grün, und die erneute Prüfung im Client ist abgehakt.
+
 ## 12. Pull Request
 
 - [x] 12.1 Pull Request von `feat/lobby-feature-modules` nach `main` mit dem Titel `feat(app)!: rebuild the lobby around feature modules` öffnen. Die Beschreibung enthält den `BREAKING CHANGE`-Hinweis zu `app.json`, die Rollback-Anleitung aus design.md und die abgehakte Abnahme-Checkliste aus 11.1. Verifikation: Der PR existiert, und der CI-Lauf ist grün.
