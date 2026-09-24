@@ -85,7 +85,7 @@ Regeln für Welle C: Die Feature-Agents legen nur neue Pakete an und löschen ni
 - [x] 6.5 `feature/sit` mit `SitConfig(offset, allowedBlocks)` und eigenen Tags (`titan:sit/*`): Sitzen, Aufstehen per Schleichen, Dismount, Aufräumen beim Disconnect. `SitHelper` aus `common` hierher verschieben. Verifikation: Die vorhandenen Sit-Tests sind grün, dazu Szenario „Sitzen und Aufstehen“ aus der Spec.
 - [x] 6.6 `feature/tickle` mit `TickleConfig(cooldownMillis)` und eigenem Tag. Verifikation: Der vorhandene `TickleListenerTest` ist grün. Der Test für das gewünschte Cooldown-Verhalten steht auf `@Disabled` mit Verweis auf die Folge-Change.
 - [x] 6.7 `feature/elytra` mit `ElytraConfig(boostMultiplier)`: Feuerwerk als `LobbyItem` ohne festen Platz, Nebenhand beim Start und Stopp des Flugs, Boost über den Item-Dispatch. Verifikation: Die vorhandenen Elytra-Tests sind grün, dazu die Szenarien „Feuerwerk beim Fliegen / nach dem Landen / Boost beim Fliegen“.
-- [ ] 6.8 `Titan.java` auf die Composition Root reduzieren. Das bedeutet:
+- [x] 6.8 `Titan.java` auf die Composition Root reduzieren. Das bedeutet:
   - Abhängigkeiten bauen,
   - `ModuleRegistry.of(protection, spawn, respawn, navigator, sit, tickle, elytra)`,
   - Plattform-Befehle `stop` und `end`,
@@ -101,13 +101,13 @@ Regeln für Welle C: Die Feature-Agents legen nur neue Pakete an und löschen ni
 
 ## 8. Aufräumen
 
-- [ ] 8.1 Folgendes löschen:
+- [x] 8.1 Folgendes löschen:
   - `common/config/AppConfig`, `AppConfigImpl`, `AppConfigBuilder`, `InternalAppConfig`, `AppConfigProvider` samt Tests
   - `common/utils/Tags` und `common/utils/Items`
   - `app/listener/` und `app/helper/`
 
   Verifikation: `./gradlew build` ist grün, `grep -r "AppConfigBuilder\|utils.Tags\|utils.Items" --include=*.java .` findet nichts.
-- [ ] 8.2 `app.json` im Repo und die README auf das neue Format umstellen, `updateRateAgones` entfernen. Verifikation: Die Lobby startet mit der Repo-`app.json` ohne Migrationshinweis im Log.
+- [x] 8.2 `app.json` im Repo und die README auf das neue Format umstellen, `updateRateAgones` entfernen. Verifikation: Die Lobby startet mit der Repo-`app.json` ohne Migrationshinweis im Log.
 
 ## 9. Architekturregeln
 
