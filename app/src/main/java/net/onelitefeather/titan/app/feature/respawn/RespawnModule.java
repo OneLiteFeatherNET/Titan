@@ -16,6 +16,7 @@
 package net.onelitefeather.titan.app.feature.respawn;
 
 import net.kyori.adventure.text.Component;
+import net.minestom.server.entity.Player;
 import net.minestom.server.event.player.PlayerDeathEvent;
 import net.minestom.server.event.player.PlayerRespawnEvent;
 import net.onelitefeather.titan.app.module.LobbyModule;
@@ -28,6 +29,19 @@ import net.onelitefeather.titan.app.module.ModuleContext;
  * away - there is no death screen in the lobby. On {@link PlayerRespawnEvent}, it hands the player
  * back the platform's standard loadout through {@link ModuleContext#items()}, the same call the
  * spawn module makes on join.
+ *
+ * <p>Minestom's {@code Player#kill()} dispatches {@link PlayerDeathEvent} <em>before</em> it marks
+ * the player dead ({@code Player#isDead()} only flips to {@code true} once the event has been
+ * handled), and {@code Player#respawn()} is a no-op while {@code isDead()} is still {@code false}.
+ * Calling {@code respawn()} straight from the {@link PlayerDeathEvent} listener would therefore
+ * silently do nothing. This module instead defers the respawn to the next tick, via the player's
+ * own {@link net.minestom.server.timer.Scheduler} - by then {@code kill()} has finished and
+ * {@code isDead()} is {@code true}, so {@code respawn()} actually runs. Scheduling on the player's
+ * own scheduler (instead of this module's {@link ModuleContext#tasks()}) also means the task is
+ * dropped for free if the player disconnects before the next tick, without this module having to
+ * track it. No extra double-respawn guard is needed: {@code respawn()} already checks
+ * {@code isDead()} itself, so a player who is revived by some other means before the scheduled
+ * respawn runs is simply left alone.
  *
  * <p>See {@code openspec/changes/lobby-feature-modules/specs/lobby-modules/spec.md}, scenario
  * "Tod ohne Nachricht", and {@code specs/lobby-hotbar/spec.md}, scenario "Ausstattung nach
@@ -48,6 +62,7 @@ public final class RespawnModule implements LobbyModule {
 
     private static void onDeath(PlayerDeathEvent event) {
         event.setDeathText(Component.empty());
-        event.getPlayer().respawn();
+        Player player = event.getPlayer();
+        player.scheduler().scheduleNextTick(player::respawn);
     }
 }
