@@ -23,6 +23,7 @@ import net.minestom.server.entity.EquipmentSlot;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.PlayerHand;
 import net.minestom.server.entity.metadata.projectile.FireworkRocketMeta;
+import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.event.player.PlayerStartFlyingWithElytraEvent;
 import net.minestom.server.event.player.PlayerStopFlyingWithElytraEvent;
 import net.minestom.server.event.player.PlayerUseItemEvent;
@@ -169,6 +170,65 @@ class ElytraModuleTest {
             env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.OFF, stampedFirework, 1));
 
             Assertions.assertEquals(2, rocketsIn(instance).size(), "stopping flight must clear the previous boost so using the firework again lights a brand-new rocket");
+        }
+    }
+
+    @DisplayName("Ticking past the burn and its cooldown while still flying allows a second rocket")
+    @Test
+    void tickingPastTheBurnAndItsCooldownWhileStillFlyingAllowsASecondRocket(Env env) {
+        try (ModuleHarness harness = ModuleHarness.start(env, new ElytraModule())) {
+            Instance instance = env.createFlatInstance();
+            Player player = env.createPlayer(instance);
+            player.setFlyingWithElytra(true);
+            env.process().eventHandler().call(new PlayerStartFlyingWithElytraEvent(player));
+            ItemStack stampedFirework = player.getItemInOffHand();
+            env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.OFF, stampedFirework, 1));
+
+            // Neither landing nor disconnecting clears the boost here - only ticking past the
+            // burn and its cooldown does. This only happens if ElytraModule actually schedules
+            // FireworkBoostTracker#advance once per tick; a module that registered the tracker but
+            // never drove it would refuse this second use forever.
+            int ticksToClearTheCooldown = ElytraConfig.DEFAULTS.burnDurationTicks() + ElytraConfig.DEFAULTS.cooldownTicks();
+            for (int i = 0; i < ticksToClearTheCooldown; i++) {
+                // Minestom's own physics tick lands the player once gravity brings them to the
+                // ground and clears the gliding flag right there (Player#tick) - reasserted every
+                // tick so this test drives the cooldown, not a landing.
+                player.setFlyingWithElytra(true);
+                env.tick();
+            }
+            player.setFlyingWithElytra(true);
+
+            // The first rocket's own scheduled removal (burnDurationTicks, well inside the ticks
+            // driven above) has already taken it out of the instance, so a refused second use
+            // would leave the instance with no rocket at all - only a freshly lit one proves the
+            // cooldown actually cleared.
+            Assertions.assertTrue(rocketsIn(instance).isEmpty(), "the first rocket's own burn must have ended long before its cooldown does");
+
+            env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.OFF, stampedFirework, 1));
+
+            Assertions.assertEquals(1, rocketsIn(instance).size(), "once the burn and its cooldown have fully ticked away, a second use must light a new rocket");
+        }
+    }
+
+    @DisplayName("A PlayerDisconnectEvent clears the player's boost state, so a reconnecting player may boost immediately")
+    @Test
+    void playerDisconnectClearsAnyActiveBoostSoAReconnectingPlayerMayBoostImmediately(Env env) {
+        try (ModuleHarness harness = ModuleHarness.start(env, new ElytraModule())) {
+            Instance instance = env.createFlatInstance();
+            Player player = env.createPlayer(instance);
+            player.setFlyingWithElytra(true);
+            env.process().eventHandler().call(new PlayerStartFlyingWithElytraEvent(player));
+            ItemStack stampedFirework = player.getItemInOffHand();
+            env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.OFF, stampedFirework, 1));
+
+            env.process().eventHandler().call(new PlayerDisconnectEvent(player));
+
+            // If the module had not forgotten the boost on disconnect, this second use - standing
+            // in for the same player reconnecting and flying again - would still be refused by the
+            // still-running cooldown, a no-op that never spawns a second rocket.
+            env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.OFF, stampedFirework, 1));
+
+            Assertions.assertEquals(2, rocketsIn(instance).size(), "a PlayerDisconnectEvent must clear the previous boost so a new use lights a brand-new rocket");
         }
     }
 
