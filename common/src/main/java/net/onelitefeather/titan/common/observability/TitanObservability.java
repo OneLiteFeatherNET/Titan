@@ -16,6 +16,7 @@
 package net.onelitefeather.titan.common.observability;
 
 import io.sentry.Sentry;
+import java.util.Objects;
 import java.util.function.Consumer;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.entity.Player;
@@ -54,6 +55,15 @@ import org.slf4j.MDC;
  * returns normally pays for an entered {@code try} and nothing else, which matters because the
  * guarded listeners include {@code PlayerMoveEvent} and {@code PlayerPacketEvent}.
  *
+ * <h2>Module attribution</h2>
+ *
+ * <p>{@link #guard(String, Consumer)} is the module-lifecycle platform's variant of {@link #guard}:
+ * it additionally puts the module id into the SLF4J MDC ({@value #MODULE_KEY}) for the duration of
+ * the listener call, and - like the player identity above - records it on the failure path so the
+ * final log record, once it reaches {@link #handleException}, names both the module and, if there
+ * was one, the player. A module's own logging during a healthy call also sees the MDC value, which
+ * is why it is set for the whole call and not just on failure.
+ *
  * <h2>Sentry is optional</h2>
  *
  * <p>Without {@value #DSN_ENVIRONMENT_VARIABLE} in the environment {@link Sentry#init} is never
@@ -75,6 +85,7 @@ public final class TitanObservability {
 
     static final String PLAYER_UUID_KEY = "player.uuid";
     static final String PLAYER_NAME_KEY = "player.name";
+    static final String MODULE_KEY = "module";
 
     /**
      * Set by {@link #guard} on the failure path and consumed by {@link #handleException}. Both run
@@ -82,6 +93,12 @@ public final class TitanObservability {
      * rethrow without touching the healthy path.
      */
     private static final ThreadLocal<PlayerIdentity> FAILING_PLAYER = new ThreadLocal<>();
+
+    /**
+     * Set by {@link #guard(String, Consumer)} on the failure path and consumed by
+     * {@link #handleException}, mirroring {@link #FAILING_PLAYER}.
+     */
+    private static final ThreadLocal<String> FAILING_MODULE = new ThreadLocal<>();
 
     private TitanObservability() {
         throw new UnsupportedOperationException("This class cannot be instantiated");
@@ -144,6 +161,31 @@ public final class TitanObservability {
     }
 
     /**
+     * Wraps a listener so a failure records which module the listener belongs to, in addition to
+     * everything {@link #guard(Consumer)} already records for the player. The module id is also
+     * placed in the SLF4J MDC ({@value #MODULE_KEY}) for the whole duration of the call, healthy or
+     * not, so a module's own log statements carry it too.
+     *
+     * @param moduleId the id of the module {@code listener} belongs to
+     * @param listener the listener to wrap
+     * @param <T>      the event type
+     * @return a listener that behaves identically but leaves module (and player) context behind
+     *         when it throws
+     */
+    public static <T extends Event> Consumer<T> guard(String moduleId, Consumer<T> listener) {
+        Objects.requireNonNull(moduleId, "moduleId");
+        Consumer<T> guarded = guard(listener);
+        return event -> {
+            try (MDC.MDCCloseable ignoredModule = MDC.putCloseable(MODULE_KEY, moduleId)) {
+                guarded.accept(event);
+            } catch (Throwable throwable) {
+                FAILING_MODULE.set(moduleId);
+                throw throwable;
+            }
+        };
+    }
+
+    /**
      * Returns the identity {@link #guard} recorded for this thread's most recent failure, and
      * clears it. Clearing is unconditional: a stale identity left behind would mis-attribute the
      * next exception this thread reports.
@@ -156,14 +198,33 @@ public final class TitanObservability {
         return identity;
     }
 
+    /**
+     * Returns the module id {@link #guard(String, Consumer)} recorded for this thread's most recent
+     * failure, and clears it, mirroring {@link #consumeFailingPlayer()}.
+     *
+     * @return the module the failing listener belonged to, or {@code null} if there was none
+     */
+    static String consumeFailingModule() {
+        String moduleId = FAILING_MODULE.get();
+        FAILING_MODULE.remove();
+        return moduleId;
+    }
+
     static void handleException(Throwable throwable) {
         PlayerIdentity identity = consumeFailingPlayer();
-        if (identity == null) {
+        String moduleId = consumeFailingModule();
+        if (identity == null && moduleId == null) {
             LOGGER.error("Unhandled exception", throwable);
             return;
         }
-        try (MDC.MDCCloseable ignoredUuid = MDC.putCloseable(PLAYER_UUID_KEY, identity.uuid()); MDC.MDCCloseable ignoredName = MDC.putCloseable(PLAYER_NAME_KEY, identity.name())) {
-            LOGGER.error("Unhandled exception while handling an event for {}", identity.name(), throwable);
+        try (MDC.MDCCloseable ignoredModule = moduleId == null ? null : MDC.putCloseable(MODULE_KEY, moduleId); MDC.MDCCloseable ignoredUuid = identity == null ? null : MDC.putCloseable(PLAYER_UUID_KEY, identity.uuid()); MDC.MDCCloseable ignoredName = identity == null ? null : MDC.putCloseable(PLAYER_NAME_KEY, identity.name())) {
+            if (moduleId != null && identity != null) {
+                LOGGER.error("Unhandled exception in module {} while handling an event for {}", moduleId, identity.name(), throwable);
+            } else if (moduleId != null) {
+                LOGGER.error("Unhandled exception in module {}", moduleId, throwable);
+            } else {
+                LOGGER.error("Unhandled exception while handling an event for {}", identity.name(), throwable);
+            }
         }
     }
 
