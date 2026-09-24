@@ -14,8 +14,6 @@ dependencies {
     implementation(project(":api"))
     implementation(project(":common"))
     implementation(platform(libs.aonyx.bom))
-    implementation(libs.togglz)
-    implementation(libs.aves)
     implementation(libs.adventure.minimessage)
     implementation(libs.minestom)
     implementation(platform(libs.minestom.extensions.bom))
@@ -46,7 +44,6 @@ dependencies {
 
     testImplementation(platform(libs.aonyx.bom))
     testImplementation(libs.minestom)
-    testImplementation(libs.aves)
     testImplementation(libs.cyano)
     testImplementation(libs.mockito)
 

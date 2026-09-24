@@ -1,5 +1,6 @@
 plugins {
     id("titan.java-conventions")
+    `java-library`
 }
 
 dependencies {
@@ -7,7 +8,10 @@ dependencies {
     implementation(platform(libs.aonyx.bom))
     implementation(libs.minestom)
     implementation(libs.togglz)
-    implementation(libs.aves)
+    // LobbyMap (net.onelitefeather.titan.common.map) extends aves' BaseMap and MapProvider hands
+    // it out publicly, so a consumer compiling against MapProvider needs BaseMap on its own
+    // compile classpath too - api, not implementation.
+    api(libs.aves)
     implementation(libs.adventure.minimessage)
     // Logging was relying on Minestom's transitive slf4j-api; declare it where it is used.
     implementation(libs.slf4j.api)
