@@ -10,22 +10,24 @@ Integrations-Branch: `feat/lobby-feature-modules`, abgezweigt von `main`. Der Ha
 | A | tests-bugs | 1.3, 1.4 | sonnet | `app/src/test/**`, `common/src/test/**` (neue Dateien) | `src/main/**` |
 | A | platform-lifecycle | 2.1–2.4 | sonnet | `app/.../module/**`, `common/.../observability/**` | `Titan.java`, `listener/**` |
 | A | config-store | 3.1, 3.3, 3.4 | sonnet | `common/.../config/**` (neue Klassen) | bestehende `AppConfig*` |
-| A | archunit-dep | 9.1 | haiku | `settings.gradle.kts`, `app/build.gradle.kts` | Quellcode |
+| A | archunit-dep | 9.1 | haiku (erledigt, vor der Regel "Implementierung = Sonnet") | `settings.gradle.kts`, `app/build.gradle.kts` | Quellcode |
 | B | config-binding | 3.2 | sonnet | `app/.../module/**` (Config-Anbindung) | `feature/**` |
 | B | items | 4.1–4.3 | sonnet | `app/.../module/item/**` | andere `module/`-Unterpakete |
-| B | navigator-entries | 5.1 | haiku | `app/.../module/navigator/**` | andere `module/`-Unterpakete |
+| B | navigator-entries | 5.1 | sonnet | `app/.../module/navigator/**` | andere `module/`-Unterpakete |
 | B | setup | 7.1 | sonnet | `setup/**` | `app/**` |
-| C | f-protection | 6.1 | haiku | `app/.../feature/protection/**` + Tests | `Titan.java`, alte Klassen (noch nicht löschen) |
+| C | f-protection | 6.1 | sonnet | `app/.../feature/protection/**` + Tests | `Titan.java`, alte Klassen (noch nicht löschen) |
 | C | f-spawn | 6.2 | sonnet | `feature/spawn/**` + Tests | dito |
-| C | f-respawn | 6.3 | haiku | `feature/respawn/**` + Tests | dito |
+| C | f-respawn | 6.3 | sonnet | `feature/respawn/**` + Tests | dito |
 | C | f-navigator | 6.4 | sonnet | `feature/navigator/**` + Tests | dito |
 | C | f-sit | 6.5 | sonnet | `feature/sit/**` + Tests | dito, `SitHelper` wird kopiert, nicht verschoben |
-| C | f-tickle | 6.6 | haiku | `feature/tickle/**` + Tests | dito |
+| C | f-tickle | 6.6 | sonnet | `feature/tickle/**` + Tests | dito |
 | C | f-elytra | 6.7 | sonnet | `feature/elytra/**` + Tests | dito |
 | D | wiring-cleanup | 6.8, 8.1, 8.2 | sonnet | `Titan.java`, Löschen der Altklassen, `app.json`, README | `feature/**`-Logik |
-| E | archrules | 9.2 | haiku | `app/src/test/.../ArchitectureTest` | `src/main/**` |
+| E | archrules | 9.2 | sonnet | `app/src/test/.../ArchitectureTest` | `src/main/**` |
 | E | docs-template | 10.1, 10.2 | sonnet | `docs/lobby-modules.md`, `app/src/test/.../feature/example/**` | `src/main/**` |
 | F | Hauptkontext | 7.2, 11.1, 11.2 | – (manuell bzw. CI, zusammen mit dem Nutzer) | – | – |
+
+Nach jeder Welle, vor dem Start der nächsten, laufen zwei Reviews: ein **Sonnet-Reviewer** (Clean Code, SOLID, DRY, test-first) und ein **Haiku-Checker** (Testpyramide, verbotene Pfade, Header, Spotless, Build). Beide sind read-only. Gültige Befunde behebt ein Sonnet-Fix-Agent im Worktree. Erst dann startet die nächste Welle.
 
 Regel für Welle B: `config-binding`, `items` und `navigator-entries` ergänzen jeweils eine Zugriffsmethode in `ModuleContext` bzw. `ModuleRegistry`. Diese kleinen, erwarteten Konflikte löst der Hauptkontext beim Mergen. Alles Übrige legen die Agents in ihren eigenen Unterpaketen ab.
 
@@ -127,3 +129,7 @@ Regeln für Welle C: Die Feature-Agents legen nur neue Pakete an und löschen ni
 
 - [ ] 11.1 Die Lobby lokal mit der migrierten `app.json` starten und im Client prüfen: Feder in Slot 4, Elytra, Navigator (4 Ziele), Sitzen, Kitzeln, Fliegen mit Boost, Höhen-Teleport, Tod und Respawn. Verifikation: Checkliste im PR abgehakt.
 - [ ] 11.2 `./gradlew build` inklusive aller Tests und ArchUnit ist grün, `openspec validate lobby-feature-modules` ist ohne Fehler. Verifikation: CI-Lauf grün.
+
+## 12. Pull Request
+
+- [ ] 12.1 Pull Request von `feat/lobby-feature-modules` nach `main` mit dem Titel `feat(app)!: rebuild the lobby around feature modules` öffnen. Die Beschreibung enthält den `BREAKING CHANGE`-Hinweis zu `app.json`, die Rollback-Anleitung aus design.md und die abgehakte Abnahme-Checkliste aus 11.1. Verifikation: Der PR existiert, und der CI-Lauf ist grün.

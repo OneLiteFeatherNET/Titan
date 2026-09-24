@@ -9,6 +9,24 @@ schema: spec-driven
 #     We use conventional commits
 #     Domain: e-commerce platform
 
+context: |
+  Titan ist ein Minestom-Lobby-Server (Java 25, Gradle, Minestom 26.1, Aves, Cyano/Microtus für Tests).
+  Für allen Java-Code gelten:
+  - Clean Code: sprechende Namen, kleine Methoden mit einer Aufgabe, keine versteckten Seiteneffekte, keine toten Codepfade.
+  - SOLID: eine Verantwortung pro Klasse; erweitern statt ändern (neue Features docken über Andockpunkte an);
+    Abhängigkeiten über Konstruktor und Abstraktionen, nicht über statische Singletons.
+  - DRY: kein kopiertes Verhalten; gemeinsame Logik nur dann extrahieren, wenn sie wirklich dieselbe Bedeutung hat.
+  - Test Driven Design mit Testpyramide: Test zuerst. Die breite Basis sind schnelle Unit-Tests ohne Minestom-Server
+    (reine Logik wird dafür aus Listenern herausgelöst). Darüber weniger Integrationstests mit Cyano-Env für
+    Event-Verdrahtung und Spielerverhalten. Oben nur wenige manuelle/End-to-End-Abnahmen.
+
+rules:
+  design:
+    - Jede Entscheidung nennt, wie sie testbar ist (Unit- oder Integrationstest) und welches SOLID-Prinzip sie stützt oder bewusst verletzt.
+  tasks:
+    - Jeder Implementierungs-Task beginnt mit dem Test (rot), dann Implementierung (grün), dann Refactoring.
+    - Jeder Task nennt die Ebene der Testpyramide (Unit oder Integration) seiner Tests.
+
 # Per-artifact rules (optional)
 # Add custom rules for specific artifacts.
 # Example:
@@ -35,8 +53,12 @@ operations:
   apply:
     guidance:
       - Tasks werden nicht im Hauptkontext umgesetzt, sondern an Subagents delegiert (Agent-Tool mit isolation "worktree"). Der Hauptkontext orchestriert nur, merged und prüft.
-      - Subagents arbeiten ausschließlich mit model "sonnet" oder "haiku". Sonnet für Aufgaben mit Designentscheidungen, heiklen Tests oder Nebenläufigkeit; Haiku für mechanische Aufgaben (Verschieben, Löschen, Abhängigkeiten, Doku-Anpassungen).
+      - Implementierung, Refactorings, Tests und Commits laufen über Sonnet-Subagents (model "sonnet"). Haiku-Subagents (model "haiku") nur für Suchen, Lesen, Faktenprüfung und CI-/Log-Triage.
+      - Reviews macht nicht der Hauptkontext selbst, sondern Review-Agents (read-only, ohne Worktree). Nach jeder Welle laufen zwei parallel. Ein Sonnet-Reviewer prüft Clean Code, SOLID, DRY und ob wirklich test-first gearbeitet wurde. Ein Haiku-Checker prüft Mechanisches, nämlich Testpyramide (Unit gegenüber Integration pro neuer Klasse), keine verbotenen Pfade angefasst, Lizenz-Header, Spotless und Build grün.
+      - Befunde aus dem Review behebt ein Sonnet-Agent, bevor die nächste Welle startet. Der Hauptkontext entscheidet nur, welche Befunde gelten.
+      - Jeder Implementierungs-Prompt enthält die Java-Prinzipien aus context (Clean Code, SOLID, DRY, TDD mit Testpyramide).
       - Unabhängige Tasks laufen parallel in einer Welle (mehrere Agent-Aufrufe in einer Nachricht). Wenn tasks.md einen Wellenplan enthält, gilt dieser.
-      - Vor jeder Welle ist der Stand der vorherigen Welle auf dem Integrations-Branch committet, damit neue Worktrees darauf aufsetzen. Nie direkt auf main arbeiten.
+      - Vor jeder Welle ist der Stand der vorherigen Welle auf dem Integrations-Branch committet. Nie direkt auf main arbeiten.
+      - Agent-Worktrees werden von origin/main abgezweigt, nicht vom aktuellen Branch. Jeder Agent-Prompt beginnt deshalb mit "git reset --hard <Integrations-Branch>" im eigenen Worktree, damit der Agent auf dem Stand der Vorwelle arbeitet.
       - Jeder Agent-Prompt nennt die Task-IDs, die betroffenen Pakete/Dateien, die Dateien, die er NICHT anfassen darf, und das Verifikationskommando. Der Agent committet im eigenen Worktree und meldet Branch und Testergebnis.
       - Nach jeder Welle merged der Hauptkontext die Worktree-Branches in den Integrations-Branch, löst Konflikte, führt ./gradlew build aus und hakt erst dann die Tasks in tasks.md ab.

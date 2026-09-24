@@ -8,6 +8,8 @@ Mit den anstehenden Features (Freunde, Stats, Voyager-Teaser, Portale, echte Wel
 
 Der Branch `feat/lobby-season` enthält bereits ein Modulsystem. Diese Change baut die Architektur auf Wunsch neu auf `main` auf und nutzt den Branch nur als Ideenquelle (`LobbyModule`, `ModuleContext`, `ModuleTasks`).
 
+**Auslieferung:** `feat(app)!: rebuild the lobby around feature modules` (Conventional Commit, PR-Titel), mit dem Footer `BREAKING CHANGE: app.json uses one section per module; the old flat file is migrated on first start and kept as app.json.v1.bak`.
+
 ## What Changes
 
 - **Modulsystem:** Jedes Lobby-Feature wird ein Modul mit `id`, `enable(context)` und `disable()`. Die Registry gibt jedem Modul einen eigenen `EventNode` und eine eigene Task-Liste. Beim Herunterfahren hängt sie beides in umgekehrter Reihenfolge ab bzw. bricht die Tasks ab.
