@@ -132,7 +132,7 @@ Regeln für Welle C: Die Feature-Agents legen nur neue Pakete an und löschen ni
 
 ## 13. Nachbesserungen aus der Abnahme
 
-- [ ] 13.1 Navigator auf Aves umstellen (design.md Entscheidung 8): ein `GlobalInventoryBuilder` für alle Spieler, `register()` in `enable()` und `unregister()` in `disable()`, Klicks über die Aves-Slot-Handler. Das eigene Minestom-`Inventory` und der eigene Klick-Listener entfallen. Test-first. Verifikation: `NavigatorModuleTest` und `NavigatorModuleLeakTest` sind grün, der Test für beide Reihenfolgen mit dem Schutz-Modul ist grün, ArchUnit ist grün.
+- [x] 13.1 Navigator auf Aves umstellen (design.md Entscheidung 8): ein `GlobalInventoryBuilder` für alle Spieler, `register()` in `enable()` und `unregister()` in `disable()`, Klicks über die Aves-Slot-Handler. Das eigene Minestom-`Inventory` und der eigene Klick-Listener entfallen. Test-first. Verifikation: `NavigatorModuleTest` und `NavigatorModuleLeakTest` sind grün, der Test für beide Reihenfolgen mit dem Schutz-Modul ist grün, ArchUnit ist grün.
 - [ ] 13.2 Elytra-Verhalten wieder an das Verhalten vor dem Umbau angleichen (Befund aus der Abnahme im Client). Zuerst ein roter Charakterisierungstest gegen die gefundene Abweichung, dann der Fix. Verifikation: Die Elytra-Tests sind grün, und die erneute Prüfung im Client ist abgehakt.
 
 ## 12. Pull Request
