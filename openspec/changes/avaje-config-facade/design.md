@@ -52,8 +52,8 @@ Danach entfallen:
 **Built-in first:** Das ist das eingebaute Verhalten von avaje-config, ganz ohne eigenen Code davor. Eine eigene Factory, die den ersten Zugriff vorwegnimmt und den Fehler übersetzt, wurde angeboten und vom Maintainer zugunsten des eingebauten Verhaltens verworfen: Der ohnehin vorhandene erste Zugriff (Startup-Log bzw. erster Read) übernimmt diese Rolle, ohne dass ein weiterer Typ existiert, der nur diesen einen Zugriff kapselt.
 
 **Test:**
-- Unit: `ConfigExceptionTest` verliert die Fälle für `malformed(...)`, behält `invalid`/`withSection`.
-- Integration: Der bestehende `ConfigurationPrecedenceTest` startet für jeden Fall eine Kind-JVM. Deren `ConfigurationPrintMain` fängt `ExceptionInInitializerError` an der Außengrenze ab und druckt die volle Ursachenkette (wie der `--validate-tickle`-Modus es schon für einen ungültigen Override tut), statt sich auf die Standard-Stacktrace-Ausgabe der JVM zu verlassen. Ein Fall prüft: Eine kaputte `application.yaml` beendet die Kind-JVM mit einer Meldung, die Datei und Zeile nennt.
+- Es gibt keine eigene `ConfigException` mehr (siehe Entscheidung 3) und damit auch keinen `ConfigExceptionTest`.
+- Integration: Der bestehende `ConfigurationPrecedenceTest` startet für jeden Fall eine Kind-JVM. Deren `ConfigurationPrintMain` fängt `ExceptionInInitializerError` an der Außengrenze ab und druckt die volle Ursachenkette, statt sich auf die Standard-Stacktrace-Ausgabe der JVM zu verlassen. Ein Fall prüft: Eine kaputte `application.yaml` beendet die Kind-JVM mit einer Meldung, die Datei und Zeile nennt.
 
 **SOLID:** Verletzt DIP bewusst. Module hängen von einer konkreten, statischen Quelle ab statt von einer injizierten Abstraktion. Das widerspricht der Projektregel „Abhängigkeiten über Konstruktor und Abstraktionen, nicht über statische Singletons“ und ist eine Entscheidung des Maintainers. Entscheidung 3 begrenzt die Folgen, indem die Fassade nur am Rand des Moduls gelesen wird.
 
@@ -77,24 +77,39 @@ Danach entfallen:
 
 **SOLID:** SRP. Die Standardwerte sind Daten und stehen in einer Datei, nicht im Code.
 
-### 3. Lesen am Rand, prüfen in reinen Funktionen
+### 3. Lesen am Rand, prüfen in reinen Funktionen - ohne eigene Exception-Klasse
 
-**Entscheidung:** Jedes Modul liest seine Werte in `enable()` über `Config`. Schlüssel sind `private static final String`-Konstanten im Modul (`"tickle.cooldownMillis"`). Die Prüfung liegt in reinen, statischen und package-privaten Funktionen, die Werte bekommen und fertige Werte zurückgeben oder `ConfigException.invalid(schlüssel, grund)` werfen. Beispiel:
+**Entscheidung:** Jedes Modul liest seine Werte in `enable()` über `Config`. Schlüssel sind `private static final String`-Konstanten im Modul (`"tickle.cooldownMillis"`). Die Prüfung liegt in reinen, statischen und package-privaten Funktionen. Es gibt keine eigene `ConfigException` (oder sonstige Exception-Klasse) dafür - eine Prüffunktion wirft das eingebaute `IllegalArgumentException`, ein Zahl-Parse ein eingebautes `NumberFormatException`. Zwei Formen, je nachdem ob die Funktion als `getAs`-Parameter läuft (Entscheidung 4) oder nicht:
 
-```java
-// TickleModule.enable()
-Duration cooldown = TickleSettings.cooldown(Config.getAs(COOLDOWN_KEY, Long::parseLong));
-```
+- **Einzelwert, über `getAs` gelesen:** Die Funktion parst und prüft in einem Schritt, nimmt den rohen Text entgegen und wird direkt als `getAs`-Funktion übergeben. Ihre eigene Meldung nennt den Schlüssel **nicht** - das übernimmt `Config.getAs` selbst, das den Schlüssel einmal in seiner `IllegalStateException` nennt und diese Exception als `cause` behält (Schlüssel in der Meldung, Grund in der Ursachenkette - vom Maintainer akzeptiert, siehe Entscheidung 4). Beispiel:
 
-`TickleSettings.cooldown(long)` prüft auf „nicht negativ“ und hat mit `Config` nichts zu tun. Die Klassen darunter (Listener, Cooldowns, Navigator-Einträge) bekommen fertige Werte per Konstruktor wie heute.
+  ```java
+  // TickleModule.enable()
+  long cooldownMillis = Config.getAs(TickleSettings.COOLDOWN_KEY, TickleSettings::cooldownMillis);
+  ```
 
-Welche Prüfungen wohin wandern, ergibt sich 1:1 aus den heutigen Compact Constructors. Sie werden vorher durch die bestehenden `*ConfigTest`-Fälle festgehalten, die auf die neuen Funktionen umziehen. Die Meldung nennt künftig den vollen Schlüssel (`tickle.cooldownMillis` statt `cooldownMillis`), wie es die geänderte Spec verlangt. Bei zwei Feldern (`spawn.minHeight` > `spawn.maxHeight`) nennt sie beide.
+  ```java
+  // TickleSettings
+  static long cooldownMillis(String raw) {
+      long millis = Long.parseLong(raw);
+      if (millis < 0) {
+          throw new IllegalArgumentException("must not be negative, was " + millis);
+      }
+      return millis;
+  }
+  ```
 
-Dazu kommt `ConfigException.invalid` mit vollem Schlüssel. Heute setzt `ModuleRegistry` den Modulnamen davor. Das entfällt, weil der Schlüssel das Modul schon enthält, und wird dort angepasst.
+  Eine reine Zahl ohne eigene Prüfung braucht dafür gar keine eigene Funktion - `Config.getAs(key, Integer::parseInt)` reicht (Entscheidung 4).
 
-**Built-in first:** avaje-config hat keine Validierung. Jakarta Bean Validation (Hibernate Validator) wurde verworfen, weil sie Reflection und eine schwere Abhängigkeit mitbringt und ohne Records bzw. Beans nichts zu annotieren hätte.
+- **Prüfung über mehrere Felder, oder über eine Liste (nicht über `getAs` gelesen):** `spawn.minHeight` gegen `spawn.maxHeight`, `elytra.cooldownTicks` gegen `elytra.burnDurationTicks` und `sit.allowedBlocks` (eine über `Config.list().of` gelesene Liste, jedes Element einzeln über `SitSettings.parseBlock` geprüft) laufen nicht als `getAs`-Funktion, weil sie den schon gelesenen/geprüften Wert eines anderen Feldes brauchen bzw. `Config.list().of` selbst nicht durch `getAs` läuft. Hier nennt die Funktion den vollen Schlüssel (bzw. beide Schlüssel) selbst im Meldungstext, weil kein `getAs` das mehr übernimmt, z. B. `"spawn.minHeight (320) must be less than spawn.maxHeight (310)"` oder `"sit.allowedBlocks: unknown block 'minecraft:not_a_block'"`.
 
-**Test:** Unit-Tests auf die reinen Funktionen, ohne `Config` und ohne Server: gültige Grenzwerte, ungültige Werte, Text der Meldung. Das sind die umgezogenen Fälle aus `SitConfigTest`, `SpawnConfigTest`, `TickleConfigTest`, `ElytraConfigTest` und `NavigatorConfigTest`.
+Die Klassen unterhalb von `enable()` (Listener, Cooldowns, Navigator-Einträge) bekommen fertige Werte per Konstruktor wie heute.
+
+Welche Prüfungen wohin wandern, ergibt sich 1:1 aus den heutigen Compact Constructors. Navigator-Einträge (`NavigatorEntryValidation`) und der Feature-Flag-Check in `NavigatorEntries#validate(FeatureFlags)` folgen demselben Muster: Ersterer nennt `navigator.entries.<name>.<feld>` selbst (kein `getAs` dazwischen, siehe Entscheidung 6), Letzterer nennt `<modulId>.entries` und die unbekannte Flag selbst.
+
+**Built-in first:** avaje-config hat keine Validierung. Jakarta Bean Validation (Hibernate Validator) wurde verworfen, weil sie Reflection und eine schwere Abhängigkeit mitbringt und ohne Records bzw. Beans nichts zu annotieren hätte. Eine eigene `ConfigException`-Klasse (frühere Fassung dieser Entscheidung) wurde nachträglich verworfen: Sie bot gegenüber den eingebauten `IllegalArgumentException`/`IllegalStateException` keinen Mehrwert mehr, sobald `getAs` den Schlüssel selbst benennt (Entscheidung 4) - `field()`/`reason()`/`withSection(...)` waren nur eine Umformulierung derselben Information, die eine Meldung genauso trägt.
+
+**Test:** Unit-Tests auf die reinen Funktionen, ohne `Config` und ohne Server: gültige Grenzwerte, ungültige Werte, Text der Meldung (ohne die Meldung auf "nennt den Schlüssel genau einmal" zu prüfen - das ist `Config.getAs`s eigene, an der Bibliothek getestete Garantie, keine, die jedes Modul selbst nachweisen muss).
 
 **SOLID:** SRP (Lesen und Prüfen getrennt), DIP bleibt für alles unterhalb von `enable()` erhalten, weil Werte per Konstruktor kommen.
 
@@ -104,7 +119,7 @@ Dazu kommt `ConfigException.invalid` mit vollem Schlüssel. Heute setzt `ModuleR
 
 **Built-in first:** `Config.getInt/getLong/getDecimal` wurden geprüft und für Zahlen verworfen: Sie werfen bei einem ungültigen Wert eine bloße `NumberFormatException` ohne Schlüssel, die Spec-Szenarien „Ungültiger Override“ verlangen aber den Schlüssel in der Meldung. `Config.getAs(key, fn)` dagegen ist genau dafür gebaut: Schlägt `fn` fehl, fängt avaje-config selbst die Exception, benennt den Schlüssel einmal in einer neuen `IllegalStateException("Failed to convert key: <key> sourced from: <quelle> with the provided function", ursprünglicheException)` und hängt die ursprüngliche Exception (z. B. die `NumberFormatException`, deren eigene Meldung den Rohwert wie `abc` trägt) als `cause` an. Damit nennt der eingebaute Weg selbst den Schlüssel einmal und behält den Grund in der Ursache - eine frühere Version dieser Entscheidung ging (ungeprüft) davon aus, `getAs` kenne den Schlüssel nicht; das stimmt nicht (verifiziert gegen den avaje-config-5.2-Quellcode, `CoreConfiguration#getAs`, und empirisch über einen Kind-JVM-Testfall). Eine eigene Hilfsklasse fürs Zahlenlesen ist damit unnötig und entfällt ersatzlos.
 
-**Test:** Kein eigener Unit-Test hier: Es gibt keine eigene Parsing-Logik mehr zu testen. Die Kind-JVM-Fälle in `ConfigurationPrecedenceTest` (`--validate-tickle` mit `TICKLE_COOLDOWNMILLIS=abc`) decken den eingebauten Pfad end-to-end ab und prüfen, dass der ausgegebene Text den Schlüssel genau einmal und den Grund (`abc`, aus der `cause`-Kette) enthält.
+**Test:** Für den reinen Zahl-Fall (`Config.getAs(key, Integer::parseInt)`) kein eigener Test: Es gibt keine eigene Parsing-Logik zu testen, und `getAs`s Wrapping-Verhalten ist Bibliothekscode. Für eine Modul-eigene `getAs`-Funktion (z. B. `TickleSettings::cooldownMillis`) genügt ein schneller Unit-Test mit einer **lokalen** `Configuration`-Instanz statt einer Kind-JVM: `Configuration.builder().put(key, "abc").build().getAs(key, TickleSettings::cooldownMillis)` wirft eine `IllegalStateException`, die den Schlüssel nennt und die ursprüngliche `NumberFormatException` (mit `abc` in ihrer eigenen Meldung) als `cause` behält - ebenso für einen negativen Rohwert, dessen `cause` `TickleSettings`' eigenes `IllegalArgumentException` ist (siehe `TickleSettingsTest`). Das baut - anders als `Config.setProperty` o. Ä. - keine gemeinsame, veränderliche Instanz und bleibt damit F.I.R.S.T.-konform, ohne eine Kind-JVM zu brauchen (siehe Entscheidung 5).
 
 ### 5. Tests und globaler Zustand
 
@@ -112,7 +127,7 @@ Dazu kommt `ConfigException.invalid` mit vollem Schlüssel. Heute setzt `ModuleR
 - **Kein Test** ruft `Config.setProperty`, `Config.putAll`, `Config.clearProperty` oder `Config.eventBuilder` auf. Das wäre gemeinsamer, veränderlicher Zustand und bricht „Independent“. Ein Grep über alle Testquellen in der Verifikation der Tasks und das Review setzen das durch.
 - **Unit-Tests** lesen keine Config. Sie testen die reinen Funktionen aus Entscheidung 3 und 4 und die Klassen darunter mit Werten per Konstruktor.
 - **Modul-Integrationstests** (Cyano, `ModuleHarness`) aktivieren Module mit den Classpath-Standardwerten. Es gibt **keine** `application-test.yaml`, damit die Tests die ausgelieferten Standardwerte prüfen und nicht eine eigene Testwelt.
-- **Tests, die andere Werte brauchen** (Rangfolge, Profile, Env, kaputte Datei, ungültiger Override), laufen in einer Kind-JVM mit `@TempDir` als Arbeitsverzeichnis, wie der bestehende `ConfigurationPrecedenceTest`. Das ist bei avaje-config ohnehin nötig, weil Arbeitsverzeichnis und Env nur pro Prozess gelten.
+- **Tests, die die statische Fassade selbst mit einem abweichenden Wert brauchen** (Rangfolge, Profile, Env, System-Property, kaputte Datei, aktive Profile im Log, Zusammenführen der `navigator.entries`-Datei mit den Standardeinträgen), laufen in einer Kind-JVM mit `@TempDir` als Arbeitsverzeichnis, wie der bestehende `ConfigurationPrecedenceTest`. Das ist bei avaje-config ohnehin nötig, weil Arbeitsverzeichnis und Env nur pro Prozess gelten. Ein ungültiger Rohwert, den eine Modul-eigene `getAs`-Funktion ablehnt (z. B. "Ungültiger Override", "Negative Dauer"), braucht das **nicht**: `Config.getAs`s Wrapping ist selbst schon eingebautes, an der Bibliothek getestetes Verhalten, das eine **lokale** `Configuration.builder()...build()`-Instanz (kein Zugriff auf die statische Fassade, siehe oben) genauso zeigt wie die statische Fassade - siehe Entscheidung 4 und `TickleSettingsTest`.
 - Heutige Modultests, die einen abweichenden Config-Wert setzen (etwa über `ModuleHarness` mit eigenem `ConfigSections`), stellen auf das Testen der Klasse unterhalb von `enable()` mit dem Wert per Konstruktor um. Oder sie prüfen den Standardwert.
 - `ModuleHarness` und `ModulePlatformFixture` verlieren den Config-Parameter. Im Test-Beispiel `ExampleModule` entfällt `ExampleConfig`. Das Beispiel zeigt stattdessen das Muster aus Entscheidung 3 mit einer reinen Prüffunktion, die ohne `Config` getestet wird.
 
@@ -141,7 +156,7 @@ Die Prüfungen aus `NavigatorConfig.Entry` (Platz 0–8, bekanntes Material, Zie
 - aus `app`: die fünf Config-Records, `ModuleContext.config(...)`, der Config-Parameter von `ModulePlatform` und `ModuleRegistry.Builder#config`, `PlatformBeans#configSections`, `ConfigurationPropertyPlugin`, `ConfigurationLoader`, die handgepflegte `app/src/dist/application.example.yaml` (wird generiert, siehe Entscheidung 2),
 - aus `setup`: der `ConfigSections`-Weg in `SetupSpawnConfig` und `LegacyAppJsonWarning` samt Aufruf.
 
-`ConfigException` bleibt, aber nur noch mit `invalid`/`withSection` für Prüfungen - `malformed` entfällt mit `ConfigurationFactory` (Entscheidung 1): Eine kaputte YAML ist kein `ConfigException` mehr, sondern ein `ExceptionInInitializerError` aus der Fassade selbst. Der `CapturingLogger` unter `common/src/test/.../config/testing` bleibt, weil `DebugDeliverTest` ihn nutzt.
+`ConfigException` entfällt vollständig, ersatzlos, samt `ConfigExceptionTest` (Entscheidung 3) - eine kaputte YAML war schon vorher kein `ConfigException` mehr, sondern ein `ExceptionInInitializerError` aus der Fassade selbst (Entscheidung 1), und ein ungültiger Konfigurationswert ist jetzt ein eingebautes `IllegalArgumentException`/`IllegalStateException`. Der `CapturingLogger` unter `common/src/test/.../config/testing` bleibt, weil `DebugDeliverTest` ihn nutzt.
 
 **Built-in first:** Nicht anwendbar, Code wird entfernt.
 
