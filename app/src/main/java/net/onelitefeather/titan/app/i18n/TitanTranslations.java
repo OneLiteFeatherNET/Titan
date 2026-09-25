@@ -15,13 +15,7 @@
  */
 package net.onelitefeather.titan.app.i18n;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Locale;
-import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.minimessage.translation.MiniMessageTranslationStore;
@@ -32,10 +26,19 @@ import net.kyori.adventure.translation.GlobalTranslator;
  * (see {@code openspec/changes/config-reload-feature-flags/design.md}, decision 5).
  *
  * <p><b>Bundles.</b> {@code app/src/main/resources/lang/titan_en.properties} (the fallback/default
- * locale, English) and {@code titan_de.properties} are read as UTF-8 explicitly ({@link
- * #bundle(Locale)}) rather than through the platform default charset {@link
- * ResourceBundle#getBundle(String, Locale)} would otherwise use for {@code .properties} files, so
- * the German umlauts in {@code titan_de.properties} survive the round trip.
+ * locale, English) and {@code titan_de.properties} are loaded through the built-in
+ * {@link ResourceBundle#getBundle(String, Locale, ClassLoader, ResourceBundle.Control)} ({@link
+ * #bundle(Locale)}), base name {@code lang.titan}. Since JDK 9, that reads {@code .properties}
+ * files as UTF-8 by default (no longer the platform's default charset), so the German umlauts in
+ * {@code titan_de.properties} survive the round trip without any explicit charset handling here.
+ * The {@link ResourceBundle.Control} passed in is
+ * {@link ResourceBundle.Control#getNoFallbackControl}: without it, {@code ResourceBundle}'s own
+ * default control would, on a lookup miss, fall back to the bundle for the JVM's default locale
+ * ({@link Locale#getDefault()}) before giving up - which would make {@link #bundle(Locale)}'s
+ * result depend on the machine it runs on instead of only on {@code locale}, breaking
+ * F.I.R.S.T.'s Repeatable rule. With the no-fallback control, a locale this class was not built to
+ * serve raises {@link java.util.MissingResourceException} instead of silently resolving to
+ * whatever locale happens to be default.
  *
  * <p><b>Placeholder syntax.</b> Bundle values are MiniMessage strings that reference a
  * translatable component's arguments positionally, with the built-in {@code <arg:N>} tag
@@ -76,6 +79,8 @@ public final class TitanTranslations {
     private static final Key STORE_KEY = Key.key("titan", "lobby");
     private static final Locale DEFAULT_LOCALE = Locale.ENGLISH;
     private static final Locale[] BUNDLE_LOCALES = {Locale.ENGLISH, Locale.GERMAN};
+    private static final String BUNDLE_BASE_NAME = "lang.titan";
+    private static final ResourceBundle.Control NO_FALLBACK_CONTROL = ResourceBundle.Control.getNoFallbackControl(ResourceBundle.Control.FORMAT_PROPERTIES);
 
     private TitanTranslations() {
     }
@@ -109,14 +114,7 @@ public final class TitanTranslations {
     }
 
     private static ResourceBundle bundle(Locale locale) {
-        String resource = "/lang/titan_" + locale.getLanguage() + ".properties";
-        try (InputStream input = TitanTranslations.class.getResourceAsStream(resource)) {
-            if (input == null) {
-                throw new IllegalStateException("Missing translation bundle on the classpath: " + resource);
-            }
-            return new PropertyResourceBundle(new InputStreamReader(input, StandardCharsets.UTF_8));
-        } catch (IOException e) {
-            throw new UncheckedIOException("Failed to read translation bundle: " + resource, e);
-        }
+        return ResourceBundle.getBundle(
+                BUNDLE_BASE_NAME, locale, TitanTranslations.class.getClassLoader(), NO_FALLBACK_CONTROL);
     }
 }

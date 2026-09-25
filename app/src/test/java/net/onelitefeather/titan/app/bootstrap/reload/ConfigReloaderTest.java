@@ -95,9 +95,9 @@ class ConfigReloaderTest {
         assertLogged(events, Level.DEBUG, "Configuration reload found no changes");
     }
 
-    @DisplayName("A valid diff is applied once and restarts only the affected modules, in stable order")
+    @DisplayName("A valid diff is applied once and restarts only the affected modules, in registration order")
     @Test
-    void validDiffAppliesOnceAndRestartsAffectedModulesInStableOrder() {
+    void validDiffAppliesOnceAndRestartsAffectedModulesInRegistrationOrder() {
         Map<String, String> old = Map.of(
                 "sit.offset.y", "0.5", "elytra.burnDurationTicks", "200", "tickle.cooldownMillis", "4000");
         Map<String, String> updated = Map.of(
@@ -106,6 +106,10 @@ class ConfigReloaderTest {
         source.willReturn(updated);
         FakeLiveConfig liveConfig = new FakeLiveConfig(old);
         ScriptedModuleRestarter restarter = new ScriptedModuleRestarter();
+        // Registered in the opposite of alphabetical order, on purpose: if ConfigReloader ever fell
+        // back to affectedModuleIds()'s own (alphabetical) iteration order, this would restart
+        // "elytra" before "sit" and the assertion below would fail.
+        restarter.moduleOrder(List.of("tickle", "sit", "elytra"));
         QueueExecutor worker = new QueueExecutor();
         QueueExecutor tick = new QueueExecutor();
         ConfigReloader reloader = new ConfigReloader(source, liveConfig, restarter, worker, tick);
@@ -119,15 +123,47 @@ class ConfigReloaderTest {
             Assertions.assertInstanceOf(ReloadResult.Applied.class, result);
             ReloadResult.Applied applied = (ReloadResult.Applied) result;
             Assertions.assertEquals(
-                    List.of("elytra", "sit"), applied.restartedModules(), "must restart only the two affected modules, alphabetically stable");
+                    List.of("sit", "elytra"), applied.restartedModules(), "must restart only the two affected modules, in registration order");
             Assertions.assertTrue(applied.rejected().isEmpty());
             Assertions.assertTrue(applied.disabledModules().isEmpty());
             Assertions.assertFalse(applied.flagsChanged());
         });
 
         Assertions.assertEquals(1, liveConfig.appliedDiffs.size(), "the diff must be applied exactly once");
-        Assertions.assertEquals(List.of("elytra", "sit"), restarter.restartCalls, "tickle's section did not change, it must not be restarted");
+        Assertions.assertEquals(List.of("sit", "elytra"), restarter.restartCalls, "tickle's section did not change, it must not be restarted");
         assertLogged(events, Level.INFO, "Module {} restarted, changed keys: {}");
+        assertLogged(events, Level.INFO, "Configuration reloaded: {} keys changed, modules restarted: {}");
+    }
+
+    @DisplayName("A changed key whose prefix names no known module is applied but never restarted")
+    @Test
+    void aChangedKeyWithNoKnownModuleIsNeverRestarted() {
+        Map<String, String> old = Map.of("spawn.simulationDistance", "6");
+        Map<String, String> updated = Map.of("spawn.simulationDistance", "10");
+        ScriptedSource source = new ScriptedSource();
+        source.willReturn(updated);
+        FakeLiveConfig liveConfig = new FakeLiveConfig(old);
+        ScriptedModuleRestarter restarter = new ScriptedModuleRestarter();
+        // "spawn" is deliberately absent from the known module ids: no such module is registered.
+        restarter.moduleOrder(List.of("sit", "elytra"));
+        QueueExecutor worker = new QueueExecutor();
+        QueueExecutor tick = new QueueExecutor();
+        ConfigReloader reloader = new ConfigReloader(source, liveConfig, restarter, worker, tick);
+
+        List<ILoggingEvent> events = captureLogs(() -> {
+            CompletableFuture<ReloadResult> future = reloader.reload();
+            worker.runAll();
+            tick.runAll();
+
+            ReloadResult.Applied applied = (ReloadResult.Applied) future.join();
+            Assertions.assertTrue(applied.restartedModules().isEmpty(), "'spawn' is not a module and must not be restarted");
+            Assertions.assertTrue(applied.rejected().isEmpty());
+            Assertions.assertTrue(applied.disabledModules().isEmpty());
+        });
+
+        Assertions.assertEquals(1, liveConfig.appliedDiffs.size(), "the changed value must still be applied to the facade");
+        Assertions.assertEquals(Map.of("spawn.simulationDistance", "10"), liveConfig.currentValues(), "the new value must be visible even though nothing was restarted for it");
+        Assertions.assertTrue(restarter.restartCalls.isEmpty(), "restart() must never be called for an id the restarter does not know - it would throw for an unknown module");
         assertLogged(events, Level.INFO, "Configuration reloaded: {} keys changed, modules restarted: {}");
     }
 
@@ -140,6 +176,7 @@ class ConfigReloaderTest {
         source.willReturn(updated);
         FakeLiveConfig liveConfig = new FakeLiveConfig(old);
         ScriptedModuleRestarter restarter = new ScriptedModuleRestarter();
+        restarter.moduleOrder(List.of("tickle"));
         RuntimeException cause = new IllegalArgumentException("tickle.cooldownMillis must not be negative");
         restarter.willReturn("tickle", new ModuleRestartOutcome.Failed(cause), new ModuleRestartOutcome.Restarted());
         QueueExecutor worker = new QueueExecutor();
@@ -179,6 +216,7 @@ class ConfigReloaderTest {
         source.willReturn(updated);
         FakeLiveConfig liveConfig = new FakeLiveConfig(old);
         ScriptedModuleRestarter restarter = new ScriptedModuleRestarter();
+        restarter.moduleOrder(List.of("tickle"));
         restarter.willReturn(
                 "tickle", new ModuleRestartOutcome.Failed(new IllegalStateException("boom")), new ModuleRestartOutcome.Failed(new IllegalStateException("boom again")));
         QueueExecutor worker = new QueueExecutor();
@@ -210,6 +248,7 @@ class ConfigReloaderTest {
         source.willReturn(firstUpdate);
         FakeLiveConfig liveConfig = new FakeLiveConfig(initial);
         ScriptedModuleRestarter restarter = new ScriptedModuleRestarter();
+        restarter.moduleOrder(List.of("sit"));
         QueueExecutor worker = new QueueExecutor();
         QueueExecutor tick = new QueueExecutor();
         ConfigReloader reloader = new ConfigReloader(source, liveConfig, restarter, worker, tick);
@@ -339,15 +378,25 @@ class ConfigReloaderTest {
         }
     }
 
-    /** A {@link ModuleRestarter} fake whose outcome per module id can be scripted call by call. */
+    /**
+     * A {@link ModuleRestarter} fake whose outcome per module id can be scripted call by call, and
+     * whose {@link #moduleOrder()} - the known, registration-ordered module ids - each test sets
+     * explicitly via {@link #moduleOrder(List)}; it defaults to empty, so a test that never sets it
+     * restarts nothing (mirroring a restarter that knows no modules) rather than silently guessing.
+     */
     private static final class ScriptedModuleRestarter implements ModuleRestarter {
 
         private final Map<String, Deque<ModuleRestartOutcome>> scripts = new HashMap<>();
         final List<String> restartCalls = new ArrayList<>();
+        private List<String> order = List.of();
 
         void willReturn(String moduleId, ModuleRestartOutcome... outcomes) {
             Deque<ModuleRestartOutcome> queue = scripts.computeIfAbsent(moduleId, id -> new ArrayDeque<>());
             queue.addAll(List.of(outcomes));
+        }
+
+        void moduleOrder(List<String> order) {
+            this.order = List.copyOf(order);
         }
 
         @Override
@@ -358,6 +407,11 @@ class ConfigReloaderTest {
                 return script.removeFirst();
             }
             return new ModuleRestartOutcome.Restarted();
+        }
+
+        @Override
+        public List<String> moduleOrder() {
+            return order;
         }
     }
 }

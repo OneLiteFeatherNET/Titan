@@ -63,8 +63,9 @@ import net.onelitefeather.titan.common.feature.FeatureFlags;
  *
  * <p>{@link #featureFlags} gates entries behind a feature flag (see {@code design.md}, decision
  * 13):
- * injected via the constructor rather than read from the static Togglz {@code FeatureContext}
- * directly, so a test can hand in a fake instead of a real {@code flags.properties} file. This
+ * injected via the constructor rather than read through the static {@code io.avaje.config.Config}
+ * facade directly, so a test can hand in a fake instead of a real {@code application.yaml} file.
+ * This
  * module hands the very same instance to its constructor, and hands the platform-wide entry
  * registry to its own {@code enable}; the composition root ({@code Titan}) wires that same
  * {@link FeatureFlags} instance into {@code ModuleRegistry.Builder#featureFlags} too, so every

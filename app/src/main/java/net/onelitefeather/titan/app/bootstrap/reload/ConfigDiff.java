@@ -50,11 +50,13 @@ public record ConfigDiff(
 
     /**
      * Defensively copies every collection so a caller mutating the map it built {@code between}
-     * from
-     * afterwards cannot reach into this diff. {@code affectedModuleIds} is copied into a fresh,
-     * unmodifiable {@link TreeSet} rather than through {@link Set#copyOf}: {@code Set.copyOf}'s
-     * iteration order is deliberately unspecified, which would silently break the alphabetically
-     * stable restart order {@link ConfigReloader} relies on.
+     * from afterwards cannot reach into this diff. {@code affectedModuleIds} is copied into a
+     * fresh, unmodifiable {@link TreeSet} rather than through {@link Set#copyOf} purely for a
+     * stable, deterministic iteration order in logs and error messages - {@code Set.copyOf}'s own
+     * order is deliberately unspecified. {@link ConfigReloader} does <em>not</em> rely on this
+     * set's own (alphabetical) order to restart modules: it restarts the ids in
+     * {@code ModuleRestarter#moduleOrder()} (registration order) that this set also contains, per
+     * {@code design.md}, decision 3.
      */
     public ConfigDiff {
         changedKeys = Set.copyOf(changedKeys);

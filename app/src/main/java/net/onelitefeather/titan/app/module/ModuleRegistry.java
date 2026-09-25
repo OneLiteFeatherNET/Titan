@@ -111,6 +111,19 @@ public final class ModuleRegistry {
     }
 
     /**
+     * @return every registered module's id ({@link LobbyModule#id()}), in registration order - an
+     *         unmodifiable snapshot, independent of whether each module is currently running. Used
+     *         as the ordering seam a {@code ConfigReloader} adapter hands to
+     *         {@code ModuleRestarter#moduleOrder()}, so a configuration reload restarts affected
+     *         modules in this same order rather than in whatever order their diff keys happen to
+     *         sort in; see {@code openspec/changes/config-reload-feature-flags/design.md}, decision
+     *         3.
+     */
+    public List<String> moduleIds() {
+        return this.modules.stream().map(LobbyModule::id).toList();
+    }
+
+    /**
      * Starts every registered module exactly once, in registration order. For each module this
      * attaches a fresh {@code titan/<id>} event node under {@code parent}, hands the module a new
      * {@link ModuleContext}, and calls {@link LobbyModule#enable}. Once {@code enable} returns,
