@@ -153,7 +153,7 @@ class ArchitectureTest {
      * feature or platform class can reach into it.
      */
     @ArchTest
-    static final ArchRule onlyModuleTypesArePublicInFeatures = classes().that().resideInAPackage(FEATURE_PACKAGE).and().haveModifier(JavaModifier.PUBLIC).should(ArchConditions.be(PUBLIC_FEATURE_API)).because("a feature module's declared surface is its *Module entry point; config records no longer exist, so everything else must be package-private so it cannot be depended on from outside the feature - see design.md decision 10.3, updated by openspec/changes/avaje-config-facade/design.md decision 3");
+    static final ArchRule onlyModuleTypesArePublicInFeatures = classes().that().resideInAPackage(FEATURE_PACKAGE).and().haveModifier(JavaModifier.PUBLIC).should(ArchConditions.be(PUBLIC_FEATURE_API)).because("a feature module's declared surface is its *Module entry point; per-module configuration types no longer exist, so everything else must be package-private so it cannot be depended on from outside the feature - see design.md decision 10.3, updated by openspec/changes/avaje-config-facade/design.md decision 3");
 
     /**
      * Rule 4 (design.md decision 10.4): only the module platform is allowed to touch the raw

@@ -262,8 +262,8 @@ deshalb in `app/src/main/resources/application.yaml` ein (s. Checkliste,
 Schritt 6).
 
 Die alte Bindung an ein Config-Record (`context.config(Typ, DEFAULTS)`, eine
-Validierung im Compact Constructor) gibt es nicht mehr - `ConfigSections` und
-`SectionBinder` sind mit dieser Change entfernt.
+Validierung im Compact Constructor) gibt es nicht mehr - die Bindeschicht
+dahinter ist mit dieser Change vollständig entfernt.
 
 Die Lobby schreibt keine Konfiguration mehr: Es gibt kein `flush()`, keine
 Datei wird angelegt oder verändert.
@@ -445,7 +445,7 @@ class ExampleModuleTest {
 - `ModuleHarness.startStandalone(LobbyModule...)` baut stattdessen einen
   eigenständigen Scheduler, `CommandManager` und Event-Node ohne `Env` - für
   reine Verdrahtungstests, die keinen Spieler brauchen (s.
-  `ModuleContextTest`, `ModuleContextConfigTest`).
+  `ModuleContextTest`).
 - `ModuleHarness` nimmt keinen Konfigurationsparameter mehr entgegen. Ein
   Modul-Integrationstest aktiviert das Modul mit den ausgelieferten
   Standardwerten aus der Classpath-`application.yaml` - es gibt **keine**
@@ -478,8 +478,11 @@ prüft im Build, nicht nur per Konvention (s. `design.md`, Entscheidung 10):
 1. Feature-Pakete unter `..app.feature.(*)..` hängen nicht voneinander ab.
 2. Klassen in `..app.module..` und `..titan.common..` hängen nicht von
    `..app.feature..` ab.
-3. Nur `*Module` in `..app.feature..` ist `public`.
-4. Nur Plattform-Code (`..app.module..`) und `TitanApplication` rufen
+3. In `..app.feature..` ist nur `*Module` `public`, dazu die von Avaje Inject
+   generierten `$DI`-Klassen (Verdrahtungscode, keine handgeschriebene
+   Feature-Oberfläche).
+4. Nur Plattform-Code (`..app.module..`) und die Kompositionswurzel (`Titan`,
+   `TitanApplication`, `PlatformBeans`) rufen
    `EventNode#addListener`/`GlobalEventHandler#addListener` direkt auf - ein
    Feature-Modul geht immer über `context.listen`/`listenIncludingCancelled`.
 5. Jede `LobbyModule`-Implementierung in `..app.feature..` trägt `@Singleton`
