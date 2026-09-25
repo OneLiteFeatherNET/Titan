@@ -48,7 +48,7 @@ Voraussetzung: `avaje-dependency-injection` ist gemergt (`PlatformBeans` und `Be
 
 ## 5. Doku und Abnahme (Welle D)
 
-- [ ] 5.1 **E2E-Smoke-Test** mit dem Shaded-Jar in Scratch-Verzeichnissen:
+- [x] 5.1 **E2E-Smoke-Test** mit dem Shaded-Jar in Scratch-Verzeichnissen:
   - (a) alte flache `app.json`: Umstellung, `application.yaml` entsteht, `app.json.migrated` auch, WARN-Zeilen im Log, sauberer Start,
   - (b) `application.yaml` plus `application-dev.yaml` mit `AVAJE_PROFILES=dev` und einer echten Env-Variable für `spawn.simulationDistance`: Die Log-Zeile nennt das Profil, der Wert greift,
   - (c) kaputte `application.yaml`: Abbruch mit Datei und Stelle des Fehlers.
