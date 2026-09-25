@@ -31,10 +31,11 @@ public class TitanLauncher {
         // Needs an initialised MinecraftServer, which the line above provides.
         TitanObservability.installExceptionHandler();
 
-        // A syntactically broken application.yaml surfaces as a ConfigException (unchecked) from
-        // Titan's constructor - see ConfigurationFactory#initialise() - the same way it does for the
-        // lobby (:app, TitanApplication#main). Startup must abort with a clear log line instead of
-        // leaving the process half-started on Minestom's already-running threads.
+        // A syntactically broken application.yaml surfaces as ExceptionInInitializerError from
+        // Titan's constructor - the static io.avaje.config.Config facade's own first-touch failure,
+        // via SetupSpawnConfig#read() - the same way it does for the lobby (:app,
+        // TitanApplication#main). Startup must abort with a clear log line instead of leaving the
+        // process half-started on Minestom's already-running threads.
         if (!startCleanly(Titan::instance)) {
             System.exit(1);
             return;
@@ -63,7 +64,7 @@ public class TitanLauncher {
             startup.run();
             return true;
         } catch (RuntimeException | Error throwable) {
-            LOGGER.error("Titan setup failed to start: {}", throwable.getMessage(), throwable);
+            LOGGER.error("Titan setup failed to start: {}", throwable.toString(), throwable);
             return false;
         }
     }

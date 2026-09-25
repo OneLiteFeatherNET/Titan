@@ -18,9 +18,13 @@ package net.onelitefeather.titan.common.config;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Signals a problem with configuration read through the {@code io.avaje.config.Config} facade:
- * either a syntactically broken file ({@link #malformed(String, String)}), or a value that failed
- * a module's own validation ({@link #invalid(String, String)}).
+ * Signals that a value a module's own validation function read through the
+ * {@code io.avaje.config.Config} facade failed that validation ({@link #invalid(String, String)}).
+ * <p>
+ * A syntactically broken {@code application.yaml} is not this exception's concern any more: the
+ * facade's own static initializer fails first touch with {@link ExceptionInInitializerError},
+ * whose cause chain already names the file and the line/column (built-in first - see
+ * {@code openspec/changes/avaje-config-facade/design.md}, decision 1).
  * <p>
  * A module's validation function knows only the full, dotted key it read (e.g.
  * {@code tickle.cooldownMillis}) and the reason a value is rejected - it is thrown as the result
@@ -30,19 +34,17 @@ import org.jetbrains.annotations.Nullable;
  * of its own to attach - {@code NavigatorEntries}, naming which module contributed a navigator
  * entry - completes it via {@link #withSection(String)} before rethrowing it.
  * <p>
- * The resulting message has the shape {@code <file>: <section>.<field> - <reason>}, for example
- * {@code application.yaml: navigator.entries - entry 'x' uses unknown feature flag 'y'}.
+ * The resulting message has the shape {@code <section>.<field> - <reason>}, for example
+ * {@code navigator.entries - entry 'x' uses unknown feature flag 'y'}.
  */
 public final class ConfigException extends RuntimeException {
 
-    private final @Nullable String file;
     private final @Nullable String section;
     private final @Nullable String field;
     private final @Nullable String reason;
 
-    private ConfigException(@Nullable String file, @Nullable String section, @Nullable String field, @Nullable String reason, @Nullable Throwable cause) {
-        super(buildMessage(file, section, field, reason), cause);
-        this.file = file;
+    private ConfigException(@Nullable String section, @Nullable String field, @Nullable String reason, @Nullable Throwable cause) {
+        super(buildMessage(section, field, reason), cause);
         this.section = section;
         this.field = field;
         this.reason = reason;
@@ -56,39 +58,10 @@ public final class ConfigException extends RuntimeException {
      *
      * @param field  the name (or full key) of the offending value
      * @param reason a human-readable explanation, e.g. {@code "must not be negative"}
-     * @return a new {@link ConfigException} without a section or file
+     * @return a new {@link ConfigException} without a section
      */
     public static ConfigException invalid(String field, String reason) {
-        return new ConfigException(null, null, field, reason, null);
-    }
-
-    /**
-     * Creates an exception describing a document that could not be parsed as JSON at all.
-     *
-     * @param file   the file name the broken document was read from, or {@code null} if the
-     *               section did not come from a single named file
-     * @param detail the underlying parser message; Gson's messages already include the line and
-     *               column of the syntax error
-     * @return a new {@link ConfigException} describing the broken document
-     */
-    public static ConfigException malformed(@Nullable String file, String detail) {
-        return malformed(file, detail, null);
-    }
-
-    /**
-     * Creates an exception describing a document that could not be parsed at all, keeping the
-     * original failure as this exception's cause so the stack trace that reaches an ERROR log (or
-     * Sentry) still shows where the parser actually failed, not just this rethrow.
-     *
-     * @param file   the file name the broken document was read from, or {@code null} if the
-     *               section did not come from a single named file
-     * @param detail the underlying parser message; a parser's own message often already includes
-     *               the line and column of the syntax error
-     * @param cause  the original failure this exception replaces, or {@code null} if there is none
-     * @return a new {@link ConfigException} describing the broken document
-     */
-    public static ConfigException malformed(@Nullable String file, String detail, @Nullable Throwable cause) {
-        return new ConfigException(file, null, null, detail, cause);
+        return new ConfigException(null, field, reason, null);
     }
 
     /**
@@ -99,27 +72,19 @@ public final class ConfigException extends RuntimeException {
      * @return a new {@link ConfigException} carrying the section
      */
     public ConfigException withSection(String section) {
-        return new ConfigException(this.file, section, this.field, this.reason, this);
+        return new ConfigException(section, this.field, this.reason, this);
     }
 
     /**
-     * The name of the configuration file the failure was found in, or {@code null} if not yet
-     * known.
-     */
-    public @Nullable String file() {
-        return file;
-    }
-
-    /**
-     * The id of the section the failure was found in, or {@code null} for a document-level
-     * failure such as broken JSON.
+     * The id of the section the failure was found in, or {@code null} for a
+     * {@link #invalid(String, String)} exception without a {@link #withSection(String)}.
      */
     public @Nullable String section() {
         return section;
     }
 
     /**
-     * The name of the offending record component, or {@code null} for a document-level failure.
+     * The name of the offending record component.
      */
     public @Nullable String field() {
         return field;
@@ -132,11 +97,8 @@ public final class ConfigException extends RuntimeException {
         return reason;
     }
 
-    private static String buildMessage(@Nullable String file, @Nullable String section, @Nullable String field, @Nullable String reason) {
+    private static String buildMessage(@Nullable String section, @Nullable String field, @Nullable String reason) {
         StringBuilder message = new StringBuilder();
-        if (file != null) {
-            message.append(file).append(": ");
-        }
         boolean hasLocation = section != null || field != null;
         if (section != null) {
             message.append(section);

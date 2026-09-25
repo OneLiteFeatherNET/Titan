@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import net.onelitefeather.titan.common.config.ConfigurationFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,9 +35,9 @@ import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Integration coverage for the {@code lobby-module-config} spec requirement "Overrides have a
- * fixed rank order": {@link ConfigurationFactory#initialise()} - reached through the static
- * {@code io.avaje.config.Config} facade {@link ConfigurationPrintMain} touches exactly the way
- * {@link net.onelitefeather.titan.app.Titan} does in production - resolves the shipped classpath
+ * fixed rank order": the static {@code io.avaje.config.Config} facade {@link
+ * ConfigurationPrintMain} touches exactly the way {@link net.onelitefeather.titan.app.Titan} does
+ * in production - built-in first, no factory of its own in between - resolves the shipped classpath
  * {@code application.yaml} (see {@code app/src/main/resources/application.yaml}), the working
  * directory's own {@code application.yaml}, its active profiles, an external file, environment
  * variables and system properties in the order the spec fixes. The classpath file's own
