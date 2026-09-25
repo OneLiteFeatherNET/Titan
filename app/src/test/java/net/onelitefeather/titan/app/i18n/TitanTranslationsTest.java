@@ -45,7 +45,7 @@ import org.junit.jupiter.api.Test;
 class TitanTranslationsTest {
 
     private static final List<String> KEY_CONSTANTS = List.of(
-            TitanTranslations.CONFIG_RELOAD_UNCHANGED, TitanTranslations.CONFIG_RELOAD_APPLIED, TitanTranslations.CONFIG_RELOAD_REJECTED, TitanTranslations.CONFIG_RELOAD_FAILED
+            TitanTranslations.CONFIG_RELOAD_UNCHANGED, TitanTranslations.CONFIG_RELOAD_APPLIED, TitanTranslations.CONFIG_RELOAD_REJECTED, TitanTranslations.CONFIG_RELOAD_FAILED, TitanTranslations.CONFIG_RELOAD_DISABLED
     );
 
     @DisplayName("Every key constant used in code exists in the English bundle")
