@@ -130,10 +130,10 @@ TickleModule(Clock)` trägt); mit genau einem Konstruktor reicht der ohne
 Welche Plattform-Dienste als Bean zur Verfügung stehen, steht in
 `app/src/main/java/net/onelitefeather/titan/app/bootstrap/PlatformBeans.java`
 (`@Factory` mit einer `@Bean`-Methode je Dienst: `InstanceContainer`,
-`MapProvider`, `LobbySpawn`, `Deliver`, `ConfigStore`, der `@Named("titan")`
-qualifizierte `EventNode<Event>`, `ItemRegistry`, `NavigatorEntries`,
-`FeatureFlags`, `Clock`). Braucht ein neues Feature einen **neuen** geteilten
-Dienst:
+`MapProvider`, `LobbySpawn`, `Deliver`, `Configuration` (avaje-config) und
+`ConfigSections` darüber, der `@Named("titan")` qualifizierte
+`EventNode<Event>`, `ItemRegistry`, `NavigatorEntries`, `FeatureFlags`,
+`Clock`). Braucht ein neues Feature einen **neuen** geteilten Dienst:
 
 - Ist er im Kern ein Plattform-Typ aus `common` oder Minestom, den mehrere
   Module brauchen (wie die bestehenden Beans oben), kommt eine weitere
@@ -213,7 +213,7 @@ Faustregel: `listen`, solange ein anderes Modul das Event nicht schon
 abbrechen könnte; `listenIncludingCancelled` nur, wenn ein über
 `context.listen` angemeldeter Handler wirklich in jedem Fall laufen muss.
 
-### `config` - den eigenen `app.json`-Abschnitt lesen
+### `config` - den eigenen Konfigurationsabschnitt lesen
 
 ```java
 public record ExampleConfig(String greeting, long cooldownMillis) {
@@ -238,27 +238,29 @@ ExampleConfig config = context.config(ExampleConfig.class, ExampleConfig.DEFAULT
 ```
 
 Ein Config-Record kennt nur sein eigenes Feld und den Grund, warum ein Wert
-abgelehnt wird - nie den Abschnitt, aus dem er geladen wurde. Deshalb wirft
-der Compact Constructor `ConfigException.invalid(field, reason)`;
-`ConfigStore` ergänzt Abschnitt und Datei, bevor die Ausnahme
-`ModuleRegistry.enableAll()` verlässt und den Start abbricht - mit Modul, Feld
-und Grund in der Meldung. `context.config` liest immer nur den **eigenen**
-Abschnitt (die Modul-`id()`); es gibt keine Überladung für einen anderen
-Abschnitt. Ohne konfigurierten `ConfigStore` (z. B. im
-`ModuleHarness.startStandalone`-Testaufbau) liefert `config` unverändert
-`defaults` zurück. Wie `listen` funktioniert `config` nur während `enable()`.
+abgelehnt wird - nie die Quelle, aus der er geladen wurde. Deshalb wirft der
+Compact Constructor `ConfigException.invalid(field, reason)`; der
+`SectionBinder` hinter `ConfigSections` (`common/.../config/`) ergänzt
+Abschnitt (und, wo bekannt, Datei), bevor die Ausnahme
+`ModuleRegistry.enableAll()` verlässt und den Start abbricht - mit Modul,
+Feld und Grund in der Meldung. `context.config` liest immer nur den
+**eigenen** Abschnitt (die Modul-`id()`), zusammengesetzt aus
+`application.yaml`, den Dateien aktiver Profile und Overrides (Env-Variable,
+System-Property) - Rangfolge und die Abbildung auf Env-Variablen stehen im
+README unter "Configuration". Es gibt keine Überladung für einen anderen
+Abschnitt. Ohne konfigurierte `ConfigSections` (z. B. im
+`ModuleHarness.startStandalone`-Testaufbau ohne Konfigurationsdatei) liefert
+`config` unverändert `defaults` zurück. Wie `listen` funktioniert `config`
+nur während `enable()`.
 
-`ConfigStore.flush()` (aufgerufen von `ModuleRegistry.enableAll()` nach dem
-Start aller Module) schreibt `app.json` nur, wenn die Datei bei
-`ConfigStore.open()` neu angelegt oder aus dem Legacy-Format migriert wurde
-(s. `ConfigStore#flush`/`#writeOnFlush`). Läuft ein neues Modul gegen ein
-bereits bestehendes, aktuelles `app.json`, bekommt es seine Defaults nur im
-Arbeitsspeicher - sein Abschnitt taucht in der Datei erst auf, sobald ihn
-jemand tatsächlich setzt (z. B. über den Setup-Server, der `ConfigStore.save()`
-explizit aufruft). Für ein neues Feature bedeutet das: seinen Abschnitt samt
-Defaults im README dokumentieren (s. Checkliste, Schritt 6) und, falls
-Betreiber ihn anpassen sollen, in derselben PR in `app.json` ergänzen -
-sonst bleibt er unsichtbar, bis jemand ihn über den Setup-Server anfasst.
+Die Lobby schreibt keine Konfiguration mehr: Es gibt kein `flush()`, keine
+Datei wird angelegt oder verändert - einzige Ausnahme ist die einmalige
+Umstellung einer bestehenden `app.json` beim Start (`AppJsonMigration`, s.
+README unter "Migrating from app.json"). Für ein neues Feature bedeutet das:
+seinen Abschnitt samt Defaults im README dokumentieren (s. Checkliste,
+Schritt 6) und, falls Betreiber ihn direkt sehen sollen, in derselben PR in
+`app/src/dist/application.example.yaml` ergänzen - sonst läuft er nur mit
+Defaults im Speicher, bis ihn jemand in `application.yaml` einträgt.
 
 ### `items` - ein Hotbar- oder Ausrüstungsitem anmelden
 
@@ -397,7 +399,7 @@ paketprivate Klasse ohne Minestom-Abhängigkeit -
 `ExampleGreetingRuleTest` prüft `ExampleGreetingRule.isOnCooldown(...)` und
 `ExampleGreetingRule.greeting(...)` ganz ohne `Env` oder `Player`. Genauso
 prüft `ExampleConfigTest` die Validierung im Compact Constructor von
-`ExampleConfig` direkt, ohne `ConfigStore`.
+`ExampleConfig` direkt, ohne `ConfigSections`.
 
 ### Oben: Env-Integrationstests über `ModuleHarness`
 
@@ -425,10 +427,10 @@ class ExampleModuleTest {
   eigenständigen Scheduler, `CommandManager` und Event-Node ohne `Env` - für
   reine Verdrahtungstests, die keinen Spieler brauchen (s.
   `ModuleContextTest`, `ModuleContextConfigTest`).
-- Beide gibt es mit einer Überladung, die einen `ConfigStore` (oder einen
-  `Path` auf eine `app.json`) entgegennimmt, für Tests, die
+- Beide gibt es mit einer Überladung, die eine `ConfigSections` (oder einen
+  `Path` auf eine YAML-Datei) entgegennimmt, für Tests, die
   `context.config(...)` abdecken sollen - `ExampleModuleTest` liest so eine
-  temporäre `app.json` über `@TempDir`.
+  temporäre `application.yaml` über `@TempDir`.
 - Ein Modul, dessen Konstruktor schon die plattformweite `NavigatorEntries`
   oder `ItemRegistry` braucht (z. B. `NavigatorModule`, das beim Öffnen jedes
   Moduls Einträge zurückliest, nicht nur die eigenen), nutzt die
@@ -491,12 +493,13 @@ prüft im Build, nicht nur per Konvention (s. `design.md`, Entscheidung 10):
 5. Tests schreiben, bevor (oder während) der Code entsteht: Unit-Tests für die
    reine Logik und die Config-Validierung, ein Env-Integrationstest über
    `ModuleHarness` für alles, was einen `Player` braucht.
-6. Falls das Feature einen `app.json`-Abschnitt hat: die neuen Felder samt
-   Defaults im README unter "Configuration Options Explained" dokumentieren -
-   `ConfigStore.flush()` schreibt eine bestehende, aktuelle `app.json` nicht
-   automatisch neu (s. "config" oben), der Abschnitt läuft bis dahin nur mit
-   Defaults im Speicher. Sollen Betreiber ihn anpassen können, den Abschnitt
-   zusätzlich in derselben PR in `app.json` ergänzen.
+6. Falls das Feature einen Konfigurationsabschnitt hat: die neuen Felder samt
+   Defaults und ihren Env-Variablen-Namen im README unter "Configuration
+   Options Explained" bzw. "Environment variable reference" dokumentieren -
+   die Lobby schreibt keine Konfiguration mehr (s. "config" oben), der
+   Abschnitt läuft bis dahin nur mit Defaults im Speicher. Sollen Betreiber
+   ihn direkt sehen, den Abschnitt zusätzlich in derselben PR in
+   `app/src/dist/application.example.yaml` ergänzen.
 
 Das war's - **keine** zentrale Modulliste mehr zu pflegen: `@Singleton` plus
 `@Priority` genügen, damit `Titan` das neue Modul über
