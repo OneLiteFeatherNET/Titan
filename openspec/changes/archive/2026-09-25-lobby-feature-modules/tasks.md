@@ -97,7 +97,7 @@ Regeln für Welle C: Die Feature-Agents legen nur neue Pakete an und löschen ni
 ## 7. Setup-Server
 
 - [x] 7.1 `setup/.../AppCommand` auf `ConfigStore.set(section, field, value)` umstellen. `fireworkBoostSlot` entfällt, die Anzeige der Config zeigt die Abschnitte. Verifikation: Test „Sitz-Versatz ändern“ (aus 1.4, jetzt aktiviert) ist grün, die Höhengrenzen bleiben erhalten.
-- [ ] 7.2 Setup-Server lokal starten, einen Wert ändern und prüfen, dass die Lobby mit der gespeicherten `app.json` startet. Verifikation: manueller Durchlauf, im PR dokumentiert.
+- [x] 7.2 Setup-Server lokal starten, einen Wert ändern und prüfen, dass die Lobby mit der gespeicherten `app.json` startet. Verifikation: manueller Durchlauf, im PR dokumentiert.
 
 ## 8. Aufräumen
 
@@ -127,13 +127,13 @@ Regeln für Welle C: Die Feature-Agents legen nur neue Pakete an und löschen ni
 
 ## 11. Gesamtabnahme
 
-- [ ] 11.1 Die Lobby lokal mit der migrierten `app.json` starten und im Client prüfen: Feder in Slot 4, Elytra, Navigator (4 Ziele), Sitzen, Kitzeln, Fliegen mit Boost, Höhen-Teleport, Tod und Respawn. Verifikation: Checkliste im PR abgehakt.
+- [x] 11.1 Die Lobby lokal mit der migrierten `app.json` starten und im Client prüfen: Feder in Slot 4, Elytra, Navigator (4 Ziele), Sitzen, Kitzeln, Fliegen mit Boost, Höhen-Teleport, Tod und Respawn. Verifikation: Checkliste im PR abgehakt.
 - [x] 11.2 `./gradlew build` inklusive aller Tests und ArchUnit ist grün, `openspec validate lobby-feature-modules` ist ohne Fehler. Verifikation: CI-Lauf grün.
 
 ## 13. Nachbesserungen aus der Abnahme
 
 - [x] 13.1 Navigator auf Aves umstellen (design.md Entscheidung 8): ein `GlobalInventoryBuilder` für alle Spieler, `register()` in `enable()` und `unregister()` in `disable()`, Klicks über die Aves-Slot-Handler. Das eigene Minestom-`Inventory` und der eigene Klick-Listener entfallen. Test-first. Verifikation: `NavigatorModuleTest` und `NavigatorModuleLeakTest` sind grün, der Test für beide Reihenfolgen mit dem Schutz-Modul ist grün, ArchUnit ist grün.
-- [ ] 13.2 Elytra-Verhalten wieder an das Verhalten vor dem Umbau angleichen (Befund aus der Abnahme im Client). Zuerst ein roter Charakterisierungstest gegen die gefundene Abweichung, dann der Fix. Verifikation: Die Elytra-Tests sind grün, und die erneute Prüfung im Client ist abgehakt.
+- [x] 13.2 Elytra-Verhalten wieder an das Verhalten vor dem Umbau angleichen (Befund aus der Abnahme im Client). Zuerst ein roter Charakterisierungstest gegen die gefundene Abweichung, dann der Fix. Verifikation: Die Elytra-Tests sind grün, und die erneute Prüfung im Client ist abgehakt.
 - [x] 13.3 Slender hinter die globale Feature-Flag `NAVIGATOR_SLENDER` legen (design.md Entscheidung 13, Spec lobby-navigator „Navigator-Ziele können hinter einer Feature-Flag liegen“). Dazu: optionales Feld `feature` an Navigator-Einträgen, Abfrage über eine injizierte `FeatureFlags`-Schnittstelle mit Togglz dahinter, Neuaufbau des Aves-Layouts bei geändertem Flag-Zustand. Test-first. Verifikation: Die Szenarien Flag aus, Flag an, Umschalten zur Laufzeit und unbekannte Flag sind grün, der Leak-Test und ArchUnit sind grün.
 
 ## 12. Pull Request
