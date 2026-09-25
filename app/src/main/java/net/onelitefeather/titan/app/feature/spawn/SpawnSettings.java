@@ -19,8 +19,8 @@ import net.onelitefeather.titan.common.config.ConfigException;
 
 /**
  * Pure validation for the {@code spawn} section's values, kept apart from however those values
- * are read ({@link SpawnModule#enable}, via {@code io.avaje.config.Config} and
- * {@link net.onelitefeather.titan.common.config.ConfigValues}).
+ * are read ({@link SpawnModule#enable}, via {@code io.avaje.config.Config}, including
+ * {@code Config.getAs(key, Integer::parseInt)} for numbers).
  *
  * <p>Every method takes plain values and either returns the validated one or throws
  * {@link ConfigException#invalid(String, String)} naming the value's full section key, e.g.

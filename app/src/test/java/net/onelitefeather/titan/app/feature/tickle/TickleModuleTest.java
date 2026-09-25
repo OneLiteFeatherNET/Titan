@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.app.feature.tickle;
 
+import io.avaje.config.Config;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -31,7 +32,6 @@ import net.minestom.testing.Env;
 import net.minestom.testing.TestConnection;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.app.module.testing.ModuleHarness;
-import net.onelitefeather.titan.common.config.ConfigValues;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
@@ -57,7 +57,7 @@ class TickleModuleTest {
      * hardcoded, so a changed shipped default (see {@code application.yaml}) cannot silently
      * desync this test from production - read-only, never mutated (F.I.R.S.T. - Independent).
      */
-    private static final long DEFAULT_COOLDOWN_MILLIS = ConfigValues.longValue(TickleSettings.COOLDOWN_KEY);
+    private static final long DEFAULT_COOLDOWN_MILLIS = Config.getAs(TickleSettings.COOLDOWN_KEY, Long::parseLong);
 
     private static TickleModule fixedClockModule() {
         return new TickleModule(Clock.fixed(NOW, ZoneOffset.UTC));

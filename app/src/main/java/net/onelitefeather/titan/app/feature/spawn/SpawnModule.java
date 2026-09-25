@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.app.feature.spawn;
 
+import io.avaje.config.Config;
 import io.avaje.inject.Priority;
 import jakarta.inject.Singleton;
 import java.util.Objects;
@@ -25,7 +26,6 @@ import net.minestom.server.instance.Instance;
 import net.onelitefeather.titan.app.module.LobbyModule;
 import net.onelitefeather.titan.app.module.LobbySpawn;
 import net.onelitefeather.titan.app.module.ModuleContext;
-import net.onelitefeather.titan.common.config.ConfigValues;
 
 /**
  * Puts a joining player into the lobby and keeps them inside its height bounds.
@@ -75,9 +75,9 @@ public final class SpawnModule implements LobbyModule {
 
     @Override
     public void enable(ModuleContext context) {
-        int maxHeight = ConfigValues.intValue(SpawnSettings.MAX_HEIGHT_KEY);
-        int minHeight = SpawnSettings.minHeight(ConfigValues.intValue(SpawnSettings.MIN_HEIGHT_KEY), maxHeight);
-        int simulationDistance = SpawnSettings.simulationDistance(ConfigValues.intValue(SpawnSettings.SIMULATION_DISTANCE_KEY));
+        int maxHeight = Config.getAs(SpawnSettings.MAX_HEIGHT_KEY, Integer::parseInt);
+        int minHeight = SpawnSettings.minHeight(Config.getAs(SpawnSettings.MIN_HEIGHT_KEY, Integer::parseInt), maxHeight);
+        int simulationDistance = SpawnSettings.simulationDistance(Config.getAs(SpawnSettings.SIMULATION_DISTANCE_KEY, Integer::parseInt));
 
         HeightBounds heightBounds = new HeightBounds(minHeight, maxHeight);
         context.listen(AsyncPlayerConfigurationEvent.class, new SpawnConfigurationListener(this.instance, this.spawnPosition::position));

@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.app.feature.elytra;
 
+import io.avaje.config.Config;
 import java.util.List;
 import net.minestom.server.component.DataComponents;
 import net.minestom.server.entity.Entity;
@@ -35,7 +36,6 @@ import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.app.module.item.ItemRegistry;
 import net.onelitefeather.titan.app.module.testing.ModuleHarness;
-import net.onelitefeather.titan.common.config.ConfigValues;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -57,8 +57,8 @@ class ElytraModuleTest {
      * read from the facade rather than hardcoded, so a changed shipped default cannot silently
      * desync this test from production - read-only, never mutated (F.I.R.S.T. - Independent).
      */
-    private static final int DEFAULT_BURN_DURATION_TICKS = ConfigValues.intValue(ElytraSettings.BURN_DURATION_TICKS_KEY);
-    private static final int DEFAULT_COOLDOWN_TICKS = ConfigValues.intValue(ElytraSettings.COOLDOWN_TICKS_KEY);
+    private static final int DEFAULT_BURN_DURATION_TICKS = Config.getAs(ElytraSettings.BURN_DURATION_TICKS_KEY, Integer::parseInt);
+    private static final int DEFAULT_COOLDOWN_TICKS = Config.getAs(ElytraSettings.COOLDOWN_TICKS_KEY, Integer::parseInt);
 
     @DisplayName("equip() puts an unbreakable elytra on the chestplate")
     @Test

@@ -24,8 +24,8 @@ import net.onelitefeather.titan.common.config.ConfigException;
 
 /**
  * Pure validation for the {@code sit} section's values, kept apart from however those values are
- * read ({@link SitModule#enable}, via {@code io.avaje.config.Config} and
- * {@link net.onelitefeather.titan.common.config.ConfigValues}).
+ * read ({@link SitModule#enable}, via {@code io.avaje.config.Config}, including
+ * {@code Config.getAs(key, Double::parseDouble)} for numbers).
  *
  * <p>Every method takes a plain value and either returns it (unchanged, or - for
  * {@link #parseBlock(String)} - converted) or throws
@@ -33,8 +33,8 @@ import net.onelitefeather.titan.common.config.ConfigException;
  * {@code sit.allowedBlocks}. None of these methods touch {@code io.avaje.config.Config} or a
  * server, so they are unit-testable on their own. There is no separate validation for
  * {@code sit.offset}: {@link SitModule#enable} builds it as a {@link Vec} from three
- * {@link net.onelitefeather.titan.common.config.ConfigValues#doubleValue} reads, which can never
- * produce {@code null}, so there is nothing to reject.
+ * {@code Config.getAs(key, Double::parseDouble)} reads, which can never produce {@code null}, so
+ * there is nothing to reject.
  *
  * <p>The keys themselves are declared here as constants, the one place this module's config
  * section is named (see {@code design.md}, decision 3), and reused by {@link SitModule#enable} to

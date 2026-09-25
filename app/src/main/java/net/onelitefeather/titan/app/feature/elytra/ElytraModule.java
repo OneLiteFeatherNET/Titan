@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.app.feature.elytra;
 
+import io.avaje.config.Config;
 import io.avaje.inject.Priority;
 import jakarta.inject.Singleton;
 import net.kyori.adventure.key.Key;
@@ -28,7 +29,6 @@ import net.onelitefeather.titan.app.module.LobbyModule;
 import net.onelitefeather.titan.app.module.ModuleContext;
 import net.onelitefeather.titan.app.module.item.ItemSlot;
 import net.onelitefeather.titan.app.module.item.LobbyItem;
-import net.onelitefeather.titan.common.config.ConfigValues;
 
 /**
  * Moves today's elytra flight and firework boost - {@code ElytraStartFlyingListener}, {@code
@@ -69,8 +69,8 @@ public final class ElytraModule implements LobbyModule {
 
     @Override
     public void enable(ModuleContext context) {
-        int burnDurationTicks = ElytraSettings.burnDurationTicks(ConfigValues.intValue(ElytraSettings.BURN_DURATION_TICKS_KEY));
-        int cooldownTicks = ElytraSettings.cooldownTicks(ConfigValues.intValue(ElytraSettings.COOLDOWN_TICKS_KEY), burnDurationTicks);
+        int burnDurationTicks = ElytraSettings.burnDurationTicks(Config.getAs(ElytraSettings.BURN_DURATION_TICKS_KEY, Integer::parseInt));
+        int cooldownTicks = ElytraSettings.cooldownTicks(Config.getAs(ElytraSettings.COOLDOWN_TICKS_KEY, Integer::parseInt), burnDurationTicks);
         FireworkBoostTracker boosts = new FireworkBoostTracker();
 
         context.items().register(new LobbyItem(Key.key("titan:elytra"), ElytraItems.ELYTRA, ItemSlot.equipment(EquipmentSlot.CHESTPLATE), (player, event) -> {

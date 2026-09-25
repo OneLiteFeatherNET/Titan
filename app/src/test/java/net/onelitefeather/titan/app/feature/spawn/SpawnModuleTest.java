@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.app.feature.spawn;
 
+import io.avaje.config.Config;
 import net.kyori.adventure.key.Key;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
@@ -34,7 +35,6 @@ import net.onelitefeather.titan.app.module.ModuleContext;
 import net.onelitefeather.titan.app.module.item.ItemSlot;
 import net.onelitefeather.titan.app.module.item.LobbyItem;
 import net.onelitefeather.titan.app.module.testing.ModuleHarness;
-import net.onelitefeather.titan.common.config.ConfigValues;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -56,9 +56,9 @@ class SpawnModuleTest {
      * shipped default (see {@code application.yaml}) cannot silently desync this test from
      * production - read-only, never mutated (F.I.R.S.T. - Independent).
      */
-    private static final int MIN_HEIGHT = ConfigValues.intValue(SpawnSettings.MIN_HEIGHT_KEY);
-    private static final int MAX_HEIGHT = ConfigValues.intValue(SpawnSettings.MAX_HEIGHT_KEY);
-    private static final int SIMULATION_DISTANCE = ConfigValues.intValue(SpawnSettings.SIMULATION_DISTANCE_KEY);
+    private static final int MIN_HEIGHT = Config.getAs(SpawnSettings.MIN_HEIGHT_KEY, Integer::parseInt);
+    private static final int MAX_HEIGHT = Config.getAs(SpawnSettings.MAX_HEIGHT_KEY, Integer::parseInt);
+    private static final int SIMULATION_DISTANCE = Config.getAs(SpawnSettings.SIMULATION_DISTANCE_KEY, Integer::parseInt);
 
     /** Registers one hotbar item so {@code items().equip(player)} has something to observe. */
     private static final class DummyItemModule implements LobbyModule {

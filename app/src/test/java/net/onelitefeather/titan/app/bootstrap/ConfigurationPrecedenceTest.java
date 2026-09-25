@@ -164,13 +164,14 @@ class ConfigurationPrecedenceTest {
         Assertions.assertTrue(joined.contains("line 3"), "the failure must name the broken line, output was:\n" + joined);
     }
 
-    @DisplayName("An invalid environment override for tickle.cooldownMillis aborts the child, naming the key exactly once")
+    @DisplayName("An invalid environment override for tickle.cooldownMillis aborts the child, naming the key exactly once and keeping the reason")
     @Test
     void invalidTickleCooldownEnvironmentOverrideAbortsNamingKeyOnce(@TempDir Path workingDir) throws IOException, InterruptedException {
         List<String> output = runTickleValidationExpectingFailure(workingDir, Map.of("TICKLE_COOLDOWNMILLIS", "abc"));
 
         String joined = String.join("\n", output);
         Assertions.assertEquals(1, countOccurrences(joined, "tickle.cooldownMillis"), "the key must be named exactly once, output was:\n" + joined);
+        Assertions.assertTrue(joined.contains("abc"), "the reason (the invalid raw value) must still reach the output via the printed cause chain, output was:\n" + joined);
     }
 
     @DisplayName("A negative tickle.cooldownMillis in application.yaml aborts the child, naming the key")

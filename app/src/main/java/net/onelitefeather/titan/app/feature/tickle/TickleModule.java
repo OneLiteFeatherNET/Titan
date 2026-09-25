@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.app.feature.tickle;
 
+import io.avaje.config.Config;
 import io.avaje.inject.Priority;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -24,7 +25,6 @@ import java.util.Objects;
 import net.minestom.server.event.entity.EntityAttackEvent;
 import net.onelitefeather.titan.app.module.LobbyModule;
 import net.onelitefeather.titan.app.module.ModuleContext;
-import net.onelitefeather.titan.common.config.ConfigValues;
 
 /**
  * Lets a player tickle another player by attacking them while holding a feather in either hand:
@@ -65,8 +65,9 @@ public final class TickleModule implements LobbyModule {
     }
 
     /**
-     * Reads and validates {@code tickle.cooldownMillis} through {@link ConfigValues#longValue} and
-     * {@link TickleSettings#cooldown(long)} - the exact line {@link #enable} runs.
+     * Reads and validates {@code tickle.cooldownMillis} through
+     * {@code Config.getAs(key, Long::parseLong)} and {@link TickleSettings#cooldown(long)} - the
+     * exact line {@link #enable} runs.
      *
      * <p>Package-private, rather than inlined into {@link #enable}, purely so
      * {@code net.onelitefeather.titan.app.feature.tickle.TickleValidation} (a test helper in the
@@ -74,11 +75,15 @@ public final class TickleModule implements LobbyModule {
      * {@code openspec/changes/avaje-config-facade/design.md}, decision 3.
      *
      * @return the validated tickle cooldown
+     * @throws IllegalStateException                                  if the configured value is
+     *                                                                missing or not a whole number
+     *                                                                ({@code Config.getAs} names
+     *                                                                the key and keeps the parse
+     *                                                                failure as the cause)
      * @throws net.onelitefeather.titan.common.config.ConfigException if the configured value is
-     *                                                                missing, not a whole number,
-     *                                                                or negative
+     *                                                                negative
      */
     static Duration readCooldown() {
-        return TickleSettings.cooldown(ConfigValues.longValue(TickleSettings.COOLDOWN_KEY));
+        return TickleSettings.cooldown(Config.getAs(TickleSettings.COOLDOWN_KEY, Long::parseLong));
     }
 }
