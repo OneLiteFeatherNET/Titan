@@ -19,6 +19,7 @@ import java.util.List;
 import net.kyori.adventure.key.InvalidKeyException;
 import net.kyori.adventure.key.Key;
 import net.minestom.server.coordinate.Vec;
+import net.minestom.server.instance.block.Block;
 import net.onelitefeather.titan.common.config.ConfigException;
 
 /**
@@ -64,18 +65,27 @@ final class SitSettings {
      * string such as {@code minecraft:spruce_stairs}, the same form {@code KeyGsonAdapter} used to
      * accept before this module read its section directly. Applies exactly the same rule
      * {@link Key#key(String)} always has: a string with characters a {@link Key} cannot contain
-     * (e.g. spaces or uppercase letters) is invalid.
+     * (e.g. spaces or uppercase letters) is invalid. Beyond syntax, the key must also name a block
+     * Minestom knows about ({@link Block#fromKey(Key)}) - the {@code lobby-module-config} spec
+     * lists
+     * "ein unbekannter Block" alongside a syntactically invalid one as an invalid value.
      *
      * @param raw one raw entry of the configured {@code sit.allowedBlocks} list
      * @return {@code raw}, parsed as a {@link Key}
-     * @throws ConfigException if {@code raw} is not a syntactically valid key
+     * @throws ConfigException if {@code raw} is not a syntactically valid key, or is valid but
+     *                         names no known block
      */
     static Key parseBlock(String raw) {
+        Key key;
         try {
-            return Key.key(raw);
+            key = Key.key(raw);
         } catch (InvalidKeyException e) {
             throw ConfigException.invalid(ALLOWED_BLOCKS_KEY, "must be a valid block key, was '" + raw + "'");
         }
+        if (Block.fromKey(key) == null) {
+            throw ConfigException.invalid(ALLOWED_BLOCKS_KEY, "must name a known block, was '" + raw + "'");
+        }
+        return key;
     }
 
     /**
