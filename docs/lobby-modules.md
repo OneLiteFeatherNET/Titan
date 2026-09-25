@@ -9,7 +9,9 @@ vermerkt, aus dem lauffähigen Vorlagemodul
 (`ExampleModule`, `ExampleConfig`, `ExampleGreetingRule`,
 `ExampleGreetingTracker`, `ExampleItems`) - kopierbar als Ausgangspunkt für ein
 echtes Feature. Es ist bewusst test-only (`app/src/test`, nicht
-`app/src/main`), damit es nie in `Titan`s Modulliste landet.
+`app/src/main`), damit es nie als echtes Modul mitläuft - s. "Gefunden
+werden" unten, warum das trotz `@Singleton`/`@Priority` an der Klasse
+funktioniert.
 
 ## Aufbau eines Moduls
 
@@ -58,6 +60,93 @@ sondern wird im Build geprüft - allerdings nur für Produktionscode unter
 `app/src/test/.../feature/example/` läuft also nicht mit und hält diese
 Regel nur per Konvention ein. Erst ein echtes Feature, das aus der Vorlage
 nach `app/src/main` kopiert wird, wird von der Prüfung erfasst.
+
+## Gefunden werden: `@Singleton` und `@Priority`
+
+Seit `avaje-dependency-injection` gibt es keine zentrale Modulliste mehr:
+`Titan` holt nach dem Aufbau des `BeanScope` alle Module über
+`scope.listByPriority(LobbyModule.class)` (Dependency-Injection-Container
+[Avaje Inject](https://avaje.io/inject/)). Damit ein Modul dabei gefunden
+wird, braucht seine Klasse zwei Annotationen:
+
+```java
+@Singleton
+@Priority(400)
+public final class NavigatorModule implements LobbyModule {
+    // ...
+}
+```
+
+(`NavigatorModule`, `app/src/main/java/net/onelitefeather/titan/app/feature/navigator/NavigatorModule.java`)
+
+- **`@Singleton`** (`jakarta.inject.Singleton`) macht die Klasse zu einer
+  Avaje-Bean - ohne sie sieht der Container das Modul überhaupt nicht.
+- **`@Priority`** (`io.avaje.inject.Priority`) legt die Startreihenfolge fest:
+  `scope.listByPriority(...)` sortiert aufsteigend, niedrigere Werte zuerst.
+  Jeder Wert muss **eindeutig** sein - das prüft
+  `ArchitectureTest#modulePrioritiesAreUnique`
+  (`app/src/test/java/net/onelitefeather/titan/app/architecture/ArchitectureTest.java`).
+
+Die heutigen sieben Module, in Hunderterschritten mit Platz dazwischen:
+
+| Modul | Priorität |
+|---|---|
+| protection | 100 |
+| spawn | 200 |
+| respawn | 300 |
+| navigator | 400 |
+| sit | 500 |
+| tickle | 600 |
+| elytra | 700 |
+
+Ein neues Modul wählt eine freie Zahl aus der Lücke, an der es einschalten
+soll. Fehlt `@Singleton` oder `@Priority` an einer Klasse, die `LobbyModule`
+implementiert, verschwindet das Modul nicht etwa unbemerkt aus der Lobby:
+`ArchitectureTest#featureLobbyModulesAreSingletonWithPriority` lässt den
+Build fehlschlagen.
+
+**Abhängigkeiten kommen über den Konstruktor.** Avaje löst sie aus dem
+`BeanScope` auf - ein `Deliver`, eine `Instance`, ein `Clock` werden einfach
+als Konstruktorparameter angefordert (s. `NavigatorModule(Deliver,
+NavigatorEntries, FeatureFlags)`, `SpawnModule(Instance, LobbySpawn)`).
+`@Inject` (`jakarta.inject.Inject`) auf dem Konstruktor braucht nur eine
+Klasse mit **mehr als einem** Konstruktor, damit Avaje weiß, welchen sie
+nehmen soll (s. `TickleModule`, dessen einziger echter Konstruktor `@Inject
+TickleModule(Clock)` trägt); mit genau einem Konstruktor reicht der ohne
+`@Inject`.
+
+Welche Plattform-Dienste als Bean zur Verfügung stehen, steht in
+`app/src/main/java/net/onelitefeather/titan/app/bootstrap/PlatformBeans.java`
+(`@Factory` mit einer `@Bean`-Methode je Dienst: `InstanceContainer`,
+`MapProvider`, `LobbySpawn`, `Deliver`, `ConfigStore`, der `@Named("titan")`
+qualifizierte `EventNode<Event>`, `ItemRegistry`, `NavigatorEntries`,
+`FeatureFlags`, `Clock`). Braucht ein neues Feature einen **neuen** geteilten
+Dienst:
+
+- Ist er im Kern ein Plattform-Typ aus `common` oder Minestom, den mehrere
+  Module brauchen (wie die bestehenden Beans oben), kommt eine weitere
+  `@Bean`-Methode in dieselbe `PlatformBeans`-Factory dazu.
+- Trägt er selbst Feature-übergreifende Logik, statt nur einen fremden Typ
+  einzuhüllen, wird er eine eigene `@Singleton`-Klasse (ohne `@Priority` -
+  das brauchen nur `LobbyModule`-Implementierungen), die betroffene Module
+  dann per Konstruktor anfordern.
+
+**Fehlt eine Abhängigkeit ganz** (kein passender `@Bean`/`@Singleton` im
+Scope für einen Konstruktorparameter), bricht `BeanScope.builder().build()`
+mit einer Exception ab, die den fehlenden Typ nennt. `Titan` baut den Scope
+im Konstruktor; `TitanApplication.main` fängt jede `RuntimeException` aus
+`new Titan()`/`titan.initialize()` ab, loggt sie als `Titan failed to
+start: …` und beendet den Prozess mit Exit-Code 1 - der Fehler fällt beim
+Start auf, nicht erst, wenn ein Spieler das Feature benutzt. Eine vergessene
+`@Singleton`- oder `@Priority`-Annotation dagegen fällt schon beim Build auf,
+über die ArchUnit-Regel oben.
+
+Sind alle Module eingeschaltet, loggt `Titan#initialize()` einmal die
+tatsächliche Startreihenfolge auf INFO-Level: `Lobby modules enabled in
+order: {}`, gefüllt mit den `id()`-Werten in der Reihenfolge von
+`scope.listByPriority(LobbyModule.class)`. Das macht die Reihenfolge aus der
+Tabelle oben auch zur Laufzeit sichtbar, ohne dass sie noch an einer Stelle
+im Code als Liste steht.
 
 ## Andockpunkte des `ModuleContext`
 
@@ -359,28 +448,37 @@ prüft im Build, nicht nur per Konvention (s. `design.md`, Entscheidung 10):
 4. Nur Plattform-Code (`..app.module..`) und `TitanApplication` rufen
    `EventNode#addListener`/`GlobalEventHandler#addListener` direkt auf - ein
    Feature-Modul geht immer über `context.listen`/`listenIncludingCancelled`.
+5. Jede `LobbyModule`-Implementierung in `..app.feature..` trägt `@Singleton`
+   **und** `@io.avaje.inject.Priority` (s. "Gefunden werden" oben).
+6. Kein Feature-Code hängt von `io.avaje.inject.BeanScope` ab - Abhängigkeiten
+   kommen ausschließlich über den Konstruktor, kein Service-Locator.
+7. Die `@Priority`-Werte aller Module in `..app.feature..` sind eindeutig
+   (`ArchitectureTest#modulePrioritiesAreUnique`, ein Reflection-Test statt
+   einer `ArchRule`).
 
-## Checkliste: neues Feature = neues Paket + eine Zeile
+## Checkliste: neues Feature = neues Paket, null geänderte Zeilen außerhalb
 
 1. Neues Paket `app/src/main/java/net/onelitefeather/titan/app/feature/<name>/`
    anlegen - `app/src/test/.../feature/example/` als Kopiervorlage nehmen.
-2. `<Name>Module` (public, implementiert `LobbyModule`) und, falls das Feature
-   Konfiguration braucht, `<Name>Config` (public record, Defaults +
-   Validierung über `ConfigException.invalid` im Compact Constructor)
-   anlegen. Alles andere - Handler, reine Logik, Item-/Tag-Konstanten - bleibt
-   paketprivat.
-3. In `enable(ModuleContext context)` die gebrauchten Andockpunkte verdrahten:
+2. `<Name>Module` (public, implementiert `LobbyModule`, trägt `@Singleton`
+   und ein noch nicht vergebenes `@Priority(n)` - s. "Gefunden werden"
+   oben und die Prioritätstabelle dort) und, falls das Feature Konfiguration
+   braucht, `<Name>Config` (public record, Defaults + Validierung über
+   `ConfigException.invalid` im Compact Constructor) anlegen. Alles andere -
+   Handler, reine Logik, Item-/Tag-Konstanten - bleibt paketprivat.
+3. Abhängigkeiten (eine `Instance`, ein `Deliver`, ein `Clock`, ...) über den
+   Konstruktor anfordern, `@Inject` nur, falls die Klasse mehr als einen
+   Konstruktor hat (s. "Gefunden werden" oben). Braucht das Feature einen
+   Plattform-Dienst, den es noch nicht gibt, kommt der entweder als weiteres
+   `@Bean` in `PlatformBeans` oder, falls er selbst Feature-übergreifende
+   Logik trägt, als eigene `@Singleton`-Klasse dazu.
+4. In `enable(ModuleContext context)` die gebrauchten Andockpunkte verdrahten:
    `context.config(...)`, `context.items().register(...)`,
    `context.commands().register(...)`, `context.navigator().add(...)`,
    `context.listen(...)`/`listenIncludingCancelled(...)`, `context.tasks()`.
-4. Tests schreiben, bevor (oder während) der Code entsteht: Unit-Tests für die
+5. Tests schreiben, bevor (oder während) der Code entsteht: Unit-Tests für die
    reine Logik und die Config-Validierung, ein Env-Integrationstest über
    `ModuleHarness` für alles, was einen `Player` braucht.
-5. **Genau eine Zeile** in `Titan.java`s Modulliste ergänzen -
-   `new <Name>Module(...)` in der `.modules(...)`-Aufzählung des
-   `ModuleRegistry.builder()`. Keine andere Datei, kein anderes Feature-Paket
-   ändert sich dafür (s. `lobby-modules`-Spec, Szenario "Beispielmodul aus der
-   Vorlage").
 6. Falls das Feature einen `app.json`-Abschnitt hat: die neuen Felder samt
    Defaults im README unter "Configuration Options Explained" dokumentieren -
    `ConfigStore.flush()` schreibt eine bestehende, aktuelle `app.json` nicht
@@ -388,6 +486,22 @@ prüft im Build, nicht nur per Konvention (s. `design.md`, Entscheidung 10):
    Defaults im Speicher. Sollen Betreiber ihn anpassen können, den Abschnitt
    zusätzlich in derselben PR in `app.json` ergänzen.
 
-`ExampleModule` selbst bleibt test-only und taucht deshalb nicht in
-`Titan.java` auf - als reguläres Feature bräuchte es genau den einen Eintrag
-aus Schritt 5, sonst keine Änderung außerhalb seines eigenen Pakets.
+Das war's - **keine** zentrale Modulliste mehr zu pflegen: `@Singleton` plus
+`@Priority` genügen, damit `Titan` das neue Modul über
+`scope.listByPriority(LobbyModule.class)` findet und an der richtigen Stelle
+startet (s. `lobby-modules`-Spec, Szenario "Beispielmodul aus der Vorlage").
+Die einzige Ausnahme von "null geänderte Zeilen außerhalb des eigenen
+Pakets" ist ein brandneuer, geteilter Plattform-Dienst (Schritt 3): Der
+berührt zwangsläufig `PlatformBeans`, weil dort - und nur dort - Plattform-
+Typen zu Avaje-Beans werden.
+
+`ExampleModule` selbst bleibt test-only (`app/src/test`, nicht
+`app/src/main`) und trägt trotzdem `@Singleton`/`@Priority(800)` (mit einem
+Kommentar, dass ein echtes Modul einen noch nicht vergebenen Wert braucht)
+sowie `@Inject` auf seinem `Clock`-Konstruktor, damit die Vorlage als Ganzes
+korrekt kopierbar bleibt. Gefunden wird es trotzdem nicht: Der
+Annotation-Processor läuft nicht für Testquellen
+(`testAnnotationProcessor` ist nicht gesetzt), `ModuleWiringTest` sieht also
+weiterhin genau die sieben Module aus der Tabelle oben, nicht acht. Als
+reguläres Feature bräuchte es genau die Annotationen aus Schritt 2, sonst
+keine Änderung außerhalb seines eigenen Pakets.
