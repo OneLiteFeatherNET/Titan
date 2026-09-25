@@ -84,7 +84,10 @@ public final class TitanTranslations {
     /** A configuration change was rejected. Argument 0: the key(s). Argument 1: the reason. */
     public static final String CONFIG_RELOAD_REJECTED = "titan.config.reload.rejected";
 
-    /** Reloading the configuration failed. Argument 0: the file. Argument 1: the location. */
+    /**
+     * Reloading the configuration failed. Argument 0: the file. Argument 1: the parser's message
+     * incl. location (may be multi-line - kept as the last argument for exactly that reason).
+     */
     public static final String CONFIG_RELOAD_FAILED = "titan.config.reload.failed";
 
     /**
