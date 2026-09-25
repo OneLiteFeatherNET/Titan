@@ -15,10 +15,9 @@
  */
 package net.onelitefeather.titan.app.feature.navigator;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import io.avaje.config.Configuration;
 import java.util.List;
+import java.util.Map;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.PlayerHand;
@@ -37,12 +36,11 @@ import net.onelitefeather.titan.app.module.LobbyModule;
 import net.onelitefeather.titan.app.module.ModuleContext;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntry;
 import net.onelitefeather.titan.app.module.testing.ModuleHarness;
-import net.onelitefeather.titan.common.config.ConfigStore;
+import net.onelitefeather.titan.common.config.ConfigSections;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.io.TempDir;
 
 /**
  * End-to-end coverage for {@link NavigatorModule} against a real {@code Env}: opening the feather
@@ -119,26 +117,10 @@ class NavigatorModuleTest {
 
     @DisplayName("An additional entry from configuration appears in the navigator (Parkour on slot 2)")
     @Test
-    void additionalConfiguredEntryAppears(Env env, @TempDir Path tempDir) throws IOException {
-        Path configFile = tempDir.resolve("app.json");
-        String json = """
-                {
-                  "configVersion": 2,
-                  "navigator": {
-                    "title": "<yellow>Navigator",
-                    "entries": [
-                      {"slot": 0, "icon": "minecraft:elytra", "displayName": "<!i><gradient:#fcba03:#03fc8c>ElytraRace</gradient>", "destination": "ElytraRace"},
-                      {"slot": 2, "icon": "minecraft:diamond_pickaxe", "displayName": "<green>Parkour", "destination": "Parkour"},
-                      {"slot": 4, "icon": "minecraft:grass_block", "displayName": "<!i><green>Survival", "destination": "Survival"},
-                      {"slot": 5, "icon": "minecraft:enderman_spawn_egg", "displayName": "<!i><gradient:#616161:#e80000c>Slender</gradient>", "destination": "cygnus"},
-                      {"slot": 8, "icon": "minecraft:wooden_axe", "displayName": "<!i><rainbow>Creative</rainbow>", "destination": "MemberBuild"}
-                    ]
-                  }
-                }
-                """;
-        Files.writeString(configFile, json);
-        ConfigStore store = ConfigStore.open(configFile);
-        try (ModuleHarness harness = ModuleHarness.start(env, store, (navigator, items) -> new LobbyModule[]{new NavigatorModule(new RecordingDeliver(), navigator, slenderActive())})) {
+    void additionalConfiguredEntryAppears(Env env) {
+        Configuration configuration = Configuration.builder().putAll(Map.of("navigator.entries.parkour.slot", "2", "navigator.entries.parkour.icon", "minecraft:diamond_pickaxe", "navigator.entries.parkour.displayName", "<green>Parkour", "navigator.entries.parkour.destination", "Parkour")).build();
+        ConfigSections sections = new ConfigSections(configuration);
+        try (ModuleHarness harness = ModuleHarness.start(env, sections, (navigator, items) -> new LobbyModule[]{new NavigatorModule(new RecordingDeliver(), navigator, slenderActive())})) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             harness.items().equip(player);

@@ -103,7 +103,7 @@ public final class NavigatorModule implements LobbyModule {
         Component title = MiniMessage.miniMessage().deserialize(config.title());
         this.navigatorInventory = new NavigatorInventory(title, this.entries, this.featureFlags, this::onSelect);
 
-        for (NavigatorConfig.Entry entry : config.entries()) {
+        for (NavigatorConfig.Entry entry : config.entries().values()) {
             context.navigator().add(toNavigatorEntry(entry));
         }
 
