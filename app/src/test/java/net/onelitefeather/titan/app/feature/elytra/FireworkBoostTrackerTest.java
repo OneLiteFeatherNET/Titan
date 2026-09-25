@@ -29,7 +29,8 @@ import org.junit.jupiter.api.Test;
  *
  * <h2>What the fixtures are built to tell apart</h2>
  *
- * <p>{@link #SHORT} burns 4 and cools down 9; {@link #LONG} burns 7 and cools down 11. Neither
+ * <p>{@code SHORT_BURN}/{@code SHORT_COOLDOWN} burn 4 and cool down 9; {@code LONG_BURN}/
+ * {@code LONG_COOLDOWN} burn 7 and cool down 11. Neither
  * burn divides the other, neither cooldown is twice its burn, and no number appears in both - so a
  * tracker that read the burn where it meant the cooldown, or that kept the first configuration it
  * ever saw, produces a count that is in neither column.
@@ -40,8 +41,10 @@ import org.junit.jupiter.api.Test;
  */
 class FireworkBoostTrackerTest {
 
-    private static final ElytraConfig SHORT = new ElytraConfig(4, 9);
-    private static final ElytraConfig LONG = new ElytraConfig(7, 11);
+    private static final int SHORT_BURN = 4;
+    private static final int SHORT_COOLDOWN = 9;
+    private static final int LONG_BURN = 7;
+    private static final int LONG_COOLDOWN = 11;
 
     private static final UUID ADA = UUID.fromString("00000000-0000-4000-8000-0000000000a1");
     private static final UUID BEN = UUID.fromString("00000000-0000-4000-8000-0000000000b2");
@@ -60,7 +63,7 @@ class FireworkBoostTrackerTest {
     void aBurnStartsOnTheTickItIsAskedForAndIsReportedAtItsFullLength() {
         Assertions.assertFalse(this.tracker.burning(ADA));
 
-        Assertions.assertTrue(this.tracker.requestBoost(ADA, SHORT, GLIDING));
+        Assertions.assertTrue(this.tracker.requestBoost(ADA, SHORT_BURN, SHORT_COOLDOWN, GLIDING));
 
         Assertions.assertTrue(this.tracker.burning(ADA));
         Assertions.assertEquals(4, this.tracker.ticksRemaining(ADA), "the tick it starts on counts, so the first reading is the whole burn");
@@ -69,7 +72,7 @@ class FireworkBoostTrackerTest {
     @DisplayName("A burn is reported on exactly as many ticks as it was configured for")
     @Test
     void aBurnIsReportedOnExactlyAsManyTicksAsItWasConfiguredFor() {
-        this.tracker.requestBoost(ADA, SHORT, GLIDING);
+        this.tracker.requestBoost(ADA, SHORT_BURN, SHORT_COOLDOWN, GLIDING);
 
         int boostedTicks = 0;
         for (int tick = 0; tick < 20; tick++) {
@@ -79,13 +82,13 @@ class FireworkBoostTrackerTest {
             this.tracker.advance();
         }
 
-        Assertions.assertEquals(SHORT.burnDurationTicks(), boostedTicks);
+        Assertions.assertEquals(SHORT_BURN, boostedTicks);
     }
 
     @DisplayName("A burn counts down one tick at a time and then stops")
     @Test
     void aBurnCountsDownOneTickAtATimeAndThenStops() {
-        this.tracker.requestBoost(ADA, SHORT, GLIDING);
+        this.tracker.requestBoost(ADA, SHORT_BURN, SHORT_COOLDOWN, GLIDING);
 
         Assertions.assertEquals(4, this.tracker.ticksRemaining(ADA));
         this.tracker.advance();
@@ -104,8 +107,8 @@ class FireworkBoostTrackerTest {
     @DisplayName("A burn runs the length of the configuration it was started with")
     @Test
     void aBurnRunsTheLengthOfTheConfigurationItWasStartedWith() {
-        this.tracker.requestBoost(ADA, LONG, GLIDING);
-        this.tracker.requestBoost(BEN, SHORT, GLIDING);
+        this.tracker.requestBoost(ADA, LONG_BURN, LONG_COOLDOWN, GLIDING);
+        this.tracker.requestBoost(BEN, SHORT_BURN, SHORT_COOLDOWN, GLIDING);
 
         for (int tick = 0; tick < 4; tick++) {
             this.tracker.advance();
@@ -122,10 +125,10 @@ class FireworkBoostTrackerTest {
     @DisplayName("A second boost during the cooldown is refused and changes nothing")
     @Test
     void aSecondBoostDuringTheCooldownIsRefusedAndChangesNothing() {
-        this.tracker.requestBoost(ADA, SHORT, GLIDING);
+        this.tracker.requestBoost(ADA, SHORT_BURN, SHORT_COOLDOWN, GLIDING);
         this.tracker.advance();
 
-        Assertions.assertFalse(this.tracker.requestBoost(ADA, LONG, GLIDING));
+        Assertions.assertFalse(this.tracker.requestBoost(ADA, LONG_BURN, LONG_COOLDOWN, GLIDING));
 
         Assertions.assertEquals(3, this.tracker.ticksRemaining(ADA), "the refused request did not restart the burn, nor lengthen it to LONG's 7");
     }
@@ -133,7 +136,7 @@ class FireworkBoostTrackerTest {
     @DisplayName("The cooldown is measured from the burn's start, so it outlasts the burn")
     @Test
     void theCooldownIsMeasuredFromTheBurnsStartSoItOutlastsTheBurn() {
-        this.tracker.requestBoost(ADA, SHORT, GLIDING);
+        this.tracker.requestBoost(ADA, SHORT_BURN, SHORT_COOLDOWN, GLIDING);
         Assertions.assertEquals(9, this.tracker.cooldownTicksRemaining(ADA));
 
         for (int tick = 0; tick < 4; tick++) {
@@ -142,24 +145,24 @@ class FireworkBoostTrackerTest {
 
         Assertions.assertFalse(this.tracker.burning(ADA), "the 4-tick burn is over");
         Assertions.assertEquals(5, this.tracker.cooldownTicksRemaining(ADA), "9 measured from the start leaves 5 after a burn of 4");
-        Assertions.assertFalse(this.tracker.requestBoost(ADA, SHORT, GLIDING));
+        Assertions.assertFalse(this.tracker.requestBoost(ADA, SHORT_BURN, SHORT_COOLDOWN, GLIDING));
     }
 
     @DisplayName("A boost is allowed again on the tick the cooldown runs out, and not before")
     @Test
     void aBoostIsAllowedAgainOnTheTickTheCooldownRunsOutAndNotBefore() {
-        this.tracker.requestBoost(ADA, SHORT, GLIDING);
+        this.tracker.requestBoost(ADA, SHORT_BURN, SHORT_COOLDOWN, GLIDING);
         for (int tick = 0; tick < 8; tick++) {
             this.tracker.advance();
         }
 
         Assertions.assertEquals(1, this.tracker.cooldownTicksRemaining(ADA));
-        Assertions.assertFalse(this.tracker.requestBoost(ADA, SHORT, GLIDING), "one tick of cooldown left is still a refusal");
+        Assertions.assertFalse(this.tracker.requestBoost(ADA, SHORT_BURN, SHORT_COOLDOWN, GLIDING), "one tick of cooldown left is still a refusal");
 
         this.tracker.advance();
 
         Assertions.assertEquals(0, this.tracker.cooldownTicksRemaining(ADA));
-        Assertions.assertTrue(this.tracker.requestBoost(ADA, SHORT, GLIDING));
+        Assertions.assertTrue(this.tracker.requestBoost(ADA, SHORT_BURN, SHORT_COOLDOWN, GLIDING));
     }
 
     // ------------------------------------------------------------------------------------------
@@ -169,22 +172,22 @@ class FireworkBoostTrackerTest {
     @DisplayName("A boost asked for while not gliding is refused and costs no cooldown")
     @Test
     void aBoostAskedForWhileNotGlidingIsRefusedAndCostsNoCooldown() {
-        Assertions.assertFalse(this.tracker.requestBoost(ADA, SHORT, ON_FOOT));
+        Assertions.assertFalse(this.tracker.requestBoost(ADA, SHORT_BURN, SHORT_COOLDOWN, ON_FOOT));
 
         Assertions.assertFalse(this.tracker.burning(ADA));
         Assertions.assertEquals(0, this.tracker.cooldownTicksRemaining(ADA), "a refused boost must not spend the cooldown of one that happened");
-        Assertions.assertTrue(this.tracker.requestBoost(ADA, SHORT, GLIDING));
+        Assertions.assertTrue(this.tracker.requestBoost(ADA, SHORT_BURN, SHORT_COOLDOWN, GLIDING));
     }
 
     @DisplayName("One player's burn is not another's")
     @Test
     void onePlayersBurnIsNotAnothers() {
-        this.tracker.requestBoost(ADA, LONG, GLIDING);
+        this.tracker.requestBoost(ADA, LONG_BURN, LONG_COOLDOWN, GLIDING);
 
         Assertions.assertTrue(this.tracker.burning(ADA));
         Assertions.assertFalse(this.tracker.burning(BEN));
         Assertions.assertEquals(0, this.tracker.ticksRemaining(BEN));
-        Assertions.assertTrue(this.tracker.requestBoost(BEN, SHORT, GLIDING), "Ada's cooldown is not Ben's");
+        Assertions.assertTrue(this.tracker.requestBoost(BEN, SHORT_BURN, SHORT_COOLDOWN, GLIDING), "Ada's cooldown is not Ben's");
         Assertions.assertEquals(7, this.tracker.ticksRemaining(ADA));
         Assertions.assertEquals(4, this.tracker.ticksRemaining(BEN));
     }
@@ -196,8 +199,8 @@ class FireworkBoostTrackerTest {
     @DisplayName("A player who disconnects (or lands) mid-burn is forgotten and takes nobody else with them")
     @Test
     void aPlayerWhoIsForgottenMidBurnTakesNobodyElseWithThem() {
-        this.tracker.requestBoost(ADA, SHORT, GLIDING);
-        this.tracker.requestBoost(BEN, LONG, GLIDING);
+        this.tracker.requestBoost(ADA, SHORT_BURN, SHORT_COOLDOWN, GLIDING);
+        this.tracker.requestBoost(BEN, LONG_BURN, LONG_COOLDOWN, GLIDING);
         this.tracker.advance();
 
         this.tracker.forget(ADA);
@@ -223,6 +226,6 @@ class FireworkBoostTrackerTest {
         Assertions.assertFalse(this.tracker.burning(ADA));
         Assertions.assertEquals(0, this.tracker.ticksRemaining(ADA));
         Assertions.assertEquals(0, this.tracker.cooldownTicksRemaining(ADA));
-        Assertions.assertTrue(this.tracker.requestBoost(ADA, SHORT, GLIDING));
+        Assertions.assertTrue(this.tracker.requestBoost(ADA, SHORT_BURN, SHORT_COOLDOWN, GLIDING));
     }
 }

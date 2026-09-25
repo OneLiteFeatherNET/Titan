@@ -28,6 +28,7 @@ import net.onelitefeather.titan.app.module.LobbyModule;
 import net.onelitefeather.titan.app.module.ModuleContext;
 import net.onelitefeather.titan.app.module.item.ItemSlot;
 import net.onelitefeather.titan.app.module.item.LobbyItem;
+import net.onelitefeather.titan.common.config.ConfigValues;
 
 /**
  * Moves today's elytra flight and firework boost - {@code ElytraStartFlyingListener}, {@code
@@ -68,14 +69,15 @@ public final class ElytraModule implements LobbyModule {
 
     @Override
     public void enable(ModuleContext context) {
-        ElytraConfig config = context.config(ElytraConfig.class, ElytraConfig.DEFAULTS);
+        int burnDurationTicks = ElytraSettings.burnDurationTicks(ConfigValues.intValue(ElytraSettings.BURN_DURATION_TICKS_KEY));
+        int cooldownTicks = ElytraSettings.cooldownTicks(ConfigValues.intValue(ElytraSettings.COOLDOWN_TICKS_KEY), burnDurationTicks);
         FireworkBoostTracker boosts = new FireworkBoostTracker();
 
         context.items().register(new LobbyItem(Key.key("titan:elytra"), ElytraItems.ELYTRA, ItemSlot.equipment(EquipmentSlot.CHESTPLATE), (player, event) -> {
         }));
         ItemStack stampedFirework = context.items().register(new LobbyItem(Key.key("titan:firework"), ElytraItems.FIREWORK, ItemSlot.unplaced(), (player, event) -> {
-            if (boosts.requestBoost(player.getUuid(), config, player.isFlyingWithElytra())) {
-                FireworkRockets.fire(player, config);
+            if (boosts.requestBoost(player.getUuid(), burnDurationTicks, cooldownTicks, player.isFlyingWithElytra())) {
+                FireworkRockets.fire(player, burnDurationTicks, cooldownTicks);
             }
         }));
 

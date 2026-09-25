@@ -33,8 +33,8 @@ final class ElytraItems {
 
     /**
      * The flight duration written into the firework's own tooltip: three, the maximum a player can
-     * craft, matching Voyager's {@code Rockets.FLIGHT_DURATION} and the deterministic burn
-     * {@link ElytraConfig#DEFAULTS} runs ({@code 10 * 3 = 30} ticks).
+     * craft, matching Voyager's {@code Rockets.FLIGHT_DURATION} and the deterministic burn the
+     * shipped default for {@code elytra.burnDurationTicks} runs ({@code 10 * 3 = 30} ticks).
      */
     private static final int FLIGHT_DURATION = 3;
 

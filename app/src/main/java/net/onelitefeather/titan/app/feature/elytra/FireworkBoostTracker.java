@@ -32,11 +32,11 @@ import java.util.UUID;
  *
  * <h2>The two counters, and why the cooldown starts with the burn</h2>
  *
- * <p>A boost sets both at once: the burn to {@link ElytraConfig#burnDurationTicks()} and the
- * cooldown to {@link ElytraConfig#cooldownTicks()}. {@link #advance()} decrements both. So the
- * cooldown is measured <strong>from the tick the burn started</strong>, and because
- * {@code ElytraConfig} refuses a cooldown that is not strictly longer than the burn, a second
- * boost cannot begin before the first has ended.
+ * <p>A boost sets both at once: the burn to the caller's {@code burnDurationTicks} and the
+ * cooldown to its {@code cooldownTicks}. {@link #advance()} decrements both. So the cooldown is
+ * measured <strong>from the tick the burn started</strong>, and because
+ * {@link ElytraSettings#cooldownTicks(int, int)} refuses a cooldown that is not strictly longer
+ * than the burn, a second boost cannot begin before the first has ended.
  *
  * <h2>Where {@link #advance()} goes in a tick</h2>
  *
@@ -62,12 +62,15 @@ final class FireworkBoostTracker {
      * rocket used on the ground moves nobody, and starting a burn for it would hold the player in a
      * cooldown for a boost they never got.
      *
-     * @param playerId         who asked
-     * @param config           the tuning to start this burn under, read now and not again for it
-     * @param flyingWithElytra this tick's gliding flag for {@code playerId}
+     * @param playerId          who asked
+     * @param burnDurationTicks how many ticks this burn lasts, already validated by
+     *                          {@link ElytraSettings#burnDurationTicks(int)}
+     * @param cooldownTicks     how many ticks after this burn starts before another may begin,
+     *                          already validated by {@link ElytraSettings#cooldownTicks(int, int)}
+     * @param flyingWithElytra  this tick's gliding flag for {@code playerId}
      * @return whether a burn started; {@code false} means nothing changed
      */
-    boolean requestBoost(UUID playerId, ElytraConfig config, boolean flyingWithElytra) {
+    boolean requestBoost(UUID playerId, int burnDurationTicks, int cooldownTicks, boolean flyingWithElytra) {
         if (!flyingWithElytra) {
             return false;
         }
@@ -75,7 +78,7 @@ final class FireworkBoostTracker {
         if (held != null && held.cooldownTicks > 0) {
             return false;
         }
-        this.burnByPlayer.put(playerId, new Burn(config.burnDurationTicks(), config.cooldownTicks()));
+        this.burnByPlayer.put(playerId, new Burn(burnDurationTicks, cooldownTicks));
         return true;
     }
 

@@ -48,4 +48,23 @@ class TickleSettingsTest {
         Assertions.assertEquals("tickle.cooldownMillis", thrown.field());
         Assertions.assertEquals("must not be negative", thrown.reason());
     }
+
+    @DisplayName("The rejection message names the full key exactly once, not doubled (e.g. tickle.tickle.)")
+    @Test
+    void rejectionMessageNamesTheFullKeyExactlyOnce() {
+        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> TickleSettings.cooldown(-5));
+
+        String message = thrown.getMessage();
+        Assertions.assertEquals(1, countOccurrences(message, TickleSettings.COOLDOWN_KEY), "key must appear exactly once in: " + message);
+    }
+
+    private static int countOccurrences(String haystack, String needle) {
+        int count = 0;
+        int index = 0;
+        while ((index = haystack.indexOf(needle, index)) != -1) {
+            count++;
+            index += needle.length();
+        }
+        return count;
+    }
 }

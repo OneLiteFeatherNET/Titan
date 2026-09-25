@@ -19,11 +19,9 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import io.avaje.config.Configuration;
-import net.onelitefeather.titan.app.feature.elytra.ElytraConfig;
 import net.onelitefeather.titan.app.feature.navigator.NavigatorConfig;
 import net.onelitefeather.titan.app.feature.sit.SitConfig;
 import net.onelitefeather.titan.app.feature.spawn.SpawnConfig;
-import net.onelitefeather.titan.app.feature.tickle.TickleConfig;
 import net.onelitefeather.titan.common.config.ConfigSections;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -68,8 +66,9 @@ class ApplicationExampleYamlTest {
 
             Assertions.assertEquals(SpawnConfig.DEFAULTS, sections.section("spawn", SpawnConfig.class, SpawnConfig.DEFAULTS), "spawn must bind to exactly its own defaults");
             Assertions.assertEquals(SitConfig.DEFAULTS, sections.section("sit", SitConfig.class, SitConfig.DEFAULTS), "sit must bind to exactly its own defaults");
-            Assertions.assertEquals(TickleConfig.DEFAULTS, sections.section("tickle", TickleConfig.class, TickleConfig.DEFAULTS), "tickle must bind to exactly its own defaults");
-            Assertions.assertEquals(ElytraConfig.DEFAULTS, sections.section("elytra", ElytraConfig.class, ElytraConfig.DEFAULTS), "elytra must bind to exactly its own defaults");
+            Assertions.assertEquals(4000L, configuration.getLong("tickle.cooldownMillis"), "tickle.cooldownMillis must bind to exactly its own default");
+            Assertions.assertEquals(30, configuration.getInt("elytra.burnDurationTicks"), "elytra.burnDurationTicks must bind to exactly its own default");
+            Assertions.assertEquals(40, configuration.getInt("elytra.cooldownTicks"), "elytra.cooldownTicks must bind to exactly its own default");
             Assertions.assertEquals(NavigatorConfig.DEFAULTS, sections.section("navigator", NavigatorConfig.class, NavigatorConfig.DEFAULTS), "navigator must bind to exactly its own defaults, entries keyed by name");
         } finally {
             sectionBinderLogger.detachAppender(appender);
