@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.app.bootstrap;
+package net.onelitefeather.titan.common.config;
 
-import net.onelitefeather.titan.common.config.ConfigException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -31,14 +30,15 @@ import org.junit.jupiter.api.Test;
  *
  * <p>{@link ConfigurationFactory#load()} itself is not called here: exercising the real failure
  * needs a genuinely broken {@code application.yaml} in the JVM's actual working directory
- * (design.md decision 1's spike result - {@code avaje-config} ignores {@code user.dir}), which
- * only a child JVM with a {@code @TempDir} working directory can provide without breaking
- * Independent/Repeatable (F.I.R.S.T.) - see
- * {@link ConfigurationPrecedenceTest#brokenApplicationYamlAbortsCleanlyNamingFileAndPosition} for
- * that coverage. What is tested here, hermetically, is the message-parsing logic itself against
- * exceptions shaped exactly like the ones {@code avaje-config} itself throws (confirmed by
- * decompiling {@code avaje-config:5.2}): {@code new IllegalStateException("Error loading
- * properties - " + resourceName, cause)} for a resource that fails to load, and {@code new
+ * (design.md
+ * decision 1's spike result - {@code avaje-config} ignores {@code user.dir}), which only a child
+ * JVM with a {@code @TempDir} working directory can provide without breaking Independent/Repeatable
+ * (F.I.R.S.T.) - see the app module's {@code ConfigurationPrecedenceTest} for that coverage. What
+ * is
+ * tested here, hermetically, is the message-parsing logic itself against exceptions shaped exactly
+ * like the ones {@code avaje-config} itself throws (confirmed by decompiling {@code
+ * avaje-config:5.2}): {@code new IllegalStateException("Error loading properties - " +
+ * resourceName, cause)} for a resource that fails to load, and {@code new
  * IllegalArgumentException("Expecting only properties or ... file extensions but got [" + file +
  * "]")} for an unsupported {@code CONFIG_FILE}/{@code config.file} extension.
  */

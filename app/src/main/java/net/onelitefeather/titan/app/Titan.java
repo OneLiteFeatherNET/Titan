@@ -72,7 +72,7 @@ public final class Titan {
      *                                                                 lobby-module-config} spec
      *                                                                scenario "Syntaktisch kaputte
      *                                                                Datei" and {@link
-     *                                                                net.onelitefeather.titan.app.bootstrap.ConfigurationFactory#load()}
+     *                                                                net.onelitefeather.titan.common.config.ConfigurationFactory#load()}
      */
     public Titan() {
         MinecraftServer.getConnectionManager().setPlayerProvider(TitanPlayer::new);

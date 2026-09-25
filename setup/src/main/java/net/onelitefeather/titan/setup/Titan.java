@@ -23,6 +23,7 @@ import net.minestom.server.event.inventory.InventoryPreClickEvent;
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent;
 import net.minestom.server.event.player.PlayerSpawnEvent;
 import net.minestom.server.instance.InstanceContainer;
+import net.onelitefeather.titan.common.config.ConfigurationFactory;
 import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
 import net.onelitefeather.titan.common.map.MapEntry;
 import net.onelitefeather.titan.common.map.MapProvider;
@@ -44,13 +45,28 @@ public final class Titan {
     private final MapProvider mapProvider;
     private final int simulationDistance;
 
+    /**
+     * @throws net.onelitefeather.titan.common.config.ConfigException if {@code application.yaml}
+     *                                                                (or a profile/external file
+     *                                                                it pulls in) cannot be
+     *                                                                parsed; see {@link
+     *                                                                ConfigurationFactory#load()}.
+     *                                                                {@link
+     *                                                                net.onelitefeather.titan.setup.TitanLauncher#main}
+     *                                                                aborts cleanly when this
+     *                                                                propagates out of {@link
+     *                                                                #instance()}.
+     */
     private Titan() {
         this.path = Path.of("");
         InstanceContainer instance = MinecraftServer.getInstanceManager().createInstanceContainer();
         MinecraftServer.getInstanceManager().registerInstance(instance);
         this.mapProvider = MapProvider.create(this.path, instance, Titan::defaultFilter);
         LegacyAppJsonWarning.warnIfLegacyAppJsonPresent(this.path.toAbsolutePath());
-        Configuration configuration = Configuration.builder().includeResourceLoading().build();
+        // Built through the same ConfigurationFactory the lobby (:app) uses, so a broken
+        // application.yaml is translated into the same ConfigException here too, instead of a raw
+        // avaje-config RuntimeException - see ConfigurationFactory's Javadoc (DRY).
+        Configuration configuration = new ConfigurationFactory().load();
         this.simulationDistance = SetupSpawnConfig.read(configuration).simulationDistance();
         BlockHandlerHelper.registerAll();
 

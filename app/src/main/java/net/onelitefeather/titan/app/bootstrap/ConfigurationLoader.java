@@ -19,6 +19,7 @@ import io.avaje.config.Configuration;
 import java.nio.file.Path;
 import net.onelitefeather.titan.app.Titan;
 import net.onelitefeather.titan.common.config.AppJsonMigration;
+import net.onelitefeather.titan.common.config.ConfigurationFactory;
 
 /**
  * Runs the lobby's full configuration bootstrap sequence: the one-time {@code app.json} &rarr;

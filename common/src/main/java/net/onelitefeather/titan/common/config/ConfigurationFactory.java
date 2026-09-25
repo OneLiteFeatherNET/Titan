@@ -13,33 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.app.bootstrap;
+package net.onelitefeather.titan.common.config;
 
 import io.avaje.config.Configuration;
-import net.onelitefeather.titan.common.config.ConfigException;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Builds the lobby's {@code avaje-config} {@link Configuration} - {@code application.yaml}, its
- * active profiles, an external file, environment variables and system properties, in that rank
- * order (see
+ * Builds the {@code avaje-config} {@link Configuration} shared by both Titan processes -
+ * {@code application.yaml}, its active profiles, an external file, environment variables and
+ * system properties, in that rank order (see
  * {@code openspec/changes/standardized-config-profiles/specs/lobby-module-config/spec.md},
- * "Overrides have a fixed rank order"). This is the single place both {@link PlatformBeans} (in
- * production) and the configuration precedence test build a {@link Configuration} from, so a test
- * exercises exactly the code path production runs, never a re-implementation of it.
+ * "Overrides have a fixed rank order").
+ *
+ * <p>The lobby (module {@code app}) and the setup server (module {@code setup}) both build their
+ * {@link Configuration} through this one factory - never through {@code Configuration.builder()}
+ * directly, nor the static {@code io.avaje.config.Config} facade - so a broken {@code
+ * application.yaml} is translated into the same {@link ConfigException} shape for both processes,
+ * and the message-parsing logic in {@link #fileNameFrom(RuntimeException)}/
+ * {@link #detailFrom(RuntimeException)} is exercised and tested exactly once (DRY).
  *
  * <p>An instance, not a static method: depending on this factory type - rather than calling
  * {@code Configuration.builder()} directly, or the static {@code io.avaje.config.Config} facade -
- * is what lets a test substitute its own factory later if the need ever arises, and keeps
- * {@link PlatformBeans} depending on an abstraction instead of global state.
+ * is what lets a test substitute its own factory later if the need ever arises, and keeps a
+ * caller depending on an abstraction instead of global state.
  *
  * <p>{@link #load()} takes no working directory: {@code avaje-config} always resolves {@code
  * application.yaml} and friends against the JVM's actual process working directory, never against
  * a path a caller hands it (see {@code design.md}, decision 1's spike result), so a parameter here
  * could only ever be ignored or misleadingly suggest otherwise. A caller that needs {@code
  * application.yaml} read from a particular directory must therefore start the whole JVM in that
- * directory (e.g. via {@link ProcessBuilder#directory(java.io.File)}, the way the configuration
- * precedence test does), not pass it to this method.
+ * directory (e.g. via {@link ProcessBuilder#directory(java.io.File)}, the way the app module's
+ * configuration precedence test does), not pass it to this method.
  */
 public final class ConfigurationFactory {
 
@@ -63,10 +67,9 @@ public final class ConfigurationFactory {
      *                         Datei". Wraps {@code avaje-config}'s own {@link RuntimeException},
      *                         keeping it as this exception's cause so the ERROR log/Sentry still
      *                         shows where the failure actually happened, into the same
-     *                         {@link ConfigException} shape
-     *                         {@link net.onelitefeather.titan.common.config.AppJsonMigration} uses
-     *                         for a broken {@code app.json}, so both failure paths surface the same
-     *                         way to an operator.
+     *                         {@link ConfigException} shape {@link AppJsonMigration} uses for a
+     *                         broken {@code app.json}, so both failure paths surface the same way
+     *                         to an operator.
      */
     public Configuration load() {
         try {
