@@ -129,6 +129,9 @@ public final class ConfigSections {
 
     private static JsonArray toJsonArray(String rawValue) {
         JsonArray array = new JsonArray();
+        if (rawValue.isEmpty()) {
+            return array;
+        }
         for (String element : rawValue.split(",", -1)) {
             array.add(element);
         }

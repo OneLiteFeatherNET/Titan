@@ -57,4 +57,15 @@ class ConfigSectionsListTest {
 
         assertEquals(List.of(Key.key("minecraft:stone")), sit.allowedBlocks());
     }
+
+    @Test
+    @DisplayName("An empty override for a List component yields an empty list, not a list with one empty element")
+    void emptyOverrideYieldsAnEmptyList() {
+        Configuration configuration = Configuration.builder().putAll(Map.of("sit.allowedBlocks", "")).build();
+        ConfigSections sections = new ConfigSections(configuration);
+
+        SitTestConfig sit = sections.section("sit", SitTestConfig.class, SitTestConfig.DEFAULTS);
+
+        assertEquals(List.of(), sit.allowedBlocks(), "an empty raw value must bind to an empty list, not [\"\"]");
+    }
 }
