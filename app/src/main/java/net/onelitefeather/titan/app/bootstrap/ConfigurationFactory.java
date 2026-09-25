@@ -16,6 +16,8 @@
 package net.onelitefeather.titan.app.bootstrap;
 
 import io.avaje.config.Configuration;
+import net.onelitefeather.titan.common.config.ConfigException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Builds the lobby's {@code avaje-config} {@link Configuration} - {@code application.yaml}, its
@@ -46,8 +48,51 @@ public final class ConfigurationFactory {
      *         external file (via {@code CONFIG_FILE}/{@code config.file}), environment variables
      *         and system properties - all resolved against the JVM's actual process working
      *         directory (see the class Javadoc)
+     * @throws ConfigException if a resolved file (e.g. a syntactically broken {@code
+     *                         application.yaml}) cannot be parsed; see the {@code
+     *                         lobby-module-config} spec scenario "Syntaktisch kaputte Datei". Wraps
+     *                         {@code avaje-config}'s own {@link IllegalStateException} - whose
+     *                         message already names the resource and whose cause already carries
+     *                         the parser's line/column - into the same {@link ConfigException}
+     *                         shape {@link net.onelitefeather.titan.common.config.AppJsonMigration}
+     *                         uses for a broken {@code app.json}, so both failure paths surface the
+     *                         same way to an operator.
      */
     public Configuration load() {
-        return Configuration.builder().includeResourceLoading().build();
+        try {
+            return Configuration.builder().includeResourceLoading().build();
+        } catch (RuntimeException e) {
+            throw ConfigException.malformed(fileNameFrom(e), detailFrom(e));
+        }
+    }
+
+    /**
+     * Extracts the resource name from an {@code avaje-config} loading failure. {@code
+     * InitialLoader#loadCustomExtension} throws {@code new IllegalStateException("Error loading
+     * properties - " + resourceName, cause)} (confirmed by decompiling {@code avaje-config:5.2}),
+     * so the resource name is everything after the last {@code " - "}. Package-private, rather than
+     * {@code private}, purely so {@code ConfigurationFactoryTest} can exercise this pure parsing
+     * logic directly against a fabricated exception, without needing a real broken file on disk
+     * (see that test's Javadoc for why).
+     */
+    static @Nullable String fileNameFrom(RuntimeException e) {
+        String message = e.getMessage();
+        if (message == null) {
+            return null;
+        }
+        int separator = message.lastIndexOf(" - ");
+        return separator >= 0 ? message.substring(separator + 3).trim() : message;
+    }
+
+    /**
+     * Prefers the cause's message - for a broken {@code application.yaml} that is SnakeYAML's own
+     * message, which already names the line and column - falling back to the outer exception's
+     * message if there is no cause. Package-private for the same testability reason as {@link
+     * #fileNameFrom(RuntimeException)}.
+     */
+    static @Nullable String detailFrom(RuntimeException e) {
+        Throwable cause = e.getCause();
+        String detail = cause != null ? cause.getMessage() : null;
+        return detail != null ? detail : e.getMessage();
     }
 }

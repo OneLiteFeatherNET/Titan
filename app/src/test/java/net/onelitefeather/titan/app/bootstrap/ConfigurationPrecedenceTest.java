@@ -134,6 +134,21 @@ class ConfigurationPrecedenceTest {
         Assertions.assertFalse(Files.exists(workingDir.resolve("app.json")), "app.json must no longer exist under its original name");
     }
 
+    @DisplayName("A syntactically broken application.yaml aborts the child cleanly, naming the file and the error position")
+    @Test
+    void brokenApplicationYamlAbortsCleanlyNamingFileAndPosition(@TempDir Path workingDir) throws IOException, InterruptedException {
+        // Line 3 is missing the ":" after "maxHeight" - a mapping value where a key was expected,
+        // exactly the class of syntax error the E2E smoke test found hangs the real process instead
+        // of exiting (see lobby-module-config spec, scenario "Syntaktisch kaputte Datei").
+        Files.writeString(workingDir.resolve("application.yaml"), "spawn:\n  minHeight: -64\n   maxHeight: 310\n");
+
+        List<String> output = runExpectingFailure(workingDir, Map.of(), List.of());
+
+        String joined = String.join("\n", output);
+        Assertions.assertTrue(joined.contains("application.yaml"), "the failure must name application.yaml, output was:\n" + joined);
+        Assertions.assertTrue(joined.contains("line 3"), "the failure must name the broken line, output was:\n" + joined);
+    }
+
     /**
      * Starts {@link ConfigurationPrintMain} in a child JVM with {@code workingDir} as its working
      * directory, an environment containing only {@code env} (plus {@code PATH}/{@code JAVA_HOME}),
@@ -143,6 +158,40 @@ class ConfigurationPrecedenceTest {
      * by only ever looking for a line starting with one of the requested keys.
      */
     private static Map<String, String> run(Path workingDir, Map<String, String> env, List<String> systemProperties, List<String> keys) throws IOException, InterruptedException {
+        ChildResult result = startAndWait(workingDir, env, systemProperties, keys);
+        Assertions.assertTrue(result.finished(), "the child process must finish within " + TIMEOUT);
+        Assertions.assertEquals(0, result.exitCode(), "the child process must exit cleanly; output was:\n" + String.join("\n", result.lines()));
+
+        Map<String, String> resolved = new HashMap<>();
+        for (String key : keys) {
+            String prefix = key + "=";
+            result.lines().stream().filter(line -> line.startsWith(prefix)).findFirst().ifPresent(line -> resolved.put(key, line.substring(prefix.length())));
+        }
+        return resolved;
+    }
+
+    /**
+     * Like {@link #run}, but for a child expected to abort: waits for the process within {@link
+     * #TIMEOUT} (never {@code 124}, the shell's own "killed by timeout" code, which would mean the
+     * process hung instead of aborting), asserts the exit code is non-zero, and returns every line
+     * the child printed - the caller inspects it for the broken file's name and error position.
+     */
+    private static List<String> runExpectingFailure(Path workingDir, Map<String, String> env, List<String> systemProperties) throws IOException, InterruptedException {
+        ChildResult result = startAndWait(workingDir, env, systemProperties, List.of());
+        Assertions.assertTrue(result.finished(), "the child process must finish within " + TIMEOUT + " instead of hanging");
+        Assertions.assertNotEquals(0, result.exitCode(), "a broken application.yaml must abort the child with a non-zero exit code; output was:\n" + String.join("\n", result.lines()));
+        return result.lines();
+    }
+
+    /**
+     * The child process's outcome: whether it finished within {@link #TIMEOUT}, its exit code (only
+     * meaningful if it finished), and every line it printed to stdout/stderr (merged, see {@link
+     * ProcessBuilder#redirectErrorStream(boolean)}).
+     */
+    private record ChildResult(boolean finished, int exitCode, List<String> lines) {
+    }
+
+    private static ChildResult startAndWait(Path workingDir, Map<String, String> env, List<String> systemProperties, List<String> keys) throws IOException, InterruptedException {
         List<String> command = new ArrayList<>();
         command.add(javaExecutable());
         command.add("-cp");
@@ -183,15 +232,8 @@ class ConfigurationPrecedenceTest {
             process.destroyForcibly();
         }
         outputReader.join(TimeUnit.SECONDS.toMillis(5));
-        Assertions.assertTrue(finished, "the child process must finish within " + TIMEOUT);
-        Assertions.assertEquals(0, process.exitValue(), "the child process must exit cleanly; output was:\n" + String.join("\n", lines));
-
-        Map<String, String> resolved = new HashMap<>();
-        for (String key : keys) {
-            String prefix = key + "=";
-            lines.stream().filter(line -> line.startsWith(prefix)).findFirst().ifPresent(line -> resolved.put(key, line.substring(prefix.length())));
-        }
-        return resolved;
+        int exitCode = finished ? process.exitValue() : -1;
+        return new ChildResult(finished, exitCode, List.copyOf(lines));
     }
 
     private static void putIfPresent(Map<String, String> target, String variable) {
