@@ -43,7 +43,10 @@ import net.onelitefeather.titan.app.module.item.LobbyItem;
  * template - but it is still never discovered as a lobby module, because Avaje Inject's annotation
  * processor does not run for test sources (no {@code testAnnotationProcessor}, see
  * {@code app/build.gradle.kts}); {@code ModuleWiringTest} keeps finding exactly the seven modules
- * under {@code app/src/main}, not this one.
+ * under {@code app/src/main}, not this one. Its {@code @Priority(800)} is deliberately past the
+ * highest real module (elytra, 700), so nobody mistakes it for a real slot in the priority table
+ * in {@code docs/lobby-modules.md} - a real module picks its own, still-unused value from that
+ * table instead of copying this one.
  *
  * <p>Behaviour: using {@link ExampleItems#GREETING_TOKEN} - or running the {@code
  * titan-example-greet} command - sends the player {@link ExampleConfig#greeting()} with their name
@@ -52,9 +55,6 @@ import net.onelitefeather.titan.app.module.item.LobbyItem;
  * player's cooldown is forgotten, so rejoining does not inherit it.
  */
 @Singleton
-// 800: deliberately past the highest real module (elytra, 700) and commented, so nobody mistakes
-// it for a real slot in the priority table in docs/lobby-modules.md. A real module picks its own,
-// still-unused value from that table instead of copying this one.
 @Priority(800)
 public final class ExampleModule implements LobbyModule {
 
