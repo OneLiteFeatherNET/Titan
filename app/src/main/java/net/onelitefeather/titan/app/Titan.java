@@ -16,12 +16,14 @@
 package net.onelitefeather.titan.app;
 
 import io.avaje.inject.BeanScope;
+import io.avaje.inject.spi.GenericType;
 import java.util.List;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.onelitefeather.butterfly.minestom.Butterfly;
 import net.onelitefeather.titan.app.bootstrap.ModuleStartupLog;
+import net.onelitefeather.titan.app.bootstrap.PlatformBeans;
 import net.onelitefeather.titan.app.commands.EndCommand;
 import net.onelitefeather.titan.app.commands.StopCommand;
 import net.onelitefeather.titan.app.module.LobbyModule;
@@ -64,7 +66,8 @@ public final class Titan {
         this.beanScope = BeanScope.builder().build();
         this.modules = this.beanScope.listByPriority(LobbyModule.class);
 
-        @SuppressWarnings("unchecked") EventNode<Event> titanNode = this.beanScope.get(EventNode.class, "titan");
+        EventNode<Event> titanNode = this.beanScope.get(new GenericType<EventNode<Event>>() {
+        }.type(), PlatformBeans.TITAN_NODE_NAME);
         ConfigStore configStore = this.beanScope.get(ConfigStore.class);
         NavigatorEntries navigatorEntries = this.beanScope.get(NavigatorEntries.class);
         ItemRegistry itemRegistry = this.beanScope.get(ItemRegistry.class);

@@ -56,7 +56,14 @@ import net.onelitefeather.titan.common.map.MapProvider;
 public final class PlatformBeans {
 
     private static final String APP_FILE_NAME = "app.json";
-    private static final String TITAN_NODE_NAME = "titan";
+
+    /**
+     * The {@code @Named} qualifier of the shared {@link EventNode} bean {@link #titanEventNode()}
+     * registers, so any other class that looks the bean up by name - such as
+     * {@link net.onelitefeather.titan.app.Titan} - references this constant instead of duplicating
+     * the literal.
+     */
+    public static final String TITAN_NODE_NAME = "titan";
 
     /**
      * @return the lobby's single {@link InstanceContainer}, registered with the instance manager -
