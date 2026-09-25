@@ -207,6 +207,45 @@ class ConfigReloaderTest {
         assertLogged(events, Level.WARN, "Module {} rejected new configuration, keeping previous values: {} ({})");
     }
 
+    @DisplayName("A rejection reports the innermost cause's message, not avaje's wrapper around it")
+    @Test
+    void rejectionReportsTheInnermostCauseNotAvajesWrapper() {
+        Map<String, String> old = Map.of("tickle.cooldownMillis", "4000");
+        Map<String, String> updated = Map.of("tickle.cooldownMillis", "-5");
+        ScriptedSource source = new ScriptedSource();
+        source.willReturn(updated);
+        FakeLiveConfig liveConfig = new FakeLiveConfig(old);
+        ScriptedModuleRestarter restarter = new ScriptedModuleRestarter();
+        restarter.moduleOrder(List.of("tickle"));
+        // The exact two-level shape avaje-config 5.2's Config.getAs(key, fn) wraps any exception a
+        // module's conversion function throws in: an outer IllegalStateException naming nothing but
+        // the fact that conversion failed, caused by the module's own, actually useful exception.
+        RuntimeException innerCause = new IllegalArgumentException("must not be negative, was -5");
+        RuntimeException avajeWrapper = new IllegalStateException(
+                "Failed to convert key: tickle.cooldownMillis with the provided function", innerCause);
+        restarter.willReturn("tickle", new ModuleRestartOutcome.Failed(avajeWrapper), new ModuleRestartOutcome.Restarted());
+        QueueExecutor worker = new QueueExecutor();
+        QueueExecutor tick = new QueueExecutor();
+        ConfigReloader reloader = new ConfigReloader(source, liveConfig, restarter, worker, tick);
+
+        List<ILoggingEvent> events = captureLogs(() -> {
+            CompletableFuture<ReloadResult> future = reloader.reload();
+            worker.runAll();
+            tick.runAll();
+
+            ReloadResult.Applied applied = (ReloadResult.Applied) future.join();
+            Assertions.assertEquals(1, applied.rejected().size());
+            ReloadResult.RejectedModule rejected = applied.rejected().get(0);
+            Assertions.assertEquals(
+                    "must not be negative, was -5", rejected.reason(), "must report the inner cause's message, not avaje's wrapper");
+        });
+
+        boolean warnLineHasInnerMessageNotWrapper = events.stream().anyMatch(
+                event -> event.getLevel() == Level.WARN && event.getFormattedMessage().contains("must not be negative, was -5") && !event.getFormattedMessage().contains("Failed to convert key"));
+        Assertions.assertTrue(
+                warnLineHasInnerMessageNotWrapper, "the captured WARN line must contain the inner message and not avaje's wrapper text, got: " + events.stream().map(ILoggingEvent::getFormattedMessage).toList());
+    }
+
     @DisplayName("A module that fails even after the fallback is reported as disabled")
     @Test
     void fallbackFailureReportsModuleAsDisabled() {

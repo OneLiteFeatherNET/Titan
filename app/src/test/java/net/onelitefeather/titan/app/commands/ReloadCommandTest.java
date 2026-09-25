@@ -73,7 +73,10 @@ class ReloadCommandTest {
     void executingSendsTheTranslatedReplyOnceTheFutureCompletes() {
         CompletableFuture<ReloadResult> future = new CompletableFuture<>();
         FakeSender console = new FakeSender(PermissionChecker.always(TriState.FALSE));
-        ReloadCommand command = new ReloadCommand(() -> future, sender -> false);
+        // An identity console renderer, never the production default: that one renders through the
+        // real, process-wide GlobalTranslator singleton, which no test may touch (F.I.R.S.T. -
+        // Independent).
+        ReloadCommand command = new ReloadCommand(() -> future, sender -> false, component -> component);
 
         executor(command).apply(console, null);
         Assertions.assertTrue(console.sent.isEmpty(), "nothing must be sent before the future completes");

@@ -24,12 +24,13 @@ package net.onelitefeather.titan.app.bootstrap.reload;
  * {@code new IllegalStateException("Error loading properties - " + resourcePath, cause)}, where
  * {@code cause} is the parser's own exception - for a syntactically broken YAML file, SnakeYAML's,
  * whose message already names the line and column (e.g. {@code "... in 'reader', line 3, column
- * 4: ..."}). This walks that cause chain: the first message starting with the loader's own prefix
- * names the file, and the innermost cause's message is the human-readable position - the same
- * pieces of information {@code app/src/test/.../bootstrap/ConfigurationPrintMain#printCauseChain}
- * prints for a broken startup load, extracted here as two separate values instead of a printed
- * chain, since {@link ConfigSnapshotSource}/{@link ReloadResult.Failed} need {@code file} and
- * {@code detail} as two fields, not a log line.
+ * 4: ..."}). The first message starting with the loader's own prefix names the file; the
+ * innermost cause's message ({@link Causes#rootMessage(Throwable)}, shared with
+ * {@link ConfigReloader#describe}) is the human-readable position - the same pieces of
+ * information {@code app/src/test/.../bootstrap/ConfigurationPrintMain#printCauseChain} prints for
+ * a broken startup load, extracted here as two separate values instead of a printed chain, since
+ * {@link ConfigSnapshotSource}/{@link ReloadResult.Failed} need {@code file} and {@code detail} as
+ * two fields, not a log line.
  */
 final class ConfigFailureDetails {
 
@@ -63,11 +64,6 @@ final class ConfigFailureDetails {
     }
 
     private static String detailOf(Throwable failure) {
-        Throwable innermost = failure;
-        while (innermost.getCause() != null) {
-            innermost = innermost.getCause();
-        }
-        String message = innermost.getMessage();
-        return message != null ? message : innermost.toString();
+        return Causes.rootMessage(failure);
     }
 }

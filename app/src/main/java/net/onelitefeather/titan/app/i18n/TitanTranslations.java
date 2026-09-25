@@ -84,7 +84,10 @@ public final class TitanTranslations {
     /** A configuration change was rejected. Argument 0: the key(s). Argument 1: the reason. */
     public static final String CONFIG_RELOAD_REJECTED = "titan.config.reload.rejected";
 
-    /** Reloading the configuration failed. Argument 0: the file. Argument 1: the location. */
+    /**
+     * Reloading the configuration failed. Argument 0: the file. Argument 1: the parser's message
+     * incl. location (may be multi-line - kept as the last argument for exactly that reason).
+     */
     public static final String CONFIG_RELOAD_FAILED = "titan.config.reload.failed";
 
     /**
@@ -97,8 +100,14 @@ public final class TitanTranslations {
      */
     public static final String CONFIG_RELOAD_DISABLED = "titan.config.reload.disabled";
 
+    /**
+     * The store's default/fallback locale - English. Exposed so other code that must render a
+     * translatable component to a fixed locale (e.g. {@code ReloadCommand}'s console renderer) uses
+     * this same constant instead of hardcoding {@link Locale#ENGLISH} a second time.
+     */
+    public static final Locale FALLBACK_LOCALE = Locale.ENGLISH;
+
     private static final Key STORE_KEY = Key.key("titan", "lobby");
-    private static final Locale DEFAULT_LOCALE = Locale.ENGLISH;
     private static final Locale[] BUNDLE_LOCALES = {Locale.ENGLISH, Locale.GERMAN};
     private static final String BUNDLE_BASE_NAME = "lang.titan";
     private static final ResourceBundle.Control NO_FALLBACK_CONTROL = ResourceBundle.Control.getNoFallbackControl(ResourceBundle.Control.FORMAT_PROPERTIES);
@@ -108,12 +117,13 @@ public final class TitanTranslations {
 
     /**
      * Builds a fresh {@link MiniMessageTranslationStore}, with the English bundle registered as
-     * {@link #DEFAULT_LOCALE its default/fallback locale} and the German bundle alongside it. Every
+     * {@link #FALLBACK_LOCALE its default/fallback locale} and the German bundle alongside it.
+     * Every
      * call returns an independent store; nothing here is shared, global, mutable state.
      */
     public static MiniMessageTranslationStore createStore() {
         MiniMessageTranslationStore store = MiniMessageTranslationStore.create(STORE_KEY);
-        store.defaultLocale(DEFAULT_LOCALE);
+        store.defaultLocale(FALLBACK_LOCALE);
         for (Locale locale : BUNDLE_LOCALES) {
             store.registerAll(locale, bundle(locale), false);
         }

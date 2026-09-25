@@ -39,6 +39,13 @@ import java.util.function.Function;
  * which is why {@code /titanreload}'s reply used to render as an empty line on the console. See
  * {@code openspec/changes/config-reload-feature-flags/design.md}, decision 5.
  *
+ * <p><b>Cost.</b> Enabling this makes Minestom render a packet containing a translatable
+ * component per receiver instead of once, bypassing its shared packet cache for that packet -
+ * negligible today, since the only translatable components in the lobby are admin command
+ * replies (e.g. {@code /titanreload}'s), sent to at most a handful of receivers. It would matter
+ * if translatable components were ever broadcast at high frequency to many players at once - a
+ * tab list, a boss bar, a scoreboard - where the shared cache is what keeps that broadcast cheap.
+ *
  * <p><b>Testability.</b> {@link #valueToSet(Function)} is the pure decision - given the current
  * value of {@value #PROPERTY_NAME} (or {@code null} if unset), the value the property must be set
  * to, or {@code null} to leave it alone - pulled apart from the actual

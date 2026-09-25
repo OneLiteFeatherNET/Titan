@@ -15,7 +15,6 @@
  */
 package net.onelitefeather.titan.app.commands;
 
-import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -29,6 +28,7 @@ import net.minestom.server.command.CommandSender;
 import net.minestom.server.command.builder.Command;
 import net.minestom.server.entity.Player;
 import net.onelitefeather.titan.app.bootstrap.reload.ReloadResult;
+import net.onelitefeather.titan.app.i18n.TitanTranslations;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -67,7 +67,8 @@ import org.slf4j.LoggerFactory;
  * when {@code ServerFlag.AUTOMATIC_COMPONENT_TRANSLATION} is on (see
  * {@code ComponentTranslationBootstrap}). The console has no receiver locale of its own; instead of
  * leaving it to whatever the host JVM's default locale happens to be, {@code consoleRenderer}
- * renders the reply to {@link Locale#ENGLISH} explicitly, right here, before it is sent - see
+ * renders the reply to {@link TitanTranslations#FALLBACK_LOCALE} explicitly, right here, before it
+ * is sent - see
  * {@code openspec/changes/config-reload-feature-flags/design.md}, decision 5. A {@link Player}'s
  * reply is left untouched, so Minestom's own per-receiver translation still applies to it.
  */
@@ -76,16 +77,24 @@ public final class ReloadCommand extends Command {
     private static final Logger LOGGER = LoggerFactory.getLogger(ReloadCommand.class);
     private static final String PERMISSION = "titan.command.reload";
 
+    /**
+     * Renders a reply to {@link TitanTranslations#FALLBACK_LOCALE} through the process-wide
+     * {@link GlobalTranslator} - production wiring's console renderer (see the class javadoc,
+     * "The console always gets the English reply"), defined once here instead of duplicated at
+     * both constructors below.
+     */
+    private static final UnaryOperator<Component> DEFAULT_CONSOLE_RENDERER = component -> GlobalTranslator.render(component, TitanTranslations.FALLBACK_LOCALE);
+
     private final Supplier<CompletableFuture<ReloadResult>> reloader;
     private final Predicate<CommandSender> requiresPermission;
     private final UnaryOperator<Component> consoleRenderer;
 
     public ReloadCommand(Supplier<CompletableFuture<ReloadResult>> reloader) {
-        this(reloader, sender -> sender instanceof Player, component -> GlobalTranslator.render(component, Locale.ENGLISH));
+        this(reloader, sender -> sender instanceof Player, DEFAULT_CONSOLE_RENDERER);
     }
 
     ReloadCommand(Supplier<CompletableFuture<ReloadResult>> reloader, Predicate<CommandSender> requiresPermission) {
-        this(reloader, requiresPermission, component -> GlobalTranslator.render(component, Locale.ENGLISH));
+        this(reloader, requiresPermission, DEFAULT_CONSOLE_RENDERER);
     }
 
     ReloadCommand(
