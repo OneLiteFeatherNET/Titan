@@ -22,8 +22,6 @@ import net.minestom.server.event.EventNode;
 import net.minestom.server.timer.Scheduler;
 import net.onelitefeather.titan.app.module.item.ItemRegistry;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
-import net.onelitefeather.titan.common.config.ConfigSections;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Builds a fresh {@link ModulePlatform} for tests that need one directly, without going through
@@ -42,21 +40,10 @@ final class ModulePlatformFixture {
     /**
      * @param scheduler      the scheduler to back the platform with
      * @param commandManager the command manager to back the platform with
-     * @return a fresh platform with no {@link ConfigSections} configured
-     */
-    static ModulePlatform create(Scheduler scheduler, CommandManager commandManager) {
-        return create(scheduler, commandManager, null);
-    }
-
-    /**
-     * @param scheduler      the scheduler to back the platform with
-     * @param commandManager the command manager to back the platform with
-     * @param configSections the {@link ConfigSections} to back the platform with, or {@code null}
-     *                       for none
      * @return a fresh platform, with its own, unshared item registry and navigator entries
      */
-    static ModulePlatform create(Scheduler scheduler, CommandManager commandManager, @Nullable ConfigSections configSections) {
+    static ModulePlatform create(Scheduler scheduler, CommandManager commandManager) {
         EventNode<Event> platformNode = EventNode.all("test-module-platform-fixture/" + UUID.randomUUID());
-        return new ModulePlatform(scheduler, commandManager, configSections, new ItemRegistry(platformNode), new NavigatorEntries());
+        return new ModulePlatform(scheduler, commandManager, new ItemRegistry(platformNode), new NavigatorEntries());
     }
 }

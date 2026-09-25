@@ -15,21 +15,19 @@
  */
 package net.onelitefeather.titan.app.bootstrap;
 
-import io.avaje.config.Configuration;
+import io.avaje.config.Config;
 import java.util.List;
 import net.onelitefeather.titan.app.Titan;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Logs the single lifecycle line {@link Titan#Titan()} emits once its {@link Configuration} bean
- * has been built.
+ * Logs the single lifecycle line {@link Titan#Titan()} emits once the
+ * {@code io.avaje.config.Config}
+ * facade has been initialised.
  *
  * <p>Pulled out on its own, mirroring {@link ModuleStartupLog}, so the log line can be
- * unit-tested with a captured appender and a {@link Configuration} built directly from a {@link
- * java.util.Map} (design.md decision 1's spike result) - never from the real environment's
- * {@code AVAJE_PROFILES}, which would make a test depend on whatever happens to be set outside
- * the test itself (F.I.R.S.T. - Repeatable).
+ * unit-tested with a captured appender.
  */
 public final class ConfigurationStartupLog {
 
@@ -42,12 +40,13 @@ public final class ConfigurationStartupLog {
      * Logs the currently active configuration profiles - the {@code avaje.profiles} key {@code
      * avaje-config} itself populates from {@code AVAJE_PROFILES}/{@code -Davaje.profiles} (see
      * {@code openspec/changes/standardized-config-profiles/design.md}, decision 6 - as a single
-     * parameterised INFO line, even when no profile is active (an empty list).
-     *
-     * @param configuration the built {@link Configuration} to read the active profiles from
+     * parameterised INFO line, even when no profile is active (an empty list). Reads {@link
+     * Config#asConfiguration()} itself (see {@code openspec/changes/avaje-config-facade/design.md},
+     * decision 1) rather than taking the already-built instance as a parameter, since {@link
+     * Titan#Titan()} has nothing else to build it for any more.
      */
-    public static void activeProfiles(Configuration configuration) {
-        List<String> profiles = configuration.list().of("avaje.profiles");
+    public static void activeProfiles() {
+        List<String> profiles = Config.asConfiguration().list().of("avaje.profiles");
         LOGGER.info("Active configuration profiles: {}", profiles);
     }
 }

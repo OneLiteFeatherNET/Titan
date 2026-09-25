@@ -46,7 +46,7 @@ import org.slf4j.MDC;
  * shutdown order, no events reaching a module during its own shutdown, listeners and commands
  * disappearing after disable, repeating tasks stopping, a failing {@code enable} aborting startup,
  * one module's failing listener not affecting another module's, and an unknown feature flag on
- * <em>any</em> module's navigator entry - not only the ones {@code NavigatorConfig} itself reads -
+ * <em>any</em> module's navigator entry - not only the ones navigator's own configuration reads -
  * aborting {@link ModuleRegistry#enableAll()}.
  */
 @ExtendWith(MicrotusExtension.class)

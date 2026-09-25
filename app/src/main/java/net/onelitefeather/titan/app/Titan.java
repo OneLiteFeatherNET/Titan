@@ -15,17 +15,13 @@
  */
 package net.onelitefeather.titan.app;
 
-import io.avaje.config.Config;
-import io.avaje.config.Configuration;
 import io.avaje.inject.BeanScope;
-import io.avaje.inject.BeanScopeBuilder;
 import io.avaje.inject.spi.GenericType;
 import java.util.List;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.onelitefeather.butterfly.minestom.Butterfly;
-import net.onelitefeather.titan.app.bootstrap.ConfigurationPropertyPlugin;
 import net.onelitefeather.titan.app.bootstrap.ConfigurationStartupLog;
 import net.onelitefeather.titan.app.bootstrap.ModuleStartupLog;
 import net.onelitefeather.titan.app.bootstrap.PlatformBeans;
@@ -36,7 +32,6 @@ import net.onelitefeather.titan.app.module.ModuleRegistry;
 import net.onelitefeather.titan.app.module.item.ItemRegistry;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
 import net.onelitefeather.titan.app.player.TitanPlayer;
-import net.onelitefeather.titan.common.config.ConfigSections;
 import net.onelitefeather.titan.common.config.ConfigurationFactory;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
 import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
@@ -83,30 +78,23 @@ public final class Titan {
         // static io.avaje.config.Config facade for - and the first touch of Config at all in this
         // JVM - so a broken application.yaml is translated into a ConfigException here, at a known
         // place, instead of surfacing as a raw ExceptionInInitializerError somewhere later in the
-        // start sequence (see design.md, decision 1). Config.asConfiguration() afterwards is then
-        // just a read of the already-built instance. That same instance is handed to the scope
-        // both as a supplied bean - so PlatformBeans#configSections resolves it instead of
-        // building its own - and as the property plugin's backing source, so avaje-inject's own
-        // default property plugin never touches the facade a second time.
+        // start sequence (see design.md, decision 1). Once this returns, the facade is the single,
+        // already-built Configuration instance for the rest of the process - Avaje Inject's own
+        // default config property plugin reading the same facade while the scope below is built is
+        // then just a second read of that instance, not a second, untranslated first touch.
         new ConfigurationFactory().initialise();
-        Configuration configuration = Config.asConfiguration();
-        ConfigurationStartupLog.activeProfiles(configuration);
+        ConfigurationStartupLog.activeProfiles();
 
-        BeanScopeBuilder beanScopeBuilder = BeanScope.builder().bean(Configuration.class, configuration);
-        // configPlugin(...) returns void, not the builder (unlike bean(...)), so it cannot be
-        // chained into the fluent call above.
-        beanScopeBuilder.configPlugin(new ConfigurationPropertyPlugin(configuration));
-        this.beanScope = beanScopeBuilder.build();
+        this.beanScope = BeanScope.builder().build();
         this.modules = this.beanScope.listByPriority(LobbyModule.class);
 
         EventNode<Event> titanNode = this.beanScope.get(new GenericType<EventNode<Event>>() {
         }.type(), PlatformBeans.TITAN_NODE_NAME);
-        ConfigSections configSections = this.beanScope.get(ConfigSections.class);
         NavigatorEntries navigatorEntries = this.beanScope.get(NavigatorEntries.class);
         ItemRegistry itemRegistry = this.beanScope.get(ItemRegistry.class);
         FeatureFlags featureFlags = this.beanScope.get(FeatureFlags.class);
 
-        this.moduleRegistry = ModuleRegistry.builder().parent(titanNode).config(configSections).navigator(navigatorEntries).items(itemRegistry).featureFlags(featureFlags).modules(this.modules).build();
+        this.moduleRegistry = ModuleRegistry.builder().parent(titanNode).navigator(navigatorEntries).items(itemRegistry).featureFlags(featureFlags).modules(this.modules).build();
     }
 
     /**

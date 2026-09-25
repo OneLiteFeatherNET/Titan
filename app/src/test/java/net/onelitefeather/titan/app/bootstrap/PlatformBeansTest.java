@@ -15,11 +15,8 @@
  */
 package net.onelitefeather.titan.app.bootstrap;
 
-import io.avaje.config.Configuration;
-import java.util.Map;
 import net.minestom.server.coordinate.Pos;
 import net.onelitefeather.titan.app.module.LobbySpawn;
-import net.onelitefeather.titan.common.config.ConfigSections;
 import net.onelitefeather.titan.common.map.LobbyMap;
 import net.onelitefeather.titan.common.map.MapProvider;
 import org.junit.jupiter.api.Assertions;
@@ -40,45 +37,11 @@ import java.util.List;
  * <p>{@link PlatformBeans#mapProvider(net.minestom.server.instance.InstanceContainer)} and {@link
  * PlatformBeans#featureFlags()} are deliberately not covered here: both ultimately touch the real
  * process working directory or a process-wide static, neither of which a unit test may depend on
- * without breaking Independent/Repeatable (F.I.R.S.T.). {@link
- * PlatformBeans#configSections(Configuration)} is different: since {@code
- * openspec/changes/standardized-config-profiles/design.md} decision 1, {@link
- * net.onelitefeather.titan.app.Titan} builds the {@link Configuration} it hands to the {@link
- * io.avaje.inject.BeanScope} exactly once, before the
- * scope exists (see {@link ConfigurationPropertyPlugin}'s Javadoc), so {@code configSections} no
- * longer touches the filesystem itself - it only binds whatever {@link Configuration} it is given,
- * which {@link #configSectionsResolvesFromTheGivenConfigurationInstance} covers with one built
- * directly from a {@link Map}. The migration step and the real
- * filesystem/profile/env/system-property
- * pipeline that builds a production {@link Configuration} still live in {@link
- * ConfigurationPrecedenceTest}, which drives a child JVM with a {@code @TempDir} as its working
- * directory instead.
+ * without breaking Independent/Repeatable (F.I.R.S.T.).
  */
 class PlatformBeansTest {
 
-    /**
-     * A minimal, self-contained config record used only to probe
-     * {@link PlatformBeans#configSections(Configuration)}'s binding mechanism, now that no feature
-     * module keeps its own config record around for a bootstrap test to borrow (see
-     * {@code openspec/changes/avaje-config-facade/design.md}, decision 3).
-     */
-    private record ProbeSection(int simulationDistance) {
-
-        private static final ProbeSection DEFAULTS = new ProbeSection(0);
-    }
-
     private final PlatformBeans platformBeans = new PlatformBeans();
-
-    @DisplayName("configSections(Configuration) binds a section from exactly the Configuration instance it is given, not one it builds itself")
-    @Test
-    void configSectionsResolvesFromTheGivenConfigurationInstance() {
-        Configuration configuration = Configuration.builder().putAll(Map.of("probe.simulationDistance", "7")).build();
-
-        ConfigSections configSections = this.platformBeans.configSections(configuration);
-        ProbeSection probe = configSections.section("probe", ProbeSection.class, ProbeSection.DEFAULTS);
-
-        Assertions.assertEquals(7, probe.simulationDistance(), "the section must resolve the value from the supplied Configuration instance");
-    }
 
     @DisplayName("Building the LobbySpawn bean does not query the MapProvider")
     @Test
