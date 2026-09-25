@@ -106,8 +106,24 @@ final class LegacyConfigMigration {
      */
     static JsonObject migrate(Path file, JsonObject legacy) {
         backUp(file);
-        String fileName = file.getFileName() != null ? file.getFileName().toString() : file.toString();
+        JsonObject migrated = toSectioned(legacy, fileNameOf(file));
+        logDroppedKeys(file, legacy);
+        return migrated;
+    }
 
+    /**
+     * Maps a legacy flat document to the sectioned format, without backing up the original file
+     * or logging dropped keys - both are the caller's business. {@link #migrate(Path, JsonObject)}
+     * uses this for {@link ConfigStore}'s own legacy handling; {@link AppJsonMigration} reuses it
+     * for the one-time {@code app.json} &rarr; {@code application.yaml} switch, since the v1 &rarr;
+     * v2 mapping is identical either way (DRY).
+     *
+     * @param legacy   the parsed legacy document
+     * @param fileName the name of the file being migrated, used only to complete a thrown {@link
+     *                 ConfigException}
+     * @return the migrated, sectioned document, including {@code configVersion}
+     */
+    static JsonObject toSectioned(JsonObject legacy, String fileName) {
         JsonObject migrated = new JsonObject();
         migrated.addProperty("configVersion", TARGET_CONFIG_VERSION);
 
@@ -128,9 +144,11 @@ final class LegacyConfigMigration {
         moveIfPresent(legacy, "tickleDuration", tickle, "cooldownMillis");
         addIfNotEmpty(migrated, "tickle", tickle);
 
-        logDroppedKeys(file, legacy);
-
         return migrated;
+    }
+
+    private static String fileNameOf(Path file) {
+        return file.getFileName() != null ? file.getFileName().toString() : file.toString();
     }
 
     private static void backUp(Path file) {
@@ -183,7 +201,15 @@ final class LegacyConfigMigration {
         return migrated;
     }
 
-    private static void logDroppedKeys(Path file, JsonObject legacy) {
+    /**
+     * Logs the legacy keys that {@code legacy} contains and {@link #toSectioned(JsonObject,
+     * String)} drops instead of migrating. Package-private so {@link AppJsonMigration} can reuse
+     * the exact same log line for the one-time {@code app.json} switch.
+     *
+     * @param file   the path the legacy document was read from, used only for the log message
+     * @param legacy the parsed legacy document
+     */
+    static void logDroppedKeys(Path file, JsonObject legacy) {
         List<String> dropped = new ArrayList<>();
         for (String key : DROPPED_KEYS) {
             if (legacy.has(key)) {
