@@ -30,13 +30,16 @@ import org.jetbrains.annotations.Nullable;
  * and reacting to a click on it is the navigator feature module's job, added in a later wave.
  *
  * <p>{@link #feature()} carries the optional feature-flag gate (see {@code design.md}, decision 13)
- * on the platform type itself, not just on {@code feature.navigator.NavigatorConfig.Entry} - so an
- * entry contributed by <em>any</em> module through {@code ModuleContext#navigator()}, not only the
- * ones the navigator module itself reads from its own configuration, can be gated the same way.
- * That is simpler than a side table the navigator feature would have to keep in lock-step with the
- * registry's contents on every add and remove, and it keeps every piece of an entry's identity - up
- * to and including whether it is currently eligible to show at all - on the one record that already
- * describes the entry as data, matching decision 8's "entries as data" approach.
+ * on the platform type itself, not just on the entry a {@code feature.navigator.NavigatorModule}
+ * reads from configuration - so an entry contributed by <em>any</em> module through
+ * {@code ModuleContext#navigator()}, not only the ones the navigator module itself reads from its
+ * own configuration, can be gated the same way. That is simpler than a side table the navigator
+ * feature would have to keep in lock-step with the registry's contents on every add and remove, and
+ * it keeps every piece of an entry's identity - up to and including whether it is currently
+ * eligible
+ * to show at all - on the one record that already describes the entry as data, matching decision
+ * 8's
+ * "entries as data" approach.
  *
  * <p>"Gated the same way" also covers validation, not just rendering: {@link NavigatorEntries}'
  * {@link NavigatorEntries#validate(net.onelitefeather.titan.common.feature.FeatureFlags) validate}
@@ -45,7 +48,7 @@ import org.jetbrains.annotations.Nullable;
  * enabled, aborting startup on an unknown name - again regardless of which module contributed the
  * entry. An entry with a misspelled {@link #feature()} therefore never ends up silently hidden
  * forever (an unknown name is never active), it aborts startup instead, exactly like a misspelled
- * name in {@code NavigatorConfig}'s own configuration does.
+ * name in the navigator module's own configuration does.
  *
  * @param slot        the slot this entry occupies, {@code 0}-{@code 8}, matching
  *                    {@link InventoryType#CHEST_1_ROW}

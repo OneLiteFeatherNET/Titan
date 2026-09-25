@@ -43,8 +43,8 @@ import net.onelitefeather.titan.common.feature.FeatureFlags;
  * entries - from the configuration or from any combination of modules - share a slot.
  * {@link #validate(FeatureFlags)} runs the same slot check and, in addition, checks every entry's
  * optional {@link NavigatorEntry#feature()} against a {@link FeatureFlags} source - again for every
- * entry regardless of which module contributed it, not only the ones {@code NavigatorConfig} itself
- * reads from configuration.
+ * entry regardless of which module contributed it, not only the ones the {@code navigator} module
+ * itself reads from configuration.
  */
 public final class NavigatorEntries {
 
@@ -124,9 +124,9 @@ public final class NavigatorEntries {
      * Runs {@link #validate()} (the slot-conflict check), then checks every entry's optional
      * {@link NavigatorEntry#feature()} against {@code featureFlags} - for <em>every</em> entry
      * currently registered, regardless of which module contributed it. That covers both an entry
-     * {@code NavigatorConfig} itself read from configuration and one any other module added through
-     * its own {@link View#add}: neither ever passed {@code featureFlags} anywhere else, so this is
-     * the only place either kind of entry's feature name is checked at all.
+     * the {@code navigator} module itself read from configuration and one any other module added
+     * through its own {@link View#add}: neither ever passed {@code featureFlags} anywhere else, so
+     * this is the only place either kind of entry's feature name is checked at all.
      *
      * <p>Meant to run once, after every module has been enabled - alongside the item-placement
      * check in {@code ModuleRegistry#enableAll()} - so an operator misspelling a feature name, in

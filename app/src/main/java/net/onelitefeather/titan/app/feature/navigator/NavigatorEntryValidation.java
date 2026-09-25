@@ -27,13 +27,36 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>Deliberately free of any {@code io.avaje.config.Config}/{@code Configuration} type, per
  * {@code openspec/changes/avaje-config-facade/design.md}, decision 3: reading the values stays
- * {@link NavigatorModule}'s job, this class only checks and assembles them. {@link NavigatorConfig
- * .Entry}'s compact constructor delegates to the same {@code require*} checks used here, so the
- * rule behind each field lives in exactly one place (see decision 6).
+ * {@link NavigatorModule}'s job, this class only checks and assembles them. {@link #buildEntry}
+ * returns a {@link ConfiguredNavigatorEntry} rather than the platform's
+ * {@link net.onelitefeather.titan.app.module.navigator.NavigatorEntry} on purpose: the latter's
+ * icon is a fully built {@link net.minestom.server.item.ItemStack}, which - unlike
+ * {@link Material#fromKey(String)} - needs a booted Minestom registry beyond what a plain unit test
+ * provides. Deserializing the icon and display name into a renderable
+ * {@link net.onelitefeather.titan.app.module.navigator.NavigatorEntry} stays
+ * {@link NavigatorModule}'s job, so this class - and its {@code buildEntry} unit test - stays a
+ * fast, server-free unit (design.md, decision 6).
  */
 final class NavigatorEntryValidation {
 
     private NavigatorEntryValidation() {
+    }
+
+    /**
+     * The plain, not-yet-rendered form of one {@code navigator.entries} entry {@link #buildEntry}
+     * returns: the icon and display name are still the raw configuration strings, not yet resolved
+     * to a {@link Material}/{@code Component} pair - see the class-level Javadoc for why.
+     *
+     * @param slot        the slot this entry occupies, {@code 0}-{@code 8}
+     * @param icon        the icon's material, as a namespaced key, already known to
+     *                    {@link Material#fromKey(String)}
+     * @param displayName the name shown to the player, as a MiniMessage string
+     * @param destination the CloudNet task name a click on this entry delivers the player to
+     * @param feature     the name of the feature flag this entry is gated behind, or {@code null}
+     *                    if it is always visible
+     */
+    record ConfiguredNavigatorEntry(int slot, String icon, String displayName, String destination,
+                                    @Nullable String feature) {
     }
 
     /**
@@ -57,14 +80,14 @@ final class NavigatorEntryValidation {
      * @throws NullPointerException if {@code name}, {@code icon}, {@code displayName} or
      *                              {@code destination} is {@code null}
      */
-    static NavigatorConfig.Entry buildEntry(String name, int slot, String icon, String displayName, String destination, @Nullable String feature) {
+    static ConfiguredNavigatorEntry buildEntry(String name, int slot, String icon, String displayName, String destination, @Nullable String feature) {
         Objects.requireNonNull(name, "name must not be null");
         String prefix = "navigator.entries." + name + ".";
         requireValidSlot(prefix + "slot", slot);
         requireKnownMaterial(prefix + "icon", icon);
         Objects.requireNonNull(displayName, "displayName must not be null");
         requireNonBlankDestination(prefix + "destination", destination);
-        return new NavigatorConfig.Entry(slot, icon, displayName, destination, feature);
+        return new ConfiguredNavigatorEntry(slot, icon, displayName, destination, feature);
     }
 
     /**
