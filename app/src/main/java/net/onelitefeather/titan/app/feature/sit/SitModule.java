@@ -15,6 +15,8 @@
  */
 package net.onelitefeather.titan.app.feature.sit;
 
+import io.avaje.inject.Priority;
+import jakarta.inject.Singleton;
 import java.util.List;
 import net.kyori.adventure.key.Key;
 import net.minestom.server.entity.Entity;
@@ -50,6 +52,8 @@ import net.onelitefeather.titan.common.event.EntityDismountEvent;
  * left behind.</li>
  * </ol>
  */
+@Singleton
+@Priority(500)
 public final class SitModule implements LobbyModule {
 
     @Override

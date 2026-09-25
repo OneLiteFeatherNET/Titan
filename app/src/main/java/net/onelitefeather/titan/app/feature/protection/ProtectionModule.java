@@ -15,6 +15,8 @@
  */
 package net.onelitefeather.titan.app.feature.protection;
 
+import io.avaje.inject.Priority;
+import jakarta.inject.Singleton;
 import net.minestom.server.event.inventory.InventoryPreClickEvent;
 import net.minestom.server.event.item.ItemDropEvent;
 import net.minestom.server.event.item.PickupItemEvent;
@@ -51,6 +53,8 @@ import net.onelitefeather.titan.common.utils.Cancelable;
  * event node, and Minestom dispatches that mapped handler before any regular event node - including
  * this module's - ever sees the click (see {@code feature.navigator.NavigatorInventory}'s Javadoc).
  */
+@Singleton
+@Priority(100)
 public final class ProtectionModule implements LobbyModule {
 
     @Override

@@ -15,6 +15,8 @@
  */
 package net.onelitefeather.titan.app.feature.respawn;
 
+import io.avaje.inject.Priority;
+import jakarta.inject.Singleton;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.player.PlayerDeathEvent;
@@ -47,6 +49,8 @@ import net.onelitefeather.titan.app.module.ModuleContext;
  * "Tod ohne Nachricht", and {@code specs/lobby-hotbar/spec.md}, scenario "Ausstattung nach
  * Respawn". This module has no configuration of its own.
  */
+@Singleton
+@Priority(300)
 public final class RespawnModule implements LobbyModule {
 
     @Override

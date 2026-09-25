@@ -20,6 +20,12 @@ dependencies {
     implementation(libs.minestom.extensions)
     implementation(libs.butterfly.minestom)
 
+    // Compile-time dependency injection for the lobby feature modules; see
+    // openspec/changes/avaje-dependency-injection. No jakarta.annotation-api needed: avaje-inject
+    // pulls jakarta.inject-api transitively, and @Priority is io.avaje.inject.Priority.
+    implementation(libs.avaje.inject)
+    annotationProcessor(libs.avaje.inject.generator)
+
     runtimeOnly(libs.luckperms.minestom.loader) {
         exclude(group = "net.kyori.adventure")
     }
@@ -46,6 +52,8 @@ dependencies {
     testImplementation(libs.minestom)
     testImplementation(libs.cyano)
     testImplementation(libs.mockito)
+    // ListAppender, for capturing a log line in a test; logback-classic itself is runtimeOnly above.
+    testImplementation(libs.logback.classic)
 
     testImplementation(libs.junit.api)
     testImplementation(libs.junit.platform.launcher)

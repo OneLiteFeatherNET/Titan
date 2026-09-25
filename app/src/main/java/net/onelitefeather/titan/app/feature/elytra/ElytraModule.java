@@ -15,6 +15,8 @@
  */
 package net.onelitefeather.titan.app.feature.elytra;
 
+import io.avaje.inject.Priority;
+import jakarta.inject.Singleton;
 import net.kyori.adventure.key.Key;
 import net.minestom.server.entity.EquipmentSlot;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
@@ -55,6 +57,8 @@ import net.onelitefeather.titan.app.module.item.LobbyItem;
  * advanced once per tick through {@code context.tasks()} - scheduled here in {@link #enable}, never
  * as a listener registered later, per {@code design.md} decision 3.
  */
+@Singleton
+@Priority(700)
 public final class ElytraModule implements LobbyModule {
 
     @Override

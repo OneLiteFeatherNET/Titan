@@ -15,91 +15,73 @@
  */
 package net.onelitefeather.titan.app;
 
+import io.avaje.inject.BeanScope;
+import io.avaje.inject.spi.GenericType;
+import java.util.List;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
-import net.minestom.server.instance.InstanceContainer;
 import net.onelitefeather.butterfly.minestom.Butterfly;
-import net.onelitefeather.titan.api.deliver.Deliver;
+import net.onelitefeather.titan.app.bootstrap.ModuleStartupLog;
+import net.onelitefeather.titan.app.bootstrap.PlatformBeans;
 import net.onelitefeather.titan.app.commands.EndCommand;
 import net.onelitefeather.titan.app.commands.StopCommand;
-import net.onelitefeather.titan.app.feature.elytra.ElytraModule;
-import net.onelitefeather.titan.app.feature.navigator.NavigatorModule;
-import net.onelitefeather.titan.app.feature.protection.ProtectionModule;
-import net.onelitefeather.titan.app.feature.respawn.RespawnModule;
-import net.onelitefeather.titan.app.feature.sit.SitModule;
-import net.onelitefeather.titan.app.feature.spawn.SpawnModule;
-import net.onelitefeather.titan.app.feature.tickle.TickleModule;
+import net.onelitefeather.titan.app.module.LobbyModule;
 import net.onelitefeather.titan.app.module.ModuleRegistry;
 import net.onelitefeather.titan.app.module.item.ItemRegistry;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
 import net.onelitefeather.titan.app.player.TitanPlayer;
 import net.onelitefeather.titan.common.config.ConfigStore;
-import net.onelitefeather.titan.common.deliver.DeliverProvider;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
-import net.onelitefeather.titan.common.feature.TogglzFeatureFlags;
 import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
-import net.onelitefeather.titan.common.map.MapProvider;
-
-import java.nio.file.Path;
 
 /**
  * The lobby's composition root.
  *
- * <p>Builds the shared dependencies every feature module is wired from - the {@link TitanPlayer}
- * provider, the lobby {@link InstanceContainer} and its {@link MapProvider}, the {@link Deliver}
- * used to send a player elsewhere, and the {@link ConfigStore} backing {@code app.json} - and hands
- * them to a {@link ModuleRegistry} of the seven lobby feature modules, in the fixed order
- * protection,
- * spawn, respawn, navigator, sit, tickle, elytra. What is left outside the module platform is
- * exactly what was never a per-player listener to begin with: the {@code stop}/{@code end} commands
- * and the Butterfly extension bridge.
+ * <p>Builds an Avaje Inject {@link BeanScope} - which discovers every lobby feature module as a
+ * {@code @Singleton} bean and every platform service {@code app/.../bootstrap/PlatformBeans}
+ * provides - then builds a {@link ModuleRegistry} from it: the modules, sorted by
+ * {@code @Priority} via {@link BeanScope#listByPriority(Class)}, plus the platform beans the
+ * registry itself needs. See {@code openspec/changes/avaje-dependency-injection/design.md},
+ * decisions 2 and 5, for why the registry is built here rather than as a bean of its own. What is
+ * left outside the module platform is exactly what was never a per-player listener to begin with:
+ * the {@code stop}/{@code end} commands and the Butterfly extension bridge.
  *
- * <p>See {@code openspec/changes/lobby-feature-modules/design.md} and task 6.8. Before this change,
- * {@code Titan#initListeners()} hand-wired nineteen listeners directly onto a shared event node;
- * every one of those now lives inside its own
- * {@link net.onelitefeather.titan.app.module.LobbyModule}
- * and that method is gone.
+ * <p>See also {@code openspec/changes/lobby-feature-modules/design.md} and task 6.8: before that
+ * change, {@code Titan#initListeners()} hand-wired nineteen listeners directly onto a shared event
+ * node; every one of those now lives inside its own
+ * {@link net.onelitefeather.titan.app.module.LobbyModule}, and this class holds no list of them at
+ * all any more - {@link BeanScope#listByPriority(Class)} discovers them.
  */
 public final class Titan {
 
-    private static final String APP_FILE_NAME = "app.json";
-    private static final String TITAN_NODE_NAME = "titan";
-
-    private final EventNode<Event> titanNode = EventNode.all(TITAN_NODE_NAME);
+    private final BeanScope beanScope;
+    private final List<LobbyModule> modules;
     private final ModuleRegistry moduleRegistry;
 
     public Titan() {
         MinecraftServer.getConnectionManager().setPlayerProvider(TitanPlayer::new);
         BlockHandlerHelper.registerAll();
 
-        Path path = Path.of("");
-        InstanceContainer instance = MinecraftServer.getInstanceManager().createInstanceContainer();
-        MinecraftServer.getInstanceManager().registerInstance(instance);
-        MapProvider mapProvider = MapProvider.create(path, instance);
-        Deliver deliver = DeliverProvider.create();
-        ConfigStore configStore = ConfigStore.open(path.resolve(APP_FILE_NAME));
+        this.beanScope = BeanScope.builder().build();
+        this.modules = this.beanScope.listByPriority(LobbyModule.class);
 
-        // Shared platform state, handed to both the registry (which every module can reach
-        // through ModuleContext) and, where a module needs the whole thing rather than the
-        // narrow add-only view ModuleContext exposes, directly into that module's constructor -
-        // see NavigatorModule, which reads every module's entries back at inventory-open time.
-        NavigatorEntries navigatorEntries = new NavigatorEntries();
-        ItemRegistry itemRegistry = new ItemRegistry(this.titanNode);
-        FeatureFlags featureFlags = new TogglzFeatureFlags();
+        EventNode<Event> titanNode = this.beanScope.get(new GenericType<EventNode<Event>>() {
+        }.type(), PlatformBeans.TITAN_NODE_NAME);
+        ConfigStore configStore = this.beanScope.get(ConfigStore.class);
+        NavigatorEntries navigatorEntries = this.beanScope.get(NavigatorEntries.class);
+        ItemRegistry itemRegistry = this.beanScope.get(ItemRegistry.class);
+        FeatureFlags featureFlags = this.beanScope.get(FeatureFlags.class);
 
-        MinecraftServer.getGlobalEventHandler().addChild(this.titanNode);
-
-        this.moduleRegistry = ModuleRegistry.builder().parent(this.titanNode).config(configStore).navigator(navigatorEntries).items(itemRegistry).featureFlags(featureFlags).modules(
-                new ProtectionModule(), new SpawnModule(mapProvider.getInstance(), () -> mapProvider.getActiveLobby().spawn()), new RespawnModule(), new NavigatorModule(deliver, navigatorEntries, featureFlags), new SitModule(), new TickleModule(), new ElytraModule()).build();
+        this.moduleRegistry = ModuleRegistry.builder().parent(titanNode).config(configStore).navigator(navigatorEntries).items(itemRegistry).featureFlags(featureFlags).modules(this.modules).build();
     }
 
     /**
-     * Starts every lobby feature module, registers the platform commands and loads Butterfly, then
-     * schedules a shutdown task that disables the modules. Because
-     * {@link net.minestom.server.timer.SchedulerManager} runs shutdown tasks in the order they were
-     * registered, this task runs before Butterfly's own shutdown task, so module cleanup still runs
-     * while Butterfly is loaded.
+     * Starts every lobby feature module, logs the order they were enabled in, registers the
+     * platform commands and loads Butterfly, then schedules shutdown tasks in this order (Minestom
+     * runs {@link net.minestom.server.timer.SchedulerManager} shutdown tasks FIFO, in the order
+     * they were registered): disabling every module, then Butterfly, then closing the
+     * {@link BeanScope}.
      *
      * @throws net.onelitefeather.titan.common.config.ConfigException       if a module's
      *                                                                      {@code app.json}
@@ -111,6 +93,7 @@ public final class Titan {
      */
     public void initialize() {
         this.moduleRegistry.enableAll();
+        ModuleStartupLog.enabledInOrder(this.modules.stream().map(LobbyModule::id).toList());
         initCommands();
 
         Butterfly butterfly = Butterfly.create();
@@ -118,6 +101,7 @@ public final class Titan {
 
         MinecraftServer.getSchedulerManager().buildShutdownTask(this::terminate);
         MinecraftServer.getSchedulerManager().buildShutdownTask(butterfly::terminate);
+        MinecraftServer.getSchedulerManager().buildShutdownTask(this.beanScope::close);
     }
 
     public void terminate() {

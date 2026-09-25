@@ -15,6 +15,9 @@
  */
 package net.onelitefeather.titan.app.feature.example;
 
+import io.avaje.inject.Priority;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.time.Clock;
 import java.util.Objects;
 import net.kyori.adventure.key.Key;
@@ -35,8 +38,15 @@ import net.onelitefeather.titan.app.module.item.LobbyItem;
  * own; the stateful cooldown tracking lives in {@link ExampleGreetingTracker}.
  *
  * <p>Test-only on purpose (see {@code app/src/test/.../app/feature/example}, not
- * {@code app/src/main}): it is a copyable starting point for a real feature, not a feature itself,
- * so it is never wired into {@code Titan}'s module list.
+ * {@code app/src/main}): it is a copyable starting point for a real feature, not a feature itself.
+ * It carries {@code @Singleton}/{@code @Priority} anyway, so it stays a <em>correct</em> copy
+ * template - but it is still never discovered as a lobby module, because Avaje Inject's annotation
+ * processor does not run for test sources (no {@code testAnnotationProcessor}, see
+ * {@code app/build.gradle.kts}); {@code ModuleWiringTest} keeps finding exactly the seven modules
+ * under {@code app/src/main}, not this one. Its {@code @Priority(800)} is deliberately past the
+ * highest real module (elytra, 700), so nobody mistakes it for a real slot in the priority table
+ * in {@code docs/lobby-modules.md} - a real module picks its own, still-unused value from that
+ * table instead of copying this one.
  *
  * <p>Behaviour: using {@link ExampleItems#GREETING_TOKEN} - or running the {@code
  * titan-example-greet} command - sends the player {@link ExampleConfig#greeting()} with their name
@@ -44,6 +54,8 @@ import net.onelitefeather.titan.app.module.item.LobbyItem;
  * greeting, in which case they get {@link ExampleItems#ON_COOLDOWN} instead. A disconnecting
  * player's cooldown is forgotten, so rejoining does not inherit it.
  */
+@Singleton
+@Priority(800)
 public final class ExampleModule implements LobbyModule {
 
     /**
@@ -66,10 +78,13 @@ public final class ExampleModule implements LobbyModule {
     /**
      * Creates a module backed by {@code clock}, so a test can control what "now" is instead of the
      * module depending on {@link System#currentTimeMillis()} - the same pattern {@code
-     * TickleModule} uses.
+     * TickleModule} uses. Carries {@code @Inject} because this class has more than one
+     * constructor - Avaje Inject would otherwise not know which one to use, were this module ever
+     * discovered (see the class Javadoc for why it is not).
      *
      * @param clock the clock to read the current time from
      */
+    @Inject
     public ExampleModule(Clock clock) {
         this.clock = Objects.requireNonNull(clock, "clock");
     }

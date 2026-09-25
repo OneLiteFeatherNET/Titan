@@ -15,6 +15,8 @@
  */
 package net.onelitefeather.titan.app.feature.navigator;
 
+import io.avaje.inject.Priority;
+import jakarta.inject.Singleton;
 import java.util.Objects;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
@@ -66,6 +68,8 @@ import net.onelitefeather.titan.common.feature.FeatureFlags;
  * {@code feature()} besides - is validated up front, once every module has enabled, by
  * {@link NavigatorEntries#validate(FeatureFlags)}, not by this module itself.
  */
+@Singleton
+@Priority(400)
 public final class NavigatorModule implements LobbyModule {
 
     private static final String ID = "navigator";

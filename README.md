@@ -149,8 +149,33 @@ Code coverage reports are generated using JaCoCo and can be found in `build/repo
 
 ### Adding a Lobby Feature Module
 
-See [`docs/lobby-modules.md`](docs/lobby-modules.md) (German) for how a lobby feature module is
-built, including a copyable template module and its tests.
+A lobby feature is a self-contained package under
+`app/src/main/java/net/onelitefeather/titan/app/feature/<name>/`, discovered automatically by
+Avaje Inject - there is no central module list to edit:
+
+- New package, copied from the template module at
+  `app/src/test/java/net/onelitefeather/titan/app/feature/example/` (`ExampleModule` and friends).
+- The `<Name>Module` class implements `LobbyModule` and carries `@jakarta.inject.Singleton` plus a
+  unique `@io.avaje.inject.Priority(n)` - ascending priority is start order, the seven existing
+  modules use gaps of 100 (protection 100, spawn 200, respawn 300, navigator 400, sit 500,
+  tickle 600, elytra 700). Missing either annotation fails the build (ArchUnit), not just the
+  running lobby.
+- Dependencies (a platform service such as `Deliver`, an `Instance`, a `Clock`, ...) are requested
+  through the constructor; `@jakarta.inject.Inject` is only needed on a constructor when the class
+  has more than one. A brand-new shared platform service is added as another `@Bean` in
+  `app/src/main/java/net/onelitefeather/titan/app/bootstrap/PlatformBeans.java`, or, if it carries
+  feature-spanning logic of its own rather than wrapping a platform type, as its own
+  `@Singleton` class.
+- Zero changed lines outside the new package - except a brand-new shared platform service, which
+  necessarily touches `PlatformBeans`.
+- A dependency nothing provides fails the build or the start, naming the missing type, instead of
+  the lobby quietly running without that module.
+- The actual start order is visible at runtime in one INFO log line:
+  `Lobby modules enabled in order: {}`.
+
+See [`docs/lobby-modules.md`](docs/lobby-modules.md) (German) for the full walkthrough - module
+anatomy, `ModuleContext` dock points, tick-thread rules, test setup with `ModuleHarness`, the
+ArchUnit rules, and a copyable template module with its tests.
 
 ## License
 
