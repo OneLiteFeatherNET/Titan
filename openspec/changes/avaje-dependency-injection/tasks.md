@@ -35,8 +35,8 @@ Integrations-Branch: `feat/avaje-dependency-injection`, abgezweigt vom aktuellen
 
 ## 3. Doku und Vorlage (Welle C)
 
-- [ ] 3.1 `ExampleModule` (Testquellen) bekommt `@Singleton`/`@Priority`/`@Inject`. Der Processor läuft nicht für Tests. Verifikation: Der Test des Beispiels ist grün, der `ModuleWiringTest` findet das Beispiel nicht.
-- [ ] 3.2 `docs/lobby-modules.md` und die README beschreiben den neuen Weg: neues Paket, `@Singleton` plus `@Priority`, Dienste per Konstruktor, neue gemeinsame Dienste als `@Bean` in `PlatformBeans` oder als eigener `@Singleton`, die Tabelle der Prioritäten, und die Checkliste „null Zeilen außerhalb des Pakets“. Verifikation: Jede Angabe zu einer API ist gegen den Code geprüft (Review-Agent).
+- [x] 3.1 `ExampleModule` (Testquellen) bekommt `@Singleton`/`@Priority`/`@Inject`. Der Processor läuft nicht für Tests. Verifikation: Der Test des Beispiels ist grün, der `ModuleWiringTest` findet das Beispiel nicht.
+- [x] 3.2 `docs/lobby-modules.md` und die README beschreiben den neuen Weg: neues Paket, `@Singleton` plus `@Priority`, Dienste per Konstruktor, neue gemeinsame Dienste als `@Bean` in `PlatformBeans` oder als eigener `@Singleton`, die Tabelle der Prioritäten, und die Checkliste „null Zeilen außerhalb des Pakets“. Verifikation: Jede Angabe zu einer API ist gegen den Code geprüft (Review-Agent).
 
 ## 4. Abnahme (Welle D)
 
