@@ -21,6 +21,9 @@ import net.onelitefeather.titan.common.config.ConfigException;
  * The {@code spawn} module's own configuration section, read via
  * {@code ModuleContext.config(SpawnConfig.class, SpawnConfig.DEFAULTS)}.
  *
+ * <p>Validation itself lives in the pure, package-private {@link SpawnSettings}; this compact
+ * constructor only delegates to it.
+ *
  * @param minHeight          the lowest {@code y} coordinate a player may fall to before being
  *                           teleported back to spawn
  * @param maxHeight          the highest {@code y} coordinate a player may rise to before being
@@ -38,11 +41,7 @@ public record SpawnConfig(int minHeight, int maxHeight, int simulationDistance) 
      *                         {@code simulationDistance} is not positive
      */
     public SpawnConfig {
-        if (minHeight >= maxHeight) {
-            throw ConfigException.invalid("minHeight", "must be less than maxHeight (" + maxHeight + ")");
-        }
-        if (simulationDistance <= 0) {
-            throw ConfigException.invalid("simulationDistance", "must be greater than 0");
-        }
+        minHeight = SpawnSettings.minHeight(minHeight, maxHeight);
+        simulationDistance = SpawnSettings.simulationDistance(simulationDistance);
     }
 }

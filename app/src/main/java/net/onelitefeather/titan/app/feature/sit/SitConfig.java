@@ -18,7 +18,6 @@ package net.onelitefeather.titan.app.feature.sit;
 import java.util.List;
 import net.kyori.adventure.key.Key;
 import net.minestom.server.coordinate.Vec;
-import net.onelitefeather.titan.common.config.ConfigException;
 
 /**
  * The {@code sit} module's own configuration section.
@@ -29,6 +28,9 @@ import net.onelitefeather.titan.common.config.ConfigException;
  * least one allowed block, so - unlike a field that simply falls back to a sensible default - an
  * empty list is rejected rather than silently turning sitting off. An operator who wants to
  * disable the feature disables the whole module instead.
+ *
+ * <p>Validation itself lives in the pure, package-private {@link SitSettings}; this compact
+ * constructor only delegates to it and keeps {@code allowedBlocks} defensively copied.
  *
  * @param offset        the offset from the clicked block's position to the seat entity, e.g.
  *                      {@code (0.5, 0.25, 0.5)} to center it on top of the block
@@ -43,15 +45,7 @@ public record SitConfig(Vec offset, List<Key> allowedBlocks) {
     public static final SitConfig DEFAULTS = new SitConfig(new Vec(0.5, 0.25, 0.5), List.of(Key.key("minecraft:spruce_stairs")));
 
     public SitConfig {
-        if (offset == null) {
-            throw ConfigException.invalid("offset", "must not be null");
-        }
-        if (allowedBlocks == null) {
-            throw ConfigException.invalid("allowedBlocks", "must not be null");
-        }
-        if (allowedBlocks.isEmpty()) {
-            throw ConfigException.invalid("allowedBlocks", "must not be empty - a player could never sit down otherwise");
-        }
-        allowedBlocks = List.copyOf(allowedBlocks);
+        offset = SitSettings.offset(offset);
+        allowedBlocks = List.copyOf(SitSettings.allowedBlocks(allowedBlocks));
     }
 }

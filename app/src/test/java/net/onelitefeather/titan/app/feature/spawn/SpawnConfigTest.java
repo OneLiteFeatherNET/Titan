@@ -15,14 +15,14 @@
  */
 package net.onelitefeather.titan.app.feature.spawn;
 
-import net.onelitefeather.titan.common.config.ConfigException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Plain unit coverage for {@link SpawnConfig}'s defaults and the validation its compact
- * constructor performs - no server needed.
+ * Plain unit tests for what is still specific to the {@link SpawnConfig} record itself - its
+ * documented {@link SpawnConfig#DEFAULTS}. The validation cases now live in
+ * {@link SpawnSettingsTest}.
  */
 class SpawnConfigTest {
 
@@ -32,40 +32,6 @@ class SpawnConfigTest {
         Assertions.assertEquals(-64, SpawnConfig.DEFAULTS.minHeight());
         Assertions.assertEquals(310, SpawnConfig.DEFAULTS.maxHeight());
         Assertions.assertEquals(2, SpawnConfig.DEFAULTS.simulationDistance());
-    }
-
-    @DisplayName("minHeight equal to maxHeight is rejected, naming both fields")
-    @Test
-    void minHeightEqualToMaxHeightIsRejected() {
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> new SpawnConfig(100, 100, 2));
-
-        Assertions.assertEquals("minHeight", thrown.field());
-        Assertions.assertTrue(thrown.reason().contains("maxHeight"), "the reason must name maxHeight too");
-    }
-
-    @DisplayName("minHeight above maxHeight is rejected, naming both fields")
-    @Test
-    void minHeightAboveMaxHeightIsRejected() {
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> new SpawnConfig(400, 300, 2));
-
-        Assertions.assertEquals("minHeight", thrown.field());
-        Assertions.assertTrue(thrown.reason().contains("maxHeight"), "the reason must name maxHeight too");
-    }
-
-    @DisplayName("A zero simulationDistance is rejected")
-    @Test
-    void zeroSimulationDistanceIsRejected() {
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> new SpawnConfig(-64, 310, 0));
-
-        Assertions.assertEquals("simulationDistance", thrown.field());
-    }
-
-    @DisplayName("A negative simulationDistance is rejected")
-    @Test
-    void negativeSimulationDistanceIsRejected() {
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> new SpawnConfig(-64, 310, -1));
-
-        Assertions.assertEquals("simulationDistance", thrown.field());
     }
 
     @DisplayName("A valid config does not throw")
