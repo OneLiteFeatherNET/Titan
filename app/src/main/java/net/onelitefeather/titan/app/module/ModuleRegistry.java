@@ -16,12 +16,19 @@
 package net.onelitefeather.titan.app.module;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.BooleanSupplier;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.command.CommandManager;
+import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
+import net.minestom.server.network.ConnectionManager;
+import net.minestom.server.thread.TickThread;
 import net.minestom.server.timer.Scheduler;
 import net.onelitefeather.titan.app.module.item.ItemPlacementConflictException;
 import net.onelitefeather.titan.app.module.item.ItemRegistry;
@@ -29,6 +36,8 @@ import net.onelitefeather.titan.app.module.navigator.NavigatorConflictException;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Starts and stops the lobby's {@link LobbyModule}s.
@@ -40,6 +49,12 @@ import org.jetbrains.annotations.Nullable;
  * and only then calls {@link LobbyModule#disable()} - so by the time a module's own shutdown code
  * runs, it can no longer receive events or run scheduled work. See {@code design.md}, decision 2,
  * and the {@code lobby-modules} spec.
+ *
+ * <p>{@link #restart(String)} does the same two things - disable, then enable - for a single
+ * module, without touching any other module; see {@code design.md}, decision 3, and its own
+ * Javadoc below. Both {@link #enableAll()}/{@link #disableAll()} and {@link #restart(String)} share
+ * the same per-module disable and enable steps ({@link #stopModule}/{@link #startModule}) rather
+ * than each having their own copy.
  *
  * <p>Once every module is up, {@link #enableAll()} validates the shared {@link ItemRegistry} and
  * {@link NavigatorEntries}, so two modules claiming the same item placement or navigator slot
@@ -54,11 +69,16 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class ModuleRegistry {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(ModuleRegistry.class);
+
     private final EventNode<Event> parent;
     private final ModulePlatform platform;
+    private final @Nullable ConnectionManager connectionManagerOverride;
     private final List<LobbyModule> modules;
-    private final List<ModuleContext> runningContexts = new ArrayList<>();
+    private final Map<String, LobbyModule> modulesById;
+    private final Map<String, ModuleContext> runningContexts = new LinkedHashMap<>();
     private final @Nullable FeatureFlags featureFlags;
+    private final BooleanSupplier tickThreadCheck;
 
     private ModuleRegistry(Builder builder) {
         this.parent = builder.parent;
@@ -67,8 +87,20 @@ public final class ModuleRegistry {
         NavigatorEntries navigatorEntries = builder.navigatorEntries != null ? builder.navigatorEntries : new NavigatorEntries();
         ItemRegistry itemRegistry = builder.itemRegistry != null ? builder.itemRegistry : new ItemRegistry(this.parent);
         this.platform = new ModulePlatform(scheduler, commandManager, itemRegistry, navigatorEntries);
+        // Resolved lazily in restart() instead of here: enableAll()/disableAll() never need a
+        // connection manager at all, and eagerly calling MinecraftServer.getConnectionManager()
+        // here would break every standalone test (ModulePlatformFixture, ModuleContextTest, ...)
+        // that builds a registry without ever booting Minestom, even though none of them restart
+        // anything.
+        this.connectionManagerOverride = builder.connectionManager;
         this.modules = List.copyOf(builder.modules);
+        Map<String, LobbyModule> byId = new LinkedHashMap<>();
+        for (LobbyModule module : this.modules) {
+            byId.put(module.id(), module);
+        }
+        this.modulesById = Map.copyOf(byId);
         this.featureFlags = builder.featureFlags;
+        this.tickThreadCheck = builder.tickThreadCheck != null ? builder.tickThreadCheck : () -> Thread.currentThread() instanceof TickThread;
     }
 
     /**
@@ -115,19 +147,13 @@ public final class ModuleRegistry {
      */
     public void enableAll() {
         for (LobbyModule module : this.modules) {
-            ModuleContext context = new ModuleContext(module.id(), this.platform);
-            this.parent.addChild(context.node());
+            ModuleContext context;
             try {
-                module.enable(context);
+                context = startModule(module);
             } catch (RuntimeException exception) {
-                context.closeForListening();
-                this.parent.removeChild(context.node());
-                context.cancelTasks();
-                context.runCleanupHooks();
                 throw new ModuleLifecycleException(module.id(), exception);
             }
-            context.closeForListening();
-            this.runningContexts.add(context);
+            this.runningContexts.put(module.id(), context);
         }
         this.platform.items().validate();
         if (this.featureFlags != null) {
@@ -144,15 +170,128 @@ public final class ModuleRegistry {
      * {@link LobbyModule#disable()}.
      */
     public void disableAll() {
-        for (int i = this.runningContexts.size() - 1; i >= 0; i--) {
-            ModuleContext context = this.runningContexts.get(i);
-            LobbyModule module = this.modules.get(i);
+        List<LobbyModule> reverseOrder = new ArrayList<>(this.modules);
+        Collections.reverse(reverseOrder);
+        for (LobbyModule module : reverseOrder) {
+            ModuleContext context = this.runningContexts.remove(module.id());
+            if (context != null) {
+                stopModule(module, context);
+            }
+        }
+    }
+
+    /**
+     * Restarts a single module - {@code moduleId} - without touching any other module. Must be
+     * called on the tick thread; see {@code design.md}, decision 3.
+     *
+     * <p>Runs, in order:
+     * <ol>
+     * <li>If the module is currently running, disables it exactly like {@link #disableAll()}
+     * would (detach node, cancel tasks, cleanup hooks in reverse order, then
+     * {@link LobbyModule#disable()}).</li>
+     * <li>Starts it again with a fresh {@link ModuleContext}, exactly like {@link #enableAll()}
+     * would for that module.</li>
+     * <li>If that succeeded, re-validates the shared {@link ItemRegistry} and
+     * {@link NavigatorEntries} (against every module, not only the restarted one) and
+     * re-equips every online player via {@link ItemRegistry#equip}.</li>
+     * </ol>
+     *
+     * <p>If starting the module or that validation fails, the partial start is torn down the same
+     * way step 1 tears a running module down, and this method returns {@link RestartOutcome.Failed}
+     * instead of throwing - the caller (a later {@code ConfigReloader}) decides whether to restore
+     * the module's previous configuration values and restart it again. Every other module is left
+     * running untouched, whichever outcome this call ends in.
+     *
+     * @param moduleId the id of the module to restart, i.e. {@link LobbyModule#id()}
+     * @return {@link RestartOutcome.Restarted} on success, {@link RestartOutcome.Failed} otherwise
+     * @throws IllegalStateException    if called from any thread other than the tick thread
+     * @throws IllegalArgumentException if no module with {@code moduleId} is registered
+     */
+    public RestartOutcome restart(String moduleId) {
+        Objects.requireNonNull(moduleId, "moduleId must not be null");
+        if (!this.tickThreadCheck.getAsBoolean()) {
+            throw new IllegalStateException("ModuleRegistry.restart() must run on the tick thread, but was called from '" + Thread.currentThread().getName() + "'");
+        }
+        LobbyModule module = this.modulesById.get(moduleId);
+        if (module == null) {
+            throw new IllegalArgumentException("No module registered with id '" + moduleId + "'");
+        }
+
+        ModuleContext previousContext = this.runningContexts.remove(moduleId);
+        if (previousContext != null) {
+            stopModule(module, previousContext);
+        }
+
+        ModuleContext newContext;
+        try {
+            newContext = startModule(module);
+        } catch (RuntimeException exception) {
+            LOGGER.debug("Module {} failed to enable during restart", moduleId, exception);
+            return new RestartOutcome.Failed(exception);
+        }
+
+        try {
+            this.platform.items().validate();
+            if (this.featureFlags != null) {
+                this.platform.navigator().validate(this.featureFlags);
+            } else {
+                this.platform.navigator().validate();
+            }
+        } catch (RuntimeException exception) {
+            LOGGER.debug("Module {} rejected during post-restart validation, rolling the partial start back", moduleId, exception);
+            stopModule(module, newContext);
+            return new RestartOutcome.Failed(exception);
+        }
+
+        this.runningContexts.put(moduleId, newContext);
+        ConnectionManager connectionManager = this.connectionManagerOverride != null ? this.connectionManagerOverride : MinecraftServer.getConnectionManager();
+        for (Player player : connectionManager.getOnlinePlayers()) {
+            this.platform.items().equip(player);
+        }
+        LOGGER.debug("Module {} restarted", moduleId);
+        return new RestartOutcome.Restarted();
+    }
+
+    /**
+     * Starts a single module: attaches a fresh {@code titan/<id>} event node under {@code parent},
+     * hands it a new {@link ModuleContext} and calls {@link LobbyModule#enable}. On failure, tears
+     * the partial start back down (node, tasks, cleanup hooks - but not {@link LobbyModule#disable}
+     * itself, since the module never finished enabling) and rethrows the original exception, so
+     * both {@link #enableAll()} and {@link #restart(String)} can each decide what that means for
+     * them - wrap it, or turn it into a {@link RestartOutcome.Failed}.
+     *
+     * @param module the module to start
+     * @return the module's new, running context
+     */
+    private ModuleContext startModule(LobbyModule module) {
+        ModuleContext context = new ModuleContext(module.id(), this.platform);
+        this.parent.addChild(context.node());
+        try {
+            module.enable(context);
+        } catch (RuntimeException exception) {
+            context.closeForListening();
             this.parent.removeChild(context.node());
             context.cancelTasks();
             context.runCleanupHooks();
-            module.disable();
+            throw exception;
         }
-        this.runningContexts.clear();
+        context.closeForListening();
+        return context;
+    }
+
+    /**
+     * Stops a single module: detaches its event node from {@code parent}, cancels its tasks, runs
+     * its cleanup hooks (most recently added first), and only then calls
+     * {@link LobbyModule#disable()} - shared by {@link #disableAll()} and {@link #restart(String)}.
+     *
+     * @param module  the module to stop
+     * @param context the context {@link #startModule} previously returned for it
+     */
+    private void stopModule(LobbyModule module, ModuleContext context) {
+        this.parent.removeChild(context.node());
+        context.cancelTasks();
+        context.runCleanupHooks();
+        module.disable();
     }
 
     /** Builds a {@link ModuleRegistry}. */
@@ -161,9 +300,11 @@ public final class ModuleRegistry {
         private EventNode<Event> parent;
         private Scheduler scheduler;
         private CommandManager commandManager;
+        private ConnectionManager connectionManager;
         private NavigatorEntries navigatorEntries;
         private ItemRegistry itemRegistry;
         private @Nullable FeatureFlags featureFlags;
+        private BooleanSupplier tickThreadCheck;
         private final List<LobbyModule> modules = new ArrayList<>();
 
         private Builder() {
@@ -201,6 +342,19 @@ public final class ModuleRegistry {
          */
         public Builder commandManager(CommandManager commandManager) {
             this.commandManager = commandManager;
+            return this;
+        }
+
+        /**
+         * The connection manager {@link ModuleRegistry#restart(String)} reads the currently online
+         * players from, to re-equip them via {@link ItemRegistry#equip}. Defaults to
+         * {@link MinecraftServer#getConnectionManager()}.
+         *
+         * @param connectionManager the connection manager
+         * @return this builder
+         */
+        public Builder connectionManager(ConnectionManager connectionManager) {
+            this.connectionManager = connectionManager;
             return this;
         }
 
@@ -266,6 +420,23 @@ public final class ModuleRegistry {
          */
         public Builder modules(List<LobbyModule> modules) {
             this.modules.addAll(modules);
+            return this;
+        }
+
+        /**
+         * Test-only override for the check {@link ModuleRegistry#restart(String)} uses to enforce
+         * that it runs on the tick thread. Defaults to {@code Thread.currentThread() instanceof
+         * net.minestom.server.thread.TickThread} - Minestom's own idiom for this (see
+         * {@code net.minestom.server.thread.Acquirable}) - which no test can satisfy directly:
+         * environments such as Cyano's {@code Env#tick()} run every tick synchronously on the
+         * calling (JUnit) thread, never on a real {@link TickThread}. Package-private: only this
+         * package's own tests use it, production wiring always keeps the real check.
+         *
+         * @param tickThreadCheck the check to use instead of the default
+         * @return this builder
+         */
+        Builder tickThreadCheck(BooleanSupplier tickThreadCheck) {
+            this.tickThreadCheck = tickThreadCheck;
             return this;
         }
 
