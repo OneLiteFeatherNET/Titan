@@ -17,12 +17,13 @@ package net.onelitefeather.titan.app.bootstrap;
 
 import io.avaje.config.Configuration;
 import java.util.List;
+import net.onelitefeather.titan.app.Titan;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Logs the single lifecycle line {@link PlatformBeans#configuration()} emits once its {@link
- * Configuration} bean has been built.
+ * Logs the single lifecycle line {@link Titan#Titan()} emits once its {@link Configuration} bean
+ * has been built.
  *
  * <p>Pulled out on its own, mirroring {@link ModuleStartupLog}, so the log line can be
  * unit-tested with a captured appender and a {@link Configuration} built directly from a {@link

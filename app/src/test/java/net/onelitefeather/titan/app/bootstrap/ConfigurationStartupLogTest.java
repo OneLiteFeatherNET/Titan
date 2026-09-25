@@ -28,8 +28,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Unit coverage for {@link ConfigurationStartupLog#activeProfiles(Configuration)} - the single
- * INFO line {@code PlatformBeans#configuration()} logs once its {@link Configuration} bean has
- * been built (see {@code openspec/changes/standardized-config-profiles/design.md}, decision 6),
+ * INFO line {@code net.onelitefeather.titan.app.Titan}'s constructor logs once its {@link
+ * Configuration} bean has been built (see {@code
+ * openspec/changes/standardized-config-profiles/design.md}, decision 6),
  * pulled out on its own so this can be asserted without touching the filesystem or the real
  * process environment. Builds its own {@link ListAppender} and detaches it in a {@code finally},
  * per test (F.I.R.S.T. - Independent), rather than sharing one across tests - the same pattern

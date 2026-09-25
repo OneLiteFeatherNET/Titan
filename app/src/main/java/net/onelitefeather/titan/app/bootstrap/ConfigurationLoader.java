@@ -17,6 +17,7 @@ package net.onelitefeather.titan.app.bootstrap;
 
 import io.avaje.config.Configuration;
 import java.nio.file.Path;
+import net.onelitefeather.titan.app.Titan;
 import net.onelitefeather.titan.common.config.AppJsonMigration;
 
 /**
@@ -25,10 +26,10 @@ import net.onelitefeather.titan.common.config.AppJsonMigration;
  * {@code openspec/changes/standardized-config-profiles/design.md}, decision 4), then builds the
  * {@code avaje-config} {@link Configuration} through {@link ConfigurationFactory}.
  *
- * <p>Both {@link PlatformBeans#configuration()} (production) and {@link ConfigurationPrintMain}
- * (the child JVM {@link ConfigurationPrecedenceTest} drives) call {@link #load()}, so a test
- * exercises exactly the sequence production runs - including the migration step - never a
- * re-implementation of it (DRY).
+ * <p>Both {@link Titan#Titan()} (production) and {@link ConfigurationPrintMain} (the child JVM
+ * {@link ConfigurationPrecedenceTest} drives) call {@link #load()}, so a test exercises exactly
+ * the sequence production runs - including the migration step - never a re-implementation of it
+ * (DRY).
  *
  * <p>The working directory is read exactly once, here, as {@code Path.of("").toAbsolutePath()},
  * and handed to {@link AppJsonMigration#migrate(Path)}; {@link ConfigurationFactory#load()} itself
