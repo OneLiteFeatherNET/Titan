@@ -25,7 +25,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TranslatableComponent;
 import net.kyori.adventure.util.TriState;
 import net.minestom.server.command.CommandSender;
-import net.minestom.server.command.builder.CommandContext;
 import net.minestom.server.command.builder.condition.CommandCondition;
 import net.minestom.server.tag.TagHandler;
 import net.onelitefeather.titan.app.bootstrap.reload.ReloadResult;

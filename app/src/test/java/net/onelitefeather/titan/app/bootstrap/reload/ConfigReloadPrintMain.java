@@ -44,7 +44,8 @@ import java.util.List;
  * this).
  *
  * <p><b>Arguments.</b> {@code args[0]} is either {@value #NO_MUTATION} (no file mutation before
- * reloading - covers a case such as "an env override alone, no file involved") or the path (relative
+ * reloading - covers a case such as "an env override alone, no file involved") or the path
+ * (relative
  * to the working directory) of a file to write <em>before</em> the reload is triggered; if so,
  * {@code args[1]} is either {@value #DELETE_FILE} (delete that file instead of writing it - covers
  * "a key disappears because its file is gone") or the exact content to write to it. Every
@@ -110,9 +111,11 @@ public final class ConfigReloadPrintMain {
         return List.of(args).subList(2, args.length);
     }
 
-    /** See {@code ConfigurationPrintMain#printCauseChain} - identical shape, own copy: this class
+    /**
+     * See {@code ConfigurationPrintMain#printCauseChain} - identical shape, own copy: this class
      * must not depend on {@code app/src/test/.../bootstrap/ConfigurationPrintMain}, a different
-     * test source file in a different package that a different task may still be evolving. */
+     * test source file in a different package that a different task may still be evolving.
+     */
     private static void printCauseChain(Throwable throwable) {
         String message = throwable.getMessage();
         System.out.println("ERROR: " + (message != null ? message : throwable.toString()));

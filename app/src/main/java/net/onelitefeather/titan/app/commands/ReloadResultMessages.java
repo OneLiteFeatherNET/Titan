@@ -44,7 +44,8 @@ public final class ReloadResultMessages {
      */
     public static List<Component> toComponents(ReloadResult result) {
         return switch (result) {
-            case ReloadResult.Unchanged unused -> List.of(Component.translatable(TitanTranslations.CONFIG_RELOAD_UNCHANGED));
+            case ReloadResult.Unchanged unused ->
+                List.of(Component.translatable(TitanTranslations.CONFIG_RELOAD_UNCHANGED));
             case ReloadResult.Applied applied -> appliedComponents(applied);
             case ReloadResult.Failed(String file, String detail) ->
                 List.of(Component.translatable(TitanTranslations.CONFIG_RELOAD_FAILED, Component.text(file), Component.text(detail)));

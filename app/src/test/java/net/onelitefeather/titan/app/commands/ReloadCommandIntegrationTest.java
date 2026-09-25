@@ -75,7 +75,8 @@ class ReloadCommandIntegrationTest {
 
     /**
      * A {@link ConsoleSender} that records every sent component instead of logging it - so this
-     * test does not depend on the real, process-wide {@link net.kyori.adventure.translation.GlobalTranslator}
+     * test does not depend on the real, process-wide
+     * {@link net.kyori.adventure.translation.GlobalTranslator}
      * singleton ever having {@code TitanTranslations} registered on it (see that class's own
      * javadoc: a test must not mutate that shared singleton). {@code !(sender instanceof Player)}
      * still holds for this subclass, so the reload command's console-always-allowed branch applies

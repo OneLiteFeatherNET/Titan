@@ -227,6 +227,7 @@ class ConfigReloadPrecedenceTest {
      * requested configuration keys and this main's own {@code RESULT}/{@code FILE}/{@code DETAIL}
      * lines.
      */
-    private record ChildResult(boolean finished, int exitCode, List<String> lines, Map<String, String> values) {
+    private record ChildResult(boolean finished, int exitCode, List<String> lines,
+                               Map<String, String> values) {
     }
 }
