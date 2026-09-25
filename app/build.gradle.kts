@@ -74,6 +74,28 @@ application {
     mainClass.set("net.onelitefeather.titan.app.TitanApplication")
 }
 
+// The classpath application.yaml (src/main/resources/application.yaml) is the single source of
+// the shipped defaults (see openspec/changes/avaje-config-facade/design.md, decision 2) - it is no
+// longer hand-duplicated as src/dist/application.example.yaml. This copies it, renamed, into the
+// distribution instead, so an operator still finds a commented example next to the jar.
+val applicationExampleYamlDir = layout.buildDirectory.dir("generated/applicationExampleYaml")
+
+val applicationExampleYaml = tasks.register<Copy>("applicationExampleYaml") {
+    group = "distribution"
+    description = "Copies the classpath application.yaml into the distribution as application.example.yaml."
+    from("src/main/resources/application.yaml")
+    into(applicationExampleYamlDir)
+    rename { "application.example.yaml" }
+}
+
+distributions {
+    main {
+        contents {
+            from(applicationExampleYaml)
+        }
+    }
+}
+
 tasks {
     jar {
         archiveClassifier.set("unshaded")

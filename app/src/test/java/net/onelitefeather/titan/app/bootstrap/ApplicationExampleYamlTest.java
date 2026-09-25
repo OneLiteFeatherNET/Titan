@@ -19,7 +19,6 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import io.avaje.config.Configuration;
-import java.nio.file.Path;
 import net.onelitefeather.titan.app.feature.elytra.ElytraConfig;
 import net.onelitefeather.titan.app.feature.navigator.NavigatorConfig;
 import net.onelitefeather.titan.app.feature.sit.SitConfig;
@@ -32,12 +31,19 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 
 /**
- * Covers task 4.4 of {@code openspec/changes/standardized-config-profiles}: {@code
- * app/src/dist/application.example.yaml} - the file that replaces the repo-root {@code app.json} -
+ * Covers task 4.4 of {@code openspec/changes/standardized-config-profiles}: the classpath {@code
+ * application.yaml} (see {@code app/src/main/resources/application.yaml}) - the file that both
+ * replaces the repo-root {@code app.json} and, per {@code openspec/changes/avaje-config-facade
+ * /design.md} decision 2, is now copied by the {@code applicationExampleYaml} Gradle task into the
+ * distribution as {@code application.example.yaml}, rather than that file being hand-maintained -
  * loads through the real {@code avaje-config} + SnakeYAML pipeline and binds every module's own
  * section to exactly that module's {@code DEFAULTS}, with no "unknown keys" warning from {@code
- * SectionBinder} - i.e. every key the example file sets is one the corresponding record actually
- * declares.
+ * SectionBinder} - i.e. every key the file sets is one the corresponding record actually declares.
+ *
+ * <p>Loaded as its own {@link Configuration} instance via
+ * {@link Configuration.Builder#load(String)}
+ * - which reads a classpath resource, never the static {@code io.avaje.config.Config} facade (see
+ * design.md, decision 5: unit tests never touch that facade).
  *
  * <p>The unknown-keys warning is logged by {@code net.onelitefeather.titan.common.config
  * .SectionBinder}, a package-private class in {@code common} this module cannot reference
@@ -46,21 +52,18 @@ import org.slf4j.LoggerFactory;
  */
 class ApplicationExampleYamlTest {
 
-    private static final String EXAMPLE_YAML = "src/dist/application.example.yaml";
+    private static final String CLASSPATH_APPLICATION_YAML = "application.yaml";
 
-    @DisplayName("application.example.yaml binds every module section to its own defaults, with no unknown-key warning")
+    @DisplayName("application.yaml binds every module section to its own defaults, with no unknown-key warning")
     @Test
     void exampleYamlBindsEveryModuleSectionToItsDefaults() {
-        Path exampleFile = Path.of(EXAMPLE_YAML);
-        Assertions.assertTrue(java.nio.file.Files.exists(exampleFile), "the example file must exist at " + exampleFile.toAbsolutePath());
-
         Logger sectionBinderLogger = (Logger) LoggerFactory.getLogger("net.onelitefeather.titan.common.config.SectionBinder");
         ListAppender<ILoggingEvent> appender = new ListAppender<>();
         appender.start();
         sectionBinderLogger.addAppender(appender);
 
         try {
-            Configuration configuration = Configuration.builder().load(exampleFile.toFile()).build();
+            Configuration configuration = Configuration.builder().load(CLASSPATH_APPLICATION_YAML).build();
             ConfigSections sections = new ConfigSections(configuration);
 
             Assertions.assertEquals(SpawnConfig.DEFAULTS, sections.section("spawn", SpawnConfig.class, SpawnConfig.DEFAULTS), "spawn must bind to exactly its own defaults");
