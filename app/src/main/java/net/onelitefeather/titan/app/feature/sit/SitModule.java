@@ -66,8 +66,8 @@ public final class SitModule implements LobbyModule {
 
     @Override
     public void enable(ModuleContext context) {
-        Vec offset = SitSettings.offset(new Vec(
-                ConfigValues.doubleValue(SitSettings.OFFSET_X_KEY), ConfigValues.doubleValue(SitSettings.OFFSET_Y_KEY), ConfigValues.doubleValue(SitSettings.OFFSET_Z_KEY)));
+        Vec offset = new Vec(
+                ConfigValues.doubleValue(SitSettings.OFFSET_X_KEY), ConfigValues.doubleValue(SitSettings.OFFSET_Y_KEY), ConfigValues.doubleValue(SitSettings.OFFSET_Z_KEY));
         List<Key> allowedBlocks = SitSettings.allowedBlocks(Config.list().of(SitSettings.ALLOWED_BLOCKS_KEY).stream().map(SitSettings::parseBlock).toList());
         Seats seats = new Seats(offset);
 
