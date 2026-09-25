@@ -85,6 +85,23 @@ class ReloadCommandTest {
         Assertions.assertEquals(TitanTranslations.CONFIG_RELOAD_UNCHANGED, component.key());
     }
 
+    @DisplayName("The console reply is rendered explicitly before being sent; a player's reply is not")
+    @Test
+    void consoleReplyIsRenderedExplicitlyButAPlayersIsNot() {
+        FakeSender console = new FakeSender(PermissionChecker.always(TriState.FALSE));
+        FakeSender player = new FakeSender(PermissionChecker.always(TriState.TRUE));
+        Component renderedForConsole = Component.text("rendered for the console");
+        ReloadCommand command = new ReloadCommand(
+                () -> CompletableFuture.completedFuture(new ReloadResult.Unchanged()), sender -> sender == player, component -> renderedForConsole);
+
+        executor(command).apply(console, null);
+        executor(command).apply(player, null);
+
+        Assertions.assertEquals(List.of(renderedForConsole), console.sent, "the console must receive the explicitly rendered component, never the raw translatable one");
+        Assertions.assertInstanceOf(
+                TranslatableComponent.class, player.sent.get(0), "a player must keep receiving the raw translatable component - Minestom renders it per receiver locale itself");
+    }
+
     @DisplayName("Executing it triggers exactly one reloader call per invocation")
     @Test
     void executingTriggersExactlyOneReloaderCallPerInvocation() {

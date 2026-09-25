@@ -21,6 +21,7 @@ import net.luckperms.api.model.user.User;
 import net.minestom.server.Auth;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.command.CommandManager;
+import net.onelitefeather.titan.app.bootstrap.ComponentTranslationBootstrap;
 import net.onelitefeather.titan.common.observability.TitanObservability;
 import net.onelitefeather.titan.common.permission.TitanPermissionBridge;
 import org.slf4j.Logger;
@@ -45,7 +46,13 @@ public class TitanApplication {
     private static final Path VELOCITY_SECRET_FILE = Path.of("forwarding.secret");
 
     public static void main(String[] args) {
-        // First statement: anything logged before this reaches the console but not Sentry.
+        // Very first statement: net.minestom.server.ServerFlag reads this system property once,
+        // in its own static initialiser - a Minestom class touched by anything below (starting
+        // with the ExtensionBootstrap#init() a few lines down) would be too late. See
+        // ComponentTranslationBootstrap's javadoc and design.md, decision 5.
+        ComponentTranslationBootstrap.enableComponentTranslation();
+
+        // Anything logged before this reaches the console but not Sentry.
         TitanObservability.bootstrap();
 
         // minestom-extensions loads platform extensions (the CloudNet bridge among
