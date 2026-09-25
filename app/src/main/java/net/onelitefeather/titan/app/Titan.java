@@ -102,7 +102,7 @@ public final class Titan {
      * they were registered): disabling every module, then Butterfly, then closing the
      * {@link BeanScope}.
      *
-     * @throws net.onelitefeather.titan.common.config.ConfigException       if a module's
+     * @throws IllegalArgumentException                                     if a module's
      *                                                                      configuration section
      *                                                                      contains an invalid
      *                                                                      value

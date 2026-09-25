@@ -15,56 +15,69 @@
  */
 package net.onelitefeather.titan.app.feature.tickle;
 
-import java.time.Duration;
-import net.onelitefeather.titan.common.config.ConfigException;
+import io.avaje.config.Configuration;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit tests for {@link TickleSettings#cooldown(long)}: the {@code cooldownMillis} validation
- * described in the {@code lobby-module-config} spec ("Negative Dauer" scenario). No {@code Config}
- * and no server involved.
+ * Unit tests for {@link TickleSettings#cooldownMillis(String)}: the {@code cooldownMillis}
+ * parsing and validation described in the {@code lobby-module-config} spec ("Negative Dauer" and
+ * "Ungültiger Override" scenarios). No {@code io.avaje.config.Config} static facade and no server
+ * involved - {@link #configGetAsWrapsAFailureNamingTheKey} and
+ * {@link #configGetAsKeepsTheNegativeDurationReasonAsTheCause} build their own, local
+ * {@link Configuration} instance instead, exactly as {@code Config.getAs} would wrap this class's
+ * own exceptions, without touching the static facade (F.I.R.S.T. - Independent/Repeatable).
  */
 class TickleSettingsTest {
 
     @DisplayName("A zero cooldown is valid")
     @Test
     void zeroCooldownIsValid() {
-        Assertions.assertEquals(Duration.ZERO, TickleSettings.cooldown(0));
+        Assertions.assertEquals(0L, TickleSettings.cooldownMillis("0"));
     }
 
     @DisplayName("A positive cooldown is valid")
     @Test
     void positiveCooldownIsValid() {
-        Assertions.assertEquals(Duration.ofMillis(1500), TickleSettings.cooldown(1500));
+        Assertions.assertEquals(1500L, TickleSettings.cooldownMillis("1500"));
     }
 
-    @DisplayName("A negative cooldown is rejected, naming the full key and reason")
+    @DisplayName("A negative cooldown is rejected")
     @Test
     void negativeCooldownIsRejected() {
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> TickleSettings.cooldown(-5));
+        IllegalArgumentException thrown = Assertions.assertThrows(IllegalArgumentException.class, () -> TickleSettings.cooldownMillis("-5"));
 
-        Assertions.assertEquals("tickle.cooldownMillis", thrown.field());
-        Assertions.assertEquals("must not be negative", thrown.reason());
+        Assertions.assertTrue(thrown.getMessage().contains("-5"), "the message must keep the offending value, was: " + thrown.getMessage());
     }
 
-    @DisplayName("The rejection message names the full key exactly once, not doubled (e.g. tickle.tickle.)")
+    @DisplayName("A non-numeric cooldown fails to parse")
     @Test
-    void rejectionMessageNamesTheFullKeyExactlyOnce() {
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> TickleSettings.cooldown(-5));
-
-        String message = thrown.getMessage();
-        Assertions.assertEquals(1, countOccurrences(message, TickleSettings.COOLDOWN_KEY), "key must appear exactly once in: " + message);
+    void nonNumericCooldownFailsToParse() {
+        Assertions.assertThrows(NumberFormatException.class, () -> TickleSettings.cooldownMillis("abc"));
     }
 
-    private static int countOccurrences(String haystack, String needle) {
-        int count = 0;
-        int index = 0;
-        while ((index = haystack.indexOf(needle, index)) != -1) {
-            count++;
-            index += needle.length();
-        }
-        return count;
+    @DisplayName("Config.getAs wraps a non-numeric value, naming the key and keeping the raw value in the cause")
+    @Test
+    void configGetAsWrapsAFailureNamingTheKey() {
+        Configuration configuration = Configuration.builder().put(TickleSettings.COOLDOWN_KEY, "abc").build();
+
+        IllegalStateException thrown = Assertions.assertThrows(IllegalStateException.class, () -> configuration.getAs(TickleSettings.COOLDOWN_KEY, TickleSettings::cooldownMillis));
+
+        Assertions.assertTrue(thrown.getMessage().contains(TickleSettings.COOLDOWN_KEY), "the message must name " + TickleSettings.COOLDOWN_KEY + ", was: " + thrown.getMessage());
+        Assertions.assertInstanceOf(NumberFormatException.class, thrown.getCause(), "the cause must be the original parse failure");
+        Assertions.assertTrue(thrown.getCause().getMessage().contains("abc"), "the cause must keep the offending raw value, was: " + thrown.getCause().getMessage());
+    }
+
+    @DisplayName("Config.getAs wraps a negative value, naming the key and keeping the reason as the cause")
+    @Test
+    void configGetAsKeepsTheNegativeDurationReasonAsTheCause() {
+        Configuration configuration = Configuration.builder().put(TickleSettings.COOLDOWN_KEY, "-5").build();
+
+        IllegalStateException thrown = Assertions.assertThrows(IllegalStateException.class, () -> configuration.getAs(TickleSettings.COOLDOWN_KEY, TickleSettings::cooldownMillis));
+
+        Assertions.assertTrue(thrown.getMessage().contains(TickleSettings.COOLDOWN_KEY), "the message must name " + TickleSettings.COOLDOWN_KEY + ", was: " + thrown.getMessage());
+        Assertions.assertInstanceOf(IllegalArgumentException.class, thrown.getCause(), "the cause must be this class's own validation failure");
+        Assertions.assertTrue(thrown.getCause().getMessage().contains("-5"), "the cause must keep the offending value, was: " + thrown.getCause().getMessage());
     }
 }

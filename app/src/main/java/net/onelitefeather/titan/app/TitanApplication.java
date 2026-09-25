@@ -70,7 +70,7 @@ public class TitanApplication {
             return user.getCachedData().getPermissionData().checkPermission(permission).asBoolean();
         });
 
-        // A module's configuration value rejecting itself (ConfigException) or two modules
+        // A module's configuration value rejecting itself (IllegalArgumentException) or two modules
         // conflicting over an item slot / navigator slot surfaces here as an unchecked exception
         // from ModuleRegistry#enableAll (see Titan#initialize) or from Titan's own constructor.
         // Startup must abort with a clear log line instead of leaving the process half-started or

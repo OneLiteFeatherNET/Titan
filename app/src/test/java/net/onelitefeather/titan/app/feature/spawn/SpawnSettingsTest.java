@@ -15,14 +15,13 @@
  */
 package net.onelitefeather.titan.app.feature.spawn;
 
-import net.onelitefeather.titan.common.config.ConfigException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * Plain unit tests for {@link SpawnSettings}: no {@code Config}, no server needed - just the pure
- * validation functions.
+ * parsing and validation functions.
  */
 class SpawnSettingsTest {
 
@@ -35,62 +34,42 @@ class SpawnSettingsTest {
     @DisplayName("minHeight equal to maxHeight is rejected, naming both full keys")
     @Test
     void minHeightEqualToMaxHeightIsRejected() {
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> SpawnSettings.minHeight(100, 100));
+        IllegalArgumentException thrown = Assertions.assertThrows(IllegalArgumentException.class, () -> SpawnSettings.minHeight(100, 100));
 
-        Assertions.assertEquals("spawn.minHeight", thrown.field());
-        Assertions.assertTrue(thrown.reason().contains("spawn.maxHeight"), "the reason must name spawn.maxHeight too");
+        Assertions.assertTrue(thrown.getMessage().contains(SpawnSettings.MIN_HEIGHT_KEY), "the message must name " + SpawnSettings.MIN_HEIGHT_KEY);
+        Assertions.assertTrue(thrown.getMessage().contains(SpawnSettings.MAX_HEIGHT_KEY), "the message must name " + SpawnSettings.MAX_HEIGHT_KEY);
     }
 
     @DisplayName("minHeight above maxHeight is rejected, naming both full keys")
     @Test
     void minHeightAboveMaxHeightIsRejected() {
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> SpawnSettings.minHeight(400, 300));
+        IllegalArgumentException thrown = Assertions.assertThrows(IllegalArgumentException.class, () -> SpawnSettings.minHeight(400, 300));
 
-        Assertions.assertEquals("spawn.minHeight", thrown.field());
-        Assertions.assertTrue(thrown.reason().contains("spawn.maxHeight"), "the reason must name spawn.maxHeight too");
+        Assertions.assertTrue(thrown.getMessage().contains(SpawnSettings.MIN_HEIGHT_KEY), "the message must name " + SpawnSettings.MIN_HEIGHT_KEY);
+        Assertions.assertTrue(thrown.getMessage().contains(SpawnSettings.MAX_HEIGHT_KEY), "the message must name " + SpawnSettings.MAX_HEIGHT_KEY);
     }
 
     @DisplayName("A valid simulationDistance is returned unchanged")
     @Test
     void aValidSimulationDistanceIsReturnedUnchanged() {
-        Assertions.assertEquals(2, SpawnSettings.simulationDistance(2));
+        Assertions.assertEquals(2, SpawnSettings.simulationDistance("2"));
     }
 
-    @DisplayName("A zero simulationDistance is rejected, naming the full key")
+    @DisplayName("A zero simulationDistance is rejected")
     @Test
     void zeroSimulationDistanceIsRejected() {
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> SpawnSettings.simulationDistance(0));
-
-        Assertions.assertEquals("spawn.simulationDistance", thrown.field());
+        Assertions.assertThrows(IllegalArgumentException.class, () -> SpawnSettings.simulationDistance("0"));
     }
 
-    @DisplayName("A negative simulationDistance is rejected, naming the full key")
+    @DisplayName("A negative simulationDistance is rejected")
     @Test
     void negativeSimulationDistanceIsRejected() {
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> SpawnSettings.simulationDistance(-1));
-
-        Assertions.assertEquals("spawn.simulationDistance", thrown.field());
+        Assertions.assertThrows(IllegalArgumentException.class, () -> SpawnSettings.simulationDistance("-1"));
     }
 
-    @DisplayName("A minHeight rejection message names spawn.minHeight exactly once")
+    @DisplayName("A non-numeric simulationDistance fails to parse")
     @Test
-    void minHeightRejectionMessageNamesTheFullKeyExactlyOnce() {
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> SpawnSettings.minHeight(400, 300));
-        String message = thrown.getMessage();
-        int firstIndex = message.indexOf("spawn.minHeight");
-
-        Assertions.assertTrue(firstIndex >= 0, "the message must name spawn.minHeight");
-        Assertions.assertEquals(-1, message.indexOf("spawn.minHeight", firstIndex + 1), "spawn.minHeight must appear exactly once, was: " + message);
-    }
-
-    @DisplayName("A simulationDistance rejection message names spawn.simulationDistance exactly once")
-    @Test
-    void simulationDistanceRejectionMessageNamesTheFullKeyExactlyOnce() {
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> SpawnSettings.simulationDistance(0));
-        String message = thrown.getMessage();
-        int firstIndex = message.indexOf("spawn.simulationDistance");
-
-        Assertions.assertTrue(firstIndex >= 0, "the message must name spawn.simulationDistance");
-        Assertions.assertEquals(-1, message.indexOf("spawn.simulationDistance", firstIndex + 1), "spawn.simulationDistance must appear exactly once, was: " + message);
+    void nonNumericSimulationDistanceFailsToParse() {
+        Assertions.assertThrows(NumberFormatException.class, () -> SpawnSettings.simulationDistance("abc"));
     }
 }

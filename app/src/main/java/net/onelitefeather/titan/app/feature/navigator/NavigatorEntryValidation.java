@@ -17,7 +17,6 @@ package net.onelitefeather.titan.app.feature.navigator;
 
 import java.util.Objects;
 import net.minestom.server.item.Material;
-import net.onelitefeather.titan.common.config.ConfigException;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -73,12 +72,12 @@ final class NavigatorEntryValidation {
      * @param feature     the name of the feature flag this entry is gated behind, or {@code null}
      *                    if it is always visible
      * @return the validated entry
-     * @throws ConfigException      if {@code slot} is outside {@code 0}-{@code 8}, {@code icon}
-     *                              does not name a known material, or {@code destination} is
-     *                              blank; the exception's field is the full key,
-     *                              {@code navigator.entries.<name>.<field>}
-     * @throws NullPointerException if {@code name}, {@code icon}, {@code displayName} or
-     *                              {@code destination} is {@code null}
+     * @throws IllegalArgumentException if {@code slot} is outside {@code 0}-{@code 8}, {@code icon}
+     *                                  does not name a known material, or {@code destination} is
+     *                                  blank; the message names the full key,
+     *                                  {@code navigator.entries.<name>.<field>}
+     * @throws NullPointerException     if {@code name}, {@code icon}, {@code displayName} or
+     *                                  {@code destination} is {@code null}
      */
     static ConfiguredNavigatorEntry buildEntry(String name, int slot, String icon, String displayName, String destination, @Nullable String feature) {
         Objects.requireNonNull(name, "name must not be null");
@@ -94,12 +93,12 @@ final class NavigatorEntryValidation {
      * @param key  the full configuration key {@code slot} was read from, named in the exception on
      *             failure
      * @param slot the slot to check
-     * @throws ConfigException if {@code slot} is outside {@code 0}-{@code 8}, matching
-     *                         {@link net.minestom.server.inventory.InventoryType#CHEST_1_ROW}
+     * @throws IllegalArgumentException if {@code slot} is outside {@code 0}-{@code 8}, matching
+     *                                  {@link net.minestom.server.inventory.InventoryType#CHEST_1_ROW}
      */
     static void requireValidSlot(String key, int slot) {
         if (slot < 0 || slot > 8) {
-            throw ConfigException.invalid(key, "slot must be between 0 and 8 (CHEST_1_ROW), was " + slot);
+            throw new IllegalArgumentException(key + ": slot must be between 0 and 8 (CHEST_1_ROW), was " + slot);
         }
     }
 
@@ -107,14 +106,14 @@ final class NavigatorEntryValidation {
      * @param key  the full configuration key {@code icon} was read from, named in the exception on
      *             failure
      * @param icon the icon's material, as a namespaced key
-     * @throws ConfigException      if {@code icon} does not name a material known to
-     *                              {@link Material#fromKey(String)}
-     * @throws NullPointerException if {@code icon} is {@code null}
+     * @throws IllegalArgumentException if {@code icon} does not name a material known to
+     *                                  {@link Material#fromKey(String)}
+     * @throws NullPointerException     if {@code icon} is {@code null}
      */
     static void requireKnownMaterial(String key, String icon) {
         Objects.requireNonNull(icon, "icon must not be null");
         if (Material.fromKey(icon) == null) {
-            throw ConfigException.invalid(key, "icon '" + icon + "' is not a known material");
+            throw new IllegalArgumentException(key + ": icon '" + icon + "' is not a known material");
         }
     }
 
@@ -122,13 +121,13 @@ final class NavigatorEntryValidation {
      * @param key         the full configuration key {@code destination} was read from, named in
      *                    the exception on failure
      * @param destination the destination to check
-     * @throws ConfigException      if {@code destination} is blank
-     * @throws NullPointerException if {@code destination} is {@code null}
+     * @throws IllegalArgumentException if {@code destination} is blank
+     * @throws NullPointerException     if {@code destination} is {@code null}
      */
     static void requireNonBlankDestination(String key, String destination) {
         Objects.requireNonNull(destination, "destination must not be null");
         if (destination.isBlank()) {
-            throw ConfigException.invalid(key, "destination must not be blank");
+            throw new IllegalArgumentException(key + ": destination must not be blank");
         }
     }
 }

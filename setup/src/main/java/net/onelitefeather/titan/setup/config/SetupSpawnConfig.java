@@ -16,38 +16,31 @@
 package net.onelitefeather.titan.setup.config;
 
 import io.avaje.config.Config;
-import net.onelitefeather.titan.common.config.ConfigException;
 
 /**
  * The setup server's only configuration value: the simulation distance sent to a spawning player
  * via {@link net.onelitefeather.titan.setup.listener.PlayerSpawnListener}.
  * <p>
- * {@link #read()} reads {@code spawn.simulationDistance} at the edge, directly from the static
- * {@code io.avaje.config.Config} facade via {@code Config.getAs(key, Integer::parseInt)}
- * (design.md, decisions 3 and 4). There is no default in code;
- * {@code setup/src/main/resources/application.yaml}
- * ships {@code spawn.simulationDistance: 2} as the shipped default, the same way the lobby's own
+ * {@link #read()} reads and validates {@code spawn.simulationDistance} at the edge, directly from
+ * the static {@code io.avaje.config.Config} facade via
+ * {@code Config.getAs(key, SetupSpawnSettings::simulationDistance)} (design.md, decisions 3 and 4).
+ * There is no default in code; {@code setup/src/main/resources/application.yaml} ships
+ * {@code spawn.simulationDistance: 2} as the shipped default, the same way the lobby's own
  * {@code spawn} section ships its defaults.
  *
- * @param simulationDistance the simulation distance sent to a spawning player
+ * @param simulationDistance the already-validated simulation distance sent to a spawning player
  */
 public record SetupSpawnConfig(int simulationDistance) {
 
     private static final String KEY = "spawn.simulationDistance";
 
     /**
-     * @throws ConfigException if {@code simulationDistance} is not positive; see
-     *                         {@link SetupSpawnSettings#simulationDistance(int)}
-     */
-    public SetupSpawnConfig {
-        simulationDistance = SetupSpawnSettings.simulationDistance(simulationDistance);
-    }
-
-    /**
-     * @return {@value #KEY}, read from the {@code io.avaje.config.Config} facade
-     * @throws ConfigException if the key is missing, not a whole number, or not positive
+     * @return {@value #KEY}, read and validated from the {@code io.avaje.config.Config} facade
+     * @throws IllegalStateException if the key is missing, not a whole number, or not positive -
+     *                               {@code Config.getAs} names the key once and keeps the reason
+     *                               as the cause
      */
     public static SetupSpawnConfig read() {
-        return new SetupSpawnConfig(Config.getAs(KEY, Integer::parseInt));
+        return new SetupSpawnConfig(Config.getAs(KEY, SetupSpawnSettings::simulationDistance));
     }
 }

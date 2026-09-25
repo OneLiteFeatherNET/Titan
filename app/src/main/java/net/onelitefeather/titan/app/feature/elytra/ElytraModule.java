@@ -69,7 +69,7 @@ public final class ElytraModule implements LobbyModule {
 
     @Override
     public void enable(ModuleContext context) {
-        int burnDurationTicks = ElytraSettings.burnDurationTicks(Config.getAs(ElytraSettings.BURN_DURATION_TICKS_KEY, Integer::parseInt));
+        int burnDurationTicks = Config.getAs(ElytraSettings.BURN_DURATION_TICKS_KEY, ElytraSettings::burnDurationTicks);
         int cooldownTicks = ElytraSettings.cooldownTicks(Config.getAs(ElytraSettings.COOLDOWN_TICKS_KEY, Integer::parseInt), burnDurationTicks);
         FireworkBoostTracker boosts = new FireworkBoostTracker();
 

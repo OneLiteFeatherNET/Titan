@@ -15,39 +15,41 @@
  */
 package net.onelitefeather.titan.app.feature.tickle;
 
-import java.time.Duration;
-import net.onelitefeather.titan.common.config.ConfigException;
-
 /**
- * Pure validation for the {@code tickle} module's configuration values (see
- * {@code openspec/changes/avaje-config-facade/design.md}, decision 3).
+ * Pure parsing and validation for the {@code tickle} module's configuration value (see
+ * {@code openspec/changes/avaje-config-facade/design.md}, decisions 3 and 4).
  *
- * <p>Takes plain values and either returns a validated result or throws
- * {@link ConfigException#invalid(String, String)} naming the full configuration key - it never
- * touches {@code io.avaje.config.Config} or a server, so it is unit-testable on its own.
- * {@link TickleModule#enable} calls this before constructing anything that needs a validated
- * cooldown, so the rule lives in exactly one place.
+ * <p>{@link #cooldownMillis(String)} is used directly as the mapping function of
+ * {@code Config.getAs(COOLDOWN_KEY, TickleSettings::cooldownMillis)} in
+ * {@link TickleModule#enable}:
+ * it never touches {@code io.avaje.config.Config} itself, so it is unit-testable on its own, and
+ * {@code getAs} wraps any exception it throws into an {@code IllegalStateException} that names
+ * {@link #COOLDOWN_KEY} once and keeps this method's own exception as the cause (key in the
+ * message, reason in the cause chain - verified against avaje-config 5.2's
+ * {@code CoreConfiguration#getAs}).
  */
 final class TickleSettings {
 
-    /** The full key for {@link #cooldown(long)}'s {@code millis} parameter. */
+    /** The full key {@link #cooldownMillis(String)} reads and validates. */
     static final String COOLDOWN_KEY = "tickle.cooldownMillis";
 
     private TickleSettings() {
     }
 
     /**
-     * Validates the tickle cooldown.
+     * Parses and validates the tickle cooldown.
      *
-     * @param millis how long, in milliseconds, an attacking player must wait before they can
-     *               tickle again; must not be negative
-     * @return {@code millis} as a {@link Duration}
-     * @throws ConfigException naming {@link #COOLDOWN_KEY} if {@code millis} is negative
+     * @param raw the configured cooldown in milliseconds, as text; must parse as a whole number
+     *            that is not negative
+     * @return {@code raw}, parsed
+     * @throws NumberFormatException    if {@code raw} does not parse as a {@code long}
+     * @throws IllegalArgumentException if the parsed value is negative
      */
-    static Duration cooldown(long millis) {
+    static long cooldownMillis(String raw) {
+        long millis = Long.parseLong(raw);
         if (millis < 0) {
-            throw ConfigException.invalid(COOLDOWN_KEY, "must not be negative");
+            throw new IllegalArgumentException("must not be negative, was " + millis);
         }
-        return Duration.ofMillis(millis);
+        return millis;
     }
 }

@@ -77,7 +77,7 @@ public final class SpawnModule implements LobbyModule {
     public void enable(ModuleContext context) {
         int maxHeight = Config.getAs(SpawnSettings.MAX_HEIGHT_KEY, Integer::parseInt);
         int minHeight = SpawnSettings.minHeight(Config.getAs(SpawnSettings.MIN_HEIGHT_KEY, Integer::parseInt), maxHeight);
-        int simulationDistance = SpawnSettings.simulationDistance(Config.getAs(SpawnSettings.SIMULATION_DISTANCE_KEY, Integer::parseInt));
+        int simulationDistance = Config.getAs(SpawnSettings.SIMULATION_DISTANCE_KEY, SpawnSettings::simulationDistance);
 
         HeightBounds heightBounds = new HeightBounds(minHeight, maxHeight);
         context.listen(AsyncPlayerConfigurationEvent.class, new SpawnConfigurationListener(this.instance, this.spawnPosition::position));

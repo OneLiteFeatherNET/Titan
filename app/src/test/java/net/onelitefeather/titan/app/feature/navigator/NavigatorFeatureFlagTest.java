@@ -31,7 +31,6 @@ import net.onelitefeather.titan.app.module.LobbyModule;
 import net.onelitefeather.titan.app.module.ModuleContext;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntry;
 import net.onelitefeather.titan.app.module.testing.ModuleHarness;
-import net.onelitefeather.titan.common.config.ConfigException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -138,10 +137,9 @@ class NavigatorFeatureFlagTest {
         // FeatureFlags wired into the harness/registry itself, for
         // ModuleRegistry#enableAll()'s NavigatorEntries#validate(FeatureFlags) check - exactly like
         // Titan wires the real TogglzFeatureFlags in.
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> ModuleHarness.start(env, flags, (navigator, items) -> new LobbyModule[]{navigatorEntrySource}));
+        IllegalArgumentException thrown = Assertions.assertThrows(IllegalArgumentException.class, () -> ModuleHarness.start(env, flags, (navigator, items) -> new LobbyModule[]{navigatorEntrySource}));
 
-        Assertions.assertEquals("navigator", thrown.section(), "a config-sourced entry's origin module is 'navigator'");
-        Assertions.assertEquals("entries", thrown.field());
-        Assertions.assertTrue(thrown.reason().contains("GIBT_ES_NICHT"), "the message must name the unknown flag");
+        Assertions.assertTrue(thrown.getMessage().contains("navigator.entries"), "a config-sourced entry's origin module is 'navigator', message was: " + thrown.getMessage());
+        Assertions.assertTrue(thrown.getMessage().contains("GIBT_ES_NICHT"), "the message must name the unknown flag");
     }
 }

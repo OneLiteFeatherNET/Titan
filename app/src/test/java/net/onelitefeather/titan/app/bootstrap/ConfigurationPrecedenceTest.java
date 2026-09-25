@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -163,27 +162,6 @@ class ConfigurationPrecedenceTest {
         Assertions.assertTrue(joined.contains("line 3"), "the failure must name the broken line, output was:\n" + joined);
     }
 
-    @DisplayName("An invalid environment override for tickle.cooldownMillis aborts the child, naming the key exactly once and keeping the reason")
-    @Test
-    void invalidTickleCooldownEnvironmentOverrideAbortsNamingKeyOnce(@TempDir Path workingDir) throws IOException, InterruptedException {
-        List<String> output = runTickleValidationExpectingFailure(workingDir, Map.of("TICKLE_COOLDOWNMILLIS", "abc"));
-
-        String joined = String.join("\n", output);
-        Assertions.assertEquals(1, countOccurrences(joined, "tickle.cooldownMillis"), "the key must be named exactly once, output was:\n" + joined);
-        Assertions.assertTrue(joined.contains("abc"), "the reason (the invalid raw value) must still reach the output via the printed cause chain, output was:\n" + joined);
-    }
-
-    @DisplayName("A negative tickle.cooldownMillis in application.yaml aborts the child, naming the key")
-    @Test
-    void negativeTickleCooldownInFileAbortsNamingKey(@TempDir Path workingDir) throws IOException, InterruptedException {
-        Files.writeString(workingDir.resolve("application.yaml"), "tickle:\n  cooldownMillis: -5\n");
-
-        List<String> output = runTickleValidationExpectingFailure(workingDir, Map.of());
-
-        String joined = String.join("\n", output);
-        Assertions.assertTrue(joined.contains("tickle.cooldownMillis"), "the failure must name tickle.cooldownMillis, output was:\n" + joined);
-    }
-
     @DisplayName("A profile changes only one value of the sit section; the others keep their shipped defaults")
     @Test
     void profileChangesOnlyOneValueOfASection(@TempDir Path workingDir) throws IOException, InterruptedException {
@@ -220,11 +198,14 @@ class ConfigurationPrecedenceTest {
                       destination: Parkour
                 """);
 
-        Set<String> names = resolvedNavigatorEntryNames(workingDir, Map.of());
+        // Plain print mode alone proves the merge: the added entry's own key resolves, and a
+        // shipped default entry's key still resolves alongside it. Grouping these flat keys into
+        // entry names is NavigatorEntryKeys's job, covered without a child JVM by
+        // NavigatorEntryKeysTest.
+        Map<String, String> resolved = run(workingDir, Map.of(), List.of(), List.of("navigator.entries.parkour.slot", "navigator.entries.survival.slot"));
 
-        Assertions.assertTrue(names.contains("parkour"), "the added entry must be resolved, names were: " + names);
-        Assertions.assertTrue(names.containsAll(Set.of("elytrarace", "survival", "slender", "creative")), "the four shipped default entries must still be resolved, names were: " + names);
-        Assertions.assertEquals(5, names.size(), "exactly the four shipped defaults plus the added entry, names were: " + names);
+        Assertions.assertEquals("2", resolved.get("navigator.entries.parkour.slot"), "the added entry's own key must resolve");
+        Assertions.assertEquals("4", resolved.get("navigator.entries.survival.slot"), "a shipped default entry's key must still resolve alongside the added one");
     }
 
     @DisplayName("With AVAJE_PROFILES=dev, the startup log names dev as the active configuration profile")
@@ -237,43 +218,6 @@ class ConfigurationPrecedenceTest {
         String joined = String.join("\n", result.lines());
         Assertions.assertTrue(joined.contains("Active configuration profiles"), "the child must log the active-profiles line, output was:\n" + joined);
         Assertions.assertTrue(joined.contains("dev"), "the logged line must name the active profile 'dev', output was:\n" + joined);
-    }
-
-    /**
-     * Like {@link #runExpectingFailure}, but for {@code --validate-tickle}: asserts the child
-     * aborted (non-zero exit, no hang) and returns every line it printed, for the caller to inspect
-     * for the offending key.
-     */
-    private static List<String> runTickleValidationExpectingFailure(Path workingDir, Map<String, String> env) throws IOException, InterruptedException {
-        ChildResult result = startAndWait(workingDir, env, List.of(), List.of("--validate-tickle"));
-        Assertions.assertTrue(result.finished(), "the child process must finish within " + TIMEOUT + " instead of hanging");
-        Assertions.assertNotEquals(0, result.exitCode(), "an invalid tickle.cooldownMillis must abort the child with a non-zero exit code; output was:\n" + String.join("\n", result.lines()));
-        return result.lines();
-    }
-
-    /**
-     * Runs {@code --navigator-entries}, asserts a clean exit and parses the single
-     * {@code navigator.entries=<name>,<name>,...} line the child printed into a set of names.
-     */
-    private static Set<String> resolvedNavigatorEntryNames(Path workingDir, Map<String, String> env) throws IOException, InterruptedException {
-        ChildResult result = startAndWait(workingDir, env, List.of(), List.of("--navigator-entries"));
-        Assertions.assertTrue(result.finished(), "the child process must finish within " + TIMEOUT);
-        Assertions.assertEquals(0, result.exitCode(), "the child process must exit cleanly; output was:\n" + String.join("\n", result.lines()));
-
-        String prefix = "navigator.entries=";
-        String line = result.lines().stream().filter(candidate -> candidate.startsWith(prefix)).findFirst().orElseThrow(() -> new AssertionError("no \"" + prefix + "\" line in output:\n" + String.join("\n", result.lines())));
-        String value = line.substring(prefix.length());
-        return value.isEmpty() ? Set.of() : Set.of(value.split(","));
-    }
-
-    private static int countOccurrences(String haystack, String needle) {
-        int count = 0;
-        int index = 0;
-        while ((index = haystack.indexOf(needle, index)) != -1) {
-            count++;
-            index += needle.length();
-        }
-        return count;
     }
 
     /**

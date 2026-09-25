@@ -20,7 +20,6 @@ import io.avaje.inject.Priority;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.time.Clock;
-import java.time.Duration;
 import java.util.Objects;
 import net.minestom.server.event.entity.EntityAttackEvent;
 import net.onelitefeather.titan.app.module.LobbyModule;
@@ -60,30 +59,7 @@ public final class TickleModule implements LobbyModule {
 
     @Override
     public void enable(ModuleContext context) {
-        Duration cooldown = readCooldown();
-        context.listen(EntityAttackEvent.class, new TickleAttackHandler(this.clock, cooldown.toMillis()));
-    }
-
-    /**
-     * Reads and validates {@code tickle.cooldownMillis} through
-     * {@code Config.getAs(key, Long::parseLong)} and {@link TickleSettings#cooldown(long)} - the
-     * exact line {@link #enable} runs.
-     *
-     * <p>Package-private, rather than inlined into {@link #enable}, purely so
-     * {@code net.onelitefeather.titan.app.feature.tickle.TickleValidation} (a test helper in the
-     * same package) can reuse it instead of repeating this read-and-validate line - see
-     * {@code openspec/changes/avaje-config-facade/design.md}, decision 3.
-     *
-     * @return the validated tickle cooldown
-     * @throws IllegalStateException                                  if the configured value is
-     *                                                                missing or not a whole number
-     *                                                                ({@code Config.getAs} names
-     *                                                                the key and keeps the parse
-     *                                                                failure as the cause)
-     * @throws net.onelitefeather.titan.common.config.ConfigException if the configured value is
-     *                                                                negative
-     */
-    static Duration readCooldown() {
-        return TickleSettings.cooldown(Config.getAs(TickleSettings.COOLDOWN_KEY, Long::parseLong));
+        long cooldownMillis = Config.getAs(TickleSettings.COOLDOWN_KEY, TickleSettings::cooldownMillis);
+        context.listen(EntityAttackEvent.class, new TickleAttackHandler(this.clock, cooldownMillis));
     }
 }

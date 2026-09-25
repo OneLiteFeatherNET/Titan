@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
-import net.onelitefeather.titan.common.config.ConfigException;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
 
 /**
@@ -138,22 +137,20 @@ public final class NavigatorEntries {
      *
      * @param featureFlags the source of truth for which feature names exist
      * @throws NavigatorConflictException if two entries share a slot; see {@link #validate()}
-     * @throws ConfigException            if any entry names a feature {@code featureFlags} does not
-     *                                    recognize; the exception's section is the id of the module
-     *                                    that contributed the offending entry (so a config-sourced
-     *                                    entry, always contributed by the {@code navigator} module
-     *                                    itself, produces the same {@code navigator.entries}
-     *                                    message
-     *                                    an operator would expect), its field is {@code entries},
-     *                                    and
-     *                                    its reason names both the entry and the unknown flag
+     * @throws IllegalArgumentException   if any entry names a feature {@code featureFlags} does not
+     *                                    recognize; the message names {@code <moduleId>.entries} -
+     *                                    the id of the module that contributed the offending entry,
+     *                                    so a config-sourced entry, always contributed by the
+     *                                    {@code navigator} module itself, produces the same
+     *                                    {@code navigator.entries} message an operator would expect
+     *                                    - together with the entry and the unknown flag
      */
     public synchronized void validate(FeatureFlags featureFlags) {
         validate();
         for (Origin origin : this.origins) {
             String feature = origin.entry().feature();
             if (feature != null && !featureFlags.exists(feature)) {
-                throw ConfigException.invalid("entries", "entry '" + origin.entry().destination() + "' uses unknown feature flag '" + feature + "'").withSection(origin.moduleId());
+                throw new IllegalArgumentException(origin.moduleId() + ".entries: entry '" + origin.entry().destination() + "' uses unknown feature flag '" + feature + "'");
             }
         }
     }

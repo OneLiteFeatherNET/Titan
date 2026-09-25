@@ -15,7 +15,6 @@
  */
 package net.onelitefeather.titan.app.feature.example;
 
-import net.onelitefeather.titan.common.config.ConfigException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -30,7 +29,7 @@ class ExampleGreetingSettingsTest {
     @Test
     void moduleDefaultsAreValid() {
         Assertions.assertDoesNotThrow(() -> ExampleGreetingSettings.greeting(ExampleModule.DEFAULT_GREETING));
-        Assertions.assertDoesNotThrow(() -> ExampleGreetingSettings.cooldownMillis(ExampleModule.DEFAULT_COOLDOWN_MILLIS));
+        Assertions.assertDoesNotThrow(() -> ExampleGreetingSettings.cooldownMillis(String.valueOf(ExampleModule.DEFAULT_COOLDOWN_MILLIS)));
     }
 
     @DisplayName("A valid greeting passes through unchanged")
@@ -39,36 +38,39 @@ class ExampleGreetingSettingsTest {
         Assertions.assertEquals("Hi %s!", ExampleGreetingSettings.greeting("Hi %s!"));
     }
 
-    @DisplayName("A blank greeting is rejected, naming the full key")
+    @DisplayName("A blank greeting is rejected")
     @Test
     void blankGreetingIsRejected() {
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> ExampleGreetingSettings.greeting("   "));
+        IllegalArgumentException thrown = Assertions.assertThrows(IllegalArgumentException.class, () -> ExampleGreetingSettings.greeting("   "));
 
-        Assertions.assertEquals(ExampleGreetingSettings.GREETING_KEY, thrown.field());
-        Assertions.assertEquals("must not be blank", thrown.reason());
+        Assertions.assertEquals("must not be blank", thrown.getMessage());
     }
 
-    @DisplayName("A greeting without a %s placeholder is rejected, naming the full key")
+    @DisplayName("A greeting without a %s placeholder is rejected")
     @Test
     void greetingWithoutPlaceholderIsRejected() {
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> ExampleGreetingSettings.greeting("Welcome to the lobby!"));
+        IllegalArgumentException thrown = Assertions.assertThrows(IllegalArgumentException.class, () -> ExampleGreetingSettings.greeting("Welcome to the lobby!"));
 
-        Assertions.assertEquals(ExampleGreetingSettings.GREETING_KEY, thrown.field());
-        Assertions.assertEquals("must contain a '%s' placeholder for the player's name", thrown.reason());
+        Assertions.assertEquals("must contain a '%s' placeholder for the player's name", thrown.getMessage());
     }
 
     @DisplayName("A non-negative cooldown passes through unchanged")
     @Test
     void aNonNegativeCooldownPassesThroughUnchanged() {
-        Assertions.assertEquals(0L, ExampleGreetingSettings.cooldownMillis(0L));
+        Assertions.assertEquals(0L, ExampleGreetingSettings.cooldownMillis("0"));
     }
 
-    @DisplayName("A negative cooldown is rejected, naming the full key and reason")
+    @DisplayName("A negative cooldown is rejected")
     @Test
     void negativeCooldownIsRejected() {
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> ExampleGreetingSettings.cooldownMillis(-1));
+        IllegalArgumentException thrown = Assertions.assertThrows(IllegalArgumentException.class, () -> ExampleGreetingSettings.cooldownMillis("-1"));
 
-        Assertions.assertEquals(ExampleGreetingSettings.COOLDOWN_KEY, thrown.field());
-        Assertions.assertEquals("must not be negative", thrown.reason());
+        Assertions.assertTrue(thrown.getMessage().contains("-1"), "the message must keep the offending value, was: " + thrown.getMessage());
+    }
+
+    @DisplayName("A non-numeric cooldown fails to parse")
+    @Test
+    void nonNumericCooldownFailsToParse() {
+        Assertions.assertThrows(NumberFormatException.class, () -> ExampleGreetingSettings.cooldownMillis("abc"));
     }
 }
