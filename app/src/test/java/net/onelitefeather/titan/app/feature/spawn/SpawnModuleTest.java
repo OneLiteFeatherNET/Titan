@@ -34,6 +34,7 @@ import net.onelitefeather.titan.app.module.ModuleContext;
 import net.onelitefeather.titan.app.module.item.ItemSlot;
 import net.onelitefeather.titan.app.module.item.LobbyItem;
 import net.onelitefeather.titan.app.module.testing.ModuleHarness;
+import net.onelitefeather.titan.common.config.ConfigValues;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -50,10 +51,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(MicrotusExtension.class)
 class SpawnModuleTest {
 
-    /** The shipped {@code spawn} defaults, per {@code app/src/main/resources/application.yaml}. */
-    private static final int MIN_HEIGHT = -64;
-    private static final int MAX_HEIGHT = 310;
-    private static final int SIMULATION_DISTANCE = 2;
+    /**
+     * The shipped {@code spawn} defaults, read from the facade rather than hardcoded, so a changed
+     * shipped default (see {@code application.yaml}) cannot silently desync this test from
+     * production - read-only, never mutated (F.I.R.S.T. - Independent).
+     */
+    private static final int MIN_HEIGHT = ConfigValues.intValue(SpawnSettings.MIN_HEIGHT_KEY);
+    private static final int MAX_HEIGHT = ConfigValues.intValue(SpawnSettings.MAX_HEIGHT_KEY);
+    private static final int SIMULATION_DISTANCE = ConfigValues.intValue(SpawnSettings.SIMULATION_DISTANCE_KEY);
 
     /** Registers one hotbar item so {@code items().equip(player)} has something to observe. */
     private static final class DummyItemModule implements LobbyModule {

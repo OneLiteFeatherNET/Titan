@@ -31,6 +31,7 @@ import net.minestom.testing.Env;
 import net.minestom.testing.TestConnection;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.app.module.testing.ModuleHarness;
+import net.onelitefeather.titan.common.config.ConfigValues;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
@@ -51,8 +52,12 @@ class TickleModuleTest {
 
     private static final Instant NOW = Instant.parse("2026-01-01T00:00:00Z");
 
-    /** The shipped default for {@code tickle.cooldownMillis} (see {@code application.yaml}). */
-    private static final long DEFAULT_COOLDOWN_MILLIS = 4000L;
+    /**
+     * The shipped default for {@code tickle.cooldownMillis}, read from the facade rather than
+     * hardcoded, so a changed shipped default (see {@code application.yaml}) cannot silently
+     * desync this test from production - read-only, never mutated (F.I.R.S.T. - Independent).
+     */
+    private static final long DEFAULT_COOLDOWN_MILLIS = ConfigValues.longValue(TickleSettings.COOLDOWN_KEY);
 
     private static TickleModule fixedClockModule() {
         return new TickleModule(Clock.fixed(NOW, ZoneOffset.UTC));
