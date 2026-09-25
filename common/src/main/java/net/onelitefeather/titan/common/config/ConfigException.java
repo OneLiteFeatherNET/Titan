@@ -18,19 +18,20 @@ package net.onelitefeather.titan.common.config;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Signals a problem with a {@code SectionBinder}-bound configuration section: either a
- * syntactically broken file, or a value that failed the validation performed by a config
- * record's compact constructor.
+ * Signals a problem with configuration read through the {@code io.avaje.config.Config} facade:
+ * either a syntactically broken file ({@link #malformed(String, String)}), or a value that failed
+ * a module's own validation ({@link #invalid(String, String)}).
  * <p>
- * Config records only know their own field and the reason a value is rejected; they do not
- * know which section of the document they were loaded from. A record's compact constructor is
- * therefore expected to throw the result of {@link #invalid(String, String)}, which carries the
- * field and reason only. {@link SectionBinder} catches that exception (Gson wraps constructor
- * failures, so the binder unwraps the cause chain first) and completes it with the section id and
- * file name via {@link #withSection(String)} and {@link #withFile(String)} before rethrowing it.
+ * A module's validation function knows only the full, dotted key it read (e.g.
+ * {@code tickle.cooldownMillis}) and the reason a value is rejected - it is thrown as the result
+ * of {@link #invalid(String, String)}, with that key passed as {@code field} and no section, since
+ * the key already names the module (see
+ * {@code openspec/changes/avaje-config-facade/design.md}, decision 3). A caller with a section id
+ * of its own to attach - {@code NavigatorEntries}, naming which module contributed a navigator
+ * entry - completes it via {@link #withSection(String)} before rethrowing it.
  * <p>
  * The resulting message has the shape {@code <file>: <section>.<field> - <reason>}, for example
- * {@code app.json: tickle.cooldownMillis - must not be negative}.
+ * {@code application.yaml: navigator.entries - entry 'x' uses unknown feature flag 'y'}.
  */
 public final class ConfigException extends RuntimeException {
 
@@ -48,11 +49,12 @@ public final class ConfigException extends RuntimeException {
     }
 
     /**
-     * Creates an exception for a value that a config record's compact constructor rejected.
-     * The section is not known at this point; {@link SectionBinder} fills it in via
-     * {@link #withSection(String)} once it knows which section produced the failing record.
+     * Creates an exception for a value a module's own validation function rejected. {@code field}
+     * is usually the full, dotted configuration key (e.g. {@code tickle.cooldownMillis}), which
+     * already names the module, so no section is attached here. A caller with a section id of its
+     * own to attach can still complete it via {@link #withSection(String)}.
      *
-     * @param field  the name of the offending record component
+     * @param field  the name (or full key) of the offending value
      * @param reason a human-readable explanation, e.g. {@code "must not be negative"}
      * @return a new {@link ConfigException} without a section or file
      */

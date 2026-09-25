@@ -22,8 +22,8 @@ import org.slf4j.helpers.MessageFormatter;
 
 /**
  * A minimal {@link org.slf4j.Logger} that records every formatted log line so tests can assert on
- * it, e.g. {@link net.onelitefeather.titan.common.config.LegacyConfigMigration}'s warning about
- * dropped legacy keys. See {@link CapturingSLF4JServiceProvider} for how this is wired up.
+ * it, e.g. {@link net.onelitefeather.titan.common.deliver.DebugDeliverTest}'s operator log line.
+ * See {@link CapturingSLF4JServiceProvider} for how this is wired up.
  */
 final class CapturingLogger extends LegacyAbstractLogger {
 
