@@ -105,6 +105,12 @@ public final class AppJsonMigration {
             sectioned = LegacyConfigMigration.toSectioned(root, fileName);
             LegacyConfigMigration.logDroppedKeys(appJson, root);
         }
+        // configVersion was only ever a marker so isLegacy(JsonObject) above could tell a v1 from
+        // a v2 app.json; it is a leftover of the old JSON format with no meaning in
+        // application.yaml, so it never survives into the migrated file - neither the v1 path
+        // (LegacyConfigMigration#toSectioned never adds it) nor here, where a v2 document is
+        // otherwise taken as-is.
+        sectioned.remove("configVersion");
         convertNavigatorEntriesToMap(sectioned);
 
         writeYaml(applicationYaml, sectioned);

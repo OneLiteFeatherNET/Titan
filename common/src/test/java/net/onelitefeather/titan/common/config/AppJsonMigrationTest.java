@@ -82,6 +82,7 @@ class AppJsonMigrationTest {
         assertFalse(root.containsKey("elytraBoostMultiplier"), "dropped keys must not survive migration");
         assertFalse(root.containsKey("updateRateAgones"), "dropped keys must not survive migration");
         assertFalse(root.containsKey("fireworkBoostSlot"), "dropped keys must not survive migration");
+        assertFalse(root.containsKey("configVersion"), "configVersion is a leftover of the old JSON format and must not survive migration");
 
         boolean loggedDroppedKeys = CapturingLoggerFactory.messages().stream().anyMatch(message -> message.contains("fireworkBoostSlot") && message.contains("updateRateAgones") && message.contains("elytraBoostMultiplier"));
         assertTrue(loggedDroppedKeys, "dropped legacy keys must be named in a WARN log, log was: " + CapturingLoggerFactory.messages());
@@ -104,12 +105,26 @@ class AppJsonMigrationTest {
         assertTrue(Files.exists(tempDir.resolve("app.json.migrated")), "app.json must be renamed to app.json.migrated");
 
         @SuppressWarnings("unchecked") var expectedRoot = (java.util.Map<String, Object>) yaml.load(originalContent);
+        expectedRoot.remove("configVersion");
         @SuppressWarnings("unchecked") var expectedNavigator = (java.util.Map<String, Object>) expectedRoot.remove("navigator");
         @SuppressWarnings("unchecked") var actualRoot = (java.util.Map<String, Object>) loadYaml(applicationYaml);
         @SuppressWarnings("unchecked") var actualNavigator = (java.util.Map<String, Object>) actualRoot.remove("navigator");
 
-        assertEquals(expectedRoot, actualRoot, "every non-navigator section must contain the same values as the original app.json");
+        assertEquals(expectedRoot, actualRoot, "every non-navigator, non-configVersion section must contain the same values as the original app.json");
         assertEquals(expectedNavigator.get("title"), actualNavigator.get("title"), "navigator.title must survive the migration");
+    }
+
+    @Test
+    @DisplayName("A sectioned v2 app.json's configVersion marker is dropped, not carried into application.yaml")
+    void migratedYamlHasNoConfigVersionKey(@TempDir Path tempDir) throws IOException {
+        Path appJson = tempDir.resolve("app.json");
+        copyFixture("/config/v2/app.json", appJson);
+        assertTrue(Files.readString(appJson).contains("configVersion"), "the fixture must actually contain configVersion, or this test proves nothing");
+
+        migration.migrate(tempDir);
+
+        @SuppressWarnings("unchecked") var root = (java.util.Map<String, Object>) loadYaml(tempDir.resolve("application.yaml"));
+        assertFalse(root.containsKey("configVersion"), "configVersion is a leftover of the old JSON format and must not survive migration");
     }
 
     @Test

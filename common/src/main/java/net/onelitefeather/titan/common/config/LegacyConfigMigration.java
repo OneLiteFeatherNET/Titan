@@ -51,8 +51,6 @@ final class LegacyConfigMigration {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LegacyConfigMigration.class);
 
-    static final int TARGET_CONFIG_VERSION = 2;
-
     /**
      * Legacy top-level keys that identify a document as the old flat format. A document without
      * {@code configVersion} that has at least one of these keys is treated as version 1.
@@ -96,11 +94,13 @@ final class LegacyConfigMigration {
      * @param legacy   the parsed legacy document
      * @param fileName the name of the file being migrated, used only to complete a thrown {@link
      *                 ConfigException}
-     * @return the migrated, sectioned document, including {@code configVersion}
+     * @return the migrated, sectioned document - {@code configVersion} was only ever a marker for
+     *         {@link #isLegacy(JsonObject)} to read on the original {@code app.json}; it is a
+     *         leftover of the old JSON format with no meaning in {@code application.yaml} and is
+     *         never added to the result
      */
     static JsonObject toSectioned(JsonObject legacy, String fileName) {
         JsonObject migrated = new JsonObject();
-        migrated.addProperty("configVersion", TARGET_CONFIG_VERSION);
 
         JsonObject spawn = new JsonObject();
         moveIfPresent(legacy, "simulationDistance", spawn, "simulationDistance");
