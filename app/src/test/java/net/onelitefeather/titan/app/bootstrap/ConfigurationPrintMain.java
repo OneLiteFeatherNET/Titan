@@ -17,29 +17,18 @@ package net.onelitefeather.titan.app.bootstrap;
 
 import io.avaje.config.Config;
 import io.avaje.config.Configuration;
-import java.util.Set;
-import net.onelitefeather.titan.app.feature.navigator.NavigatorValidation;
-import net.onelitefeather.titan.app.feature.tickle.TickleValidation;
 
 /**
  * The child process entry point {@link ConfigurationPrecedenceTest} launches: touches the same
  * static {@link Config} facade {@code PlatformBeans}/{@code Titan} use - built-in first, no factory
  * of its own wraps that touch (see {@code openspec/changes/avaje-config-facade/design.md}, decision
  * 1) - then either prints one {@code key=value} line per requested key to stdout - {@code <absent>}
- * if the key resolves to nothing at all - or, for the special arguments below, runs the same
- * read-and-validate path a module runs at startup and reports the outcome. Either way, the parent
- * test process - which cannot reach into this JVM's memory - asserts on what this process printed.
+ * if the key resolves to nothing at all - or, for {@value #LOG_ACTIVE_PROFILES}, runs
+ * {@link ConfigurationStartupLog#activeProfiles()}. Either way, the parent test process - which
+ * cannot reach into this JVM's memory - asserts on what this process printed.
  *
- * <p>Four modes, chosen by {@code args[0]}:
+ * <p>Two modes, chosen by {@code args[0]}:
  * <ul>
- * <li>{@value #VALIDATE_TICKLE}: runs {@link TickleValidation#validate()} - the same
- * {@code Config.getAs(key, Long::parseLong)}/{@code TickleSettings.cooldown} line
- * {@code TickleModule.enable} runs. Prints {@code tickle=OK} and exits {@code 0} if the configured
- * value is valid; otherwise prints the full cause chain via {@link #printCauseChain(Throwable)}
- * and exits {@code 1}.</li>
- * <li>{@value #NAVIGATOR_ENTRIES}: runs {@link NavigatorValidation#resolvedEntryNames()} - the same
- * name resolution {@code NavigatorModule.enable} runs for {@code navigator.entries} - and prints
- * {@code navigator.entries=<name>,<name>,...}.</li>
  * <li>{@value #LOG_ACTIVE_PROFILES}: runs {@link ConfigurationStartupLog#activeProfiles()} - the
  * exact call {@code Titan}'s constructor makes as its own first touch of the facade - so
  * {@link net.onelitefeather.titan.app.bootstrap.ConfigurationPrecedenceTest} can assert on the
@@ -48,18 +37,24 @@ import net.onelitefeather.titan.app.feature.tickle.TickleValidation;
  * same file production runs with, so the parent test can read it back merged with this process's
  * regular output (see {@link ConfigurationPrecedenceTest#startAndWait}).</li>
  * <li>anything else: every argument is a configuration key to print, in order, via
- * {@code Configuration.get(key, "<absent>")} - the original, plain read mode.</li>
+ * {@code Configuration.get(key, "<absent>")} - the original, plain read mode. This mode alone
+ * covers reading a nested key such as {@code navigator.entries.parkour.slot} - printing it
+ * demonstrates that a working-directory entry merges alongside the shipped defaults, without a
+ * validation bridge of its own (see {@code openspec/changes/avaje-config-facade/design.md},
+ * decision 6, and {@link NavigatorEntryKeysTest} for the pure name-grouping this stops short
+ * of).</li>
  * </ul>
- * Neither validation mode touches a Minestom server: both helpers stop short of anything that
- * needs Minestom's registry data (see their own Javadoc).
+ * A module's own read-and-validate path (e.g. {@code tickle.cooldownMillis} through
+ * {@code Config.getAs(key, TickleSettings::cooldownMillis)}) is covered by that module's own unit
+ * tests against a local {@link Configuration} instance instead of a child JVM here - see
+ * {@code TickleSettingsTest} - because {@code Config.getAs} wraps and names the key by itself
+ * (built-in first), with nothing left for a bridge like this to add.
  *
  * <p>A syntactically broken {@code application.yaml} fails the facade's own static initializer on
  * first touch with {@link ExceptionInInitializerError}, whichever mode above makes that first
- * touch.
- * {@link #main(String[])} catches it at the top level and prints the full cause chain - the same
- * shape {@link #validateTickle()} already used - via {@link #printCauseChain(Throwable)}, so the
- * file name and the parser's line/column reach this process's stdout reliably, rather than relying
- * on the JVM's own uncaught-exception formatting.
+ * touch. {@link #main(String[])} catches it at the top level and prints the full cause chain via
+ * {@link #printCauseChain(Throwable)}, so the file name and the parser's line/column reach this
+ * process's stdout reliably, rather than relying on the JVM's own uncaught-exception formatting.
  *
  * <p>{@link ConfigurationPrecedenceTest} controls this process's working directory, environment and
  * system properties via {@link ProcessBuilder} before launching it, so what this class prints is
@@ -67,8 +62,6 @@ import net.onelitefeather.titan.app.feature.tickle.TickleValidation;
  */
 public final class ConfigurationPrintMain {
 
-    private static final String VALIDATE_TICKLE = "--validate-tickle";
-    private static final String NAVIGATOR_ENTRIES = "--navigator-entries";
     private static final String LOG_ACTIVE_PROFILES = "--log-active-profiles";
 
     private ConfigurationPrintMain() {
@@ -84,14 +77,6 @@ public final class ConfigurationPrintMain {
     }
 
     private static void run(String[] args) {
-        if (args.length == 1 && VALIDATE_TICKLE.equals(args[0])) {
-            validateTickle();
-            return;
-        }
-        if (args.length == 1 && NAVIGATOR_ENTRIES.equals(args[0])) {
-            printNavigatorEntries();
-            return;
-        }
         if (args.length == 1 && LOG_ACTIVE_PROFILES.equals(args[0])) {
             ConfigurationStartupLog.activeProfiles();
             return;
@@ -101,26 +86,6 @@ public final class ConfigurationPrintMain {
         for (String key : args) {
             System.out.println(key + "=" + configuration.get(key, "<absent>"));
         }
-    }
-
-    private static void validateTickle() {
-        try {
-            TickleValidation.validate();
-            System.out.println("tickle=OK");
-        } catch (RuntimeException e) {
-            // A negative cooldown fails validation with a ConfigException naming the key, no
-            // cause. A non-numeric or missing value fails the read itself with an
-            // IllegalStateException that also names the key, keeping the NumberFormatException
-            // (or similar) as its cause - printed here too, so the reason reaches this process's
-            // stdout, not just the key.
-            printCauseChain(e);
-            System.exit(1);
-        }
-    }
-
-    private static void printNavigatorEntries() {
-        Set<String> names = NavigatorValidation.resolvedEntryNames();
-        System.out.println("navigator.entries=" + String.join(",", names));
     }
 
     /**
