@@ -87,6 +87,18 @@ public final class NavigatorModule implements LobbyModule {
   `ArchitectureTest#modulePrioritiesAreUnique`
   (`app/src/test/java/net/onelitefeather/titan/app/architecture/ArchitectureTest.java`).
 
+**Warnung: Nie ein `List<LobbyModule>` injizieren, um die Startreihenfolge zu
+bekommen.** Nur `BeanScope.listByPriority(...)` sortiert nach `@Priority` -
+ein konstruktorinjiziertes `List<LobbyModule>` (oder jedes `List<T>` von
+`@Priority`-Beans) liefert Avaje in Registrierungsreihenfolge, **nicht**
+sortiert. Und `listByPriority(...)` funktioniert erst, **nachdem**
+`BeanScope.builder().build()` zurückgekehrt ist - ein Aufruf während des
+Scope-Aufbaus (also aus einem `@Factory`/`@Bean`, dem der Scope selbst
+injiziert wurde) wirft `IllegalStateException`. Die Startreihenfolge kommt
+deshalb ausschließlich aus `Titan`s eigenem
+`scope.listByPriority(LobbyModule.class)`, aufgerufen nachdem
+`BeanScope.builder().build()` fertig ist (s. `Titan.java`).
+
 Die heutigen sieben Module, in Hunderterschritten mit Platz dazwischen:
 
 | Modul | Priorität |
