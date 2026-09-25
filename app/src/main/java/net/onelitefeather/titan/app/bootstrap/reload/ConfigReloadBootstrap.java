@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.timer.TaskSchedule;
+import net.onelitefeather.titan.app.bootstrap.ConfigurationStartupLog;
 import net.onelitefeather.titan.app.module.ModuleRegistry;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -51,7 +52,6 @@ public final class ConfigReloadBootstrap {
 
     private static final String INTERVAL_SECONDS_KEY = "titan.config.reload.intervalSeconds";
     private static final int DEFAULT_INTERVAL_SECONDS = 10;
-    private static final String ACTIVE_PROFILES_KEY = "avaje.profiles";
     private static final String CONFIG_FILE_PROPERTY = "config.file";
     private static final String CONFIG_FILE_ENV = "CONFIG_FILE";
 
@@ -92,7 +92,7 @@ public final class ConfigReloadBootstrap {
             return;
         }
 
-        List<String> activeProfiles = Config.asConfiguration().list().of(ACTIVE_PROFILES_KEY);
+        List<String> activeProfiles = Config.asConfiguration().list().of(ConfigurationStartupLog.ACTIVE_PROFILES_KEY);
         List<Path> paths = ConfigFileWatcher.pathsFor(Path.of(""), activeProfiles, configFilePath());
         ConfigFileWatcher watcher = new ConfigFileWatcher(paths, ConfigReloadBootstrap::stamp, reloader::reload);
         MinecraftServer.getSchedulerManager().buildTask(watcher::check).repeat(TaskSchedule.seconds(intervalSeconds)).schedule();

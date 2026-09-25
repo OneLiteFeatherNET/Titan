@@ -55,6 +55,18 @@ class ReloadResultMessagesTest {
         Assertions.assertEquals("sit, tickle", argumentPlain(component, 0));
     }
 
+    @DisplayName("Applied with no restarted, rejected or disabled modules maps to a single 'no modules' component instead of an empty module list")
+    @Test
+    void appliedWithNoModulesAtAllMapsToASingleNoModulesComponent() {
+        ReloadResult.Applied applied = new ReloadResult.Applied(List.of(), List.of(), List.of(), true);
+
+        List<Component> components = ReloadResultMessages.toComponents(applied);
+
+        Assertions.assertEquals(1, components.size(), "a flags-only (or otherwise moduleless) reload must produce exactly one line");
+        TranslatableComponent component = assertTranslatable(components.get(0), TitanTranslations.CONFIG_RELOAD_APPLIED_NO_MODULES);
+        Assertions.assertTrue(component.arguments().isEmpty(), "the 'no modules' message takes no arguments");
+    }
+
     @DisplayName("Applied with a rejected module adds exactly one rejected line naming its keys and reason")
     @Test
     void appliedWithARejectedModuleAddsOneRejectedLine() {
