@@ -124,7 +124,7 @@ Die Prioritäten bilden die heutige Reihenfolge ab, in Hunderter-Schritten mit P
 Das größte Risiko von automatischem Finden ist ein Modul, das still fehlt. Dagegen gibt es drei Absicherungen:
 - **`ModuleWiringTest`** (Integrationstest mit `Env`, weil die Factory Minestom-Singletons braucht): Er baut den echten `BeanScope` und prüft vier Dinge:
   - alle 7 bekannten Module sind genau einmal vorhanden,
-  - die Reihenfolge der `List<LobbyModule>` entspricht der Tabelle aus Entscheidung 2,
+  - die Reihenfolge von `scope.listByPriority(LobbyModule.class)` entspricht der Tabelle aus Entscheidung 2,
   - der Scope baut sich ohne fehlende Abhängigkeit,
   - der Scope lässt sich sauber schließen.
 - **ArchUnit, neue Regeln:**

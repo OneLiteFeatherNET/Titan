@@ -11,10 +11,10 @@ Ziel ist eine Arbeitsweise wie in Micronaut: Klasse annotieren, Abhängigkeiten 
 ## What Changes
 
 - **Avaje Inject als DI-Container:** `io.avaje:avaje-inject` plus Annotation-Processor `avaje-inject-generator` in `app` (und in `common`, falls dort Beans liegen). Die Verdrahtung wird beim Kompilieren erzeugt.
-- **Module werden automatisch gefunden:** Feature-Module sind `@Singleton`-Beans mit Konstruktor-Injektion. Der `ModuleRegistry` bekommt alle Module als `List<LobbyModule>` injiziert. Die zentrale Modulliste in `Titan.java` entfällt.
-- **Feste Startreihenfolge:** Die Reihenfolge wird ausdrücklich über `@Priority` festgelegt und ist deterministisch. Die Richtung (ob ein niedriger Wert zuerst kommt) klärt der Spike.
-- **Plattform-Dienste als Beans:** Eine `@Factory` stellt Minestom-Objekte und Plattform-Dienste bereit: `InstanceContainer`, `MapProvider`, `Deliver`, `ConfigStore`, `ItemRegistry`, `NavigatorEntries`, `FeatureFlags`, `Clock`. Module fordern sie per Konstruktor an.
-- **Schlanke Composition Root:** `Titan.java` baut nur noch den `BeanScope`, holt den `ModuleRegistry` und schließt den Scope beim Herunterfahren.
+- **Module werden automatisch gefunden:** Feature-Module sind `@Singleton`-Beans mit Konstruktor-Injektion. `Titan` holt nach dem Aufbau des Scopes alle Module per `BeanScope.listByPriority(LobbyModule.class)` und übergibt sie dem `ModuleRegistry`. Die zentrale Modulliste in `Titan.java` entfällt.
+- **Feste Startreihenfolge:** Die Reihenfolge wird ausdrücklich über `@Priority` (`io.avaje.inject.Priority`) festgelegt und ist deterministisch, niedrige Werte zuerst (Spike).
+- **Plattform-Dienste als Beans:** Eine `@Factory` stellt Minestom-Objekte und Plattform-Dienste bereit: `InstanceContainer`, `MapProvider`, `LobbySpawn`, `Deliver`, `ConfigStore`, den `titan`-EventNode, `ItemRegistry`, `NavigatorEntries`, `FeatureFlags`, `Clock`. Module fordern sie per Konstruktor an.
+- **Schlanke Composition Root:** `Titan.java` baut nur noch den `BeanScope`, baut daraus den `ModuleRegistry` (sortierte Module plus Plattform-Beans) und schließt den Scope beim Herunterfahren.
 - **Der Lebenszyklus bleibt beim `ModuleRegistry`:** `enable`/`disable`, der eigene EventNode pro Modul, die Aufräumregeln und `ModuleContext` bleiben unverändert. Avaje baut die Objekte, die Registry schaltet sie an und ab.
 - **Config bleibt wie heute:** Module lesen ihren Abschnitt mit `ctx.config(...)` in `enable()`. Config per Konstruktor im Micronaut-Stil ist bewusst **nicht** Teil dieser Change (siehe Nicht-Ziele).
 - **Tests:** Unit-Tests bauen Module weiter per `new …(…)`. Dazu kommen ein Test „der Container verdrahtet sich vollständig“ (alle Module gefunden, keine Bindung fehlt, Reihenfolge stimmt) und eine ArchUnit-Regel, dass Features keinen `BeanScope` direkt nutzen (kein Service Locator).
@@ -42,13 +42,13 @@ Ziel ist eine Arbeitsweise wie in Micronaut: Klasse annotieren, Abhängigkeiten 
 
 - **Code:**
   - `app`: `Titan.java` wird zur Bootstrap-Klasse für den `BeanScope`, dazu kommt eine neue `@Factory` für die Plattform-Beans.
-  - `ModuleRegistry`: Konstruktor mit `List<LobbyModule>`. Der Builder bleibt für Tests und den `ModuleHarness`.
+  - `ModuleRegistry`: unverändert, `Titan` baut ihn über den bestehenden Builder mit der Liste aus `listByPriority`. Der Builder bleibt für Tests und den `ModuleHarness`.
   - Alle 7 Feature-Module bekommen `@Singleton` und `@Priority` und einen `@Inject`-Konstruktor.
 - **Neue Abhängigkeiten:**
-  - Laufzeit: `io.avaje:avaje-inject` (aktuelle Version per Spike).
-  - Build: `io.avaje:avaje-inject-generator` als `annotationProcessor`.
-  - Test: `io.avaje:avaje-inject-test`.
-  - Eventuell `jakarta.annotation-api` für `@Priority`.
+  - Laufzeit: `io.avaje:avaje-inject:12.7` (Spike).
+  - Build: `io.avaje:avaje-inject-generator:12.7` als `annotationProcessor`.
+  - Test: `io.avaje:avaje-inject-test:12.7`, nur falls gebraucht.
+  - `jakarta.annotation-api` ist nicht nötig, `@Priority` kommt aus `io.avaje.inject`.
 - **Build:** Das Shadow-Plugin muss die `META-INF/services`-Dateien zusammenführen (`mergeServiceFiles()`), damit Avaje und Togglz beide im Jar landen.
 - **Laufzeit:** Es gibt keine Reflection, der AOT-Cache bleibt nutzbar. Die Startzeit wird im Spike gemessen.
 - **Texte für Nutzer:** keine Änderung.
