@@ -54,7 +54,7 @@ Voraussetzung: `avaje-dependency-injection` ist gemergt (`PlatformBeans` und `Be
   - (c) kaputte `application.yaml`: Abbruch mit Datei und Stelle des Fehlers.
 
   Verifikation: Die wichtigsten Log-Zeilen stehen im PR.
-- [ ] 5.2 README und `docs/lobby-modules.md` anpassen: Konfiguration mit `application.yaml`, Profilen, Rangfolge, einer Tabelle der Env-Variablen, der Umstellung von `app.json` samt Rollback-Hinweis, und dem Wegfall von `/setup app`. Verifikation: Ein Review-Agent prüft alle Schlüssel- und Env-Namen gegen den Code.
+- [x] 5.2 README und `docs/lobby-modules.md` anpassen: Konfiguration mit `application.yaml`, Profilen, Rangfolge, einer Tabelle der Env-Variablen, der Umstellung von `app.json` samt Rollback-Hinweis, und dem Wegfall von `/setup app`. Verifikation: Ein Review-Agent prüft alle Schlüssel- und Env-Namen gegen den Code.
 - [ ] 5.3 Lokale Abnahme im Client durch den Maintainer: Die Lobby verhält sich mit der umgestellten Config unverändert, und ein Wert aus einem `dev`-Profil greift. Verifikation: Die Checkliste im PR ist abgehakt.
 
 ## 6. Pull Request
