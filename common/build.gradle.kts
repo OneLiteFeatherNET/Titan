@@ -15,6 +15,10 @@ dependencies {
     implementation(libs.adventure.minimessage)
     // Logging was relying on Minestom's transitive slf4j-api; declare it where it is used.
     implementation(libs.slf4j.api)
+    // application.yaml, profiles and env/-D overrides. SnakeYAML is optional in avaje-config's
+    // POM, so it is declared here to get the full YAML parser (and Dump for the app.json migration).
+    api(libs.avaje.config)
+    implementation(libs.snakeyaml)
     // TitanObservability compiles against the Sentry API. The Logback appender that actually
     // reports is a runtime concern of the two application modules.
     implementation(platform(libs.sentry.bom))
