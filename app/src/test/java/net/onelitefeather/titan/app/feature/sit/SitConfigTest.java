@@ -19,14 +19,14 @@ import java.util.ArrayList;
 import java.util.List;
 import net.kyori.adventure.key.Key;
 import net.minestom.server.coordinate.Vec;
-import net.onelitefeather.titan.common.config.ConfigException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Plain unit tests for {@link SitConfig}: no {@code Env}, no Minestom server needed - just the
- * record's own compact constructor and {@link SitConfig#DEFAULTS}.
+ * Plain unit tests for what is still specific to the {@link SitConfig} record itself - its
+ * documented {@link SitConfig#DEFAULTS} and the defensive copy of {@code allowedBlocks} its
+ * compact constructor performs. The validation cases now live in {@link SitSettingsTest}.
  */
 class SitConfigTest {
 
@@ -35,27 +35,6 @@ class SitConfigTest {
     void defaultsMatchDocumentedValues() {
         Assertions.assertEquals(new Vec(0.5, 0.25, 0.5), SitConfig.DEFAULTS.offset());
         Assertions.assertEquals(List.of(Key.key("minecraft:spruce_stairs")), SitConfig.DEFAULTS.allowedBlocks());
-    }
-
-    @DisplayName("A null offset is rejected, naming the field")
-    @Test
-    void nullOffsetIsRejected() {
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> new SitConfig(null, List.of(Key.key("minecraft:spruce_stairs"))));
-        Assertions.assertEquals("offset", thrown.field());
-    }
-
-    @DisplayName("A null allowedBlocks list is rejected, naming the field")
-    @Test
-    void nullAllowedBlocksIsRejected() {
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> new SitConfig(new Vec(0.5, 0.25, 0.5), null));
-        Assertions.assertEquals("allowedBlocks", thrown.field());
-    }
-
-    @DisplayName("An empty allowedBlocks list is rejected, naming the field")
-    @Test
-    void emptyAllowedBlocksIsRejected() {
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> new SitConfig(new Vec(0.5, 0.25, 0.5), List.of()));
-        Assertions.assertEquals("allowedBlocks", thrown.field());
     }
 
     @DisplayName("allowedBlocks is defensively copied: mutating the source list afterwards has no effect")
