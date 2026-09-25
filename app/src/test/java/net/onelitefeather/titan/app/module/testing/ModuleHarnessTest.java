@@ -15,8 +15,6 @@
  */
 package net.onelitefeather.titan.app.module.testing;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -42,14 +40,13 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.io.TempDir;
 
 /**
  * TDD coverage for {@link ModuleHarness} itself: a module started through it must react to an event
  * fired for a real {@code Env} player, must stop reacting once the harness is closed, and closing
  * one harness must not leave anything behind for the next one started in the same test run. Also
  * covers the accessors ({@link ModuleHarness#items()}, {@link ModuleHarness#navigator()}) and the
- * configuration-file and standalone (no {@code Env}) entry points.
+ * standalone (no {@code Env}) entry point.
  */
 @ExtendWith(MicrotusExtension.class)
 class ModuleHarnessTest {
@@ -83,10 +80,6 @@ class ModuleHarnessTest {
         public void enable(ModuleContext context) {
             context.listen(PlayerTestEvent.class, event -> this.counter.incrementAndGet());
         }
-    }
-
-    private record TestConfig(int value) {
-        static final TestConfig DEFAULTS = new TestConfig(3);
     }
 
     @DisplayName("A module started through the harness receives an event fired for an Env player")
@@ -178,55 +171,6 @@ class ModuleHarnessTest {
             Assertions.assertEquals(Material.FEATHER, player.getInventory().getItemStack(0).material(), "harness.items() must be the same registry the module registered its item through");
             Assertions.assertEquals(1, harness.navigator().entries().size(), "harness.navigator() must be the same registry the module added its entry through");
         }
-    }
-
-    @DisplayName("A YAML file passed to start() is what a started module reads its section from")
-    @Test
-    void startWithAConfigFileLetsAModuleReadItsOwnSection(Env env, @TempDir Path tempDir) throws java.io.IOException {
-        Path configFile = tempDir.resolve("application.yaml");
-        Files.writeString(configFile, "cfg:\n  value: 9\n");
-        AtomicReference<TestConfig> seen = new AtomicReference<>();
-        LobbyModule module = new LobbyModule() {
-
-            @Override
-            public String id() {
-                return "cfg";
-            }
-
-            @Override
-            public void enable(ModuleContext context) {
-                seen.set(context.config(TestConfig.class, TestConfig.DEFAULTS));
-            }
-        };
-
-        try (ModuleHarness harness = ModuleHarness.start(env, configFile, module)) {
-            Assertions.assertEquals(new TestConfig(9), seen.get(), "the module must read the value from the YAML file, not its default");
-        }
-    }
-
-    @DisplayName("Without a config file, a started module falls back to its defaults, and no file is created")
-    @Test
-    void startWithoutAConfigFileFallsBackToDefaults(Env env, @TempDir Path tempDir) {
-        Path configFile = tempDir.resolve("application.yaml");
-        AtomicReference<TestConfig> seen = new AtomicReference<>();
-        LobbyModule module = new LobbyModule() {
-
-            @Override
-            public String id() {
-                return "cfg";
-            }
-
-            @Override
-            public void enable(ModuleContext context) {
-                seen.set(context.config(TestConfig.class, TestConfig.DEFAULTS));
-            }
-        };
-
-        try (ModuleHarness harness = ModuleHarness.start(env, configFile, module)) {
-            Assertions.assertEquals(TestConfig.DEFAULTS, seen.get());
-        }
-
-        Assertions.assertFalse(Files.exists(configFile), "reading configuration must never create a file");
     }
 
     @DisplayName("startStandalone() enables and disables a module without booting an Env")

@@ -28,7 +28,6 @@ import net.onelitefeather.titan.app.module.item.ItemRegistry;
 import net.onelitefeather.titan.app.module.navigator.NavigatorConflictException;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
 import net.onelitefeather.titan.common.config.ConfigException;
-import net.onelitefeather.titan.common.config.ConfigSections;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
 import org.jetbrains.annotations.Nullable;
 
@@ -52,8 +51,7 @@ import org.jetbrains.annotations.Nullable;
  * {@code design.md}, decision 13.
  *
  * <p>Built through {@link #builder()} rather than a public constructor, so a later wave can add
- * further platform services to the builder without breaking existing callers, the way
- * {@link Builder#config(ConfigSections)} did.
+ * further platform services to the builder without breaking existing callers.
  */
 public final class ModuleRegistry {
 
@@ -69,7 +67,7 @@ public final class ModuleRegistry {
         CommandManager commandManager = builder.commandManager != null ? builder.commandManager : MinecraftServer.getCommandManager();
         NavigatorEntries navigatorEntries = builder.navigatorEntries != null ? builder.navigatorEntries : new NavigatorEntries();
         ItemRegistry itemRegistry = builder.itemRegistry != null ? builder.itemRegistry : new ItemRegistry(this.parent);
-        this.platform = new ModulePlatform(scheduler, commandManager, builder.configSections, itemRegistry, navigatorEntries);
+        this.platform = new ModulePlatform(scheduler, commandManager, itemRegistry, navigatorEntries);
         this.modules = List.copyOf(builder.modules);
         this.featureFlags = builder.featureFlags;
     }
@@ -162,7 +160,6 @@ public final class ModuleRegistry {
         private EventNode<Event> parent;
         private Scheduler scheduler;
         private CommandManager commandManager;
-        private @Nullable ConfigSections configSections;
         private NavigatorEntries navigatorEntries;
         private ItemRegistry itemRegistry;
         private @Nullable FeatureFlags featureFlags;
@@ -203,19 +200,6 @@ public final class ModuleRegistry {
          */
         public Builder commandManager(CommandManager commandManager) {
             this.commandManager = commandManager;
-            return this;
-        }
-
-        /**
-         * The {@link ConfigSections} modules read their own section from, via
-         * {@link ModuleContext#config}. Optional: if never set, {@link ModuleContext#config}
-         * returns each module's defaults unchanged.
-         *
-         * @param configSections the configuration sections
-         * @return this builder
-         */
-        public Builder config(ConfigSections configSections) {
-            this.configSections = configSections;
             return this;
         }
 

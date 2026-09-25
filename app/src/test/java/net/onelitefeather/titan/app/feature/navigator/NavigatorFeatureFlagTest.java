@@ -32,7 +32,6 @@ import net.onelitefeather.titan.app.module.ModuleContext;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntry;
 import net.onelitefeather.titan.app.module.testing.ModuleHarness;
 import net.onelitefeather.titan.common.config.ConfigException;
-import net.onelitefeather.titan.common.config.ConfigSections;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -117,9 +116,10 @@ class NavigatorFeatureFlagTest {
     @DisplayName("An unknown feature name in a navigator-sourced entry aborts enableAll(), naming navigator.entries and the unknown flag")
     @Test
     void unknownFeatureInConfigurationAbortsEnableAll(Env env) {
-        // A stand-in for an unknown feature name in navigator.entries, in place of a ConfigSections
-        // override no longer read by NavigatorModule (design.md, decision 5). Contributed under the
-        // "navigator" module id, the same id a config-sourced entry is always attributed to.
+        // A stand-in for an unknown feature name in navigator.entries, in place of a
+        // Config-sourced override no longer read by NavigatorModule (design.md, decision 5).
+        // Contributed under the "navigator" module id, the same id a config-sourced entry is
+        // always attributed to.
         NavigatorEntry slender = new NavigatorEntry(5, ItemStack.of(Material.ENDERMAN_SPAWN_EGG), Component.text("Slender"), "cygnus", "GIBT_ES_NICHT");
         LobbyModule navigatorEntrySource = new LobbyModule() {
 
@@ -138,7 +138,7 @@ class NavigatorFeatureFlagTest {
         // FeatureFlags wired into the harness/registry itself, for
         // ModuleRegistry#enableAll()'s NavigatorEntries#validate(FeatureFlags) check - exactly like
         // Titan wires the real TogglzFeatureFlags in.
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> ModuleHarness.start(env, (ConfigSections) null, flags, (navigator, items) -> new LobbyModule[]{navigatorEntrySource}));
+        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> ModuleHarness.start(env, flags, (navigator, items) -> new LobbyModule[]{navigatorEntrySource}));
 
         Assertions.assertEquals("navigator", thrown.section(), "a config-sourced entry's origin module is 'navigator'");
         Assertions.assertEquals("entries", thrown.field());
