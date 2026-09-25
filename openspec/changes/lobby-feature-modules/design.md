@@ -213,6 +213,15 @@ Der bisherige Boost (`FireworkBoostPhysics` + `FireworkBoostTracker`, server-sei
 - **Portierung statt Abhängigkeit:** Voyager veröffentlicht kein Artefakt, das die Lobby einbinden könnte, und Titan bleibt Apache-2.0-only. Der Code wird deshalb kopiert/angepasst, nicht importiert; jede portierte Klasse trägt einen kurzen Javadoc-Hinweis „Ported from Voyager (…)“ und Titans Apache-Header.
 - **Getestet:** `FireworkBoostTrackerTest` portiert Voyagers gleichnamige Testklasse eins zu eins auf `ElytraConfig` - reine Zähler-Arithmetik ohne `Env`, F.I.R.S.T. entsprechend die unterste Stufe der Testpyramide. `ElytraModuleTest` deckt den Weg über `ModuleHarness`/`Env` ab: Rakete wird abgefeuert und trägt den Spieler als Shooter, verschwindet nach `burnDurationTicks`, eine zweite Nutzung während Brennen/Abklingzeit feuert nichts ab, und Landen setzt den Zustand zurück.
 
+### 13. Navigator-Ziele hinter einer globalen Feature-Flag (Togglz)
+
+- **Art der Flag:** global an oder aus, keine Stufen pro Zielgruppe (Entscheidung des Maintainers). Damit bleibt das geteilte Aves-Inventar aus Entscheidung 8 bestehen. Ein Inventar pro Spieler wäre erst für gestufte Freigaben nötig.
+- **Quelle:** das vorhandene Togglz-Setup (`TitanFeatures`, `SingletonFeatureManagerProvider`, `FileBasedStateRepository` auf `flags.properties`). Fehlt eine Flag in der Datei, gilt sie als aus. Das ist ein sicherer Standard: Slender ist verborgen, bis es freigegeben wird.
+- **Generisch statt Slender-Sonderfall:** `NavigatorConfig.Entry` bekommt ein optionales Feld `feature` (Name einer `TitanFeatures`-Konstante). Die Standardwerte binden Slender an `NAVIGATOR_SLENDER`. Ein unbekannter Name bricht den Start mit einer `ConfigException` ab.
+- **Abhängigkeit umkehren (DIP):** Das Navigator-Modul fragt Flags über eine kleine Schnittstelle ab, etwa `FeatureFlags#isActive(String)`, die per Konstruktor hereinkommt. Produktiv steckt Togglz dahinter, in Tests eine Attrappe. So bleiben die Tests schnell und wiederholbar, ohne `flags.properties` und ohne den statischen `FeatureContext`.
+- **Aktualität:** Beim Öffnen werden die sichtbaren Einträge aus den Registry-Einträgen und dem aktuellen Flag-Zustand berechnet. Das Aves-Layout wird nur neu gesetzt, wenn sich diese sichtbare Menge geändert hat (Registry-Version oder Flag-Zustand). Die Laufzeitumschaltung wirkt damit beim nächsten Öffnen.
+- **Testbarkeit:** Unit-Tests für das Filtern der sichtbaren Einträge und für die Config-Validierung, Integrationstests mit `Env` für Flag aus, Flag an und das Umschalten zwischen zwei Öffnungen. Der Leak-Test bleibt grün.
+
 ## Risks / Trade-offs
 
 - **[Risiko] Migration zerstört eine Betreiber-Config** → Die Altdatei wird vorher nach `.v1.bak` kopiert, eine kaputte Datei nie überschrieben. Ein Test migriert die echte `app.json` aus dem Repo und vergleicht das Verhalten.

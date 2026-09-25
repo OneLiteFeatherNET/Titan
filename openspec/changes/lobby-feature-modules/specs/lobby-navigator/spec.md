@@ -46,6 +46,25 @@ Klickt ein Spieler ein Ziel an, MUSS die Lobby ihn an das konfigurierte Weiterle
 - **WHEN** die Lobby ohne CloudNet läuft und ein Spieler ein Ziel anklickt
 - **THEN** passiert keine Weiterleitung, und es entsteht kein Fehler
 
+### Requirement: Navigator-Ziele können hinter einer Feature-Flag liegen
+Ein Navigator-Ziel MUSS optional an eine Feature-Flag gebunden werden können. Ist die Flag aus, DARF das Ziel für niemanden im Navigator erscheinen, und der Platz wird wie ein leerer Platz gefüllt. Ist sie an, erscheint das Ziel für alle Spieler. Eine Änderung des Flag-Zustands MUSS beim nächsten Öffnen des Navigators sichtbar sein, ohne Neustart. Eine unbekannte Flag in der Konfiguration MUSS den Start abbrechen. Das Standardziel Slender MUSS an die Flag `NAVIGATOR_SLENDER` gebunden sein.
+
+#### Scenario: Slender bei ausgeschalteter Flag
+- **WHEN** die Flag `NAVIGATOR_SLENDER` aus ist oder in `flags.properties` fehlt und ein Spieler den Navigator öffnet
+- **THEN** ist auf Platz 5 kein Slender-Ziel, sondern eine graue Glasscheibe, und die übrigen Ziele sind unverändert
+
+#### Scenario: Slender bei eingeschalteter Flag
+- **WHEN** die Flag `NAVIGATOR_SLENDER` an ist und ein Spieler den Navigator öffnet
+- **THEN** erscheint Slender auf Platz 5, und ein Klick darauf leitet zum Ziel „cygnus“ weiter
+
+#### Scenario: Flag wird zur Laufzeit umgeschaltet
+- **WHEN** die Flag `NAVIGATOR_SLENDER` während des Betriebs eingeschaltet wird
+- **THEN** zeigt der Navigator Slender beim nächsten Öffnen, ohne dass die Lobby neu startet
+
+#### Scenario: Unbekannte Flag in der Konfiguration
+- **WHEN** ein Navigator-Eintrag in `app.json` `"feature": "GIBT_ES_NICHT"` enthält
+- **THEN** startet die Lobby nicht, und die Fehlermeldung nennt `navigator.entries` und die unbekannte Flag
+
 ### Requirement: Öffnen des Navigators häuft nichts an
 Das Öffnen des Navigators DARF NICHT dazu führen, dass pro Spieler oder pro Öffnung zusätzliche Event-Listener oder dauerhaft gehaltene Objekte entstehen. Nach dem Verlassen der Lobby DARF der Navigator keine Referenz mehr auf den Spieler halten.
 
