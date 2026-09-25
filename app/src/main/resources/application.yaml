@@ -96,3 +96,15 @@ navigator:
       icon: minecraft:wooden_axe
       displayName: "<!i><rainbow>Creative</rainbow>"
       destination: MemberBuild
+
+# Feature flags: plain booleans, one per flag name, with the same sources and override order as
+# every other key here (a profile's file, an external file, an environment variable such as
+# "FEATURES_NAVIGATOR_SLENDER", or a system property). The names listed here - all "false" by
+# default - are also the complete list of flags the lobby knows about: a navigator entry's
+# "feature" key (see "navigator.entries" above) naming anything not listed here aborts startup.
+features:
+  NAVIGATOR_CREATIVE: false
+  NAVIGATOR_SLENDER: false
+  NAVIGATOR_MANIS: false
+  NAVIGATOR_SURVIVAL: false
+  NAVIGATOR_ELYTRA: false
