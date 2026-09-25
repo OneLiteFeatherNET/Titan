@@ -59,4 +59,4 @@ Voraussetzung: `avaje-dependency-injection` ist gemergt (`PlatformBeans` und `Be
 
 ## 6. Pull Request
 
-- [ ] 6.1 Den Pull Request `feat(config)!: load lobby configuration from application.yaml with profiles` von `feat/standardized-config-profiles` nach `main` öffnen. Die Beschreibung enthält den `BREAKING CHANGE`-Footer aus proposal.md, die Migrations- und Rollback-Hinweise aus design.md und die Checkliste zur Abnahme. Verifikation: Der PR existiert, die CI ist grün.
+- [x] 6.1 Den Pull Request `feat(config)!: load lobby configuration from application.yaml with profiles` von `feat/standardized-config-profiles` nach `main` öffnen. Die Beschreibung enthält den `BREAKING CHANGE`-Footer aus proposal.md, die Migrations- und Rollback-Hinweise aus design.md und die Checkliste zur Abnahme. Verifikation: Der PR existiert, die CI ist grün.
