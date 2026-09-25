@@ -59,7 +59,7 @@ Jeder Agent-Prompt wiederholt die Regeln, die für ihn gelten:
   - Für Betreiber: Wo die Standardwerte stehen (`application.example.yaml` in der Distribution), und dass unbekannte Schlüssel nicht mehr gemeldet werden. Der Abschnitt zur Umstellung von `app.json` wird ersetzt durch den Upgrade-Hinweis: vorher einmal das Release mit `standardized-config-profiles` starten oder `app.json` von Hand übertragen.
 
   Verifikation: Ein Review-Agent prüft alle Schlüssel gegen die Classpath-Datei.
-- [ ] 4.4 Lokale Abnahme im Client durch den Maintainer: Die Lobby verhält sich unverändert, und ein Wert aus einem `dev`-Profil greift. Verifikation: Die Checkliste im PR ist abgehakt.
+- [x] 4.4 Lokale Abnahme im Client durch den Maintainer: Die Lobby verhält sich unverändert, und ein Wert aus einem `dev`-Profil greift. Verifikation: Die Checkliste im PR ist abgehakt.
 
 ## 5. Pull Request
 
