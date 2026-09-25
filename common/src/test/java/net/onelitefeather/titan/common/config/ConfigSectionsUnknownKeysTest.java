@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * carries a key its record type does not declare - e.g. a leftover {@code elytra.legacyFlag}.
  * Exactly one warning is logged per section, naming the section and every unknown key, captured
  * via the same {@link CapturingLoggerFactory} SLF4J test provider {@link
- * ConfigStoreUnknownKeysTest} uses.
+ * SectionBinderUnknownKeysTest} uses.
  */
 class ConfigSectionsUnknownKeysTest {
 

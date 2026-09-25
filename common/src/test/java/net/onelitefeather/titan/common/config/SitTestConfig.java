@@ -22,7 +22,8 @@ import java.util.List;
 
 /**
  * A stand-in for the real {@code sit} module's config record, used to exercise {@link
- * ConfigStore}'s {@link Vec} and {@link Key} adapters without depending on the {@code app} module.
+ * SectionBinder}'s {@link Vec} and {@link Key} adapters without depending on the {@code app}
+ * module.
  */
 record SitTestConfig(Vec offset, List<Key> allowedBlocks) {
 

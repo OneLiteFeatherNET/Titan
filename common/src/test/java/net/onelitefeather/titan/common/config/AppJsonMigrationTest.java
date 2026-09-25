@@ -188,6 +188,20 @@ class AppJsonMigrationTest {
         assertFalse(Files.exists(tempDir.resolve("application.yaml")), "no application.yaml may be written for a broken app.json");
     }
 
+    @Test
+    @DisplayName("A document whose root is not a JSON object is rejected, and nothing is renamed or written")
+    void nonObjectRootIsRejected(@TempDir Path tempDir) throws IOException {
+        Path appJson = tempDir.resolve("app.json");
+        String content = "[1, 2, 3]";
+        Files.writeString(appJson, content);
+
+        assertThrows(ConfigException.class, () -> migration.migrate(tempDir));
+
+        assertEquals(content, Files.readString(appJson), "app.json must never be modified");
+        assertFalse(Files.exists(tempDir.resolve("app.json.migrated")), "app.json must never be renamed");
+        assertFalse(Files.exists(tempDir.resolve("application.yaml")), "no application.yaml may be written");
+    }
+
     private Object loadYaml(Path file) throws IOException {
         try (var reader = Files.newBufferedReader(file)) {
             return yaml.load(reader);

@@ -34,9 +34,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The binding core shared by every source of a config section - today {@link ConfigStore} (a
- * single {@code app.json} document) and {@link ConfigSections} (flattened {@code avaje-config}
- * keys reassembled into a tree).
+ * The binding core {@link ConfigSections} (flattened {@code avaje-config} keys reassembled into a
+ * tree) uses to bind a module's config record.
  * <p>
  * Given a section's raw JSON value (or {@code null} if the section is absent) and a default
  * instance of the module's config record, {@link #bind} deep-merges the two, deserializes the
@@ -45,8 +44,8 @@ import java.util.Map;
  * ConfigException} naming the offending field, and warns once about keys the record does not
  * declare.
  * <p>
- * Package-private: callers only reach this through {@link ConfigStore#section(String, Class,
- * Record)} or {@link ConfigSections#section(String, Class, Record)}.
+ * Package-private: callers only reach this through {@link ConfigSections#section(String, Class,
+ * Record)}.
  */
 final class SectionBinder {
 
@@ -63,18 +62,15 @@ final class SectionBinder {
     }
 
     /**
-     * The single {@link Gson} instance every section is bound with - shared with {@link
-     * ConfigStore}, which also uses it to serialize a whole section back to JSON for {@link
-     * ConfigStore#setSection(String, Record)} and {@link ConfigStore#save()}, so the same {@link
-     * Vec}/{@link Pos}/{@link Key} adapters apply everywhere a config record is (de)serialized.
+     * The single {@link Gson} instance every section is bound with, so the same {@link Vec}/{@link
+     * Pos}/{@link Key} adapters apply everywhere a config record is (de)serialized.
      */
     Gson gson() {
         return gson;
     }
 
     /**
-     * The result of binding a section: the raw JSON, deep-merged over the defaults (what a caller
-     * such as {@link ConfigStore} keeps around to write back unchanged), and the value
+     * The result of binding a section: the raw JSON, deep-merged over the defaults, and the value
      * deserialized from it.
      */
     record Bound<R extends Record>(JsonElement merged, R value) {

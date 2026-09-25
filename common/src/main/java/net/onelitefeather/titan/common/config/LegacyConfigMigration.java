@@ -21,18 +21,14 @@ import com.google.gson.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 /**
- * Migrates the lobby's original flat {@code app.json} format to the sectioned format used by
- * {@link ConfigStore}.
+ * Migrates the lobby's original flat {@code app.json} format to the sectioned format {@link
+ * AppJsonMigration} writes to {@code application.yaml}.
  * <p>
  * The mapping is fixed (see {@code design.md}, decision 5 of the {@code lobby-feature-modules}
  * change):
@@ -50,8 +46,6 @@ import java.util.Set;
  * therefore gets no {@code elytra} section at all, and the module starts with its own compiled-in
  * defaults instead.</li>
  * </ul>
- * Before the migrated document is written, the original file is copied next to itself as
- * {@code <file>.v1.bak}.
  */
 final class LegacyConfigMigration {
 
@@ -95,28 +89,9 @@ final class LegacyConfigMigration {
     }
 
     /**
-     * Migrates a legacy flat document read from {@code file} into the sectioned format.
-     * Backs up the original file to {@code <file>.v1.bak} before returning, and logs the
-     * legacy keys that were dropped instead of migrated.
-     *
-     * @param file   the path the legacy document was read from, used only for the backup copy
-     *               and log message
-     * @param legacy the parsed legacy document
-     * @return the migrated, sectioned document, including {@code configVersion}
-     */
-    static JsonObject migrate(Path file, JsonObject legacy) {
-        backUp(file);
-        JsonObject migrated = toSectioned(legacy, fileNameOf(file));
-        logDroppedKeys(file, legacy);
-        return migrated;
-    }
-
-    /**
-     * Maps a legacy flat document to the sectioned format, without backing up the original file
-     * or logging dropped keys - both are the caller's business. {@link #migrate(Path, JsonObject)}
-     * uses this for {@link ConfigStore}'s own legacy handling; {@link AppJsonMigration} reuses it
-     * for the one-time {@code app.json} &rarr; {@code application.yaml} switch, since the v1 &rarr;
-     * v2 mapping is identical either way (DRY).
+     * Maps a legacy flat document to the sectioned format, without logging the keys it drops -
+     * that is the caller's business. {@link AppJsonMigration} uses this for the one-time
+     * {@code app.json} &rarr; {@code application.yaml} switch.
      *
      * @param legacy   the parsed legacy document
      * @param fileName the name of the file being migrated, used only to complete a thrown {@link
@@ -145,19 +120,6 @@ final class LegacyConfigMigration {
         addIfNotEmpty(migrated, "tickle", tickle);
 
         return migrated;
-    }
-
-    private static String fileNameOf(Path file) {
-        return file.getFileName() != null ? file.getFileName().toString() : file.toString();
-    }
-
-    private static void backUp(Path file) {
-        Path backup = file.resolveSibling(file.getFileName().toString() + ".v1.bak");
-        try {
-            Files.copy(file, backup, StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-            throw new UncheckedIOException("Failed to back up legacy config " + file + " to " + backup, e);
-        }
     }
 
     private static void moveIfPresent(JsonObject source, String sourceKey, JsonObject target, String targetKey) {

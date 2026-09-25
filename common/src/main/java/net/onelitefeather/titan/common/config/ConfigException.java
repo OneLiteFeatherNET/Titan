@@ -18,15 +18,15 @@ package net.onelitefeather.titan.common.config;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Signals a problem with a {@link ConfigStore}-managed configuration document: either a
+ * Signals a problem with a {@code SectionBinder}-bound configuration section: either a
  * syntactically broken file, or a value that failed the validation performed by a config
  * record's compact constructor.
  * <p>
  * Config records only know their own field and the reason a value is rejected; they do not
  * know which section of the document they were loaded from. A record's compact constructor is
  * therefore expected to throw the result of {@link #invalid(String, String)}, which carries the
- * field and reason only. {@link ConfigStore} catches that exception (Gson wraps constructor
- * failures, so the store unwraps the cause chain first) and completes it with the section id and
+ * field and reason only. {@link SectionBinder} catches that exception (Gson wraps constructor
+ * failures, so the binder unwraps the cause chain first) and completes it with the section id and
  * file name via {@link #withSection(String)} and {@link #withFile(String)} before rethrowing it.
  * <p>
  * The resulting message has the shape {@code <file>: <section>.<field> - <reason>}, for example
@@ -49,7 +49,7 @@ public final class ConfigException extends RuntimeException {
 
     /**
      * Creates an exception for a value that a config record's compact constructor rejected.
-     * The section is not known at this point; {@link ConfigStore} fills it in via
+     * The section is not known at this point; {@link SectionBinder} fills it in via
      * {@link #withSection(String)} once it knows which section produced the failing record.
      *
      * @param field  the name of the offending record component

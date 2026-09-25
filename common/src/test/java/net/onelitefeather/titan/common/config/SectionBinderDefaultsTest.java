@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * Covers the {@code lobby-module-config} spec scenarios "missing section" and "missing single
  * value" against {@link SectionBinder#bind(String, String, Class, Record, JsonElement)} directly,
- * without a {@link ConfigStore} document or a {@link ConfigSections} configuration around it.
+ * without a {@link ConfigSections} configuration around it.
  */
 class SectionBinderDefaultsTest {
 

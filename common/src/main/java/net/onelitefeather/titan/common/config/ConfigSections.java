@@ -39,7 +39,7 @@ import java.util.Set;
  * keys, splitting a value into a JSON array only where the target record component - found by
  * walking {@code type}'s own record components, recursing into nested records and into the value
  * type of a {@code Map<String, Record>} component - is actually a {@code List}/{@code Set}/array,
- * then delegates to the same, already-tested {@link SectionBinder} core {@link ConfigStore} uses.
+ * then delegates to the same, already-tested {@link SectionBinder} core.
  */
 public final class ConfigSections {
 

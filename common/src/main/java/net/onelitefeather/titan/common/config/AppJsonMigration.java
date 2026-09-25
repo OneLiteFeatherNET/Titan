@@ -210,8 +210,8 @@ public final class AppJsonMigration {
      * Writes {@code document} to {@code target} as block-style YAML, first to a sibling temporary
      * file that is then moved into place with {@link StandardCopyOption#ATOMIC_MOVE} (falling back
      * to a plain {@link StandardCopyOption#REPLACE_EXISTING} move only if the file system does not
-     * support an atomic move) - the same pattern {@code ConfigStore#save()} uses, so a reader never
-     * observes a half-written file.
+     * support an atomic move), so a reader never observes a half-written file and a failure while
+     * writing never corrupts a previous, still-valid {@code application.yaml}.
      */
     private static void writeYaml(Path target, JsonObject document) {
         DumperOptions options = new DumperOptions();
