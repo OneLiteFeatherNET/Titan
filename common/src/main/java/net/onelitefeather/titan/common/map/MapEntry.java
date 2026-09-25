@@ -15,7 +15,6 @@
  */
 package net.onelitefeather.titan.common.map;
 
-import net.onelitefeather.titan.common.config.AppConfig;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Files;
@@ -23,11 +22,14 @@ import java.nio.file.Path;
 
 public record MapEntry(@NotNull Path path) {
 
+    /** The file name a lobby map is persisted under, inside a map's own directory. */
+    public static final String MAP_FILE_NAME = "map.json";
+
     public boolean hasMapFile() {
-        return Files.exists(path.resolve(AppConfig.MAP_FILE_NAME));
+        return Files.exists(path.resolve(MAP_FILE_NAME));
     }
 
     public @NotNull Path getMapFile() {
-        return path.resolve(AppConfig.MAP_FILE_NAME);
+        return path.resolve(MAP_FILE_NAME);
     }
 }

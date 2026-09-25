@@ -13,7 +13,6 @@ dependencies {
     implementation(libs.togglz)
     implementation(libs.aves)
     implementation(libs.adventure.minimessage)
-    implementation(libs.caffeine)
 
     // Logging. See :app - the setup server had the same silent-logger problem.
     implementation(libs.slf4j.api)

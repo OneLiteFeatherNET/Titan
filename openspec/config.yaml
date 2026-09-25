@@ -1,0 +1,51 @@
+schema: olf-spec-driven
+
+# Project context (optional)
+# This is shown to AI when creating artifacts.
+# Add your tech stack, conventions, style guides, domain knowledge, etc.
+# Example:
+#   context: |
+#     Tech stack: TypeScript, React, Node.js
+#     We use conventional commits
+#     Domain: e-commerce platform
+
+context: |
+  Titan ist ein Minestom-Lobby-Server (Java 25, Gradle, Minestom 26.1, Aves, Cyano/Microtus für Tests).
+  Für allen Java-Code gelten:
+  - Clean Code: sprechende Namen, kleine Methoden mit einer Aufgabe, keine versteckten Seiteneffekte, keine toten Codepfade.
+  - SOLID: eine Verantwortung pro Klasse; erweitern statt ändern (neue Features docken über Andockpunkte an);
+    Abhängigkeiten über Konstruktor und Abstraktionen, nicht über statische Singletons.
+  - DRY: kein kopiertes Verhalten; gemeinsame Logik nur dann extrahieren, wenn sie wirklich dieselbe Bedeutung hat.
+  - Test Driven Design mit Testpyramide: Test zuerst. Die breite Basis sind schnelle Unit-Tests ohne Minestom-Server
+    (reine Logik wird dafür aus Listenern herausgelöst). Darüber weniger Integrationstests mit Cyano-Env für
+    Event-Verdrahtung und Spielerverhalten. Oben nur wenige manuelle/End-to-End-Abnahmen.
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+#   operations:
+#     apply:
+#       guidance:
+#         - Keep test summaries concise
+#     archive:
+#       guidance:
+#         - Summarize the archive outcome before finishing
+
+operations:
+  apply:
+    guidance:
+      # Generic orchestration rules (Sonnet/Haiku split, worktree waves, integration
+      # branch, review agents, ...) now live in the olf-spec-driven schema's
+      # apply.instruction. Only Titan-specific guidance stays here.
+      - Der Build wird mit "./gradlew build" geprüft, bevor Tasks in tasks.md abgehakt werden.

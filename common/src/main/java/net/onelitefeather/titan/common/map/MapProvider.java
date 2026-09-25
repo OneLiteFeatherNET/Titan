@@ -25,7 +25,6 @@ import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.LightingChunk;
 import net.minestom.server.instance.anvil.AnvilLoader;
 import net.minestom.server.utils.chunk.ChunkUtils;
-import net.onelitefeather.titan.common.config.AppConfig;
 import net.theevilreaper.aves.file.GsonFileHandler;
 import net.theevilreaper.aves.file.gson.PositionGsonAdapter;
 import net.theevilreaper.aves.map.BaseMap;
@@ -73,12 +72,12 @@ public final class MapProvider {
     }
 
     public void saveMap(@NotNull BaseMap baseMap) {
-        this.fileHandler.save(this.mapPool.getMapEntry().path().resolve(AppConfig.MAP_FILE_NAME), baseMap instanceof LobbyMap gameMap ? gameMap : baseMap);
+        this.fileHandler.save(this.mapPool.getMapEntry().path().resolve(MapEntry.MAP_FILE_NAME), baseMap instanceof LobbyMap gameMap ? gameMap : baseMap);
         loadMapData();
     }
 
     private void loadMapData() {
-        var lobbyData = this.fileHandler.load(this.mapPool.getMapEntry().path().resolve(AppConfig.MAP_FILE_NAME), LobbyMap.class);
+        var lobbyData = this.fileHandler.load(this.mapPool.getMapEntry().path().resolve(MapEntry.MAP_FILE_NAME), LobbyMap.class);
         // Use LightingChunk so the world is actually lit: it computes and sends
         // sky/block light. Plain DynamicChunks send no light, leaving the lobby
         // pitch black. Must be set before any chunk is loaded by the AnvilLoader.
