@@ -88,8 +88,8 @@ navigator:
       icon: minecraft:enderman_spawn_egg
       displayName: "<!i><gradient:#616161:#e80000c>Slender</gradient>"
       destination: cygnus
-      # Optional: the name of a TitanFeatures constant this entry is gated behind. Omit this key
-      # entirely for an entry that is always visible.
+      # Optional: the name of a flag listed under "features" below that this entry is gated
+      # behind. Omit this key entirely for an entry that is always visible.
       feature: NAVIGATOR_SLENDER
     creative:
       slot: 8

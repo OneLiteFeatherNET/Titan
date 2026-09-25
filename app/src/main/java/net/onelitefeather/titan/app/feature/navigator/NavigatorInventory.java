@@ -124,8 +124,8 @@ final class NavigatorInventory {
     private synchronized void applyLayoutIfChanged() {
         // Recomputed on every open by design, not cached across opens: a flag flip has no push
         // signal to this class, so re-checking here is the only way to notice one. The cost is
-        // small - one Togglz lookup per flagged entry - and Togglz itself re-reads flags.properties
-        // at most once per second, not on every isActive() call.
+        // small - one ConfigFeatureFlags lookup per flagged entry, i.e. one avaje-config Config.getBool
+        // read per isActive() call, with no per-second caching of its own.
         List<NavigatorEntry> visible = NavigatorVisibility.visible(this.entries.entries(), this.featureFlags);
         if (visible.equals(this.appliedVisibleEntries)) {
             return;
