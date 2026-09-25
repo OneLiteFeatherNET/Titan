@@ -15,43 +15,45 @@
  */
 package net.onelitefeather.titan.setup.config;
 
-import io.avaje.config.Configuration;
+import net.onelitefeather.titan.common.config.ConfigException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.util.Map;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Covers {@link SetupSpawnConfig#read(Configuration)}, the only configuration value the setup
- * server reads (see {@code design.md} decision 5 of {@code standardized-config-profiles}). It
- * reads {@code spawn.simulationDistance} directly via {@link Configuration#getInt(String, int)}
- * rather than through {@link net.onelitefeather.titan.common.config.ConfigSections}'s record
- * binding: the lobby's own {@code spawn} section also carries {@code minHeight}/{@code maxHeight},
- * fields this setup-local record does not declare, and binding a partial record over a shared
- * {@code application.yaml} would make {@code ConfigSections} log a spurious "contains unknown
- * keys" warning on every setup-server start.
+ * Covers {@link SetupSpawnSettings#simulationDistance(int)}, the pure validation behind {@link
+ * SetupSpawnConfig}'s compact constructor (design.md, decisions 3 and 5).
+ *
+ * <p>None of these tests touch the {@code io.avaje.config.Config} facade or the section-binding
+ * layer it replaced - the validated value comes in as a plain {@code int}, so this class is free
+ * of the facade's global state.
  */
 class SetupSpawnConfigTest {
 
     @Test
-    @DisplayName("Reads the configured simulation distance")
-    void readsTheConfiguredSimulationDistance() {
-        Configuration configuration = Configuration.builder().putAll(Map.of("spawn.simulationDistance", "4")).build();
-
-        SetupSpawnConfig spawn = SetupSpawnConfig.read(configuration);
-
-        assertEquals(4, spawn.simulationDistance());
+    @DisplayName("Accepts a positive simulation distance")
+    void acceptsAPositiveSimulationDistance() {
+        assertEquals(4, SetupSpawnSettings.simulationDistance(4));
     }
 
     @Test
-    @DisplayName("Falls back to the default simulation distance (2) when unset")
-    void fallsBackToTheDefaultWhenUnset() {
-        Configuration configuration = Configuration.builder().build();
+    @DisplayName("Rejects a simulation distance of zero, naming the full key")
+    void rejectsAZeroSimulationDistance() {
+        ConfigException thrown = assertThrows(ConfigException.class, () -> SetupSpawnSettings.simulationDistance(0));
 
-        SetupSpawnConfig spawn = SetupSpawnConfig.read(configuration);
+        assertEquals("spawn.simulationDistance", thrown.field());
+        assertTrue(thrown.getMessage().contains("spawn.simulationDistance"), "message must name the full key: " + thrown.getMessage());
+    }
 
-        assertEquals(2, spawn.simulationDistance());
+    @Test
+    @DisplayName("Rejects a negative simulation distance, naming the full key")
+    void rejectsANegativeSimulationDistance() {
+        ConfigException thrown = assertThrows(ConfigException.class, () -> SetupSpawnSettings.simulationDistance(-1));
+
+        assertEquals("spawn.simulationDistance", thrown.field());
+        assertTrue(thrown.getMessage().contains("spawn.simulationDistance"), "message must name the full key: " + thrown.getMessage());
     }
 }

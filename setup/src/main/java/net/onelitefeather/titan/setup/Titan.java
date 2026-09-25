@@ -15,8 +15,6 @@
  */
 package net.onelitefeather.titan.setup;
 
-import io.avaje.config.Config;
-import io.avaje.config.Configuration;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
@@ -67,8 +65,7 @@ public final class Titan {
         // ConfigException here too, instead of a raw ExceptionInInitializerError - see
         // ConfigurationFactory's Javadoc (DRY).
         new ConfigurationFactory().initialise();
-        Configuration configuration = Config.asConfiguration();
-        this.simulationDistance = SetupSpawnConfig.read(configuration).simulationDistance();
+        this.simulationDistance = SetupSpawnConfig.read().simulationDistance();
         BlockHandlerHelper.registerAll();
 
         initCommands();
