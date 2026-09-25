@@ -40,7 +40,8 @@ public final class TickleValidation {
      * Runs {@link TickleModule#readCooldown()} - the same read-and-validate line
      * {@link TickleModule#enable} runs for {@code tickle.cooldownMillis}.
      *
-     * @throws ConfigException if the configured value is missing, not a whole number, or negative
+     * @throws IllegalStateException if the configured value is missing or not a whole number
+     * @throws ConfigException       if the configured value is negative
      */
     public static void validate() {
         TickleModule.readCooldown();

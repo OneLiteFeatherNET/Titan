@@ -35,10 +35,13 @@ import net.onelitefeather.titan.common.config.ConfigurationFactory;
  * <p>Four modes, chosen by {@code args[0]}:
  * <ul>
  * <li>{@value #VALIDATE_TICKLE}: runs {@link TickleValidation#validate()} - the same
- * {@code ConfigValues.longValue}/{@code TickleSettings.cooldown} line
+ * {@code Config.getAs(key, Long::parseLong)}/{@code TickleSettings.cooldown} line
  * {@code TickleModule.enable} runs. Prints {@code tickle=OK} and exits {@code 0} if the configured
- * value is valid; otherwise prints {@code ERROR: <message>} (the {@link ConfigException}'s own
- * message, naming the full key) and exits {@code 1}.</li>
+ * value is valid; otherwise prints {@code ERROR: <message>}, naming the full key once, plus one
+ * {@code Caused by: <cause message>} line per exception in the cause chain (the reason, e.g. a
+ * {@link NumberFormatException}'s own message, so both the key and the reason reach this
+ * process's stdout even though {@code Config.getAs} wraps the parse failure into an
+ * {@link IllegalStateException} rather than a {@link ConfigException}), and exits {@code 1}.</li>
  * <li>{@value #NAVIGATOR_ENTRIES}: runs {@link NavigatorValidation#resolvedEntryNames()} - the same
  * name resolution {@code NavigatorModule.enable} runs for {@code navigator.entries} - and prints
  * {@code navigator.entries=<name>,<name>,...}.</li>
@@ -95,8 +98,16 @@ public final class ConfigurationPrintMain {
         try {
             TickleValidation.validate();
             System.out.println("tickle=OK");
-        } catch (ConfigException e) {
+        } catch (RuntimeException e) {
+            // A negative cooldown fails validation with a ConfigException naming the key, no
+            // cause. A non-numeric or missing value fails the read itself with an
+            // IllegalStateException that also names the key, keeping the NumberFormatException
+            // (or similar) as its cause - printed here too, so the reason reaches this process's
+            // stdout, not just the key.
             System.out.println("ERROR: " + e.getMessage());
+            for (Throwable cause = e.getCause(); cause != null; cause = cause.getCause()) {
+                System.out.println("Caused by: " + cause.getMessage());
+            }
             System.exit(1);
         }
     }

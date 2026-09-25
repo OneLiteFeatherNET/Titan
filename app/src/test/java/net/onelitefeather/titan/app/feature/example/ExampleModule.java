@@ -127,7 +127,7 @@ public final class ExampleModule implements LobbyModule {
      * <pre>{@code
      * String greeting = ExampleGreetingSettings.greeting(Config.get(ExampleGreetingSettings.GREETING_KEY));
      * long cooldownMillis =
-     *         ExampleGreetingSettings.cooldownMillis(ConfigValues.longValue(ExampleGreetingSettings.COOLDOWN_KEY));
+     *         ExampleGreetingSettings.cooldownMillis(Config.getAs(ExampleGreetingSettings.COOLDOWN_KEY, Long::parseLong));
      * }</pre>
      *
      * <p>This template has no section of its own in the shipped {@code application.yaml} (see the

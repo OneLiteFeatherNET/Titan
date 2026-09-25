@@ -25,7 +25,7 @@ import net.onelitefeather.titan.common.config.ConfigException;
  *
  * <pre>{@code
  * String greeting = ExampleGreetingSettings.greeting(Config.get(GREETING_KEY));
- * long cooldownMillis = ExampleGreetingSettings.cooldownMillis(ConfigValues.longValue(COOLDOWN_KEY));
+ * long cooldownMillis = ExampleGreetingSettings.cooldownMillis(Config.getAs(COOLDOWN_KEY, Long::parseLong));
  * }</pre>
  *
  * <p>This template has no section of its own in the shipped {@code application.yaml} (see

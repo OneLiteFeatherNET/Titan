@@ -227,17 +227,20 @@ den Konstruktor, wie jede andere Abhängigkeit auch.
 
 ```java
 // TickleModule.enable()
-Duration cooldown = TickleSettings.cooldown(ConfigValues.longValue(COOLDOWN_KEY));
+Duration cooldown = TickleSettings.cooldown(Config.getAs(COOLDOWN_KEY, Long::parseLong));
 ```
 
 - **Strings** kommen über `Config.get(key)`, **Listen** über
   `Config.list().of(key)`, **Wahrheitswerte** über `Config.getBool(key)`.
 - **Zahlen** (`int`/`long`/`double`) kommen über
-  `net.onelitefeather.titan.common.config.ConfigValues#intValue/longValue/doubleValue(key)`
-  statt über `Config.getInt/getLong/getDecimal`: Die Fassade wirft bei einem
-  ungültigen Zahlenwert eine `NumberFormatException` ohne Schlüssel,
-  `ConfigValues` übersetzt sie in `ConfigException.invalid(key, "must be a
-  whole number, was '…'")` mit dem vollen Schlüssel.
+  `Config.getAs(key, Integer::parseInt)` (entsprechend `Long::parseLong`,
+  `Double::parseDouble`) statt über `Config.getInt/getLong/getDecimal`: Die
+  Fassade wirft bei einem ungültigen Zahlenwert über diese drei bloß eine
+  `NumberFormatException` ohne Schlüssel, aber `Config.getAs(key, fn)` fängt
+  einen Fehler von `fn` selbst ab und wirft eine `IllegalStateException`, die
+  den vollen Schlüssel einmal benennt und die ursprüngliche
+  `NumberFormatException` (mit dem ungültigen Rohwert in ihrer eigenen
+  Meldung) als `cause` behält.
 - Der **Schlüssel** ist eine `private static final String`-Konstante im
   Modul, nach dem Schema `<modul-id>.<feld>` (z. B. `"tickle.cooldownMillis"`)
   - kein Config-Record mehr, das den Abschnitt beschreibt.
@@ -500,8 +503,9 @@ prüft im Build, nicht nur per Konvention (s. `design.md`, Entscheidung 10):
 2. `<Name>Module` (public, implementiert `LobbyModule`, trägt `@Singleton`
    und ein noch nicht vergebenes `@Priority(n)` - s. "Gefunden werden" oben
    und die Prioritätstabelle dort) anlegen. Braucht das Feature Konfiguration,
-   kommen die Schlüssel-Konstanten und das Lesen über `Config`/`ConfigValues`
-   in dieselbe Klasse, die Validierung in eine reine, paketprivate Funktion
+   kommen die Schlüssel-Konstanten und das Lesen über `Config` (inklusive
+   `Config.getAs` für Zahlen) in dieselbe Klasse, die Validierung in eine
+   reine, paketprivate Funktion
    (s. "Konfiguration lesen" oben) - kein eigenes Config-Record mehr. Alles
    andere - Handler, reine Logik, Item-/Tag-Konstanten - bleibt paketprivat.
 3. Abhängigkeiten (eine `Instance`, ein `Deliver`, ein `Clock`, ...) über den
@@ -511,8 +515,9 @@ prüft im Build, nicht nur per Konvention (s. `design.md`, Entscheidung 10):
    `@Bean` in `PlatformBeans` oder, falls er selbst Feature-übergreifende
    Logik trägt, als eigene `@Singleton`-Klasse dazu.
 4. In `enable(ModuleContext context)` die gebrauchten Andockpunkte verdrahten:
-   `Config`/`ConfigValues` fürs Lesen der eigenen Werte (kein Andockpunkt auf
-   `ModuleContext`, s. "Konfiguration lesen" oben), dazu
+   `Config` (inklusive `Config.getAs` für Zahlen) fürs Lesen der eigenen
+   Werte (kein Andockpunkt auf `ModuleContext`, s. "Konfiguration lesen"
+   oben), dazu
    `context.items().register(...)`, `context.commands().register(...)`,
    `context.navigator().add(...)`, `context.listen(...)`/
    `listenIncludingCancelled(...)`, `context.tasks()`.

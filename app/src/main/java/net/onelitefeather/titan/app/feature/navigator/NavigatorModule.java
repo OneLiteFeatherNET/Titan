@@ -37,7 +37,6 @@ import net.onelitefeather.titan.app.module.item.ItemSlot;
 import net.onelitefeather.titan.app.module.item.LobbyItem;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntry;
-import net.onelitefeather.titan.common.config.ConfigValues;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
 
 /**
@@ -142,7 +141,7 @@ public final class NavigatorModule implements LobbyModule {
         List<NavigatorEntry> entries = new ArrayList<>();
         for (String name : names) {
             String prefix = ENTRIES_PATH + "." + name + ".";
-            int slot = ConfigValues.intValue(prefix + "slot");
+            int slot = Config.getAs(prefix + "slot", Integer::parseInt);
             String icon = Config.get(prefix + "icon");
             String displayName = Config.get(prefix + "displayName");
             String destination = Config.get(prefix + "destination");

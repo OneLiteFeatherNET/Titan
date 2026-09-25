@@ -30,7 +30,6 @@ import net.minestom.server.event.player.PlayerPacketEvent;
 import net.minestom.server.network.packet.client.play.ClientInputPacket;
 import net.onelitefeather.titan.app.module.LobbyModule;
 import net.onelitefeather.titan.app.module.ModuleContext;
-import net.onelitefeather.titan.common.config.ConfigValues;
 import net.onelitefeather.titan.common.event.EntityDismountEvent;
 
 /**
@@ -67,7 +66,7 @@ public final class SitModule implements LobbyModule {
     @Override
     public void enable(ModuleContext context) {
         Vec offset = new Vec(
-                ConfigValues.doubleValue(SitSettings.OFFSET_X_KEY), ConfigValues.doubleValue(SitSettings.OFFSET_Y_KEY), ConfigValues.doubleValue(SitSettings.OFFSET_Z_KEY));
+                Config.getAs(SitSettings.OFFSET_X_KEY, Double::parseDouble), Config.getAs(SitSettings.OFFSET_Y_KEY, Double::parseDouble), Config.getAs(SitSettings.OFFSET_Z_KEY, Double::parseDouble));
         List<Key> allowedBlocks = SitSettings.allowedBlocks(Config.list().of(SitSettings.ALLOWED_BLOCKS_KEY).stream().map(SitSettings::parseBlock).toList());
         Seats seats = new Seats(offset);
 
