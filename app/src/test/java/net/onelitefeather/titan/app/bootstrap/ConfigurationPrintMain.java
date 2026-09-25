@@ -16,7 +16,6 @@
 package net.onelitefeather.titan.app.bootstrap;
 
 import io.avaje.config.Configuration;
-import java.nio.file.Path;
 
 /**
  * The child process entry point {@link ConfigurationPrecedenceTest} launches: builds the {@link
@@ -36,7 +35,7 @@ public final class ConfigurationPrintMain {
     }
 
     public static void main(String[] args) {
-        Configuration configuration = new ConfigurationFactory().load(Path.of("").toAbsolutePath());
+        Configuration configuration = new ConfigurationFactory().load();
         for (String key : args) {
             System.out.println(key + "=" + configuration.get(key, "<absent>"));
         }

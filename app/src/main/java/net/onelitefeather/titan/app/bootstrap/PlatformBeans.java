@@ -119,7 +119,7 @@ public final class PlatformBeans {
     public Configuration configuration() {
         Path workingDir = Path.of("").toAbsolutePath();
         new AppJsonMigration().migrate(workingDir);
-        Configuration configuration = new ConfigurationFactory().load(workingDir);
+        Configuration configuration = new ConfigurationFactory().load();
         ConfigurationStartupLog.activeProfiles(configuration);
         return configuration;
     }

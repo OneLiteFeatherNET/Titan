@@ -16,7 +16,6 @@
 package net.onelitefeather.titan.app.bootstrap;
 
 import io.avaje.config.Configuration;
-import java.nio.file.Path;
 
 /**
  * Builds the lobby's {@code avaje-config} {@link Configuration} - {@code application.yaml}, its
@@ -30,27 +29,25 @@ import java.nio.file.Path;
  * <p>An instance, not a static method: depending on this factory type - rather than calling
  * {@code Configuration.builder()} directly, or the static {@code io.avaje.config.Config} facade -
  * is what lets a test substitute its own factory later if the need ever arises, and keeps
- * {@link PlatformBeans} depending on an abstraction instead of global state (see the change's
- * "Principles": "the factory depends on a Path, not on globals").
+ * {@link PlatformBeans} depending on an abstraction instead of global state.
  *
- * <p>{@code workingDir} is accepted for exactly that reason, even though {@code avaje-config}
- * itself resolves {@code application.yaml} and friends against the JVM's actual working directory,
- * not an arbitrary {@link Path} (see {@code design.md}, decision 1's spike result) - a caller must
- * therefore only call {@link #load(Path)} with a {@code workingDir} that equals the JVM's real
- * working directory (e.g. by starting the whole process with that directory, the way the
- * configuration precedence test does with {@link ProcessBuilder#directory(java.io.File)}), never
- * with an arbitrary path the JVM was not actually started in.
+ * <p>{@link #load()} takes no working directory: {@code avaje-config} always resolves {@code
+ * application.yaml} and friends against the JVM's actual process working directory, never against
+ * a path a caller hands it (see {@code design.md}, decision 1's spike result), so a parameter here
+ * could only ever be ignored or misleadingly suggest otherwise. A caller that needs {@code
+ * application.yaml} read from a particular directory must therefore start the whole JVM in that
+ * directory (e.g. via {@link ProcessBuilder#directory(java.io.File)}, the way the configuration
+ * precedence test does), not pass it to this method.
  */
 public final class ConfigurationFactory {
 
     /**
-     * @param workingDir the directory the lobby was started in; must equal the JVM's actual working
-     *                   directory (see the class Javadoc)
      * @return a {@link Configuration} built from {@code application.yaml}, its active profiles, an
      *         external file (via {@code CONFIG_FILE}/{@code config.file}), environment variables
-     *         and system properties
+     *         and system properties - all resolved against the JVM's actual process working
+     *         directory (see the class Javadoc)
      */
-    public Configuration load(Path workingDir) {
+    public Configuration load() {
         return Configuration.builder().includeResourceLoading().build();
     }
 }
