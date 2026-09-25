@@ -35,16 +35,21 @@ import net.minestom.server.entity.Player;
 final class ExampleGreetingTracker {
 
     private final Clock clock;
-    private final ExampleConfig config;
+    private final String greeting;
+    private final long cooldownMillis;
     private final Map<UUID, Long> lastGreetedAtMillis = new ConcurrentHashMap<>();
 
     /**
-     * @param clock  the clock "now" is read from
-     * @param config this module's own configuration, read once in {@link ExampleModule#enable}
+     * @param clock          the clock "now" is read from
+     * @param greeting       this module's validated greeting template, read and validated once in
+     *                       {@link ExampleModule#enable}
+     * @param cooldownMillis this module's validated cooldown in milliseconds, read and validated
+     *                       once in {@link ExampleModule#enable}
      */
-    ExampleGreetingTracker(Clock clock, ExampleConfig config) {
+    ExampleGreetingTracker(Clock clock, String greeting, long cooldownMillis) {
         this.clock = clock;
-        this.config = config;
+        this.greeting = greeting;
+        this.cooldownMillis = cooldownMillis;
     }
 
     /**
@@ -55,11 +60,11 @@ final class ExampleGreetingTracker {
         long now = this.clock.millis();
         UUID playerId = player.getUuid();
         Long lastGreeted = this.lastGreetedAtMillis.get(playerId);
-        if (lastGreeted != null && ExampleGreetingRule.isOnCooldown(lastGreeted, now, this.config.cooldownMillis())) {
+        if (lastGreeted != null && ExampleGreetingRule.isOnCooldown(lastGreeted, now, this.cooldownMillis)) {
             return Optional.empty();
         }
         this.lastGreetedAtMillis.put(playerId, now);
-        return Optional.of(ExampleGreetingRule.greeting(this.config.greeting(), player.getUsername()));
+        return Optional.of(ExampleGreetingRule.greeting(this.greeting, player.getUsername()));
     }
 
     /**

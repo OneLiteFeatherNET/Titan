@@ -6,7 +6,7 @@ Dieses Dokument erklärt, wie ein Lobby-Feature als eigenständiges
 Checkliste für ein neues Feature. Alle Codebeispiele stammen, wo nicht anders
 vermerkt, aus dem lauffähigen Vorlagemodul
 `app/src/test/java/net/onelitefeather/titan/app/feature/example/`
-(`ExampleModule`, `ExampleGreetingRule`,
+(`ExampleModule`, `ExampleGreetingRule`, `ExampleGreetingSettings`,
 `ExampleGreetingTracker`, `ExampleItems`) - kopierbar als Ausgangspunkt für ein
 echtes Feature. Es ist bewusst test-only (`app/src/test`, nicht
 `app/src/main`), damit es nie als echtes Modul mitläuft - s. "Gefunden

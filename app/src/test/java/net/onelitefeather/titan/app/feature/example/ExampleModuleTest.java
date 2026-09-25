@@ -15,14 +15,10 @@
  */
 package net.onelitefeather.titan.app.feature.example;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
-import net.kyori.adventure.text.Component;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.PlayerHand;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
@@ -41,14 +37,14 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Env integration coverage for {@link ExampleModule} through a real {@link ModuleHarness} - the
- * top of the test pyramid described in {@code docs/lobby-modules.md}: item use dispatch, the
- * command's lifecycle, and config read from a temp {@code application.yaml}. The pure cooldown and
- * formatting rule already has its own coverage in {@link ExampleGreetingRuleTest}; this class only
- * checks that the module wires it to the platform correctly.
+ * top of the test pyramid described in {@code docs/lobby-modules.md}: item use dispatch and the
+ * command's lifecycle. The pure cooldown and formatting rule already has its own coverage in
+ * {@link ExampleGreetingRuleTest}, and the pure validation of the module's configuration values in
+ * {@code ExampleGreetingSettingsTest}; this class only checks that the module wires everything to
+ * the platform correctly.
  *
  * <p>Every test uses a fixed {@link Clock} (F.I.R.S.T. - repeatable), so "now" never depends on
  * when the test happens to run.
@@ -78,7 +74,7 @@ class ExampleModuleTest {
 
             env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, token, 0L));
 
-            messages.assertSingle(message -> Assertions.assertEquals(ExampleGreetingRule.greeting(ExampleConfig.DEFAULTS.greeting(), player.getUsername()), message.message()));
+            messages.assertSingle(message -> Assertions.assertEquals(ExampleGreetingRule.greeting(ExampleModule.DEFAULT_GREETING, player.getUsername()), message.message()));
         }
     }
 
@@ -101,7 +97,7 @@ class ExampleModuleTest {
             // per use.
             List<SystemChatPacket> collected = messages.collect();
             Assertions.assertEquals(2, collected.size(), "the second use must still send a message, just not a fresh greeting");
-            Assertions.assertEquals(ExampleGreetingRule.greeting(ExampleConfig.DEFAULTS.greeting(), player.getUsername()), collected.get(0).message());
+            Assertions.assertEquals(ExampleGreetingRule.greeting(ExampleModule.DEFAULT_GREETING, player.getUsername()), collected.get(0).message());
             Assertions.assertEquals(ExampleItems.ON_COOLDOWN, collected.get(1).message(), "a second use within the cooldown must not send a fresh greeting");
         }
     }
@@ -132,7 +128,7 @@ class ExampleModuleTest {
         try (ModuleHarness harness = ModuleHarness.start(env, fixedClockModule())) {
             env.process().command().execute(player, ExampleModule.COMMAND_NAME);
 
-            messages.assertSingle(message -> Assertions.assertEquals(ExampleGreetingRule.greeting(ExampleConfig.DEFAULTS.greeting(), player.getUsername()), message.message()));
+            messages.assertSingle(message -> Assertions.assertEquals(ExampleGreetingRule.greeting(ExampleModule.DEFAULT_GREETING, player.getUsername()), message.message()));
         }
     }
 
@@ -168,24 +164,7 @@ class ExampleModuleTest {
             // usingTheGreetingTokenAgainWithinTheCooldownSendsTheOnCooldownMessage().
             List<SystemChatPacket> collected = messages.collect();
             Assertions.assertEquals(2, collected.size());
-            Assertions.assertEquals(ExampleGreetingRule.greeting(ExampleConfig.DEFAULTS.greeting(), player.getUsername()), collected.get(1).message(), "a disconnected player's cooldown must be forgotten, not carried over");
-        }
-    }
-
-    @DisplayName("The module reads its own section from a temp application.yaml")
-    @Test
-    void readsItsOwnSectionFromATempApplicationYaml(Env env, @TempDir Path dir) throws IOException {
-        Path file = dir.resolve("application.yaml");
-        Files.writeString(file, "example:\n  greeting: \"Hi %s, enjoy the lobby!\"\n  cooldownMillis: 0\n");
-        Instance instance = env.createFlatInstance();
-        TestConnection connection = env.createConnection();
-        Player player = connection.connect(instance);
-        Collector<SystemChatPacket> messages = connection.trackIncoming(SystemChatPacket.class);
-
-        try (ModuleHarness harness = ModuleHarness.start(env, file, fixedClockModule())) {
-            env.process().command().execute(player, ExampleModule.COMMAND_NAME);
-
-            messages.assertSingle(message -> Assertions.assertEquals(Component.text("Hi " + player.getUsername() + ", enjoy the lobby!"), message.message(), "the module must read the configured greeting from its own section, not the default"));
+            Assertions.assertEquals(ExampleGreetingRule.greeting(ExampleModule.DEFAULT_GREETING, player.getUsername()), collected.get(1).message(), "a disconnected player's cooldown must be forgotten, not carried over");
         }
     }
 }
