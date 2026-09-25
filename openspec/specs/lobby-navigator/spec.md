@@ -6,15 +6,19 @@ Legt fest, wie die Ziele des Lobby-Navigators entstehen: aus der Konfiguration o
 ## Requirements
 
 ### Requirement: Navigator-Ziele kommen aus der Konfiguration
-Der Navigator MUSS seine Ziele aus seinem Konfigurationsabschnitt lesen. Jedes Ziel besteht aus Symbol, angezeigtem Namen, Platz im Navigator und Weiterleitungsziel. Ein neues Ziel MUSS sich durch einen Konfigurationseintrag hinzufügen lassen, ohne Codeänderung.
+Der Navigator MUSS seine Ziele aus seinem Konfigurationsabschnitt lesen. Jedes Ziel hat einen eindeutigen Namen und besteht aus Symbol, angezeigtem Namen, Platz im Navigator und Weiterleitungsziel. Ein neues Ziel MUSS sich durch einen Konfigurationseintrag hinzufügen lassen, ohne Codeänderung. Über seinen Namen MUSS sich ein einzelnes Ziel in einem Profil oder per Override ändern lassen, ohne die übrigen Ziele zu wiederholen.
 
 #### Scenario: Standardziele
 - **WHEN** ein Spieler ohne angepasste Konfiguration den Navigator öffnet
 - **THEN** sieht er eine Reihe mit ElytraRace auf Platz 0, Survival auf Platz 4, Slender auf Platz 5 und Creative auf Platz 8, die übrigen Plätze sind mit grauen Glasscheiben gefüllt
 
 #### Scenario: Zusätzliches Ziel per Konfiguration
-- **WHEN** der Betreiber im Abschnitt `"navigator"` ein Ziel „Parkour“ auf Platz 2 ergänzt und die Lobby neu startet
+- **WHEN** der Betreiber im Abschnitt `navigator` ein Ziel `parkour` („Parkour“) auf Platz 2 ergänzt und die Lobby neu startet
 - **THEN** zeigt der Navigator „Parkour“ auf Platz 2 an
+
+#### Scenario: Profil ändert ein einzelnes Ziel
+- **WHEN** `application-dev.yaml` nur für das Ziel `survival` ein anderes Weiterleitungsziel setzt und das Profil `dev` aktiv ist
+- **THEN** leitet Survival zum neuen Ziel weiter, und alle anderen Ziele bleiben wie in `application.yaml`
 
 ### Requirement: Module können Navigator-Ziele beisteuern
 Ein Modul MUSS dem Navigator eigene Ziele hinzufügen können, ohne den Navigator zu ändern. Wird das Modul abgeschaltet, MUSS sein Ziel aus dem Navigator verschwinden.
@@ -61,7 +65,7 @@ Ein Navigator-Ziel MUSS optional an eine Feature-Flag gebunden werden können. I
 - **THEN** zeigt der Navigator Slender beim nächsten Öffnen, ohne dass die Lobby neu startet
 
 #### Scenario: Unbekannte Flag in der Konfiguration
-- **WHEN** ein Navigator-Eintrag in `app.json` `"feature": "GIBT_ES_NICHT"` enthält
+- **WHEN** ein Navigator-Eintrag in `application.yaml` `feature: GIBT_ES_NICHT` enthält
 - **THEN** startet die Lobby nicht, und die Fehlermeldung nennt `navigator.entries` und die unbekannte Flag
 
 ### Requirement: Öffnen des Navigators häuft nichts an
