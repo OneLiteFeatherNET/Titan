@@ -113,6 +113,7 @@ Die bestehenden Tests für den Binding-Kern ziehen mit um.
   3. `application.yaml` schreiben.
   4. `app.json` in `app.json.migrated` umbenennen.
   5. Eine WARN-Zeile zur Umstellung ausgeben.
+- **Navigator-Einträge:** In `app.json` ist `navigator.entries` eine Liste, das Ziel ist eine Map mit Namen (Entscheidung 3). Die Umstellung vergibt jedem Eintrag einen Namen aus seinem `displayName`: MiniMessage-Tags entfernen, Kleinbuchstaben, nur Buchstaben und Ziffern behalten (`<!i><green>Survival` → `survival`). Das ergibt für die Standardeinträge genau `elytrarace`, `survival`, `slender`, `creative`. Ist ein Name leer oder schon vergeben, wird `slot<N>` bzw. `-<slot>` angehängt, damit kein Eintrag verloren geht.
 - **Beide vorhanden:** `app.json` bleibt unangetastet, eine WARN-Zeile meldet „wird ignoriert“.
 - **Keine von beiden:** Es passiert nichts.
 - **Syntaktisch kaputte `app.json`:** Der Start bricht mit Datei und Stelle des Fehlers ab, nichts wird umbenannt.

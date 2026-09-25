@@ -21,13 +21,13 @@ Voraussetzung: `avaje-dependency-injection` ist gemergt (`PlatformBeans` und `Be
 
 ## 2. Binder (Welle B, test-first)
 
-- [ ] 2.1 **Unit-Tests zuerst**, in `common`, mit einer `Configuration` aus einer Map: fehlender Abschnitt bzw. Einzelwert ergibt den Standardwert, verschachtelter Record, Liste von Strings, Map von Records, falscher Typ aus einem Override (Modul und Feld in der Meldung), ungültiger Wert aus dem Compact Constructor, Warnung bei unbekannten Schlüsseln einmal pro Abschnitt (per abgefangenem Appender). Verifikation: Die Tests sind rot, bevor `ConfigSections` existiert.
-- [ ] 2.2 Den Binding-Kern aus `ConfigStore.section` in das package-private `SectionBinder` herausziehen (verhaltensgleich, die bestehenden Tests ziehen mit um). `ConfigSections` baut aus der `Configuration` den `JsonObject`-Baum und delegiert an den `SectionBinder`. Verifikation: 2.1 ist grün, die bisherigen Tests des Binding-Kerns sind grün.
-- [ ] 2.3 Abhängigkeit `avaje-config` (Version aus 1.1) in den Versionskatalog und nach `common` aufnehmen. Verifikation: `./gradlew :common:build` ist grün.
+- [x] 2.1 **Unit-Tests zuerst**, in `common`, mit einer `Configuration` aus einer Map: fehlender Abschnitt bzw. Einzelwert ergibt den Standardwert, verschachtelter Record, Liste von Strings, Map von Records, falscher Typ aus einem Override (Modul und Feld in der Meldung), ungültiger Wert aus dem Compact Constructor, Warnung bei unbekannten Schlüsseln einmal pro Abschnitt (per abgefangenem Appender). Verifikation: Die Tests sind rot, bevor `ConfigSections` existiert.
+- [x] 2.2 Den Binding-Kern aus `ConfigStore.section` in das package-private `SectionBinder` herausziehen (verhaltensgleich, die bestehenden Tests ziehen mit um). `ConfigSections` baut aus der `Configuration` den `JsonObject`-Baum und delegiert an den `SectionBinder`. Verifikation: 2.1 ist grün, die bisherigen Tests des Binding-Kerns sind grün.
+- [x] 2.3 Abhängigkeit `avaje-config` (Version aus 1.1) in den Versionskatalog und nach `common` aufnehmen. Verifikation: `./gradlew :common:build` ist grün.
 
 ## 3. Umstellung von app.json (Welle B, test-first)
 
-- [ ] 3.1 **Unit-Tests zuerst** mit `@TempDir`:
+- [x] 3.1 **Unit-Tests zuerst** mit `@TempDir`:
   - v1-Fixture (echte alte `app.json`) ergibt `application.yaml` plus `app.json.migrated`, und das Log nennt die verworfenen Schlüssel,
   - v2 ergibt dieselben Werte,
   - sind beide Dateien vorhanden, bleibt `app.json` unverändert, mit einer Warnung,
@@ -36,7 +36,7 @@ Voraussetzung: `avaje-dependency-injection` ist gemergt (`PlatformBeans` und `Be
   - Rundlauf: Die geschriebene YAML, gelesen durch `ConfigSections`, ergibt identische Records.
 
   Verifikation: Die Tests sind zuerst rot.
-- [ ] 3.2 `AppJsonMigration` und das YAML-Schreibwerkzeug (bzw. SnakeYAML `Dump`, falls laut 1.2 vorhanden) umsetzen. Die Abbildung v1 → v2 aus `LegacyConfigMigration` wiederverwenden. Verifikation: 3.1 ist grün.
+- [x] 3.2 `AppJsonMigration` und das YAML-Schreibwerkzeug (bzw. SnakeYAML `Dump`, falls laut 1.2 vorhanden) umsetzen. Die Abbildung v1 → v2 aus `LegacyConfigMigration` wiederverwenden. Verifikation: 3.1 ist grün.
 
 ## 4. Verdrahtung (Welle C)
 
