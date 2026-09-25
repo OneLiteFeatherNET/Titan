@@ -227,7 +227,7 @@ den Konstruktor, wie jede andere Abhängigkeit auch.
 
 ```java
 // TickleModule.enable()
-Duration cooldown = TickleSettings.cooldown(Config.getAs(COOLDOWN_KEY, Long::parseLong));
+long cooldownMillis = Config.getAs(TickleSettings.COOLDOWN_KEY, TickleSettings::cooldownMillis);
 ```
 
 - **Strings** kommen über `Config.get(key)`, **Listen** über
@@ -238,20 +238,28 @@ Duration cooldown = TickleSettings.cooldown(Config.getAs(COOLDOWN_KEY, Long::par
   Fassade wirft bei einem ungültigen Zahlenwert über diese drei bloß eine
   `NumberFormatException` ohne Schlüssel, aber `Config.getAs(key, fn)` fängt
   einen Fehler von `fn` selbst ab und wirft eine `IllegalStateException`, die
-  den vollen Schlüssel einmal benennt und die ursprüngliche
-  `NumberFormatException` (mit dem ungültigen Rohwert in ihrer eigenen
-  Meldung) als `cause` behält.
+  den vollen Schlüssel einmal benennt und die ursprüngliche Exception (mit
+  dem ungültigen Rohwert oder dem Ablehnungsgrund in ihrer eigenen Meldung)
+  als `cause` behält - Schlüssel in der Meldung, Grund in der
+  Ursachenkette.
 - Der **Schlüssel** ist eine `private static final String`-Konstante im
   Modul, nach dem Schema `<modul-id>.<feld>` (z. B. `"tickle.cooldownMillis"`)
   - kein Config-Record mehr, das den Abschnitt beschreibt.
-- Die **Prüfung** liegt in einer reinen, statischen, paketprivaten Funktion,
-  die den gelesenen Wert entgegennimmt und entweder den fertigen Wert
-  zurückgibt oder `ConfigException.invalid(vollerSchlüssel, grund)` wirft -
-  `TickleSettings.cooldown(long)` oben prüft z. B. nur „nicht negativ“ und hat
-  mit `Config` selbst nichts zu tun. So bleibt die Prüfung ohne `Config` und
-  ohne Server testbar (s. "Tests" unten). Die Meldung nennt den vollen
-  Schlüssel, bei zwei zusammenhängenden Feldern (z. B. `spawn.minHeight` >
-  `spawn.maxHeight`) beide.
+- Die **Prüfung** liegt in einer reinen, statischen, paketprivaten Funktion.
+  Für einen **Einzelwert** parst und prüft sie in einem Schritt und dient
+  direkt als `getAs`-Funktion - `TickleSettings.cooldownMillis(String)` oben
+  prüft z. B. nur „nicht negativ“ und wirft dafür ein einfaches
+  `IllegalArgumentException("must not be negative, was -5")`, ohne den
+  Schlüssel selbst zu nennen: Das übernimmt `Config.getAs` bereits. Eine
+  reine Zahl ohne eigene Prüfung braucht gar keine eigene Funktion
+  (`Integer::parseInt` reicht). Für eine **Prüfung über mehrere Felder**
+  (z. B. `spawn.minHeight` gegen `spawn.maxHeight`) oder eine Prüfung, die
+  nicht über `getAs` läuft (z. B. `sit.allowedBlocks`, eine über
+  `Config.list().of` gelesene Liste), nennt die Funktion beide bzw. den
+  vollen Schlüssel selbst im Meldungstext, weil dort kein `getAs` das mehr
+  übernimmt. Beide Formen werfen ein einfaches `IllegalArgumentException` -
+  es gibt keine eigene Exception-Klasse dafür. So bleibt die Prüfung ohne
+  `Config` und ohne Server testbar (s. „Tests“ unten).
 
 **Standardwerte gehören in `application.yaml`, nicht in den Code.** Ein
 Modul liest ohne eigenen Fallback im Code (`Config.get(key)`, nicht
@@ -307,7 +315,8 @@ Die Einträge eines Moduls verschwinden automatisch, wenn es abgeschaltet
 wird.
 
 **Einträge hinter einer Feature-Flag verstecken:** `NavigatorEntry` (und, für
-den Navigator selbst, `NavigatorConfig.Entry`) trägt ein optionales Feld
+den Navigator selbst, die gelesenen Rohwerte, die
+`NavigatorEntryValidation#buildEntry` prüft) trägt ein optionales Feld
 `feature` - den Namen einer `TitanFeatures`-Konstante, z. B.
 `"NAVIGATOR_SLENDER"`. Ist die Flag aus (oder fehlt sie ganz in
 `flags.properties` - ein sicherer Standard), rendert `NavigatorInventory` an
@@ -318,8 +327,8 @@ erscheint der Eintrag wie gewohnt. Geprüft wird über die kleine
 `TogglzFeatureFlags` (steckt hinter `TitanFeatures`/Togglz), in Tests eine
 Attrappe, damit Tests ohne echte `flags.properties`-Datei und ohne den
 statischen `FeatureContext` auskommen. Ein Eintrag mit einem Namen, den
-`FeatureFlags` nicht kennt, bricht den Start ab (`ConfigException`, nennt
-`navigator.entries` und den unbekannten Namen). Das gilt auch für Einträge,
+`FeatureFlags` nicht kennt, bricht den Start ab (`IllegalArgumentException`,
+nennt `navigator.entries` und den unbekannten Namen). Das gilt auch für Einträge,
 die ein anderes Modul über `context.navigator().add(...)` beisteuert, nicht
 nur für die Einträge aus der `navigator`-Config selbst - das Feld sitzt auf
 `NavigatorEntry` und damit auf jedem Eintrag gleichermaßen, statt in einer
@@ -408,9 +417,14 @@ ruft `Config.setProperty`, `Config.putAll`, `Config.clearProperty` oder
 bricht "Independent". Es gibt auch **keine** `application-test.yaml`. Ein
 Unit-Test liest grundsätzlich keine Config; er testet die reinen
 Prüffunktionen (s. "Konfiguration lesen" oben) und die Klassen darunter mit
-Werten per Konstruktor. Ein Test, der einen abweichenden Wert braucht
-(Rangfolge, Profil, Env, ungültiger Override), läuft in einer eigenen
-Kind-JVM mit `@TempDir` als Arbeitsverzeichnis, wie
+Werten per Konstruktor. Dass `Config.getAs` einen Fehler der eigenen
+Prüffunktion in eine `IllegalStateException` mit dem vollen Schlüssel
+übersetzt, lässt sich ebenfalls ohne Kind-JVM testen: eine **lokale**
+`Configuration.builder().put(key, wert).build()`-Instanz (nicht die statische
+Fassade) genügt, wie `TickleSettingsTest` es für einen ungültigen und einen
+negativen Rohwert vormacht. Ein Test, der einen abweichenden Wert der
+statischen Fassade selbst braucht (Rangfolge, Profil, Env, kaputte Datei),
+läuft in einer eigenen Kind-JVM mit `@TempDir` als Arbeitsverzeichnis, wie
 `ConfigurationPrecedenceTest`.
 
 ### Unten: reine Unit-Tests
