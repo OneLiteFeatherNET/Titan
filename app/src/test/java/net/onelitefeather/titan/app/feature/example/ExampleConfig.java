@@ -18,13 +18,13 @@ package net.onelitefeather.titan.app.feature.example;
 import net.onelitefeather.titan.common.config.ConfigException;
 
 /**
- * The {@code example} module's own {@code app.json} section - a template for a new feature's own
+ * The {@code example} module's own configuration section - a template for a new feature's own
  * config record, see {@code docs/lobby-modules.md}.
  *
  * <p>Validated in the compact constructor, exactly like every other feature's config record (see
  * {@code SitConfig}, {@code TickleConfig}): a config record only knows its own field and the reason
  * a value is rejected, never which section it was loaded from -
- * {@link net.onelitefeather.titan.common.config.ConfigStore} fills that in before the exception
+ * {@link net.onelitefeather.titan.common.config.ConfigSections} fills that in before the exception
  * reaches {@link net.onelitefeather.titan.app.module.ModuleContext#config}'s caller.
  *
  * @param greeting       the message sent to a greeted player; must contain exactly one {@code %s}

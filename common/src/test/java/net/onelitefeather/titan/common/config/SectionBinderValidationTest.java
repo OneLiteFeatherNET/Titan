@@ -15,13 +15,10 @@
  */
 package net.onelitefeather.titan.common.config;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -32,21 +29,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * height bounds": a value that fails a config record's own validation must abort with a message
  * naming the section, the field and the reason - see {@link ConfigException}.
  */
-class ConfigStoreValidationTest {
+class SectionBinderValidationTest {
+
+    private final SectionBinder binder = new SectionBinder();
 
     @Test
     @DisplayName("A negative duration is rejected, naming the section, field and reason")
-    void negativeDurationIsRejected(@TempDir Path tempDir) throws IOException {
-        Path file = tempDir.resolve("app.json");
-        Files.writeString(file, """
-                {
-                  "configVersion": 2,
-                  "tickle": {"cooldownMillis": -5}
-                }
-                """);
-        ConfigStore store = ConfigStore.open(file);
+    void negativeDurationIsRejected() {
+        JsonElement existing = JsonParser.parseString("{\"cooldownMillis\": -5}");
 
-        ConfigException exception = assertThrows(ConfigException.class, () -> store.section("tickle", TickleTestConfig.class, TickleTestConfig.DEFAULTS));
+        ConfigException exception = assertThrows(ConfigException.class, () -> binder.bind("app.json", "tickle", TickleTestConfig.class, TickleTestConfig.DEFAULTS, existing));
 
         assertEquals("tickle", exception.section());
         assertEquals("cooldownMillis", exception.field());
@@ -57,17 +49,10 @@ class ConfigStoreValidationTest {
 
     @Test
     @DisplayName("Impossible height bounds are rejected, naming both fields")
-    void impossibleHeightBoundsAreRejected(@TempDir Path tempDir) throws IOException {
-        Path file = tempDir.resolve("app.json");
-        Files.writeString(file, """
-                {
-                  "configVersion": 2,
-                  "spawn": {"minHeight": 500, "maxHeight": -64, "simulationDistance": 2}
-                }
-                """);
-        ConfigStore store = ConfigStore.open(file);
+    void impossibleHeightBoundsAreRejected() {
+        JsonElement existing = JsonParser.parseString("{\"minHeight\": 500, \"maxHeight\": -64, \"simulationDistance\": 2}");
 
-        ConfigException exception = assertThrows(ConfigException.class, () -> store.section("spawn", SpawnTestConfig.class, SpawnTestConfig.DEFAULTS));
+        ConfigException exception = assertThrows(ConfigException.class, () -> binder.bind("app.json", "spawn", SpawnTestConfig.class, SpawnTestConfig.DEFAULTS, existing));
 
         assertEquals("spawn", exception.section());
         assertEquals("minHeight", exception.field());

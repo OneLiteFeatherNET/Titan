@@ -15,7 +15,7 @@
  */
 package net.onelitefeather.titan.app.feature.navigator;
 
-import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import net.minestom.server.item.Material;
 import net.onelitefeather.titan.common.config.ConfigException;
@@ -29,14 +29,21 @@ import org.jetbrains.annotations.Nullable;
  * {@code lobby-navigator} spec's "Navigator-Ziele kommen aus der Konfiguration" requirement: a new
  * destination is added purely by editing this section, with no code change.
  *
+ * <p>{@code entries} is keyed by a unique name (see {@code openspec/changes/
+ * standardized-config-profiles/design.md}, decision 3) - {@code elytrarace}, {@code survival},
+ * {@code slender} and {@code creative} for the defaults - so a profile or an override can change a
+ * single entry (e.g. {@code navigator.entries.survival.destination}) without repeating the others.
+ * The map's own iteration order does not matter: an entry's position in the navigator inventory is
+ * its {@link Entry#slot()}, not the order entries appear in configuration.
+ *
  * @param title   the shared navigator inventory's title, as a MiniMessage string
- * @param entries every destination shown in the navigator; two entries sharing a slot, and an
- *                unknown {@link Entry#feature()}, are only caught once every module has enabled -
- *                together with entries other modules contribute - by
+ * @param entries every destination shown in the navigator, keyed by name; two entries sharing a
+ *                slot, and an unknown {@link Entry#feature()}, are only caught once every module
+ *                has enabled - together with entries other modules contribute - by
  *                {@code NavigatorEntries#validate()}/{@code NavigatorEntries#validate(FeatureFlags)},
  *                not here
  */
-public record NavigatorConfig(String title, List<Entry> entries) {
+public record NavigatorConfig(String title, Map<String, Entry> entries) {
 
     /**
      * The four destinations the lobby has always shown - ElytraRace, Survival, Slender and
@@ -44,7 +51,7 @@ public record NavigatorConfig(String title, List<Entry> entries) {
      * {@code openspec/changes/lobby-feature-modules/design.md}, decision 13); the other three are
      * always visible.
      */
-    public static final NavigatorConfig DEFAULTS = new NavigatorConfig("<yellow>Navigator", List.of(new Entry(0, "minecraft:elytra", "<!i><gradient:#fcba03:#03fc8c>ElytraRace</gradient>", "ElytraRace"), new Entry(4, "minecraft:grass_block", "<!i><green>Survival", "Survival"), new Entry(5, "minecraft:enderman_spawn_egg", "<!i><gradient:#616161:#e80000c>Slender</gradient>", "cygnus", "NAVIGATOR_SLENDER"), new Entry(8, "minecraft:wooden_axe", "<!i><rainbow>Creative</rainbow>", "MemberBuild")));
+    public static final NavigatorConfig DEFAULTS = new NavigatorConfig("<yellow>Navigator", Map.of("elytrarace", new Entry(0, "minecraft:elytra", "<!i><gradient:#fcba03:#03fc8c>ElytraRace</gradient>", "ElytraRace"), "survival", new Entry(4, "minecraft:grass_block", "<!i><green>Survival", "Survival"), "slender", new Entry(5, "minecraft:enderman_spawn_egg", "<!i><gradient:#616161:#e80000c>Slender</gradient>", "cygnus", "NAVIGATOR_SLENDER"), "creative", new Entry(8, "minecraft:wooden_axe", "<!i><rainbow>Creative</rainbow>", "MemberBuild")));
 
     /**
      * @throws NullPointerException if {@code title} or {@code entries} is {@code null}
@@ -52,7 +59,7 @@ public record NavigatorConfig(String title, List<Entry> entries) {
     public NavigatorConfig {
         Objects.requireNonNull(title, "title must not be null");
         Objects.requireNonNull(entries, "entries must not be null");
-        entries = List.copyOf(entries);
+        entries = Map.copyOf(entries);
     }
 
     /**

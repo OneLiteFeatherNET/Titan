@@ -17,7 +17,7 @@ package net.onelitefeather.titan.common.config;
 
 /**
  * A stand-in for the real {@code tickle} module's config record, used to exercise {@link
- * ConfigStore} without depending on the {@code app} module.
+ * SectionBinder} without depending on the {@code app} module.
  */
 record TickleTestConfig(long cooldownMillis) {
 

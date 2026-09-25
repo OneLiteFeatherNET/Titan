@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Plain unit coverage for {@link ExampleConfig}'s compact constructor - validation belongs to the
- * record itself, not to {@link net.onelitefeather.titan.common.config.ConfigStore}, so it is
+ * record itself, not to {@link net.onelitefeather.titan.common.config.ConfigSections}, so it is
  * testable without one; see {@code docs/lobby-modules.md}.
  */
 class ExampleConfigTest {

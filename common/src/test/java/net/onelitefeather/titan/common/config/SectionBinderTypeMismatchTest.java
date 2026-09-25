@@ -15,13 +15,10 @@
  */
 package net.onelitefeather.titan.common.config;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -29,26 +26,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Covers a JSON type mismatch (e.g. a string where a record component expects a {@code long}):
- * {@link ConfigStore#section(String, Class, Record)} must not let Gson's raw {@link
- * RuntimeException} escape; it must report a {@link ConfigException} naming the file, the section
- * and - whenever the offending field can be determined by checking the section against the
- * record's own components - the field too.
+ * {@link SectionBinder#bind(String, String, Class, Record, JsonElement)} must not let Gson's raw
+ * {@link RuntimeException} escape; it must report a {@link ConfigException} naming the file, the
+ * section and - whenever the offending field can be determined by checking the section against
+ * the record's own components - the field too.
  */
-class ConfigStoreTypeMismatchTest {
+class SectionBinderTypeMismatchTest {
+
+    private final SectionBinder binder = new SectionBinder();
 
     @Test
     @DisplayName("A string value for a long field is rejected, naming file, section and field")
-    void stringForLongFieldIsRejected(@TempDir Path tempDir) throws IOException {
-        Path file = tempDir.resolve("app.json");
-        Files.writeString(file, """
-                {
-                  "configVersion": 2,
-                  "tickle": {"cooldownMillis": "oops"}
-                }
-                """);
-        ConfigStore store = ConfigStore.open(file);
+    void stringForLongFieldIsRejected() {
+        JsonElement existing = JsonParser.parseString("{\"cooldownMillis\": \"oops\"}");
 
-        ConfigException exception = assertThrows(ConfigException.class, () -> store.section("tickle", TickleTestConfig.class, TickleTestConfig.DEFAULTS));
+        ConfigException exception = assertThrows(ConfigException.class, () -> binder.bind("app.json", "tickle", TickleTestConfig.class, TickleTestConfig.DEFAULTS, existing));
 
         assertEquals("app.json", exception.file());
         assertEquals("tickle", exception.section());
@@ -59,17 +51,10 @@ class ConfigStoreTypeMismatchTest {
 
     @Test
     @DisplayName("A type mismatch inside a multi-field section still names the offending field")
-    void mismatchInMultiFieldSectionNamesTheField(@TempDir Path tempDir) throws IOException {
-        Path file = tempDir.resolve("app.json");
-        Files.writeString(file, """
-                {
-                  "configVersion": 2,
-                  "spawn": {"minHeight": -64, "maxHeight": "not-a-number", "simulationDistance": 2}
-                }
-                """);
-        ConfigStore store = ConfigStore.open(file);
+    void mismatchInMultiFieldSectionNamesTheField() {
+        JsonElement existing = JsonParser.parseString("{\"minHeight\": -64, \"maxHeight\": \"not-a-number\", \"simulationDistance\": 2}");
 
-        ConfigException exception = assertThrows(ConfigException.class, () -> store.section("spawn", SpawnTestConfig.class, SpawnTestConfig.DEFAULTS));
+        ConfigException exception = assertThrows(ConfigException.class, () -> binder.bind("app.json", "spawn", SpawnTestConfig.class, SpawnTestConfig.DEFAULTS, existing));
 
         assertEquals("spawn", exception.section());
         assertEquals("maxHeight", exception.field());

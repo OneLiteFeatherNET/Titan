@@ -15,9 +15,8 @@
  */
 package net.onelitefeather.titan.app.feature.navigator;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import io.avaje.config.Configuration;
+import java.util.Map;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.PlayerHand;
 import net.minestom.server.event.inventory.InventoryPreClickEvent;
@@ -32,12 +31,11 @@ import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.app.module.LobbyModule;
 import net.onelitefeather.titan.app.module.testing.ModuleHarness;
 import net.onelitefeather.titan.common.config.ConfigException;
-import net.onelitefeather.titan.common.config.ConfigStore;
+import net.onelitefeather.titan.common.config.ConfigSections;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.io.TempDir;
 
 /**
  * End-to-end coverage for the {@code lobby-navigator} spec requirement "Navigator-Ziele können
@@ -115,29 +113,17 @@ class NavigatorFeatureFlagTest {
         }
     }
 
-    @DisplayName("An unknown feature name in app.json aborts enableAll(), naming navigator.entries and the unknown flag")
+    @DisplayName("An unknown feature name in application.yaml aborts enableAll(), naming navigator.entries and the unknown flag")
     @Test
-    void unknownFeatureInConfigurationAbortsEnableAll(Env env, @TempDir Path tempDir) throws IOException {
-        Path configFile = tempDir.resolve("app.json");
-        String json = """
-                {
-                  "configVersion": 2,
-                  "navigator": {
-                    "title": "<yellow>Navigator",
-                    "entries": [
-                      {"slot": 5, "icon": "minecraft:enderman_spawn_egg", "displayName": "<white>Slender", "destination": "cygnus", "feature": "GIBT_ES_NICHT"}
-                    ]
-                  }
-                }
-                """;
-        Files.writeString(configFile, json);
-        ConfigStore store = ConfigStore.open(configFile);
+    void unknownFeatureInConfigurationAbortsEnableAll(Env env) {
+        Configuration configuration = Configuration.builder().putAll(Map.of("navigator.entries.slender.slot", "5", "navigator.entries.slender.icon", "minecraft:enderman_spawn_egg", "navigator.entries.slender.displayName", "<white>Slender", "navigator.entries.slender.destination", "cygnus", "navigator.entries.slender.feature", "GIBT_ES_NICHT")).build();
+        ConfigSections sections = new ConfigSections(configuration);
         FakeFeatureFlags flags = new FakeFeatureFlags();
 
         // Wired into both the module (for rendering) and the harness/registry itself (for
         // ModuleRegistry#enableAll()'s NavigatorEntries#validate(FeatureFlags) check) - the same
         // instance, exactly like Titan wires the real TogglzFeatureFlags into both places.
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> ModuleHarness.start(env, store, flags, (navigator, items) -> new LobbyModule[]{new NavigatorModule(new RecordingDeliver(), navigator, flags)}));
+        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> ModuleHarness.start(env, sections, flags, (navigator, items) -> new LobbyModule[]{new NavigatorModule(new RecordingDeliver(), navigator, flags)}));
 
         Assertions.assertEquals("navigator", thrown.section(), "a config-sourced entry's origin module is 'navigator'");
         Assertions.assertEquals("entries", thrown.field());

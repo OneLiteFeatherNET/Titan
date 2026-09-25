@@ -18,14 +18,16 @@ package net.onelitefeather.titan.app.feature.tickle;
 import net.onelitefeather.titan.common.config.ConfigException;
 
 /**
- * The {@code tickle} module's own {@code app.json} section.
+ * The {@code tickle} module's own configuration section.
  *
  * @param cooldownMillis how long, in milliseconds, an attacking player must wait before they can
  *                       tickle again; must not be negative
  */
 public record TickleConfig(long cooldownMillis) {
 
-    /** This section's defaults, used when {@code app.json} has no {@code tickle} section at all. */
+    /**
+     * This section's defaults, used when the configuration has no {@code tickle} section at all.
+     */
     public static final TickleConfig DEFAULTS = new TickleConfig(4000);
 
     /**

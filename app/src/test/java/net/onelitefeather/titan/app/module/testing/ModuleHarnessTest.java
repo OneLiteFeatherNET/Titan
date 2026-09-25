@@ -49,7 +49,7 @@ import org.junit.jupiter.api.io.TempDir;
  * fired for a real {@code Env} player, must stop reacting once the harness is closed, and closing
  * one harness must not leave anything behind for the next one started in the same test run. Also
  * covers the accessors ({@link ModuleHarness#items()}, {@link ModuleHarness#navigator()}) and the
- * config-store and standalone (no {@code Env}) entry points.
+ * configuration-file and standalone (no {@code Env}) entry points.
  */
 @ExtendWith(MicrotusExtension.class)
 class ModuleHarnessTest {
@@ -180,10 +180,34 @@ class ModuleHarnessTest {
         }
     }
 
-    @DisplayName("A ConfigStore passed to start() is what a started module reads its section from")
+    @DisplayName("A YAML file passed to start() is what a started module reads its section from")
     @Test
-    void startWithAConfigFileLetsAModuleReadItsOwnSection(Env env, @TempDir Path tempDir) {
-        Path configFile = tempDir.resolve("app.json");
+    void startWithAConfigFileLetsAModuleReadItsOwnSection(Env env, @TempDir Path tempDir) throws java.io.IOException {
+        Path configFile = tempDir.resolve("application.yaml");
+        Files.writeString(configFile, "cfg:\n  value: 9\n");
+        AtomicReference<TestConfig> seen = new AtomicReference<>();
+        LobbyModule module = new LobbyModule() {
+
+            @Override
+            public String id() {
+                return "cfg";
+            }
+
+            @Override
+            public void enable(ModuleContext context) {
+                seen.set(context.config(TestConfig.class, TestConfig.DEFAULTS));
+            }
+        };
+
+        try (ModuleHarness harness = ModuleHarness.start(env, configFile, module)) {
+            Assertions.assertEquals(new TestConfig(9), seen.get(), "the module must read the value from the YAML file, not its default");
+        }
+    }
+
+    @DisplayName("Without a config file, a started module falls back to its defaults, and no file is created")
+    @Test
+    void startWithoutAConfigFileFallsBackToDefaults(Env env, @TempDir Path tempDir) {
+        Path configFile = tempDir.resolve("application.yaml");
         AtomicReference<TestConfig> seen = new AtomicReference<>();
         LobbyModule module = new LobbyModule() {
 
@@ -202,7 +226,7 @@ class ModuleHarnessTest {
             Assertions.assertEquals(TestConfig.DEFAULTS, seen.get());
         }
 
-        Assertions.assertTrue(Files.exists(configFile), "enableAll() must flush a freshly created config store");
+        Assertions.assertFalse(Files.exists(configFile), "reading configuration must never create a file");
     }
 
     @DisplayName("startStandalone() enables and disables a module without booting an Env")

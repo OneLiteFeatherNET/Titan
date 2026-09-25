@@ -46,7 +46,7 @@ import org.junit.jupiter.api.io.TempDir;
 /**
  * Env integration coverage for {@link ExampleModule} through a real {@link ModuleHarness} - the
  * top of the test pyramid described in {@code docs/lobby-modules.md}: item use dispatch, the
- * command's lifecycle, and config read from a temp {@code app.json}. The pure cooldown and
+ * command's lifecycle, and config read from a temp {@code application.yaml}. The pure cooldown and
  * formatting rule already has its own coverage in {@link ExampleGreetingRuleTest}; this class only
  * checks that the module wires it to the platform correctly.
  *
@@ -172,11 +172,11 @@ class ExampleModuleTest {
         }
     }
 
-    @DisplayName("The module reads its own section from a temp app.json")
+    @DisplayName("The module reads its own section from a temp application.yaml")
     @Test
-    void readsItsOwnSectionFromATempAppJson(Env env, @TempDir Path dir) throws IOException {
-        Path file = dir.resolve("app.json");
-        Files.writeString(file, "{\"configVersion\":2,\"example\":{\"greeting\":\"Hi %s, enjoy the lobby!\",\"cooldownMillis\":0}}");
+    void readsItsOwnSectionFromATempApplicationYaml(Env env, @TempDir Path dir) throws IOException {
+        Path file = dir.resolve("application.yaml");
+        Files.writeString(file, "example:\n  greeting: \"Hi %s, enjoy the lobby!\"\n  cooldownMillis: 0\n");
         Instance instance = env.createFlatInstance();
         TestConnection connection = env.createConnection();
         Player player = connection.connect(instance);

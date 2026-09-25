@@ -44,7 +44,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * <p>Log lines are asserted through {@link CapturingLoggerFactory}, the SLF4J test binding already
  * registered for the {@code common} module's test sources (see {@code
  * META-INF/services/org.slf4j.spi.SLF4JServiceProvider} in {@code common/src/test/resources} and
- * {@code LegacyConfigMigrationTest}/{@code ConfigStoreUnknownKeysTest} for the same pattern) -
+ * {@code LegacyConfigMigrationTest}/{@code SectionBinderUnknownKeysTest} for the same pattern) -
  * adding logback-classic here instead would register a second, competing {@code
  * SLF4JServiceProvider} on the same test classpath and make those two existing tests' logging
  * assertions depend on undefined {@code ServiceLoader} ordering.

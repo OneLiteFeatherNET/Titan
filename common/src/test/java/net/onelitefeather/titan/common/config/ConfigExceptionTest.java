@@ -64,6 +64,24 @@ class ConfigExceptionTest {
     }
 
     @Test
+    @DisplayName("malformed() with a cause keeps it, so the original failure's stack trace is not lost")
+    void malformedWithCauseKeepsIt() {
+        RuntimeException original = new RuntimeException("mapping values are not allowed here");
+
+        ConfigException exception = ConfigException.malformed("application.yaml", "mapping values are not allowed here", original);
+
+        assertSame(original, exception.getCause(), "the original failure must be reachable as the cause, for the ERROR log/Sentry");
+    }
+
+    @Test
+    @DisplayName("malformed() without a cause has none, exactly like the two-argument overload")
+    void malformedWithoutCauseHasNoCause() {
+        ConfigException exception = ConfigException.malformed("application.yaml", "mapping values are not allowed here", null);
+
+        assertNull(exception.getCause());
+    }
+
+    @Test
     @DisplayName("withSection() and withFile() each return a new instance, keeping the previous one as the cause")
     void withSectionAndWithFileAreImmutableAndChainCauses() {
         ConfigException original = ConfigException.invalid("cooldownMillis", "must not be negative");

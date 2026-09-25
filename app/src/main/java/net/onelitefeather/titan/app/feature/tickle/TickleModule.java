@@ -30,7 +30,7 @@ import net.onelitefeather.titan.app.module.ModuleContext;
  *
  * <p>Its observable behaviour - including today's two known cooldown bugs - is unchanged from
  * before this module existed. See {@link TickleAttackHandler} and {@link TickleCooldownRule} for
- * the implementation, and {@link TickleConfig} for this module's {@code app.json} section.
+ * the implementation, and {@link TickleConfig} for this module's configuration section.
  */
 @Singleton
 @Priority(600)

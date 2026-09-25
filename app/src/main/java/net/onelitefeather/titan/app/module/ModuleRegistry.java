@@ -28,7 +28,7 @@ import net.onelitefeather.titan.app.module.item.ItemRegistry;
 import net.onelitefeather.titan.app.module.navigator.NavigatorConflictException;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
 import net.onelitefeather.titan.common.config.ConfigException;
-import net.onelitefeather.titan.common.config.ConfigStore;
+import net.onelitefeather.titan.common.config.ConfigSections;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,12 +49,11 @@ import org.jetbrains.annotations.Nullable;
  * 8. If a {@link FeatureFlags} source was configured via {@link Builder#featureFlags}, that same
  * {@link NavigatorEntries} validation also checks every entry's optional feature flag - regardless
  * of which module contributed the entry - against it, aborting startup on an unknown name; see
- * {@code design.md}, decision 13. Only once every validation has passed cleanly does it flush the
- * configured {@link ConfigStore} (if any).
+ * {@code design.md}, decision 13.
  *
  * <p>Built through {@link #builder()} rather than a public constructor, so a later wave can add
  * further platform services to the builder without breaking existing callers, the way
- * {@link Builder#config(ConfigStore)} did.
+ * {@link Builder#config(ConfigSections)} did.
  */
 public final class ModuleRegistry {
 
@@ -70,7 +69,7 @@ public final class ModuleRegistry {
         CommandManager commandManager = builder.commandManager != null ? builder.commandManager : MinecraftServer.getCommandManager();
         NavigatorEntries navigatorEntries = builder.navigatorEntries != null ? builder.navigatorEntries : new NavigatorEntries();
         ItemRegistry itemRegistry = builder.itemRegistry != null ? builder.itemRegistry : new ItemRegistry(this.parent);
-        this.platform = new ModulePlatform(scheduler, commandManager, builder.configStore, itemRegistry, navigatorEntries);
+        this.platform = new ModulePlatform(scheduler, commandManager, builder.configSections, itemRegistry, navigatorEntries);
         this.modules = List.copyOf(builder.modules);
         this.featureFlags = builder.featureFlags;
     }
@@ -90,12 +89,7 @@ public final class ModuleRegistry {
      * module's context stops accepting new listeners.
      *
      * <p>Once every module is enabled, validates the shared {@link ItemRegistry}, then the shared
-     * {@link NavigatorEntries}, and only then flushes the configured {@link ConfigStore} (if any),
-     * via {@link ConfigStore#flush()} - which is what makes a first start (no {@code app.json} yet,
-     * or a legacy one just migrated) end up with a section for every module a module asked for
-     * through {@link ModuleContext#config}, and does nothing on a run against an already up-to-date
-     * file. No flush happens if a module's {@code enable} throws, or if either validation fails, so
-     * a rejected value never gets written to disk.
+     * {@link NavigatorEntries}. Neither validation runs if a module's {@code enable} throws.
      *
      * @throws ModuleLifecycleException       if a module's {@code enable} throws; the exception
      *                                        names the failing module and carries the original
@@ -142,10 +136,6 @@ public final class ModuleRegistry {
         } else {
             this.platform.navigator().validate();
         }
-        ConfigStore configStore = this.platform.config();
-        if (configStore != null) {
-            configStore.flush();
-        }
     }
 
     /**
@@ -172,7 +162,7 @@ public final class ModuleRegistry {
         private EventNode<Event> parent;
         private Scheduler scheduler;
         private CommandManager commandManager;
-        private @Nullable ConfigStore configStore;
+        private @Nullable ConfigSections configSections;
         private NavigatorEntries navigatorEntries;
         private ItemRegistry itemRegistry;
         private @Nullable FeatureFlags featureFlags;
@@ -217,16 +207,15 @@ public final class ModuleRegistry {
         }
 
         /**
-         * The {@link ConfigStore} modules read their own section from, via
+         * The {@link ConfigSections} modules read their own section from, via
          * {@link ModuleContext#config}. Optional: if never set, {@link ModuleContext#config}
-         * returns
-         * each module's defaults unchanged and {@link #enableAll()} has nothing to flush.
+         * returns each module's defaults unchanged.
          *
-         * @param configStore the config store
+         * @param configSections the configuration sections
          * @return this builder
          */
-        public Builder config(ConfigStore configStore) {
-            this.configStore = configStore;
+        public Builder config(ConfigSections configSections) {
+            this.configSections = configSections;
             return this;
         }
 

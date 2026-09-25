@@ -18,15 +18,15 @@ package net.onelitefeather.titan.common.config;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Signals a problem with a {@link ConfigStore}-managed configuration document: either a
+ * Signals a problem with a {@code SectionBinder}-bound configuration section: either a
  * syntactically broken file, or a value that failed the validation performed by a config
  * record's compact constructor.
  * <p>
  * Config records only know their own field and the reason a value is rejected; they do not
  * know which section of the document they were loaded from. A record's compact constructor is
  * therefore expected to throw the result of {@link #invalid(String, String)}, which carries the
- * field and reason only. {@link ConfigStore} catches that exception (Gson wraps constructor
- * failures, so the store unwraps the cause chain first) and completes it with the section id and
+ * field and reason only. {@link SectionBinder} catches that exception (Gson wraps constructor
+ * failures, so the binder unwraps the cause chain first) and completes it with the section id and
  * file name via {@link #withSection(String)} and {@link #withFile(String)} before rethrowing it.
  * <p>
  * The resulting message has the shape {@code <file>: <section>.<field> - <reason>}, for example
@@ -49,7 +49,7 @@ public final class ConfigException extends RuntimeException {
 
     /**
      * Creates an exception for a value that a config record's compact constructor rejected.
-     * The section is not known at this point; {@link ConfigStore} fills it in via
+     * The section is not known at this point; {@link SectionBinder} fills it in via
      * {@link #withSection(String)} once it knows which section produced the failing record.
      *
      * @param field  the name of the offending record component
@@ -63,13 +63,30 @@ public final class ConfigException extends RuntimeException {
     /**
      * Creates an exception describing a document that could not be parsed as JSON at all.
      *
-     * @param file   the file name the broken document was read from
+     * @param file   the file name the broken document was read from, or {@code null} if the
+     *               section did not come from a single named file
      * @param detail the underlying parser message; Gson's messages already include the line and
      *               column of the syntax error
      * @return a new {@link ConfigException} describing the broken document
      */
-    public static ConfigException malformed(String file, String detail) {
-        return new ConfigException(file, null, null, detail, null);
+    public static ConfigException malformed(@Nullable String file, String detail) {
+        return malformed(file, detail, null);
+    }
+
+    /**
+     * Creates an exception describing a document that could not be parsed at all, keeping the
+     * original failure as this exception's cause so the stack trace that reaches an ERROR log (or
+     * Sentry) still shows where the parser actually failed, not just this rethrow.
+     *
+     * @param file   the file name the broken document was read from, or {@code null} if the
+     *               section did not come from a single named file
+     * @param detail the underlying parser message; a parser's own message often already includes
+     *               the line and column of the syntax error
+     * @param cause  the original failure this exception replaces, or {@code null} if there is none
+     * @return a new {@link ConfigException} describing the broken document
+     */
+    public static ConfigException malformed(@Nullable String file, String detail, @Nullable Throwable cause) {
+        return new ConfigException(file, null, null, detail, cause);
     }
 
     /**
@@ -87,10 +104,11 @@ public final class ConfigException extends RuntimeException {
      * Returns a copy of this exception with the file name set, keeping this instance as the
      * cause.
      *
-     * @param file the name of the file the offending document was read from
+     * @param file the name of the file the offending document was read from, or {@code null} if
+     *             it did not come from a single named file
      * @return a new {@link ConfigException} carrying the file name
      */
-    public ConfigException withFile(String file) {
+    public ConfigException withFile(@Nullable String file) {
         return new ConfigException(file, this.section, this.field, this.reason, this);
     }
 
