@@ -204,7 +204,7 @@ class ConfigReloaderTest {
         Assertions.assertEquals(1, liveConfig.revertPuts.size(), "must revert exactly once");
         Assertions.assertEquals(Map.of("tickle.cooldownMillis", "4000"), liveConfig.revertPuts.get(0), "must restore the module's old value");
         Assertions.assertTrue(liveConfig.revertRemovals.get(0).isEmpty());
-        assertLogged(events, Level.WARN, "Module {} rejected new configuration, keeping previous values: {}");
+        assertLogged(events, Level.WARN, "Module {} rejected new configuration, keeping previous values: {} ({})");
     }
 
     @DisplayName("A module that fails even after the fallback is reported as disabled")

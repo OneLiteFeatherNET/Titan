@@ -173,8 +173,10 @@ public final class ConfigReloader {
                 ConfigDiff.ModuleRevert revert = diff.revertFor(moduleId);
                 liveConfig.applyRevert(revert.puts(), revert.removals());
                 if (restarter.restart(moduleId) instanceof ModuleRestartOutcome.Restarted) {
-                    rejected.add(new ReloadResult.RejectedModule(moduleId, keys, describe(cause)));
-                    LOGGER.warn("Module {} rejected new configuration, keeping previous values: {}", moduleId, keys);
+                    String reason = describe(cause);
+                    rejected.add(new ReloadResult.RejectedModule(moduleId, keys, reason));
+                    LOGGER.warn(
+                            "Module {} rejected new configuration, keeping previous values: {} ({})", moduleId, keys, reason);
                 } else {
                     disabled.add(moduleId);
                     LOGGER.error(
