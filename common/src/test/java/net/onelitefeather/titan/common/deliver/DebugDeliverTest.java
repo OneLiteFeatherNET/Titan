@@ -99,6 +99,23 @@ class DebugDeliverTest {
         Assertions.assertEquals(List.of(expectedLine), CapturingLoggerFactory.messages(), "exactly one INFO line must be logged for the click");
     }
 
+    @DisplayName("A target containing MiniMessage-like text is shown literally, never interpreted as MiniMessage")
+    @Test
+    void sendPlayerWithMiniMessageLikeTargetShowsItLiterally(Env env) {
+        Instance instance = env.createFlatInstance();
+        TestConnection connection = env.createConnection();
+        Player player = connection.connect(instance);
+        Collector<SystemChatPacket> messages = connection.trackIncoming(SystemChatPacket.class);
+        DeliverComponent component = DeliverComponent.taskBuilder().taskName("<red>evil").player(player).build();
+
+        this.deliver.sendPlayer(player, component);
+
+        messages.assertSingle(packet -> {
+            String text = PlainTextComponentSerializer.plainText().serialize(packet.message());
+            Assertions.assertTrue(text.contains("<red>evil"), "a config-supplied target must appear literally, not be interpreted as MiniMessage: " + text);
+        });
+    }
+
     @DisplayName("A null player is ignored without logging")
     @Test
     void sendPlayerWithNullPlayerDoesNothing() {

@@ -54,13 +54,11 @@ public final class DebugDeliver implements Deliver {
                 report(player, "task", taskComponent.taskName(), TASK_MESSAGE);
             case DeliverComponent.ServerDeliverComponent serverDeliverComponent ->
                 report(player, "server", serverDeliverComponent.gameServer(), SERVER_MESSAGE);
-            case null, default ->
-                throw new IllegalStateException("Unexpected value: " + component.type());
         }
     }
 
     private static void report(Player player, String kind, String target, String messageTemplate) {
-        Component message = MiniMessage.miniMessage().deserialize(messageTemplate, Placeholder.parsed("target", target));
+        Component message = MiniMessage.miniMessage().deserialize(messageTemplate, Placeholder.unparsed("target", target));
         player.sendMessage(message);
         LOGGER.info("Debug deliver: would send {} ({}) to {} {}", player.getUsername(), player.getUuid(), kind, target);
     }
