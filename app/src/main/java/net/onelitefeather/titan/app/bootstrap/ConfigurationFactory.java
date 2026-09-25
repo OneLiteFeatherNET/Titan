@@ -44,55 +44,81 @@ import org.jetbrains.annotations.Nullable;
 public final class ConfigurationFactory {
 
     /**
+     * The prefix {@code avaje-config}'s own {@code InitialLoader#loadCustomExtension} puts in
+     * front of the resource name when a resolved file (e.g. a syntactically broken {@code
+     * application.yaml}) fails to load: {@code new IllegalStateException("Error loading properties
+     * - " + resourceName, cause)} (confirmed by decompiling {@code avaje-config:5.2}).
+     */
+    private static final String RESOURCE_LOAD_FAILURE_PREFIX = "Error loading properties - ";
+
+    /**
      * @return a {@link Configuration} built from {@code application.yaml}, its active profiles, an
      *         external file (via {@code CONFIG_FILE}/{@code config.file}), environment variables
      *         and system properties - all resolved against the JVM's actual process working
      *         directory (see the class Javadoc)
      * @throws ConfigException if a resolved file (e.g. a syntactically broken {@code
-     *                         application.yaml}) cannot be parsed; see the {@code
-     *                         lobby-module-config} spec scenario "Syntaktisch kaputte Datei". Wraps
-     *                         {@code avaje-config}'s own {@link IllegalStateException} - whose
-     *                         message already names the resource and whose cause already carries
-     *                         the parser's line/column - into the same {@link ConfigException}
-     *                         shape {@link net.onelitefeather.titan.common.config.AppJsonMigration}
-     *                         uses for a broken {@code app.json}, so both failure paths surface the
-     *                         same way to an operator.
+     *                         application.yaml}) cannot be parsed, or an unsupported {@code
+     *                         CONFIG_FILE}/{@code config.file} extension is configured; see the
+     *                         {@code lobby-module-config} spec scenario "Syntaktisch kaputte
+     *                         Datei". Wraps {@code avaje-config}'s own {@link RuntimeException},
+     *                         keeping it as this exception's cause so the ERROR log/Sentry still
+     *                         shows where the failure actually happened, into the same
+     *                         {@link ConfigException} shape
+     *                         {@link net.onelitefeather.titan.common.config.AppJsonMigration} uses
+     *                         for a broken {@code app.json}, so both failure paths surface the same
+     *                         way to an operator.
      */
     public Configuration load() {
         try {
             return Configuration.builder().includeResourceLoading().build();
         } catch (RuntimeException e) {
-            throw ConfigException.malformed(fileNameFrom(e), detailFrom(e));
+            throw ConfigException.malformed(fileNameFrom(e), detailFrom(e), e);
         }
     }
 
     /**
-     * Extracts the resource name from an {@code avaje-config} loading failure. {@code
-     * InitialLoader#loadCustomExtension} throws {@code new IllegalStateException("Error loading
-     * properties - " + resourceName, cause)} (confirmed by decompiling {@code avaje-config:5.2}),
-     * so the resource name is everything after the last {@code " - "}. Package-private, rather than
-     * {@code private}, purely so {@code ConfigurationFactoryTest} can exercise this pure parsing
-     * logic directly against a fabricated exception, without needing a real broken file on disk
-     * (see that test's Javadoc for why).
+     * Extracts the resource name from an {@code avaje-config} loading failure shaped like
+     * {@link #RESOURCE_LOAD_FAILURE_PREFIX}. {@code avaje-config} does not only throw that shape,
+     * though: an unsupported {@code CONFIG_FILE}/{@code config.file} extension surfaces as {@code
+     * InitialLoader#loadViaSystemProperty}'s own {@code IllegalArgumentException("Expecting only
+     * properties or ... file extensions but got [" + file + "]")}, whose whole sentence is not a
+     * file name at all. Returning that whole sentence here would make {@link #detailFrom} - which
+     * falls back to the same message when there is no cause - repeat it a second time in the final
+     * {@link ConfigException} message. So a file name is extracted only when the message actually
+     * has the expected shape; any other message yields {@code null} here, leaving
+     * {@link #detailFrom(RuntimeException)} to carry the whole sentence exactly once.
+     *
+     * <p>Package-private, rather than {@code private}, purely so {@code ConfigurationFactoryTest}
+     * can exercise this pure parsing logic directly against a fabricated exception, without
+     * needing a real broken file on disk (see that test's Javadoc for why).
      */
     static @Nullable String fileNameFrom(RuntimeException e) {
         String message = e.getMessage();
-        if (message == null) {
+        if (message == null || !message.startsWith(RESOURCE_LOAD_FAILURE_PREFIX)) {
             return null;
         }
-        int separator = message.lastIndexOf(" - ");
-        return separator >= 0 ? message.substring(separator + 3).trim() : message;
+        return message.substring(RESOURCE_LOAD_FAILURE_PREFIX.length()).trim();
     }
 
     /**
-     * Prefers the cause's message - for a broken {@code application.yaml} that is SnakeYAML's own
-     * message, which already names the line and column - falling back to the outer exception's
-     * message if there is no cause. Package-private for the same testability reason as {@link
-     * #fileNameFrom(RuntimeException)}.
+     * For the {@link #RESOURCE_LOAD_FAILURE_PREFIX} message shape, prefers the cause's message -
+     * for a broken {@code application.yaml} that is SnakeYAML's own message, which already names
+     * the line and column - falling back to the outer exception's message if there is no cause.
+     * For any other message shape (see {@link #fileNameFrom(RuntimeException)}), returns the outer
+     * message as-is: that shape's whole sentence already is the detail, and {@link
+     * #fileNameFrom(RuntimeException)} returns {@code null} for it, so returning it here too does
+     * not duplicate anything in the final {@link ConfigException} message.
+     *
+     * <p>Package-private for the same testability reason as
+     * {@link #fileNameFrom(RuntimeException)}.
      */
     static @Nullable String detailFrom(RuntimeException e) {
+        String message = e.getMessage();
+        if (message == null || !message.startsWith(RESOURCE_LOAD_FAILURE_PREFIX)) {
+            return message;
+        }
         Throwable cause = e.getCause();
         String detail = cause != null ? cause.getMessage() : null;
-        return detail != null ? detail : e.getMessage();
+        return detail != null ? detail : message;
     }
 }
