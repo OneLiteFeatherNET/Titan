@@ -46,7 +46,7 @@ dependencyResolutionManagement {
             version("minestom-extensions", "2.2.0")
 
             version("mockito", "5.24.0")
-            version("archunit", "1.5.0")
+            version("archunit", "1.5.1")
             version("avaje-inject", "12.7")
             version("avaje-config", "5.2")
             version("snakeyaml", "2.7")
