@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.app.feature.elytra;
 
+import io.avaje.config.Config;
 import java.util.List;
 import net.minestom.server.component.DataComponents;
 import net.minestom.server.entity.Entity;
@@ -50,6 +51,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
  */
 @ExtendWith(MicrotusExtension.class)
 class ElytraModuleTest {
+
+    /**
+     * The shipped defaults for {@code elytra.burnDurationTicks} / {@code elytra.cooldownTicks},
+     * read from the facade rather than hardcoded, so a changed shipped default cannot silently
+     * desync this test from production - read-only, never mutated (F.I.R.S.T. - Independent).
+     */
+    private static final int DEFAULT_BURN_DURATION_TICKS = Config.getAs(ElytraSettings.BURN_DURATION_TICKS_KEY, Integer::parseInt);
+    private static final int DEFAULT_COOLDOWN_TICKS = Config.getAs(ElytraSettings.COOLDOWN_TICKS_KEY, Integer::parseInt);
 
     @DisplayName("equip() puts an unbreakable elytra on the chestplate")
     @Test
@@ -111,7 +120,7 @@ class ElytraModuleTest {
             // The rocket must be removed again once its burn ends; driving ticks past that point
             // must not throw.
             Assertions.assertDoesNotThrow(() -> {
-                for (int i = 0; i < ElytraConfig.DEFAULTS.burnDurationTicks(); i++) {
+                for (int i = 0; i < DEFAULT_BURN_DURATION_TICKS; i++) {
                     env.tick();
                 }
             });
@@ -188,7 +197,7 @@ class ElytraModuleTest {
             // burn and its cooldown does. This only happens if ElytraModule actually schedules
             // FireworkBoostTracker#advance once per tick; a module that registered the tracker but
             // never drove it would refuse this second use forever.
-            int ticksToClearTheCooldown = ElytraConfig.DEFAULTS.burnDurationTicks() + ElytraConfig.DEFAULTS.cooldownTicks();
+            int ticksToClearTheCooldown = DEFAULT_BURN_DURATION_TICKS + DEFAULT_COOLDOWN_TICKS;
             for (int i = 0; i < ticksToClearTheCooldown; i++) {
                 // Minestom's own physics tick lands the player once gravity brings them to the
                 // ground and clears the gliding flag right there (Player#tick) - reasserted every

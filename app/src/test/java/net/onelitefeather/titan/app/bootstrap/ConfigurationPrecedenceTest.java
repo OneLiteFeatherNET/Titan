@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import net.onelitefeather.titan.common.config.ConfigurationFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -35,12 +34,16 @@ import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Integration coverage for the {@code lobby-module-config} spec requirement "Overrides have a
- * fixed rank order": {@link ConfigurationFactory#load()} - reached through {@link
- * ConfigurationLoader#load()}, the exact collaborator {@link PlatformBeans} uses in production -
- * resolves {@code application.yaml}, its active profiles, an external file, environment variables
- * and system properties in the order the spec fixes. The last case below also covers {@link
- * ConfigurationLoader#load()}'s migration step, run in the same child JVM before configuration is
- * resolved, exactly like production.
+ * fixed rank order": the static {@code io.avaje.config.Config} facade {@link
+ * ConfigurationPrintMain} touches exactly the way {@link net.onelitefeather.titan.app.Titan} does
+ * in production - built-in first, no factory of its own in between - resolves the shipped classpath
+ * {@code application.yaml} (see {@code app/src/main/resources/application.yaml}), the working
+ * directory's own {@code application.yaml}, its active profiles, an external file, environment
+ * variables and system properties in the order the spec fixes. The classpath file's own
+ * {@code spawn.simulationDistance} default is {@code 2} and its {@code tickle.cooldownMillis}
+ * default is {@code 4000} throughout this test (see that file), so a case that does not override
+ * either key resolves to those values, never {@code <absent>} - the lowest rank in "Overrides have
+ * a fixed rank order" is the shipped default, not nothing.
  *
  * <p>{@code avaje-config} resolves files against the JVM's real working directory and reads
  * {@code System.getenv} directly, with no injectable provider (see {@code design.md}, decision 6's
@@ -110,29 +113,38 @@ class ConfigurationPrecedenceTest {
         Assertions.assertEquals("3", resolved.get("spawn.simulationDistance"), "the external file named by CONFIG_FILE must win over the base file");
     }
 
-    @DisplayName("A first start without any configuration file resolves no keys, and creates no file")
+    @DisplayName("A first start without any configuration file resolves the shipped classpath default, and creates no file")
     @Test
-    void firstStartWithoutAnyFileCreatesNoFile(@TempDir Path workingDir) throws IOException, InterruptedException {
+    void firstStartWithoutAnyFileResolvesTheShippedDefault(@TempDir Path workingDir) throws IOException, InterruptedException {
         Map<String, String> resolved = run(workingDir, Map.of(), List.of(), List.of("spawn.simulationDistance", "tickle.cooldownMillis"));
 
-        Assertions.assertEquals("<absent>", resolved.get("spawn.simulationDistance"), "with no file at all, the key must resolve to nothing - defaults are ConfigSections' job, not Configuration's");
-        Assertions.assertEquals("<absent>", resolved.get("tickle.cooldownMillis"));
+        Assertions.assertEquals("2", resolved.get("spawn.simulationDistance"), "with no file in the working directory, the shipped classpath application.yaml's own default must apply");
+        Assertions.assertEquals("4000", resolved.get("tickle.cooldownMillis"));
         try (var entries = Files.list(workingDir)) {
             Assertions.assertTrue(entries.findAny().isEmpty(), "reading configuration must never create a file in the working directory");
         }
     }
 
-    @DisplayName("A legacy app.json in the working directory is migrated before configuration is resolved")
+    @DisplayName("application.yaml in the working directory beats the shipped classpath default")
     @Test
-    void legacyAppJsonIsMigratedBeforeConfigurationIsResolved(@TempDir Path workingDir) throws IOException, InterruptedException {
-        Files.writeString(workingDir.resolve("app.json"), "{\"tickleDuration\": 4000}");
+    void fileInWorkingDirectoryBeatsTheShippedDefault(@TempDir Path workingDir) throws IOException, InterruptedException {
+        Files.writeString(workingDir.resolve("application.yaml"), "spawn:\n  simulationDistance: 3\n");
+
+        Map<String, String> resolved = run(workingDir, Map.of(), List.of(), List.of("spawn.simulationDistance"));
+
+        Assertions.assertEquals("3", resolved.get("spawn.simulationDistance"), "the working directory's own application.yaml must win over the shipped classpath default (2)");
+    }
+
+    @DisplayName("An existing app.json is no longer read - it is ignored, and the shipped defaults apply")
+    @Test
+    void existingAppJsonIsIgnoredAndDefaultsApply(@TempDir Path workingDir) throws IOException, InterruptedException {
+        Files.writeString(workingDir.resolve("app.json"), "{\"tickleDuration\": 1000}");
 
         Map<String, String> resolved = run(workingDir, Map.of(), List.of(), List.of("tickle.cooldownMillis"));
 
-        Assertions.assertEquals("4000", resolved.get("tickle.cooldownMillis"), "the migrated value must be resolved by the same run that performed the migration");
-        Assertions.assertTrue(Files.exists(workingDir.resolve("application.yaml")), "the migration must have written application.yaml");
-        Assertions.assertTrue(Files.exists(workingDir.resolve("app.json.migrated")), "app.json must have been renamed to app.json.migrated");
-        Assertions.assertFalse(Files.exists(workingDir.resolve("app.json")), "app.json must no longer exist under its original name");
+        Assertions.assertEquals("4000", resolved.get("tickle.cooldownMillis"), "app.json is no longer converted or read at all; the shipped default must apply instead of any value app.json carries");
+        Assertions.assertTrue(Files.exists(workingDir.resolve("app.json")), "app.json must be left exactly as found");
+        Assertions.assertFalse(Files.exists(workingDir.resolve("application.yaml")), "reading configuration must never write application.yaml, migrated or otherwise");
     }
 
     @DisplayName("A syntactically broken application.yaml aborts the child cleanly, naming the file and the error position")
@@ -148,6 +160,64 @@ class ConfigurationPrecedenceTest {
         String joined = String.join("\n", output);
         Assertions.assertTrue(joined.contains("application.yaml"), "the failure must name application.yaml, output was:\n" + joined);
         Assertions.assertTrue(joined.contains("line 3"), "the failure must name the broken line, output was:\n" + joined);
+    }
+
+    @DisplayName("A profile changes only one value of the sit section; the others keep their shipped defaults")
+    @Test
+    void profileChangesOnlyOneValueOfASection(@TempDir Path workingDir) throws IOException, InterruptedException {
+        Files.writeString(workingDir.resolve("application-dev.yaml"), "sit:\n  offset:\n    y: 0.5\n");
+
+        Map<String, String> resolved = run(workingDir, Map.of("AVAJE_PROFILES", "dev"), List.of(), List.of("sit.offset.x", "sit.offset.y", "sit.offset.z"));
+
+        Assertions.assertEquals("0.5", resolved.get("sit.offset.y"), "the active profile's value must win for y (shipped default is 0.25)");
+        Assertions.assertEquals("0.5", resolved.get("sit.offset.x"), "x must keep the shipped default, untouched by the profile");
+        Assertions.assertEquals("0.5", resolved.get("sit.offset.z"), "z must keep the shipped default, untouched by the profile");
+    }
+
+    @DisplayName("A file setting only tickle.cooldownMillis leaves other modules at their shipped default")
+    @Test
+    void fileSettingOnlyOneKeyLeavesOtherModulesAtTheirDefault(@TempDir Path workingDir) throws IOException, InterruptedException {
+        Files.writeString(workingDir.resolve("application.yaml"), "tickle:\n  cooldownMillis: 1000\n");
+
+        Map<String, String> resolved = run(workingDir, Map.of(), List.of(), List.of("tickle.cooldownMillis", "spawn.simulationDistance"));
+
+        Assertions.assertEquals("1000", resolved.get("tickle.cooldownMillis"), "the file's own value must apply");
+        Assertions.assertEquals("2", resolved.get("spawn.simulationDistance"), "an untouched module must keep its shipped default");
+    }
+
+    @DisplayName("A navigator entry added in application.yaml appears alongside the shipped defaults")
+    @Test
+    void fileAddingANavigatorEntryAppearsAlongsideTheShippedDefaults(@TempDir Path workingDir) throws IOException, InterruptedException {
+        Files.writeString(workingDir.resolve("application.yaml"), """
+                navigator:
+                  entries:
+                    parkour:
+                      slot: 2
+                      icon: minecraft:slime_block
+                      displayName: "<green>Parkour"
+                      destination: Parkour
+                """);
+
+        // Plain print mode alone proves the merge: the added entry's own key resolves, and a
+        // shipped default entry's key still resolves alongside it. Grouping these flat keys into
+        // entry names is NavigatorEntryKeys's job, covered without a child JVM by
+        // NavigatorEntryKeysTest.
+        Map<String, String> resolved = run(workingDir, Map.of(), List.of(), List.of("navigator.entries.parkour.slot", "navigator.entries.survival.slot"));
+
+        Assertions.assertEquals("2", resolved.get("navigator.entries.parkour.slot"), "the added entry's own key must resolve");
+        Assertions.assertEquals("4", resolved.get("navigator.entries.survival.slot"), "a shipped default entry's key must still resolve alongside the added one");
+    }
+
+    @DisplayName("With AVAJE_PROFILES=dev, the startup log names dev as the active configuration profile")
+    @Test
+    void activeProfilesLogLineNamesTheActiveProfile(@TempDir Path workingDir) throws IOException, InterruptedException {
+        ChildResult result = startAndWait(workingDir, Map.of("AVAJE_PROFILES", "dev"), List.of(), List.of("--log-active-profiles"));
+
+        Assertions.assertTrue(result.finished(), "the child process must finish within " + TIMEOUT);
+        Assertions.assertEquals(0, result.exitCode(), "the child process must exit cleanly; output was:\n" + String.join("\n", result.lines()));
+        String joined = String.join("\n", result.lines());
+        Assertions.assertTrue(joined.contains("Active configuration profiles"), "the child must log the active-profiles line, output was:\n" + joined);
+        Assertions.assertTrue(joined.contains("dev"), "the logged line must name the active profile 'dev', output was:\n" + joined);
     }
 
     /**

@@ -15,9 +15,7 @@
  */
 package net.onelitefeather.titan.app.bootstrap;
 
-import io.avaje.config.Configuration;
 import io.avaje.inject.Bean;
-import io.avaje.inject.External;
 import io.avaje.inject.Factory;
 import jakarta.inject.Named;
 import java.nio.file.Path;
@@ -31,7 +29,6 @@ import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.app.module.LobbySpawn;
 import net.onelitefeather.titan.app.module.item.ItemRegistry;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
-import net.onelitefeather.titan.common.config.ConfigSections;
 import net.onelitefeather.titan.common.deliver.DeliverProvider;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
 import net.onelitefeather.titan.common.feature.TogglzFeatureFlags;
@@ -104,24 +101,6 @@ public final class PlatformBeans {
     @Bean
     public Deliver deliver() {
         return DeliverProvider.create();
-    }
-
-    /**
-     * @param configuration the {@link Configuration} every module's section is bound from - loaded
-     *                      exactly once by {@link net.onelitefeather.titan.app.Titan} via {@link
-     *                      ConfigurationLoader}, before the {@link io.avaje.inject.BeanScope} is
-     *                      built, and supplied to the scope as an external bean ({@link External} -
-     *                      no {@code @Factory}/{@code @Bean} method in this class provides a {@link
-     *                      Configuration}, so the annotation processor must be told not to expect
-     *                      one); this class never builds a {@link Configuration} of its own (see
-     *                      {@code openspec/changes/standardized-config-profiles/design.md},
-     *                      decision 1, and {@link ConfigurationPropertyPlugin}'s Javadoc for why)
-     * @return the sectioned configuration every module's {@code ModuleContext#config} reads its
-     *         own section from
-     */
-    @Bean
-    public ConfigSections configSections(@External Configuration configuration) {
-        return new ConfigSections(configuration);
     }
 
     /**

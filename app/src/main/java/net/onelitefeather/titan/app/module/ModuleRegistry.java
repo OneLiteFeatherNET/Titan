@@ -27,8 +27,6 @@ import net.onelitefeather.titan.app.module.item.ItemPlacementConflictException;
 import net.onelitefeather.titan.app.module.item.ItemRegistry;
 import net.onelitefeather.titan.app.module.navigator.NavigatorConflictException;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
-import net.onelitefeather.titan.common.config.ConfigException;
-import net.onelitefeather.titan.common.config.ConfigSections;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
 import org.jetbrains.annotations.Nullable;
 
@@ -52,8 +50,7 @@ import org.jetbrains.annotations.Nullable;
  * {@code design.md}, decision 13.
  *
  * <p>Built through {@link #builder()} rather than a public constructor, so a later wave can add
- * further platform services to the builder without breaking existing callers, the way
- * {@link Builder#config(ConfigSections)} did.
+ * further platform services to the builder without breaking existing callers.
  */
 public final class ModuleRegistry {
 
@@ -69,7 +66,7 @@ public final class ModuleRegistry {
         CommandManager commandManager = builder.commandManager != null ? builder.commandManager : MinecraftServer.getCommandManager();
         NavigatorEntries navigatorEntries = builder.navigatorEntries != null ? builder.navigatorEntries : new NavigatorEntries();
         ItemRegistry itemRegistry = builder.itemRegistry != null ? builder.itemRegistry : new ItemRegistry(this.parent);
-        this.platform = new ModulePlatform(scheduler, commandManager, builder.configSections, itemRegistry, navigatorEntries);
+        this.platform = new ModulePlatform(scheduler, commandManager, itemRegistry, navigatorEntries);
         this.modules = List.copyOf(builder.modules);
         this.featureFlags = builder.featureFlags;
     }
@@ -93,21 +90,23 @@ public final class ModuleRegistry {
      *
      * @throws ModuleLifecycleException       if a module's {@code enable} throws; the exception
      *                                        names the failing module and carries the original
-     *                                        failure as its cause - for a
-     *                                        {@link net.onelitefeather.titan.common.config.ConfigException},
-     *                                        that cause already names the offending section, field
-     *                                        and reason. The failing module's own node, tasks and
-     *                                        cleanup hooks are torn down before this is thrown;
-     *                                        modules enabled earlier in this call are left running.
-     *                                        This registry does not shut itself down in response -
-     *                                        the only caller, {@code TitanApplication}, logs the
-     *                                        failure and exits the process instead
+     *                                        failure as its cause - for an
+     *                                        {@link IllegalArgumentException} a module's own
+     *                                        validation function threw, that cause already names
+     *                                        the offending key and reason. The failing module's own
+     *                                        node, tasks and cleanup hooks are torn down before
+     *                                        this
+     *                                        is thrown; modules enabled earlier in this call are
+     *                                        left running. This registry does not shut itself down
+     *                                        in response - the only caller, {@code
+     *                                        TitanApplication}, logs the failure and exits the
+     *                                        process instead
      * @throws ItemPlacementConflictException if two modules registered an item for the same
      *                                        placement; thrown after every module has enabled, so
      *                                        the message can name both of them
      * @throws NavigatorConflictException     if, once every module is enabled, two navigator
      *                                        entries share a slot
-     * @throws ConfigException                if a {@link FeatureFlags} source was configured via
+     * @throws IllegalArgumentException       if a {@link FeatureFlags} source was configured via
      *                                        {@link Builder#featureFlags} and a navigator entry -
      *                                        contributed by any module, not only through
      *                                        configuration - names a feature that source does not
@@ -162,7 +161,6 @@ public final class ModuleRegistry {
         private EventNode<Event> parent;
         private Scheduler scheduler;
         private CommandManager commandManager;
-        private @Nullable ConfigSections configSections;
         private NavigatorEntries navigatorEntries;
         private ItemRegistry itemRegistry;
         private @Nullable FeatureFlags featureFlags;
@@ -203,19 +201,6 @@ public final class ModuleRegistry {
          */
         public Builder commandManager(CommandManager commandManager) {
             this.commandManager = commandManager;
-            return this;
-        }
-
-        /**
-         * The {@link ConfigSections} modules read their own section from, via
-         * {@link ModuleContext#config}. Optional: if never set, {@link ModuleContext#config}
-         * returns each module's defaults unchanged.
-         *
-         * @param configSections the configuration sections
-         * @return this builder
-         */
-        public Builder config(ConfigSections configSections) {
-            this.configSections = configSections;
             return this;
         }
 

@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.app.feature.elytra;
 
+import io.avaje.config.Config;
 import io.avaje.inject.Priority;
 import jakarta.inject.Singleton;
 import net.kyori.adventure.key.Key;
@@ -68,14 +69,15 @@ public final class ElytraModule implements LobbyModule {
 
     @Override
     public void enable(ModuleContext context) {
-        ElytraConfig config = context.config(ElytraConfig.class, ElytraConfig.DEFAULTS);
+        int burnDurationTicks = Config.getAs(ElytraSettings.BURN_DURATION_TICKS_KEY, ElytraSettings::burnDurationTicks);
+        int cooldownTicks = ElytraSettings.cooldownTicks(Config.getAs(ElytraSettings.COOLDOWN_TICKS_KEY, Integer::parseInt), burnDurationTicks);
         FireworkBoostTracker boosts = new FireworkBoostTracker();
 
         context.items().register(new LobbyItem(Key.key("titan:elytra"), ElytraItems.ELYTRA, ItemSlot.equipment(EquipmentSlot.CHESTPLATE), (player, event) -> {
         }));
         ItemStack stampedFirework = context.items().register(new LobbyItem(Key.key("titan:firework"), ElytraItems.FIREWORK, ItemSlot.unplaced(), (player, event) -> {
-            if (boosts.requestBoost(player.getUuid(), config, player.isFlyingWithElytra())) {
-                FireworkRockets.fire(player, config);
+            if (boosts.requestBoost(player.getUuid(), burnDurationTicks, cooldownTicks, player.isFlyingWithElytra())) {
+                FireworkRockets.fire(player, burnDurationTicks, cooldownTicks);
             }
         }));
 

@@ -32,7 +32,6 @@ import net.minestom.server.timer.TaskSchedule;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntry;
-import net.onelitefeather.titan.common.config.ConfigException;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
 import net.onelitefeather.titan.common.observability.TitanObservability;
 import org.junit.jupiter.api.Assertions;
@@ -46,7 +45,7 @@ import org.slf4j.MDC;
  * shutdown order, no events reaching a module during its own shutdown, listeners and commands
  * disappearing after disable, repeating tasks stopping, a failing {@code enable} aborting startup,
  * one module's failing listener not affecting another module's, and an unknown feature flag on
- * <em>any</em> module's navigator entry - not only the ones {@code NavigatorConfig} itself reads -
+ * <em>any</em> module's navigator entry - not only the ones navigator's own configuration reads -
  * aborting {@link ModuleRegistry#enableAll()}.
  */
 @ExtendWith(MicrotusExtension.class)
@@ -255,10 +254,9 @@ class ModuleRegistryTest {
         });
         ModuleRegistry registry = builder(env, parent).featureFlags(new TestFeatureFlags(Set.of())).modules(teaser).build();
 
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, registry::enableAll);
+        IllegalArgumentException thrown = Assertions.assertThrows(IllegalArgumentException.class, registry::enableAll);
 
-        Assertions.assertEquals("teaser", thrown.section(), "the exception must name the entry's origin module, not 'navigator'");
-        Assertions.assertEquals("entries", thrown.field());
-        Assertions.assertTrue(thrown.reason().contains("TYPO"), "the message must name the unknown flag");
+        Assertions.assertTrue(thrown.getMessage().contains("teaser.entries"), "the message must name the entry's origin module, not 'navigator', was: " + thrown.getMessage());
+        Assertions.assertTrue(thrown.getMessage().contains("TYPO"), "the message must name the unknown flag");
     }
 }

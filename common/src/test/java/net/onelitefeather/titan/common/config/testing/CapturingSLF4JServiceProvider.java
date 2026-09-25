@@ -27,9 +27,8 @@ import org.slf4j.spi.SLF4JServiceProvider;
  * META-INF/services/org.slf4j.spi.SLF4JServiceProvider}, that records every log line through
  * {@link CapturingLoggerFactory} instead of discarding it. Without this, SLF4J falls back to a
  * no-op logger during tests (there is no logging binding on the test runtime classpath), which
- * makes it impossible to assert that {@link
- * net.onelitefeather.titan.common.config.LegacyConfigMigration} actually logs the legacy keys it
- * drops.
+ * makes it impossible to assert that a class such as
+ * {@link net.onelitefeather.titan.common.deliver.DebugDeliver} actually logs the line it promises.
  */
 public final class CapturingSLF4JServiceProvider implements SLF4JServiceProvider {
 

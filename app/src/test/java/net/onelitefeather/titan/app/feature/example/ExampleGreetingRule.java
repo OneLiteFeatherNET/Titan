@@ -45,8 +45,8 @@ final class ExampleGreetingRule {
     }
 
     /**
-     * @param template   an {@link ExampleConfig#greeting()} value, containing exactly one
-     *                   {@code %s} placeholder
+     * @param template   a greeting template (see {@link ExampleGreetingSettings#greeting(String)}),
+     *                   containing exactly one {@code %s} placeholder
      * @param playerName the greeted player's name, substituted for {@code %s}
      * @return the formatted greeting
      */

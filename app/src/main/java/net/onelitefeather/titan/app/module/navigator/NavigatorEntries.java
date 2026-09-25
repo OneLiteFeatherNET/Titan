@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
-import net.onelitefeather.titan.common.config.ConfigException;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
 
 /**
@@ -43,8 +42,8 @@ import net.onelitefeather.titan.common.feature.FeatureFlags;
  * entries - from the configuration or from any combination of modules - share a slot.
  * {@link #validate(FeatureFlags)} runs the same slot check and, in addition, checks every entry's
  * optional {@link NavigatorEntry#feature()} against a {@link FeatureFlags} source - again for every
- * entry regardless of which module contributed it, not only the ones {@code NavigatorConfig} itself
- * reads from configuration.
+ * entry regardless of which module contributed it, not only the ones the {@code navigator} module
+ * itself reads from configuration.
  */
 public final class NavigatorEntries {
 
@@ -124,9 +123,9 @@ public final class NavigatorEntries {
      * Runs {@link #validate()} (the slot-conflict check), then checks every entry's optional
      * {@link NavigatorEntry#feature()} against {@code featureFlags} - for <em>every</em> entry
      * currently registered, regardless of which module contributed it. That covers both an entry
-     * {@code NavigatorConfig} itself read from configuration and one any other module added through
-     * its own {@link View#add}: neither ever passed {@code featureFlags} anywhere else, so this is
-     * the only place either kind of entry's feature name is checked at all.
+     * the {@code navigator} module itself read from configuration and one any other module added
+     * through its own {@link View#add}: neither ever passed {@code featureFlags} anywhere else, so
+     * this is the only place either kind of entry's feature name is checked at all.
      *
      * <p>Meant to run once, after every module has been enabled - alongside the item-placement
      * check in {@code ModuleRegistry#enableAll()} - so an operator misspelling a feature name, in
@@ -138,22 +137,20 @@ public final class NavigatorEntries {
      *
      * @param featureFlags the source of truth for which feature names exist
      * @throws NavigatorConflictException if two entries share a slot; see {@link #validate()}
-     * @throws ConfigException            if any entry names a feature {@code featureFlags} does not
-     *                                    recognize; the exception's section is the id of the module
-     *                                    that contributed the offending entry (so a config-sourced
-     *                                    entry, always contributed by the {@code navigator} module
-     *                                    itself, produces the same {@code navigator.entries}
-     *                                    message
-     *                                    an operator would expect), its field is {@code entries},
-     *                                    and
-     *                                    its reason names both the entry and the unknown flag
+     * @throws IllegalArgumentException   if any entry names a feature {@code featureFlags} does not
+     *                                    recognize; the message names {@code <moduleId>.entries} -
+     *                                    the id of the module that contributed the offending entry,
+     *                                    so a config-sourced entry, always contributed by the
+     *                                    {@code navigator} module itself, produces the same
+     *                                    {@code navigator.entries} message an operator would expect
+     *                                    - together with the entry and the unknown flag
      */
     public synchronized void validate(FeatureFlags featureFlags) {
         validate();
         for (Origin origin : this.origins) {
             String feature = origin.entry().feature();
             if (feature != null && !featureFlags.exists(feature)) {
-                throw ConfigException.invalid("entries", "entry '" + origin.entry().destination() + "' uses unknown feature flag '" + feature + "'").withSection(origin.moduleId());
+                throw new IllegalArgumentException(origin.moduleId() + ".entries: entry '" + origin.entry().destination() + "' uses unknown feature flag '" + feature + "'");
             }
         }
     }

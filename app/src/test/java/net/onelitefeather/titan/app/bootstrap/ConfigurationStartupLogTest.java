@@ -18,40 +18,47 @@ package net.onelitefeather.titan.app.bootstrap;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
-import io.avaje.config.Configuration;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 
 /**
- * Unit coverage for {@link ConfigurationStartupLog#activeProfiles(Configuration)} - the single
- * INFO line {@code net.onelitefeather.titan.app.Titan}'s constructor logs once its {@link
- * Configuration} bean has been built (see {@code
- * openspec/changes/standardized-config-profiles/design.md}, decision 6),
- * pulled out on its own so this can be asserted without touching the filesystem or the real
- * process environment. Builds its own {@link ListAppender} and detaches it in a {@code finally},
- * per test (F.I.R.S.T. - Independent), rather than sharing one across tests - the same pattern
- * {@link ModuleStartupLogTest} uses. Every {@link Configuration} here is built directly from a
- * {@link Map} (design.md decision 1's spike result), never from the real environment's {@code
- * AVAJE_PROFILES}, so the test result never depends on what happens to be set outside the test
- * itself (F.I.R.S.T. - Repeatable).
+ * Unit coverage for {@link ConfigurationStartupLog#activeProfiles()} - the single INFO line
+ * {@code net.onelitefeather.titan.app.Titan}'s constructor logs once the {@code
+ * io.avaje.config.Config} facade has been initialised (see {@code
+ * openspec/changes/standardized-config-profiles/design.md}, decision 6), pulled out on its own so
+ * this can be asserted with a captured appender. Builds its own {@link ListAppender} and detaches
+ * it in a {@code finally}, per test (F.I.R.S.T. - Independent), the same pattern
+ * {@link ModuleStartupLogTest} uses.
+ *
+ * <p>Since {@code openspec/changes/avaje-config-facade/design.md} decision 1,
+ * {@link ConfigurationStartupLog#activeProfiles()} reads the static {@code Config} facade itself
+ * instead of taking an injected {@code Configuration}, so this test now shares that facade's
+ * one-time, JVM-wide initialisation with every other test in this process - the shipped
+ * classpath {@code application.yaml}, with no test-only override (design.md decision 5: no
+ * {@code application-test.yaml}, and no test may call a {@code Config} mutator). This test only
+ * asserts the shape of the line - message template, single argument, INFO level - and that the
+ * argument is the list this process's own facade actually resolved (an empty list, the shipped
+ * default with no {@code AVAJE_PROFILES} set), not a fabricated one; it cannot exercise a
+ * different profile, because mutating this JVM's already-initialised facade is exactly what
+ * decision 5 forbids a test to do. That scenario - a chosen profile actually appearing in the
+ * logged line - is covered separately, in a child JVM with its own environment, by
+ * {@code ConfigurationPrecedenceTest#activeProfilesLogLineNamesTheActiveProfile}.
  */
 class ConfigurationStartupLogTest {
 
-    @DisplayName("With no active profile, logs one INFO line naming an empty list")
+    @DisplayName("Logs exactly one parameterised INFO line naming the active configuration profiles")
     @Test
-    void logsOneInfoLineWithAnEmptyListWhenNoProfileIsActive() {
-        Configuration configuration = Configuration.builder().putAll(Map.of()).build();
+    void logsOneInfoLineNamingTheActiveProfiles() {
         Logger logger = (Logger) LoggerFactory.getLogger(ConfigurationStartupLog.class);
         ListAppender<ILoggingEvent> appender = new ListAppender<>();
         appender.start();
         logger.addAppender(appender);
 
         try {
-            ConfigurationStartupLog.activeProfiles(configuration);
+            ConfigurationStartupLog.activeProfiles();
         } finally {
             logger.detachAppender(appender);
         }
@@ -59,27 +66,8 @@ class ConfigurationStartupLogTest {
         Assertions.assertEquals(1, appender.list.size(), "must log exactly one line");
         ILoggingEvent event = appender.list.get(0);
         Assertions.assertEquals("Active configuration profiles: {}", event.getMessage(), "must be the parameterised template, not a pre-built string");
-        Assertions.assertArrayEquals(new Object[]{List.of()}, event.getArgumentArray(), "with no active profile, the argument must be an empty list");
+        Assertions.assertEquals(1, event.getArgumentArray().length, "must carry exactly one argument: the list of active profiles");
+        Assertions.assertInstanceOf(List.class, event.getArgumentArray()[0], "the argument must be the list avaje-config resolved, not a formatted string");
         Assertions.assertEquals(ch.qos.logback.classic.Level.INFO, event.getLevel());
-    }
-
-    @DisplayName("With active profiles set, logs one INFO line naming every active profile")
-    @Test
-    void logsOneInfoLineNamingEveryActiveProfile() {
-        Configuration configuration = Configuration.builder().putAll(Map.of("avaje.profiles", "dev,secondary")).build();
-        Logger logger = (Logger) LoggerFactory.getLogger(ConfigurationStartupLog.class);
-        ListAppender<ILoggingEvent> appender = new ListAppender<>();
-        appender.start();
-        logger.addAppender(appender);
-
-        try {
-            ConfigurationStartupLog.activeProfiles(configuration);
-        } finally {
-            logger.detachAppender(appender);
-        }
-
-        Assertions.assertEquals(1, appender.list.size(), "must log exactly one line");
-        ILoggingEvent event = appender.list.get(0);
-        Assertions.assertArrayEquals(new Object[]{List.of("dev", "secondary")}, event.getArgumentArray(), "must carry every active profile, in order, as the single argument");
     }
 }

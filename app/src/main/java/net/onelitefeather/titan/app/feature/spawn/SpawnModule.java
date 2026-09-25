@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.app.feature.spawn;
 
+import io.avaje.config.Config;
 import io.avaje.inject.Priority;
 import jakarta.inject.Singleton;
 import java.util.Objects;
@@ -74,10 +75,13 @@ public final class SpawnModule implements LobbyModule {
 
     @Override
     public void enable(ModuleContext context) {
-        SpawnConfig config = context.config(SpawnConfig.class, SpawnConfig.DEFAULTS);
-        HeightBounds heightBounds = new HeightBounds(config.minHeight(), config.maxHeight());
+        int maxHeight = Config.getAs(SpawnSettings.MAX_HEIGHT_KEY, Integer::parseInt);
+        int minHeight = SpawnSettings.minHeight(Config.getAs(SpawnSettings.MIN_HEIGHT_KEY, Integer::parseInt), maxHeight);
+        int simulationDistance = Config.getAs(SpawnSettings.SIMULATION_DISTANCE_KEY, SpawnSettings::simulationDistance);
+
+        HeightBounds heightBounds = new HeightBounds(minHeight, maxHeight);
         context.listen(AsyncPlayerConfigurationEvent.class, new SpawnConfigurationListener(this.instance, this.spawnPosition::position));
-        context.listen(PlayerSpawnEvent.class, new SpawnJoinListener(config.simulationDistance(), this.spawnPosition::position, context.items()));
+        context.listen(PlayerSpawnEvent.class, new SpawnJoinListener(simulationDistance, this.spawnPosition::position, context.items()));
         context.listen(PlayerMoveEvent.class, new SpawnBoundsListener(heightBounds, this.spawnPosition::position));
     }
 }

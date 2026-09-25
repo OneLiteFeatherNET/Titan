@@ -15,7 +15,6 @@
  */
 package net.onelitefeather.titan.setup;
 
-import io.avaje.config.Configuration;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
@@ -23,13 +22,11 @@ import net.minestom.server.event.inventory.InventoryPreClickEvent;
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent;
 import net.minestom.server.event.player.PlayerSpawnEvent;
 import net.minestom.server.instance.InstanceContainer;
-import net.onelitefeather.titan.common.config.ConfigurationFactory;
 import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
 import net.onelitefeather.titan.common.map.MapEntry;
 import net.onelitefeather.titan.common.map.MapProvider;
 import net.onelitefeather.titan.common.utils.Cancelable;
 import net.onelitefeather.titan.setup.commands.SetupCommand;
-import net.onelitefeather.titan.setup.config.LegacyAppJsonWarning;
 import net.onelitefeather.titan.setup.config.SetupSpawnConfig;
 import net.onelitefeather.titan.setup.listener.PlayerConfigurationListener;
 import net.onelitefeather.titan.setup.listener.PlayerSpawnListener;
@@ -46,28 +43,27 @@ public final class Titan {
     private final int simulationDistance;
 
     /**
-     * @throws net.onelitefeather.titan.common.config.ConfigException if {@code application.yaml}
-     *                                                                (or a profile/external file
-     *                                                                it pulls in) cannot be
-     *                                                                parsed; see {@link
-     *                                                                ConfigurationFactory#load()}.
-     *                                                                {@link
-     *                                                                net.onelitefeather.titan.setup.TitanLauncher#main}
-     *                                                                aborts cleanly when this
-     *                                                                propagates out of {@link
-     *                                                                #instance()}.
+     * @throws ExceptionInInitializerError if {@code application.yaml} (or a profile/external file
+     *                                     it pulls in) cannot be parsed; the static
+     *                                     {@code io.avaje.config.Config} facade throws this from
+     *                                     its own static initializer on first touch, wrapping the
+     *                                     underlying parser failure (file and line/column) as its
+     *                                     cause. {@link
+     *                                     net.onelitefeather.titan.setup.TitanLauncher#main}
+     *                                     aborts cleanly when this propagates out of
+     *                                     {@link #instance()}.
      */
     private Titan() {
         this.path = Path.of("");
         InstanceContainer instance = MinecraftServer.getInstanceManager().createInstanceContainer();
         MinecraftServer.getInstanceManager().registerInstance(instance);
         this.mapProvider = MapProvider.create(this.path, instance, Titan::defaultFilter);
-        LegacyAppJsonWarning.warnIfLegacyAppJsonPresent(this.path.toAbsolutePath());
-        // Built through the same ConfigurationFactory the lobby (:app) uses, so a broken
-        // application.yaml is translated into the same ConfigException here too, instead of a raw
-        // avaje-config RuntimeException - see ConfigurationFactory's Javadoc (DRY).
-        Configuration configuration = new ConfigurationFactory().load();
-        this.simulationDistance = SetupSpawnConfig.read(configuration).simulationDistance();
+        // SetupSpawnConfig#read() is the first touch of the static io.avaje.config.Config facade
+        // in this process - deliberately, at a known, early place (built-in first: no factory of
+        // our own wraps this touch; see design.md, decision 1). A broken application.yaml surfaces
+        // here as ExceptionInInitializerError, whose cause chain already names the file and the
+        // line/column.
+        this.simulationDistance = SetupSpawnConfig.read().simulationDistance();
         BlockHandlerHelper.registerAll();
 
         initCommands();

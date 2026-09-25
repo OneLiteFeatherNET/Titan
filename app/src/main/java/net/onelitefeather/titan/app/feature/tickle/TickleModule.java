@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.app.feature.tickle;
 
+import io.avaje.config.Config;
 import io.avaje.inject.Priority;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -30,7 +31,8 @@ import net.onelitefeather.titan.app.module.ModuleContext;
  *
  * <p>Its observable behaviour - including today's two known cooldown bugs - is unchanged from
  * before this module existed. See {@link TickleAttackHandler} and {@link TickleCooldownRule} for
- * the implementation, and {@link TickleConfig} for this module's configuration section.
+ * the implementation, and {@link TickleSettings} for this module's own configuration key and
+ * validation.
  */
 @Singleton
 @Priority(600)
@@ -57,7 +59,7 @@ public final class TickleModule implements LobbyModule {
 
     @Override
     public void enable(ModuleContext context) {
-        TickleConfig config = context.config(TickleConfig.class, TickleConfig.DEFAULTS);
-        context.listen(EntityAttackEvent.class, new TickleAttackHandler(this.clock, config.cooldownMillis()));
+        long cooldownMillis = Config.getAs(TickleSettings.COOLDOWN_KEY, TickleSettings::cooldownMillis);
+        context.listen(EntityAttackEvent.class, new TickleAttackHandler(this.clock, cooldownMillis));
     }
 }

@@ -1,0 +1,5 @@
+# The setup server's shipped default: the simulation distance sent to a spawning player. See
+# net.onelitefeather.titan.setup.config.SetupSpawnConfig - the only configuration value the setup
+# server reads.
+spawn:
+  simulationDistance: 2
