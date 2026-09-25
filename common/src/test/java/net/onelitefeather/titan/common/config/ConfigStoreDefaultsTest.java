@@ -29,48 +29,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Covers the {@code lobby-module-config} spec scenarios "missing section", "missing single value"
- * and "first start", against {@link ConfigStore#section(String, Class, Record)} and {@link
- * ConfigStore#flush()} directly (no {@code ModuleContext} binding involved; that is task 3.2).
+ * Covers the {@code lobby-module-config} spec scenario "first start" against {@link
+ * ConfigStore#flush()} - writing every requested section's defaults to disk on the first start.
+ * The binding-core scenarios "missing section" and "missing single value" moved to {@link
+ * SectionBinderDefaultsTest}.
  */
 class ConfigStoreDefaultsTest {
-
-    @Test
-    @DisplayName("A section missing from the file falls back to the module's defaults")
-    void missingSectionUsesDefaults(@TempDir Path tempDir) throws IOException {
-        Path file = tempDir.resolve("app.json");
-        Files.writeString(file, """
-                {
-                  "configVersion": 2,
-                  "spawn": {"minHeight": -64, "maxHeight": 310, "simulationDistance": 2}
-                }
-                """);
-
-        ConfigStore store = ConfigStore.open(file);
-        TickleTestConfig tickle = store.section("tickle", TickleTestConfig.class, TickleTestConfig.DEFAULTS);
-
-        assertEquals(TickleTestConfig.DEFAULTS.cooldownMillis(), tickle.cooldownMillis());
-    }
-
-    @Test
-    @DisplayName("A field missing from a present section falls back to its default, not 0")
-    void missingSingleFieldUsesDefaultNotZero(@TempDir Path tempDir) throws IOException {
-        Path file = tempDir.resolve("app.json");
-        // Only minHeight is set; maxHeight and simulationDistance are absent.
-        Files.writeString(file, """
-                {
-                  "configVersion": 2,
-                  "spawn": {"minHeight": -32}
-                }
-                """);
-
-        ConfigStore store = ConfigStore.open(file);
-        SpawnTestConfig spawn = store.section("spawn", SpawnTestConfig.class, SpawnTestConfig.DEFAULTS);
-
-        assertEquals(-32, spawn.minHeight(), "the present field must be read from the file");
-        assertEquals(SpawnTestConfig.DEFAULTS.maxHeight(), spawn.maxHeight(), "missing field must default, not 0");
-        assertEquals(SpawnTestConfig.DEFAULTS.simulationDistance(), spawn.simulationDistance(), "missing primitive field must default, not 0");
-    }
 
     @Test
     @DisplayName("A missing file is created with every requested section once flush() runs")

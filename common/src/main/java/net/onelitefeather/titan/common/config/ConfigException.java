@@ -63,12 +63,13 @@ public final class ConfigException extends RuntimeException {
     /**
      * Creates an exception describing a document that could not be parsed as JSON at all.
      *
-     * @param file   the file name the broken document was read from
+     * @param file   the file name the broken document was read from, or {@code null} if the
+     *               section did not come from a single named file
      * @param detail the underlying parser message; Gson's messages already include the line and
      *               column of the syntax error
      * @return a new {@link ConfigException} describing the broken document
      */
-    public static ConfigException malformed(String file, String detail) {
+    public static ConfigException malformed(@Nullable String file, String detail) {
         return new ConfigException(file, null, null, detail, null);
     }
 
@@ -87,10 +88,11 @@ public final class ConfigException extends RuntimeException {
      * Returns a copy of this exception with the file name set, keeping this instance as the
      * cause.
      *
-     * @param file the name of the file the offending document was read from
+     * @param file the name of the file the offending document was read from, or {@code null} if
+     *             it did not come from a single named file
      * @return a new {@link ConfigException} carrying the file name
      */
-    public ConfigException withFile(String file) {
+    public ConfigException withFile(@Nullable String file) {
         return new ConfigException(file, this.section, this.field, this.reason, this);
     }
 
