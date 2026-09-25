@@ -76,6 +76,16 @@ public final class TitanTranslations {
     /** Reloading the configuration failed. Argument 0: the file. Argument 1: the location. */
     public static final String CONFIG_RELOAD_FAILED = "titan.config.reload.failed";
 
+    /**
+     * A module could not be restarted even with its previous configuration values and is left
+     * disabled - an operator must intervene. Argument 0: the module id. Added in wave B (see
+     * {@code openspec/changes/config-reload-feature-flags/tasks.md}, task 5.1): the {@code
+     * ReloadResult -> Component} mapper reuses {@link #CONFIG_RELOAD_REJECTED}'s wording for
+     * nothing, since "disabled" needs its own text - a disabled module is not merely running with
+     * its previous values, it is not running at all.
+     */
+    public static final String CONFIG_RELOAD_DISABLED = "titan.config.reload.disabled";
+
     private static final Key STORE_KEY = Key.key("titan", "lobby");
     private static final Locale DEFAULT_LOCALE = Locale.ENGLISH;
     private static final Locale[] BUNDLE_LOCALES = {Locale.ENGLISH, Locale.GERMAN};

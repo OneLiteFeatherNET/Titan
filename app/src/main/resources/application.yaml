@@ -108,3 +108,20 @@ features:
   NAVIGATOR_MANIS: false
   NAVIGATOR_SURVIVAL: false
   NAVIGATOR_ELYTRA: false
+
+# Configuration reload (see openspec/changes/config-reload-feature-flags/design.md, decision 1).
+#
+# avaje-config's own built-in file watcher is deliberately left off: on reload it does not
+# re-apply env/system-property overrides, leaves a deleted key in place, never notices a newly
+# created file, and partially applies a change if one of several files is broken. The lobby's own
+# reloader (the "/titanreload" command, and this file's own polling below) rebuilds the whole
+# configuration through the same pipeline used on startup instead, so overrides, deleted keys and
+# new files all behave exactly like a fresh start, and a broken file changes nothing at all.
+config.watch.enabled: false
+
+# How often, in seconds, the lobby polls application.{yaml,yml,properties} (base and per active
+# profile) plus CONFIG_FILE/config.file for changes and triggers a reload if one is found. Read
+# once at startup; "0" turns polling off entirely (the "/titanreload" command still works either
+# way). Commented out here since 10 is already the lobby's own built-in default - uncomment only
+# to change it.
+# titan.config.reload.intervalSeconds: 10
