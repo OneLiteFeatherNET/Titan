@@ -103,18 +103,6 @@ public final class ConfigException extends RuntimeException {
     }
 
     /**
-     * Returns a copy of this exception with the file name set, keeping this instance as the
-     * cause.
-     *
-     * @param file the name of the file the offending document was read from, or {@code null} if
-     *             it did not come from a single named file
-     * @return a new {@link ConfigException} carrying the file name
-     */
-    public ConfigException withFile(@Nullable String file) {
-        return new ConfigException(file, this.section, this.field, this.reason, this);
-    }
-
-    /**
      * The name of the configuration file the failure was found in, or {@code null} if not yet
      * known.
      */
