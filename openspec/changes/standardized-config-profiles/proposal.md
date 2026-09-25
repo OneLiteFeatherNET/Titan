@@ -19,7 +19,7 @@ Als Framework wird **avaje-config** eingesetzt. Es bringt Profile, mehrere gesch
 - **Quellen und Profile:**
   - `application.yaml` (Basis) und `application-<profil>.yaml`; das aktive Profil wird per `AVAJE_PROFILES` bzw. `-Davaje.profiles` gewählt.
   - Einzelne Werte werden per Env-Variable (`SIT_OFFSET_Y`) oder System-Property überschrieben.
-  - Eine externe Datei lässt sich per `PROPS_FILE` einbinden, z.B. für eine Kubernetes-ConfigMap oder ein CloudNet-Template.
+  - Eine externe Datei lässt sich per `CONFIG_FILE` einbinden, z.B. für eine Kubernetes-ConfigMap oder ein CloudNet-Template.
 - **Pro Modul bleibt ein Abschnitt:** Jedes Modul liest weiterhin seinen Abschnitt (`sit`, `spawn`, …) über `ctx.config(Typ.class, DEFAULTS)` als Record. Eine dünne eigene Schicht bindet einen Abschnitt aus avaje-config an den Record, inklusive Standardwerten und Validierung im Compact Constructor wie heute. Ungültige Werte brechen den Start weiterhin mit Modul, Feld und Grund ab.
 - **Nur noch lesen:** Die Lobby schreibt keine Konfiguration mehr. Standardwerte leben in den Config-Records bzw. einer mitgelieferten Beispiel-`application.yaml`, es wird nichts automatisch angelegt.
 - **Setup-Server nur noch für Map-Daten:** Die Befehle `/setup app …` und der `SetupConfigEditor` entfallen. Konfiguration wird in YAML gepflegt und versioniert.
@@ -57,7 +57,7 @@ Als Framework wird **avaje-config** eingesetzt. Es bringt Profile, mehrere gesch
   - Gson entfällt für die Config, wird aber anderswo weiter genutzt.
 - **Betrieb (BREAKING):**
   - Aus `app.json` wird `application.yaml`.
-  - Deployments (CloudNet-Template, später Docker/K8s) liefern die YAML-Datei bzw. `PROPS_FILE` aus und setzen `AVAJE_PROFILES`.
+  - Deployments (CloudNet-Template, später Docker/K8s) liefern die YAML-Datei bzw. `CONFIG_FILE` aus und setzen `AVAJE_PROFILES`.
   - README und Rollout-Hinweise werden aktualisiert.
 - **Texte für Nutzer:** Die Setup-Befehle `/setup app …` fallen weg. Die Hilfe- und Fehlermeldungen im Setup-Server passen sich entsprechend an.
 - **Abhängigkeit zwischen Changes:** Baut auf `avaje-dependency-injection` auf. avaje-config wird dann über Avaje Inject bereitgestellt.
