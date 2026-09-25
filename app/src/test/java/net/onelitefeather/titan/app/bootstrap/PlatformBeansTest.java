@@ -15,8 +15,12 @@
  */
 package net.onelitefeather.titan.app.bootstrap;
 
+import io.avaje.config.Configuration;
+import java.util.Map;
 import net.minestom.server.coordinate.Pos;
+import net.onelitefeather.titan.app.feature.spawn.SpawnConfig;
 import net.onelitefeather.titan.app.module.LobbySpawn;
+import net.onelitefeather.titan.common.config.ConfigSections;
 import net.onelitefeather.titan.common.map.LobbyMap;
 import net.onelitefeather.titan.common.map.MapProvider;
 import org.junit.jupiter.api.Assertions;
@@ -34,17 +38,37 @@ import java.util.List;
  * mocks {@link MapProvider} rather than a real one, so this runs without a Minestom server or the
  * filesystem {@code worlds/} a real {@code MapProvider} reads.
  *
- * <p>{@link PlatformBeans#configuration()} and {@link
- * PlatformBeans#configSections(io.avaje.config.Configuration)} are deliberately not covered here:
- * both ultimately touch the real process working directory and, through {@link
- * ConfigurationLoader}, the migration step's filesystem side effects - none of which a unit test
- * may depend on without breaking Independent/Repeatable (F.I.R.S.T.). That coverage, including the
- * migration step, lives in {@link ConfigurationPrecedenceTest}, which drives a child JVM with a
- * {@code @TempDir} as its working directory instead.
+ * <p>{@link PlatformBeans#mapProvider(net.minestom.server.instance.InstanceContainer)} and {@link
+ * PlatformBeans#featureFlags()} are deliberately not covered here: both ultimately touch the real
+ * process working directory or a process-wide static, neither of which a unit test may depend on
+ * without breaking Independent/Repeatable (F.I.R.S.T.). {@link
+ * PlatformBeans#configSections(Configuration)} is different: since {@code
+ * openspec/changes/standardized-config-profiles/design.md} decision 1, {@link
+ * net.onelitefeather.titan.app.Titan} builds the {@link Configuration} it hands to the {@link
+ * io.avaje.inject.BeanScope} exactly once, before the
+ * scope exists (see {@link ConfigurationPropertyPlugin}'s Javadoc), so {@code configSections} no
+ * longer touches the filesystem itself - it only binds whatever {@link Configuration} it is given,
+ * which {@link #configSectionsResolvesFromTheGivenConfigurationInstance} covers with one built
+ * directly from a {@link Map}. The migration step and the real
+ * filesystem/profile/env/system-property
+ * pipeline that builds a production {@link Configuration} still live in {@link
+ * ConfigurationPrecedenceTest}, which drives a child JVM with a {@code @TempDir} as its working
+ * directory instead.
  */
 class PlatformBeansTest {
 
     private final PlatformBeans platformBeans = new PlatformBeans();
+
+    @DisplayName("configSections(Configuration) binds a section from exactly the Configuration instance it is given, not one it builds itself")
+    @Test
+    void configSectionsResolvesFromTheGivenConfigurationInstance() {
+        Configuration configuration = Configuration.builder().putAll(Map.of("spawn.simulationDistance", "7")).build();
+
+        ConfigSections configSections = this.platformBeans.configSections(configuration);
+        SpawnConfig spawn = configSections.section("spawn", SpawnConfig.class, SpawnConfig.DEFAULTS);
+
+        Assertions.assertEquals(7, spawn.simulationDistance(), "the section must resolve the value from the supplied Configuration instance");
+    }
 
     @DisplayName("Building the LobbySpawn bean does not query the MapProvider")
     @Test

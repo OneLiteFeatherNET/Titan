@@ -17,6 +17,7 @@ package net.onelitefeather.titan.app.bootstrap;
 
 import io.avaje.config.Configuration;
 import io.avaje.inject.Bean;
+import io.avaje.inject.External;
 import io.avaje.inject.Factory;
 import jakarta.inject.Named;
 import java.nio.file.Path;
@@ -65,14 +66,6 @@ public final class PlatformBeans {
     public static final String TITAN_NODE_NAME = "titan";
 
     /**
-     * The collaborator {@link #configuration()} delegates the migrate-then-load sequence to - see
-     * that method's Javadoc. Held as a field, rather than the migration and the factory being
-     * invoked inline, so the bean method depends on one small collaborator instead of orchestrating
-     * global filesystem state itself.
-     */
-    private final ConfigurationLoader configurationLoader = new ConfigurationLoader();
-
-    /**
      * @return the lobby's single {@link InstanceContainer}, registered with the instance manager -
      *         also satisfies a module constructor asking for the narrower {@link Instance} type
      */
@@ -114,28 +107,20 @@ public final class PlatformBeans {
     }
 
     /**
-     * Builds the {@link Configuration} every module's section is ultimately read from, via {@link
-     * ConfigurationLoader} - the same collaborator {@link ConfigurationPrintMain} (the child JVM
-     * the configuration precedence test drives) calls, so both run the exact same migrate-then-load
-     * sequence (DRY) - and logs the active profiles once, at INFO, via {@link
-     * ConfigurationStartupLog}.
-     *
-     * @return the {@link Configuration} every module's section is ultimately read from
-     */
-    @Bean
-    public Configuration configuration() {
-        Configuration configuration = configurationLoader.load();
-        ConfigurationStartupLog.activeProfiles(configuration);
-        return configuration;
-    }
-
-    /**
-     * @param configuration the {@link Configuration} every module's section is bound from
+     * @param configuration the {@link Configuration} every module's section is bound from - loaded
+     *                      exactly once by {@link net.onelitefeather.titan.app.Titan} via {@link
+     *                      ConfigurationLoader}, before the {@link io.avaje.inject.BeanScope} is
+     *                      built, and supplied to the scope as an external bean ({@link External} -
+     *                      no {@code @Factory}/{@code @Bean} method in this class provides a {@link
+     *                      Configuration}, so the annotation processor must be told not to expect
+     *                      one); this class never builds a {@link Configuration} of its own (see
+     *                      {@code openspec/changes/standardized-config-profiles/design.md},
+     *                      decision 1, and {@link ConfigurationPropertyPlugin}'s Javadoc for why)
      * @return the sectioned configuration every module's {@code ModuleContext#config} reads its
      *         own section from
      */
     @Bean
-    public ConfigSections configSections(Configuration configuration) {
+    public ConfigSections configSections(@External Configuration configuration) {
         return new ConfigSections(configuration);
     }
 
