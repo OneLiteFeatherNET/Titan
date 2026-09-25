@@ -72,7 +72,7 @@ public class TitanApplication {
 
         // A module's configuration section rejecting a value (ConfigException), a syntactically
         // broken application.yaml (also a ConfigException - see Titan's constructor and
-        // ConfigurationFactory#load()), or two modules conflicting over an item slot / navigator
+        // ConfigurationFactory#initialise()), or two modules conflicting over an item slot / navigator
         // slot surfaces here as an unchecked exception from ModuleRegistry#enableAll (see
         // Titan#initialize) or from Titan's own constructor. Startup must abort with a clear log
         // line instead of leaving the process half-started or hanging on LuckPerms'/the extension
