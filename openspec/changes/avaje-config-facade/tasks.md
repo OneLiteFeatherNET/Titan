@@ -63,4 +63,4 @@ Jeder Agent-Prompt wiederholt die Regeln, die für ihn gelten:
 
 ## 5. Pull Request
 
-- [ ] 5.1 Den Pull Request `refactor(config)!: read configuration through the avaje config facade` von `refactor/avaje-config-facade` nach `main` öffnen. Titel und Beschreibung sind auf Englisch. Die Beschreibung enthält den `BREAKING CHANGE`-Footer aus proposal.md, den Upgrade-Hinweis aus dem Migrationsplan in design.md, die entfernten Klassen, die Testregeln zur Fassade, die Ausgaben aus 4.1 und 4.2 und die Abnahme-Checkliste. Verifikation: Der PR existiert, und die CI ist grün.
+- [x] 5.1 Den Pull Request `refactor(config)!: read configuration through the avaje config facade` von `refactor/avaje-config-facade` nach `main` öffnen. Titel und Beschreibung sind auf Englisch. Die Beschreibung enthält den `BREAKING CHANGE`-Footer aus proposal.md, den Upgrade-Hinweis aus dem Migrationsplan in design.md, die entfernten Klassen, die Testregeln zur Fassade, die Ausgaben aus 4.1 und 4.2 und die Abnahme-Checkliste. Verifikation: Der PR existiert, und die CI ist grün.
