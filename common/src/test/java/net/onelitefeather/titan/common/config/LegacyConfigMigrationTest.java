@@ -28,7 +28,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Covers {@link LegacyConfigMigration#toSectioned(JsonObject, String)} directly: the mapping
  * itself (see {@code design.md}, decision 5 of the {@code lobby-feature-modules} change, and the
  * {@code lobby-module-config} spec scenario "migration of the previous file") is exercised through
- * the real {@code app.json} fixture by {@link AppJsonMigrationTest#migratesFlatV1AppJson(java.nio.file.Path)},
+ * the real {@code app.json} fixture by
+ * {@link AppJsonMigrationTest#migratesFlatV1AppJson(java.nio.file.Path)},
  * so this class only covers the one failure case that test does not: a legacy
  * {@code allowedSitBlocks} entry missing its {@code value} key.
  */
