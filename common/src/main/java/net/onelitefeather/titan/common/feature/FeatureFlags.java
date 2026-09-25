@@ -33,7 +33,7 @@ package net.onelitefeather.titan.common.feature;
  * depend on {@code app.feature} (see {@code design.md}, decision 10.2, and
  * {@code ArchitectureTest#platformAndCommonDoNotDependOnFeatures}) - the reverse direction, a
  * feature depending on {@code titan.common}, is exactly what every feature already does for
- * {@link net.onelitefeather.titan.common.config.ConfigException} and friends.
+ * other shared {@code titan.common} types.
  */
 public interface FeatureFlags {
 

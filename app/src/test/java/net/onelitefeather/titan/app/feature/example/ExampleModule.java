@@ -127,7 +127,7 @@ public final class ExampleModule implements LobbyModule {
      * <pre>{@code
      * String greeting = ExampleGreetingSettings.greeting(Config.get(ExampleGreetingSettings.GREETING_KEY));
      * long cooldownMillis =
-     *         ExampleGreetingSettings.cooldownMillis(Config.getAs(ExampleGreetingSettings.COOLDOWN_KEY, Long::parseLong));
+     *         Config.getAs(ExampleGreetingSettings.COOLDOWN_KEY, ExampleGreetingSettings::cooldownMillis);
      * }</pre>
      *
      * <p>This template has no section of its own in the shipped {@code application.yaml} (see the
@@ -139,7 +139,7 @@ public final class ExampleModule implements LobbyModule {
     @Override
     public void enable(ModuleContext context) {
         String greeting = ExampleGreetingSettings.greeting(DEFAULT_GREETING);
-        long cooldownMillis = ExampleGreetingSettings.cooldownMillis(DEFAULT_COOLDOWN_MILLIS);
+        long cooldownMillis = ExampleGreetingSettings.cooldownMillis(String.valueOf(DEFAULT_COOLDOWN_MILLIS));
         ExampleGreetingTracker tracker = new ExampleGreetingTracker(this.clock, greeting, cooldownMillis);
 
         // items(): register a hotbar item; ItemRegistry stamps it and dispatches its use back to

@@ -15,17 +15,16 @@
  */
 package net.onelitefeather.titan.app.feature.spawn;
 
-import net.onelitefeather.titan.common.config.ConfigException;
-
 /**
- * Pure validation for the {@code spawn} section's values, kept apart from however those values
- * are read ({@link SpawnModule#enable}, via {@code io.avaje.config.Config}, including
- * {@code Config.getAs(key, Integer::parseInt)} for numbers).
+ * Pure parsing and validation for the {@code spawn} section's values, kept apart from however
+ * those values are read ({@link SpawnModule#enable}, via {@code io.avaje.config.Config}).
  *
- * <p>Every method takes plain values and either returns the validated one or throws
- * {@link ConfigException#invalid(String, String)} naming the value's full section key, e.g.
- * {@code spawn.minHeight}. None of these methods touch {@code io.avaje.config.Config} or a
- * server, so they are unit-testable on their own.
+ * <p>{@link #simulationDistance(String)} is a single-value check, used directly as the mapping
+ * function of {@code Config.getAs(SIMULATION_DISTANCE_KEY, SpawnSettings::simulationDistance)} -
+ * {@code getAs} wraps any exception it throws into an {@code IllegalStateException} naming the key
+ * once, keeping this method's own exception as the cause. {@link #minHeight(int, int)} is a
+ * cross-field check - it needs both already-parsed heights - so {@link SpawnModule#enable} calls
+ * it itself, after reading both values; its own message therefore names both full keys.
  *
  * <p>The keys themselves are declared here as constants, the one place this module's config
  * section is named (see {@code design.md}, decision 3), and reused by {@link SpawnModule#enable}
@@ -41,30 +40,38 @@ final class SpawnSettings {
     }
 
     /**
+     * Not read through {@code Config.getAs}'s mapping function (unlike
+     * {@link #simulationDistance(String)}): it needs both already-parsed heights, so it self-names
+     * both full keys in its message.
+     *
      * @param minHeight the lowest {@code y} coordinate a player may fall to before being
      *                  teleported back to spawn
      * @param maxHeight the highest {@code y} coordinate a player may rise to before being
      *                  teleported back to spawn
      * @return {@code minHeight}, unchanged
-     * @throws ConfigException if {@code minHeight} is not less than {@code maxHeight}; the
-     *                         message names both {@code spawn.minHeight} and
-     *                         {@code spawn.maxHeight}
+     * @throws IllegalArgumentException if {@code minHeight} is not less than {@code maxHeight}; the
+     *                                  message names both {@link #MIN_HEIGHT_KEY} and
+     *                                  {@link #MAX_HEIGHT_KEY}
      */
     static int minHeight(int minHeight, int maxHeight) {
         if (minHeight >= maxHeight) {
-            throw ConfigException.invalid(MIN_HEIGHT_KEY, "must be less than " + MAX_HEIGHT_KEY + " (" + maxHeight + ")");
+            throw new IllegalArgumentException(MIN_HEIGHT_KEY + " (" + minHeight + ") must be less than " + MAX_HEIGHT_KEY + " (" + maxHeight + ")");
         }
         return minHeight;
     }
 
     /**
-     * @param simulationDistance the simulation distance sent to a player on spawn
-     * @return {@code simulationDistance}, unchanged
-     * @throws ConfigException if {@code simulationDistance} is not positive
+     * Parses and validates the simulation distance sent to a player on spawn.
+     *
+     * @param raw the configured simulation distance, as text; must parse as a strictly positive int
+     * @return {@code raw}, parsed
+     * @throws NumberFormatException    if {@code raw} does not parse as an {@code int}
+     * @throws IllegalArgumentException if the parsed value is not positive
      */
-    static int simulationDistance(int simulationDistance) {
+    static int simulationDistance(String raw) {
+        int simulationDistance = Integer.parseInt(raw);
         if (simulationDistance <= 0) {
-            throw ConfigException.invalid(SIMULATION_DISTANCE_KEY, "must be greater than 0");
+            throw new IllegalArgumentException("must be greater than 0, was " + simulationDistance);
         }
         return simulationDistance;
     }

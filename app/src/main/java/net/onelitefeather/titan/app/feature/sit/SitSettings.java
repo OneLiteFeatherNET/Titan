@@ -20,18 +20,17 @@ import net.kyori.adventure.key.InvalidKeyException;
 import net.kyori.adventure.key.Key;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.instance.block.Block;
-import net.onelitefeather.titan.common.config.ConfigException;
 
 /**
- * Pure validation for the {@code sit} section's values, kept apart from however those values are
- * read ({@link SitModule#enable}, via {@code io.avaje.config.Config}, including
+ * Pure parsing and validation for the {@code sit} section's values, kept apart from however those
+ * values are read ({@link SitModule#enable}, via {@code io.avaje.config.Config}, including
  * {@code Config.getAs(key, Double::parseDouble)} for numbers).
  *
- * <p>Every method takes a plain value and either returns it (unchanged, or - for
- * {@link #parseBlock(String)} - converted) or throws
- * {@link ConfigException#invalid(String, String)} naming the value's full section key, e.g.
- * {@code sit.allowedBlocks}. None of these methods touch {@code io.avaje.config.Config} or a
- * server, so they are unit-testable on their own. There is no separate validation for
+ * <p>Neither method here is read through {@code Config.getAs}'s mapping function:
+ * {@link #parseBlock(String)} runs once per entry of the {@code sit.allowedBlocks} list, read via
+ * {@code Config.list().of(key)} - a plain list of strings, not wrapped by {@code getAs} - and
+ * {@link #allowedBlocks(List)} is a cross-check over the whole, already-parsed list. Both therefore
+ * self-name {@link #ALLOWED_BLOCKS_KEY} in their own message. There is no separate validation for
  * {@code sit.offset}: {@link SitModule#enable} builds it as a {@link Vec} from three
  * {@code Config.getAs(key, Double::parseDouble)} reads, which can never produce {@code null}, so
  * there is nothing to reject.
@@ -57,23 +56,23 @@ final class SitSettings {
      * {@link Key#key(String)} always has: a string with characters a {@link Key} cannot contain
      * (e.g. spaces or uppercase letters) is invalid. Beyond syntax, the key must also name a block
      * Minestom knows about ({@link Block#fromKey(Key)}) - the {@code lobby-module-config} spec
-     * lists
-     * "ein unbekannter Block" alongside a syntactically invalid one as an invalid value.
+     * lists "ein unbekannter Block" alongside a syntactically invalid one as an invalid value.
      *
      * @param raw one raw entry of the configured {@code sit.allowedBlocks} list
      * @return {@code raw}, parsed as a {@link Key}
-     * @throws ConfigException if {@code raw} is not a syntactically valid key, or is valid but
-     *                         names no known block
+     * @throws IllegalArgumentException if {@code raw} is not a syntactically valid key, or is valid
+     *                                  but names no known block; either way the message names
+     *                                  {@link #ALLOWED_BLOCKS_KEY}
      */
     static Key parseBlock(String raw) {
         Key key;
         try {
             key = Key.key(raw);
         } catch (InvalidKeyException e) {
-            throw ConfigException.invalid(ALLOWED_BLOCKS_KEY, "must be a valid block key, was '" + raw + "'");
+            throw new IllegalArgumentException(ALLOWED_BLOCKS_KEY + ": invalid block key '" + raw + "'");
         }
         if (Block.fromKey(key) == null) {
-            throw ConfigException.invalid(ALLOWED_BLOCKS_KEY, "must name a known block, was '" + raw + "'");
+            throw new IllegalArgumentException(ALLOWED_BLOCKS_KEY + ": unknown block '" + raw + "'");
         }
         return key;
     }
@@ -81,15 +80,16 @@ final class SitSettings {
     /**
      * @param allowedBlocks the block keys a player may sit down on
      * @return {@code allowedBlocks}, unchanged
-     * @throws ConfigException if {@code allowedBlocks} is {@code null} or empty - a player could
-     *                         never sit down otherwise
+     * @throws IllegalArgumentException if {@code allowedBlocks} is {@code null} or empty - a player
+     *                                  could never sit down otherwise; the message names
+     *                                  {@link #ALLOWED_BLOCKS_KEY}
      */
     static List<Key> allowedBlocks(List<Key> allowedBlocks) {
         if (allowedBlocks == null) {
-            throw ConfigException.invalid(ALLOWED_BLOCKS_KEY, "must not be null");
+            throw new IllegalArgumentException(ALLOWED_BLOCKS_KEY + " must not be null");
         }
         if (allowedBlocks.isEmpty()) {
-            throw ConfigException.invalid(ALLOWED_BLOCKS_KEY, "must not be empty - a player could never sit down otherwise");
+            throw new IllegalArgumentException(ALLOWED_BLOCKS_KEY + " must not be empty - a player could never sit down otherwise");
         }
         return allowedBlocks;
     }

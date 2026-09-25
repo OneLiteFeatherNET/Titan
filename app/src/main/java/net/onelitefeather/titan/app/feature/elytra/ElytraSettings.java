@@ -15,39 +15,44 @@
  */
 package net.onelitefeather.titan.app.feature.elytra;
 
-import net.onelitefeather.titan.common.config.ConfigException;
-
 /**
- * Pure validation for the {@code elytra} module's configuration values (see
- * {@code openspec/changes/avaje-config-facade/design.md}, decision 3).
+ * Pure parsing and validation for the {@code elytra} module's configuration values (see
+ * {@code openspec/changes/avaje-config-facade/design.md}, decisions 3 and 4).
  *
- * <p>Takes plain values and either returns a validated result or throws
- * {@link ConfigException#invalid(String, String)} naming the full configuration key - it never
- * touches {@code io.avaje.config.Config} or a server, so it is unit-testable on its own.
- * {@link ElytraModule#enable} calls both before constructing anything that needs validated
- * values, so the rules live in exactly one place.
+ * <p>{@link #burnDurationTicks(String)} is a single-value check, used directly as the mapping
+ * function of {@code Config.getAs(BURN_DURATION_TICKS_KEY, ElytraSettings::burnDurationTicks)} in
+ * {@link ElytraModule#enable} - {@code getAs} wraps any exception it throws into an
+ * {@code IllegalStateException} naming the key once, keeping this method's own exception as the
+ * cause. {@link #cooldownTicks(int, int)} is a cross-field check - it needs the already-validated
+ * burn duration - so {@link ElytraModule#enable} calls it itself, after reading both values; its
+ * own
+ * message therefore names both full keys.
  */
 final class ElytraSettings {
 
-    /** The full key for {@link #burnDurationTicks(int)}'s parameter. */
+    /** The full key {@link #burnDurationTicks(String)} reads and validates. */
     static final String BURN_DURATION_TICKS_KEY = "elytra.burnDurationTicks";
 
-    /** The full key for {@link #cooldownTicks(int, int)}'s {@code cooldownTicks} parameter. */
+    /**
+     * The full key {@link #cooldownTicks(int, int)}'s {@code cooldownTicks} parameter is read from.
+     */
     static final String COOLDOWN_TICKS_KEY = "elytra.cooldownTicks";
 
     private ElytraSettings() {
     }
 
     /**
-     * Validates how many ticks one rocket boosts for.
+     * Parses and validates how many ticks one rocket boosts for.
      *
-     * @param burnDurationTicks the configured burn duration; must be strictly positive
-     * @return {@code burnDurationTicks} unchanged
-     * @throws ConfigException naming {@link #BURN_DURATION_TICKS_KEY} if it is not positive
+     * @param raw the configured burn duration, as text; must parse as a strictly positive int
+     * @return {@code raw}, parsed
+     * @throws NumberFormatException    if {@code raw} does not parse as an {@code int}
+     * @throws IllegalArgumentException if the parsed value is not positive
      */
-    static int burnDurationTicks(int burnDurationTicks) {
+    static int burnDurationTicks(String raw) {
+        int burnDurationTicks = Integer.parseInt(raw);
         if (burnDurationTicks <= 0) {
-            throw ConfigException.invalid(BURN_DURATION_TICKS_KEY, "must be positive");
+            throw new IllegalArgumentException("must be positive, was " + burnDurationTicks);
         }
         return burnDurationTicks;
     }
@@ -55,18 +60,21 @@ final class ElytraSettings {
     /**
      * Validates how many ticks after a boost starts before another may be used. Measured from the
      * burn's start, so it must be strictly longer than {@code burnDurationTicks} - otherwise two
-     * rockets could burn on the same player at once.
+     * rockets could burn on the same player at once. Not read through {@code Config.getAs}'s
+     * mapping function (unlike {@link #burnDurationTicks(String)}): it needs the already-validated
+     * burn duration, so it self-names both full keys in its message.
      *
      * @param cooldownTicks     the configured cooldown; must be strictly longer than
      *                          {@code burnDurationTicks}
      * @param burnDurationTicks the already-validated burn duration to compare against
      * @return {@code cooldownTicks} unchanged
-     * @throws ConfigException naming {@link #COOLDOWN_TICKS_KEY} if it is not longer than
-     *                         {@code burnDurationTicks}
+     * @throws IllegalArgumentException if it is not longer than {@code burnDurationTicks}; the
+     *                                  message names both {@link #COOLDOWN_TICKS_KEY} and
+     *                                  {@link #BURN_DURATION_TICKS_KEY}
      */
     static int cooldownTicks(int cooldownTicks, int burnDurationTicks) {
         if (cooldownTicks <= burnDurationTicks) {
-            throw ConfigException.invalid(COOLDOWN_TICKS_KEY, "must be longer than burnDurationTicks");
+            throw new IllegalArgumentException(COOLDOWN_TICKS_KEY + " (" + cooldownTicks + ") must be longer than " + BURN_DURATION_TICKS_KEY + " (" + burnDurationTicks + ")");
         }
         return cooldownTicks;
     }
