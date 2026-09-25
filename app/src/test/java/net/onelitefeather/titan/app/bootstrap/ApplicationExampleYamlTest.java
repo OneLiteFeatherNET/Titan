@@ -20,7 +20,6 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import io.avaje.config.Configuration;
 import net.onelitefeather.titan.app.feature.elytra.ElytraConfig;
-import net.onelitefeather.titan.app.feature.navigator.NavigatorConfig;
 import net.onelitefeather.titan.app.feature.sit.SitConfig;
 import net.onelitefeather.titan.app.feature.spawn.SpawnConfig;
 import net.onelitefeather.titan.app.feature.tickle.TickleConfig;
@@ -70,7 +69,16 @@ class ApplicationExampleYamlTest {
             Assertions.assertEquals(SitConfig.DEFAULTS, sections.section("sit", SitConfig.class, SitConfig.DEFAULTS), "sit must bind to exactly its own defaults");
             Assertions.assertEquals(TickleConfig.DEFAULTS, sections.section("tickle", TickleConfig.class, TickleConfig.DEFAULTS), "tickle must bind to exactly its own defaults");
             Assertions.assertEquals(ElytraConfig.DEFAULTS, sections.section("elytra", ElytraConfig.class, ElytraConfig.DEFAULTS), "elytra must bind to exactly its own defaults");
-            Assertions.assertEquals(NavigatorConfig.DEFAULTS, sections.section("navigator", NavigatorConfig.class, NavigatorConfig.DEFAULTS), "navigator must bind to exactly its own defaults, entries keyed by name");
+
+            // navigator no longer has a Config record to bind through ConfigSections (see
+            // openspec/changes/avaje-config-facade/design.md, decision 6); its own values are
+            // checked directly against the raw Configuration instead, literal expected values in
+            // place of the removed record's own defaults.
+            Assertions.assertEquals("<yellow>Navigator", configuration.get("navigator.title"), "navigator.title must match its own default");
+            Assertions.assertEquals(0, configuration.getInt("navigator.entries.elytrarace.slot"), "navigator.entries.elytrarace.slot");
+            Assertions.assertEquals("Survival", configuration.get("navigator.entries.survival.destination"), "navigator.entries.survival.destination");
+            Assertions.assertEquals("NAVIGATOR_SLENDER", configuration.getNullable("navigator.entries.slender.feature"), "navigator.entries.slender.feature");
+            Assertions.assertEquals("MemberBuild", configuration.get("navigator.entries.creative.destination"), "navigator.entries.creative.destination");
         } finally {
             sectionBinderLogger.detachAppender(appender);
         }

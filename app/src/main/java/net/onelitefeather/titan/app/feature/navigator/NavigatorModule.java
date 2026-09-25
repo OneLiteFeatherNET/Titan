@@ -15,9 +15,13 @@
  */
 package net.onelitefeather.titan.app.feature.navigator;
 
+import io.avaje.config.Config;
 import io.avaje.inject.Priority;
 import jakarta.inject.Singleton;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -33,6 +37,7 @@ import net.onelitefeather.titan.app.module.item.ItemSlot;
 import net.onelitefeather.titan.app.module.item.LobbyItem;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntry;
+import net.onelitefeather.titan.common.config.ConfigValues;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
 
 /**
@@ -64,9 +69,18 @@ import net.onelitefeather.titan.common.feature.FeatureFlags;
  * module hands the very same instance to its constructor, and hands the platform-wide entry
  * registry to its own {@code enable}; the composition root ({@code Titan}) wires that same
  * {@link FeatureFlags} instance into {@code ModuleRegistry.Builder#featureFlags} too, so every
- * configured entry's {@link NavigatorConfig.Entry#feature()} - and every other module's entries'
+ * configured entry's {@link NavigatorEntry#feature()} - and every other module's entries'
  * {@code feature()} besides - is validated up front, once every module has enabled, by
  * {@link NavigatorEntries#validate(FeatureFlags)}, not by this module itself.
+ *
+ * <p>{@link #enable} reads its title and entries directly from the {@code io.avaje.config.Config}
+ * static facade - the title via {@code Config.get("navigator.title")}, the entries by turning the
+ * keys {@code Config.asConfiguration().forPath("navigator.entries").keys()} returns into names via
+ * {@link NavigatorEntryKeys#names(Set)}, validating each one's values with
+ * {@link NavigatorEntryValidation#buildEntry} and deserializing the result into a renderable
+ * {@link NavigatorEntry} - per {@code openspec/changes/avaje-config-facade/design.md}, decision 6.
+ * No default values are supplied in code; every key is expected to exist in the shipped classpath
+ * {@code application.yaml}.
  */
 @Singleton
 @Priority(400)
@@ -75,6 +89,8 @@ public final class NavigatorModule implements LobbyModule {
     private static final String ID = "navigator";
     private static final Key ITEM_KEY = Key.key("titan:navigator");
     private static final int HOTBAR_SLOT = 4;
+    private static final String TITLE_KEY = "navigator.title";
+    private static final String ENTRIES_PATH = "navigator.entries";
 
     private final Deliver deliver;
     private final NavigatorEntries entries;
@@ -99,18 +115,49 @@ public final class NavigatorModule implements LobbyModule {
 
     @Override
     public void enable(ModuleContext context) {
-        NavigatorConfig config = context.config(NavigatorConfig.class, NavigatorConfig.DEFAULTS);
-        Component title = MiniMessage.miniMessage().deserialize(config.title());
+        Component title = MiniMessage.miniMessage().deserialize(Config.get(TITLE_KEY));
         this.navigatorInventory = new NavigatorInventory(title, this.entries, this.featureFlags, this::onSelect);
 
-        for (NavigatorConfig.Entry entry : config.entries().values()) {
-            context.navigator().add(toNavigatorEntry(entry));
+        for (NavigatorEntry entry : readEntries()) {
+            context.navigator().add(entry);
         }
 
         ItemStack feather = ItemStack.builder(Material.FEATHER).customName(MiniMessage.miniMessage().deserialize("<!i><aqua>Navigator")).build();
         context.items().register(new LobbyItem(ITEM_KEY, feather, ItemSlot.hotbar(HOTBAR_SLOT), (player, event) -> player.openInventory(this.navigatorInventory.current())));
 
         this.navigatorInventory.register();
+    }
+
+    /**
+     * Reads every entry under {@code navigator.entries}: the entry names come from
+     * {@link NavigatorEntryKeys#names(Set)} applied to
+     * {@code Config.asConfiguration().forPath(ENTRIES_PATH).keys()}, each name's own {@code slot},
+     * {@code icon}, {@code displayName}, {@code destination} and optional {@code feature} are read
+     * and validated by {@link NavigatorEntryValidation#buildEntry}, and the result is turned into a
+     * renderable {@link NavigatorEntry} by {@link #toNavigatorEntry}.
+     *
+     * @return every configured navigator entry, ready to register
+     */
+    private static List<NavigatorEntry> readEntries() {
+        Set<String> names = NavigatorEntryKeys.names(Config.asConfiguration().forPath(ENTRIES_PATH).keys());
+        List<NavigatorEntry> entries = new ArrayList<>();
+        for (String name : names) {
+            String prefix = ENTRIES_PATH + "." + name + ".";
+            int slot = ConfigValues.intValue(prefix + "slot");
+            String icon = Config.get(prefix + "icon");
+            String displayName = Config.get(prefix + "displayName");
+            String destination = Config.get(prefix + "destination");
+            String feature = Config.getNullable(prefix + "feature");
+            NavigatorEntryValidation.ConfiguredNavigatorEntry configured = NavigatorEntryValidation.buildEntry(name, slot, icon, displayName, destination, feature);
+            entries.add(toNavigatorEntry(configured));
+        }
+        return entries;
+    }
+
+    private static NavigatorEntry toNavigatorEntry(NavigatorEntryValidation.ConfiguredNavigatorEntry entry) {
+        Component displayName = MiniMessage.miniMessage().deserialize(entry.displayName());
+        ItemStack icon = ItemStack.builder(Material.fromKey(entry.icon())).customName(displayName).build();
+        return new NavigatorEntry(entry.slot(), icon, displayName, entry.destination(), entry.feature());
     }
 
     @Override
@@ -131,11 +178,5 @@ public final class NavigatorModule implements LobbyModule {
 
     private void onSelect(Player player, NavigatorEntry entry) {
         this.deliver.sendPlayer(player, DeliverComponent.taskBuilder().taskName(entry.destination()).player(player).build());
-    }
-
-    private static NavigatorEntry toNavigatorEntry(NavigatorConfig.Entry entry) {
-        Component displayName = MiniMessage.miniMessage().deserialize(entry.displayName());
-        ItemStack icon = ItemStack.builder(Material.fromKey(entry.icon())).customName(displayName).build();
-        return new NavigatorEntry(entry.slot(), icon, displayName, entry.destination(), entry.feature());
     }
 }

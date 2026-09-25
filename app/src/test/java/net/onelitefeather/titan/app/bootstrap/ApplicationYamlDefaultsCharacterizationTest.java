@@ -21,10 +21,10 @@ import java.util.Map;
 import net.kyori.adventure.key.Key;
 import net.minestom.server.coordinate.Vec;
 import net.onelitefeather.titan.app.feature.elytra.ElytraConfig;
-import net.onelitefeather.titan.app.feature.navigator.NavigatorConfig;
 import net.onelitefeather.titan.app.feature.sit.SitConfig;
 import net.onelitefeather.titan.app.feature.spawn.SpawnConfig;
 import net.onelitefeather.titan.app.feature.tickle.TickleConfig;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -33,8 +33,11 @@ import org.junit.jupiter.api.Test;
  * Characterization test for {@code avaje-config-facade} task 1.1: locks in that the classpath
  * {@code app/src/main/resources/application.yaml} - the file every module will read directly
  * through {@code io.avaje.config.Config} once the facade migration is complete - carries exactly
- * today's {@code DEFAULTS} of {@link SitConfig}, {@link SpawnConfig}, {@link TickleConfig},
- * {@link ElytraConfig} and {@link NavigatorConfig}, key by key.
+ * today's {@code DEFAULTS} of {@link SitConfig}, {@link SpawnConfig}, {@link TickleConfig} and
+ * {@link ElytraConfig}, key by key, and the shipped navigator defaults (the navigator module's own
+ * per-entry config record was removed once the navigator module moved onto this file, see {@code
+ * openspec/changes/avaje-config-facade/design.md}, decision 6 - its navigator assertions below
+ * compare against the same values, spelled out literally, instead).
  *
  * <p>Loads the file as its own {@link Configuration} instance via
  * {@link Configuration.Builder#load(String)} - which reads a classpath resource, never the static
@@ -93,19 +96,19 @@ class ApplicationYamlDefaultsCharacterizationTest {
         Assertions.assertEquals(ElytraConfig.DEFAULTS.cooldownTicks(), configuration.getInt("elytra.cooldownTicks"), "elytra.cooldownTicks");
     }
 
-    @DisplayName("navigator: application.yaml matches NavigatorConfig.DEFAULTS")
+    @DisplayName("navigator: application.yaml matches the shipped defaults - ElytraRace, Survival, Slender (gated behind NAVIGATOR_SLENDER) and Creative")
     @Test
     void navigatorMatchesDefaults() {
         Configuration configuration = load();
 
-        Assertions.assertEquals(NavigatorConfig.DEFAULTS.title(), configuration.get("navigator.title"), "navigator.title");
+        Assertions.assertEquals("<yellow>Navigator", configuration.get("navigator.title"), "navigator.title");
 
-        Map<String, NavigatorConfig.Entry> expectedEntries = NavigatorConfig.DEFAULTS.entries();
+        Map<String, ExpectedNavigatorEntry> expectedEntries = Map.of("elytrarace", new ExpectedNavigatorEntry(0, "minecraft:elytra", "<!i><gradient:#fcba03:#03fc8c>ElytraRace</gradient>", "ElytraRace", null), "survival", new ExpectedNavigatorEntry(4, "minecraft:grass_block", "<!i><green>Survival", "Survival", null), "slender", new ExpectedNavigatorEntry(5, "minecraft:enderman_spawn_egg", "<!i><gradient:#616161:#e80000c>Slender</gradient>", "cygnus", "NAVIGATOR_SLENDER"), "creative", new ExpectedNavigatorEntry(8, "minecraft:wooden_axe", "<!i><rainbow>Creative</rainbow>", "MemberBuild", null));
         Assertions.assertEquals(expectedEntries.keySet(), configuration.forPath("navigator.entries").keys().stream().map(key -> key.split("\\.")[0]).collect(java.util.stream.Collectors.toSet()), "navigator.entries names");
 
-        for (Map.Entry<String, NavigatorConfig.Entry> entry : expectedEntries.entrySet()) {
+        for (Map.Entry<String, ExpectedNavigatorEntry> entry : expectedEntries.entrySet()) {
             String name = entry.getKey();
-            NavigatorConfig.Entry expected = entry.getValue();
+            ExpectedNavigatorEntry expected = entry.getValue();
             String prefix = "navigator.entries." + name + ".";
 
             Assertions.assertEquals(expected.slot(), configuration.getInt(prefix + "slot"), prefix + "slot");
@@ -114,5 +117,14 @@ class ApplicationYamlDefaultsCharacterizationTest {
             Assertions.assertEquals(expected.destination(), configuration.get(prefix + "destination"), prefix + "destination");
             Assertions.assertEquals(expected.feature(), configuration.getNullable(prefix + "feature"), prefix + "feature");
         }
+    }
+
+    /**
+     * A literal stand-in for the navigator's former per-entry config record, spelling out one
+     * expected default entry's fields so this test does not depend on the removed record (see
+     * {@code openspec/changes/avaje-config-facade/design.md}, decision 6).
+     */
+    private record ExpectedNavigatorEntry(int slot, String icon, String displayName,
+                                          String destination, @Nullable String feature) {
     }
 }

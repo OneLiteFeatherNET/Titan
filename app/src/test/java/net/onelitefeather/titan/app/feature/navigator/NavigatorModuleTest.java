@@ -15,9 +15,7 @@
  */
 package net.onelitefeather.titan.app.feature.navigator;
 
-import io.avaje.config.Configuration;
 import java.util.List;
-import java.util.Map;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.PlayerHand;
@@ -36,7 +34,6 @@ import net.onelitefeather.titan.app.module.LobbyModule;
 import net.onelitefeather.titan.app.module.ModuleContext;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntry;
 import net.onelitefeather.titan.app.module.testing.ModuleHarness;
-import net.onelitefeather.titan.common.config.ConfigSections;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -45,9 +42,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 /**
  * End-to-end coverage for {@link NavigatorModule} against a real {@code Env}: opening the feather
  * shows the configured entries synchronously (no tick needed), clicking an entry forwards through
- * {@code Deliver} and closes the inventory, an additional entry from configuration appears, and an
- * entry contributed by another module appears and disappears once that module's contribution is
- * withdrawn.
+ * {@code Deliver} and closes the inventory, and an entry contributed by another module appears and
+ * disappears once that module's contribution is withdrawn.
  *
  * <p>Started through {@link ModuleHarness}'s {@link ModuleHarness.ModuleFactory} overloads, which
  * hand the harness's own {@link net.onelitefeather.titan.app.module.navigator.NavigatorEntries}
@@ -115,12 +111,27 @@ class NavigatorModuleTest {
         }
     }
 
-    @DisplayName("An additional entry from configuration appears in the navigator (Parkour on slot 2)")
+    @DisplayName("An additional entry appears in the navigator (Parkour on slot 2)")
     @Test
     void additionalConfiguredEntryAppears(Env env) {
-        Configuration configuration = Configuration.builder().putAll(Map.of("navigator.entries.parkour.slot", "2", "navigator.entries.parkour.icon", "minecraft:diamond_pickaxe", "navigator.entries.parkour.displayName", "<green>Parkour", "navigator.entries.parkour.destination", "Parkour")).build();
-        ConfigSections sections = new ConfigSections(configuration);
-        try (ModuleHarness harness = ModuleHarness.start(env, sections, (navigator, items) -> new LobbyModule[]{new NavigatorModule(new RecordingDeliver(), navigator, slenderActive())})) {
+        // A stand-in for an entry another module contributes, in place of a ConfigSections
+        // override no longer read by NavigatorModule (design.md, decision 5) - built directly, the
+        // same way NavigatorModule itself builds a renderable entry once
+        // NavigatorEntryValidation#buildEntry has validated its plain configuration values.
+        NavigatorEntry parkour = new NavigatorEntry(2, ItemStack.of(Material.DIAMOND_PICKAXE), Component.text("Parkour"), "Parkour");
+        LobbyModule parkourModule = new LobbyModule() {
+
+            @Override
+            public String id() {
+                return "parkour";
+            }
+
+            @Override
+            public void enable(ModuleContext context) {
+                context.navigator().add(parkour);
+            }
+        };
+        try (ModuleHarness harness = ModuleHarness.start(env, (navigator, items) -> new LobbyModule[]{new NavigatorModule(new RecordingDeliver(), navigator, slenderActive()), parkourModule})) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             harness.items().equip(player);
@@ -130,7 +141,7 @@ class NavigatorModuleTest {
 
             AbstractInventory openInventory = player.getOpenInventory();
             Assertions.assertNotNull(openInventory);
-            Assertions.assertEquals(Material.DIAMOND_PICKAXE, openInventory.getItemStack(2).material(), "the configured Parkour entry must appear on slot 2");
+            Assertions.assertEquals(Material.DIAMOND_PICKAXE, openInventory.getItemStack(2).material(), "the additional Parkour entry must appear on slot 2");
         }
     }
 
