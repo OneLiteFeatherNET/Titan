@@ -15,19 +15,16 @@
  */
 package net.onelitefeather.titan.app.bootstrap;
 
-import io.avaje.config.Configuration;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
 import net.minestom.server.coordinate.Pos;
 import net.onelitefeather.titan.app.module.LobbySpawn;
-import net.onelitefeather.titan.common.config.ConfigSections;
 import net.onelitefeather.titan.common.map.LobbyMap;
 import net.onelitefeather.titan.common.map.MapProvider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+
+import java.util.List;
 
 /**
  * Unit coverage for {@link PlatformBeans#lobbySpawn(MapProvider)}: the bean method's own Javadoc
@@ -37,12 +34,13 @@ import org.mockito.Mockito;
  * mocks {@link MapProvider} rather than a real one, so this runs without a Minestom server or the
  * filesystem {@code worlds/} a real {@code MapProvider} reads.
  *
- * <p>Also covers {@link PlatformBeans#configuration()} and {@link
- * PlatformBeans#configSections(Configuration)}: run against this module's own working directory,
- * which - unlike the repository root before this change - never has an {@code application.yaml}
- * or a leftover {@code app.json} of its own, so both beans must build cleanly and a section must
- * fall back to its defaults, exactly like the {@code lobby-module-config} spec's "Ohne
- * Konfigurationsdatei gelten die Standardwerte" scenario.
+ * <p>{@link PlatformBeans#configuration()} and {@link
+ * PlatformBeans#configSections(io.avaje.config.Configuration)} are deliberately not covered here:
+ * both ultimately touch the real process working directory and, through {@link
+ * ConfigurationLoader}, the migration step's filesystem side effects - none of which a unit test
+ * may depend on without breaking Independent/Repeatable (F.I.R.S.T.). That coverage, including the
+ * migration step, lives in {@link ConfigurationPrecedenceTest}, which drives a child JVM with a
+ * {@code @TempDir} as its working directory instead.
  */
 class PlatformBeansTest {
 
@@ -74,22 +72,5 @@ class PlatformBeansTest {
 
         Assertions.assertEquals(firstSpawn, positionBeforeSwitch, "the first call must return the active lobby's spawn at that time");
         Assertions.assertEquals(secondSpawn, positionAfterSwitch, "the next call must return the switched-to active lobby's spawn, proving position() re-reads MapProvider every time instead of caching");
-    }
-
-    private record Probe(int value) {
-    }
-
-    @DisplayName("configuration() and configSections() build cleanly with no application.yaml present, and a section falls back to its defaults")
-    @Test
-    void configurationAndConfigSectionsBuildCleanlyWithNoFilePresent() {
-        Path workingDir = Path.of("").toAbsolutePath();
-        Assertions.assertFalse(Files.exists(workingDir.resolve("application.yaml")), "this module's own directory must not have an application.yaml of its own");
-        Assertions.assertFalse(Files.exists(workingDir.resolve("app.json")), "this module's own directory must not have a leftover app.json of its own");
-
-        Configuration configuration = this.platformBeans.configuration();
-        ConfigSections configSections = this.platformBeans.configSections(configuration);
-
-        Probe probe = configSections.section("platform-beans-test-probe", Probe.class, new Probe(42));
-        Assertions.assertEquals(42, probe.value(), "with no application.yaml in the working directory, a section must fall back to its defaults");
     }
 }

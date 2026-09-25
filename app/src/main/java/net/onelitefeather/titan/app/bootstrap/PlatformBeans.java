@@ -30,7 +30,6 @@ import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.app.module.LobbySpawn;
 import net.onelitefeather.titan.app.module.item.ItemRegistry;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
-import net.onelitefeather.titan.common.config.AppJsonMigration;
 import net.onelitefeather.titan.common.config.ConfigSections;
 import net.onelitefeather.titan.common.deliver.DeliverProvider;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
@@ -64,6 +63,14 @@ public final class PlatformBeans {
      * the literal.
      */
     public static final String TITAN_NODE_NAME = "titan";
+
+    /**
+     * The collaborator {@link #configuration()} delegates the migrate-then-load sequence to - see
+     * that method's Javadoc. Held as a field, rather than the migration and the factory being
+     * invoked inline, so the bean method depends on one small collaborator instead of orchestrating
+     * global filesystem state itself.
+     */
+    private final ConfigurationLoader configurationLoader = new ConfigurationLoader();
 
     /**
      * @return the lobby's single {@link InstanceContainer}, registered with the instance manager -
@@ -107,19 +114,17 @@ public final class PlatformBeans {
     }
 
     /**
-     * Runs the one-time {@code app.json} &rarr; {@code application.yaml} switch (see
-     * {@code openspec/changes/standardized-config-profiles/design.md}, decision 4), then builds
-     * the {@code avaje-config} {@link Configuration} through {@link ConfigurationFactory} - the
-     * same factory the configuration precedence test drives against a child JVM - and logs the
-     * active profiles once, at INFO, via {@link ConfigurationStartupLog}.
+     * Builds the {@link Configuration} every module's section is ultimately read from, via {@link
+     * ConfigurationLoader} - the same collaborator {@link ConfigurationPrintMain} (the child JVM
+     * the configuration precedence test drives) calls, so both run the exact same migrate-then-load
+     * sequence (DRY) - and logs the active profiles once, at INFO, via {@link
+     * ConfigurationStartupLog}.
      *
      * @return the {@link Configuration} every module's section is ultimately read from
      */
     @Bean
     public Configuration configuration() {
-        Path workingDir = Path.of("").toAbsolutePath();
-        new AppJsonMigration().migrate(workingDir);
-        Configuration configuration = new ConfigurationFactory().load();
+        Configuration configuration = configurationLoader.load();
         ConfigurationStartupLog.activeProfiles(configuration);
         return configuration;
     }

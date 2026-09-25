@@ -34,9 +34,12 @@ import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Integration coverage for the {@code lobby-module-config} spec requirement "Overrides have a
- * fixed rank order": {@link ConfigurationFactory#load(Path)} - the exact factory method {@link
- * PlatformBeans} uses in production - resolves {@code application.yaml}, its active profiles, an
- * external file, environment variables and system properties in the order the spec fixes.
+ * fixed rank order": {@link ConfigurationFactory#load()} - reached through {@link
+ * ConfigurationLoader#load()}, the exact collaborator {@link PlatformBeans} uses in production -
+ * resolves {@code application.yaml}, its active profiles, an external file, environment variables
+ * and system properties in the order the spec fixes. The last case below also covers {@link
+ * ConfigurationLoader#load()}'s migration step, run in the same child JVM before configuration is
+ * resolved, exactly like production.
  *
  * <p>{@code avaje-config} resolves files against the JVM's real working directory and reads
  * {@code System.getenv} directly, with no injectable provider (see {@code design.md}, decision 6's
@@ -116,6 +119,19 @@ class ConfigurationPrecedenceTest {
         try (var entries = Files.list(workingDir)) {
             Assertions.assertTrue(entries.findAny().isEmpty(), "reading configuration must never create a file in the working directory");
         }
+    }
+
+    @DisplayName("A legacy app.json in the working directory is migrated before configuration is resolved")
+    @Test
+    void legacyAppJsonIsMigratedBeforeConfigurationIsResolved(@TempDir Path workingDir) throws IOException, InterruptedException {
+        Files.writeString(workingDir.resolve("app.json"), "{\"tickleDuration\": 4000}");
+
+        Map<String, String> resolved = run(workingDir, Map.of(), List.of(), List.of("tickle.cooldownMillis"));
+
+        Assertions.assertEquals("4000", resolved.get("tickle.cooldownMillis"), "the migrated value must be resolved by the same run that performed the migration");
+        Assertions.assertTrue(Files.exists(workingDir.resolve("application.yaml")), "the migration must have written application.yaml");
+        Assertions.assertTrue(Files.exists(workingDir.resolve("app.json.migrated")), "app.json must have been renamed to app.json.migrated");
+        Assertions.assertFalse(Files.exists(workingDir.resolve("app.json")), "app.json must no longer exist under its original name");
     }
 
     /**
