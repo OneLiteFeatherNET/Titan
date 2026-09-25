@@ -30,7 +30,6 @@ import net.minestom.server.item.Material;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.app.module.LobbyModule;
-import net.onelitefeather.titan.app.module.ModuleLifecycleException;
 import net.onelitefeather.titan.app.module.testing.ModuleHarness;
 import net.onelitefeather.titan.common.config.ConfigException;
 import net.onelitefeather.titan.common.config.ConfigStore;
@@ -135,12 +134,13 @@ class NavigatorFeatureFlagTest {
         ConfigStore store = ConfigStore.open(configFile);
         FakeFeatureFlags flags = new FakeFeatureFlags();
 
-        ModuleLifecycleException thrown = Assertions.assertThrows(ModuleLifecycleException.class, () -> ModuleHarness.start(env, store, (navigator, items) -> new LobbyModule[]{new NavigatorModule(new RecordingDeliver(), navigator, flags)}));
+        // Wired into both the module (for rendering) and the harness/registry itself (for
+        // ModuleRegistry#enableAll()'s NavigatorEntries#validate(FeatureFlags) check) - the same
+        // instance, exactly like Titan wires the real TogglzFeatureFlags into both places.
+        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> ModuleHarness.start(env, store, flags, (navigator, items) -> new LobbyModule[]{new NavigatorModule(new RecordingDeliver(), navigator, flags)}));
 
-        Assertions.assertInstanceOf(ConfigException.class, thrown.getCause(), "the underlying failure must be the ConfigException NavigatorConfig#validateFeatures throws");
-        ConfigException configException = (ConfigException) thrown.getCause();
-        Assertions.assertEquals("navigator", configException.section());
-        Assertions.assertEquals("entries", configException.field());
-        Assertions.assertTrue(configException.reason().contains("GIBT_ES_NICHT"), "the message must name the unknown flag");
+        Assertions.assertEquals("navigator", thrown.section(), "a config-sourced entry's origin module is 'navigator'");
+        Assertions.assertEquals("entries", thrown.field());
+        Assertions.assertTrue(thrown.reason().contains("GIBT_ES_NICHT"), "the message must name the unknown flag");
     }
 }

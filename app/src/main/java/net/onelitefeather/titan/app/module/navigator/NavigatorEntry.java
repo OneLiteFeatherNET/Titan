@@ -38,6 +38,15 @@ import org.jetbrains.annotations.Nullable;
  * to and including whether it is currently eligible to show at all - on the one record that already
  * describes the entry as data, matching decision 8's "entries as data" approach.
  *
+ * <p>"Gated the same way" also covers validation, not just rendering: {@link NavigatorEntries}'
+ * {@link NavigatorEntries#validate(net.onelitefeather.titan.common.feature.FeatureFlags) validate}
+ * checks <em>every</em> registered entry's {@link #feature()} against a
+ * {@link net.onelitefeather.titan.common.feature.FeatureFlags} source once every module has been
+ * enabled, aborting startup on an unknown name - again regardless of which module contributed the
+ * entry. An entry with a misspelled {@link #feature()} therefore never ends up silently hidden
+ * forever (an unknown name is never active), it aborts startup instead, exactly like a misspelled
+ * name in {@code NavigatorConfig}'s own configuration does.
+ *
  * @param slot        the slot this entry occupies, {@code 0}-{@code 8}, matching
  *                    {@link InventoryType#CHEST_1_ROW}
  * @param icon        the item shown in {@code slot}

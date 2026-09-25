@@ -98,7 +98,7 @@ class NavigatorEntriesTest {
         entries.add("navigator", entryAt(0, "ElytraRace"));
         entries.add("navigator", entryAt(4, "Survival"));
 
-        Assertions.assertDoesNotThrow(entries::validate);
+        Assertions.assertDoesNotThrow(() -> entries.validate());
     }
 
     @DisplayName("version() increments when an entry is added")

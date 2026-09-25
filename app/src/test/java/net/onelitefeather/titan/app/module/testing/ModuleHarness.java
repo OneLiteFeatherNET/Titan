@@ -16,6 +16,7 @@
 package net.onelitefeather.titan.app.module.testing;
 
 import java.nio.file.Path;
+import java.util.Objects;
 import java.util.UUID;
 import net.minestom.server.command.CommandManager;
 import net.minestom.server.event.Event;
@@ -27,6 +28,7 @@ import net.onelitefeather.titan.app.module.ModuleRegistry;
 import net.onelitefeather.titan.app.module.item.ItemRegistry;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
 import net.onelitefeather.titan.common.config.ConfigStore;
+import net.onelitefeather.titan.common.feature.FeatureFlags;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -217,7 +219,37 @@ public final class ModuleHarness implements AutoCloseable {
         EventNode<Event> globalNode = env.process().eventHandler();
         EventNode<Event> parent = EventNode.all("module-harness/" + UUID.randomUUID());
         globalNode.addChild(parent);
-        return start(globalNode, parent, env.process().scheduler(), env.process().command(), configStore, factory);
+        return start(globalNode, parent, env.process().scheduler(), env.process().command(), configStore, null, factory);
+    }
+
+    /**
+     * Starts the module(s) {@code factory} builds against {@code env}, reading their configuration
+     * from {@code configStore}, with {@code featureFlags} wired into the registry itself - via
+     * {@code ModuleRegistry.Builder#featureFlags} - not just into whatever module {@code factory}
+     * builds from it. Use this instead of {@link #start(Env, ConfigStore, ModuleFactory)} for a
+     * test
+     * that needs {@link ModuleRegistry#enableAll()} itself to validate a navigator entry's feature
+     * flag - see
+     * {@link net.onelitefeather.titan.app.module.navigator.NavigatorEntries#validate(FeatureFlags)}
+     * -
+     * rather than only whatever the built module does with {@code featureFlags} on its own.
+     *
+     * @param env          the Microtus environment to attach to and to take the scheduler and
+     *                     command manager from
+     * @param configStore  the {@link ConfigStore} the started modules read their section from, or
+     *                     {@code null} for none
+     * @param featureFlags the source of truth {@link ModuleRegistry#enableAll()} checks every
+     *                     navigator entry's feature flag against
+     * @param factory      builds the modules to start from the harness's own navigator entries and
+     *                     item registry
+     * @return a started harness; close it (or use try-with-resources) once the test is done
+     */
+    public static ModuleHarness start(Env env, @Nullable ConfigStore configStore, FeatureFlags featureFlags, ModuleFactory factory) {
+        Objects.requireNonNull(featureFlags, "featureFlags must not be null");
+        EventNode<Event> globalNode = env.process().eventHandler();
+        EventNode<Event> parent = EventNode.all("module-harness/" + UUID.randomUUID());
+        globalNode.addChild(parent);
+        return start(globalNode, parent, env.process().scheduler(), env.process().command(), configStore, featureFlags, factory);
     }
 
     /**
@@ -296,16 +328,19 @@ public final class ModuleHarness implements AutoCloseable {
      */
     public static ModuleHarness startStandalone(@Nullable ConfigStore configStore, ModuleFactory factory) {
         EventNode<Event> parent = EventNode.all("module-harness/" + UUID.randomUUID());
-        return start(null, parent, Scheduler.newScheduler(), new CommandManager(), configStore, factory);
+        return start(null, parent, Scheduler.newScheduler(), new CommandManager(), configStore, null, factory);
     }
 
-    private static ModuleHarness start(@Nullable EventNode<Event> attachedTo, EventNode<Event> parent, Scheduler scheduler, CommandManager commandManager, @Nullable ConfigStore configStore, ModuleFactory factory) {
+    private static ModuleHarness start(@Nullable EventNode<Event> attachedTo, EventNode<Event> parent, Scheduler scheduler, CommandManager commandManager, @Nullable ConfigStore configStore, @Nullable FeatureFlags featureFlags, ModuleFactory factory) {
         ItemRegistry items = new ItemRegistry(parent);
         NavigatorEntries navigator = new NavigatorEntries();
         LobbyModule[] modules = factory.create(navigator, items);
         ModuleRegistry.Builder builder = ModuleRegistry.builder().parent(parent).scheduler(scheduler).commandManager(commandManager).items(items).navigator(navigator).modules(modules);
         if (configStore != null) {
             builder.config(configStore);
+        }
+        if (featureFlags != null) {
+            builder.featureFlags(featureFlags);
         }
         ModuleRegistry registry = builder.build();
         registry.enableAll();

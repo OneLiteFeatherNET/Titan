@@ -90,7 +90,7 @@ public final class Titan {
 
         MinecraftServer.getGlobalEventHandler().addChild(this.titanNode);
 
-        this.moduleRegistry = ModuleRegistry.builder().parent(this.titanNode).config(configStore).navigator(navigatorEntries).items(itemRegistry).modules(
+        this.moduleRegistry = ModuleRegistry.builder().parent(this.titanNode).config(configStore).navigator(navigatorEntries).items(itemRegistry).featureFlags(featureFlags).modules(
                 new ProtectionModule(), new SpawnModule(mapProvider.getInstance(), () -> mapProvider.getActiveLobby().spawn()), new RespawnModule(), new NavigatorModule(deliver, navigatorEntries, featureFlags), new SitModule(), new TickleModule(), new ElytraModule()).build();
     }
 

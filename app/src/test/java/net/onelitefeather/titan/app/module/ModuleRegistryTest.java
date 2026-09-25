@@ -17,16 +17,23 @@ package net.onelitefeather.titan.app.module;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import net.kyori.adventure.text.Component;
 import net.minestom.server.command.builder.Command;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.event.trait.PlayerEvent;
 import net.minestom.server.instance.Instance;
+import net.minestom.server.item.ItemStack;
+import net.minestom.server.item.Material;
 import net.minestom.server.timer.TaskSchedule;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.app.module.navigator.NavigatorEntry;
+import net.onelitefeather.titan.common.config.ConfigException;
+import net.onelitefeather.titan.common.feature.FeatureFlags;
 import net.onelitefeather.titan.common.observability.TitanObservability;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -38,7 +45,9 @@ import org.slf4j.MDC;
  * Covers the {@code lobby-modules} spec scenarios for {@link ModuleRegistry}: start order, reverse
  * shutdown order, no events reaching a module during its own shutdown, listeners and commands
  * disappearing after disable, repeating tasks stopping, a failing {@code enable} aborting startup,
- * and one module's failing listener not affecting another module's.
+ * one module's failing listener not affecting another module's, and an unknown feature flag on
+ * <em>any</em> module's navigator entry - not only the ones {@code NavigatorConfig} itself reads -
+ * aborting {@link ModuleRegistry#enableAll()}.
  */
 @ExtendWith(MicrotusExtension.class)
 class ModuleRegistryTest {
@@ -55,6 +64,25 @@ class ModuleRegistryTest {
         @Override
         public Player getPlayer() {
             return this.player;
+        }
+    }
+
+    /**
+     * A minimal test-only {@link FeatureFlags}: a name {@link #known} contains exists; nothing
+     * else does. Mirrors {@code TogglzFeatureFlags}' behaviour for a name it has never heard of,
+     * without needing a real {@code flags.properties} file - see this codebase's F.I.R.S.T. rule
+     * against that in a unit test.
+     */
+    private record TestFeatureFlags(Set<String> known) implements FeatureFlags {
+
+        @Override
+        public boolean exists(String featureName) {
+            return this.known.contains(featureName);
+        }
+
+        @Override
+        public boolean isActive(String featureName) {
+            return this.known.contains(featureName);
         }
     }
 
@@ -215,5 +243,22 @@ class ModuleRegistryTest {
         // before - the earlier failure left neither module detached nor the dispatch chain broken.
         Assertions.assertDoesNotThrow(() -> parent.call(new PlayerTestEvent(player)));
         Assertions.assertEquals(2, healthyListenerCalls.get(), "the healthy module's listener must keep running on later events");
+    }
+
+    @DisplayName("An unknown feature flag on a navigator entry contributed by any module - not just navigator's own configuration - aborts enableAll(), naming that module and the flag")
+    @Test
+    void unknownFeatureFlagOnAnyModulesEntryAbortsEnableAll(Env env) {
+        EventNode<Event> parent = EventNode.all("test-unknown-feature-flag-any-module");
+        List<String> log = new ArrayList<>();
+        NavigatorEntry entry = new NavigatorEntry(0, ItemStack.of(Material.FEATHER), Component.text("Voyager"), "Voyager", "TYPO");
+        RecordingModule teaser = new RecordingModule("teaser", log, context -> context.navigator().add(entry), () -> {
+        });
+        ModuleRegistry registry = builder(env, parent).featureFlags(new TestFeatureFlags(Set.of())).modules(teaser).build();
+
+        ConfigException thrown = Assertions.assertThrows(ConfigException.class, registry::enableAll);
+
+        Assertions.assertEquals("teaser", thrown.section(), "the exception must name the entry's origin module, not 'navigator'");
+        Assertions.assertEquals("entries", thrown.field());
+        Assertions.assertTrue(thrown.reason().contains("TYPO"), "the message must name the unknown flag");
     }
 }

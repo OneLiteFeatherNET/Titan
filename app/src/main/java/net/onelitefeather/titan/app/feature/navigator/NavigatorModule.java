@@ -59,10 +59,12 @@ import net.onelitefeather.titan.common.feature.FeatureFlags;
  * 13):
  * injected via the constructor rather than read from the static Togglz {@code FeatureContext}
  * directly, so a test can hand in a fake instead of a real {@code flags.properties} file. This
- * module's own {@link #enable} validates every configured entry's
- * {@link NavigatorConfig.Entry#feature()}
- * against it up front and aborts startup - via {@link NavigatorConfig#validateFeatures} - if any
- * name is unknown.
+ * module hands the very same instance to its constructor, and hands the platform-wide entry
+ * registry to its own {@code enable}; the composition root ({@code Titan}) wires that same
+ * {@link FeatureFlags} instance into {@code ModuleRegistry.Builder#featureFlags} too, so every
+ * configured entry's {@link NavigatorConfig.Entry#feature()} - and every other module's entries'
+ * {@code feature()} besides - is validated up front, once every module has enabled, by
+ * {@link NavigatorEntries#validate(FeatureFlags)}, not by this module itself.
  */
 public final class NavigatorModule implements LobbyModule {
 
@@ -94,7 +96,6 @@ public final class NavigatorModule implements LobbyModule {
     @Override
     public void enable(ModuleContext context) {
         NavigatorConfig config = context.config(NavigatorConfig.class, NavigatorConfig.DEFAULTS);
-        config.validateFeatures(this.featureFlags);
         Component title = MiniMessage.miniMessage().deserialize(config.title());
         this.navigatorInventory = new NavigatorInventory(title, this.entries, this.featureFlags, this::onSelect);
 

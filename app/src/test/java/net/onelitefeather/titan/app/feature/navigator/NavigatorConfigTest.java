@@ -108,26 +108,4 @@ class NavigatorConfigTest {
     void nullDestinationIsRejected() {
         Assertions.assertThrows(NullPointerException.class, () -> new NavigatorConfig.Entry(0, "minecraft:feather", "<white>Test", null));
     }
-
-    @DisplayName("validateFeatures passes when every entry's feature is null or known")
-    @Test
-    void validateFeaturesPassesForKnownOrAbsentFeatures() {
-        NavigatorConfig config = new NavigatorConfig("<yellow>Navigator", List.of(new NavigatorConfig.Entry(0, "minecraft:feather", "<white>Always", "Always"), new NavigatorConfig.Entry(5, "minecraft:enderman_spawn_egg", "<white>Slender", "cygnus", "NAVIGATOR_SLENDER")));
-        FakeFeatureFlags flags = new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", true);
-
-        Assertions.assertDoesNotThrow(() -> config.validateFeatures(flags));
-    }
-
-    @DisplayName("validateFeatures aborts on an unknown feature, naming the navigator.entries section and the flag")
-    @Test
-    void validateFeaturesAbortsOnAnUnknownFeature() {
-        NavigatorConfig config = new NavigatorConfig("<yellow>Navigator", List.of(new NavigatorConfig.Entry(5, "minecraft:enderman_spawn_egg", "<white>Slender", "cygnus", "GIBT_ES_NICHT")));
-        FakeFeatureFlags flags = new FakeFeatureFlags();
-
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> config.validateFeatures(flags));
-
-        Assertions.assertEquals("navigator", thrown.section());
-        Assertions.assertEquals("entries", thrown.field());
-        Assertions.assertTrue(thrown.reason().contains("GIBT_ES_NICHT"), "the reason must name the unknown flag");
-    }
 }
