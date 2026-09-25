@@ -18,15 +18,23 @@ package net.onelitefeather.titan.app.feature.sit;
 import java.util.List;
 import net.kyori.adventure.key.Key;
 import net.minestom.server.coordinate.Vec;
+import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.common.config.ConfigException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Plain unit tests for {@link SitSettings}: no {@code Config}, no {@code ConfigSections}, no
  * server needed - just the pure validation functions.
+ *
+ * <p>{@link MicrotusExtension} is only needed because {@link SitSettings#parseBlock} resolves a
+ * key against Minestom's block registry data (see
+ * {@link net.onelitefeather.titan.app.feature.navigator.NavigatorEntryValidationTest}'s Javadoc for
+ * the same pattern with {@code Material}).
  */
+@ExtendWith(MicrotusExtension.class)
 class SitSettingsTest {
 
     @DisplayName("A valid offset is returned unchanged")
@@ -75,6 +83,14 @@ class SitSettingsTest {
     void invalidBlockKeyStringIsRejected() {
         ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> SitSettings.parseBlock("Not A Valid Key!!"));
         Assertions.assertEquals("sit.allowedBlocks", thrown.field());
+    }
+
+    @DisplayName("A syntactically valid key that names no known block is rejected, naming the full key")
+    @Test
+    void unknownBlockKeyIsRejected() {
+        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> SitSettings.parseBlock("minecraft:not_a_block"));
+        Assertions.assertEquals("sit.allowedBlocks", thrown.field());
+        Assertions.assertTrue(thrown.reason().contains("not_a_block"), "the reason must name the offending value, was: " + thrown.reason());
     }
 
     @DisplayName("A rejection message names the full key exactly once")

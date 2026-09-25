@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import net.onelitefeather.titan.common.config.ConfigurationFactory;
 import org.junit.jupiter.api.Assertions;
@@ -161,6 +162,106 @@ class ConfigurationPrecedenceTest {
         String joined = String.join("\n", output);
         Assertions.assertTrue(joined.contains("application.yaml"), "the failure must name application.yaml, output was:\n" + joined);
         Assertions.assertTrue(joined.contains("line 3"), "the failure must name the broken line, output was:\n" + joined);
+    }
+
+    @DisplayName("An invalid environment override for tickle.cooldownMillis aborts the child, naming the key exactly once")
+    @Test
+    void invalidTickleCooldownEnvironmentOverrideAbortsNamingKeyOnce(@TempDir Path workingDir) throws IOException, InterruptedException {
+        List<String> output = runTickleValidationExpectingFailure(workingDir, Map.of("TICKLE_COOLDOWNMILLIS", "abc"));
+
+        String joined = String.join("\n", output);
+        Assertions.assertEquals(1, countOccurrences(joined, "tickle.cooldownMillis"), "the key must be named exactly once, output was:\n" + joined);
+    }
+
+    @DisplayName("A negative tickle.cooldownMillis in application.yaml aborts the child, naming the key")
+    @Test
+    void negativeTickleCooldownInFileAbortsNamingKey(@TempDir Path workingDir) throws IOException, InterruptedException {
+        Files.writeString(workingDir.resolve("application.yaml"), "tickle:\n  cooldownMillis: -5\n");
+
+        List<String> output = runTickleValidationExpectingFailure(workingDir, Map.of());
+
+        String joined = String.join("\n", output);
+        Assertions.assertTrue(joined.contains("tickle.cooldownMillis"), "the failure must name tickle.cooldownMillis, output was:\n" + joined);
+    }
+
+    @DisplayName("A profile changes only one value of the sit section; the others keep their shipped defaults")
+    @Test
+    void profileChangesOnlyOneValueOfASection(@TempDir Path workingDir) throws IOException, InterruptedException {
+        Files.writeString(workingDir.resolve("application-dev.yaml"), "sit:\n  offset:\n    y: 0.5\n");
+
+        Map<String, String> resolved = run(workingDir, Map.of("AVAJE_PROFILES", "dev"), List.of(), List.of("sit.offset.x", "sit.offset.y", "sit.offset.z"));
+
+        Assertions.assertEquals("0.5", resolved.get("sit.offset.y"), "the active profile's value must win for y (shipped default is 0.25)");
+        Assertions.assertEquals("0.5", resolved.get("sit.offset.x"), "x must keep the shipped default, untouched by the profile");
+        Assertions.assertEquals("0.5", resolved.get("sit.offset.z"), "z must keep the shipped default, untouched by the profile");
+    }
+
+    @DisplayName("A file setting only tickle.cooldownMillis leaves other modules at their shipped default")
+    @Test
+    void fileSettingOnlyOneKeyLeavesOtherModulesAtTheirDefault(@TempDir Path workingDir) throws IOException, InterruptedException {
+        Files.writeString(workingDir.resolve("application.yaml"), "tickle:\n  cooldownMillis: 1000\n");
+
+        Map<String, String> resolved = run(workingDir, Map.of(), List.of(), List.of("tickle.cooldownMillis", "spawn.simulationDistance"));
+
+        Assertions.assertEquals("1000", resolved.get("tickle.cooldownMillis"), "the file's own value must apply");
+        Assertions.assertEquals("2", resolved.get("spawn.simulationDistance"), "an untouched module must keep its shipped default");
+    }
+
+    @DisplayName("A navigator entry added in application.yaml appears alongside the shipped defaults")
+    @Test
+    void fileAddingANavigatorEntryAppearsAlongsideTheShippedDefaults(@TempDir Path workingDir) throws IOException, InterruptedException {
+        Files.writeString(workingDir.resolve("application.yaml"), """
+                navigator:
+                  entries:
+                    parkour:
+                      slot: 2
+                      icon: minecraft:slime_block
+                      displayName: "<green>Parkour"
+                      destination: Parkour
+                """);
+
+        Set<String> names = resolvedNavigatorEntryNames(workingDir, Map.of());
+
+        Assertions.assertTrue(names.contains("parkour"), "the added entry must be resolved, names were: " + names);
+        Assertions.assertTrue(names.containsAll(Set.of("elytrarace", "survival", "slender", "creative")), "the four shipped default entries must still be resolved, names were: " + names);
+        Assertions.assertEquals(5, names.size(), "exactly the four shipped defaults plus the added entry, names were: " + names);
+    }
+
+    /**
+     * Like {@link #runExpectingFailure}, but for {@code --validate-tickle}: asserts the child
+     * aborted (non-zero exit, no hang) and returns every line it printed, for the caller to inspect
+     * for the offending key.
+     */
+    private static List<String> runTickleValidationExpectingFailure(Path workingDir, Map<String, String> env) throws IOException, InterruptedException {
+        ChildResult result = startAndWait(workingDir, env, List.of(), List.of("--validate-tickle"));
+        Assertions.assertTrue(result.finished(), "the child process must finish within " + TIMEOUT + " instead of hanging");
+        Assertions.assertNotEquals(0, result.exitCode(), "an invalid tickle.cooldownMillis must abort the child with a non-zero exit code; output was:\n" + String.join("\n", result.lines()));
+        return result.lines();
+    }
+
+    /**
+     * Runs {@code --navigator-entries}, asserts a clean exit and parses the single
+     * {@code navigator.entries=<name>,<name>,...} line the child printed into a set of names.
+     */
+    private static Set<String> resolvedNavigatorEntryNames(Path workingDir, Map<String, String> env) throws IOException, InterruptedException {
+        ChildResult result = startAndWait(workingDir, env, List.of(), List.of("--navigator-entries"));
+        Assertions.assertTrue(result.finished(), "the child process must finish within " + TIMEOUT);
+        Assertions.assertEquals(0, result.exitCode(), "the child process must exit cleanly; output was:\n" + String.join("\n", result.lines()));
+
+        String prefix = "navigator.entries=";
+        String line = result.lines().stream().filter(candidate -> candidate.startsWith(prefix)).findFirst().orElseThrow(() -> new AssertionError("no \"" + prefix + "\" line in output:\n" + String.join("\n", result.lines())));
+        String value = line.substring(prefix.length());
+        return value.isEmpty() ? Set.of() : Set.of(value.split(","));
+    }
+
+    private static int countOccurrences(String haystack, String needle) {
+        int count = 0;
+        int index = 0;
+        while ((index = haystack.indexOf(needle, index)) != -1) {
+            count++;
+            index += needle.length();
+        }
+        return count;
     }
 
     /**
