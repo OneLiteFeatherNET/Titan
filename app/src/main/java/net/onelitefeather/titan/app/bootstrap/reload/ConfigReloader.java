@@ -131,7 +131,7 @@ public final class ConfigReloader {
         List<ReloadResult.RejectedModule> rejected = new ArrayList<>();
         List<String> disabled = new ArrayList<>();
 
-        for (String moduleId : diff.affectedModuleIds()) {
+        for (String moduleId : restartOrder(diff)) {
             restartModule(diff, moduleId, restarted, rejected, disabled);
         }
 
@@ -139,6 +139,26 @@ public final class ConfigReloader {
         LOGGER.info("Configuration reloaded: {} keys changed, modules restarted: {}", changedKeyCount, restarted);
 
         return new ReloadResult.Applied(restarted, rejected, disabled, diff.featureFlagsChanged());
+    }
+
+    /**
+     * @param diff the just-applied diff
+     * @return {@code diff.affectedModuleIds()}, but in {@code restarter.moduleOrder()}'s
+     *         (registration) order instead of that set's own alphabetical iteration order - per
+     *         {@code design.md}, decision 3. An affected id {@code restarter.moduleOrder()} does
+     *         not
+     *         know - its prefix never named a registered module - is left out: it is not a module,
+     *         so it is never passed to {@link ModuleRestarter#restart(String)}, which would throw
+     *         for an unknown id.
+     */
+    private List<String> restartOrder(ConfigDiff diff) {
+        List<String> order = new ArrayList<>();
+        for (String moduleId : restarter.moduleOrder()) {
+            if (diff.affectedModuleIds().contains(moduleId)) {
+                order.add(moduleId);
+            }
+        }
+        return order;
     }
 
     private void restartModule(

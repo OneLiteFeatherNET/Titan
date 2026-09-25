@@ -15,6 +15,8 @@
  */
 package net.onelitefeather.titan.app.bootstrap.reload;
 
+import java.util.List;
+
 /**
  * Restarts exactly one lobby module by id, on the tick thread, so it picks up its section of a just
  * applied configuration diff.
@@ -24,8 +26,10 @@ package net.onelitefeather.titan.app.bootstrap.reload;
  * sealed
  * {@code RestartOutcome} to {@link ModuleRestartOutcome} with a small lambda - see that type's
  * javadoc for why {@link ConfigReloader} does not depend on the {@code module} package directly.
+ * {@link #moduleOrder()} is backed the same way, by
+ * {@code net.onelitefeather.titan.app.module.ModuleRegistry#moduleIds()} - so this interface, not
+ * the {@code module} package, is the only ordering seam {@link ConfigReloader} knows about.
  */
-@FunctionalInterface
 public interface ModuleRestarter {
 
     /**
@@ -33,4 +37,18 @@ public interface ModuleRestarter {
      * @return whether the restart succeeded with the module's new configuration values
      */
     ModuleRestartOutcome restart(String moduleId);
+
+    /**
+     * The ids of every module this restarter can restart, in <em>registration</em> order - not the
+     * alphabetical order a {@link ConfigDiff}'s {@code affectedModuleIds} happens to iterate in.
+     * See
+     * {@code openspec/changes/config-reload-feature-flags/design.md}, decision 3: restarts follow
+     * registration order, so {@link ConfigReloader} restarts affected modules in the order this
+     * method returns them, skipping any affected id this restarter does not know - a diff key whose
+     * prefix never named a module (e.g. a typo, or a section such as {@code spawn} with no matching
+     * module) is deliberately never passed to {@link #restart(String)}.
+     *
+     * @return every known module id, in registration order
+     */
+    List<String> moduleOrder();
 }
