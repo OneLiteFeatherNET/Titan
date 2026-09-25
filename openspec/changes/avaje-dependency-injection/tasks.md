@@ -40,7 +40,7 @@ Integrations-Branch: `feat/avaje-dependency-injection`, abgezweigt vom aktuellen
 
 ## 4. Abnahme (Welle D)
 
-- [ ] 4.1 **E2E-Smoke-Test:** Das Shaded-Jar in einem Scratch-Verzeichnis starten, mit einer Kopie der Welten und `-Dtitan.aot.trainSeconds=15`. Prüfen: Die Log-Zeile mit der Startreihenfolge ist vorhanden, der Start ist sauber, das Herunterfahren ohne Exception. Außerdem eine absichtlich fehlende Abhängigkeit (z.B. per Test-Profil bzw. entferntem `@Bean`) als Probe: Der Start bricht mit einer Meldung ab, die das Modul und den Typ nennt. Verifikation: Die wichtigsten Log-Zeilen stehen im PR.
+- [x] 4.1 **E2E-Smoke-Test:** Das Shaded-Jar in einem Scratch-Verzeichnis starten, mit einer Kopie der Welten und `-Dtitan.aot.trainSeconds=15`. Prüfen: Die Log-Zeile mit der Startreihenfolge ist vorhanden, der Start ist sauber, das Herunterfahren ohne Exception. Außerdem eine absichtlich fehlende Abhängigkeit (z.B. per Test-Profil bzw. entferntem `@Bean`) als Probe: Der Start bricht mit einer Meldung ab, die das Modul und den Typ nennt. Verifikation: Die wichtigsten Log-Zeilen stehen im PR.
 - [ ] 4.2 Lokale Abnahme im Client durch den Maintainer: Die Lobby verhält sich unverändert (Feder und Navigator, Sitzen, Kitzeln, Elytra, Höhen-Teleport, Respawn). Verifikation: Die Checkliste im PR ist abgehakt.
 
 ## 5. Pull Request
