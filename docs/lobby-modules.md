@@ -194,6 +194,26 @@ das `NavigatorModule` ausgeschaltet, bleiben die Einträge einfach ungenutzt.
 Die Einträge eines Moduls verschwinden automatisch, wenn es abgeschaltet
 wird.
 
+**Einträge hinter einer Feature-Flag verstecken:** `NavigatorEntry` (und, für
+den Navigator selbst, `NavigatorConfig.Entry`) trägt ein optionales Feld
+`feature` - den Namen einer `TitanFeatures`-Konstante, z. B.
+`"NAVIGATOR_SLENDER"`. Ist die Flag aus (oder fehlt sie ganz in
+`flags.properties` - ein sicherer Standard), rendert `NavigatorInventory` an
+dieser Stelle die normale graue Glasscheibe statt des Eintrags; ist sie an,
+erscheint der Eintrag wie gewohnt. Geprüft wird über die kleine
+`net.onelitefeather.titan.common.feature.FeatureFlags`-Schnittstelle, die dem
+`NavigatorModule` per Konstruktor übergeben wird - produktiv
+`TogglzFeatureFlags` (steckt hinter `TitanFeatures`/Togglz), in Tests eine
+Attrappe, damit Tests ohne echte `flags.properties`-Datei und ohne den
+statischen `FeatureContext` auskommen. Ein Eintrag mit einem Namen, den
+`FeatureFlags` nicht kennt, bricht den Start ab (`ConfigException`, nennt
+`navigator.entries` und den unbekannten Namen). Das gilt auch für Einträge,
+die ein anderes Modul über `context.navigator().add(...)` beisteuert, nicht
+nur für die Einträge aus der `navigator`-Config selbst - das Feld sitzt auf
+`NavigatorEntry` und damit auf jedem Eintrag gleichermaßen, statt in einer
+separaten Tabelle, die der Navigator sonst parallel zur Registry pflegen
+müsste.
+
 ### `commands` - einen Befehl anmelden
 
 ```java
@@ -244,8 +264,10 @@ registriert wurde, läuft **auf dem Tick-Thread**. Daraus folgen vier Regeln:
    baut die feste Rückmeldung `ON_COOLDOWN` einmal als `static final
    Component` statt bei jeder Benutzung neu - dasselbe Prinzip, in größerem
    Maßstab, hinter `NavigatorModule`s `NavigatorInventory`: Das geteilte
-   Inventar wird nur neu gebaut, wenn sich `NavigatorEntries.version()`
-   geändert hat, nicht bei jedem Öffnen.
+   Inventar wird nur neu gebaut, wenn sich die sichtbare Eintragsmenge
+   geändert hat - weil sich `NavigatorEntries.version()` geändert hat (ein
+   Eintrag kam hinzu oder fiel weg) oder weil sich der Zustand einer
+   Feature-Flag geändert hat -, nicht bei jedem Öffnen.
 4. **Spielerbezogener Zustand gehört aufgeräumt.** Zustand, der pro Spieler
    gehalten wird (z. B. ein Cooldown-Zeitstempel), muss bei
    `PlayerDisconnectEvent` entfernt werden, sonst wächst er über die

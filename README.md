@@ -88,7 +88,8 @@ that no longer has a home (`updateRateAgones`, `fireworkBoostSlot`) is dropped a
         "slot": 5,
         "icon": "minecraft:enderman_spawn_egg",
         "displayName": "<!i><gradient:#616161:#e80000c>Slender</gradient>",
-        "destination": "cygnus"
+        "destination": "cygnus",
+        "feature": "NAVIGATOR_SLENDER"
       },
       {
         "slot": 8,
@@ -120,6 +121,12 @@ that no longer has a home (`updateRateAgones`, `fireworkBoostSlot`) is dropped a
 - `navigator.entries`: the navigator's destinations, each with a hotbar-chest slot (`0`-`8`), an
   icon material key, a MiniMessage display name and the CloudNet task name a click delivers the
   player to
+- `navigator.entries[].feature` (optional): the name of a `TitanFeatures` feature flag this
+  destination is gated behind, e.g. `"NAVIGATOR_SLENDER"`. Omitted, the destination is always
+  visible. A name Togglz does not recognize aborts startup with a message naming
+  `navigator.entries` and the unknown name. A flag missing from `flags.properties` counts as
+  **off** - Slender, for example, stays hidden until `NAVIGATOR_SLENDER` is explicitly turned on.
+  Toggling a flag takes effect the next time a player opens the navigator, with no restart.
 
 ## Development
 
