@@ -117,7 +117,8 @@ public final class TitanTranslations {
 
     /**
      * Builds a fresh {@link MiniMessageTranslationStore}, with the English bundle registered as
-     * {@link #FALLBACK_LOCALE its default/fallback locale} and the German bundle alongside it. Every
+     * {@link #FALLBACK_LOCALE its default/fallback locale} and the German bundle alongside it.
+     * Every
      * call returns an independent store; nothing here is shared, global, mutable state.
      */
     public static MiniMessageTranslationStore createStore() {
