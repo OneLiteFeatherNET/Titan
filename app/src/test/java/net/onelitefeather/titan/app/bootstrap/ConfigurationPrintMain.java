@@ -32,7 +32,7 @@ import net.onelitefeather.titan.common.config.ConfigurationFactory;
  * module runs at startup and reports the outcome. Either way, the parent test process - which
  * cannot reach into this JVM's memory - asserts on what this process printed.
  *
- * <p>Three modes, chosen by {@code args[0]}:
+ * <p>Four modes, chosen by {@code args[0]}:
  * <ul>
  * <li>{@value #VALIDATE_TICKLE}: runs {@link TickleValidation#validate()} - the same
  * {@code ConfigValues.longValue}/{@code TickleSettings.cooldown} line
@@ -42,6 +42,14 @@ import net.onelitefeather.titan.common.config.ConfigurationFactory;
  * <li>{@value #NAVIGATOR_ENTRIES}: runs {@link NavigatorValidation#resolvedEntryNames()} - the same
  * name resolution {@code NavigatorModule.enable} runs for {@code navigator.entries} - and prints
  * {@code navigator.entries=<name>,<name>,...}.</li>
+ * <li>{@value #LOG_ACTIVE_PROFILES}: runs {@link ConfigurationStartupLog#activeProfiles()} - the
+ * exact call {@code Titan}'s constructor makes right after
+ * {@link ConfigurationFactory#initialise()}
+ * - so {@link net.onelitefeather.titan.app.bootstrap.ConfigurationPrecedenceTest} can assert on the
+ * INFO line it logs under a chosen profile. The line reaches this process's stdout via the
+ * {@code CONSOLE} appender {@code common/src/main/resources/logback.xml} wires to {@code root}, the
+ * same file production runs with, so the parent test can read it back merged with this process's
+ * regular output (see {@link ConfigurationPrecedenceTest#startAndWait}).</li>
  * <li>anything else: every argument is a configuration key to print, in order, via
  * {@code Configuration.get(key, "<absent>")} - the original, plain read mode.</li>
  * </ul>
@@ -56,6 +64,7 @@ public final class ConfigurationPrintMain {
 
     private static final String VALIDATE_TICKLE = "--validate-tickle";
     private static final String NAVIGATOR_ENTRIES = "--navigator-entries";
+    private static final String LOG_ACTIVE_PROFILES = "--log-active-profiles";
 
     private ConfigurationPrintMain() {
     }
@@ -69,6 +78,10 @@ public final class ConfigurationPrintMain {
         }
         if (args.length == 1 && NAVIGATOR_ENTRIES.equals(args[0])) {
             printNavigatorEntries();
+            return;
+        }
+        if (args.length == 1 && LOG_ACTIVE_PROFILES.equals(args[0])) {
+            ConfigurationStartupLog.activeProfiles();
             return;
         }
 

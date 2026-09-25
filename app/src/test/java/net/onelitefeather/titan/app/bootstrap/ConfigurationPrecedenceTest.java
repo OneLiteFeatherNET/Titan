@@ -227,6 +227,18 @@ class ConfigurationPrecedenceTest {
         Assertions.assertEquals(5, names.size(), "exactly the four shipped defaults plus the added entry, names were: " + names);
     }
 
+    @DisplayName("With AVAJE_PROFILES=dev, the startup log names dev as the active configuration profile")
+    @Test
+    void activeProfilesLogLineNamesTheActiveProfile(@TempDir Path workingDir) throws IOException, InterruptedException {
+        ChildResult result = startAndWait(workingDir, Map.of("AVAJE_PROFILES", "dev"), List.of(), List.of("--log-active-profiles"));
+
+        Assertions.assertTrue(result.finished(), "the child process must finish within " + TIMEOUT);
+        Assertions.assertEquals(0, result.exitCode(), "the child process must exit cleanly; output was:\n" + String.join("\n", result.lines()));
+        String joined = String.join("\n", result.lines());
+        Assertions.assertTrue(joined.contains("Active configuration profiles"), "the child must log the active-profiles line, output was:\n" + joined);
+        Assertions.assertTrue(joined.contains("dev"), "the logged line must name the active profile 'dev', output was:\n" + joined);
+    }
+
     /**
      * Like {@link #runExpectingFailure}, but for {@code --validate-tickle}: asserts the child
      * aborted (non-zero exit, no hang) and returns every line it printed, for the caller to inspect
