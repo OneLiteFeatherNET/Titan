@@ -1,12 +1,12 @@
 # lobby-module-config Specification
 
 ## Purpose
-Legt fest, wie jedes Lobby-Modul seine eigene Konfiguration aus `application.yaml`, Profilen und Overrides per Env-Variable oder System-Property erhält, wie ungültige Werte behandelt werden und wie eine bestehende `app.json` einmalig übernommen wird.
+Legt fest, wie jedes Lobby-Modul seine eigene Konfiguration aus den mitgelieferten Standardwerten, `application.yaml`, Profilen und Overrides per Env-Variable oder System-Property erhält und wie ungültige Werte behandelt werden.
 
 ## Requirements
 
 ### Requirement: Ein Konfigurationsabschnitt pro Modul
-Die Lobby-Konfiguration MUSS aus je einem benannten Abschnitt pro Modul bestehen. Die Grundlage bildet `application.yaml` im Arbeitsverzeichnis, ergänzt durch die Dateien der aktiven Profile und durch Overrides. Der Abschnittsname MUSS der Modul-ID entsprechen. Ein Modul MUSS nur seinen eigenen Abschnitt lesen können. Die Schlüssel innerhalb eines Abschnitts MÜSSEN den Namen der Felder des Config-Records des Moduls entsprechen.
+Die Lobby-Konfiguration MUSS aus je einem benannten Abschnitt pro Modul bestehen. Die Grundlage bildet `application.yaml` im Arbeitsverzeichnis, ergänzt durch die Dateien der aktiven Profile und durch Overrides. Der Abschnittsname MUSS der Modul-ID entsprechen. Jeder Schlüssel eines Moduls MUSS unter seinem eigenen Abschnitt liegen (`<modul-id>.<feld>`). Ein Modul DARF KEINE Werte aus dem Abschnitt eines anderen Moduls lesen. Die Schlüssel und ihre Bedeutung MÜSSEN dokumentiert sein.
 
 #### Scenario: Modul liest seinen Abschnitt
 - **WHEN** `application.yaml` den Abschnitt `sit` mit `offset: {x: 0.5, y: 0.25, z: 0.5}` enthält
@@ -15,6 +15,10 @@ Die Lobby-Konfiguration MUSS aus je einem benannten Abschnitt pro Modul bestehen
 #### Scenario: Liste von Einträgen
 - **WHEN** `application.yaml` im Abschnitt `navigator` unter `entries` einen Eintrag `parkour` mit Platz 2 enthält
 - **THEN** zeigt der Navigator „Parkour“ auf Platz 2 zusätzlich zu den übrigen Einträgen
+
+#### Scenario: Profil ändert nur einen Wert eines Abschnitts
+- **WHEN** `application-dev.yaml` nur `sit.offset.y: 0.5` setzt und das Profil `dev` aktiv ist
+- **THEN** gilt für „sit“ der Versatz y = 0.5, und x und z behalten ihre Standardwerte
 
 ### Requirement: Fehlende Werte erhalten Standardwerte
 Fehlt ein Abschnitt oder ein einzelner Wert, MUSS das Modul den dokumentierten Standardwert erhalten. Fehlende Werte DÜRFEN NICHT als 0, leer oder `null` ankommen, wenn der Standardwert etwas anderes ist.
@@ -28,7 +32,7 @@ Fehlt ein Abschnitt oder ein einzelner Wert, MUSS das Modul den dokumentierten S
 - **THEN** gilt für `maxHeight` der Standardwert und nicht 0
 
 ### Requirement: Ungültige Werte verhindern den Start
-Enthält ein Abschnitt einen ungültigen Wert, MUSS die Lobby den Start abbrechen, egal ob der Wert aus einer Datei, einem Profil oder einem Override stammt. Die Fehlermeldung MUSS Modul, Feld und Grund nennen. Die Lobby DARF NICHT mit einem stillschweigend ersetzten Wert weiterlaufen. Ungültig sind zum Beispiel eine negative Dauer, eine Mindesthöhe über der Maximalhöhe oder ein unbekannter Block.
+Enthält ein Abschnitt einen ungültigen Wert, MUSS die Lobby den Start abbrechen, egal ob der Wert aus einer Datei, einem Profil oder einem Override stammt. Die Fehlermeldung MUSS den vollständigen Schlüssel (`<modul-id>.<feld>`) und den Grund nennen. Die Lobby DARF NICHT mit einem stillschweigend ersetzten Wert weiterlaufen. Ungültig sind zum Beispiel ein Wert, der nicht zum erwarteten Typ passt, eine negative Dauer, eine Mindesthöhe über der Maximalhöhe oder ein unbekannter Block.
 
 #### Scenario: Negative Dauer
 - **WHEN** `application.yaml` im Abschnitt `tickle` `cooldownMillis: -5` enthält
@@ -36,7 +40,7 @@ Enthält ein Abschnitt einen ungültigen Wert, MUSS die Lobby den Start abbreche
 
 #### Scenario: Unmögliche Höhengrenzen
 - **WHEN** im Abschnitt `spawn` `minHeight` größer als `maxHeight` ist
-- **THEN** startet die Lobby nicht und nennt beide Felder in der Fehlermeldung
+- **THEN** startet die Lobby nicht und nennt `spawn.minHeight` und `spawn.maxHeight` in der Fehlermeldung
 
 #### Scenario: Ungültiger Override
 - **WHEN** eine Env-Variable den Wert für `tickle.cooldownMillis` auf `abc` setzt
@@ -47,11 +51,15 @@ Enthält ein Abschnitt einen ungültigen Wert, MUSS die Lobby den Start abbreche
 - **THEN** startet die Lobby nicht, und die Fehlermeldung nennt die Datei und die Stelle des Fehlers
 
 ### Requirement: Ohne Konfigurationsdatei gelten die Standardwerte
-Fehlt `application.yaml`, MUSS die Lobby mit den dokumentierten Standardwerten aller Module starten. Die Lobby DARF im Betrieb keine Konfigurationsdatei anlegen oder verändern. Einzige Ausnahme ist die einmalige Umstellung einer bestehenden `app.json`.
+Fehlt `application.yaml` im Arbeitsverzeichnis, MUSS die Lobby mit den mitgelieferten Standardwerten aller Module starten. Die Standardwerte MÜSSEN mit der Lobby ausgeliefert werden und für Betreiber einsehbar sein. Die Lobby DARF im Betrieb keine Konfigurationsdatei anlegen oder verändern.
 
 #### Scenario: Erster Start ohne Datei
 - **WHEN** die Lobby ohne `application.yaml` und ohne `app.json` startet
 - **THEN** läuft sie mit den Standardwerten aller Module, und im Arbeitsverzeichnis entsteht keine neue Konfigurationsdatei
+
+#### Scenario: Datei setzt nur einzelne Werte
+- **WHEN** `application.yaml` im Arbeitsverzeichnis nur `tickle.cooldownMillis: 1000` enthält
+- **THEN** gilt für „tickle“ 1000 ms, und alle anderen Module laufen mit ihren Standardwerten
 
 ### Requirement: Profile ergänzen die Basiskonfiguration
 Die Lobby MUSS Profile unterstützen. Das aktive Profil bzw. die aktiven Profile werden über eine Env-Variable oder System-Property gewählt. Für jedes aktive Profil MUSS die Lobby `application-<profil>.yaml` laden, falls die Datei vorhanden ist. Werte aus einem Profil MÜSSEN die Basiswerte überschreiben, nicht gesetzte Werte bleiben aus der Basis erhalten.
@@ -66,14 +74,18 @@ Die Lobby MUSS Profile unterstützen. Das aktive Profil bzw. die aktiven Profile
 
 ### Requirement: Overrides haben eine feste Rangfolge
 Einzelne Werte MÜSSEN sich per Env-Variable und per System-Property überschreiben lassen. Die Rangfolge MUSS von niedrig nach hoch lauten:
-1. Standardwert des Records,
-2. `application.yaml`,
+1. mitgelieferte Standardwerte,
+2. `application.yaml` im Arbeitsverzeichnis,
 3. Profil-Dateien,
 4. externe Datei aus einer Env-Variable bzw. System-Property,
 5. Env-Variable,
 6. System-Property.
 
 Die Abbildung von Schlüssel auf Env-Variable MUSS dokumentiert sein.
+
+#### Scenario: Datei schlägt Standardwert
+- **WHEN** der mitgelieferte Standardwert für `spawn.simulationDistance` 2 ist und `application.yaml` im Arbeitsverzeichnis `spawn.simulationDistance: 3` enthält
+- **THEN** sendet die Lobby eine Simulationsdistanz von 3
 
 #### Scenario: Env-Variable schlägt Datei
 - **WHEN** `application.yaml` `spawn.simulationDistance: 2` enthält und die passende Env-Variable den Wert `4` setzt
@@ -82,25 +94,3 @@ Die Abbildung von Schlüssel auf Env-Variable MUSS dokumentiert sein.
 #### Scenario: System-Property schlägt Env-Variable
 - **WHEN** sowohl die Env-Variable als auch die System-Property für `spawn.simulationDistance` gesetzt sind
 - **THEN** gilt der Wert der System-Property
-
-### Requirement: Unbekannte Schlüssel werden gemeldet
-Enthält ein Abschnitt Schlüssel, die der Config-Record des Moduls nicht kennt, MUSS die Lobby sie beim Start in genau einer Warnung pro Abschnitt nennen und ignorieren. Der Start DARF daran NICHT scheitern.
-
-#### Scenario: Veralteter Schlüssel
-- **WHEN** der Abschnitt `elytra` einen Schlüssel `boostMultiplier` enthält
-- **THEN** startet die Lobby, und im Log steht eine Warnung, die `elytra` und `boostMultiplier` nennt
-
-### Requirement: Bestehende app.json wird einmalig umgestellt
-Findet die Lobby beim Start eine `app.json` (flaches Format v1 oder Abschnitte v2), aber keine `application.yaml`, MUSS sie die Werte einmalig in eine `application.yaml` übernehmen und die `app.json` in `app.json.migrated` umbenennen. Die Lobby MUSS die Umstellung mit einer Warnung im Log melden. Nicht mehr verwendete Schlüssel (`updateRateAgones`, `fireworkBoostSlot`, `elytraBoostMultiplier`) MÜSSEN verworfen und im Log genannt werden. Existiert bereits eine `application.yaml`, DARF die Lobby eine vorhandene `app.json` NICHT anfassen und MUSS sie nur mit einer Warnung melden.
-
-#### Scenario: Umstellung einer flachen app.json
-- **WHEN** die Lobby mit einer flachen `app.json` startet, die `"tickleDuration": 4000`, `"elytraBoostMultiplier": 35.0` und `"updateRateAgones": 2000` enthält, und keine `application.yaml` existiert
-- **THEN** existiert danach eine `application.yaml` mit `tickle.cooldownMillis: 4000` und ohne `elytraBoostMultiplier` und `updateRateAgones`, die alte Datei heißt `app.json.migrated`, und das Log nennt die verworfenen Schlüssel
-
-#### Scenario: Umstellung einer app.json mit Abschnitten
-- **WHEN** die Lobby mit einer `app.json` im Format v2 startet und keine `application.yaml` existiert
-- **THEN** enthält die neue `application.yaml` dieselben Abschnitte und Werte, und die Lobby verhält sich genauso wie vorher
-
-#### Scenario: application.yaml existiert bereits
-- **WHEN** sowohl `app.json` als auch `application.yaml` vorhanden sind
-- **THEN** liest die Lobby nur `application.yaml`, lässt `app.json` unverändert und warnt, dass `app.json` ignoriert wird
