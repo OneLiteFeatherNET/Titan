@@ -20,18 +20,18 @@ Integrations-Branch: `feat/avaje-dependency-injection`, abgezweigt vom aktuellen
 
 ## 2. Verdrahtung (Welle B, test-first)
 
-- [ ] 2.1 **Integrationstest zuerst:** `app/src/test/.../bootstrap/ModuleWiringTest` (Env) baut den echten `BeanScope` und prüft: alle 7 Module genau einmal, Reihenfolge von `listByPriority(LobbyModule.class)` wie in design.md Entscheidung 2, keine fehlende Abhängigkeit, sauberes `close()`. Verifikation: Der Test ist zunächst rot, weil Avaje noch fehlt, und nach 2.2–2.5 grün.
-- [ ] 2.2 **Unit-Tests zuerst:** ArchUnit-Regeln in `ArchitectureTest`:
+- [x] 2.1 **Integrationstest zuerst:** `app/src/test/.../bootstrap/ModuleWiringTest` (Env) baut den echten `BeanScope` und prüft: alle 7 Module genau einmal, Reihenfolge von `listByPriority(LobbyModule.class)` wie in design.md Entscheidung 2, keine fehlende Abhängigkeit, sauberes `close()`. Verifikation: Der Test ist zunächst rot, weil Avaje noch fehlt, und nach 2.2–2.5 grün.
+- [x] 2.2 **Unit-Tests zuerst:** ArchUnit-Regeln in `ArchitectureTest`:
   - (a) jede `LobbyModule`-Implementierung in `..app.feature..` trägt `@Singleton` und `@io.avaje.inject.Priority`,
   - (b) kein Feature-Code nutzt `BeanScope`,
   - (c) die `@Priority`-Werte der Module sind eindeutig.
 
   Verifikation: Jede Regel ist per absichtlich eingebautem Verstoß rot, danach grün.
-- [ ] 2.3 Abhängigkeiten: `avaje-inject` und `avaje-inject-generator` (12.7, aus 1.1) in den Versionskatalog, kein `jakarta.annotation-api`. Dazu `implementation` plus `annotationProcessor(avaje-inject-generator)` in `app`, `testImplementation(avaje-inject-test)` nur, falls gebraucht. Kein `testAnnotationProcessor`. Verifikation: `./gradlew :app:dependencies` zeigt sie, `./gradlew build` ist grün.
-- [ ] 2.4 `LobbySpawn` (funktionale Schnittstelle) einführen und `SpawnModule(Instance, LobbySpawn)` anpassen. `TickleModule` behält nur `@Inject TickleModule(Clock)`. Bestehende Tests werden nur an den Konstruktoren angepasst. Ebene: Unit- und Integrationstests der Module. Verifikation: alle Spawn- und Tickle-Tests grün.
-- [ ] 2.5 Alle 7 Module mit `@Singleton` und `@Priority` gemäß der Tabelle annotieren, und `@Inject`, wo nötig. `app/.../bootstrap/PlatformBeans` (`@Factory`) mit den Beans aus design.md Entscheidung 3 anlegen. `ModuleRegistry` ist **kein** Bean, ihn baut `Titan` (2.6). Verifikation: 2.1 und 2.2 sind grün.
-- [ ] 2.6 `Titan.java` auf `BeanScope` umstellen (design.md Entscheidung 5): nach `build()` den `ModuleRegistry` über den Builder mit `scope.listByPriority(LobbyModule.class)` und den Plattform-Beans aus dem Scope bauen, Shutdown-Reihenfolge `disableAll` → Butterfly → `close`, und eine INFO-Zeile `Lobby modules enabled in order: {}`. **Unit-Test zuerst** mit einem abgefangenen Appender, der die Log-Zeile mit der Reihenfolge prüft. Verifikation: Der Test ist grün, `Titan` enthält keine Modulliste mehr.
-- [ ] 2.7 Verifikation der Welle: `./gradlew build` ist grün, inklusive aller bestehenden Tests, ArchUnit und Spotless.
+- [x] 2.3 Abhängigkeiten: `avaje-inject` und `avaje-inject-generator` (12.7, aus 1.1) in den Versionskatalog, kein `jakarta.annotation-api`. Dazu `implementation` plus `annotationProcessor(avaje-inject-generator)` in `app`, `testImplementation(avaje-inject-test)` nur, falls gebraucht. Kein `testAnnotationProcessor`. Verifikation: `./gradlew :app:dependencies` zeigt sie, `./gradlew build` ist grün.
+- [x] 2.4 `LobbySpawn` (funktionale Schnittstelle) einführen und `SpawnModule(Instance, LobbySpawn)` anpassen. `TickleModule` behält nur `@Inject TickleModule(Clock)`. Bestehende Tests werden nur an den Konstruktoren angepasst. Ebene: Unit- und Integrationstests der Module. Verifikation: alle Spawn- und Tickle-Tests grün.
+- [x] 2.5 Alle 7 Module mit `@Singleton` und `@Priority` gemäß der Tabelle annotieren, und `@Inject`, wo nötig. `app/.../bootstrap/PlatformBeans` (`@Factory`) mit den Beans aus design.md Entscheidung 3 anlegen. `ModuleRegistry` ist **kein** Bean, ihn baut `Titan` (2.6). Verifikation: 2.1 und 2.2 sind grün.
+- [x] 2.6 `Titan.java` auf `BeanScope` umstellen (design.md Entscheidung 5): nach `build()` den `ModuleRegistry` über den Builder mit `scope.listByPriority(LobbyModule.class)` und den Plattform-Beans aus dem Scope bauen, Shutdown-Reihenfolge `disableAll` → Butterfly → `close`, und eine INFO-Zeile `Lobby modules enabled in order: {}`. **Unit-Test zuerst** mit einem abgefangenen Appender, der die Log-Zeile mit der Reihenfolge prüft. Verifikation: Der Test ist grün, `Titan` enthält keine Modulliste mehr.
+- [x] 2.7 Verifikation der Welle: `./gradlew build` ist grün, inklusive aller bestehenden Tests, ArchUnit und Spotless.
 
 ## 3. Doku und Vorlage (Welle C)
 
