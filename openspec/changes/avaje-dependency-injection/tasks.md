@@ -45,4 +45,4 @@ Integrations-Branch: `feat/avaje-dependency-injection`, abgezweigt vom aktuellen
 
 ## 5. Pull Request
 
-- [ ] 5.1 Den Pull Request `feat(app): discover lobby modules with Avaje Inject` von `feat/avaje-dependency-injection` nach `main` öffnen. Die Beschreibung enthält die Messwerte aus dem Spike, die Tabelle der Prioritäten und die Checkliste zur Abnahme. Verifikation: Der PR existiert, die CI ist grün.
+- [x] 5.1 Den Pull Request `feat(app): discover lobby modules with Avaje Inject` von `feat/avaje-dependency-injection` nach `main` öffnen. Die Beschreibung enthält die Messwerte aus dem Spike, die Tabelle der Prioritäten und die Checkliste zur Abnahme. Verifikation: Der PR existiert, die CI ist grün.
