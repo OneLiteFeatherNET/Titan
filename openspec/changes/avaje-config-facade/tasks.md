@@ -46,15 +46,15 @@ Jeder Agent-Prompt wiederholt die Regeln, die für ihn gelten:
 
 ## 4. Abnahme und Doku (Welle D)
 
-- [ ] 4.1 **F.I.R.S.T.-Check:** `grep -rnE "Config\.(setProperty|putAll|clearProperty|eventBuilder)" --include=*.java */src/test` findet nichts, und es existiert keine `application-test.yaml` bzw. `application-test.properties`. Ein Haiku-Agent prüft zusätzlich alle geänderten Tests auf Sleeps, Systemzeit und Abhängigkeit von der Reihenfolge. Verifikation: Die Ausgaben stehen im PR.
-- [ ] 4.2 **E2E-Smoke-Test** mit dem Shaded-Jar in Scratch-Verzeichnissen:
+- [x] 4.1 **F.I.R.S.T.-Check:** `grep -rnE "Config\.(setProperty|putAll|clearProperty|eventBuilder)" --include=*.java */src/test` findet nichts, und es existiert keine `application-test.yaml` bzw. `application-test.properties`. Ein Haiku-Agent prüft zusätzlich alle geänderten Tests auf Sleeps, Systemzeit und Abhängigkeit von der Reihenfolge. Verifikation: Die Ausgaben stehen im PR.
+- [x] 4.2 **E2E-Smoke-Test** mit dem Shaded-Jar in Scratch-Verzeichnissen:
   - (a) Start ohne `application.yaml`: Die Standardwerte greifen, und es entsteht keine Datei.
   - (b) `application.yaml` mit nur `tickle.cooldownMillis: 1000` plus `AVAJE_PROFILES=dev` und `application-dev.yaml`: Die Log-Zeile nennt das Profil, und die Werte greifen.
   - (c) Env `TICKLE_COOLDOWNMILLIS=abc`: Der Start bricht mit Schlüssel und Grund ab.
   - (d) übrig gebliebene `app.json` ohne `application.yaml`: Der Start läuft mit den Standardwerten, und die Datei bleibt unverändert.
 
   Verifikation: Die wichtigsten Log-Zeilen stehen im PR.
-- [ ] 4.3 README und `docs/lobby-modules.md` anpassen:
+- [x] 4.3 README und `docs/lobby-modules.md` anpassen:
   - Für Modul-Autoren: das Muster mit `Config`, `ConfigValues` und reinen Prüffunktionen, die Testregeln aus Design-Entscheidung 5, und dass Standardwerte in die Classpath-`application.yaml` gehören.
   - Für Betreiber: Wo die Standardwerte stehen (`application.example.yaml` in der Distribution), und dass unbekannte Schlüssel nicht mehr gemeldet werden. Der Abschnitt zur Umstellung von `app.json` wird ersetzt durch den Upgrade-Hinweis: vorher einmal das Release mit `standardized-config-profiles` starten oder `app.json` von Hand übertragen.
 
