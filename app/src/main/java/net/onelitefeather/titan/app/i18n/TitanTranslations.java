@@ -70,6 +70,17 @@ public final class TitanTranslations {
     /** Configuration changes were applied. Argument 0: the restarted modules. */
     public static final String CONFIG_RELOAD_APPLIED = "titan.config.reload.applied";
 
+    /**
+     * Configuration changes were applied, but none of them - e.g. a {@code features.*} flag, or
+     * another non-module key such as {@code titan.config.reload.intervalSeconds} - required
+     * restarting a module. Takes no arguments. Added in wave B (see
+     * {@code openspec/changes/config-reload-feature-flags/tasks.md}, task 5.1): without this key,
+     * {@link #CONFIG_RELOAD_APPLIED} would render with an empty module list ("Restarted modules:
+     * "),
+     * which misreports a reload that only changed flags as one that touched a module.
+     */
+    public static final String CONFIG_RELOAD_APPLIED_NO_MODULES = "titan.config.reload.applied.nomodules";
+
     /** A configuration change was rejected. Argument 0: the key(s). Argument 1: the reason. */
     public static final String CONFIG_RELOAD_REJECTED = "titan.config.reload.rejected";
 

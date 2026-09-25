@@ -30,7 +30,10 @@ import net.onelitefeather.titan.app.i18n.TitanTranslations;
  * <p>A module in a {@link ReloadResult.Applied} result appears in exactly one of three places:
  * named in the single "applied" line's module list (restarted), its own "rejected" line (kept its
  * previous values), or its own "disabled" line (left stopped) - mirroring
- * {@link ReloadResult.Applied}'s own javadoc.
+ * {@link ReloadResult.Applied}'s own javadoc. If none of the three lists names a module - e.g. a
+ * reload that only changed a {@code features.*} flag or another non-module key - that "applied"
+ * line would otherwise read as an empty module list; instead this maps the whole result to a
+ * single {@link TitanTranslations#CONFIG_RELOAD_APPLIED_NO_MODULES} line.
  */
 public final class ReloadResultMessages {
 
@@ -53,6 +56,10 @@ public final class ReloadResultMessages {
     }
 
     private static List<Component> appliedComponents(ReloadResult.Applied applied) {
+        if (applied.restartedModules().isEmpty() && applied.rejected().isEmpty() && applied.disabledModules().isEmpty()) {
+            return List.of(Component.translatable(TitanTranslations.CONFIG_RELOAD_APPLIED_NO_MODULES));
+        }
+
         List<Component> components = new ArrayList<>();
         components.add(Component.translatable(TitanTranslations.CONFIG_RELOAD_APPLIED, Component.text(String.join(", ", applied.restartedModules()))));
         for (ReloadResult.RejectedModule rejected : applied.rejected()) {
