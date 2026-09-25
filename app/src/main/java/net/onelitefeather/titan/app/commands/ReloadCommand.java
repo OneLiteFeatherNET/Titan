@@ -15,12 +15,15 @@
  */
 package net.onelitefeather.titan.app.commands;
 
+import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import java.util.concurrent.CompletableFuture;
 import net.kyori.adventure.permission.PermissionChecker;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.translation.GlobalTranslator;
 import net.kyori.adventure.util.TriState;
 import net.minestom.server.command.CommandSender;
 import net.minestom.server.command.builder.Command;
@@ -58,6 +61,15 @@ import org.slf4j.LoggerFactory;
  * once that future completes, on whichever thread completes it (production: the reload's own
  * worker or tick thread, per {@code ConfigReloader}'s own javadoc) - never by blocking the calling
  * thread on {@code .join()}/{@code .get()}.
+ *
+ * <p><b>The console always gets the English reply.</b> Minestom renders a {@code
+ * Component.translatable(...)} per receiver locale only for an actual {@link Player} - and only
+ * when {@code ServerFlag.AUTOMATIC_COMPONENT_TRANSLATION} is on (see
+ * {@code ComponentTranslationBootstrap}). The console has no receiver locale of its own; instead of
+ * leaving it to whatever the host JVM's default locale happens to be, {@code consoleRenderer}
+ * renders the reply to {@link Locale#ENGLISH} explicitly, right here, before it is sent - see
+ * {@code openspec/changes/config-reload-feature-flags/design.md}, decision 5. A {@link Player}'s
+ * reply is left untouched, so Minestom's own per-receiver translation still applies to it.
  */
 public final class ReloadCommand extends Command {
 
@@ -66,15 +78,22 @@ public final class ReloadCommand extends Command {
 
     private final Supplier<CompletableFuture<ReloadResult>> reloader;
     private final Predicate<CommandSender> requiresPermission;
+    private final UnaryOperator<Component> consoleRenderer;
 
     public ReloadCommand(Supplier<CompletableFuture<ReloadResult>> reloader) {
-        this(reloader, sender -> sender instanceof Player);
+        this(reloader, sender -> sender instanceof Player, component -> GlobalTranslator.render(component, Locale.ENGLISH));
     }
 
     ReloadCommand(Supplier<CompletableFuture<ReloadResult>> reloader, Predicate<CommandSender> requiresPermission) {
+        this(reloader, requiresPermission, component -> GlobalTranslator.render(component, Locale.ENGLISH));
+    }
+
+    ReloadCommand(
+                  Supplier<CompletableFuture<ReloadResult>> reloader, Predicate<CommandSender> requiresPermission, UnaryOperator<Component> consoleRenderer) {
         super("titanreload");
         this.reloader = Objects.requireNonNull(reloader, "reloader");
         this.requiresPermission = Objects.requireNonNull(requiresPermission, "requiresPermission");
+        this.consoleRenderer = Objects.requireNonNull(consoleRenderer, "consoleRenderer");
         setCondition(this::canReload);
         setDefaultExecutor((sender, context) -> triggerReload(sender));
     }
@@ -87,9 +106,13 @@ public final class ReloadCommand extends Command {
     }
 
     private void triggerReload(CommandSender sender) {
+        // The same predicate canReload() uses to decide whether the permission check applies:
+        // it is false for exactly the senders treated as "console" here too - production wires
+        // both from the same sender instanceof Player check.
+        boolean isConsole = !this.requiresPermission.test(sender);
         this.reloader.get().thenAccept(result -> {
             for (Component component : ReloadResultMessages.toComponents(result)) {
-                sender.sendMessage(component);
+                sender.sendMessage(isConsole ? this.consoleRenderer.apply(component) : component);
             }
         }).exceptionally(error -> {
             LOGGER.error("Configuration reload triggered by {} failed unexpectedly", sender, error);
