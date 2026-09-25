@@ -15,35 +15,39 @@
  */
 package net.onelitefeather.titan.common.config;
 
+import io.avaje.config.Config;
 import io.avaje.config.Configuration;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Builds the {@code avaje-config} {@link Configuration} shared by both Titan processes -
- * {@code application.yaml}, its active profiles, an external file, environment variables and
- * system properties, in that rank order (see
- * {@code openspec/changes/standardized-config-profiles/specs/lobby-module-config/spec.md},
- * "Overrides have a fixed rank order").
+ * Triggers the one-time build of the {@code avaje-config} static {@link Config} facade's
+ * {@link Configuration} - {@code application.yaml}, its active profiles, an external file,
+ * environment variables and system properties, in that rank order (see
+ * {@code openspec/changes/avaje-config-facade/specs/lobby-module-config/spec.md}, "Overrides have
+ * a fixed rank order") - and translates a broken load into the same {@link ConfigException} shape
+ * both Titan processes already use.
  *
- * <p>The lobby (module {@code app}) and the setup server (module {@code setup}) both build their
- * {@link Configuration} through this one factory - never through {@code Configuration.builder()}
- * directly, nor the static {@code io.avaje.config.Config} facade - so a broken {@code
- * application.yaml} is translated into the same {@link ConfigException} shape for both processes,
- * and the message-parsing logic in {@link #fileNameFrom(RuntimeException)}/
+ * <p>{@code Config} builds its {@link Configuration} lazily, in its own static initializer, the
+ * first time anything touches the class (see design.md, decision 1's fact check of
+ * {@code avaje-config:5.2}). A load failure therefore does not surface as this class's own
+ * exception but as {@link ExceptionInInitializerError}, and every further touch of {@code Config}
+ * in the same JVM then fails again with {@link NoClassDefFoundError}. {@link #initialise()} is
+ * meant to be the very first thing either process does, at a single, known place, so that first
+ * touch - and any translation a broken file needs - happens here, before anything else in the
+ * start sequence can hit the raw error instead.
+ *
+ * <p>The lobby (module {@code app}) and the setup server (module {@code setup}) both call
+ * {@link #initialise()} through this one factory, rather than duplicating the
+ * {@link ExceptionInInitializerError}-unwrapping logic in each process, so a broken {@code
+ * application.yaml} is translated into the same {@link ConfigException} shape for both, and the
+ * message-parsing logic in {@link #fileNameFrom(RuntimeException)}/
  * {@link #detailFrom(RuntimeException)} is exercised and tested exactly once (DRY).
  *
  * <p>An instance, not a static method: depending on this factory type - rather than calling
- * {@code Configuration.builder()} directly, or the static {@code io.avaje.config.Config} facade -
- * is what lets a test substitute its own factory later if the need ever arises, and keeps a
- * caller depending on an abstraction instead of global state.
- *
- * <p>{@link #load()} takes no working directory: {@code avaje-config} always resolves {@code
- * application.yaml} and friends against the JVM's actual process working directory, never against
- * a path a caller hands it (see {@code design.md}, decision 1's spike result), so a parameter here
- * could only ever be ignored or misleadingly suggest otherwise. A caller that needs {@code
- * application.yaml} read from a particular directory must therefore start the whole JVM in that
- * directory (e.g. via {@link ProcessBuilder#directory(java.io.File)}, the way the app module's
- * configuration precedence test does), not pass it to this method.
+ * {@code Config} directly - keeps a caller depending on an abstraction instead of global state,
+ * even though {@link #initialise()} itself ultimately has to touch the facade once (see design.md,
+ * decision 1's SOLID note: this is a deliberate, bounded exception to the project's "no static
+ * singletons" rule).
  */
 public final class ConfigurationFactory {
 
@@ -56,27 +60,44 @@ public final class ConfigurationFactory {
     private static final String RESOURCE_LOAD_FAILURE_PREFIX = "Error loading properties - ";
 
     /**
-     * @return a {@link Configuration} built from {@code application.yaml}, its active profiles, an
-     *         external file (via {@code CONFIG_FILE}/{@code config.file}), environment variables
-     *         and system properties - all resolved against the JVM's actual process working
-     *         directory (see the class Javadoc)
+     * Triggers the static {@link Config} facade's one-time initialization - the first touch of
+     * {@link Config} in the JVM, wherever this method is called from - so that {@code
+     * application.yaml}, its active profiles, an external file, environment variables and system
+     * properties are resolved against the JVM's actual process working directory (see the class
+     * Javadoc). Every subsequent call, in this JVM, is a no-op: the class is already initialized.
+     *
      * @throws ConfigException if a resolved file (e.g. a syntactically broken {@code
      *                         application.yaml}) cannot be parsed, or an unsupported {@code
      *                         CONFIG_FILE}/{@code config.file} extension is configured; see the
      *                         {@code lobby-module-config} spec scenario "Syntaktisch kaputte
-     *                         Datei". Wraps {@code avaje-config}'s own {@link RuntimeException},
-     *                         keeping it as this exception's cause so the ERROR log/Sentry still
-     *                         shows where the failure actually happened, into the same
-     *                         {@link ConfigException} shape {@link AppJsonMigration} uses for a
-     *                         broken {@code app.json}, so both failure paths surface the same way
-     *                         to an operator.
+     *                         Datei". Wraps the original failure, keeping it as this exception's
+     *                         cause so the ERROR log/Sentry still shows where the failure actually
+     *                         happened.
      */
-    public Configuration load() {
+    public void initialise() {
         try {
-            return Configuration.builder().includeResourceLoading().build();
-        } catch (RuntimeException e) {
-            throw ConfigException.malformed(fileNameFrom(e), detailFrom(e), e);
+            Config.asConfiguration();
+        } catch (ExceptionInInitializerError error) {
+            throw translate(error);
         }
+    }
+
+    /**
+     * Unwraps an {@link ExceptionInInitializerError} thrown by {@link Config}'s static initializer
+     * and translates its cause into a {@link ConfigException}, via the same
+     * {@link #fileNameFrom(RuntimeException)}/{@link #detailFrom(RuntimeException)} logic
+     * {@link #initialise()} always used.
+     *
+     * <p>Package-private, rather than {@code private}, so {@code ConfigurationFactoryTest} can
+     * exercise this translation directly against a hand-built {@link ExceptionInInitializerError},
+     * without ever touching the real {@link Config} facade (design.md, decision 5: no unit test
+     * calls the facade).
+     */
+    static ConfigException translate(ExceptionInInitializerError error) {
+        if (error.getCause() instanceof RuntimeException cause) {
+            return ConfigException.malformed(fileNameFrom(cause), detailFrom(cause), cause);
+        }
+        return ConfigException.malformed(null, error.getMessage(), error);
     }
 
     /**

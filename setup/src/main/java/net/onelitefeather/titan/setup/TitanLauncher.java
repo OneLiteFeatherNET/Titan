@@ -32,7 +32,7 @@ public class TitanLauncher {
         TitanObservability.installExceptionHandler();
 
         // A syntactically broken application.yaml surfaces as a ConfigException (unchecked) from
-        // Titan's constructor - see ConfigurationFactory#load() - the same way it does for the
+        // Titan's constructor - see ConfigurationFactory#initialise() - the same way it does for the
         // lobby (:app, TitanApplication#main). Startup must abort with a clear log line instead of
         // leaving the process half-started on Minestom's already-running threads.
         if (!startCleanly(Titan::instance)) {

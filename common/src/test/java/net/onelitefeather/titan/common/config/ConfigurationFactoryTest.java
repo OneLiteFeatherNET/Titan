@@ -20,29 +20,57 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit coverage for {@link ConfigurationFactory#fileNameFrom(RuntimeException)} and {@link
- * ConfigurationFactory#detailFrom(RuntimeException)} - the pure logic {@link
- * ConfigurationFactory#load()} uses to translate an {@code avaje-config} loading failure into a
- * {@link ConfigException} naming the broken file and the parser's position (see the {@code
- * lobby-module-config} spec scenario "Syntaktisch kaputte Datei") - plus coverage that {@link
- * ConfigurationFactory#load()}'s own translation keeps the original failure as the resulting
- * {@link ConfigException}'s cause.
+ * Unit coverage for {@link ConfigurationFactory#fileNameFrom(RuntimeException)}, {@link
+ * ConfigurationFactory#detailFrom(RuntimeException)} and {@link
+ * ConfigurationFactory#translate(ExceptionInInitializerError)} - the pure logic {@link
+ * ConfigurationFactory#initialise()} uses to translate an {@code avaje-config} loading failure into
+ * a {@link ConfigException} naming the broken file and the parser's position (see the {@code
+ * lobby-module-config} spec scenario "Syntaktisch kaputte Datei") - plus coverage that the
+ * translation keeps the original failure as the resulting {@link ConfigException}'s cause.
  *
- * <p>{@link ConfigurationFactory#load()} itself is not called here: exercising the real failure
- * needs a genuinely broken {@code application.yaml} in the JVM's actual working directory
- * (design.md
- * decision 1's spike result - {@code avaje-config} ignores {@code user.dir}), which only a child
- * JVM with a {@code @TempDir} working directory can provide without breaking Independent/Repeatable
- * (F.I.R.S.T.) - see the app module's {@code ConfigurationPrecedenceTest} for that coverage. What
- * is
- * tested here, hermetically, is the message-parsing logic itself against exceptions shaped exactly
- * like the ones {@code avaje-config} itself throws (confirmed by decompiling {@code
- * avaje-config:5.2}): {@code new IllegalStateException("Error loading properties - " +
- * resourceName, cause)} for a resource that fails to load, and {@code new
- * IllegalArgumentException("Expecting only properties or ... file extensions but got [" + file +
- * "]")} for an unsupported {@code CONFIG_FILE}/{@code config.file} extension.
+ * <p>{@link ConfigurationFactory#initialise()} itself is not called here: exercising the real
+ * failure needs a genuinely broken {@code application.yaml} in the JVM's actual working directory
+ * (design.md decision 1's spike result - {@code avaje-config} ignores {@code user.dir}), which only
+ * a child JVM with a {@code @TempDir} working directory can provide without breaking
+ * Independent/Repeatable (F.I.R.S.T.) - see the app module's {@code ConfigurationPrecedenceTest}
+ * for that coverage; calling the real static {@code io.avaje.config.Config} facade from a unit test
+ * would also make every other test in the same JVM depend on whichever configuration happened to
+ * load first (design.md, decision 5). What is tested here, hermetically, is the message-parsing
+ * logic itself against exceptions shaped exactly like the ones {@code avaje-config} itself throws
+ * (confirmed by decompiling {@code avaje-config:5.2}): {@code new IllegalStateException("Error
+ * loading properties - " + resourceName, cause)} for a resource that fails to load, wrapped in a
+ * hand-built {@link ExceptionInInitializerError} for the cases that exercise
+ * {@link ConfigurationFactory#translate(ExceptionInInitializerError)} - the same shape {@code
+ * Config}'s own static initializer produces - and {@code new IllegalArgumentException("Expecting
+ * only properties or ... file extensions but got [" + file + "]")} for an unsupported {@code
+ * CONFIG_FILE}/{@code config.file} extension.
  */
 class ConfigurationFactoryTest {
+
+    @DisplayName("initialise() unwraps an ExceptionInInitializerError and translates its cause")
+    @Test
+    void translateUnwrapsExceptionInInitializerErrorCause() {
+        RuntimeException cause = brokenYamlFailure();
+        ExceptionInInitializerError error = new ExceptionInInitializerError(cause);
+
+        ConfigException translated = ConfigurationFactory.translate(error);
+
+        Assertions.assertEquals("application.yaml", translated.file(), "the file name must be read from the wrapped failure's own message");
+        Assertions.assertEquals("application.yaml: mapping values are not allowed here in 'reader', line 3, column 13", translated.getMessage(), "the parser's line/column detail must survive the translation");
+        Assertions.assertSame(cause, translated.getCause(), "the original avaje-config failure must stay reachable as the cause, for the ERROR log/Sentry");
+    }
+
+    @DisplayName("initialise() falls back to the error's own message when it has no RuntimeException cause")
+    @Test
+    void translateFallsBackWhenTheErrorHasNoRuntimeExceptionCause() {
+        ExceptionInInitializerError error = new ExceptionInInitializerError("no cause set");
+
+        ConfigException translated = ConfigurationFactory.translate(error);
+
+        Assertions.assertNull(translated.file(), "with no RuntimeException cause to parse a file name out of, file() must stay null");
+        Assertions.assertEquals("no cause set", translated.getMessage());
+        Assertions.assertSame(error, translated.getCause(), "the error itself must stay reachable as the cause");
+    }
 
     @DisplayName("The resource name is read from the tail of avaje-config's own message")
     @Test

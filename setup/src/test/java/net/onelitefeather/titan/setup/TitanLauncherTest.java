@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * Unit coverage for {@link TitanLauncher#startCleanly(Runnable)} - the seam
  * {@link TitanLauncher#main} runs {@link Titan#instance()} through, so a broken {@code
  * application.yaml} (surfacing as a {@link ConfigException} from {@link Titan}'s constructor, see
- * {@code net.onelitefeather.titan.common.config.ConfigurationFactory#load()}) aborts startup
+ * {@code net.onelitefeather.titan.common.config.ConfigurationFactory#initialise()}) aborts startup
  * cleanly instead of leaving the process half-started, the same way
  * {@code net.onelitefeather.titan.app.TitanApplication#main} already does for the lobby.
  *

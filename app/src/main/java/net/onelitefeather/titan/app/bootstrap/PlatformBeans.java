@@ -107,15 +107,18 @@ public final class PlatformBeans {
     }
 
     /**
-     * @param configuration the {@link Configuration} every module's section is bound from - loaded
-     *                      exactly once by {@link net.onelitefeather.titan.app.Titan} via {@link
-     *                      ConfigurationLoader}, before the {@link io.avaje.inject.BeanScope} is
-     *                      built, and supplied to the scope as an external bean ({@link External} -
-     *                      no {@code @Factory}/{@code @Bean} method in this class provides a {@link
-     *                      Configuration}, so the annotation processor must be told not to expect
-     *                      one); this class never builds a {@link Configuration} of its own (see
-     *                      {@code openspec/changes/standardized-config-profiles/design.md},
-     *                      decision 1, and {@link ConfigurationPropertyPlugin}'s Javadoc for why)
+     * @param configuration the {@link Configuration} every module's section is still bound from
+     *                      until {@code ConfigSections} itself is removed - resolved exactly once
+     *                      by {@link net.onelitefeather.titan.app.Titan} via {@code
+     *                      net.onelitefeather.titan.common.config.ConfigurationFactory#initialise()}
+     *                      and the static {@code io.avaje.config.Config} facade, before the
+     *                      {@link io.avaje.inject.BeanScope} is built, and supplied to the scope as
+     *                      an external bean ({@link External} - no {@code @Factory}/{@code @Bean}
+     *                      method in this class provides a {@link Configuration}, so the annotation
+     *                      processor must be told not to expect one); this class never builds a
+     *                      {@link Configuration} of its own (see {@code
+     *                      openspec/changes/avaje-config-facade/design.md}, decision 1, and
+     *                      {@link ConfigurationPropertyPlugin}'s Javadoc for why)
      * @return the sectioned configuration every module's {@code ModuleContext#config} reads its
      *         own section from
      */
