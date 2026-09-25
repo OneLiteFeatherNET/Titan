@@ -103,9 +103,41 @@ class AppJsonMigrationTest {
         assertTrue(Files.exists(applicationYaml), "application.yaml must be written");
         assertTrue(Files.exists(tempDir.resolve("app.json.migrated")), "app.json must be renamed to app.json.migrated");
 
-        Object expected = yaml.load(originalContent);
-        Object actual = loadYaml(applicationYaml);
-        assertEquals(expected, actual, "application.yaml must contain the same sections and values as the original app.json");
+        @SuppressWarnings("unchecked") var expectedRoot = (java.util.Map<String, Object>) yaml.load(originalContent);
+        @SuppressWarnings("unchecked") var expectedNavigator = (java.util.Map<String, Object>) expectedRoot.remove("navigator");
+        @SuppressWarnings("unchecked") var actualRoot = (java.util.Map<String, Object>) loadYaml(applicationYaml);
+        @SuppressWarnings("unchecked") var actualNavigator = (java.util.Map<String, Object>) actualRoot.remove("navigator");
+
+        assertEquals(expectedRoot, actualRoot, "every non-navigator section must contain the same values as the original app.json");
+        assertEquals(expectedNavigator.get("title"), actualNavigator.get("title"), "navigator.title must survive the migration");
+    }
+
+    @Test
+    @DisplayName("A sectioned v2 app.json's navigator.entries list is migrated to a map keyed by name derived from displayName")
+    void migratesNavigatorEntriesListToMapKeyedByName(@TempDir Path tempDir) throws IOException {
+        Path appJson = tempDir.resolve("app.json");
+        copyFixture("/config/v2/app.json", appJson);
+
+        migration.migrate(tempDir);
+
+        Path applicationYaml = tempDir.resolve("application.yaml");
+        @SuppressWarnings("unchecked") var root = (java.util.Map<String, Object>) loadYaml(applicationYaml);
+        @SuppressWarnings("unchecked") var navigator = (java.util.Map<String, Object>) root.get("navigator");
+        @SuppressWarnings("unchecked") var entries = (java.util.Map<String, Object>) navigator.get("entries");
+
+        assertEquals(java.util.Set.of("elytrarace", "survival", "slender", "creative"), entries.keySet(), "the v2 fixture's four entries must be named exactly elytrarace, survival, slender and creative");
+
+        @SuppressWarnings("unchecked") var elytrarace = (java.util.Map<String, Object>) entries.get("elytrarace");
+        assertEquals(0, elytrarace.get("slot"));
+        assertEquals("ElytraRace", elytrarace.get("destination"));
+
+        @SuppressWarnings("unchecked") var slender = (java.util.Map<String, Object>) entries.get("slender");
+        assertEquals(5, slender.get("slot"));
+        assertEquals("cygnus", slender.get("destination"));
+        assertEquals("NAVIGATOR_SLENDER", slender.get("feature"));
+
+        @SuppressWarnings("unchecked") var creative = (java.util.Map<String, Object>) entries.get("creative");
+        assertEquals(8, creative.get("slot"));
     }
 
     @Test

@@ -34,9 +34,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Runs the one-time switch from the lobby's original {@code app.json} to {@code application.yaml}
@@ -60,6 +63,12 @@ import java.util.Map;
  * The YAML is written first, to a sibling temporary file that is then moved into place, and
  * {@code app.json} is renamed only afterwards - so a crash mid-migration can never leave a
  * half-written {@code application.yaml} next to an already-renamed {@code app.json}.
+ * <p>
+ * Before writing, {@link #convertNavigatorEntriesToMap(JsonObject)} turns a {@code
+ * navigator.entries} JSON list - the only shape {@code app.json} ever had - into a map keyed by a
+ * name derived from each entry's {@code displayName}, matching decision 3's
+ * {@code NavigatorConfig(String, Map<String, Entry>)} shape. See that method's Javadoc for the
+ * naming rule.
  */
 public final class AppJsonMigration {
 
@@ -96,6 +105,7 @@ public final class AppJsonMigration {
             sectioned = LegacyConfigMigration.toSectioned(root, fileName);
             LegacyConfigMigration.logDroppedKeys(appJson, root);
         }
+        convertNavigatorEntriesToMap(sectioned);
 
         writeYaml(applicationYaml, sectioned);
 
@@ -103,6 +113,59 @@ public final class AppJsonMigration {
         renameToMigrated(appJson, migratedAppJson);
 
         LOGGER.warn("Migrated {} to {} - the original file was renamed to {}; to roll back, rename it back to {} before starting an older build", fileName, APPLICATION_YAML, migratedAppJson.getFileName(), APP_JSON);
+    }
+
+    /**
+     * Converts {@code navigator.entries} from a JSON list (the only shape {@code app.json} ever
+     * had) into a map keyed by a name derived from each entry's {@code displayName}, matching the
+     * {@code NavigatorConfig(String, Map<String, Entry>)} shape decision 3 of {@code design.md}
+     * chose. MiniMessage tags are stripped, the remainder is lower-cased and only {@code [a-z0-9]}
+     * is kept; an empty or already-taken name falls back to {@code slot<N>}/{@code name-<N>}, where
+     * {@code N} is the entry's {@code slot}. Does nothing if {@code navigator} or
+     * {@code navigator.entries} is absent, or if {@code entries} is already a map - e.g. someone
+     * hand-wrote a v2 {@code app.json} in the new shape already.
+     */
+    private static void convertNavigatorEntriesToMap(JsonObject sectioned) {
+        if (!sectioned.has("navigator") || !sectioned.get("navigator").isJsonObject()) {
+            return;
+        }
+        JsonObject navigator = sectioned.getAsJsonObject("navigator");
+        if (!navigator.has("entries") || !navigator.get("entries").isJsonArray()) {
+            return;
+        }
+        JsonArray entries = navigator.getAsJsonArray("entries");
+        JsonObject entriesByName = new JsonObject();
+        Set<String> usedNames = new HashSet<>();
+        for (JsonElement element : entries) {
+            if (!element.isJsonObject()) {
+                continue;
+            }
+            JsonObject entry = element.getAsJsonObject();
+            String name = deriveEntryName(entry, usedNames);
+            usedNames.add(name);
+            entriesByName.add(name, entry);
+        }
+        navigator.add("entries", entriesByName);
+    }
+
+    /**
+     * Derives a navigator entry's map key from its {@code displayName}: strips MiniMessage tags
+     * ({@code <...>}), lower-cases the rest, and keeps only {@code [a-z0-9]}. Falls back to
+     * {@code slot<N>} if that leaves nothing, or appends {@code -<N>} if the name is already used
+     * by an earlier entry in the same document - {@code N} being this entry's {@code slot}.
+     */
+    private static String deriveEntryName(JsonObject entry, Set<String> usedNames) {
+        String slot = entry.has("slot") ? entry.get("slot").getAsString() : "";
+        String displayName = entry.has("displayName") ? entry.get("displayName").getAsString() : "";
+        String stripped = displayName.replaceAll("<[^>]*>", "");
+        String candidate = stripped.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
+        if (candidate.isEmpty()) {
+            return "slot" + slot;
+        }
+        if (usedNames.contains(candidate)) {
+            return candidate + "-" + slot;
+        }
+        return candidate;
     }
 
     private JsonObject readJsonObject(Path file, String fileName) {

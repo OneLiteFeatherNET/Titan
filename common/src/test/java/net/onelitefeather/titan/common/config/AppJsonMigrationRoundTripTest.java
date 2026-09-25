@@ -42,12 +42,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * {@link ConfigSections} must rebuild the exact same records from those flat keys that a direct
  * {@link SectionBinder} bind over the original (pre-migration) JSON tree would produce.
  * <p>
- * Only sections whose module record has a same-shaped stand-in in {@code common}'s own test tree
- * (see {@link SitTestConfig}, {@link SpawnTestConfig}, {@link TickleTestConfig}, {@link
- * ElytraTestConfig}) are bound into a record here; {@code navigator} is compared by its flat keys
- * instead, because its real shape in these fixtures is a JSON <em>list</em> of entries, while
- * {@link NavigatorTestConfig} - this module's own stand-in for the shape decision 3 chose - is
- * keyed by a <em>map</em>, so it cannot bind the fixtures' navigator section at all.
+ * Sections whose module record has a same-shaped stand-in in {@code common}'s own test tree (see
+ * {@link SitTestConfig}, {@link SpawnTestConfig}, {@link TickleTestConfig}, {@link
+ * ElytraTestConfig}) are bound into a record and compared field by field against a direct {@link
+ * SectionBinder} bind over the original (pre-migration) JSON tree. {@code navigator} is different:
+ * its shape in the fixture is a JSON <em>list</em> of entries, while {@link NavigatorTestConfig} -
+ * this module's own stand-in for the shape decision 3 chose - is keyed by a <em>map</em>, so a
+ * direct bind over the original tree cannot produce an "expected" {@link NavigatorTestConfig} to
+ * compare against. Instead, {@link AppJsonMigration}'s own navigator-entries-to-map conversion
+ * (see its Javadoc) is exercised through the real pipeline: the migrated {@code application.yaml}
+ * is loaded through {@link ConfigSections}, bound straight into {@link NavigatorTestConfig}, and
+ * asserted field by field against the values the fixture's list entries carry.
  */
 class AppJsonMigrationRoundTripTest {
 
@@ -70,13 +75,12 @@ class AppJsonMigrationRoundTripTest {
         assertSectionRoundTrips(sections, originalRoot, "spawn", SpawnTestConfig.class, SpawnTestConfig.DEFAULTS);
         assertSectionRoundTrips(sections, originalRoot, "tickle", TickleTestConfig.class, TickleTestConfig.DEFAULTS);
 
-        Configuration navigatorScope = configuration.forPath("navigator");
-        assertEquals("<yellow>Navigator", navigatorScope.get("title"), "navigator.title must survive the YAML round trip");
-        assertEquals("0", navigatorScope.get("entries[0].slot"), "the first navigator entry's slot must survive the YAML round trip");
-        assertEquals("ElytraRace", navigatorScope.get("entries[0].destination"), "the first navigator entry's destination must survive the YAML round trip");
-        assertEquals("5", navigatorScope.get("entries[2].slot"), "the third navigator entry's slot must survive the YAML round trip");
-        assertEquals("cygnus", navigatorScope.get("entries[2].destination"), "the third navigator entry's destination must survive the YAML round trip");
-        assertEquals("8", navigatorScope.get("entries[3].slot"), "the fourth navigator entry's slot must survive the YAML round trip");
+        NavigatorTestConfig navigator = sections.section("navigator", NavigatorTestConfig.class, NavigatorTestConfig.DEFAULTS);
+        assertEquals("<yellow>Navigator", navigator.title(), "navigator.title must survive the migration and the YAML round trip");
+        assertEquals(4, navigator.entries().size(), "the fixture's four navigator entries must all survive the migration");
+        assertEquals(new NavigatorTestConfig.Entry(0, "ElytraRace"), navigator.entries().get("elytrarace"), "the first entry must be named 'elytrarace', derived from its displayName");
+        assertEquals(new NavigatorTestConfig.Entry(5, "cygnus"), navigator.entries().get("slender"), "the third entry must be named 'slender', derived from its displayName");
+        assertEquals(new NavigatorTestConfig.Entry(8, "MemberBuild"), navigator.entries().get("creative"), "the fourth entry must be named 'creative', derived from its displayName");
     }
 
     @Test
