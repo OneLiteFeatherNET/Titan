@@ -37,27 +37,27 @@ Der Stand danach:
 
 ## Decisions
 
-### 1. Die statische Fassade `Config` ist die einzige Quelle, einmal früh beim Start initialisiert
+### 1. Die statische Fassade `Config` ist die einzige Quelle, ohne eigene Factory davor
 
-**Entscheidung:** Titan und der Setup-Server bauen keine eigene `Configuration` mehr. `ConfigurationFactory.load()` wird zu `ConfigurationFactory.initialise()`. Die Methode ist der erste Schritt in `Titan` bzw. im Setup-Server und läuft vor dem Aufbau des `BeanScope`. `ConfigurationLoader` entfällt, weil ihm ohne Migration nur noch dieser eine Aufruf bliebe. Sie greift einmal auf `Config.asConfiguration()` zu und löst damit den statischen Initialisierer aus. Einen `ExceptionInInitializerError` packt sie aus und übersetzt dessen Ursache mit den bestehenden, getesteten Hilfsmethoden `fileNameFrom`/`detailFrom` in `ConfigException.malformed(...)`. So bleibt der saubere Abbruch mit Datei und Stelle aus `standardized-config-profiles` erhalten.
+**Entscheidung:** Titan und der Setup-Server bauen keine eigene `Configuration` mehr - und keine eigene Factory, die die Fassade anfasst, bevor der Rest des Starts das ohnehin täte. Der erste Zugriff ist der erste absichtliche Zugriff, den der jeweilige Prozess sowieso schon braucht: in der Lobby `ConfigurationStartupLog.activeProfiles()` in `Titan`s Konstruktor, im Setup-Server `SetupSpawnConfig.read()` (liest `spawn.simulationDistance`), ebenfalls in `Titan`s Konstruktor. `ConfigurationLoader` entfällt, weil ihm ohne Migration nichts mehr bliebe.
+
+Ein Ladefehler (kaputte `application.yaml`) wirft die Fassade selbst, in ihrem statischen Initialisierer, als `ExceptionInInitializerError` - an genau der Stelle des ersten Zugriffs oben, unübersetzt. Die Ursachenkette dieses Errors nennt Datei und Stelle bereits selbst (`IllegalStateException("Error loading properties - <datei>", cause)`, deren `cause` bei einer kaputten YAML SnakeYAMLs eigene Meldung mit Zeile/Spalte ist) - eine Übersetzung in eine eigene `ConfigException` bringt hier nichts mehr bei, das der Aufrufer nicht auch direkt aus der Ursachenkette läse. `TitanApplication#main`/`TitanLauncher#main` fangen `RuntimeException | Error` ohnehin schon um den ganzen Start herum ab (siehe unten); das reicht.
 
 Danach entfallen:
+- `ConfigurationFactory` und `ConfigurationFactoryTest` ersatzlos.
+- `ConfigException.malformed(...)`: Es gibt keinen Aufrufer mehr, der eine kaputte YAML noch selbst übersetzt.
 - `ConfigurationPropertyPlugin`: Avaje Inject nutzt ohne ihn die Fassade, und das ist jetzt dieselbe und einzige Instanz. Der Grund für das Plugin (zweite Instanz, spät gebaut) fällt weg.
 - der `@External Configuration`-Bean in `Titan`/`PlatformBeans`.
 
-`ConfigurationStartupLog.activeProfiles(...)` bekommt `Config.asConfiguration()`. Die INFO-Zeile `Active configuration profiles: {}` bleibt unverändert.
-
-**Früh initialisieren:** Weil die Fassade beim ersten Zugriff lädt, soll dieser Zugriff an einer bekannten Stelle mit Fehlerübersetzung geschehen. Sonst träfe ein Ladefehler als roher `ExceptionInInitializerError` irgendwo im Start auf, etwa beim Aufbau des `BeanScope`.
-
-**Built-in first:** Das ist das eingebaute Mittel von avaje-config. Die Alternative, die injizierte `Configuration`-Instanz mit derselben API zu nutzen, wurde angeboten und vom Maintainer zugunsten der Fassade verworfen. Die Mehrarbeit für Tests (Entscheidung 5) wird bewusst in Kauf genommen.
+**Built-in first:** Das ist das eingebaute Verhalten von avaje-config, ganz ohne eigenen Code davor. Eine eigene Factory, die den ersten Zugriff vorwegnimmt und den Fehler übersetzt, wurde angeboten und vom Maintainer zugunsten des eingebauten Verhaltens verworfen: Der ohnehin vorhandene erste Zugriff (Startup-Log bzw. erster Read) übernimmt diese Rolle, ohne dass ein weiterer Typ existiert, der nur diesen einen Zugriff kapselt.
 
 **Test:**
-- Unit: `ConfigurationFactoryTest` behält die Tests für `fileNameFrom`/`detailFrom` und bekommt einen Fall, in dem ein `ExceptionInInitializerError` samt Ursache ausgepackt wird. Dieser Fall arbeitet mit einer selbst gebauten Exception, nicht mit der echten Fassade.
-- Integration: Der bestehende `ConfigurationPrecedenceTest` startet für jeden Fall eine Kind-JVM. Deren `ConfigurationPrintMain` liest künftig über `Config` statt über eine eigene Instanz. Ein neuer Fall prüft: Eine kaputte `application.yaml` beendet die Kind-JVM mit einer Meldung, die Datei und Zeile nennt.
+- Unit: `ConfigExceptionTest` verliert die Fälle für `malformed(...)`, behält `invalid`/`withSection`.
+- Integration: Der bestehende `ConfigurationPrecedenceTest` startet für jeden Fall eine Kind-JVM. Deren `ConfigurationPrintMain` fängt `ExceptionInInitializerError` an der Außengrenze ab und druckt die volle Ursachenkette (wie der `--validate-tickle`-Modus es schon für einen ungültigen Override tut), statt sich auf die Standard-Stacktrace-Ausgabe der JVM zu verlassen. Ein Fall prüft: Eine kaputte `application.yaml` beendet die Kind-JVM mit einer Meldung, die Datei und Zeile nennt.
 
 **SOLID:** Verletzt DIP bewusst. Module hängen von einer konkreten, statischen Quelle ab statt von einer injizierten Abstraktion. Das widerspricht der Projektregel „Abhängigkeiten über Konstruktor und Abstraktionen, nicht über statische Singletons“ und ist eine Entscheidung des Maintainers. Entscheidung 3 begrenzt die Folgen, indem die Fassade nur am Rand des Moduls gelesen wird.
 
-**Log:** unverändert (INFO `Active configuration profiles: {}`, ERROR über den bestehenden Abbruchpfad).
+**Log:** `TitanApplication#main`/`TitanLauncher#main` loggen den Abbruch künftig über `throwable.toString()` statt `throwable.getMessage()`: Ein `ExceptionInInitializerError` hat kein eigenes Message, `getMessage()` liefert `null` und die Kopfzeile läse sonst wörtlich „... failed to start: null“. Der Throwable bleibt weiterhin das letzte Log-Argument, sodass die volle Stacktrace samt aller `Caused by`-Zeilen im ERROR-Log/Sentry ankommt.
 
 ### 2. Standardwerte als Classpath-`application.yaml`
 
@@ -141,7 +141,7 @@ Die Prüfungen aus `NavigatorConfig.Entry` (Platz 0–8, bekanntes Material, Zie
 - aus `app`: die fünf Config-Records, `ModuleContext.config(...)`, der Config-Parameter von `ModulePlatform` und `ModuleRegistry.Builder#config`, `PlatformBeans#configSections`, `ConfigurationPropertyPlugin`, `ConfigurationLoader`, die handgepflegte `app/src/dist/application.example.yaml` (wird generiert, siehe Entscheidung 2),
 - aus `setup`: der `ConfigSections`-Weg in `SetupSpawnConfig` und `LegacyAppJsonWarning` samt Aufruf.
 
-`ConfigException` bleibt (`invalid` für Prüfungen, `malformed` für kaputte YAML). Der `CapturingLogger` unter `common/src/test/.../config/testing` bleibt, weil `DebugDeliverTest` ihn nutzt.
+`ConfigException` bleibt, aber nur noch mit `invalid`/`withSection` für Prüfungen - `malformed` entfällt mit `ConfigurationFactory` (Entscheidung 1): Eine kaputte YAML ist kein `ConfigException` mehr, sondern ein `ExceptionInInitializerError` aus der Fassade selbst. Der `CapturingLogger` unter `common/src/test/.../config/testing` bleibt, weil `DebugDeliverTest` ihn nutzt.
 
 **Built-in first:** Nicht anwendbar, Code wird entfernt.
 
@@ -162,7 +162,7 @@ Die Prüfungen aus `NavigatorConfig.Entry` (Platz 0–8, bekanntes Material, Zie
 ## Risks / Trade-offs
 
 - **[Risiko, BREAKING] Eine nicht umgestellte `app.json` wird stumm ignoriert.** Wer das Release mit `standardized-config-profiles` überspringt, startet mit den Standardwerten. → Mitigation: `BREAKING CHANGE`-Footer, Hinweis in Release Notes und README. Beim eigenen Deployment ist die Umstellung bereits gelaufen (Migrationsplan Schritt 2).
-- **[Risiko] `Config` wird vor `ConfigurationFactory.initialise()` berührt**, etwa durch einen statischen Initialisierer. Dann kommt ein Ladefehler ohne Übersetzung an. → Mitigation: `initialise()` ist der erste Schritt im Start, und der Kind-JVM-Test zur kaputten YAML prüft die Meldung.
+- **[Risiko] Irgendein anderer statischer Initialisierer berührt `Config` vor dem beabsichtigten ersten Zugriff** (`ConfigurationStartupLog.activeProfiles()` bzw. `SetupSpawnConfig.read()`). Dann trifft der `ExceptionInInitializerError` an einer unerwarteten Stelle auf, statt an der dokumentierten. → Mitigation: `TitanApplication#main`/`TitanLauncher#main` fangen `RuntimeException | Error` ohnehin um den ganzen Start herum ab, der Abbruch bleibt also in jedem Fall sauber; der Kind-JVM-Test zur kaputten YAML prüft zusätzlich, dass die Meldung Datei und Zeile nennt.
 - **[Risiko] Globaler Zustand in Tests.** Ein einzelner Aufruf von `Config.setProperty` in einem Test macht andere Tests abhängig von der Reihenfolge. → Mitigation: Verbot und Grep-Check (Entscheidung 5), Kind-JVMs für abweichende Werte.
 - **[Trade-off] Weniger Isolation zwischen Modulen.** Technisch kann jedes Modul jeden Schlüssel lesen. → Die Spec verlangt es weiter als Regel. Die Schlüssel-Konstanten stehen im Modul selbst, das Review prüft das Präfix.
 - **[Trade-off] Keine Warnung mehr bei unbekannten oder vertippten Schlüsseln.** Ein Tippfehler in der eigenen `application.yaml` bleibt stumm, es gilt der Standardwert. → Die Classpath-Datei und die generierte Beispieldatei zeigen alle gültigen Schlüssel. Die README weist darauf hin.
