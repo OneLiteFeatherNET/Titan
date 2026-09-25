@@ -15,14 +15,14 @@
  */
 package net.onelitefeather.titan.app.feature.tickle;
 
-import net.onelitefeather.titan.common.config.ConfigException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit tests for {@link TickleConfig}: the documented default and the {@code cooldownMillis}
- * validation described in the {@code lobby-module-config} spec ("Negative Dauer" scenario).
+ * Unit test for {@link TickleConfig}'s own documented default. The {@code cooldownMillis}
+ * validation itself is {@link TickleSettings}'s responsibility and is covered by
+ * {@link TickleSettingsTest}; {@link TickleConfig}'s compact constructor only delegates to it.
  */
 class TickleConfigTest {
 
@@ -30,26 +30,5 @@ class TickleConfigTest {
     @Test
     void defaultsHaveA4000MillisecondCooldown() {
         Assertions.assertEquals(4000L, TickleConfig.DEFAULTS.cooldownMillis());
-    }
-
-    @DisplayName("A zero cooldown is valid")
-    @Test
-    void zeroCooldownIsValid() {
-        Assertions.assertDoesNotThrow(() -> new TickleConfig(0));
-    }
-
-    @DisplayName("A positive cooldown is valid")
-    @Test
-    void positiveCooldownIsValid() {
-        Assertions.assertEquals(1500L, new TickleConfig(1500).cooldownMillis());
-    }
-
-    @DisplayName("A negative cooldown is rejected, naming the field and reason")
-    @Test
-    void negativeCooldownIsRejected() {
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> new TickleConfig(-5));
-
-        Assertions.assertEquals("cooldownMillis", thrown.field());
-        Assertions.assertEquals("must not be negative", thrown.reason());
     }
 }

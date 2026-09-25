@@ -15,14 +15,15 @@
  */
 package net.onelitefeather.titan.app.feature.elytra;
 
-import net.onelitefeather.titan.common.config.ConfigException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit coverage for {@link ElytraConfig}'s compact constructor validation and its defaults - no
- * {@code Env} or server required.
+ * Unit test for {@link ElytraConfig}'s own documented default. The {@code burnDurationTicks} and
+ * {@code cooldownTicks} validation itself is {@link ElytraSettings}'s responsibility and is
+ * covered by {@link ElytraSettingsTest}; {@link ElytraConfig}'s compact constructor only delegates
+ * to it.
  */
 class ElytraConfigTest {
 
@@ -31,48 +32,5 @@ class ElytraConfigTest {
     void defaultsMatchesVoyagersOwnTuning() {
         Assertions.assertEquals(30, ElytraConfig.DEFAULTS.burnDurationTicks());
         Assertions.assertEquals(40, ElytraConfig.DEFAULTS.cooldownTicks());
-    }
-
-    @DisplayName("A cooldown strictly longer than the burn is accepted unchanged")
-    @Test
-    void aCooldownStrictlyLongerThanTheBurnIsAccepted() {
-        ElytraConfig config = new ElytraConfig(10, 15);
-
-        Assertions.assertEquals(10, config.burnDurationTicks());
-        Assertions.assertEquals(15, config.cooldownTicks());
-    }
-
-    @DisplayName("A zero burn duration is rejected")
-    @Test
-    void aZeroBurnDurationIsRejected() {
-        ConfigException exception = Assertions.assertThrows(ConfigException.class, () -> new ElytraConfig(0, 10));
-
-        Assertions.assertEquals("burnDurationTicks", exception.field());
-        Assertions.assertEquals("must be positive", exception.reason());
-    }
-
-    @DisplayName("A negative burn duration is rejected")
-    @Test
-    void aNegativeBurnDurationIsRejected() {
-        ConfigException exception = Assertions.assertThrows(ConfigException.class, () -> new ElytraConfig(-1, 10));
-
-        Assertions.assertEquals("burnDurationTicks", exception.field());
-    }
-
-    @DisplayName("A cooldown equal to the burn duration is rejected")
-    @Test
-    void aCooldownEqualToTheBurnDurationIsRejected() {
-        ConfigException exception = Assertions.assertThrows(ConfigException.class, () -> new ElytraConfig(10, 10));
-
-        Assertions.assertEquals("cooldownTicks", exception.field());
-        Assertions.assertEquals("must be longer than burnDurationTicks", exception.reason());
-    }
-
-    @DisplayName("A cooldown shorter than the burn duration is rejected")
-    @Test
-    void aCooldownShorterThanTheBurnDurationIsRejected() {
-        ConfigException exception = Assertions.assertThrows(ConfigException.class, () -> new ElytraConfig(10, 5));
-
-        Assertions.assertEquals("cooldownTicks", exception.field());
     }
 }
