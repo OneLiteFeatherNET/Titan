@@ -30,8 +30,11 @@ import net.onelitefeather.titan.common.config.ConfigException;
  * <p>Every method takes a plain value and either returns it (unchanged, or - for
  * {@link #parseBlock(String)} - converted) or throws
  * {@link ConfigException#invalid(String, String)} naming the value's full section key, e.g.
- * {@code sit.offset}. None of these methods touch {@code io.avaje.config.Config},
- * {@code ConfigSections} or a server, so they are unit-testable on their own.
+ * {@code sit.allowedBlocks}. None of these methods touch {@code io.avaje.config.Config} or a
+ * server, so they are unit-testable on their own. There is no separate validation for
+ * {@code sit.offset}: {@link SitModule#enable} builds it as a {@link Vec} from three
+ * {@link net.onelitefeather.titan.common.config.ConfigValues#doubleValue} reads, which can never
+ * produce {@code null}, so there is nothing to reject.
  *
  * <p>The keys themselves are declared here as constants, the one place this module's config
  * section is named (see {@code design.md}, decision 3), and reused by {@link SitModule#enable} to
@@ -39,7 +42,6 @@ import net.onelitefeather.titan.common.config.ConfigException;
  */
 final class SitSettings {
 
-    static final String OFFSET_KEY = "sit.offset";
     static final String OFFSET_X_KEY = "sit.offset.x";
     static final String OFFSET_Y_KEY = "sit.offset.y";
     static final String OFFSET_Z_KEY = "sit.offset.z";
@@ -49,21 +51,9 @@ final class SitSettings {
     }
 
     /**
-     * @param offset the offset from the clicked block's position to the seat entity
-     * @return {@code offset}, unchanged
-     * @throws ConfigException if {@code offset} is {@code null}
-     */
-    static Vec offset(Vec offset) {
-        if (offset == null) {
-            throw ConfigException.invalid(OFFSET_KEY, "must not be null");
-        }
-        return offset;
-    }
-
-    /**
      * Parses one raw value of the {@code sit.allowedBlocks} list as a {@link Key} - a plain
-     * string such as {@code minecraft:spruce_stairs}, the same form {@code KeyGsonAdapter} used to
-     * accept before this module read its section directly. Applies exactly the same rule
+     * string such as {@code minecraft:spruce_stairs}, read directly from
+     * {@code io.avaje.config.Config} by {@link SitModule#enable}. Applies exactly the same rule
      * {@link Key#key(String)} always has: a string with characters a {@link Key} cannot contain
      * (e.g. spaces or uppercase letters) is invalid. Beyond syntax, the key must also name a block
      * Minestom knows about ({@link Block#fromKey(Key)}) - the {@code lobby-module-config} spec

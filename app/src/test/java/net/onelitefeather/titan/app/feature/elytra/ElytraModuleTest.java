@@ -35,6 +35,7 @@ import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.app.module.item.ItemRegistry;
 import net.onelitefeather.titan.app.module.testing.ModuleHarness;
+import net.onelitefeather.titan.common.config.ConfigValues;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -51,9 +52,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(MicrotusExtension.class)
 class ElytraModuleTest {
 
-    /** The shipped defaults for {@code elytra.burnDurationTicks} / {@code elytra.cooldownTicks}. */
-    private static final int DEFAULT_BURN_DURATION_TICKS = 30;
-    private static final int DEFAULT_COOLDOWN_TICKS = 40;
+    /**
+     * The shipped defaults for {@code elytra.burnDurationTicks} / {@code elytra.cooldownTicks},
+     * read from the facade rather than hardcoded, so a changed shipped default cannot silently
+     * desync this test from production - read-only, never mutated (F.I.R.S.T. - Independent).
+     */
+    private static final int DEFAULT_BURN_DURATION_TICKS = ConfigValues.intValue(ElytraSettings.BURN_DURATION_TICKS_KEY);
+    private static final int DEFAULT_COOLDOWN_TICKS = ConfigValues.intValue(ElytraSettings.COOLDOWN_TICKS_KEY);
 
     @DisplayName("equip() puts an unbreakable elytra on the chestplate")
     @Test

@@ -130,16 +130,15 @@ public final class NavigatorModule implements LobbyModule {
 
     /**
      * Reads every entry under {@code navigator.entries}: the entry names come from
-     * {@link NavigatorEntryKeys#names(Set)} applied to
-     * {@code Config.asConfiguration().forPath(ENTRIES_PATH).keys()}, each name's own {@code slot},
-     * {@code icon}, {@code displayName}, {@code destination} and optional {@code feature} are read
-     * and validated by {@link NavigatorEntryValidation#buildEntry}, and the result is turned into a
-     * renderable {@link NavigatorEntry} by {@link #toNavigatorEntry}.
+     * {@link #readEntryNames()}, each name's own {@code slot}, {@code icon}, {@code displayName},
+     * {@code destination} and optional {@code feature} are read and validated by
+     * {@link NavigatorEntryValidation#buildEntry}, and the result is turned into a renderable
+     * {@link NavigatorEntry} by {@link #toNavigatorEntry}.
      *
      * @return every configured navigator entry, ready to register
      */
     private static List<NavigatorEntry> readEntries() {
-        Set<String> names = NavigatorEntryKeys.names(Config.asConfiguration().forPath(ENTRIES_PATH).keys());
+        Set<String> names = readEntryNames();
         List<NavigatorEntry> entries = new ArrayList<>();
         for (String name : names) {
             String prefix = ENTRIES_PATH + "." + name + ".";
@@ -152,6 +151,22 @@ public final class NavigatorModule implements LobbyModule {
             entries.add(toNavigatorEntry(configured));
         }
         return entries;
+    }
+
+    /**
+     * Reads every configured {@code navigator.entries} entry name:
+     * {@link NavigatorEntryKeys#names(Set)} applied to
+     * {@code Config.asConfiguration().forPath(ENTRIES_PATH).keys()}.
+     *
+     * <p>Package-private, rather than inlined into {@link #readEntries()}, purely so
+     * {@code net.onelitefeather.titan.app.feature.navigator.NavigatorValidation} (a test helper in
+     * the same package) can reuse it instead of repeating this read line - see
+     * {@code openspec/changes/avaje-config-facade/design.md}, decision 3.
+     *
+     * @return every configured {@code navigator.entries} entry name
+     */
+    static Set<String> readEntryNames() {
+        return NavigatorEntryKeys.names(Config.asConfiguration().forPath(ENTRIES_PATH).keys());
     }
 
     private static NavigatorEntry toNavigatorEntry(NavigatorEntryValidation.ConfiguredNavigatorEntry entry) {

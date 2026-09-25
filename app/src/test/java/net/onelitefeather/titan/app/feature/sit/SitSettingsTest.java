@@ -17,7 +17,6 @@ package net.onelitefeather.titan.app.feature.sit;
 
 import java.util.List;
 import net.kyori.adventure.key.Key;
-import net.minestom.server.coordinate.Vec;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.common.config.ConfigException;
 import org.junit.jupiter.api.Assertions;
@@ -26,8 +25,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Plain unit tests for {@link SitSettings}: no {@code Config}, no {@code ConfigSections}, no
- * server needed - just the pure validation functions.
+ * Plain unit tests for {@link SitSettings}: no {@code Config}, no server needed - just the pure
+ * validation functions. {@code sit.offset} has no validation function of its own to test here -
+ * see {@link SitSettings}'s Javadoc for why - only {@code sit.allowedBlocks}, read and validated
+ * by {@link SitModule#enable}.
  *
  * <p>{@link MicrotusExtension} is only needed because {@link SitSettings#parseBlock} resolves a
  * key against Minestom's block registry data (see
@@ -36,20 +37,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
  */
 @ExtendWith(MicrotusExtension.class)
 class SitSettingsTest {
-
-    @DisplayName("A valid offset is returned unchanged")
-    @Test
-    void aValidOffsetIsReturnedUnchanged() {
-        Vec offset = new Vec(0.5, 0.25, 0.5);
-        Assertions.assertEquals(offset, SitSettings.offset(offset));
-    }
-
-    @DisplayName("A null offset is rejected, naming the full key")
-    @Test
-    void nullOffsetIsRejected() {
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> SitSettings.offset(null));
-        Assertions.assertEquals("sit.offset", thrown.field());
-    }
 
     @DisplayName("A valid allowedBlocks list is returned unchanged")
     @Test

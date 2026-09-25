@@ -60,7 +60,25 @@ public final class TickleModule implements LobbyModule {
 
     @Override
     public void enable(ModuleContext context) {
-        Duration cooldown = TickleSettings.cooldown(ConfigValues.longValue(TickleSettings.COOLDOWN_KEY));
+        Duration cooldown = readCooldown();
         context.listen(EntityAttackEvent.class, new TickleAttackHandler(this.clock, cooldown.toMillis()));
+    }
+
+    /**
+     * Reads and validates {@code tickle.cooldownMillis} through {@link ConfigValues#longValue} and
+     * {@link TickleSettings#cooldown(long)} - the exact line {@link #enable} runs.
+     *
+     * <p>Package-private, rather than inlined into {@link #enable}, purely so
+     * {@code net.onelitefeather.titan.app.feature.tickle.TickleValidation} (a test helper in the
+     * same package) can reuse it instead of repeating this read-and-validate line - see
+     * {@code openspec/changes/avaje-config-facade/design.md}, decision 3.
+     *
+     * @return the validated tickle cooldown
+     * @throws net.onelitefeather.titan.common.config.ConfigException if the configured value is
+     *                                                                missing, not a whole number,
+     *                                                                or negative
+     */
+    static Duration readCooldown() {
+        return TickleSettings.cooldown(ConfigValues.longValue(TickleSettings.COOLDOWN_KEY));
     }
 }

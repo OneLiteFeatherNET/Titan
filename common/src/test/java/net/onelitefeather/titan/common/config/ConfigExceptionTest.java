@@ -25,18 +25,17 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * Covers {@link ConfigException}'s message shape ({@code <file>: <section>.<field> - <reason>})
- * and the immutable, cause-chaining behaviour of {@link ConfigException#withSection(String)} and
- * {@link ConfigException#withFile(String)}.
+ * and the immutable, cause-chaining behaviour of {@link ConfigException#withSection(String)}.
  */
 class ConfigExceptionTest {
 
     @Test
-    @DisplayName("A fully qualified exception has the message shape <file>: <section>.<field> - <reason>")
-    void fullMessageShape() {
-        ConfigException exception = ConfigException.invalid("cooldownMillis", "must not be negative").withSection("tickle").withFile("app.json");
+    @DisplayName("A section and field together have the message shape <section>.<field> - <reason>")
+    void sectionAndFieldMessageShape() {
+        ConfigException exception = ConfigException.invalid("cooldownMillis", "must not be negative").withSection("tickle");
 
-        assertEquals("app.json: tickle.cooldownMillis - must not be negative", exception.getMessage());
-        assertEquals("app.json", exception.file());
+        assertEquals("tickle.cooldownMillis - must not be negative", exception.getMessage());
+        assertNull(exception.file(), "invalid()/withSection() never set a file - only malformed() does");
         assertEquals("tickle", exception.section());
         assertEquals("cooldownMillis", exception.field());
         assertEquals("must not be negative", exception.reason());
@@ -82,22 +81,17 @@ class ConfigExceptionTest {
     }
 
     @Test
-    @DisplayName("withSection() and withFile() each return a new instance, keeping the previous one as the cause")
-    void withSectionAndWithFileAreImmutableAndChainCauses() {
+    @DisplayName("withSection() returns a new instance, keeping the previous one as the cause")
+    void withSectionIsImmutableAndChainsCauses() {
         ConfigException original = ConfigException.invalid("cooldownMillis", "must not be negative");
 
         ConfigException withSection = original.withSection("tickle");
-        ConfigException withBoth = withSection.withFile("app.json");
 
         assertNotSame(original, withSection, "withSection() must not mutate the original instance");
-        assertNotSame(withSection, withBoth, "withFile() must not mutate the instance it was called on");
         assertNull(original.section(), "the original instance must stay unchanged");
         assertNull(original.file());
         assertEquals("tickle", withSection.section());
-        assertNull(withSection.file(), "withSection() alone must not set a file");
-        assertEquals("tickle", withBoth.section(), "withFile() must keep the section set by withSection()");
-        assertEquals("app.json", withBoth.file());
+        assertNull(withSection.file(), "withSection() must not set a file");
         assertSame(original, withSection.getCause(), "withSection() keeps the previous instance as its cause");
-        assertSame(withSection, withBoth.getCause(), "withFile() keeps the previous instance as its cause");
     }
 }

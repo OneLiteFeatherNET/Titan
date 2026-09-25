@@ -37,8 +37,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * {@code ItemStack.of(Material)} other pure-data tests in this codebase use - resolves the stack's
  * {@code Material} through Minestom's registry data once a custom name component is set. That data
  * is only bound once {@link net.minestom.testing.extension.MicrotusExtension} actually creates an
- * {@code Env}, which it only does when a test method asks for one - the same reason
- * {@code ModuleContextConfigTest#itemPlacementConflictAbortsEnableAllBeforeFlush} takes one.
+ * {@code Env}, which it only does when a test method asks for one - the same reason other tests
+ * that resolve a {@code Material} through Minestom's registry data take one.
  */
 @ExtendWith(MicrotusExtension.class)
 class NavigatorLayoutTest {

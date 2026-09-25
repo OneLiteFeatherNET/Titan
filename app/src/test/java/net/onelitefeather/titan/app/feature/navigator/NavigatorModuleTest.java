@@ -114,10 +114,10 @@ class NavigatorModuleTest {
     @DisplayName("An additional entry appears in the navigator (Parkour on slot 2)")
     @Test
     void additionalConfiguredEntryAppears(Env env) {
-        // A stand-in for an entry another module contributes, in place of a ConfigSections
-        // override no longer read by NavigatorModule (design.md, decision 5) - built directly, the
-        // same way NavigatorModule itself builds a renderable entry once
-        // NavigatorEntryValidation#buildEntry has validated its plain configuration values.
+        // A stand-in for an entry another module contributes through context.navigator().add(...)
+        // rather than through navigator.entries in application.yaml - built directly, the same way
+        // NavigatorModule itself builds a renderable entry once NavigatorEntryValidation#buildEntry
+        // has validated its plain configuration values.
         NavigatorEntry parkour = new NavigatorEntry(2, ItemStack.of(Material.DIAMOND_PICKAXE), Component.text("Parkour"), "Parkour");
         LobbyModule parkourModule = new LobbyModule() {
 

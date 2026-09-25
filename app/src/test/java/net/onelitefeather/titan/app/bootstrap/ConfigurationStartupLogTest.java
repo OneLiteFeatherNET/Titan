@@ -38,10 +38,14 @@ import org.slf4j.LoggerFactory;
  * instead of taking an injected {@code Configuration}, so this test now shares that facade's
  * one-time, JVM-wide initialisation with every other test in this process - the shipped
  * classpath {@code application.yaml}, with no test-only override (design.md decision 5: no
- * {@code application-test.yaml}, and no test may call a {@code Config} mutator). This only asserts
- * the shape of the line and that the argument is the list avaje-config actually resolved, not a
- * fabricated one; the "a profile changes the value" scenario is covered by the child-JVM
- * {@code ConfigurationPrecedenceTest} instead (design.md decision 5).
+ * {@code application-test.yaml}, and no test may call a {@code Config} mutator). This test only
+ * asserts the shape of the line - message template, single argument, INFO level - and that the
+ * argument is the list this process's own facade actually resolved (an empty list, the shipped
+ * default with no {@code AVAJE_PROFILES} set), not a fabricated one; it cannot exercise a
+ * different profile, because mutating this JVM's already-initialised facade is exactly what
+ * decision 5 forbids a test to do. That scenario - a chosen profile actually appearing in the
+ * logged line - is covered separately, in a child JVM with its own environment, by
+ * {@code ConfigurationPrecedenceTest#activeProfilesLogLineNamesTheActiveProfile}.
  */
 class ConfigurationStartupLogTest {
 

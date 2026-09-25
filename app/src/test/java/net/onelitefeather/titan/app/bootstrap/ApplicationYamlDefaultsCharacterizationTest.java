@@ -24,12 +24,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Characterization test for {@code avaje-config-facade} task 1.1: locks in that the classpath
- * {@code app/src/main/resources/application.yaml} - the file every module will read directly
- * through {@code io.avaje.config.Config} once the facade migration is complete - carries exactly
- * today's defaults of the {@code sit}, {@code spawn}, {@code tickle}, {@code elytra} and
- * {@code navigator} sections, key by key. Their config records are gone (see {@code
- * avaje-config-facade} tasks 2.1-2.5), so the expected values are spelled out literally.
+ * Locks in that the classpath {@code app/src/main/resources/application.yaml} - the single source
+ * of every module's shipped defaults, read directly through {@code io.avaje.config.Config} (see
+ * {@code openspec/changes/avaje-config-facade/design.md}, decision 2) - carries exactly the
+ * expected defaults of the {@code sit}, {@code spawn}, {@code tickle}, {@code elytra} and
+ * {@code navigator} sections, key by key. Each module's own per-field configuration type is gone
+ * (see design.md, decision 7), so the expected values are spelled out literally here instead of
+ * compared against one.
  *
  * <p>Loads the file as its own {@link Configuration} instance via
  * {@link Configuration.Builder#load(String)} - which reads a classpath resource, never the static
@@ -37,9 +38,9 @@ import org.junit.jupiter.api.Test;
  * facade) - so this test has no dependency on JVM-wide state and stays Independent and Repeatable
  * (F.I.R.S.T.).
  *
- * <p>Once the five config records above are removed in a later wave, this test's assertions move
- * to whatever locks in the shipped defaults at that point; until then it is the safety net that
- * {@code application.yaml} and the records it will replace never silently drift apart.
+ * <p>This is the safety net that a shipped default cannot silently drift out from under whichever
+ * module reads it - the only other place any of these values could be found is the
+ * {@code lobby-module-config} spec's own examples, which this test does not read.
  */
 class ApplicationYamlDefaultsCharacterizationTest {
 
@@ -110,8 +111,8 @@ class ApplicationYamlDefaultsCharacterizationTest {
     }
 
     /**
-     * A literal stand-in for the navigator's former per-entry config record, spelling out one
-     * expected default entry's fields so this test does not depend on the removed record (see
+     * A literal stand-in for one expected default navigator entry's fields, spelling them out
+     * instead of comparing against a type, since navigator entries are no longer bound to one (see
      * {@code openspec/changes/avaje-config-facade/design.md}, decision 6).
      */
     private record ExpectedNavigatorEntry(int slot, String icon, String displayName,
