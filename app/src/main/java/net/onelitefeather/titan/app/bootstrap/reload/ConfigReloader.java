@@ -209,9 +209,17 @@ public final class ConfigReloader {
         }
     }
 
+    /**
+     * @param cause the exception {@link ModuleRestartOutcome.Failed} carries
+     * @return the module's own rejection reason - {@link Causes#rootMessage(Throwable)}'s innermost
+     *         cause, since avaje-config 5.2's {@code Config.getAs(key, fn)} wraps any exception a
+     *         module's conversion function throws as {@code new IllegalStateException("Failed to
+     *         convert key: ... with the provided function", e)}; reporting {@code cause}'s own
+     *         message here would show that wrapper instead of the module's actual reason (e.g.
+     *         "must not be negative, was -5")
+     */
     private static String describe(Throwable cause) {
-        String message = cause.getMessage();
-        return message != null ? message : cause.toString();
+        return Causes.rootMessage(cause);
     }
 
     /**
