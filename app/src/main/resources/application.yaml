@@ -1,17 +1,24 @@
-# Titan lobby configuration example.
+# Titan lobby - shipped configuration defaults.
 #
-# Copy this file to "application.yaml" next to the lobby's jar (the working directory) and edit
-# it - the lobby loads it, plus any active profile's "application-<profile>.yaml", on every start.
-# Every value below is the module's own compiled-in default; the lobby runs with these exact
-# values even without any file at all (see the lobby-module-config spec, "Ohne
-# Konfigurationsdatei gelten die Standardwerte"). Uncomment and change only what you want to
-# differ from the default - a value this file does not set falls back to the module's default,
-# whether the key is entirely missing or the whole file is.
+# This file ships inside the lobby's jar (on the classpath) and IS the single source of the
+# defaults below - the lobby runs with these exact values even without any file at all next to the
+# jar (see the lobby-module-config spec, "Ohne Konfigurationsdatei gelten die Standardwerte"). The
+# build also copies it, unchanged, into the distribution as "application.example.yaml" next to the
+# jar, purely so an operator has a commented copy to read; that copy is not loaded.
 #
-# Each top-level key is a module id, matching exactly one net.onelitefeather.titan.app.feature.*
-# module's own config record; a module only ever reads its own section (see the
-# lobby-module-config spec, "Ein Modul MUSS nur seinen eigenen Abschnitt lesen können"). Every key
-# inside a section is a record field name.
+# To override a value, copy this file to "application.yaml" in the working directory next to the
+# jar and keep only the keys you want to change - the lobby loads that file, plus any active
+# profile's "application-<profile>.yaml", on every start, merged over the shipped defaults above.
+# A key a working-directory file does not set falls back to the shipped default here, whether the
+# key is entirely missing or the whole file is.
+#
+# Each top-level key is a module id (matching exactly one net.onelitefeather.titan.app.feature.*
+# module's own configuration keys - a module only ever reads its own section, see the
+# lobby-module-config spec, "Ein Modul MUSS nur seinen eigenen Abschnitt lesen können"); every
+# other key inside a section is <module-id>.<field>, e.g. "spawn.minHeight". The one exception is
+# "navigator.entries", where each key one level down (e.g. "survival" in
+# "navigator.entries.survival.slot") is not a fixed field name but the name of one navigator entry
+# - an operator can add a brand-new entry purely by adding its own map key, with no code change.
 #
 # Profiles: create "application-dev.yaml" (or any other profile name) with just the keys you want
 # to differ for that profile, then start the lobby with the environment variable
