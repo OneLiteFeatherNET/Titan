@@ -15,31 +15,29 @@
  */
 package net.onelitefeather.titan.app.feature.navigator;
 
-import io.avaje.config.Config;
 import java.util.Set;
 
 /**
- * Test-only entry point into the name-resolution half of the exact read path
- * {@link NavigatorModule#enable} runs for {@code navigator.entries}, without needing a Minestom
- * server: {@link net.onelitefeather.titan.app.bootstrap.ConfigurationPrintMain} calls
+ * Test-only entry point into {@link NavigatorModule#readEntryNames()} - the name-resolution half
+ * of the exact read path {@link NavigatorModule#enable} runs for {@code navigator.entries} -
+ * without needing a Minestom server: {@link
+ * net.onelitefeather.titan.app.bootstrap.ConfigurationPrintMain} calls
  * {@link #resolvedEntryNames()} from a child JVM so
  * {@link net.onelitefeather.titan.app.bootstrap.ConfigurationPrecedenceTest} can cover the
  * {@code lobby-module-config} spec's "Liste von Einträgen" scenario.
  *
  * <p>Deliberately stops at the entry names, the same boundary
- * {@link NavigatorEntryKeys#names(Set)} draws: building a full, renderable
+ * {@link NavigatorModule#readEntryNames()} draws: building a full, renderable
  * {@link net.onelitefeather.titan.app.module.navigator.NavigatorEntry} additionally resolves each
  * entry's icon via {@code Material.fromKey}, which needs Minestom's registry data - see
  * {@link NavigatorEntryValidationTest}'s Javadoc. The spec scenario only asks whether the resolved
  * entry names contain the extra entry alongside the shipped defaults, so this helper does not need
  * that registry at all.
  *
- * <p>Public, unlike {@link NavigatorEntryKeys} itself, purely so a class in another package (the
- * bootstrap test package) can call it; it adds no validation of its own.
+ * <p>Public, unlike {@link NavigatorModule#readEntryNames()} itself, purely so a class in another
+ * package (the bootstrap test package) can call it; it adds no validation of its own.
  */
 public final class NavigatorValidation {
-
-    private static final String ENTRIES_PATH = "navigator.entries";
 
     private NavigatorValidation() {
     }
@@ -49,6 +47,6 @@ public final class NavigatorValidation {
      *         {@link NavigatorModule#enable} resolves them before validating and rendering each one
      */
     public static Set<String> resolvedEntryNames() {
-        return NavigatorEntryKeys.names(Config.asConfiguration().forPath(ENTRIES_PATH).keys());
+        return NavigatorModule.readEntryNames();
     }
 }

@@ -16,21 +16,20 @@
 package net.onelitefeather.titan.app.feature.tickle;
 
 import net.onelitefeather.titan.common.config.ConfigException;
-import net.onelitefeather.titan.common.config.ConfigValues;
 
 /**
- * Test-only entry point into the exact read-and-validate line {@link TickleModule#enable} runs for
- * {@code tickle.cooldownMillis}, without building a {@link TickleModule} or needing a Minestom
- * server: {@link net.onelitefeather.titan.app.bootstrap.ConfigurationPrintMain} calls
- * {@link #validate()} from a child JVM so
- * {@link net.onelitefeather.titan.app.bootstrap.ConfigurationPrecedenceTest} can cover the
- * {@code lobby-module-config} spec's "Ungültiger Override" and "Negative Dauer" scenarios for this
- * module - both are only reachable through {@link TickleSettings#cooldown(long)}, which is
- * package-private, hence this helper living in the same package rather than
- * {@code ConfigurationPrintMain} calling it directly.
+ * Test-only entry point into {@link TickleModule#readCooldown()} - the exact read-and-validate
+ * line {@link TickleModule#enable} runs for {@code tickle.cooldownMillis} - without building a
+ * {@link TickleModule} or needing a Minestom server: {@link
+ * net.onelitefeather.titan.app.bootstrap.ConfigurationPrintMain} calls {@link #validate()} from a
+ * child JVM so {@link net.onelitefeather.titan.app.bootstrap.ConfigurationPrecedenceTest} can
+ * cover the {@code lobby-module-config} spec's "Ungültiger Override" and "Negative Dauer"
+ * scenarios for this module - {@link TickleModule#readCooldown()} is package-private, hence this
+ * helper living in the same package rather than {@code ConfigurationPrintMain} calling it
+ * directly.
  *
- * <p>Public, unlike {@link TickleSettings} itself, purely so a class in another package/module
- * (the bootstrap test package) can call it; it adds no validation of its own.
+ * <p>Public, unlike {@link TickleModule#readCooldown()} itself, purely so a class in another
+ * package/module (the bootstrap test package) can call it; it adds no validation of its own.
  */
 public final class TickleValidation {
 
@@ -38,12 +37,12 @@ public final class TickleValidation {
     }
 
     /**
-     * Reads and validates {@code tickle.cooldownMillis} through {@link ConfigValues#longValue} and
-     * {@link TickleSettings#cooldown(long)}, exactly as {@link TickleModule#enable} does.
+     * Runs {@link TickleModule#readCooldown()} - the same read-and-validate line
+     * {@link TickleModule#enable} runs for {@code tickle.cooldownMillis}.
      *
      * @throws ConfigException if the configured value is missing, not a whole number, or negative
      */
     public static void validate() {
-        TickleSettings.cooldown(ConfigValues.longValue(TickleSettings.COOLDOWN_KEY));
+        TickleModule.readCooldown();
     }
 }
