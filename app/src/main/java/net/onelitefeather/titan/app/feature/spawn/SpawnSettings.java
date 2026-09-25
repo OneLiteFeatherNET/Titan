@@ -24,8 +24,8 @@ import net.onelitefeather.titan.common.config.ConfigException;
  *
  * <p>Every method takes plain values and either returns the validated one or throws
  * {@link ConfigException#invalid(String, String)} naming the value's full section key, e.g.
- * {@code spawn.minHeight}. None of these methods touch {@code io.avaje.config.Config},
- * {@code ConfigSections} or a server, so they are unit-testable on their own.
+ * {@code spawn.minHeight}. None of these methods touch {@code io.avaje.config.Config} or a
+ * server, so they are unit-testable on their own.
  *
  * <p>The keys themselves are declared here as constants, the one place this module's config
  * section is named (see {@code design.md}, decision 3), and reused by {@link SpawnModule#enable}

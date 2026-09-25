@@ -23,10 +23,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Unit coverage for {@link NavigatorEntryValidation#buildEntry}: the checks moved out of the
- * navigator's former per-entry config record's compact constructor (see {@code openspec/changes/
- * avaje-config-facade/design.md}, decision 6), now reporting the full
- * {@code navigator.entries.<name>.<field>} key instead of just {@code entries}, and assembling the
+ * Unit coverage for {@link NavigatorEntryValidation#buildEntry}: the per-entry checks (see
+ * {@code openspec/changes/avaje-config-facade/design.md}, decision 6) that report the full
+ * {@code navigator.entries.<name>.<field>} key instead of just {@code entries}, and assemble the
  * plain {@link NavigatorEntryValidation.ConfiguredNavigatorEntry} - see that type's Javadoc for why
  * {@code buildEntry} stops short of the platform's own, renderable
  * {@link net.onelitefeather.titan.app.module.navigator.NavigatorEntry}.

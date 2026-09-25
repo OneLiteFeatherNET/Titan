@@ -21,8 +21,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Plain unit tests for {@link SpawnSettings}: no {@code Config}, no {@code ConfigSections}, no
- * server needed - just the pure validation functions.
+ * Plain unit tests for {@link SpawnSettings}: no {@code Config}, no server needed - just the pure
+ * validation functions.
  */
 class SpawnSettingsTest {
 
