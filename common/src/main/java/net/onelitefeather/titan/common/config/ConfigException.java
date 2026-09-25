@@ -70,7 +70,23 @@ public final class ConfigException extends RuntimeException {
      * @return a new {@link ConfigException} describing the broken document
      */
     public static ConfigException malformed(@Nullable String file, String detail) {
-        return new ConfigException(file, null, null, detail, null);
+        return malformed(file, detail, null);
+    }
+
+    /**
+     * Creates an exception describing a document that could not be parsed at all, keeping the
+     * original failure as this exception's cause so the stack trace that reaches an ERROR log (or
+     * Sentry) still shows where the parser actually failed, not just this rethrow.
+     *
+     * @param file   the file name the broken document was read from, or {@code null} if the
+     *               section did not come from a single named file
+     * @param detail the underlying parser message; a parser's own message often already includes
+     *               the line and column of the syntax error
+     * @param cause  the original failure this exception replaces, or {@code null} if there is none
+     * @return a new {@link ConfigException} describing the broken document
+     */
+    public static ConfigException malformed(@Nullable String file, String detail, @Nullable Throwable cause) {
+        return new ConfigException(file, null, null, detail, cause);
     }
 
     /**
