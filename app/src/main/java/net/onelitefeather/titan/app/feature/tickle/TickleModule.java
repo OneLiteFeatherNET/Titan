@@ -15,6 +15,9 @@
  */
 package net.onelitefeather.titan.app.feature.tickle;
 
+import io.avaje.inject.Priority;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.time.Clock;
 import java.util.Objects;
 import net.minestom.server.event.entity.EntityAttackEvent;
@@ -29,21 +32,20 @@ import net.onelitefeather.titan.app.module.ModuleContext;
  * before this module existed. See {@link TickleAttackHandler} and {@link TickleCooldownRule} for
  * the implementation, and {@link TickleConfig} for this module's {@code app.json} section.
  */
+@Singleton
+@Priority(600)
 public final class TickleModule implements LobbyModule {
 
     private final Clock clock;
 
-    /** Creates a module backed by the system clock. */
-    public TickleModule() {
-        this(Clock.systemUTC());
-    }
-
     /**
-     * Creates a module backed by {@code clock}, so a test can control what "now" is instead of the
-     * module depending on {@link System#currentTimeMillis()}.
+     * Creates a module backed by {@code clock} - the platform's {@code Clock} bean is the system
+     * clock in production, so a test can control what "now" is instead of the module depending on
+     * {@link System#currentTimeMillis()}.
      *
      * @param clock the clock to read the current time from
      */
+    @Inject
     public TickleModule(Clock clock) {
         this.clock = Objects.requireNonNull(clock, "clock");
     }

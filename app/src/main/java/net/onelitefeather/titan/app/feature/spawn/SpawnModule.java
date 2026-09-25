@@ -15,14 +15,15 @@
  */
 package net.onelitefeather.titan.app.feature.spawn;
 
+import io.avaje.inject.Priority;
+import jakarta.inject.Singleton;
 import java.util.Objects;
-import java.util.function.Supplier;
-import net.minestom.server.coordinate.Pos;
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent;
 import net.minestom.server.event.player.PlayerMoveEvent;
 import net.minestom.server.event.player.PlayerSpawnEvent;
 import net.minestom.server.instance.Instance;
 import net.onelitefeather.titan.app.module.LobbyModule;
+import net.onelitefeather.titan.app.module.LobbySpawn;
 import net.onelitefeather.titan.app.module.ModuleContext;
 
 /**
@@ -37,19 +38,23 @@ import net.onelitefeather.titan.app.module.ModuleContext;
  * </ul>
  *
  * <p>Depends on the lobby {@link Instance} and the current spawn position only - not the whole
- * {@code MapProvider}. A {@link Supplier} is
+ * {@code MapProvider}. A {@link LobbySpawn} is
  * enough because the spawn position can change after this module is built (e.g. a map reload)
  * while the instance itself does not, and because {@code MapProvider} also carries unrelated
  * concerns (loading, saving and listing maps) this module has no business depending on. Keeping the
  * constructor to exactly what this module reads follows the Dependency Inversion / Interface
- * Segregation principles this change's platform layer is built around (see {@code design.md},
- * decision 2), and it lets a test hand in a plain {@code () -> pos} instead of building a real map
- * provider.
+ * Segregation principles this change's platform layer is built around (see
+ * {@code openspec/changes/avaje-dependency-injection/design.md}, decision 4), and it lets a test
+ * hand in a plain {@code () -> pos} instead of building a real map provider. {@link LobbySpawn}
+ * rather than a bare {@code Supplier<Pos>} is what makes this bean unambiguous for the dependency
+ * injection container to wire - see that decision for why.
  */
+@Singleton
+@Priority(200)
 public final class SpawnModule implements LobbyModule {
 
     private final Instance instance;
-    private final Supplier<Pos> spawnPosition;
+    private final LobbySpawn spawnPosition;
 
     /**
      * @param instance      the instance a configuring player spawns into
@@ -57,7 +62,7 @@ public final class SpawnModule implements LobbyModule {
      *                      the lobby map has none, in which case no respawn point or teleport is
      *                      applied
      */
-    public SpawnModule(Instance instance, Supplier<Pos> spawnPosition) {
+    public SpawnModule(Instance instance, LobbySpawn spawnPosition) {
         this.instance = Objects.requireNonNull(instance, "instance");
         this.spawnPosition = Objects.requireNonNull(spawnPosition, "spawnPosition");
     }
@@ -71,8 +76,8 @@ public final class SpawnModule implements LobbyModule {
     public void enable(ModuleContext context) {
         SpawnConfig config = context.config(SpawnConfig.class, SpawnConfig.DEFAULTS);
         HeightBounds heightBounds = new HeightBounds(config.minHeight(), config.maxHeight());
-        context.listen(AsyncPlayerConfigurationEvent.class, new SpawnConfigurationListener(this.instance, this.spawnPosition));
-        context.listen(PlayerSpawnEvent.class, new SpawnJoinListener(config.simulationDistance(), this.spawnPosition, context.items()));
-        context.listen(PlayerMoveEvent.class, new SpawnBoundsListener(heightBounds, this.spawnPosition));
+        context.listen(AsyncPlayerConfigurationEvent.class, new SpawnConfigurationListener(this.instance, this.spawnPosition::position));
+        context.listen(PlayerSpawnEvent.class, new SpawnJoinListener(config.simulationDistance(), this.spawnPosition::position, context.items()));
+        context.listen(PlayerMoveEvent.class, new SpawnBoundsListener(heightBounds, this.spawnPosition::position));
     }
 }

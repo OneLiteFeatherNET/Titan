@@ -47,6 +47,7 @@ dependencyResolutionManagement {
 
             version("mockito", "5.24.0")
             version("archunit", "1.5.0")
+            version("avaje-inject", "12.7")
 
             version("slf4j", "2.0.20")
             version("logback", "1.6.3")
@@ -90,6 +91,11 @@ dependencyResolutionManagement {
             library("cyano", "net.onelitefeather", "cyano").withoutVersion()
             library("mockito", "org.mockito", "mockito-core").versionRef("mockito")
             library("archunit", "com.tngtech.archunit", "archunit-junit5").versionRef("archunit")
+
+            // Compile-time dependency injection for the lobby feature modules and their platform
+            // services; see openspec/changes/avaje-dependency-injection.
+            library("avaje-inject", "io.avaje", "avaje-inject").versionRef("avaje-inject")
+            library("avaje-inject-generator", "io.avaje", "avaje-inject-generator").versionRef("avaje-inject")
 
             // Guava: unrelocated, expected by LuckPerms (was transitive via CloudNet).
             library("guava", "com.google.guava", "guava").versionRef("guava")
