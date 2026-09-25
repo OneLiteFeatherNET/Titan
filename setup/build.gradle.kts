@@ -10,7 +10,6 @@ dependencies {
     implementation(project(":api"))
     implementation(platform(libs.aonyx.bom))
     implementation(libs.minestom)
-    implementation(libs.togglz)
     implementation(libs.aves)
     implementation(libs.adventure.minimessage)
 
