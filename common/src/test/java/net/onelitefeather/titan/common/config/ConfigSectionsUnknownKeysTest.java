@@ -89,4 +89,41 @@ class ConfigSectionsUnknownKeysTest {
 
         assertTrue(CapturingLoggerFactory.messages().isEmpty(), "a missing section has no unknown keys to warn about, log was: " + CapturingLoggerFactory.messages());
     }
+
+    @Test
+    @DisplayName("An unknown key nested inside a record field is reported with its full dotted path")
+    void unknownKeyNestedInsideRecordFieldIsReportedWithDottedPath() {
+        Configuration configuration = Configuration.builder().putAll(Map.of("sit.offset.xx", "5")).build();
+        ConfigSections sections = new ConfigSections(configuration);
+
+        sections.section("sit", SitTestConfig.class, SitTestConfig.DEFAULTS);
+
+        long warningsNamingTheNestedKey = CapturingLoggerFactory.messages().stream().filter(message -> message.contains("sit") && message.contains("offset.xx")).count();
+        assertEquals(1, warningsNamingTheNestedKey, "expected exactly one warning naming sit and offset.xx, log was: " + CapturingLoggerFactory.messages());
+    }
+
+    @Test
+    @DisplayName("An unknown key nested inside one entry of a map-of-records field is reported with its full dotted path")
+    void unknownKeyNestedInsideMapOfRecordsEntryIsReportedWithDottedPath() {
+        Configuration configuration = Configuration.builder().putAll(Map.of("navigator.entries.survival.slott", "3")).build();
+        ConfigSections sections = new ConfigSections(configuration);
+
+        sections.section("navigator", NavigatorTestConfig.class, NavigatorTestConfig.DEFAULTS);
+
+        long warningsNamingTheNestedKey = CapturingLoggerFactory.messages().stream().filter(message -> message.contains("navigator") && message.contains("entries.survival.slott")).count();
+        assertEquals(1, warningsNamingTheNestedKey, "expected exactly one warning naming navigator and entries.survival.slott, log was: " + CapturingLoggerFactory.messages());
+    }
+
+    @Test
+    @DisplayName("A new entry key under a map-of-records field is never reported as unknown")
+    void newEntryKeyUnderMapOfRecordsFieldIsNeverReportedAsUnknown() {
+        Configuration configuration = Configuration.builder().putAll(Map.of(
+                "navigator.entries.parkour.slot", "2", "navigator.entries.parkour.destination", "parkour-lobby"
+        )).build();
+        ConfigSections sections = new ConfigSections(configuration);
+
+        sections.section("navigator", NavigatorTestConfig.class, NavigatorTestConfig.DEFAULTS);
+
+        assertTrue(CapturingLoggerFactory.messages().isEmpty(), "a new, well-formed map entry must not be flagged as unknown, log was: " + CapturingLoggerFactory.messages());
+    }
 }

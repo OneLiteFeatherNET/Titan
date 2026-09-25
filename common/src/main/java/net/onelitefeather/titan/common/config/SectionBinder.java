@@ -30,10 +30,8 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * The binding core shared by every source of a config section - today {@link ConfigStore} (a
@@ -122,8 +120,12 @@ final class SectionBinder {
     /**
      * Logs one warning naming every key {@code existing} has that {@code type}'s record components
      * do not declare - e.g. a leftover {@code elytra.boostMultiplier} in a section that used to
-     * have it. Never changes {@code existing} itself: an unknown key is not this class's business
-     * to drop or rewrite, only to flag.
+     * have it, or a typo nested inside a record field or a map-of-records entry (e.g. {@code
+     * offset.xx} or {@code entries.survival.slott}), reported with its full dotted path. A key
+     * under a {@code Map<String, ...>} component (e.g. {@code entries.parkour}, a new navigator
+     * entry) is a map key, never an unknown field - only the fields inside a record-typed map
+     * value are checked. Never changes {@code existing} itself: an unknown key is not this class's
+     * business to drop or rewrite, only to flag.
      *
      * @param fileName the file name to name in the warning, or {@code null} to omit it
      * @param id       the section id, used only for the log line
@@ -134,16 +136,8 @@ final class SectionBinder {
         if (existing == null || !existing.isJsonObject()) {
             return;
         }
-        Set<String> declared = new HashSet<>();
-        for (RecordComponent component : type.getRecordComponents()) {
-            declared.add(component.getName());
-        }
         List<String> unknown = new ArrayList<>();
-        for (String key : existing.getAsJsonObject().keySet()) {
-            if (!declared.contains(key)) {
-                unknown.add(key);
-            }
-        }
+        collectUnknownKeys(type, existing.getAsJsonObject(), "", unknown);
         if (unknown.isEmpty()) {
             return;
         }
@@ -151,6 +145,45 @@ final class SectionBinder {
             LOGGER.warn("{}: {} contains unknown keys {} - they are ignored", fileName, id, unknown);
         } else {
             LOGGER.warn("{} contains unknown keys {} - they are ignored", id, unknown);
+        }
+    }
+
+    /**
+     * Walks {@code object}'s keys against {@code type}'s own record components, adding every key
+     * without a matching component to {@code unknown} (as {@code prefix.key}, or just {@code key}
+     * when {@code prefix} is empty), and recursing into a nested record component's own object and
+     * into each record-typed entry of a {@code Map<String, Record>} component - the same descent
+     * {@link #findMismatchedComponent} performs to name a type mismatch, and {@link
+     * ConfigSections#isListTyped} performs to decide whether a value must be split into a list, via
+     * the shared {@link RecordFields} lookups (DRY).
+     */
+    private static void collectUnknownKeys(Class<? extends Record> type, JsonObject object, String prefix, List<String> unknown) {
+        for (Map.Entry<String, JsonElement> entry : object.entrySet()) {
+            String key = entry.getKey();
+            String path = prefix.isEmpty() ? key : prefix + "." + key;
+            RecordComponent component = RecordFields.component(type, key);
+            if (component == null) {
+                unknown.add(path);
+                continue;
+            }
+            JsonElement value = entry.getValue();
+            if (!value.isJsonObject()) {
+                continue;
+            }
+            if (component.getType().isRecord()) {
+                @SuppressWarnings("unchecked") Class<? extends Record> nestedType = (Class<? extends Record>) component.getType();
+                collectUnknownKeys(nestedType, value.getAsJsonObject(), path, unknown);
+            } else if (Map.class.isAssignableFrom(component.getType())) {
+                Class<?> valueType = RecordFields.mapValueType(component);
+                if (valueType != null && valueType.isRecord()) {
+                    @SuppressWarnings("unchecked") Class<? extends Record> entryType = (Class<? extends Record>) valueType;
+                    for (Map.Entry<String, JsonElement> mapEntry : value.getAsJsonObject().entrySet()) {
+                        if (mapEntry.getValue().isJsonObject()) {
+                            collectUnknownKeys(entryType, mapEntry.getValue().getAsJsonObject(), path + "." + mapEntry.getKey(), unknown);
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -195,13 +228,13 @@ final class SectionBinder {
     /**
      * Finds the first record component of {@code type} whose value in {@code merged} cannot
      * represent that component's declared type, descending into a nested record component and into
-     * each record-typed entry of a {@code Map<String, Record>} component via the shared {@link
-     * RecordFields} lookups (DRY, the same lookups {@link ConfigSections#isListTyped} uses) - so a
-     * mismatch inside {@code sit.offset.x} or {@code navigator.entries.survival.slot} is reported
-     * with its full dotted path, not just the top-level component name. Only simple, unambiguous
-     * mismatches (numeric and boolean components) are detected; strings, collections and the custom
-     * {@link Key}/{@link Vec}/{@link Pos} adapters are left to Gson's own error, which is reported
-     * as a section-level message instead.
+     * each record-typed entry of a {@code Map<String, Record>} component - the same descent {@link
+     * #collectUnknownKeys} performs for unknown keys, via the shared {@link RecordFields} lookups
+     * (DRY) - so a mismatch inside {@code sit.offset.x} or {@code navigator.entries.survival.slot}
+     * is reported with its full dotted path, not just the top-level component name. Only simple,
+     * unambiguous mismatches (numeric and boolean components) are detected; strings, collections
+     * and the custom {@link Key}/{@link Vec}/{@link Pos} adapters are left to Gson's own error,
+     * which is reported as a section-level message instead.
      */
     private static @Nullable MismatchedField findMismatchedComponent(Class<? extends Record> type, JsonElement merged, String prefix) {
         if (!merged.isJsonObject()) {
