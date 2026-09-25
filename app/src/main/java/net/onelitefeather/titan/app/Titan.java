@@ -36,6 +36,8 @@ import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
 import net.onelitefeather.titan.app.player.TitanPlayer;
 import net.onelitefeather.titan.common.config.ConfigStore;
 import net.onelitefeather.titan.common.deliver.DeliverProvider;
+import net.onelitefeather.titan.common.feature.FeatureFlags;
+import net.onelitefeather.titan.common.feature.TogglzFeatureFlags;
 import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
 import net.onelitefeather.titan.common.map.MapProvider;
 
@@ -84,11 +86,12 @@ public final class Titan {
         // see NavigatorModule, which reads every module's entries back at inventory-open time.
         NavigatorEntries navigatorEntries = new NavigatorEntries();
         ItemRegistry itemRegistry = new ItemRegistry(this.titanNode);
+        FeatureFlags featureFlags = new TogglzFeatureFlags();
 
         MinecraftServer.getGlobalEventHandler().addChild(this.titanNode);
 
         this.moduleRegistry = ModuleRegistry.builder().parent(this.titanNode).config(configStore).navigator(navigatorEntries).items(itemRegistry).modules(
-                new ProtectionModule(), new SpawnModule(mapProvider.getInstance(), () -> mapProvider.getActiveLobby().spawn()), new RespawnModule(), new NavigatorModule(deliver, navigatorEntries), new SitModule(), new TickleModule(), new ElytraModule()).build();
+                new ProtectionModule(), new SpawnModule(mapProvider.getInstance(), () -> mapProvider.getActiveLobby().spawn()), new RespawnModule(), new NavigatorModule(deliver, navigatorEntries, featureFlags), new SitModule(), new TickleModule(), new ElytraModule()).build();
     }
 
     /**

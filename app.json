@@ -41,7 +41,8 @@
         "slot": 5,
         "icon": "minecraft:enderman_spawn_egg",
         "displayName": "<!i><gradient:#616161:#e80000c>Slender</gradient>",
-        "destination": "cygnus"
+        "destination": "cygnus",
+        "feature": "NAVIGATOR_SLENDER"
       },
       {
         "slot": 8,

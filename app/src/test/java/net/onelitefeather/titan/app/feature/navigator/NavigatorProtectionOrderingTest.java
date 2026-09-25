@@ -70,7 +70,7 @@ class NavigatorProtectionOrderingTest {
         RecordingDeliver deliver = new RecordingDeliver();
 
         try (ModuleHarness harness = ModuleHarness.start(env, (navigator, items) -> {
-            NavigatorModule navigatorModule = new NavigatorModule(deliver, navigator);
+            NavigatorModule navigatorModule = new NavigatorModule(deliver, navigator, new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", true));
             ProtectionModule protectionModule = new ProtectionModule();
             return navigatorFirst ? new LobbyModule[]{navigatorModule, protectionModule} : new LobbyModule[]{protectionModule, navigatorModule};
         })) {

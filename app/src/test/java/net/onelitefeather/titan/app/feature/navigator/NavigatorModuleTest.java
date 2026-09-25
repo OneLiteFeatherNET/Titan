@@ -54,15 +54,23 @@ import org.junit.jupiter.api.io.TempDir;
  * <p>Started through {@link ModuleHarness}'s {@link ModuleHarness.ModuleFactory} overloads, which
  * hand the harness's own {@link net.onelitefeather.titan.app.module.navigator.NavigatorEntries}
  * (returned afterwards by {@link ModuleHarness#navigator()}) to {@link NavigatorModule}'s
- * constructor before the registry starts - see {@link ModuleHarness}'s class-level Javadoc.
+ * constructor before the registry starts - see {@link ModuleHarness}'s class-level Javadoc. Every
+ * test here declares {@code NAVIGATOR_SLENDER} active on its {@link FakeFeatureFlags}, since these
+ * tests are not about the feature-flag gate itself (see {@code NavigatorFeatureFlagTest} for that)
+ * -
+ * they only need Slender to behave exactly as it did before decision 13.
  */
 @ExtendWith(MicrotusExtension.class)
 class NavigatorModuleTest {
 
+    private static FakeFeatureFlags slenderActive() {
+        return new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", true);
+    }
+
     @DisplayName("Opening the navigator via the feather shows the four default entries, synchronously")
     @Test
     void openingTheNavigatorShowsTheFourDefaultEntries(Env env) {
-        try (ModuleHarness harness = ModuleHarness.start(env, (navigator, items) -> new LobbyModule[]{new NavigatorModule(new RecordingDeliver(), navigator)})) {
+        try (ModuleHarness harness = ModuleHarness.start(env, (navigator, items) -> new LobbyModule[]{new NavigatorModule(new RecordingDeliver(), navigator, slenderActive())})) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             harness.items().equip(player);
@@ -88,7 +96,7 @@ class NavigatorModuleTest {
     @Test
     void clickingAnEntryForwardsAndCloses(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
-        try (ModuleHarness harness = ModuleHarness.start(env, (navigator, items) -> new LobbyModule[]{new NavigatorModule(deliver, navigator)})) {
+        try (ModuleHarness harness = ModuleHarness.start(env, (navigator, items) -> new LobbyModule[]{new NavigatorModule(deliver, navigator, slenderActive())})) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             harness.items().equip(player);
@@ -130,7 +138,7 @@ class NavigatorModuleTest {
                 """;
         Files.writeString(configFile, json);
         ConfigStore store = ConfigStore.open(configFile);
-        try (ModuleHarness harness = ModuleHarness.start(env, store, (navigator, items) -> new LobbyModule[]{new NavigatorModule(new RecordingDeliver(), navigator)})) {
+        try (ModuleHarness harness = ModuleHarness.start(env, store, (navigator, items) -> new LobbyModule[]{new NavigatorModule(new RecordingDeliver(), navigator, slenderActive())})) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             harness.items().equip(player);
@@ -160,7 +168,7 @@ class NavigatorModuleTest {
             }
         };
 
-        try (ModuleHarness harness = ModuleHarness.start(env, (navigator, items) -> new LobbyModule[]{new NavigatorModule(new RecordingDeliver(), navigator), teaser})) {
+        try (ModuleHarness harness = ModuleHarness.start(env, (navigator, items) -> new LobbyModule[]{new NavigatorModule(new RecordingDeliver(), navigator, slenderActive()), teaser})) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             harness.items().equip(player);

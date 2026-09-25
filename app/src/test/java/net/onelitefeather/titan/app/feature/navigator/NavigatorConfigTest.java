@@ -35,11 +35,19 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(MicrotusExtension.class)
 class NavigatorConfigTest {
 
-    @DisplayName("DEFAULTS reproduces today's four navigator entries exactly")
+    @DisplayName("DEFAULTS reproduces today's four navigator entries exactly, Slender gated behind NAVIGATOR_SLENDER")
     @Test
     void defaultsReproduceTodaysFourEntries() {
         Assertions.assertEquals("<yellow>Navigator", NavigatorConfig.DEFAULTS.title());
-        Assertions.assertEquals(List.of(new NavigatorConfig.Entry(0, "minecraft:elytra", "<!i><gradient:#fcba03:#03fc8c>ElytraRace</gradient>", "ElytraRace"), new NavigatorConfig.Entry(4, "minecraft:grass_block", "<!i><green>Survival", "Survival"), new NavigatorConfig.Entry(5, "minecraft:enderman_spawn_egg", "<!i><gradient:#616161:#e80000c>Slender</gradient>", "cygnus"), new NavigatorConfig.Entry(8, "minecraft:wooden_axe", "<!i><rainbow>Creative</rainbow>", "MemberBuild")), NavigatorConfig.DEFAULTS.entries());
+        Assertions.assertEquals(List.of(new NavigatorConfig.Entry(0, "minecraft:elytra", "<!i><gradient:#fcba03:#03fc8c>ElytraRace</gradient>", "ElytraRace"), new NavigatorConfig.Entry(4, "minecraft:grass_block", "<!i><green>Survival", "Survival"), new NavigatorConfig.Entry(5, "minecraft:enderman_spawn_egg", "<!i><gradient:#616161:#e80000c>Slender</gradient>", "cygnus", "NAVIGATOR_SLENDER"), new NavigatorConfig.Entry(8, "minecraft:wooden_axe", "<!i><rainbow>Creative</rainbow>", "MemberBuild")), NavigatorConfig.DEFAULTS.entries());
+    }
+
+    @DisplayName("A 4-arg entry has no feature gate")
+    @Test
+    void fourArgEntryHasNoFeature() {
+        NavigatorConfig.Entry entry = new NavigatorConfig.Entry(0, "minecraft:feather", "<white>Test", "Test");
+
+        Assertions.assertNull(entry.feature());
     }
 
     @DisplayName("A null title is rejected")
@@ -99,5 +107,27 @@ class NavigatorConfigTest {
     @Test
     void nullDestinationIsRejected() {
         Assertions.assertThrows(NullPointerException.class, () -> new NavigatorConfig.Entry(0, "minecraft:feather", "<white>Test", null));
+    }
+
+    @DisplayName("validateFeatures passes when every entry's feature is null or known")
+    @Test
+    void validateFeaturesPassesForKnownOrAbsentFeatures() {
+        NavigatorConfig config = new NavigatorConfig("<yellow>Navigator", List.of(new NavigatorConfig.Entry(0, "minecraft:feather", "<white>Always", "Always"), new NavigatorConfig.Entry(5, "minecraft:enderman_spawn_egg", "<white>Slender", "cygnus", "NAVIGATOR_SLENDER")));
+        FakeFeatureFlags flags = new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", true);
+
+        Assertions.assertDoesNotThrow(() -> config.validateFeatures(flags));
+    }
+
+    @DisplayName("validateFeatures aborts on an unknown feature, naming the navigator.entries section and the flag")
+    @Test
+    void validateFeaturesAbortsOnAnUnknownFeature() {
+        NavigatorConfig config = new NavigatorConfig("<yellow>Navigator", List.of(new NavigatorConfig.Entry(5, "minecraft:enderman_spawn_egg", "<white>Slender", "cygnus", "GIBT_ES_NICHT")));
+        FakeFeatureFlags flags = new FakeFeatureFlags();
+
+        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> config.validateFeatures(flags));
+
+        Assertions.assertEquals("navigator", thrown.section());
+        Assertions.assertEquals("entries", thrown.field());
+        Assertions.assertTrue(thrown.reason().contains("GIBT_ES_NICHT"), "the reason must name the unknown flag");
     }
 }

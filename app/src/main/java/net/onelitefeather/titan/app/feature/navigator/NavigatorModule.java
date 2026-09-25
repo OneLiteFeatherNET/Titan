@@ -31,6 +31,7 @@ import net.onelitefeather.titan.app.module.item.ItemSlot;
 import net.onelitefeather.titan.app.module.item.LobbyItem;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntry;
+import net.onelitefeather.titan.common.feature.FeatureFlags;
 
 /**
  * The lobby's navigator: a feather in hotbar slot 4 that opens one Aves-built inventory shared by
@@ -53,6 +54,15 @@ import net.onelitefeather.titan.app.module.navigator.NavigatorEntry;
  * because {@link ModuleContext#navigator()} only exposes the narrow, add-only
  * {@link NavigatorEntries.View} - this module needs to read back every module's entries at open
  * time, not just add its own.
+ *
+ * <p>{@link #featureFlags} gates entries behind a feature flag (see {@code design.md}, decision
+ * 13):
+ * injected via the constructor rather than read from the static Togglz {@code FeatureContext}
+ * directly, so a test can hand in a fake instead of a real {@code flags.properties} file. This
+ * module's own {@link #enable} validates every configured entry's
+ * {@link NavigatorConfig.Entry#feature()}
+ * against it up front and aborts startup - via {@link NavigatorConfig#validateFeatures} - if any
+ * name is unknown.
  */
 public final class NavigatorModule implements LobbyModule {
 
@@ -62,15 +72,18 @@ public final class NavigatorModule implements LobbyModule {
 
     private final Deliver deliver;
     private final NavigatorEntries entries;
+    private final FeatureFlags featureFlags;
     private NavigatorInventory navigatorInventory;
 
     /**
-     * @param deliver the delivery service a navigator click forwards the player through
-     * @param entries the platform-wide navigator entry registry this module renders
+     * @param deliver      the delivery service a navigator click forwards the player through
+     * @param entries      the platform-wide navigator entry registry this module renders
+     * @param featureFlags the source of truth an entry's optional feature gate is checked against
      */
-    public NavigatorModule(Deliver deliver, NavigatorEntries entries) {
+    public NavigatorModule(Deliver deliver, NavigatorEntries entries, FeatureFlags featureFlags) {
         this.deliver = Objects.requireNonNull(deliver, "deliver must not be null");
         this.entries = Objects.requireNonNull(entries, "entries must not be null");
+        this.featureFlags = Objects.requireNonNull(featureFlags, "featureFlags must not be null");
     }
 
     @Override
@@ -81,8 +94,9 @@ public final class NavigatorModule implements LobbyModule {
     @Override
     public void enable(ModuleContext context) {
         NavigatorConfig config = context.config(NavigatorConfig.class, NavigatorConfig.DEFAULTS);
+        config.validateFeatures(this.featureFlags);
         Component title = MiniMessage.miniMessage().deserialize(config.title());
-        this.navigatorInventory = new NavigatorInventory(title, this.entries, this::onSelect);
+        this.navigatorInventory = new NavigatorInventory(title, this.entries, this.featureFlags, this::onSelect);
 
         for (NavigatorConfig.Entry entry : config.entries()) {
             context.navigator().add(toNavigatorEntry(entry));
@@ -117,6 +131,6 @@ public final class NavigatorModule implements LobbyModule {
     private static NavigatorEntry toNavigatorEntry(NavigatorConfig.Entry entry) {
         Component displayName = MiniMessage.miniMessage().deserialize(entry.displayName());
         ItemStack icon = ItemStack.builder(Material.fromKey(entry.icon())).customName(displayName).build();
-        return new NavigatorEntry(entry.slot(), icon, displayName, entry.destination());
+        return new NavigatorEntry(entry.slot(), icon, displayName, entry.destination(), entry.feature());
     }
 }

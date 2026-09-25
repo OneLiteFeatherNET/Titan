@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.app.feature.navigator;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import net.kyori.adventure.text.Component;
@@ -23,6 +24,7 @@ import net.minestom.server.inventory.Inventory;
 import net.minestom.server.inventory.InventoryType;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntry;
+import net.onelitefeather.titan.common.feature.FeatureFlags;
 import net.theevilreaper.aves.inventory.GlobalInventoryBuilder;
 import net.theevilreaper.aves.inventory.click.ClickHolder;
 import net.theevilreaper.aves.inventory.layout.InventoryLayout;
@@ -39,8 +41,14 @@ import net.theevilreaper.aves.inventory.layout.InventoryLayout;
  * listener on the built inventory's own event node exactly once for this module's whole lifetime.
  *
  * <p>{@link #current()} returns the up-to-date {@link Inventory}, rebuilding the Aves
- * {@link InventoryLayout} first if {@link NavigatorEntries#version()} has changed since the last
- * build - never on a schedule, and never once per player or per open. Rebuilding only replaces the
+ * {@link InventoryLayout} first if the set of <em>visible</em> entries - every registry entry with
+ * no {@link NavigatorEntry#feature()}, plus every one whose feature is currently active according
+ * to
+ * a {@link FeatureFlags} source (see {@link NavigatorVisibility}) - differs from the set last
+ * applied. That covers both a change to {@link NavigatorEntries#version()} (an entry was added or
+ * removed) and a feature flag being toggled at runtime, without this class needing to track the two
+ * separately: see {@code openspec/changes/lobby-feature-modules/design.md}, decision 13. Never
+ * rebuilt on a schedule, and never once per player or per open. Rebuilding only replaces the
  * builder's static layout ({@link GlobalInventoryBuilder#getInventory} then applies it
  * synchronously) - this never needs Aves' data-layout, next-tick scheduling path, so opening the
  * navigator never needs a server tick to show the right content.
@@ -60,19 +68,23 @@ import net.theevilreaper.aves.inventory.layout.InventoryLayout;
 final class NavigatorInventory {
 
     private final NavigatorEntries entries;
+    private final FeatureFlags featureFlags;
     private final BiConsumer<Player, NavigatorEntry> onSelect;
     private final GlobalInventoryBuilder builder;
-    private long appliedAtVersion = -1;
+    private List<NavigatorEntry> appliedVisibleEntries;
 
     /**
-     * @param title    the inventory's title
-     * @param entries  the platform-wide registry this inventory renders - every module's
-     *                 contributions, not just the owning module's own
-     * @param onSelect called with the clicking player and the entry occupying the clicked slot,
-     *                 after the click is cancelled and before the inventory is closed
+     * @param title        the inventory's title
+     * @param entries      the platform-wide registry this inventory renders - every module's
+     *                     contributions, not just the owning module's own
+     * @param featureFlags the source of truth for whether an entry's optional feature gate is
+     *                     currently active
+     * @param onSelect     called with the clicking player and the entry occupying the clicked slot,
+     *                     after the click is cancelled and before the inventory is closed
      */
-    NavigatorInventory(Component title, NavigatorEntries entries, BiConsumer<Player, NavigatorEntry> onSelect) {
+    NavigatorInventory(Component title, NavigatorEntries entries, FeatureFlags featureFlags, BiConsumer<Player, NavigatorEntry> onSelect) {
         this.entries = entries;
+        this.featureFlags = featureFlags;
         this.onSelect = onSelect;
         this.builder = new GlobalInventoryBuilder(title, InventoryType.CHEST_1_ROW);
     }
@@ -104,18 +116,19 @@ final class NavigatorInventory {
     }
 
     /**
-     * Rebuilds and applies the Aves layout if {@link NavigatorEntries#version()} moved on since the
-     * layout last applied here - a no-op otherwise. Synchronized so two threads opening the
-     * navigator at the same time can never observe, or trigger, half of a rebuild.
+     * Rebuilds and applies the Aves layout if the current set of visible entries (see
+     * {@link NavigatorVisibility}) differs from the set last applied here - a no-op otherwise.
+     * Synchronized so two threads opening the navigator at the same time can never observe, or
+     * trigger, half of a rebuild.
      */
     private synchronized void applyLayoutIfChanged() {
-        long version = this.entries.version();
-        if (version == this.appliedAtVersion) {
+        List<NavigatorEntry> visible = NavigatorVisibility.visible(this.entries.entries(), this.featureFlags);
+        if (visible.equals(this.appliedVisibleEntries)) {
             return;
         }
-        this.builder.setLayout(toAvesLayout(NavigatorLayout.of(this.entries.entries())));
+        this.builder.setLayout(toAvesLayout(NavigatorLayout.of(visible)));
         this.builder.invalidateLayout();
-        this.appliedAtVersion = version;
+        this.appliedVisibleEntries = visible;
     }
 
     /**

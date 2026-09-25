@@ -78,7 +78,7 @@ class NavigatorModuleLeakTest {
     void openingAndClosingRepeatedlyDoesNotLeakListeners(Env env) {
         NavigatorModule[] moduleHolder = new NavigatorModule[1];
         try (ModuleHarness harness = ModuleHarness.start(env, (navigator, items) -> {
-            moduleHolder[0] = new NavigatorModule(new RecordingDeliver(), navigator);
+            moduleHolder[0] = new NavigatorModule(new RecordingDeliver(), navigator, new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", true));
             return new LobbyModule[]{moduleHolder[0]};
         })) {
             Instance instance = env.createFlatInstance();
@@ -105,7 +105,7 @@ class NavigatorModuleLeakTest {
     void manyPlayersJoinOpenAndLeaveWithoutLeakingListeners(Env env) {
         NavigatorModule[] moduleHolder = new NavigatorModule[1];
         try (ModuleHarness harness = ModuleHarness.start(env, (navigator, items) -> {
-            moduleHolder[0] = new NavigatorModule(new RecordingDeliver(), navigator);
+            moduleHolder[0] = new NavigatorModule(new RecordingDeliver(), navigator, new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", true));
             return new LobbyModule[]{moduleHolder[0]};
         })) {
             Instance instance = env.createFlatInstance();

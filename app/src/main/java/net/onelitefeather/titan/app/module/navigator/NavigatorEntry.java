@@ -19,6 +19,7 @@ import java.util.Objects;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.inventory.InventoryType;
 import net.minestom.server.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * One destination shown in the lobby navigator.
@@ -28,13 +29,25 @@ import net.minestom.server.item.ItemStack;
  * the player to - never *how* it is rendered or clicked. Building the shared navigator inventory
  * and reacting to a click on it is the navigator feature module's job, added in a later wave.
  *
+ * <p>{@link #feature()} carries the optional feature-flag gate (see {@code design.md}, decision 13)
+ * on the platform type itself, not just on {@code feature.navigator.NavigatorConfig.Entry} - so an
+ * entry contributed by <em>any</em> module through {@code ModuleContext#navigator()}, not only the
+ * ones the navigator module itself reads from its own configuration, can be gated the same way.
+ * That is simpler than a side table the navigator feature would have to keep in lock-step with the
+ * registry's contents on every add and remove, and it keeps every piece of an entry's identity - up
+ * to and including whether it is currently eligible to show at all - on the one record that already
+ * describes the entry as data, matching decision 8's "entries as data" approach.
+ *
  * @param slot        the slot this entry occupies, {@code 0}-{@code 8}, matching
  *                    {@link InventoryType#CHEST_1_ROW}
  * @param icon        the item shown in {@code slot}
  * @param displayName the name shown to the player
  * @param destination the CloudNet task name a click on this entry delivers the player to
+ * @param feature     the name of the feature flag this entry is gated behind, or {@code null} if it
+ *                    is always visible
  */
-public record NavigatorEntry(int slot, ItemStack icon, Component displayName, String destination) {
+public record NavigatorEntry(int slot, ItemStack icon, Component displayName, String destination,
+                             @Nullable String feature) {
 
     /**
      * @throws IllegalArgumentException if {@code slot} is outside {@code 0}-{@code 8}, or
@@ -52,5 +65,15 @@ public record NavigatorEntry(int slot, ItemStack icon, Component displayName, St
         if (destination.isBlank()) {
             throw new IllegalArgumentException("destination must not be blank");
         }
+    }
+
+    /**
+     * Creates an entry that is always visible, with no {@link #feature()} gate.
+     *
+     * @throws IllegalArgumentException as documented on the canonical constructor
+     * @throws NullPointerException     as documented on the canonical constructor
+     */
+    public NavigatorEntry(int slot, ItemStack icon, Component displayName, String destination) {
+        this(slot, icon, displayName, destination, null);
     }
 }
