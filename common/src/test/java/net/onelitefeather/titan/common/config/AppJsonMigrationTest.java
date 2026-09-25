@@ -202,6 +202,65 @@ class AppJsonMigrationTest {
         assertFalse(Files.exists(tempDir.resolve("application.yaml")), "no application.yaml may be written");
     }
 
+    @Test
+    @DisplayName("Two navigator entries whose displayNames strip to the same name both survive, keyed by name and name-slot")
+    void collidingDisplayNamesBothSurviveUnderDistinctKeys(@TempDir Path tempDir) throws IOException {
+        Path appJson = tempDir.resolve("app.json");
+        Files.writeString(appJson, """
+                {
+                  "configVersion": 2,
+                  "navigator": {
+                    "title": "<yellow>Navigator",
+                    "entries": [
+                      {"slot": 0, "displayName": "<green>Survival", "destination": "first"},
+                      {"slot": 3, "displayName": "Survival", "destination": "second"}
+                    ]
+                  }
+                }
+                """);
+
+        migration.migrate(tempDir);
+
+        Path applicationYaml = tempDir.resolve("application.yaml");
+        @SuppressWarnings("unchecked") var root = (java.util.Map<String, Object>) loadYaml(applicationYaml);
+        @SuppressWarnings("unchecked") var navigator = (java.util.Map<String, Object>) root.get("navigator");
+        @SuppressWarnings("unchecked") var entries = (java.util.Map<String, Object>) navigator.get("entries");
+
+        assertEquals(java.util.Set.of("survival", "survival-3"), entries.keySet(), "the second colliding entry must fall back to name-slot, neither entry may be lost");
+
+        @SuppressWarnings("unchecked") var first = (java.util.Map<String, Object>) entries.get("survival");
+        assertEquals("first", first.get("destination"));
+        @SuppressWarnings("unchecked") var second = (java.util.Map<String, Object>) entries.get("survival-3");
+        assertEquals("second", second.get("destination"));
+    }
+
+    @Test
+    @DisplayName("A navigator entry whose displayName is empty or tags-only falls back to slot<N>")
+    void emptyOrTagsOnlyDisplayNameFallsBackToSlotN(@TempDir Path tempDir) throws IOException {
+        Path appJson = tempDir.resolve("app.json");
+        Files.writeString(appJson, """
+                {
+                  "configVersion": 2,
+                  "navigator": {
+                    "title": "<yellow>Navigator",
+                    "entries": [
+                      {"slot": 2, "displayName": "<red><bold>", "destination": "tagsOnly"},
+                      {"slot": 7, "displayName": "", "destination": "empty"}
+                    ]
+                  }
+                }
+                """);
+
+        migration.migrate(tempDir);
+
+        Path applicationYaml = tempDir.resolve("application.yaml");
+        @SuppressWarnings("unchecked") var root = (java.util.Map<String, Object>) loadYaml(applicationYaml);
+        @SuppressWarnings("unchecked") var navigator = (java.util.Map<String, Object>) root.get("navigator");
+        @SuppressWarnings("unchecked") var entries = (java.util.Map<String, Object>) navigator.get("entries");
+
+        assertEquals(java.util.Set.of("slot2", "slot7"), entries.keySet(), "an empty or tags-only displayName must fall back to slot<N>");
+    }
+
     private Object loadYaml(Path file) throws IOException {
         try (var reader = Files.newBufferedReader(file)) {
             return yaml.load(reader);
