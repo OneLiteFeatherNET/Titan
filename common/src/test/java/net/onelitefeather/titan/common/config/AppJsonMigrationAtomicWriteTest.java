@@ -39,8 +39,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * document is written to a sibling temporary file first and only then moved into place, so a
  * reader never observes a half-written file and a failed migration never leaves a corrupt or
  * partial {@code application.yaml} behind, nor renames {@code app.json} it did not finish writing
- * a replacement for. This behaviour used to live in {@code ConfigStore#save()}, covered by the
- * now-removed {@code ConfigStoreAtomicSaveTest}.
+ * a replacement for.
  */
 class AppJsonMigrationAtomicWriteTest {
 
