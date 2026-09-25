@@ -28,6 +28,7 @@ import net.minestom.server.event.trait.PlayerEvent;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
+import net.minestom.server.thread.TickSchedulerThread;
 import net.minestom.server.timer.TaskSchedule;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
@@ -276,5 +277,21 @@ class ModuleRegistryTest {
 
         Assertions.assertTrue(thrown.getMessage().contains("teaser.entries"), "the message must name the entry's origin module, not 'navigator', was: " + thrown.getMessage());
         Assertions.assertTrue(thrown.getMessage().contains("TYPO"), "the message must name the unknown flag");
+    }
+
+    @DisplayName("The default tick-thread guard accepts Minestom's own tick scheduler thread and rejects an ordinary thread")
+    @Test
+    void defaultTickThreadGuardAcceptsTheTickSchedulerThreadAndRejectsAnOrdinaryThread(Env env) {
+        // Constructed, never started: ConfigReloadBootstrap wires the scheduler manager itself as
+        // ConfigReloader's tick executor, and SchedulerManager's own tasks run on exactly this
+        // thread type (see ModuleRegistry.isTickSchedulerThread's Javadoc) - starting it here would
+        // spin up a second, real tick loop racing the one Env already drives.
+        Thread tickSchedulerThread = new TickSchedulerThread(env.process());
+        Thread ordinaryThread = new Thread("not-a-tick-thread");
+
+        Assertions.assertTrue(
+                ModuleRegistry.isTickSchedulerThread(tickSchedulerThread), "must accept Minestom's own tick scheduler thread, the thread every production restart() call runs on"
+        );
+        Assertions.assertFalse(ModuleRegistry.isTickSchedulerThread(ordinaryThread), "must reject a thread that is not the tick scheduler thread");
     }
 }

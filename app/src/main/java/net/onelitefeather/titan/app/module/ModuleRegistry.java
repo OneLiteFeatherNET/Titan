@@ -28,6 +28,7 @@ import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.network.ConnectionManager;
+import net.minestom.server.thread.TickSchedulerThread;
 import net.minestom.server.thread.TickThread;
 import net.minestom.server.timer.Scheduler;
 import net.onelitefeather.titan.app.module.item.ItemPlacementConflictException;
@@ -100,7 +101,33 @@ public final class ModuleRegistry {
         }
         this.modulesById = Map.copyOf(byId);
         this.featureFlags = builder.featureFlags;
-        this.tickThreadCheck = builder.tickThreadCheck != null ? builder.tickThreadCheck : () -> Thread.currentThread() instanceof TickThread;
+        this.tickThreadCheck = builder.tickThreadCheck != null ? builder.tickThreadCheck : () -> isTickSchedulerThread(Thread.currentThread());
+    }
+
+    /**
+     * @param thread the thread to check
+     * @return whether {@code thread} is the single, globally-serialized thread Minestom's own
+     *         {@code SchedulerManager} ticks scheduled tasks on - a {@link TickSchedulerThread}
+     *         (name {@code Ms-TickScheduler}, see
+     *         {@link MinecraftServer#THREAD_NAME_TICK_SCHEDULER}). That is the thread
+     *         {@code ConfigReloadBootstrap} wires as {@code ConfigReloader}'s tick executor
+     *         ({@code SchedulerManager#scheduleNextTick}/{@code Scheduler#execute}), so it is the
+     *         thread every production call to {@link #restart(String)} actually runs on.
+     *
+     *         <p>Deliberately narrower than "any Minestom tick thread": Minestom's per-partition
+     *         {@link TickThread} workers tick concurrently with each other (one per partition), and
+     *         {@link #restart(String)} detaches an event node and, once the module is back up,
+     *         re-equips <em>every</em> online player - state that spans every partition, not one.
+     *         Only the single thread the scheduler itself is serialized on is an acceptable owner
+     *         for that; a per-partition {@link TickThread} is rejected even though its name also
+     *         contains "Tick".
+     *
+     *         <p>Package-private so {@code ModuleRegistryTest} can exercise it directly against a
+     *         constructed {@link TickSchedulerThread} instance, without booting a full Minestom
+     *         server or starting that thread.
+     */
+    static boolean isTickSchedulerThread(Thread thread) {
+        return thread instanceof TickSchedulerThread;
     }
 
     /**
@@ -195,7 +222,8 @@ public final class ModuleRegistry {
 
     /**
      * Restarts a single module - {@code moduleId} - without touching any other module. Must be
-     * called on the tick thread; see {@code design.md}, decision 3.
+     * called on the tick scheduler thread - see {@link #isTickSchedulerThread(Thread)} - and
+     * {@code design.md}, decision 3.
      *
      * <p>Runs, in order:
      * <ol>
@@ -217,13 +245,15 @@ public final class ModuleRegistry {
      *
      * @param moduleId the id of the module to restart, i.e. {@link LobbyModule#id()}
      * @return {@link RestartOutcome.Restarted} on success, {@link RestartOutcome.Failed} otherwise
-     * @throws IllegalStateException    if called from any thread other than the tick thread
+     * @throws IllegalStateException    if called from any thread other than the tick scheduler
+     *                                  thread - see {@link #isTickSchedulerThread(Thread)}
      * @throws IllegalArgumentException if no module with {@code moduleId} is registered
      */
     public RestartOutcome restart(String moduleId) {
         Objects.requireNonNull(moduleId, "moduleId must not be null");
         if (!this.tickThreadCheck.getAsBoolean()) {
-            throw new IllegalStateException("ModuleRegistry.restart() must run on the tick thread, but was called from '" + Thread.currentThread().getName() + "'");
+            throw new IllegalStateException(
+                    "ModuleRegistry.restart() must run on the tick scheduler thread ('" + MinecraftServer.THREAD_NAME_TICK_SCHEDULER + "'), but was called from '" + Thread.currentThread().getName() + "'");
         }
         LobbyModule module = this.modulesById.get(moduleId);
         if (module == null) {
@@ -438,11 +468,12 @@ public final class ModuleRegistry {
 
         /**
          * Test-only override for the check {@link ModuleRegistry#restart(String)} uses to enforce
-         * that it runs on the tick thread. Defaults to {@code Thread.currentThread() instanceof
-         * net.minestom.server.thread.TickThread} - Minestom's own idiom for this (see
-         * {@code net.minestom.server.thread.Acquirable}) - which no test can satisfy directly:
-         * environments such as Cyano's {@code Env#tick()} run every tick synchronously on the
-         * calling (JUnit) thread, never on a real {@link TickThread}. Package-private: only this
+         * that it runs on the tick scheduler thread. Defaults to
+         * {@code isTickSchedulerThread(Thread.currentThread())} - see
+         * {@link ModuleRegistry#isTickSchedulerThread(Thread)} - which no test can satisfy
+         * directly: environments such as Cyano's {@code Env#tick()} run every tick synchronously
+         * on the calling (JUnit) thread, never on a real
+         * {@link net.minestom.server.thread.TickSchedulerThread}. Package-private: only this
          * package's own tests use it, production wiring always keeps the real check.
          *
          * @param tickThreadCheck the check to use instead of the default
