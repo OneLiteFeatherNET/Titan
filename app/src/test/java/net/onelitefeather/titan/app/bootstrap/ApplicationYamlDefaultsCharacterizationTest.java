@@ -18,11 +18,7 @@ package net.onelitefeather.titan.app.bootstrap;
 import io.avaje.config.Configuration;
 import java.util.List;
 import java.util.Map;
-import net.kyori.adventure.key.Key;
-import net.minestom.server.coordinate.Vec;
 import net.onelitefeather.titan.app.feature.navigator.NavigatorConfig;
-import net.onelitefeather.titan.app.feature.sit.SitConfig;
-import net.onelitefeather.titan.app.feature.spawn.SpawnConfig;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -31,10 +27,9 @@ import org.junit.jupiter.api.Test;
  * Characterization test for {@code avaje-config-facade} task 1.1: locks in that the classpath
  * {@code app/src/main/resources/application.yaml} - the file every module will read directly
  * through {@code io.avaje.config.Config} once the facade migration is complete - carries exactly
- * today's {@code DEFAULTS} of {@link SitConfig}, {@link SpawnConfig}, tickle
- * ({@code 4000} for {@code tickle.cooldownMillis}), elytra ({@code 30}/{@code 40} for
- * {@code elytra.burnDurationTicks}/{@code elytra.cooldownTicks}) and {@link NavigatorConfig},
- * key by key.
+ * today's defaults of the {@code sit}, {@code spawn}, {@code tickle} and {@code elytra}
+ * sections (their config records are gone, see {@code avaje-config-facade} tasks 2.1-2.4) and
+ * {@link NavigatorConfig}, key by key.
  *
  * <p>Loads the file as its own {@link Configuration} instance via
  * {@link Configuration.Builder#load(String)} - which reads a classpath resource, never the static
@@ -52,28 +47,26 @@ class ApplicationYamlDefaultsCharacterizationTest {
         return Configuration.builder().load("application.yaml").build();
     }
 
-    @DisplayName("spawn: application.yaml matches SpawnConfig.DEFAULTS")
+    @DisplayName("spawn: application.yaml matches the shipped defaults (-64, 310, 2)")
     @Test
     void spawnMatchesDefaults() {
         Configuration configuration = load();
 
-        Assertions.assertEquals(SpawnConfig.DEFAULTS.minHeight(), configuration.getInt("spawn.minHeight"), "spawn.minHeight");
-        Assertions.assertEquals(SpawnConfig.DEFAULTS.maxHeight(), configuration.getInt("spawn.maxHeight"), "spawn.maxHeight");
-        Assertions.assertEquals(SpawnConfig.DEFAULTS.simulationDistance(), configuration.getInt("spawn.simulationDistance"), "spawn.simulationDistance");
+        Assertions.assertEquals(-64, configuration.getInt("spawn.minHeight"), "spawn.minHeight");
+        Assertions.assertEquals(310, configuration.getInt("spawn.maxHeight"), "spawn.maxHeight");
+        Assertions.assertEquals(2, configuration.getInt("spawn.simulationDistance"), "spawn.simulationDistance");
     }
 
-    @DisplayName("sit: application.yaml matches SitConfig.DEFAULTS")
+    @DisplayName("sit: application.yaml matches the shipped defaults")
     @Test
     void sitMatchesDefaults() {
         Configuration configuration = load();
 
-        Vec expectedOffset = SitConfig.DEFAULTS.offset();
-        Assertions.assertEquals(expectedOffset.x(), configuration.getDecimal("sit.offset.x").doubleValue(), "sit.offset.x");
-        Assertions.assertEquals(expectedOffset.y(), configuration.getDecimal("sit.offset.y").doubleValue(), "sit.offset.y");
-        Assertions.assertEquals(expectedOffset.z(), configuration.getDecimal("sit.offset.z").doubleValue(), "sit.offset.z");
+        Assertions.assertEquals(0.5, configuration.getDecimal("sit.offset.x").doubleValue(), "sit.offset.x");
+        Assertions.assertEquals(0.25, configuration.getDecimal("sit.offset.y").doubleValue(), "sit.offset.y");
+        Assertions.assertEquals(0.5, configuration.getDecimal("sit.offset.z").doubleValue(), "sit.offset.z");
 
-        List<String> expectedAllowedBlocks = SitConfig.DEFAULTS.allowedBlocks().stream().map(Key::asString).toList();
-        Assertions.assertEquals(expectedAllowedBlocks, configuration.list().of("sit.allowedBlocks"), "sit.allowedBlocks");
+        Assertions.assertEquals(List.of("minecraft:spruce_stairs"), configuration.list().of("sit.allowedBlocks"), "sit.allowedBlocks");
     }
 
     @DisplayName("tickle: application.yaml matches today's shipped default (4000ms)")

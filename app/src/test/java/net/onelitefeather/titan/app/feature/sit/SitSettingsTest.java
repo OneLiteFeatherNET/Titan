@@ -63,4 +63,27 @@ class SitSettingsTest {
         ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> SitSettings.allowedBlocks(List.of()));
         Assertions.assertEquals("sit.allowedBlocks", thrown.field());
     }
+
+    @DisplayName("A valid block key string parses to the same Key")
+    @Test
+    void aValidBlockKeyStringParses() {
+        Assertions.assertEquals(Key.key("minecraft:spruce_stairs"), SitSettings.parseBlock("minecraft:spruce_stairs"));
+    }
+
+    @DisplayName("An invalid block key string is rejected, naming the full key")
+    @Test
+    void invalidBlockKeyStringIsRejected() {
+        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> SitSettings.parseBlock("Not A Valid Key!!"));
+        Assertions.assertEquals("sit.allowedBlocks", thrown.field());
+    }
+
+    @DisplayName("A rejection message names the full key exactly once")
+    @Test
+    void rejectionMessageNamesTheFullKeyExactlyOnce() {
+        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> SitSettings.allowedBlocks(null));
+        String message = thrown.getMessage();
+        int firstIndex = message.indexOf("sit.allowedBlocks");
+        Assertions.assertTrue(firstIndex >= 0, "the message must name sit.allowedBlocks");
+        Assertions.assertEquals(-1, message.indexOf("sit.allowedBlocks", firstIndex + 1), "sit.allowedBlocks must appear exactly once, was: " + message);
+    }
 }

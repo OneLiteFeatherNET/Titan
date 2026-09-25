@@ -19,14 +19,23 @@ import net.onelitefeather.titan.common.config.ConfigException;
 
 /**
  * Pure validation for the {@code spawn} section's values, kept apart from however those values
- * were read (today {@link SpawnConfig}'s compact constructor, called by {@code SectionBinder}).
+ * are read ({@link SpawnModule#enable}, via {@code io.avaje.config.Config} and
+ * {@link net.onelitefeather.titan.common.config.ConfigValues}).
  *
  * <p>Every method takes plain values and either returns the validated one or throws
  * {@link ConfigException#invalid(String, String)} naming the value's full section key, e.g.
  * {@code spawn.minHeight}. None of these methods touch {@code io.avaje.config.Config},
  * {@code ConfigSections} or a server, so they are unit-testable on their own.
+ *
+ * <p>The keys themselves are declared here as constants, the one place this module's config
+ * section is named (see {@code design.md}, decision 3), and reused by {@link SpawnModule#enable}
+ * to read the raw values.
  */
 final class SpawnSettings {
+
+    static final String MIN_HEIGHT_KEY = "spawn.minHeight";
+    static final String MAX_HEIGHT_KEY = "spawn.maxHeight";
+    static final String SIMULATION_DISTANCE_KEY = "spawn.simulationDistance";
 
     private SpawnSettings() {
     }
@@ -43,7 +52,7 @@ final class SpawnSettings {
      */
     static int minHeight(int minHeight, int maxHeight) {
         if (minHeight >= maxHeight) {
-            throw ConfigException.invalid("spawn.minHeight", "must be less than spawn.maxHeight (" + maxHeight + ")");
+            throw ConfigException.invalid(MIN_HEIGHT_KEY, "must be less than " + MAX_HEIGHT_KEY + " (" + maxHeight + ")");
         }
         return minHeight;
     }
@@ -55,7 +64,7 @@ final class SpawnSettings {
      */
     static int simulationDistance(int simulationDistance) {
         if (simulationDistance <= 0) {
-            throw ConfigException.invalid("spawn.simulationDistance", "must be greater than 0");
+            throw ConfigException.invalid(SIMULATION_DISTANCE_KEY, "must be greater than 0");
         }
         return simulationDistance;
     }

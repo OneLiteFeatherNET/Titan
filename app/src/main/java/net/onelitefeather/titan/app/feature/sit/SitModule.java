@@ -15,10 +15,12 @@
  */
 package net.onelitefeather.titan.app.feature.sit;
 
+import io.avaje.config.Config;
 import io.avaje.inject.Priority;
 import jakarta.inject.Singleton;
 import java.util.List;
 import net.kyori.adventure.key.Key;
+import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.Entity;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.EventDispatcher;
@@ -28,6 +30,7 @@ import net.minestom.server.event.player.PlayerPacketEvent;
 import net.minestom.server.network.packet.client.play.ClientInputPacket;
 import net.onelitefeather.titan.app.module.LobbyModule;
 import net.onelitefeather.titan.app.module.ModuleContext;
+import net.onelitefeather.titan.common.config.ConfigValues;
 import net.onelitefeather.titan.common.event.EntityDismountEvent;
 
 /**
@@ -40,8 +43,8 @@ import net.onelitefeather.titan.common.event.EntityDismountEvent;
  * <p>Behaviour, in terms of the four listeners this module registers through
  * {@link ModuleContext#listen}:
  * <ol>
- * <li>{@link PlayerBlockInteractEvent}: clicking a block whose key is in
- * {@link SitConfig#allowedBlocks()} sits the player down there.</li>
+ * <li>{@link PlayerBlockInteractEvent}: clicking a block whose key is in the configured
+ * {@code sit.allowedBlocks} sits the player down there.</li>
  * <li>{@link PlayerPacketEvent}: a sneak ({@link ClientInputPacket#shift()}) input packet sent
  * while riding something fires the shared {@link EntityDismountEvent} - the same event type
  * {@code common.event} already defines, kept as an explicitly allowed cross-feature
@@ -63,9 +66,10 @@ public final class SitModule implements LobbyModule {
 
     @Override
     public void enable(ModuleContext context) {
-        SitConfig config = context.config(SitConfig.class, SitConfig.DEFAULTS);
-        List<Key> allowedBlocks = config.allowedBlocks();
-        Seats seats = new Seats(config.offset());
+        Vec offset = SitSettings.offset(new Vec(
+                ConfigValues.doubleValue(SitSettings.OFFSET_X_KEY), ConfigValues.doubleValue(SitSettings.OFFSET_Y_KEY), ConfigValues.doubleValue(SitSettings.OFFSET_Z_KEY)));
+        List<Key> allowedBlocks = SitSettings.allowedBlocks(Config.list().of(SitSettings.ALLOWED_BLOCKS_KEY).stream().map(SitSettings::parseBlock).toList());
+        Seats seats = new Seats(offset);
 
         context.listen(PlayerBlockInteractEvent.class, event -> {
             if (isAllowedBlock(allowedBlocks, event.getBlock().key())) {

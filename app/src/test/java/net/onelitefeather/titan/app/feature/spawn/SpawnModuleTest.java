@@ -50,6 +50,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(MicrotusExtension.class)
 class SpawnModuleTest {
 
+    /** The shipped {@code spawn} defaults, per {@code app/src/main/resources/application.yaml}. */
+    private static final int MIN_HEIGHT = -64;
+    private static final int MAX_HEIGHT = 310;
+    private static final int SIMULATION_DISTANCE = 2;
+
     /** Registers one hotbar item so {@code items().equip(player)} has something to observe. */
     private static final class DummyItemModule implements LobbyModule {
 
@@ -101,7 +106,7 @@ class SpawnModuleTest {
             env.process().eventHandler().call(new PlayerSpawnEvent(player, instance, true));
 
             collector.assertSingle();
-            Assertions.assertEquals(SpawnConfig.DEFAULTS.simulationDistance(), collector.collect().getFirst().simulationDistance());
+            Assertions.assertEquals(SIMULATION_DISTANCE, collector.collect().getFirst().simulationDistance());
             Assertions.assertEquals(spawnPos, player.getPosition());
             Assertions.assertEquals(Material.STICK, player.getInventory().getItemStack(0).material(), "equip() must have applied the other module's registered item too");
         }
@@ -116,7 +121,7 @@ class SpawnModuleTest {
 
         try (ModuleHarness harness = ModuleHarness.start(env, module)) {
             Player player = env.createPlayer(instance);
-            Pos belowMin = new Pos(0, SpawnConfig.DEFAULTS.minHeight() - 10, 0);
+            Pos belowMin = new Pos(0, MIN_HEIGHT - 10, 0);
             player.teleport(belowMin);
 
             env.process().eventHandler().call(new PlayerMoveEvent(player, belowMin, true));
@@ -134,7 +139,7 @@ class SpawnModuleTest {
 
         try (ModuleHarness harness = ModuleHarness.start(env, module)) {
             Player player = env.createPlayer(instance);
-            Pos aboveMax = new Pos(0, SpawnConfig.DEFAULTS.maxHeight() + 10, 0);
+            Pos aboveMax = new Pos(0, MAX_HEIGHT + 10, 0);
             player.teleport(aboveMax);
 
             env.process().eventHandler().call(new PlayerMoveEvent(player, aboveMax, true));
@@ -152,7 +157,7 @@ class SpawnModuleTest {
 
         try (ModuleHarness harness = ModuleHarness.start(env, module)) {
             Player player = env.createPlayer(instance);
-            Pos withinBounds = new Pos(0, (SpawnConfig.DEFAULTS.minHeight() + SpawnConfig.DEFAULTS.maxHeight()) / 2.0, 0);
+            Pos withinBounds = new Pos(0, (MIN_HEIGHT + MAX_HEIGHT) / 2.0, 0);
             player.teleport(withinBounds);
 
             env.process().eventHandler().call(new PlayerMoveEvent(player, withinBounds, true));

@@ -71,4 +71,26 @@ class SpawnSettingsTest {
 
         Assertions.assertEquals("spawn.simulationDistance", thrown.field());
     }
+
+    @DisplayName("A minHeight rejection message names spawn.minHeight exactly once")
+    @Test
+    void minHeightRejectionMessageNamesTheFullKeyExactlyOnce() {
+        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> SpawnSettings.minHeight(400, 300));
+        String message = thrown.getMessage();
+        int firstIndex = message.indexOf("spawn.minHeight");
+
+        Assertions.assertTrue(firstIndex >= 0, "the message must name spawn.minHeight");
+        Assertions.assertEquals(-1, message.indexOf("spawn.minHeight", firstIndex + 1), "spawn.minHeight must appear exactly once, was: " + message);
+    }
+
+    @DisplayName("A simulationDistance rejection message names spawn.simulationDistance exactly once")
+    @Test
+    void simulationDistanceRejectionMessageNamesTheFullKeyExactlyOnce() {
+        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> SpawnSettings.simulationDistance(0));
+        String message = thrown.getMessage();
+        int firstIndex = message.indexOf("spawn.simulationDistance");
+
+        Assertions.assertTrue(firstIndex >= 0, "the message must name spawn.simulationDistance");
+        Assertions.assertEquals(-1, message.indexOf("spawn.simulationDistance", firstIndex + 1), "spawn.simulationDistance must appear exactly once, was: " + message);
+    }
 }
