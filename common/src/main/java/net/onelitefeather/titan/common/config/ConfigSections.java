@@ -70,20 +70,25 @@ public final class ConfigSections {
     public <R extends Record> R section(String id, Class<R> type, R defaults) {
         Configuration scoped = configuration.forPath(id);
         Set<String> keys = scoped.keys();
-        JsonElement existing = keys.isEmpty() ? null : buildTree(scoped, keys, type);
+        JsonElement existing = keys.isEmpty() ? null : buildTree(id, scoped, keys, type);
         return binder.bind(null, id, type, defaults, existing).value();
     }
 
     /**
      * Rebuilds a section's raw JSON value from its flat, dotted keys, e.g. {@code offset.x},
      * {@code offset.y}, {@code offset.z} become {@code {offset: {x: ..., y: ..., z: ...}}}.
+     *
+     * @throws ConfigException if two keys set a plain value and a nested value for the same path
+     *                         at once (e.g. {@code offset} together with {@code offset.x}) - which
+     *                         key would otherwise silently win depends only on the iteration order
+     *                         of {@code keys}
      */
-    private static JsonObject buildTree(Configuration scoped, Set<String> keys, Class<? extends Record> type) {
+    private static JsonObject buildTree(String sectionId, Configuration scoped, Set<String> keys, Class<? extends Record> type) {
         JsonObject root = new JsonObject();
         for (String key : keys) {
             List<String> path = List.of(key.split("\\."));
             String value = scoped.get(key);
-            addAtPath(root, path, value, isListTyped(type, path));
+            addAtPath(root, sectionId, path, value, isListTyped(type, path));
         }
         return root;
     }
@@ -93,22 +98,36 @@ public final class ConfigSections {
      * JsonObject} for every path segment but the last, e.g. path {@code ["offset", "x"]} ends up
      * as {@code root.offset.x}.
      */
-    private static void addAtPath(JsonObject root, List<String> path, String rawValue, boolean asList) {
+    private static void addAtPath(JsonObject root, String sectionId, List<String> path, String rawValue, boolean asList) {
         JsonObject current = root;
         for (int i = 0; i < path.size() - 1; i++) {
             String segment = path.get(i);
             JsonElement child = current.get(segment);
             JsonObject childObject;
-            if (child != null && child.isJsonObject()) {
-                childObject = child.getAsJsonObject();
-            } else {
+            if (child == null) {
                 childObject = new JsonObject();
                 current.add(segment, childObject);
+            } else if (child.isJsonObject()) {
+                childObject = child.getAsJsonObject();
+            } else {
+                throw conflictingKey(sectionId, path.subList(0, i + 1));
             }
             current = childObject;
         }
         String leaf = path.get(path.size() - 1);
+        if (current.has(leaf) && current.get(leaf).isJsonObject()) {
+            throw conflictingKey(sectionId, path);
+        }
         current.add(leaf, asList ? toJsonArray(rawValue) : new JsonPrimitive(rawValue));
+    }
+
+    /**
+     * Reports that {@code fieldPath} (relative to {@code sectionId}) is set both as a plain value
+     * and as a nested value at once, e.g. {@code sit.offset} together with {@code sit.offset.x}.
+     */
+    private static ConfigException conflictingKey(String sectionId, List<String> fieldPath) {
+        String field = String.join(".", fieldPath);
+        return ConfigException.invalid(field, "has both a plain value and nested fields set at the same time; remove one").withSection(sectionId);
     }
 
     private static JsonArray toJsonArray(String rawValue) {
