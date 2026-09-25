@@ -17,9 +17,9 @@ Titan is a complete Minestom-based Minecraft lobby server that provides various 
 
 1. Download the latest release from the releases page
 2. Run the server using: `java -jar titan-x.x.x.jar`
-3. The server runs with every module's compiled-in defaults if no configuration file is present;
-   copy [`app/src/dist/application.example.yaml`](app/src/dist/application.example.yaml) to
-   `application.yaml` next to the jar to customize it (see Configuration below)
+3. The server runs with every module's shipped defaults if no configuration file is present; copy
+   `application.example.yaml` from the distribution (next to the jar) to `application.yaml` and
+   edit it to customize (see Configuration below)
 
 ## Running the Server
 
@@ -36,13 +36,12 @@ You can configure server properties like port, MOTD, and more in the generated c
 ## Configuration
 
 Configuration lives in `application.yaml` in the lobby's working directory (next to the jar), one
-named section per lobby feature module, key names matching that module's config record fields. A
-commented example with every section and its defaults ships as
-[`app/src/dist/application.example.yaml`](app/src/dist/application.example.yaml) - copy it to
-`application.yaml` and edit only what should differ. A module reads only its own section; a missing
-file, a missing section or a missing key falls back to the module's own compiled-in default, listed
-below. The lobby never creates or writes a configuration file itself, other than the one-time
-`app.json` switch described further down.
+named section per lobby feature module, keys following the `<module-id>.<field>` schema. The
+shipped defaults live inside the jar; a commented `application.example.yaml` listing every section
+and key with its default also ships in the distribution, next to the jar - copy it to
+`application.yaml` and edit only the values that should differ. A missing file, a missing section
+or a missing key falls back to the shipped default, listed below. The lobby never creates or writes
+a configuration file itself.
 
 ### Profiles and overrides
 
@@ -59,7 +58,7 @@ the working directory).
 Every key can also be set directly via an environment variable or a system property. Rank order,
 low to high:
 
-1. the module's own compiled-in default,
+1. the shipped default,
 2. `application.yaml`,
 3. the active profile's `application-<profile>.yaml`,
 4. the external file selected via `CONFIG_FILE`/`config.file`,
@@ -77,9 +76,9 @@ pattern `NAVIGATOR_ENTRIES_<NAME>_<FIELD>`, `<NAME>` being the entry's map key, 
 `navigator.entries.survival.destination` becomes `NAVIGATOR_ENTRIES_SURVIVAL_DESTINATION`.
 
 An invalid value - from `application.yaml`, a profile or an override - aborts startup with a
-message naming the module, the field and the reason (e.g. a negative cooldown, or `minHeight` not
-less than `maxHeight`). A section with a key its module's config record does not declare produces
-one warning per section at startup and is otherwise ignored - the lobby still starts.
+message naming the full key (`<module-id>.<field>`) and the reason (e.g. a negative cooldown, or
+`spawn.minHeight` not less than `spawn.maxHeight`). An unknown or misspelled key is no longer
+reported - it is silently ignored, and the lobby starts using the shipped default for that key.
 
 ### Sections and keys
 
@@ -183,33 +182,19 @@ navigator:
 becomes `NAVIGATOR_ENTRIES_SURVIVAL_DESTINATION`. The default entries are `elytrarace`,
 `survival`, `slender` and `creative`.
 
-### Migrating from app.json
+### Upgrading from an app.json-based release
 
-An old `app.json` (flat or already sectioned) is switched over automatically, once, the next time
-the lobby starts and finds no `application.yaml` yet:
-
-- the values are written to a new `application.yaml`,
-- `app.json` is renamed to `app.json.migrated`,
-- keys with no home anymore (`updateRateAgones`, `fireworkBoostSlot`, `elytraBoostMultiplier`) are
-  dropped and named in the log,
-- `navigator.entries` (a list in `app.json`) becomes a map, each entry named after its
-  `displayName` (MiniMessage tags stripped, lower-cased, only letters and digits kept; a name that
-  would be empty or is already taken falls back to `slot<N>`/`name-<N>`, `N` being the entry's
-  slot),
-- a WARN line names the switch and the renamed file.
-
-If both `app.json` and `application.yaml` already exist, the lobby only reads `application.yaml`
-and warns that `app.json` is ignored - it is never touched in that case. If `app.json` is not
-valid JSON, startup aborts and nothing is renamed or written.
-
-**Rollback:** deploy the previous jar and rename `app.json.migrated` back to `app.json`.
+`app.json` is no longer read or converted. Before upgrading a server that still has one, either
+start the previous release once - it switches `app.json` over to `application.yaml` on its own, as
+described in that release's docs - or transfer the values by hand into a new `application.yaml`
+(same sections and keys as before). A leftover `app.json` or `app.json.migrated` next to the jar is
+ignored and does not affect startup; once `application.yaml` is in place, either file can be
+deleted.
 
 ### Setup server
 
 The setup server no longer edits configuration - the `/setup app ...` commands have been removed.
-It only reads `spawn.simulationDistance` (default `2`) from the same configuration, and logs a
-warning if it finds an `app.json` but no `application.yaml` yet (the lobby migrates on its own next
-start, not the setup server).
+It only reads `spawn.simulationDistance` (default `2`) from the same configuration.
 
 ### Deployment
 

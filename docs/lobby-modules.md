@@ -6,7 +6,7 @@ Dieses Dokument erklärt, wie ein Lobby-Feature als eigenständiges
 Checkliste für ein neues Feature. Alle Codebeispiele stammen, wo nicht anders
 vermerkt, aus dem lauffähigen Vorlagemodul
 `app/src/test/java/net/onelitefeather/titan/app/feature/example/`
-(`ExampleModule`, `ExampleConfig`, `ExampleGreetingRule`,
+(`ExampleModule`, `ExampleGreetingRule`,
 `ExampleGreetingTracker`, `ExampleItems`) - kopierbar als Ausgangspunkt für ein
 echtes Feature. Es ist bewusst test-only (`app/src/test`, nicht
 `app/src/main`), damit es nie als echtes Modul mitläuft - s. "Gefunden
@@ -52,8 +52,9 @@ Muster wie `TickleModule`).
 
 Ein Feature-Paket unter `app/feature/<name>` folgt einer festen Sichtbarkeit
 (s. `design.md`, Entscheidung 10, und `ArchitectureTest`, unten): nur die
-Klassen `<Name>Module` und `<Name>Config` sind `public`, alles andere -
-Handler, Vorlagen, Items, Tags - ist paketprivat. Das ist kein Stilwunsch,
+Klasse `<Name>Module` ist `public`, alles andere - Handler, Vorlagen, Items,
+Tags, die paketprivaten Prüffunktionen aus "Konfiguration lesen" unten - ist
+paketprivat. Das ist kein Stilwunsch,
 sondern wird im Build geprüft - allerdings nur für Produktionscode unter
 `app/src/main`: `ArchitectureTest` analysiert mit
 `ImportOption.DoNotIncludeTests`, das test-only Vorlagemodul unter
@@ -130,10 +131,11 @@ TickleModule(Clock)` trägt); mit genau einem Konstruktor reicht der ohne
 Welche Plattform-Dienste als Bean zur Verfügung stehen, steht in
 `app/src/main/java/net/onelitefeather/titan/app/bootstrap/PlatformBeans.java`
 (`@Factory` mit einer `@Bean`-Methode je Dienst: `InstanceContainer`,
-`MapProvider`, `LobbySpawn`, `Deliver`, `Configuration` (avaje-config) und
-`ConfigSections` darüber, der `@Named("titan")` qualifizierte
+`MapProvider`, `LobbySpawn`, `Deliver`, der `@Named("titan")` qualifizierte
 `EventNode<Event>`, `ItemRegistry`, `NavigatorEntries`, `FeatureFlags`,
-`Clock`). Braucht ein neues Feature einen **neuen** geteilten Dienst:
+`Clock`). Konfiguration kommt nicht über eine Bean - ein Modul liest sie
+direkt über die statische Fassade `io.avaje.config.Config` (s. "Konfiguration
+lesen" unten). Braucht ein neues Feature einen **neuen** geteilten Dienst:
 
 - Ist er im Kern ein Plattform-Typ aus `common` oder Minestom, den mehrere
   Module brauchen (wie die bestehenden Beans oben), kommt eine weitere
@@ -213,54 +215,58 @@ Faustregel: `listen`, solange ein anderes Modul das Event nicht schon
 abbrechen könnte; `listenIncludingCancelled` nur, wenn ein über
 `context.listen` angemeldeter Handler wirklich in jedem Fall laufen muss.
 
-### `config` - den eigenen Konfigurationsabschnitt lesen
+### Konfiguration lesen: die statische Fassade `Config`
+
+Anders als bei den übrigen Andockpunkten gibt es dafür **keine** Methode auf
+`ModuleContext`: Ein Modul liest seine Werte in `enable(ModuleContext)` direkt
+über die statische Fassade `io.avaje.config.Config` (avaje-config) - bewusst
+eine Ausnahme von der Projektregel „keine statischen Singletons“ (s.
+`design.md`, Entscheidung 1). Der Zugriff bleibt deshalb auf `enable()`
+beschränkt; alles darunter (Handler, reine Logik) bekommt fertige Werte über
+den Konstruktor, wie jede andere Abhängigkeit auch.
 
 ```java
-public record ExampleConfig(String greeting, long cooldownMillis) {
-    public static final ExampleConfig DEFAULTS = new ExampleConfig("Welcome to the lobby, %s!", 5000);
-
-    public ExampleConfig {
-        if (greeting == null || greeting.isBlank()) {
-            throw ConfigException.invalid("greeting", "must not be blank");
-        }
-        if (!greeting.contains("%s")) {
-            throw ConfigException.invalid("greeting", "must contain a '%s' placeholder for the player's name");
-        }
-        if (cooldownMillis < 0) {
-            throw ConfigException.invalid("cooldownMillis", "must not be negative");
-        }
-    }
-}
+// TickleModule.enable()
+Duration cooldown = TickleSettings.cooldown(ConfigValues.longValue(COOLDOWN_KEY));
 ```
 
-```java
-ExampleConfig config = context.config(ExampleConfig.class, ExampleConfig.DEFAULTS);
-```
+- **Strings** kommen über `Config.get(key)`, **Listen** über
+  `Config.list().of(key)`, **Wahrheitswerte** über `Config.getBool(key)`.
+- **Zahlen** (`int`/`long`/`double`) kommen über
+  `net.onelitefeather.titan.common.config.ConfigValues#intValue/longValue/doubleValue(key)`
+  statt über `Config.getInt/getLong/getDecimal`: Die Fassade wirft bei einem
+  ungültigen Zahlenwert eine `NumberFormatException` ohne Schlüssel,
+  `ConfigValues` übersetzt sie in `ConfigException.invalid(key, "must be a
+  whole number, was '…'")` mit dem vollen Schlüssel.
+- Der **Schlüssel** ist eine `private static final String`-Konstante im
+  Modul, nach dem Schema `<modul-id>.<feld>` (z. B. `"tickle.cooldownMillis"`)
+  - kein Config-Record mehr, das den Abschnitt beschreibt.
+- Die **Prüfung** liegt in einer reinen, statischen, paketprivaten Funktion,
+  die den gelesenen Wert entgegennimmt und entweder den fertigen Wert
+  zurückgibt oder `ConfigException.invalid(vollerSchlüssel, grund)` wirft -
+  `TickleSettings.cooldown(long)` oben prüft z. B. nur „nicht negativ“ und hat
+  mit `Config` selbst nichts zu tun. So bleibt die Prüfung ohne `Config` und
+  ohne Server testbar (s. "Tests" unten). Die Meldung nennt den vollen
+  Schlüssel, bei zwei zusammenhängenden Feldern (z. B. `spawn.minHeight` >
+  `spawn.maxHeight`) beide.
 
-Ein Config-Record kennt nur sein eigenes Feld und den Grund, warum ein Wert
-abgelehnt wird - nie die Quelle, aus der er geladen wurde. Deshalb wirft der
-Compact Constructor `ConfigException.invalid(field, reason)`; der
-`SectionBinder` hinter `ConfigSections` (`common/.../config/`) ergänzt
-Abschnitt (und, wo bekannt, Datei), bevor die Ausnahme
-`ModuleRegistry.enableAll()` verlässt und den Start abbricht - mit Modul,
-Feld und Grund in der Meldung. `context.config` liest immer nur den
-**eigenen** Abschnitt (die Modul-`id()`), zusammengesetzt aus
-`application.yaml`, den Dateien aktiver Profile und Overrides (Env-Variable,
-System-Property) - Rangfolge und die Abbildung auf Env-Variablen stehen im
-README unter "Configuration". Es gibt keine Überladung für einen anderen
-Abschnitt. Ohne konfigurierte `ConfigSections` (z. B. im
-`ModuleHarness.startStandalone`-Testaufbau ohne Konfigurationsdatei) liefert
-`config` unverändert `defaults` zurück. Wie `listen` funktioniert `config`
-nur während `enable()`.
+**Standardwerte gehören in `application.yaml`, nicht in den Code.** Ein
+Modul liest ohne eigenen Fallback im Code (`Config.get(key)`, nicht
+`Config.get(key, "…")`) - die Standardwerte für jeden Schlüssel stehen einmal
+in der mitgelieferten `app/src/main/resources/application.yaml`, die
+avaje-config vor der Datei im Arbeitsverzeichnis aus dem Classpath lädt.
+Fehlt ein Schlüssel dort, ist das ein Programmierfehler: Der Start bricht mit
+`Missing required configuration parameter [key]` ab, nicht mit einem stillen
+Fallback im Code. Ein neues Feature trägt seine Schlüssel samt Standardwert
+deshalb in `app/src/main/resources/application.yaml` ein (s. Checkliste,
+Schritt 6).
+
+Die alte Bindung an ein Config-Record (`context.config(Typ, DEFAULTS)`, eine
+Validierung im Compact Constructor) gibt es nicht mehr - `ConfigSections` und
+`SectionBinder` sind mit dieser Change entfernt.
 
 Die Lobby schreibt keine Konfiguration mehr: Es gibt kein `flush()`, keine
-Datei wird angelegt oder verändert - einzige Ausnahme ist die einmalige
-Umstellung einer bestehenden `app.json` beim Start (`AppJsonMigration`, s.
-README unter "Migrating from app.json"). Für ein neues Feature bedeutet das:
-seinen Abschnitt samt Defaults im README dokumentieren (s. Checkliste,
-Schritt 6) und, falls Betreiber ihn direkt sehen sollen, in derselben PR in
-`app/src/dist/application.example.yaml` ergänzen - sonst läuft er nur mit
-Defaults im Speicher, bis ihn jemand in `application.yaml` einträgt.
+Datei wird angelegt oder verändert.
 
 ### `items` - ein Hotbar- oder Ausrüstungsitem anmelden
 
@@ -392,14 +398,27 @@ Ergebnis (deshalb ein fester `Clock.fixed(...)` statt der Systemzeit, s.
 statt manueller Log-Kontrolle, und entstehen zusammen mit dem Code, nicht
 danach.
 
+Weil `Config` globaler, pro JVM einmal geladener und danach unveränderlicher
+Zustand ist (s. `design.md`, Entscheidung 5), gilt zusätzlich: **Kein Test**
+ruft `Config.setProperty`, `Config.putAll`, `Config.clearProperty` oder
+`Config.eventBuilder` auf - das wäre gemeinsamer, veränderlicher Zustand und
+bricht "Independent". Es gibt auch **keine** `application-test.yaml`. Ein
+Unit-Test liest grundsätzlich keine Config; er testet die reinen
+Prüffunktionen (s. "Konfiguration lesen" oben) und die Klassen darunter mit
+Werten per Konstruktor. Ein Test, der einen abweichenden Wert braucht
+(Rangfolge, Profil, Env, ungültiger Override), läuft in einer eigenen
+Kind-JVM mit `@TempDir` als Arbeitsverzeichnis, wie
+`ConfigurationPrecedenceTest`.
+
 ### Unten: reine Unit-Tests
 
 Reine Entscheidungs- und Formatierungslogik gehört in eine eigene,
 paketprivate Klasse ohne Minestom-Abhängigkeit -
 `ExampleGreetingRuleTest` prüft `ExampleGreetingRule.isOnCooldown(...)` und
 `ExampleGreetingRule.greeting(...)` ganz ohne `Env` oder `Player`. Genauso
-prüft `ExampleConfigTest` die Validierung im Compact Constructor von
-`ExampleConfig` direkt, ohne `ConfigSections`.
+prüft ein Unit-Test die paketprivate Prüffunktion aus "Konfiguration lesen"
+oben direkt, ganz ohne `Config`: gültige Grenzwerte, ungültige Werte, Text der
+Meldung.
 
 ### Oben: Env-Integrationstests über `ModuleHarness`
 
@@ -427,10 +446,11 @@ class ExampleModuleTest {
   eigenständigen Scheduler, `CommandManager` und Event-Node ohne `Env` - für
   reine Verdrahtungstests, die keinen Spieler brauchen (s.
   `ModuleContextTest`, `ModuleContextConfigTest`).
-- Beide gibt es mit einer Überladung, die eine `ConfigSections` (oder einen
-  `Path` auf eine YAML-Datei) entgegennimmt, für Tests, die
-  `context.config(...)` abdecken sollen - `ExampleModuleTest` liest so eine
-  temporäre `application.yaml` über `@TempDir`.
+- `ModuleHarness` nimmt keinen Konfigurationsparameter mehr entgegen. Ein
+  Modul-Integrationstest aktiviert das Modul mit den ausgelieferten
+  Standardwerten aus der Classpath-`application.yaml` - es gibt **keine**
+  `application-test.yaml`, damit Tests die ausgelieferten Standardwerte
+  prüfen und nicht eine eigene Testwelt (s. Tests-Abschnitt oben).
 - Ein Modul, dessen Konstruktor schon die plattformweite `NavigatorEntries`
   oder `ItemRegistry` braucht (z. B. `NavigatorModule`, das beim Öffnen jedes
   Moduls Einträge zurückliest, nicht nur die eigenen), nutzt die
@@ -458,7 +478,7 @@ prüft im Build, nicht nur per Konvention (s. `design.md`, Entscheidung 10):
 1. Feature-Pakete unter `..app.feature.(*)..` hängen nicht voneinander ab.
 2. Klassen in `..app.module..` und `..titan.common..` hängen nicht von
    `..app.feature..` ab.
-3. Nur `*Module` und `*Config` in `..app.feature..` sind `public`.
+3. Nur `*Module` in `..app.feature..` ist `public`.
 4. Nur Plattform-Code (`..app.module..`) und `TitanApplication` rufen
    `EventNode#addListener`/`GlobalEventHandler#addListener` direkt auf - ein
    Feature-Modul geht immer über `context.listen`/`listenIncludingCancelled`.
@@ -475,11 +495,12 @@ prüft im Build, nicht nur per Konvention (s. `design.md`, Entscheidung 10):
 1. Neues Paket `app/src/main/java/net/onelitefeather/titan/app/feature/<name>/`
    anlegen - `app/src/test/.../feature/example/` als Kopiervorlage nehmen.
 2. `<Name>Module` (public, implementiert `LobbyModule`, trägt `@Singleton`
-   und ein noch nicht vergebenes `@Priority(n)` - s. "Gefunden werden"
-   oben und die Prioritätstabelle dort) und, falls das Feature Konfiguration
-   braucht, `<Name>Config` (public record, Defaults + Validierung über
-   `ConfigException.invalid` im Compact Constructor) anlegen. Alles andere -
-   Handler, reine Logik, Item-/Tag-Konstanten - bleibt paketprivat.
+   und ein noch nicht vergebenes `@Priority(n)` - s. "Gefunden werden" oben
+   und die Prioritätstabelle dort) anlegen. Braucht das Feature Konfiguration,
+   kommen die Schlüssel-Konstanten und das Lesen über `Config`/`ConfigValues`
+   in dieselbe Klasse, die Validierung in eine reine, paketprivate Funktion
+   (s. "Konfiguration lesen" oben) - kein eigenes Config-Record mehr. Alles
+   andere - Handler, reine Logik, Item-/Tag-Konstanten - bleibt paketprivat.
 3. Abhängigkeiten (eine `Instance`, ein `Deliver`, ein `Clock`, ...) über den
    Konstruktor anfordern, `@Inject` nur, falls die Klasse mehr als einen
    Konstruktor hat (s. "Gefunden werden" oben). Braucht das Feature einen
@@ -487,19 +508,20 @@ prüft im Build, nicht nur per Konvention (s. `design.md`, Entscheidung 10):
    `@Bean` in `PlatformBeans` oder, falls er selbst Feature-übergreifende
    Logik trägt, als eigene `@Singleton`-Klasse dazu.
 4. In `enable(ModuleContext context)` die gebrauchten Andockpunkte verdrahten:
-   `context.config(...)`, `context.items().register(...)`,
-   `context.commands().register(...)`, `context.navigator().add(...)`,
-   `context.listen(...)`/`listenIncludingCancelled(...)`, `context.tasks()`.
+   `Config`/`ConfigValues` fürs Lesen der eigenen Werte (kein Andockpunkt auf
+   `ModuleContext`, s. "Konfiguration lesen" oben), dazu
+   `context.items().register(...)`, `context.commands().register(...)`,
+   `context.navigator().add(...)`, `context.listen(...)`/
+   `listenIncludingCancelled(...)`, `context.tasks()`.
 5. Tests schreiben, bevor (oder während) der Code entsteht: Unit-Tests für die
    reine Logik und die Config-Validierung, ein Env-Integrationstest über
    `ModuleHarness` für alles, was einen `Player` braucht.
-6. Falls das Feature einen Konfigurationsabschnitt hat: die neuen Felder samt
-   Defaults und ihren Env-Variablen-Namen im README unter "Configuration
-   Options Explained" bzw. "Environment variable reference" dokumentieren -
-   die Lobby schreibt keine Konfiguration mehr (s. "config" oben), der
-   Abschnitt läuft bis dahin nur mit Defaults im Speicher. Sollen Betreiber
-   ihn direkt sehen, den Abschnitt zusätzlich in derselben PR in
-   `app/src/dist/application.example.yaml` ergänzen.
+6. Falls das Feature Konfiguration hat: die neuen Schlüssel samt Standardwert
+   in `app/src/main/resources/application.yaml` eintragen - das ist die
+   einzige Stelle, an der der Standardwert steht (s. "Konfiguration lesen"
+   oben) - und die Felder, ihre Standardwerte und Env-Variablen-Namen im
+   README unter "Configuration Options Explained" bzw. "Environment variable
+   reference" dokumentieren.
 
 Das war's - **keine** zentrale Modulliste mehr zu pflegen: `@Singleton` plus
 `@Priority` genügen, damit `Titan` das neue Modul über
