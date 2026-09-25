@@ -136,6 +136,11 @@ public final class ItemRegistry {
      */
     synchronized void unregister(Key key) {
         this.registrations.remove(key.asString());
+        // Also drop this key's claim, not only its registration - otherwise a module that
+        // registers, unregisters (its own disable) and registers the same key again (a restart,
+        // see ModuleRegistry#restart) would leave two claims for one key behind, and the next
+        // validate() would report that as a conflict with itself.
+        this.keyClaims.removeIf(claim -> claim.key().equals(key.asString()));
     }
 
     /**

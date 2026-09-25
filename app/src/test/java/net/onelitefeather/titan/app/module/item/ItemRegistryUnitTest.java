@@ -90,6 +90,20 @@ class ItemRegistryUnitTest {
         Assertions.assertTrue(thrown.getMessage().contains("titan:shared"));
     }
 
+    @DisplayName("A module re-registering the same key after unregistering it does not conflict with itself")
+    @Test
+    void reregisteringTheSameKeyAfterUnregisteringItDoesNotConflict(Env env) {
+        ItemRegistry registry = newRegistry(env, "test-validate-reregister-same-key");
+        registry.contextView("sit", cleanup -> {
+        }).register(item("titan:sit", ItemSlot.hotbar(0)));
+        registry.unregister(Key.key("titan:sit"));
+
+        registry.contextView("sit", cleanup -> {
+        }).register(item("titan:sit", ItemSlot.hotbar(0)));
+
+        Assertions.assertDoesNotThrow(registry::validate, "a module restarting (unregister, then register the same key again) must not conflict with its own, now-gone, earlier claim");
+    }
+
     @DisplayName("An item disappears from the equip plan once its module's cleanup hook runs")
     @Test
     void anItemDisappearsOnceItsModulesCleanupHookRuns(Env env) {
