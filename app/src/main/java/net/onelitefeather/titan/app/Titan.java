@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.app;
 
+import io.avaje.config.Config;
 import io.avaje.config.Configuration;
 import io.avaje.inject.BeanScope;
 import io.avaje.inject.BeanScopeBuilder;
@@ -24,7 +25,6 @@ import net.minestom.server.MinecraftServer;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.onelitefeather.butterfly.minestom.Butterfly;
-import net.onelitefeather.titan.app.bootstrap.ConfigurationLoader;
 import net.onelitefeather.titan.app.bootstrap.ConfigurationPropertyPlugin;
 import net.onelitefeather.titan.app.bootstrap.ConfigurationStartupLog;
 import net.onelitefeather.titan.app.bootstrap.ModuleStartupLog;
@@ -37,6 +37,7 @@ import net.onelitefeather.titan.app.module.item.ItemRegistry;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
 import net.onelitefeather.titan.app.player.TitanPlayer;
 import net.onelitefeather.titan.common.config.ConfigSections;
+import net.onelitefeather.titan.common.config.ConfigurationFactory;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
 import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
 
@@ -72,20 +73,23 @@ public final class Titan {
      *                                                                 lobby-module-config} spec
      *                                                                scenario "Syntaktisch kaputte
      *                                                                Datei" and {@link
-     *                                                                net.onelitefeather.titan.common.config.ConfigurationFactory#load()}
+     *                                                                net.onelitefeather.titan.common.config.ConfigurationFactory#initialise()}
      */
     public Titan() {
         MinecraftServer.getConnectionManager().setPlayerProvider(TitanPlayer::new);
         BlockHandlerHelper.registerAll();
 
-        // Loaded exactly once, here, before the BeanScope is built - never via avaje-inject's
-        // default property plugin, which would touch the static io.avaje.config.Config facade and
-        // load application.yaml a second time (see design.md, decision 1, and
-        // ConfigurationPropertyPlugin's Javadoc for why that turned a broken file into a hang
-        // instead of a clean abort). The same instance is handed to the scope both as a supplied
-        // bean - so PlatformBeans#configSections resolves it instead of building its own - and as
-        // the property plugin's backing source.
-        Configuration configuration = new ConfigurationLoader().load();
+        // ConfigurationFactory#initialise() is the first thing this constructor touches the
+        // static io.avaje.config.Config facade for - and the first touch of Config at all in this
+        // JVM - so a broken application.yaml is translated into a ConfigException here, at a known
+        // place, instead of surfacing as a raw ExceptionInInitializerError somewhere later in the
+        // start sequence (see design.md, decision 1). Config.asConfiguration() afterwards is then
+        // just a read of the already-built instance. That same instance is handed to the scope
+        // both as a supplied bean - so PlatformBeans#configSections resolves it instead of
+        // building its own - and as the property plugin's backing source, so avaje-inject's own
+        // default property plugin never touches the facade a second time.
+        new ConfigurationFactory().initialise();
+        Configuration configuration = Config.asConfiguration();
         ConfigurationStartupLog.activeProfiles(configuration);
 
         BeanScopeBuilder beanScopeBuilder = BeanScope.builder().bean(Configuration.class, configuration);

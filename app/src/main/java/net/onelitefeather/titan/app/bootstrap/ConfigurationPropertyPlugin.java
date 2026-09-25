@@ -27,19 +27,18 @@ import java.util.Optional;
  * plugin.
  *
  * <p>Avaje Inject's default plugin, {@code io.avaje.inject.DConfigProps}, reads the <em>static</em>
- * {@code io.avaje.config.Config} facade, which lazily builds its own, second {@link Configuration}
- * from {@code application.yaml} the first time anything touches it - in violation of {@code
- * openspec/changes/standardized-config-profiles/design.md}, decision 1 ("platform code uses a
- * Configuration instance, never the static Config facade"). Worse, that lazy build runs inside
- * {@code Config}'s static initializer, so a syntactically broken {@code application.yaml} surfaces
- * there as an uncaught {@link ExceptionInInitializerError} - which {@link
- * net.onelitefeather.titan.app.TitanApplication#main} cannot catch as a {@link RuntimeException} -
- * instead of the clean, caught {@link net.onelitefeather.titan.common.config.ConfigException} a
- * single, explicit {@link ConfigurationLoader#load()} call produces. {@link
- * net.onelitefeather.titan.app.Titan} therefore loads the {@link Configuration} exactly once,
- * before building the {@link io.avaje.inject.BeanScope}, and hands that same instance both to this
- * plugin (via {@link io.avaje.inject.BeanScopeBuilder#configPlugin(ConfigPropertyPlugin)}) and to
- * the scope itself (as a supplied bean) - so the static facade is never touched at all.
+ * {@code io.avaje.config.Config} facade directly, the first time anything touches it, with no
+ * caught translation of a syntactically broken {@code application.yaml}: that first touch runs
+ * inside {@code Config}'s own static initializer, so a broken file would surface there as an
+ * uncaught {@link ExceptionInInitializerError} instead of the clean, caught
+ * {@link net.onelitefeather.titan.common.config.ConfigException} a single, explicit
+ * {@code net.onelitefeather.titan.common.config.ConfigurationFactory#initialise()} call produces.
+ * {@link net.onelitefeather.titan.app.Titan} therefore calls {@code initialise()} itself, at a
+ * known point before the {@link io.avaje.inject.BeanScope} is built, and hands the resulting
+ * {@code Config.asConfiguration()} instance both to this plugin (via
+ * {@link io.avaje.inject.BeanScopeBuilder#configPlugin(ConfigPropertyPlugin)}) and to the scope
+ * itself (as a supplied bean) - so the default plugin's own, untranslated first touch of the
+ * facade never happens at all.
  */
 public final class ConfigurationPropertyPlugin implements ConfigPropertyPlugin {
 

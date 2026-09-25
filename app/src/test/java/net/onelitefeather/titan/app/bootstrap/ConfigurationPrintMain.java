@@ -15,15 +15,17 @@
  */
 package net.onelitefeather.titan.app.bootstrap;
 
+import io.avaje.config.Config;
 import io.avaje.config.Configuration;
+import net.onelitefeather.titan.common.config.ConfigurationFactory;
 
 /**
  * The child process entry point {@link ConfigurationPrecedenceTest} launches: runs the exact same
- * migrate-then-load sequence production runs, through the very same {@link ConfigurationLoader}
- * {@code PlatformBeans} uses, then prints one {@code key=value} line per requested key to stdout -
- * {@code <absent>} if the key resolves to nothing at all - so the parent test process, which cannot
- * reach into this JVM's memory, can assert on what the real {@code avaje-config} pipeline resolved,
- * migration included.
+ * {@link ConfigurationFactory#initialise()} step production runs, through the very same static
+ * {@link Config} facade {@code PlatformBeans}/{@code Titan} use, then prints one {@code key=value}
+ * line per requested key to stdout - {@code <absent>} if the key resolves to nothing at all - so
+ * the parent test process, which cannot reach into this JVM's memory, can assert on what the real
+ * {@code avaje-config} pipeline resolved.
  *
  * <p>Deliberately tiny: every argument is a configuration key to print, in order, nothing else.
  * {@link ConfigurationPrecedenceTest} controls this process's working directory, environment and
@@ -36,7 +38,8 @@ public final class ConfigurationPrintMain {
     }
 
     public static void main(String[] args) {
-        Configuration configuration = new ConfigurationLoader().load();
+        new ConfigurationFactory().initialise();
+        Configuration configuration = Config.asConfiguration();
         for (String key : args) {
             System.out.println(key + "=" + configuration.get(key, "<absent>"));
         }

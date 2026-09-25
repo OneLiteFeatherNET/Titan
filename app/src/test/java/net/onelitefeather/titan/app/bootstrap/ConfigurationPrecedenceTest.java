@@ -35,12 +35,16 @@ import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Integration coverage for the {@code lobby-module-config} spec requirement "Overrides have a
- * fixed rank order": {@link ConfigurationFactory#load()} - reached through {@link
- * ConfigurationLoader#load()}, the exact collaborator {@link PlatformBeans} uses in production -
- * resolves {@code application.yaml}, its active profiles, an external file, environment variables
- * and system properties in the order the spec fixes. The last case below also covers {@link
- * ConfigurationLoader#load()}'s migration step, run in the same child JVM before configuration is
- * resolved, exactly like production.
+ * fixed rank order": {@link ConfigurationFactory#initialise()} - reached through the static
+ * {@code io.avaje.config.Config} facade {@link ConfigurationPrintMain} touches exactly the way
+ * {@link net.onelitefeather.titan.app.Titan} does in production - resolves the shipped classpath
+ * {@code application.yaml} (see {@code app/src/main/resources/application.yaml}), the working
+ * directory's own {@code application.yaml}, its active profiles, an external file, environment
+ * variables and system properties in the order the spec fixes. The classpath file's own
+ * {@code spawn.simulationDistance} default is {@code 2} and its {@code tickle.cooldownMillis}
+ * default is {@code 4000} throughout this test (see that file), so a case that does not override
+ * either key resolves to those values, never {@code <absent>} - the lowest rank in "Overrides have
+ * a fixed rank order" is the shipped default, not nothing.
  *
  * <p>{@code avaje-config} resolves files against the JVM's real working directory and reads
  * {@code System.getenv} directly, with no injectable provider (see {@code design.md}, decision 6's
@@ -110,29 +114,38 @@ class ConfigurationPrecedenceTest {
         Assertions.assertEquals("3", resolved.get("spawn.simulationDistance"), "the external file named by CONFIG_FILE must win over the base file");
     }
 
-    @DisplayName("A first start without any configuration file resolves no keys, and creates no file")
+    @DisplayName("A first start without any configuration file resolves the shipped classpath default, and creates no file")
     @Test
-    void firstStartWithoutAnyFileCreatesNoFile(@TempDir Path workingDir) throws IOException, InterruptedException {
+    void firstStartWithoutAnyFileResolvesTheShippedDefault(@TempDir Path workingDir) throws IOException, InterruptedException {
         Map<String, String> resolved = run(workingDir, Map.of(), List.of(), List.of("spawn.simulationDistance", "tickle.cooldownMillis"));
 
-        Assertions.assertEquals("<absent>", resolved.get("spawn.simulationDistance"), "with no file at all, the key must resolve to nothing - defaults are ConfigSections' job, not Configuration's");
-        Assertions.assertEquals("<absent>", resolved.get("tickle.cooldownMillis"));
+        Assertions.assertEquals("2", resolved.get("spawn.simulationDistance"), "with no file in the working directory, the shipped classpath application.yaml's own default must apply");
+        Assertions.assertEquals("4000", resolved.get("tickle.cooldownMillis"));
         try (var entries = Files.list(workingDir)) {
             Assertions.assertTrue(entries.findAny().isEmpty(), "reading configuration must never create a file in the working directory");
         }
     }
 
-    @DisplayName("A legacy app.json in the working directory is migrated before configuration is resolved")
+    @DisplayName("application.yaml in the working directory beats the shipped classpath default")
     @Test
-    void legacyAppJsonIsMigratedBeforeConfigurationIsResolved(@TempDir Path workingDir) throws IOException, InterruptedException {
-        Files.writeString(workingDir.resolve("app.json"), "{\"tickleDuration\": 4000}");
+    void fileInWorkingDirectoryBeatsTheShippedDefault(@TempDir Path workingDir) throws IOException, InterruptedException {
+        Files.writeString(workingDir.resolve("application.yaml"), "spawn:\n  simulationDistance: 3\n");
+
+        Map<String, String> resolved = run(workingDir, Map.of(), List.of(), List.of("spawn.simulationDistance"));
+
+        Assertions.assertEquals("3", resolved.get("spawn.simulationDistance"), "the working directory's own application.yaml must win over the shipped classpath default (2)");
+    }
+
+    @DisplayName("An existing app.json is no longer read - it is ignored, and the shipped defaults apply")
+    @Test
+    void existingAppJsonIsIgnoredAndDefaultsApply(@TempDir Path workingDir) throws IOException, InterruptedException {
+        Files.writeString(workingDir.resolve("app.json"), "{\"tickleDuration\": 1000}");
 
         Map<String, String> resolved = run(workingDir, Map.of(), List.of(), List.of("tickle.cooldownMillis"));
 
-        Assertions.assertEquals("4000", resolved.get("tickle.cooldownMillis"), "the migrated value must be resolved by the same run that performed the migration");
-        Assertions.assertTrue(Files.exists(workingDir.resolve("application.yaml")), "the migration must have written application.yaml");
-        Assertions.assertTrue(Files.exists(workingDir.resolve("app.json.migrated")), "app.json must have been renamed to app.json.migrated");
-        Assertions.assertFalse(Files.exists(workingDir.resolve("app.json")), "app.json must no longer exist under its original name");
+        Assertions.assertEquals("4000", resolved.get("tickle.cooldownMillis"), "app.json is no longer converted or read at all; the shipped default must apply instead of any value app.json carries");
+        Assertions.assertTrue(Files.exists(workingDir.resolve("app.json")), "app.json must be left exactly as found");
+        Assertions.assertFalse(Files.exists(workingDir.resolve("application.yaml")), "reading configuration must never write application.yaml, migrated or otherwise");
     }
 
     @DisplayName("A syntactically broken application.yaml aborts the child cleanly, naming the file and the error position")
