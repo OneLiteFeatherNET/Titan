@@ -28,6 +28,7 @@ import net.onelitefeather.titan.common.map.MapEntry;
 import net.onelitefeather.titan.common.map.MapProvider;
 import net.onelitefeather.titan.common.utils.Cancelable;
 import net.onelitefeather.titan.setup.commands.SetupCommand;
+import net.onelitefeather.titan.setup.config.LegacyAppJsonWarning;
 import net.onelitefeather.titan.setup.config.SetupSpawnConfig;
 import net.onelitefeather.titan.setup.listener.PlayerConfigurationListener;
 import net.onelitefeather.titan.setup.listener.PlayerSpawnListener;
@@ -48,6 +49,7 @@ public final class Titan {
         InstanceContainer instance = MinecraftServer.getInstanceManager().createInstanceContainer();
         MinecraftServer.getInstanceManager().registerInstance(instance);
         this.mapProvider = MapProvider.create(this.path, instance, Titan::defaultFilter);
+        LegacyAppJsonWarning.warnIfLegacyAppJsonPresent(this.path.toAbsolutePath());
         Configuration configuration = Configuration.builder().includeResourceLoading().build();
         this.simulationDistance = SetupSpawnConfig.read(configuration).simulationDistance();
         BlockHandlerHelper.registerAll();
