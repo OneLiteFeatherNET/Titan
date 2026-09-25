@@ -18,7 +18,6 @@ package net.onelitefeather.titan.app.bootstrap;
 import io.avaje.config.Configuration;
 import java.util.Map;
 import net.minestom.server.coordinate.Pos;
-import net.onelitefeather.titan.app.feature.spawn.SpawnConfig;
 import net.onelitefeather.titan.app.module.LobbySpawn;
 import net.onelitefeather.titan.common.config.ConfigSections;
 import net.onelitefeather.titan.common.map.LobbyMap;
@@ -57,17 +56,28 @@ import java.util.List;
  */
 class PlatformBeansTest {
 
+    /**
+     * A minimal, self-contained config record used only to probe
+     * {@link PlatformBeans#configSections(Configuration)}'s binding mechanism, now that no feature
+     * module keeps its own config record around for a bootstrap test to borrow (see
+     * {@code openspec/changes/avaje-config-facade/design.md}, decision 3).
+     */
+    private record ProbeSection(int simulationDistance) {
+
+        private static final ProbeSection DEFAULTS = new ProbeSection(0);
+    }
+
     private final PlatformBeans platformBeans = new PlatformBeans();
 
     @DisplayName("configSections(Configuration) binds a section from exactly the Configuration instance it is given, not one it builds itself")
     @Test
     void configSectionsResolvesFromTheGivenConfigurationInstance() {
-        Configuration configuration = Configuration.builder().putAll(Map.of("spawn.simulationDistance", "7")).build();
+        Configuration configuration = Configuration.builder().putAll(Map.of("probe.simulationDistance", "7")).build();
 
         ConfigSections configSections = this.platformBeans.configSections(configuration);
-        SpawnConfig spawn = configSections.section("spawn", SpawnConfig.class, SpawnConfig.DEFAULTS);
+        ProbeSection probe = configSections.section("probe", ProbeSection.class, ProbeSection.DEFAULTS);
 
-        Assertions.assertEquals(7, spawn.simulationDistance(), "the section must resolve the value from the supplied Configuration instance");
+        Assertions.assertEquals(7, probe.simulationDistance(), "the section must resolve the value from the supplied Configuration instance");
     }
 
     @DisplayName("Building the LobbySpawn bean does not query the MapProvider")

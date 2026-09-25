@@ -16,20 +16,33 @@
 package net.onelitefeather.titan.app.feature.sit;
 
 import java.util.List;
+import net.kyori.adventure.key.InvalidKeyException;
 import net.kyori.adventure.key.Key;
 import net.minestom.server.coordinate.Vec;
 import net.onelitefeather.titan.common.config.ConfigException;
 
 /**
- * Pure validation for the {@code sit} section's values, kept apart from however those values were
- * read (today {@link SitConfig}'s compact constructor, called by {@code SectionBinder}).
+ * Pure validation for the {@code sit} section's values, kept apart from however those values are
+ * read ({@link SitModule#enable}, via {@code io.avaje.config.Config} and
+ * {@link net.onelitefeather.titan.common.config.ConfigValues}).
  *
- * <p>Every method takes a plain value and either returns it unchanged or throws
+ * <p>Every method takes a plain value and either returns it (unchanged, or - for
+ * {@link #parseBlock(String)} - converted) or throws
  * {@link ConfigException#invalid(String, String)} naming the value's full section key, e.g.
  * {@code sit.offset}. None of these methods touch {@code io.avaje.config.Config},
  * {@code ConfigSections} or a server, so they are unit-testable on their own.
+ *
+ * <p>The keys themselves are declared here as constants, the one place this module's config
+ * section is named (see {@code design.md}, decision 3), and reused by {@link SitModule#enable} to
+ * read the raw values.
  */
 final class SitSettings {
+
+    static final String OFFSET_KEY = "sit.offset";
+    static final String OFFSET_X_KEY = "sit.offset.x";
+    static final String OFFSET_Y_KEY = "sit.offset.y";
+    static final String OFFSET_Z_KEY = "sit.offset.z";
+    static final String ALLOWED_BLOCKS_KEY = "sit.allowedBlocks";
 
     private SitSettings() {
     }
@@ -41,9 +54,28 @@ final class SitSettings {
      */
     static Vec offset(Vec offset) {
         if (offset == null) {
-            throw ConfigException.invalid("sit.offset", "must not be null");
+            throw ConfigException.invalid(OFFSET_KEY, "must not be null");
         }
         return offset;
+    }
+
+    /**
+     * Parses one raw value of the {@code sit.allowedBlocks} list as a {@link Key} - a plain
+     * string such as {@code minecraft:spruce_stairs}, the same form {@code KeyGsonAdapter} used to
+     * accept before this module read its section directly. Applies exactly the same rule
+     * {@link Key#key(String)} always has: a string with characters a {@link Key} cannot contain
+     * (e.g. spaces or uppercase letters) is invalid.
+     *
+     * @param raw one raw entry of the configured {@code sit.allowedBlocks} list
+     * @return {@code raw}, parsed as a {@link Key}
+     * @throws ConfigException if {@code raw} is not a syntactically valid key
+     */
+    static Key parseBlock(String raw) {
+        try {
+            return Key.key(raw);
+        } catch (InvalidKeyException e) {
+            throw ConfigException.invalid(ALLOWED_BLOCKS_KEY, "must be a valid block key, was '" + raw + "'");
+        }
     }
 
     /**
@@ -54,10 +86,10 @@ final class SitSettings {
      */
     static List<Key> allowedBlocks(List<Key> allowedBlocks) {
         if (allowedBlocks == null) {
-            throw ConfigException.invalid("sit.allowedBlocks", "must not be null");
+            throw ConfigException.invalid(ALLOWED_BLOCKS_KEY, "must not be null");
         }
         if (allowedBlocks.isEmpty()) {
-            throw ConfigException.invalid("sit.allowedBlocks", "must not be empty - a player could never sit down otherwise");
+            throw ConfigException.invalid(ALLOWED_BLOCKS_KEY, "must not be empty - a player could never sit down otherwise");
         }
         return allowedBlocks;
     }

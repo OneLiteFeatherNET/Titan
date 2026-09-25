@@ -19,10 +19,9 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import io.avaje.config.Configuration;
+import java.util.List;
 import net.onelitefeather.titan.app.feature.elytra.ElytraConfig;
 import net.onelitefeather.titan.app.feature.navigator.NavigatorConfig;
-import net.onelitefeather.titan.app.feature.sit.SitConfig;
-import net.onelitefeather.titan.app.feature.spawn.SpawnConfig;
 import net.onelitefeather.titan.app.feature.tickle.TickleConfig;
 import net.onelitefeather.titan.common.config.ConfigSections;
 import org.junit.jupiter.api.Assertions;
@@ -66,8 +65,16 @@ class ApplicationExampleYamlTest {
             Configuration configuration = Configuration.builder().load(CLASSPATH_APPLICATION_YAML).build();
             ConfigSections sections = new ConfigSections(configuration);
 
-            Assertions.assertEquals(SpawnConfig.DEFAULTS, sections.section("spawn", SpawnConfig.class, SpawnConfig.DEFAULTS), "spawn must bind to exactly its own defaults");
-            Assertions.assertEquals(SitConfig.DEFAULTS, sections.section("sit", SitConfig.class, SitConfig.DEFAULTS), "sit must bind to exactly its own defaults");
+            // spawn and sit no longer have a config record to bind through ConfigSections (see
+            // avaje-config-facade task 2.1/2.2); their own defaults are checked directly against
+            // the loaded Configuration instead.
+            Assertions.assertEquals(-64, configuration.getInt("spawn.minHeight"), "spawn.minHeight must match its own default");
+            Assertions.assertEquals(310, configuration.getInt("spawn.maxHeight"), "spawn.maxHeight must match its own default");
+            Assertions.assertEquals(2, configuration.getInt("spawn.simulationDistance"), "spawn.simulationDistance must match its own default");
+            Assertions.assertEquals(0.5, configuration.getDecimal("sit.offset.x").doubleValue(), "sit.offset.x must match its own default");
+            Assertions.assertEquals(0.25, configuration.getDecimal("sit.offset.y").doubleValue(), "sit.offset.y must match its own default");
+            Assertions.assertEquals(0.5, configuration.getDecimal("sit.offset.z").doubleValue(), "sit.offset.z must match its own default");
+            Assertions.assertEquals(List.of("minecraft:spruce_stairs"), configuration.list().of("sit.allowedBlocks"), "sit.allowedBlocks must match its own default");
             Assertions.assertEquals(TickleConfig.DEFAULTS, sections.section("tickle", TickleConfig.class, TickleConfig.DEFAULTS), "tickle must bind to exactly its own defaults");
             Assertions.assertEquals(ElytraConfig.DEFAULTS, sections.section("elytra", ElytraConfig.class, ElytraConfig.DEFAULTS), "elytra must bind to exactly its own defaults");
             Assertions.assertEquals(NavigatorConfig.DEFAULTS, sections.section("navigator", NavigatorConfig.class, NavigatorConfig.DEFAULTS), "navigator must bind to exactly its own defaults, entries keyed by name");

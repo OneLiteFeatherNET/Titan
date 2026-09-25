@@ -21,7 +21,6 @@ import io.avaje.inject.BeanScopeBuilder;
 import java.util.Map;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.app.feature.spawn.SpawnConfig;
 import net.onelitefeather.titan.common.config.ConfigSections;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
 import net.onelitefeather.titan.common.map.MapProvider;
@@ -56,10 +55,21 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(MicrotusExtension.class)
 class TitanBeanScopeConfigurationWiringTest {
 
+    /**
+     * A minimal, self-contained config record used only to probe {@link ConfigSections}'
+     * binding mechanism, now that no feature module keeps its own config record around for a
+     * bootstrap test to borrow (see {@code openspec/changes/avaje-config-facade/design.md},
+     * decision 3).
+     */
+    private record ProbeSection(int simulationDistance) {
+
+        private static final ProbeSection DEFAULTS = new ProbeSection(0);
+    }
+
     @DisplayName("ConfigSections resolves a value from the Configuration instance supplied to the scope, not a rebuilt one")
     @Test
     void configSectionsResolvesFromTheSuppliedConfigurationInstance(Env env) {
-        Configuration configuration = Configuration.builder().putAll(Map.of("spawn.simulationDistance", "7")).build();
+        Configuration configuration = Configuration.builder().putAll(Map.of("probe.simulationDistance", "7")).build();
 
         BeanScopeBuilder.ForTesting builder = BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class);
         builder.bean(Configuration.class, configuration);
@@ -68,9 +78,9 @@ class TitanBeanScopeConfigurationWiringTest {
         BeanScope scope = builder.build();
         try {
             ConfigSections configSections = scope.get(ConfigSections.class);
-            SpawnConfig spawn = configSections.section("spawn", SpawnConfig.class, SpawnConfig.DEFAULTS);
+            ProbeSection probe = configSections.section("probe", ProbeSection.class, ProbeSection.DEFAULTS);
 
-            Assertions.assertEquals(7, spawn.simulationDistance(), "the scope must resolve ConfigSections from exactly the Configuration instance it was given");
+            Assertions.assertEquals(7, probe.simulationDistance(), "the scope must resolve ConfigSections from exactly the Configuration instance it was given");
         } finally {
             scope.close();
         }
