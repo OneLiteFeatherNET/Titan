@@ -175,31 +175,65 @@ final class SectionBinder {
      * exception falls back to a section-level message built from the original failure.
      */
     private static ConfigException typeMismatch(@Nullable String fileName, String id, Class<? extends Record> type, JsonElement merged, RuntimeException cause) {
-        RecordComponent mismatched = findMismatchedComponent(type, merged);
+        MismatchedField mismatched = findMismatchedComponent(type, merged, "");
         if (mismatched != null) {
-            JsonElement value = merged.getAsJsonObject().get(mismatched.getName());
-            return ConfigException.invalid(mismatched.getName(), mismatchReason(mismatched.getType(), value)).withSection(id).withFile(fileName);
+            return ConfigException.invalid(mismatched.path(), mismatchReason(mismatched.type(), mismatched.value())).withSection(id).withFile(fileName);
         }
         String detail = cause.getMessage() != null ? cause.getMessage() : cause.getClass().getSimpleName();
         return ConfigException.malformed(fileName, "could not be read as '" + type.getSimpleName() + "': " + detail).withSection(id);
     }
 
     /**
-     * Finds the first record component of {@code type} whose value in {@code merged} cannot
-     * represent that component's declared type. Only simple, unambiguous mismatches (numeric and
-     * boolean components) are detected; strings, nested records, collections and the custom {@link
-     * Key}/{@link Vec}/{@link Pos} adapters are left to Gson's own error, which is reported as a
-     * section-level message instead.
+     * A record component whose value could not represent its declared type, together with the
+     * dotted path the component was found at (e.g. {@code offset.x} or {@code
+     * entries.survival.slot} for a component nested inside a record or inside a {@code
+     * Map<String, Record>} entry) and the offending value itself.
      */
-    private static @Nullable RecordComponent findMismatchedComponent(Class<? extends Record> type, JsonElement merged) {
+    private record MismatchedField(String path, Class<?> type, JsonElement value) {
+    }
+
+    /**
+     * Finds the first record component of {@code type} whose value in {@code merged} cannot
+     * represent that component's declared type, descending into a nested record component and into
+     * each record-typed entry of a {@code Map<String, Record>} component via the shared {@link
+     * RecordFields} lookups (DRY, the same lookups {@link ConfigSections#isListTyped} uses) - so a
+     * mismatch inside {@code sit.offset.x} or {@code navigator.entries.survival.slot} is reported
+     * with its full dotted path, not just the top-level component name. Only simple, unambiguous
+     * mismatches (numeric and boolean components) are detected; strings, collections and the custom
+     * {@link Key}/{@link Vec}/{@link Pos} adapters are left to Gson's own error, which is reported
+     * as a section-level message instead.
+     */
+    private static @Nullable MismatchedField findMismatchedComponent(Class<? extends Record> type, JsonElement merged, String prefix) {
         if (!merged.isJsonObject()) {
             return null;
         }
         JsonObject object = merged.getAsJsonObject();
         for (RecordComponent component : type.getRecordComponents()) {
             JsonElement value = object.get(component.getName());
-            if (value != null && isTypeMismatch(component.getType(), value)) {
-                return component;
+            if (value == null) {
+                continue;
+            }
+            String path = prefix.isEmpty() ? component.getName() : prefix + "." + component.getName();
+            if (isTypeMismatch(component.getType(), value)) {
+                return new MismatchedField(path, component.getType(), value);
+            }
+            if (component.getType().isRecord() && value.isJsonObject()) {
+                @SuppressWarnings("unchecked") Class<? extends Record> nestedType = (Class<? extends Record>) component.getType();
+                MismatchedField nested = findMismatchedComponent(nestedType, value, path);
+                if (nested != null) {
+                    return nested;
+                }
+            } else if (Map.class.isAssignableFrom(component.getType()) && value.isJsonObject()) {
+                Class<?> valueType = RecordFields.mapValueType(component);
+                if (valueType != null && valueType.isRecord()) {
+                    @SuppressWarnings("unchecked") Class<? extends Record> entryType = (Class<? extends Record>) valueType;
+                    for (Map.Entry<String, JsonElement> mapEntry : value.getAsJsonObject().entrySet()) {
+                        MismatchedField nested = findMismatchedComponent(entryType, mapEntry.getValue(), path + "." + mapEntry.getKey());
+                        if (nested != null) {
+                            return nested;
+                        }
+                    }
+                }
             }
         }
         return null;

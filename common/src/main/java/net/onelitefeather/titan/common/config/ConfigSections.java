@@ -20,11 +20,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.avaje.config.Configuration;
-import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.RecordComponent;
-import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -153,7 +150,7 @@ public final class ConfigSections {
             if (!currentType.isRecord()) {
                 return false;
             }
-            RecordComponent component = findComponent(currentType, path.get(i));
+            RecordComponent component = RecordFields.component(currentType, path.get(i));
             if (component == null) {
                 return false;
             }
@@ -161,7 +158,7 @@ public final class ConfigSections {
                 return isListLike(component.getType());
             }
             if (Map.class.isAssignableFrom(component.getType())) {
-                Class<?> valueType = mapValueType(component);
+                Class<?> valueType = RecordFields.mapValueType(component);
                 if (valueType == null || i + 2 > path.size()) {
                     return false;
                 }
@@ -174,27 +171,7 @@ public final class ConfigSections {
         return false;
     }
 
-    private static @Nullable RecordComponent findComponent(Class<?> type, String name) {
-        for (RecordComponent component : type.getRecordComponents()) {
-            if (component.getName().equals(name)) {
-                return component;
-            }
-        }
-        return null;
-    }
-
     private static boolean isListLike(Class<?> type) {
         return List.class.isAssignableFrom(type) || Set.class.isAssignableFrom(type) || type.isArray();
-    }
-
-    private static @Nullable Class<?> mapValueType(RecordComponent component) {
-        Type genericType = component.getGenericType();
-        if (genericType instanceof ParameterizedType parameterized) {
-            Type[] arguments = parameterized.getActualTypeArguments();
-            if (arguments.length == 2 && arguments[1] instanceof Class<?> valueClass) {
-                return valueClass;
-            }
-        }
-        return null;
     }
 }

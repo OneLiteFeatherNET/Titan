@@ -61,4 +61,30 @@ class ConfigSectionsTypeMismatchTest {
         assertEquals("spawn", exception.section());
         assertEquals("maxHeight", exception.field());
     }
+
+    @Test
+    @DisplayName("A non-numeric override for a nested record field is rejected, naming the field's full dotted path")
+    void nonNumericOverrideForNestedRecordFieldIsRejected() {
+        Configuration configuration = Configuration.builder().putAll(Map.of("sit.offset.x", "abc")).build();
+        ConfigSections sections = new ConfigSections(configuration);
+
+        ConfigException exception = assertThrows(ConfigException.class, () -> sections.section("sit", SitTestConfig.class, SitTestConfig.DEFAULTS));
+
+        assertEquals("sit", exception.section());
+        assertEquals("offset.x", exception.field(), "the offending nested field should be named with its full dotted path");
+        assertTrue(exception.getMessage().contains("sit.offset.x"), "message should name section and nested field: " + exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("A non-numeric override for a field of a map-of-records entry is rejected, naming the entry and its field")
+    void nonNumericOverrideForMapOfRecordsFieldIsRejected() {
+        Configuration configuration = Configuration.builder().putAll(Map.of("navigator.entries.survival.slot", "abc")).build();
+        ConfigSections sections = new ConfigSections(configuration);
+
+        ConfigException exception = assertThrows(ConfigException.class, () -> sections.section("navigator", NavigatorTestConfig.class, NavigatorTestConfig.DEFAULTS));
+
+        assertEquals("navigator", exception.section());
+        assertEquals("entries.survival.slot", exception.field(), "the offending map-entry field should be named with its full dotted path");
+        assertTrue(exception.getMessage().contains("navigator.entries.survival.slot"), "message should name section, entry and field: " + exception.getMessage());
+    }
 }
