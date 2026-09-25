@@ -22,7 +22,6 @@ import net.minestom.server.event.inventory.InventoryPreClickEvent;
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent;
 import net.minestom.server.event.player.PlayerSpawnEvent;
 import net.minestom.server.instance.InstanceContainer;
-import net.onelitefeather.titan.common.config.ConfigurationFactory;
 import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
 import net.onelitefeather.titan.common.map.MapEntry;
 import net.onelitefeather.titan.common.map.MapProvider;
@@ -44,27 +43,26 @@ public final class Titan {
     private final int simulationDistance;
 
     /**
-     * @throws net.onelitefeather.titan.common.config.ConfigException if {@code application.yaml}
-     *                                                                (or a profile/external file
-     *                                                                it pulls in) cannot be
-     *                                                                parsed; see {@link
-     *                                                                ConfigurationFactory#initialise()}.
-     *                                                                {@link
-     *                                                                net.onelitefeather.titan.setup.TitanLauncher#main}
-     *                                                                aborts cleanly when this
-     *                                                                propagates out of {@link
-     *                                                                #instance()}.
+     * @throws ExceptionInInitializerError if {@code application.yaml} (or a profile/external file
+     *                                     it pulls in) cannot be parsed; the static
+     *                                     {@code io.avaje.config.Config} facade throws this from
+     *                                     its own static initializer on first touch, wrapping the
+     *                                     underlying parser failure (file and line/column) as its
+     *                                     cause. {@link
+     *                                     net.onelitefeather.titan.setup.TitanLauncher#main}
+     *                                     aborts cleanly when this propagates out of
+     *                                     {@link #instance()}.
      */
     private Titan() {
         this.path = Path.of("");
         InstanceContainer instance = MinecraftServer.getInstanceManager().createInstanceContainer();
         MinecraftServer.getInstanceManager().registerInstance(instance);
         this.mapProvider = MapProvider.create(this.path, instance, Titan::defaultFilter);
-        // Triggers the same static io.avaje.config.Config facade the lobby (:app) uses, through the
-        // same ConfigurationFactory, so a broken application.yaml is translated into the same
-        // ConfigException here too, instead of a raw ExceptionInInitializerError - see
-        // ConfigurationFactory's Javadoc (DRY).
-        new ConfigurationFactory().initialise();
+        // SetupSpawnConfig#read() is the first touch of the static io.avaje.config.Config facade
+        // in this process - deliberately, at a known, early place (built-in first: no factory of
+        // our own wraps this touch; see design.md, decision 1). A broken application.yaml surfaces
+        // here as ExceptionInInitializerError, whose cause chain already names the file and the
+        // line/column.
         this.simulationDistance = SetupSpawnConfig.read().simulationDistance();
         BlockHandlerHelper.registerAll();
 

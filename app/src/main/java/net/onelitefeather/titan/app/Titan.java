@@ -32,7 +32,6 @@ import net.onelitefeather.titan.app.module.ModuleRegistry;
 import net.onelitefeather.titan.app.module.item.ItemRegistry;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
 import net.onelitefeather.titan.app.player.TitanPlayer;
-import net.onelitefeather.titan.common.config.ConfigurationFactory;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
 import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
 
@@ -61,28 +60,27 @@ public final class Titan {
     private final ModuleRegistry moduleRegistry;
 
     /**
-     * @throws net.onelitefeather.titan.common.config.ConfigException if {@code application.yaml}
-     *                                                                (or a profile/external file
-     *                                                                it pulls in) cannot be
-     *                                                                parsed; see the {@code
-     *                                                                 lobby-module-config} spec
-     *                                                                scenario "Syntaktisch kaputte
-     *                                                                Datei" and {@link
-     *                                                                net.onelitefeather.titan.common.config.ConfigurationFactory#initialise()}
+     * @throws ExceptionInInitializerError if {@code application.yaml} (or a profile/external file
+     *                                     it pulls in) cannot be parsed; the {@code
+     *                                     io.avaje.config.Config} facade's own static initializer
+     *                                     throws this on its first touch, wrapping the underlying
+     *                                     parser failure (file and line/column) as its cause; see
+     *                                     the {@code lobby-module-config} spec scenario
+     *                                     "Syntaktisch kaputte Datei".
      */
     public Titan() {
         MinecraftServer.getConnectionManager().setPlayerProvider(TitanPlayer::new);
         BlockHandlerHelper.registerAll();
 
-        // ConfigurationFactory#initialise() is the first thing this constructor touches the
-        // static io.avaje.config.Config facade for - and the first touch of Config at all in this
-        // JVM - so a broken application.yaml is translated into a ConfigException here, at a known
-        // place, instead of surfacing as a raw ExceptionInInitializerError somewhere later in the
-        // start sequence (see design.md, decision 1). Once this returns, the facade is the single,
+        // ConfigurationStartupLog#activeProfiles() is the first thing this constructor touches
+        // the static io.avaje.config.Config facade for - and the first touch of Config at all in
+        // this JVM - deliberately, at a known place in the start sequence (built-in first: no
+        // factory of our own wraps this touch; see design.md, decision 1). A broken
+        // application.yaml surfaces here as ExceptionInInitializerError, whose cause chain already
+        // names the file and the line/column. Once this returns, the facade is the single,
         // already-built Configuration instance for the rest of the process - Avaje Inject's own
         // default config property plugin reading the same facade while the scope below is built is
-        // then just a second read of that instance, not a second, untranslated first touch.
-        new ConfigurationFactory().initialise();
+        // then just a second read of that instance, not a second first touch.
         ConfigurationStartupLog.activeProfiles();
 
         this.beanScope = BeanScope.builder().build();

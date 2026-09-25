@@ -70,31 +70,28 @@ public class TitanApplication {
             return user.getCachedData().getPermissionData().checkPermission(permission).asBoolean();
         });
 
-        // A module's configuration value rejecting itself (ConfigException), a syntactically
-        // broken application.yaml (also a ConfigException - see Titan's constructor and
-        // ConfigurationFactory#initialise()), or two modules conflicting over an item slot / navigator
-        // slot surfaces here as an unchecked exception from ModuleRegistry#enableAll (see
-        // Titan#initialize) or from Titan's own constructor. Startup must abort with a clear log
-        // line instead of leaving the process half-started or hanging on LuckPerms'/the extension
-        // bootstrap's already-running threads (see lobby-module-config spec, "Ungültige Werte
-        // verhindern den Start" and "Syntaktisch kaputte Datei"). Also catches Error: Titan's
-        // constructor calls ConfigurationFactory#initialise() before anything else, so that is the
-        // first touch of the static io.avaje.config.Config facade in this JVM, and a broken file is
-        // translated into the ConfigException above right there. Avaje Inject's own default config
-        // property plugin then touches the facade again while building the BeanScope a few lines
-        // later - by then just a second read of the same, already-initialised instance, not a second
-        // untranslated first touch. This catch is the remaining safety net for a bug that touches
-        // Config any earlier than that (e.g. from some other class's own static initializer running
-        // before Titan's constructor), which would still surface as a raw
-        // ExceptionInInitializerError - not a RuntimeException - and would otherwise go uncaught
-        // here and hang the process on non-daemon threads already started above instead of exiting.
+        // A module's configuration value rejecting itself (ConfigException) or two modules
+        // conflicting over an item slot / navigator slot surfaces here as an unchecked exception
+        // from ModuleRegistry#enableAll (see Titan#initialize) or from Titan's own constructor.
+        // Startup must abort with a clear log line instead of leaving the process half-started or
+        // hanging on LuckPerms'/the extension bootstrap's already-running threads (see
+        // lobby-module-config spec, "Ungültige Werte verhindern den Start" and "Syntaktisch kaputte
+        // Datei"). Also catches Error: Titan's constructor touches the static
+        // io.avaje.config.Config facade first (ConfigurationStartupLog#activeProfiles()), the
+        // first touch of that facade in this JVM, so a broken application.yaml surfaces right there
+        // as ExceptionInInitializerError, whose cause chain names the file and the line/column.
+        // Avaje Inject's own default config property plugin then touches the facade again while
+        // building the BeanScope a few lines later - by then just a second read of the same,
+        // already-initialised instance. This catch is the safety net that keeps that
+        // ExceptionInInitializerError - not a RuntimeException - from going uncaught here and
+        // hanging the process on non-daemon threads already started above instead of exiting.
         // Logged once and exited, never rethrown - rethrowing an Error caught this deep would only
         // recreate the same hang this catch exists to prevent.
         try {
             Titan titan = new Titan();
             titan.initialize();
         } catch (RuntimeException | Error throwable) {
-            LOGGER.error("Titan failed to start: {}", throwable.getMessage(), throwable);
+            LOGGER.error("Titan failed to start: {}", throwable.toString(), throwable);
             System.exit(1);
             return;
         }
