@@ -20,7 +20,7 @@ import java.util.List;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.app.module.LobbyModule;
-import net.onelitefeather.titan.common.config.ConfigStore;
+import net.onelitefeather.titan.common.config.ConfigSections;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
 import net.onelitefeather.titan.common.map.MapProvider;
 import org.junit.jupiter.api.Assertions;
@@ -37,7 +37,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
  *
  * <p><strong>Hermetic seam:</strong> three of {@code app.bootstrap.PlatformBeans}' beans touch the
  * filesystem or a process-wide static in production - {@link MapProvider} reads {@code worlds/},
- * {@link ConfigStore} reads {@code app.json}, and {@link FeatureFlags} (the real
+ * {@link ConfigSections} reads {@code application.yaml} (plus profiles, an external file, env
+ * variables and system properties), and {@link FeatureFlags} (the real
  * {@code TogglzFeatureFlags}) reads {@code flags.properties} through Togglz's own static, JVM-wide
  * cached {@code FeatureContext} (a global neither this test nor {@code PlatformBeans} controls, and
  * {@code common} - which owns it - is out of scope for this change). Building the scope with those
@@ -48,10 +49,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * factory method checks whether its bean type is already supplied before constructing one (see
  * {@code *$DI.build_*} in the annotation-processor output - each starts with
  * {@code if (builder.isBeanAbsent(...))}) - so {@code PlatformBeans#mapProvider},
- * {@code #configStore} and {@code #featureFlags} never run at all, and every other bean (all seven
- * modules, the shared event node, item registry, navigator entries, {@code Deliver}, {@code Clock},
- * and - since nothing overrides it - the real {@code InstanceContainer}) is built exactly as
- * {@code Titan} builds it in production. Beans that depend on the mocked ones (e.g.
+ * {@code #configSections} and {@code #featureFlags} never run at all, and every other bean (all
+ * seven modules, the shared event node, item registry, navigator entries, {@code Deliver},
+ * {@code Clock}, and - since nothing overrides it - the real {@code InstanceContainer}) is built
+ * exactly as {@code Titan} builds it in production. Beans that depend on the mocked ones (e.g.
  * {@code LobbySpawn}, wired from {@link MapProvider}) still get built for real, against the mock -
  * safe here because this test never calls a module's {@code enable()}, so the mocked instances'
  * methods are never actually invoked.
@@ -65,7 +66,7 @@ class ModuleWiringTest {
     @DisplayName("The scope wires all seven lobby modules exactly once, in priority order, with no missing dependency, and closes cleanly")
     @Test
     void scopeWiresEverySevenModulesInPriorityOrderAndClosesCleanly(Env env) {
-        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class).mock(ConfigStore.class).mock(FeatureFlags.class).build();
+        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class).mock(ConfigSections.class).mock(FeatureFlags.class).build();
 
         List<LobbyModule> modules = scope.listByPriority(LobbyModule.class);
         List<String> actualOrder = modules.stream().map(LobbyModule::id).toList();

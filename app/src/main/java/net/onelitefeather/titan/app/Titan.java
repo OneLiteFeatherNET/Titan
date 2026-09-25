@@ -31,7 +31,7 @@ import net.onelitefeather.titan.app.module.ModuleRegistry;
 import net.onelitefeather.titan.app.module.item.ItemRegistry;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
 import net.onelitefeather.titan.app.player.TitanPlayer;
-import net.onelitefeather.titan.common.config.ConfigStore;
+import net.onelitefeather.titan.common.config.ConfigSections;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
 import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
 
@@ -68,12 +68,12 @@ public final class Titan {
 
         EventNode<Event> titanNode = this.beanScope.get(new GenericType<EventNode<Event>>() {
         }.type(), PlatformBeans.TITAN_NODE_NAME);
-        ConfigStore configStore = this.beanScope.get(ConfigStore.class);
+        ConfigSections configSections = this.beanScope.get(ConfigSections.class);
         NavigatorEntries navigatorEntries = this.beanScope.get(NavigatorEntries.class);
         ItemRegistry itemRegistry = this.beanScope.get(ItemRegistry.class);
         FeatureFlags featureFlags = this.beanScope.get(FeatureFlags.class);
 
-        this.moduleRegistry = ModuleRegistry.builder().parent(titanNode).config(configStore).navigator(navigatorEntries).items(itemRegistry).featureFlags(featureFlags).modules(this.modules).build();
+        this.moduleRegistry = ModuleRegistry.builder().parent(titanNode).config(configSections).navigator(navigatorEntries).items(itemRegistry).featureFlags(featureFlags).modules(this.modules).build();
     }
 
     /**
@@ -84,9 +84,8 @@ public final class Titan {
      * {@link BeanScope}.
      *
      * @throws net.onelitefeather.titan.common.config.ConfigException       if a module's
-     *                                                                      {@code app.json}
-     *                                                                      section contains an
-     *                                                                      invalid
+     *                                                                      configuration section
+     *                                                                      contains an invalid
      *                                                                      value
      * @throws net.onelitefeather.titan.app.module.ModuleLifecycleException if a module fails to
      *                                                                      enable

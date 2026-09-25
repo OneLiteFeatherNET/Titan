@@ -130,8 +130,9 @@ public final class NavigatorEntries {
      *
      * <p>Meant to run once, after every module has been enabled - alongside the item-placement
      * check in {@code ModuleRegistry#enableAll()} - so an operator misspelling a feature name, in
-     * {@code app.json} or in a module's own hard-coded entry, aborts startup instead of silently
-     * hiding (or always showing) a destination; see {@code openspec/changes/lobby-feature-modules/
+     * {@code application.yaml} or in a module's own hard-coded entry, aborts startup instead of
+     * silently hiding (or always showing) a destination; see
+     * {@code openspec/changes/lobby-feature-modules/
      * design.md}, decision 13, and the {@code lobby-navigator} spec's "Unbekannte Flag in der
      * Konfiguration" scenario.
      *

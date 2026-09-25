@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.app.bootstrap;
 
+import io.avaje.config.Configuration;
 import io.avaje.inject.Bean;
 import io.avaje.inject.Factory;
 import jakarta.inject.Named;
@@ -29,7 +30,8 @@ import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.app.module.LobbySpawn;
 import net.onelitefeather.titan.app.module.item.ItemRegistry;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
-import net.onelitefeather.titan.common.config.ConfigStore;
+import net.onelitefeather.titan.common.config.AppJsonMigration;
+import net.onelitefeather.titan.common.config.ConfigSections;
 import net.onelitefeather.titan.common.deliver.DeliverProvider;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
 import net.onelitefeather.titan.common.feature.TogglzFeatureFlags;
@@ -54,8 +56,6 @@ import net.onelitefeather.titan.common.map.MapProvider;
  */
 @Factory
 public final class PlatformBeans {
-
-    private static final String APP_FILE_NAME = "app.json";
 
     /**
      * The {@code @Named} qualifier of the shared {@link EventNode} bean {@link #titanEventNode()}
@@ -107,12 +107,31 @@ public final class PlatformBeans {
     }
 
     /**
-     * @return the sectioned {@code app.json} configuration store every module's
-     *         {@code ModuleContext#config} reads its own section from
+     * Runs the one-time {@code app.json} &rarr; {@code application.yaml} switch (see
+     * {@code openspec/changes/standardized-config-profiles/design.md}, decision 4), then builds
+     * the {@code avaje-config} {@link Configuration} through {@link ConfigurationFactory} - the
+     * same factory the configuration precedence test drives against a child JVM - and logs the
+     * active profiles once, at INFO, via {@link ConfigurationStartupLog}.
+     *
+     * @return the {@link Configuration} every module's section is ultimately read from
      */
     @Bean
-    public ConfigStore configStore() {
-        return ConfigStore.open(Path.of("").resolve(APP_FILE_NAME));
+    public Configuration configuration() {
+        Path workingDir = Path.of("").toAbsolutePath();
+        new AppJsonMigration().migrate(workingDir);
+        Configuration configuration = new ConfigurationFactory().load(workingDir);
+        ConfigurationStartupLog.activeProfiles(configuration);
+        return configuration;
+    }
+
+    /**
+     * @param configuration the {@link Configuration} every module's section is bound from
+     * @return the sectioned configuration every module's {@code ModuleContext#config} reads its
+     *         own section from
+     */
+    @Bean
+    public ConfigSections configSections(Configuration configuration) {
+        return new ConfigSections(configuration);
     }
 
     /**

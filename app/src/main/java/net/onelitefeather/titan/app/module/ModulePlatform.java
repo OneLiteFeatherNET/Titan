@@ -19,7 +19,7 @@ import net.minestom.server.command.CommandManager;
 import net.minestom.server.timer.Scheduler;
 import net.onelitefeather.titan.app.module.item.ItemRegistry;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
-import net.onelitefeather.titan.common.config.ConfigStore;
+import net.onelitefeather.titan.common.config.ConfigSections;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -36,13 +36,13 @@ import org.jetbrains.annotations.Nullable;
  *
  * @param scheduler      the scheduler modules' tasks run on
  * @param commandManager the command manager modules register commands on
- * @param config         the {@link ConfigStore} modules read their own section from, or
+ * @param config         the {@link ConfigSections} modules read their own section from, or
  *                       {@code null} if none is configured
  * @param items          the platform-wide item registry modules register {@link
  *                       net.onelitefeather.titan.app.module.item.LobbyItem}s through
  * @param navigator      the platform-wide registry modules contribute navigator entries to
  */
 record ModulePlatform(Scheduler scheduler, CommandManager commandManager,
-                      @Nullable ConfigStore config, ItemRegistry items,
+                      @Nullable ConfigSections config, ItemRegistry items,
                       NavigatorEntries navigator) {
 }

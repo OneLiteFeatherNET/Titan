@@ -24,7 +24,7 @@ import net.minestom.server.event.EventNode;
 import net.onelitefeather.titan.app.module.item.ModuleItems;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
 import net.onelitefeather.titan.common.config.ConfigException;
-import net.onelitefeather.titan.common.config.ConfigStore;
+import net.onelitefeather.titan.common.config.ConfigSections;
 import net.onelitefeather.titan.common.observability.TitanObservability;
 
 /**
@@ -151,41 +151,41 @@ public final class ModuleContext {
      * Returns this module's own configuration section, deserialized into {@code type}, using
      * {@code defaults} for anything the section (or the whole section) does not set.
      *
-     * <p>Backed by {@link ConfigStore#section(String, Class, Record)}, called with this module's
-     * own
-     * {@link #moduleId()} as the section id - there is no overload that takes a different id, so a
-     * module can only ever read its own section, never another module's (see {@code
-     * lobby-module-config} spec, "Ein Modul MUSS nur seinen eigenen Abschnitt lesen können").
+     * <p>Backed by {@link ConfigSections#section(String, Class, Record)}, called with this
+     * module's own {@link #moduleId()} as the section id - there is no overload that takes a
+     * different id, so a module can only ever read its own section, never another module's (see
+     * {@code lobby-module-config} spec, "Ein Modul MUSS nur seinen eigenen Abschnitt lesen
+     * können").
      *
      * <p>Only works while {@link LobbyModule#enable} is running, for the same reason as
      * {@link #listen}: a module reads its configuration once, up front, never in response to
      * something happening later (a player joining, a command running, ...).
      *
-     * <p>If no {@link ConfigStore} was configured on the owning {@link ModuleRegistry}, this
+     * <p>If no {@link ConfigSections} was configured on the owning {@link ModuleRegistry}, this
      * returns
      * {@code defaults} unchanged instead of throwing, so a test module - or a module under test in
-     * isolation - does not need to wire up a config file just to run.
+     * isolation - does not need to wire up a configuration just to run.
      *
      * @param type     the config record type
      * @param defaults a fully populated default instance
      * @param <R>      the config record type
      * @return this module's section, deserialized into {@code type}, or {@code defaults} if no
-     *         {@link ConfigStore} is configured
+     *         {@link ConfigSections} is configured
      * @throws IllegalStateException if called after {@link LobbyModule#enable} has returned
      * @throws ConfigException       if the section contains an invalid value; thrown by
      *                               {@code type}'s own compact constructor and completed by the
-     *                               {@link ConfigStore} with this module's id as the section before
-     *                               it reaches the caller
+     *                               {@link ConfigSections} with this module's id as the section
+     *                               before it reaches the caller
      */
     public <R extends Record> R config(Class<R> type, R defaults) {
         if (this.listeningClosed) {
             throw new IllegalStateException("Module '" + this.moduleId + "' tried to read its config after enable() returned. Config must be read while enable() runs.");
         }
-        ConfigStore configStore = this.platform.config();
-        if (configStore == null) {
+        ConfigSections configSections = this.platform.config();
+        if (configSections == null) {
             return defaults;
         }
-        return configStore.section(this.moduleId, type, defaults);
+        return configSections.section(this.moduleId, type, defaults);
     }
 
     /**

@@ -32,7 +32,7 @@ import net.onelitefeather.titan.app.module.item.LobbyItem;
 /**
  * Template for a new lobby feature module, referenced end to end from
  * {@code docs/lobby-modules.md}. It is deliberately small but touches every extension point a
- * typical feature needs: its own {@code app.json} section ({@link ExampleConfig}), a hotbar item
+ * typical feature needs: its own configuration section ({@link ExampleConfig}), a hotbar item
  * ({@link ExampleItems#GREETING_TOKEN}), a command, and a listener that cleans up per-player state
  * on disconnect. The pure decision logic lives in {@link ExampleGreetingRule}, unit-tested on its
  * own; the stateful cooldown tracking lives in {@link ExampleGreetingTracker}.
@@ -96,7 +96,7 @@ public final class ExampleModule implements LobbyModule {
 
     @Override
     public void enable(ModuleContext context) {
-        // config(): read this module's own app.json section once, up front - never later, see
+        // config(): read this module's own configuration section once, up front - never later, see
         // ModuleContext#config.
         ExampleConfig config = context.config(ExampleConfig.class, ExampleConfig.DEFAULTS);
         ExampleGreetingTracker tracker = new ExampleGreetingTracker(this.clock, config);
