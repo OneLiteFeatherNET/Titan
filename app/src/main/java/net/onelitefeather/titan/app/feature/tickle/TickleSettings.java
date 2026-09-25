@@ -25,7 +25,8 @@ import net.onelitefeather.titan.common.config.ConfigException;
  * <p>Takes plain values and either returns a validated result or throws
  * {@link ConfigException#invalid(String, String)} naming the full configuration key - it never
  * touches {@code io.avaje.config.Config} or a server, so it is unit-testable on its own.
- * {@link TickleConfig}'s compact constructor delegates here so the same rule is not duplicated.
+ * {@link TickleModule#enable} calls this before constructing anything that needs a validated
+ * cooldown, so the rule lives in exactly one place.
  */
 final class TickleSettings {
 

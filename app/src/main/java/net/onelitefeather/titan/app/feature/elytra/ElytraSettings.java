@@ -24,7 +24,8 @@ import net.onelitefeather.titan.common.config.ConfigException;
  * <p>Takes plain values and either returns a validated result or throws
  * {@link ConfigException#invalid(String, String)} naming the full configuration key - it never
  * touches {@code io.avaje.config.Config} or a server, so it is unit-testable on its own.
- * {@link ElytraConfig}'s compact constructor delegates here so the same rules are not duplicated.
+ * {@link ElytraModule#enable} calls both before constructing anything that needs validated
+ * values, so the rules live in exactly one place.
  */
 final class ElytraSettings {
 

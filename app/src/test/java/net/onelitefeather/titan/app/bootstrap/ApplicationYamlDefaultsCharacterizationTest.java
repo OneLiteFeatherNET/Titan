@@ -20,11 +20,9 @@ import java.util.List;
 import java.util.Map;
 import net.kyori.adventure.key.Key;
 import net.minestom.server.coordinate.Vec;
-import net.onelitefeather.titan.app.feature.elytra.ElytraConfig;
 import net.onelitefeather.titan.app.feature.navigator.NavigatorConfig;
 import net.onelitefeather.titan.app.feature.sit.SitConfig;
 import net.onelitefeather.titan.app.feature.spawn.SpawnConfig;
-import net.onelitefeather.titan.app.feature.tickle.TickleConfig;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -33,8 +31,10 @@ import org.junit.jupiter.api.Test;
  * Characterization test for {@code avaje-config-facade} task 1.1: locks in that the classpath
  * {@code app/src/main/resources/application.yaml} - the file every module will read directly
  * through {@code io.avaje.config.Config} once the facade migration is complete - carries exactly
- * today's {@code DEFAULTS} of {@link SitConfig}, {@link SpawnConfig}, {@link TickleConfig},
- * {@link ElytraConfig} and {@link NavigatorConfig}, key by key.
+ * today's {@code DEFAULTS} of {@link SitConfig}, {@link SpawnConfig}, tickle
+ * ({@code 4000} for {@code tickle.cooldownMillis}), elytra ({@code 30}/{@code 40} for
+ * {@code elytra.burnDurationTicks}/{@code elytra.cooldownTicks}) and {@link NavigatorConfig},
+ * key by key.
  *
  * <p>Loads the file as its own {@link Configuration} instance via
  * {@link Configuration.Builder#load(String)} - which reads a classpath resource, never the static
@@ -76,21 +76,21 @@ class ApplicationYamlDefaultsCharacterizationTest {
         Assertions.assertEquals(expectedAllowedBlocks, configuration.list().of("sit.allowedBlocks"), "sit.allowedBlocks");
     }
 
-    @DisplayName("tickle: application.yaml matches TickleConfig.DEFAULTS")
+    @DisplayName("tickle: application.yaml matches today's shipped default (4000ms)")
     @Test
     void tickleMatchesDefaults() {
         Configuration configuration = load();
 
-        Assertions.assertEquals(TickleConfig.DEFAULTS.cooldownMillis(), configuration.getLong("tickle.cooldownMillis"), "tickle.cooldownMillis");
+        Assertions.assertEquals(4000L, configuration.getLong("tickle.cooldownMillis"), "tickle.cooldownMillis");
     }
 
-    @DisplayName("elytra: application.yaml matches ElytraConfig.DEFAULTS")
+    @DisplayName("elytra: application.yaml matches today's shipped defaults (30 / 40 ticks)")
     @Test
     void elytraMatchesDefaults() {
         Configuration configuration = load();
 
-        Assertions.assertEquals(ElytraConfig.DEFAULTS.burnDurationTicks(), configuration.getInt("elytra.burnDurationTicks"), "elytra.burnDurationTicks");
-        Assertions.assertEquals(ElytraConfig.DEFAULTS.cooldownTicks(), configuration.getInt("elytra.cooldownTicks"), "elytra.cooldownTicks");
+        Assertions.assertEquals(30, configuration.getInt("elytra.burnDurationTicks"), "elytra.burnDurationTicks");
+        Assertions.assertEquals(40, configuration.getInt("elytra.cooldownTicks"), "elytra.cooldownTicks");
     }
 
     @DisplayName("navigator: application.yaml matches NavigatorConfig.DEFAULTS")

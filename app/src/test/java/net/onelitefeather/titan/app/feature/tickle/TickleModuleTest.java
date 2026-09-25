@@ -51,6 +51,9 @@ class TickleModuleTest {
 
     private static final Instant NOW = Instant.parse("2026-01-01T00:00:00Z");
 
+    /** The shipped default for {@code tickle.cooldownMillis} (see {@code application.yaml}). */
+    private static final long DEFAULT_COOLDOWN_MILLIS = 4000L;
+
     private static TickleModule fixedClockModule() {
         return new TickleModule(Clock.fixed(NOW, ZoneOffset.UTC));
     }
@@ -76,7 +79,7 @@ class TickleModuleTest {
             targetMessages.assertSingle();
             cooldownPackets.assertSingle();
             Assertions.assertTrue(attacker.hasTag(TickleAttackHandler.COOLDOWN_EXPIRY), "attacker must carry the cooldown tag after tickling");
-            Assertions.assertEquals(Long.valueOf(NOW.toEpochMilli() + TickleConfig.DEFAULTS.cooldownMillis()), attacker.getTag(TickleAttackHandler.COOLDOWN_EXPIRY));
+            Assertions.assertEquals(Long.valueOf(NOW.toEpochMilli() + DEFAULT_COOLDOWN_MILLIS), attacker.getTag(TickleAttackHandler.COOLDOWN_EXPIRY));
         }
     }
 
@@ -145,11 +148,11 @@ class TickleModuleTest {
 
             // Move past the cooldown and attack again - desired behaviour is a second tickle, not
             // just the cooldown tag silently being cleared.
-            clock.advance(Duration.ofMillis(TickleConfig.DEFAULTS.cooldownMillis() + 1));
+            clock.advance(Duration.ofMillis(DEFAULT_COOLDOWN_MILLIS + 1));
             env.process().eventHandler().call(new EntityAttackEvent(attacker, target));
 
             Assertions.assertEquals(2, attackerMessages.collect().size(), "the first hit after expiry must tickle again, not just clear the tag");
-            long expectedTicks = TickleConfig.DEFAULTS.cooldownMillis() / 50;
+            long expectedTicks = DEFAULT_COOLDOWN_MILLIS / 50;
             for (SetCooldownPacket packet : cooldownPackets.collect()) {
                 Assertions.assertEquals(expectedTicks, packet.cooldownTicks(), "the cooldown packet must carry a tick count (cooldownMillis / 50), not a millisecond timestamp");
             }

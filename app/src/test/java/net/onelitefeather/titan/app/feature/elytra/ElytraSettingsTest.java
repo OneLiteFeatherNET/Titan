@@ -69,4 +69,32 @@ class ElytraSettingsTest {
 
         Assertions.assertEquals("elytra.cooldownTicks", exception.field());
     }
+
+    @DisplayName("The burn duration rejection message names the full key exactly once, not doubled (e.g. elytra.elytra.)")
+    @Test
+    void burnDurationRejectionMessageNamesTheFullKeyExactlyOnce() {
+        ConfigException exception = Assertions.assertThrows(ConfigException.class, () -> ElytraSettings.burnDurationTicks(0));
+
+        String message = exception.getMessage();
+        Assertions.assertEquals(1, countOccurrences(message, ElytraSettings.BURN_DURATION_TICKS_KEY), "key must appear exactly once in: " + message);
+    }
+
+    @DisplayName("The cooldown rejection message names the full key exactly once, not doubled (e.g. elytra.elytra.)")
+    @Test
+    void cooldownRejectionMessageNamesTheFullKeyExactlyOnce() {
+        ConfigException exception = Assertions.assertThrows(ConfigException.class, () -> ElytraSettings.cooldownTicks(10, 10));
+
+        String message = exception.getMessage();
+        Assertions.assertEquals(1, countOccurrences(message, ElytraSettings.COOLDOWN_TICKS_KEY), "key must appear exactly once in: " + message);
+    }
+
+    private static int countOccurrences(String haystack, String needle) {
+        int count = 0;
+        int index = 0;
+        while ((index = haystack.indexOf(needle, index)) != -1) {
+            count++;
+            index += needle.length();
+        }
+        return count;
+    }
 }
