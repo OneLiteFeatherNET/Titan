@@ -83,7 +83,7 @@ Danach entfallen:
 
 ```java
 // TickleModule.enable()
-Duration cooldown = TickleSettings.cooldown(ConfigValues.longValue(COOLDOWN_KEY));
+Duration cooldown = TickleSettings.cooldown(Config.getAs(COOLDOWN_KEY, Long::parseLong));
 ```
 
 `TickleSettings.cooldown(long)` prüft auf „nicht negativ“ und hat mit `Config` nichts zu tun. Die Klassen darunter (Listener, Cooldowns, Navigator-Einträge) bekommen fertige Werte per Konstruktor wie heute.
@@ -98,15 +98,13 @@ Dazu kommt `ConfigException.invalid` mit vollem Schlüssel. Heute setzt `ModuleR
 
 **SOLID:** SRP (Lesen und Prüfen getrennt), DIP bleibt für alles unterhalb von `enable()` erhalten, weil Werte per Konstruktor kommen.
 
-### 4. `ConfigValues`: Zahlen mit Schlüssel in der Fehlermeldung
+### 4. Zahlen lesen: `Config.getAs(key, fn)`, kein eigenes Hilfsmittel
 
-**Entscheidung:** Eine kleine Klasse `common/.../config/ConfigValues` mit `int intValue(String key)`, `long longValue(String key)` und `double doubleValue(String key)`. Sie liest `Config.get(key)` und parst den Wert selbst. Aus einer `NumberFormatException` wird `ConfigException.invalid(key, "must be a whole number, was 'abc'")` bzw. „a number“. Das Parsen steckt in package-privaten Funktionen `parseInt(key, raw)` usw., die ohne `Config` testbar sind. Strings, Listen und Wahrheitswerte lesen Module direkt mit `Config.get`, `Config.list().of` und `Config.getBool`.
+**Entscheidung:** Ein Modul liest einen numerischen Wert mit `Config.getAs(key, Integer::parseInt)` (entsprechend `Long::parseLong`, `Double::parseDouble`) statt mit einer eigenen Klasse. Strings, Listen und Wahrheitswerte lesen Module weiterhin direkt mit `Config.get`, `Config.list().of` und `Config.getBool`.
 
-**Built-in first:** `Config.getInt/getLong/getDecimal` wurden geprüft und für Zahlen verworfen: Sie werfen eine `NumberFormatException` ohne Schlüssel, die Spec-Szenarien „Ungültiger Override“ verlangen aber den Schlüssel in der Meldung. `Config.getAs(key, fn)` hilft nicht, weil `fn` den Schlüssel nicht kennt. Für alles andere reicht die Fassade und wird direkt genutzt.
+**Built-in first:** `Config.getInt/getLong/getDecimal` wurden geprüft und für Zahlen verworfen: Sie werfen bei einem ungültigen Wert eine bloße `NumberFormatException` ohne Schlüssel, die Spec-Szenarien „Ungültiger Override“ verlangen aber den Schlüssel in der Meldung. `Config.getAs(key, fn)` dagegen ist genau dafür gebaut: Schlägt `fn` fehl, fängt avaje-config selbst die Exception, benennt den Schlüssel einmal in einer neuen `IllegalStateException("Failed to convert key: <key> sourced from: <quelle> with the provided function", ursprünglicheException)` und hängt die ursprüngliche Exception (z. B. die `NumberFormatException`, deren eigene Meldung den Rohwert wie `abc` trägt) als `cause` an. Damit nennt der eingebaute Weg selbst den Schlüssel einmal und behält den Grund in der Ursache - eine frühere Version dieser Entscheidung ging (ungeprüft) davon aus, `getAs` kenne den Schlüssel nicht; das stimmt nicht (verifiziert gegen den avaje-config-5.2-Quellcode, `CoreConfiguration#getAs`, und empirisch über einen Kind-JVM-Testfall). Eine eigene Hilfsklasse fürs Zahlenlesen ist damit unnötig und entfällt ersatzlos.
 
-**Test:** Unit-Tests auf `parseInt`/`parseLong`/`parseDouble` mit Schlüssel und Rohwert: gültige Zahl, `abc`, leerer String, Überlauf.
-
-**SOLID:** SRP, ein einziger Grund zur Änderung (Zahlen parsen mit Meldung).
+**Test:** Kein eigener Unit-Test hier: Es gibt keine eigene Parsing-Logik mehr zu testen. Die Kind-JVM-Fälle in `ConfigurationPrecedenceTest` (`--validate-tickle` mit `TICKLE_COOLDOWNMILLIS=abc`) decken den eingebauten Pfad end-to-end ab und prüfen, dass der ausgegebene Text den Schlüssel genau einmal und den Grund (`abc`, aus der `cause`-Kette) enthält.
 
 ### 5. Tests und globaler Zustand
 
