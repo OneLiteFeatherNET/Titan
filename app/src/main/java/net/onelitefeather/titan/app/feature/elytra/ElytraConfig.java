@@ -43,12 +43,14 @@ public record ElytraConfig(int burnDurationTicks, int cooldownTicks) {
      */
     public static final ElytraConfig DEFAULTS = new ElytraConfig(30, 40);
 
+    /**
+     * Delegates to {@link ElytraSettings} so the validation rules live in exactly one place.
+     *
+     * @throws ConfigException naming {@link ElytraSettings#BURN_DURATION_TICKS_KEY} or
+     *                         {@link ElytraSettings#COOLDOWN_TICKS_KEY} for an invalid value
+     */
     public ElytraConfig {
-        if (burnDurationTicks <= 0) {
-            throw ConfigException.invalid("burnDurationTicks", "must be positive");
-        }
-        if (cooldownTicks <= burnDurationTicks) {
-            throw ConfigException.invalid("cooldownTicks", "must be longer than burnDurationTicks");
-        }
+        burnDurationTicks = ElytraSettings.burnDurationTicks(burnDurationTicks);
+        cooldownTicks = ElytraSettings.cooldownTicks(cooldownTicks, burnDurationTicks);
     }
 }

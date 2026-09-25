@@ -31,11 +31,13 @@ public record TickleConfig(long cooldownMillis) {
     public static final TickleConfig DEFAULTS = new TickleConfig(4000);
 
     /**
-     * @throws ConfigException if {@code cooldownMillis} is negative
+     * Delegates to {@link TickleSettings#cooldown(long)} so the validation rule lives in exactly
+     * one place.
+     *
+     * @throws ConfigException naming {@link TickleSettings#COOLDOWN_KEY} if {@code cooldownMillis}
+     *                         is negative
      */
     public TickleConfig {
-        if (cooldownMillis < 0) {
-            throw ConfigException.invalid("cooldownMillis", "must not be negative");
-        }
+        cooldownMillis = TickleSettings.cooldown(cooldownMillis).toMillis();
     }
 }
