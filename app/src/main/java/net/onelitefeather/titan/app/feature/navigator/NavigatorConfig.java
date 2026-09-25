@@ -17,7 +17,6 @@ package net.onelitefeather.titan.app.feature.navigator;
 
 import java.util.Map;
 import java.util.Objects;
-import net.minestom.server.item.Material;
 import net.onelitefeather.titan.common.config.ConfigException;
 import org.jetbrains.annotations.Nullable;
 
@@ -89,18 +88,10 @@ public record NavigatorConfig(String title, Map<String, Entry> entries) {
          *                              is {@code null}
          */
         public Entry {
-            if (slot < 0 || slot > 8) {
-                throw ConfigException.invalid("entries", "slot must be between 0 and 8 (CHEST_1_ROW), was " + slot);
-            }
-            Objects.requireNonNull(icon, "icon must not be null");
-            if (Material.fromKey(icon) == null) {
-                throw ConfigException.invalid("entries", "icon '" + icon + "' is not a known material");
-            }
+            NavigatorEntryValidation.requireValidSlot("entries", slot);
+            NavigatorEntryValidation.requireKnownMaterial("entries", icon);
             Objects.requireNonNull(displayName, "displayName must not be null");
-            Objects.requireNonNull(destination, "destination must not be null");
-            if (destination.isBlank()) {
-                throw ConfigException.invalid("entries", "destination must not be blank");
-            }
+            NavigatorEntryValidation.requireNonBlankDestination("entries", destination);
         }
 
         /**

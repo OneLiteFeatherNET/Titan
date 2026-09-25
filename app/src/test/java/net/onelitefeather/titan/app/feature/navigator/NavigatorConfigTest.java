@@ -18,7 +18,6 @@ package net.onelitefeather.titan.app.feature.navigator;
 import io.avaje.config.Configuration;
 import java.util.Map;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.common.config.ConfigException;
 import net.onelitefeather.titan.common.config.ConfigSections;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -27,12 +26,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Unit coverage for {@link NavigatorConfig} and {@link NavigatorConfig.Entry}: the defaults
- * reproduce today's four navigator entries exactly, keyed by name, and an entry's compact
- * constructor rejects a slot outside {@code 0}-{@code 8}, an unknown material and a blank
- * destination. Also covers the {@code lobby-navigator} spec scenarios "Profil ändert ein einzelnes
- * Ziel" and "Zusätzliches Ziel per Konfiguration" through {@link ConfigSections}, built from a
- * {@link Configuration} over a plain {@link Map} (see {@code design.md} decision 1's spike result)
- * - the map stands in for a profile or override source setting just one key.
+ * reproduce today's four navigator entries exactly, keyed by name. The checks an entry's compact
+ * constructor performs - slot {@code 0}-{@code 8}, a known material, a non-blank destination - are
+ * covered by {@link NavigatorEntryValidationTest} instead, against the same {@code require*}
+ * functions the constructor now delegates to (see {@code openspec/changes/avaje-config-facade/
+ * design.md}, decision 6). Also covers the {@code lobby-navigator} spec scenarios "Profil ändert
+ * ein
+ * einzelnes Ziel" and "Zusätzliches Ziel per Konfiguration" through {@link ConfigSections}, built
+ * from a {@link Configuration} over a plain {@link Map} (see {@code design.md} decision 1's spike
+ * result) - the map stands in for a profile or override source setting just one key.
  *
  * <p>{@link net.minestom.testing.extension.MicrotusExtension} is only needed because
  * {@link net.minestom.server.item.Material#fromKey(String)} resolves against Minestom's registry
@@ -66,53 +68,6 @@ class NavigatorConfigTest {
     @Test
     void nullEntriesIsRejected() {
         Assertions.assertThrows(NullPointerException.class, () -> new NavigatorConfig("<yellow>Navigator", null));
-    }
-
-    @DisplayName("A negative slot is rejected")
-    @Test
-    void negativeSlotIsRejected() {
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> new NavigatorConfig.Entry(-1, "minecraft:feather", "<white>Test", "Test"));
-
-        Assertions.assertEquals("entries", thrown.field());
-        Assertions.assertTrue(thrown.reason().contains("-1"), "the reason must name the offending slot");
-    }
-
-    @DisplayName("A slot past 8 (outside CHEST_1_ROW) is rejected")
-    @Test
-    void slotPastEightIsRejected() {
-        Assertions.assertThrows(ConfigException.class, () -> new NavigatorConfig.Entry(9, "minecraft:feather", "<white>Test", "Test"));
-    }
-
-    @DisplayName("An unknown material is rejected")
-    @Test
-    void unknownMaterialIsRejected() {
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> new NavigatorConfig.Entry(0, "minecraft:not_a_real_material", "<white>Test", "Test"));
-
-        Assertions.assertTrue(thrown.reason().contains("not_a_real_material"), "the reason must name the offending icon");
-    }
-
-    @DisplayName("A blank destination is rejected")
-    @Test
-    void blankDestinationIsRejected() {
-        Assertions.assertThrows(ConfigException.class, () -> new NavigatorConfig.Entry(0, "minecraft:feather", "<white>Test", "   "));
-    }
-
-    @DisplayName("A null icon is rejected")
-    @Test
-    void nullIconIsRejected() {
-        Assertions.assertThrows(NullPointerException.class, () -> new NavigatorConfig.Entry(0, null, "<white>Test", "Test"));
-    }
-
-    @DisplayName("A null display name is rejected")
-    @Test
-    void nullDisplayNameIsRejected() {
-        Assertions.assertThrows(NullPointerException.class, () -> new NavigatorConfig.Entry(0, "minecraft:feather", null, "Test"));
-    }
-
-    @DisplayName("A null destination is rejected")
-    @Test
-    void nullDestinationIsRejected() {
-        Assertions.assertThrows(NullPointerException.class, () -> new NavigatorConfig.Entry(0, "minecraft:feather", "<white>Test", null));
     }
 
     @DisplayName("A profile-like override changes a single entry's destination, leaving the others at their defaults")
