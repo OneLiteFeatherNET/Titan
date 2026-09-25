@@ -16,7 +16,6 @@
 package net.onelitefeather.titan.app.feature.navigator;
 
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.common.config.ConfigException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -56,35 +55,35 @@ class NavigatorEntryValidationTest {
     @DisplayName("A negative slot is rejected, naming the full key")
     @Test
     void negativeSlotIsRejected() {
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> NavigatorEntryValidation.buildEntry("survival", -1, "minecraft:feather", "<white>Test", "Test", null));
+        IllegalArgumentException thrown = Assertions.assertThrows(IllegalArgumentException.class, () -> NavigatorEntryValidation.buildEntry("survival", -1, "minecraft:feather", "<white>Test", "Test", null));
 
-        Assertions.assertEquals("navigator.entries.survival.slot", thrown.field());
-        Assertions.assertTrue(thrown.reason().contains("-1"), "the reason must name the offending slot");
+        Assertions.assertTrue(thrown.getMessage().contains("navigator.entries.survival.slot"), "the message must name navigator.entries.survival.slot, was: " + thrown.getMessage());
+        Assertions.assertTrue(thrown.getMessage().contains("-1"), "the message must name the offending slot");
     }
 
     @DisplayName("A slot past 8 (outside CHEST_1_ROW) is rejected, naming the full key")
     @Test
     void slotPastEightIsRejected() {
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> NavigatorEntryValidation.buildEntry("survival", 9, "minecraft:feather", "<white>Test", "Test", null));
+        IllegalArgumentException thrown = Assertions.assertThrows(IllegalArgumentException.class, () -> NavigatorEntryValidation.buildEntry("survival", 9, "minecraft:feather", "<white>Test", "Test", null));
 
-        Assertions.assertEquals("navigator.entries.survival.slot", thrown.field());
+        Assertions.assertTrue(thrown.getMessage().contains("navigator.entries.survival.slot"), "the message must name navigator.entries.survival.slot, was: " + thrown.getMessage());
     }
 
     @DisplayName("An unknown material is rejected, naming the full key")
     @Test
     void unknownMaterialIsRejected() {
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> NavigatorEntryValidation.buildEntry("survival", 0, "minecraft:not_a_real_material", "<white>Test", "Test", null));
+        IllegalArgumentException thrown = Assertions.assertThrows(IllegalArgumentException.class, () -> NavigatorEntryValidation.buildEntry("survival", 0, "minecraft:not_a_real_material", "<white>Test", "Test", null));
 
-        Assertions.assertEquals("navigator.entries.survival.icon", thrown.field());
-        Assertions.assertTrue(thrown.reason().contains("not_a_real_material"), "the reason must name the offending icon");
+        Assertions.assertTrue(thrown.getMessage().contains("navigator.entries.survival.icon"), "the message must name navigator.entries.survival.icon, was: " + thrown.getMessage());
+        Assertions.assertTrue(thrown.getMessage().contains("not_a_real_material"), "the message must name the offending icon");
     }
 
     @DisplayName("A blank destination is rejected, naming the full key")
     @Test
     void blankDestinationIsRejected() {
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> NavigatorEntryValidation.buildEntry("survival", 0, "minecraft:feather", "<white>Test", "   ", null));
+        IllegalArgumentException thrown = Assertions.assertThrows(IllegalArgumentException.class, () -> NavigatorEntryValidation.buildEntry("survival", 0, "minecraft:feather", "<white>Test", "   ", null));
 
-        Assertions.assertEquals("navigator.entries.survival.destination", thrown.field());
+        Assertions.assertTrue(thrown.getMessage().contains("navigator.entries.survival.destination"), "the message must name navigator.entries.survival.destination, was: " + thrown.getMessage());
     }
 
     @DisplayName("A null name is rejected")

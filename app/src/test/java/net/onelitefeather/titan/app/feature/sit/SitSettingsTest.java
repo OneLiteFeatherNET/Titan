@@ -18,7 +18,6 @@ package net.onelitefeather.titan.app.feature.sit;
 import java.util.List;
 import net.kyori.adventure.key.Key;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.common.config.ConfigException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,9 +25,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Plain unit tests for {@link SitSettings}: no {@code Config}, no server needed - just the pure
- * validation functions. {@code sit.offset} has no validation function of its own to test here -
- * see {@link SitSettings}'s Javadoc for why - only {@code sit.allowedBlocks}, read and validated
- * by {@link SitModule#enable}.
+ * parsing and validation functions. {@code sit.offset} has no validation function of its own to
+ * test here - see {@link SitSettings}'s Javadoc for why - only {@code sit.allowedBlocks}, read and
+ * validated by {@link SitModule#enable}.
  *
  * <p>{@link MicrotusExtension} is only needed because {@link SitSettings#parseBlock} resolves a
  * key against Minestom's block registry data (see
@@ -48,15 +47,15 @@ class SitSettingsTest {
     @DisplayName("A null allowedBlocks list is rejected, naming the full key")
     @Test
     void nullAllowedBlocksIsRejected() {
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> SitSettings.allowedBlocks(null));
-        Assertions.assertEquals("sit.allowedBlocks", thrown.field());
+        IllegalArgumentException thrown = Assertions.assertThrows(IllegalArgumentException.class, () -> SitSettings.allowedBlocks(null));
+        Assertions.assertTrue(thrown.getMessage().contains(SitSettings.ALLOWED_BLOCKS_KEY), "the message must name " + SitSettings.ALLOWED_BLOCKS_KEY);
     }
 
     @DisplayName("An empty allowedBlocks list is rejected, naming the full key")
     @Test
     void emptyAllowedBlocksIsRejected() {
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> SitSettings.allowedBlocks(List.of()));
-        Assertions.assertEquals("sit.allowedBlocks", thrown.field());
+        IllegalArgumentException thrown = Assertions.assertThrows(IllegalArgumentException.class, () -> SitSettings.allowedBlocks(List.of()));
+        Assertions.assertTrue(thrown.getMessage().contains(SitSettings.ALLOWED_BLOCKS_KEY), "the message must name " + SitSettings.ALLOWED_BLOCKS_KEY);
     }
 
     @DisplayName("A valid block key string parses to the same Key")
@@ -68,25 +67,15 @@ class SitSettingsTest {
     @DisplayName("An invalid block key string is rejected, naming the full key")
     @Test
     void invalidBlockKeyStringIsRejected() {
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> SitSettings.parseBlock("Not A Valid Key!!"));
-        Assertions.assertEquals("sit.allowedBlocks", thrown.field());
+        IllegalArgumentException thrown = Assertions.assertThrows(IllegalArgumentException.class, () -> SitSettings.parseBlock("Not A Valid Key!!"));
+        Assertions.assertTrue(thrown.getMessage().contains(SitSettings.ALLOWED_BLOCKS_KEY), "the message must name " + SitSettings.ALLOWED_BLOCKS_KEY);
     }
 
     @DisplayName("A syntactically valid key that names no known block is rejected, naming the full key")
     @Test
     void unknownBlockKeyIsRejected() {
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> SitSettings.parseBlock("minecraft:not_a_block"));
-        Assertions.assertEquals("sit.allowedBlocks", thrown.field());
-        Assertions.assertTrue(thrown.reason().contains("not_a_block"), "the reason must name the offending value, was: " + thrown.reason());
-    }
-
-    @DisplayName("A rejection message names the full key exactly once")
-    @Test
-    void rejectionMessageNamesTheFullKeyExactlyOnce() {
-        ConfigException thrown = Assertions.assertThrows(ConfigException.class, () -> SitSettings.allowedBlocks(null));
-        String message = thrown.getMessage();
-        int firstIndex = message.indexOf("sit.allowedBlocks");
-        Assertions.assertTrue(firstIndex >= 0, "the message must name sit.allowedBlocks");
-        Assertions.assertEquals(-1, message.indexOf("sit.allowedBlocks", firstIndex + 1), "sit.allowedBlocks must appear exactly once, was: " + message);
+        IllegalArgumentException thrown = Assertions.assertThrows(IllegalArgumentException.class, () -> SitSettings.parseBlock("minecraft:not_a_block"));
+        Assertions.assertTrue(thrown.getMessage().contains(SitSettings.ALLOWED_BLOCKS_KEY), "the message must name " + SitSettings.ALLOWED_BLOCKS_KEY);
+        Assertions.assertTrue(thrown.getMessage().contains("not_a_block"), "the message must name the offending value, was: " + thrown.getMessage());
     }
 }

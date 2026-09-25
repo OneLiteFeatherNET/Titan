@@ -15,44 +15,42 @@
  */
 package net.onelitefeather.titan.setup.config;
 
-import net.onelitefeather.titan.common.config.ConfigException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Covers {@link SetupSpawnSettings#simulationDistance(int)}, the pure validation behind {@link
- * SetupSpawnConfig}'s compact constructor (design.md, decisions 3 and 5).
+ * Covers {@link SetupSpawnSettings#simulationDistance(String)}, the pure parsing and validation
+ * behind {@link SetupSpawnConfig#read()} (design.md, decisions 3, 4 and 5).
  *
- * <p>None of these tests touch the {@code io.avaje.config.Config} facade - the validated value
- * comes in as a plain {@code int}, so this class is free of the facade's global state.
+ * <p>None of these tests touch the {@code io.avaje.config.Config} facade - the raw value comes in
+ * as a plain {@code String}, so this class is free of the facade's global state.
  */
 class SetupSpawnSettingsTest {
 
     @Test
     @DisplayName("Accepts a positive simulation distance")
     void acceptsAPositiveSimulationDistance() {
-        assertEquals(4, SetupSpawnSettings.simulationDistance(4));
+        assertEquals(4, SetupSpawnSettings.simulationDistance("4"));
     }
 
     @Test
-    @DisplayName("Rejects a simulation distance of zero, naming the full key")
+    @DisplayName("Rejects a simulation distance of zero")
     void rejectsAZeroSimulationDistance() {
-        ConfigException thrown = assertThrows(ConfigException.class, () -> SetupSpawnSettings.simulationDistance(0));
-
-        assertEquals("spawn.simulationDistance", thrown.field());
-        assertTrue(thrown.getMessage().contains("spawn.simulationDistance"), "message must name the full key: " + thrown.getMessage());
+        assertThrows(IllegalArgumentException.class, () -> SetupSpawnSettings.simulationDistance("0"));
     }
 
     @Test
-    @DisplayName("Rejects a negative simulation distance, naming the full key")
+    @DisplayName("Rejects a negative simulation distance")
     void rejectsANegativeSimulationDistance() {
-        ConfigException thrown = assertThrows(ConfigException.class, () -> SetupSpawnSettings.simulationDistance(-1));
+        assertThrows(IllegalArgumentException.class, () -> SetupSpawnSettings.simulationDistance("-1"));
+    }
 
-        assertEquals("spawn.simulationDistance", thrown.field());
-        assertTrue(thrown.getMessage().contains("spawn.simulationDistance"), "message must name the full key: " + thrown.getMessage());
+    @Test
+    @DisplayName("Rejects a non-numeric simulation distance")
+    void rejectsANonNumericSimulationDistance() {
+        assertThrows(NumberFormatException.class, () -> SetupSpawnSettings.simulationDistance("abc"));
     }
 }

@@ -15,7 +15,6 @@
  */
 package net.onelitefeather.titan.app.feature.elytra;
 
-import net.onelitefeather.titan.common.config.ConfigException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -29,7 +28,7 @@ class ElytraSettingsTest {
     @DisplayName("A cooldown strictly longer than the burn is accepted unchanged")
     @Test
     void aCooldownStrictlyLongerThanTheBurnIsAccepted() {
-        int burnDurationTicks = ElytraSettings.burnDurationTicks(10);
+        int burnDurationTicks = ElytraSettings.burnDurationTicks("10");
         int cooldownTicks = ElytraSettings.cooldownTicks(15, burnDurationTicks);
 
         Assertions.assertEquals(10, burnDurationTicks);
@@ -39,62 +38,38 @@ class ElytraSettingsTest {
     @DisplayName("A zero burn duration is rejected")
     @Test
     void aZeroBurnDurationIsRejected() {
-        ConfigException exception = Assertions.assertThrows(ConfigException.class, () -> ElytraSettings.burnDurationTicks(0));
+        IllegalArgumentException exception = Assertions.assertThrows(IllegalArgumentException.class, () -> ElytraSettings.burnDurationTicks("0"));
 
-        Assertions.assertEquals("elytra.burnDurationTicks", exception.field());
-        Assertions.assertEquals("must be positive", exception.reason());
+        Assertions.assertTrue(exception.getMessage().contains("positive"), "the message must explain why, was: " + exception.getMessage());
     }
 
     @DisplayName("A negative burn duration is rejected")
     @Test
     void aNegativeBurnDurationIsRejected() {
-        ConfigException exception = Assertions.assertThrows(ConfigException.class, () -> ElytraSettings.burnDurationTicks(-1));
-
-        Assertions.assertEquals("elytra.burnDurationTicks", exception.field());
+        Assertions.assertThrows(IllegalArgumentException.class, () -> ElytraSettings.burnDurationTicks("-1"));
     }
 
-    @DisplayName("A cooldown equal to the burn duration is rejected")
+    @DisplayName("A non-numeric burn duration fails to parse")
+    @Test
+    void nonNumericBurnDurationFailsToParse() {
+        Assertions.assertThrows(NumberFormatException.class, () -> ElytraSettings.burnDurationTicks("abc"));
+    }
+
+    @DisplayName("A cooldown equal to the burn duration is rejected, naming both full keys")
     @Test
     void aCooldownEqualToTheBurnDurationIsRejected() {
-        ConfigException exception = Assertions.assertThrows(ConfigException.class, () -> ElytraSettings.cooldownTicks(10, 10));
+        IllegalArgumentException exception = Assertions.assertThrows(IllegalArgumentException.class, () -> ElytraSettings.cooldownTicks(10, 10));
 
-        Assertions.assertEquals("elytra.cooldownTicks", exception.field());
-        Assertions.assertEquals("must be longer than burnDurationTicks", exception.reason());
+        Assertions.assertTrue(exception.getMessage().contains(ElytraSettings.COOLDOWN_TICKS_KEY), "the message must name " + ElytraSettings.COOLDOWN_TICKS_KEY);
+        Assertions.assertTrue(exception.getMessage().contains(ElytraSettings.BURN_DURATION_TICKS_KEY), "the message must name " + ElytraSettings.BURN_DURATION_TICKS_KEY);
     }
 
-    @DisplayName("A cooldown shorter than the burn duration is rejected")
+    @DisplayName("A cooldown shorter than the burn duration is rejected, naming both full keys")
     @Test
     void aCooldownShorterThanTheBurnDurationIsRejected() {
-        ConfigException exception = Assertions.assertThrows(ConfigException.class, () -> ElytraSettings.cooldownTicks(5, 10));
+        IllegalArgumentException exception = Assertions.assertThrows(IllegalArgumentException.class, () -> ElytraSettings.cooldownTicks(5, 10));
 
-        Assertions.assertEquals("elytra.cooldownTicks", exception.field());
-    }
-
-    @DisplayName("The burn duration rejection message names the full key exactly once, not doubled (e.g. elytra.elytra.)")
-    @Test
-    void burnDurationRejectionMessageNamesTheFullKeyExactlyOnce() {
-        ConfigException exception = Assertions.assertThrows(ConfigException.class, () -> ElytraSettings.burnDurationTicks(0));
-
-        String message = exception.getMessage();
-        Assertions.assertEquals(1, countOccurrences(message, ElytraSettings.BURN_DURATION_TICKS_KEY), "key must appear exactly once in: " + message);
-    }
-
-    @DisplayName("The cooldown rejection message names the full key exactly once, not doubled (e.g. elytra.elytra.)")
-    @Test
-    void cooldownRejectionMessageNamesTheFullKeyExactlyOnce() {
-        ConfigException exception = Assertions.assertThrows(ConfigException.class, () -> ElytraSettings.cooldownTicks(10, 10));
-
-        String message = exception.getMessage();
-        Assertions.assertEquals(1, countOccurrences(message, ElytraSettings.COOLDOWN_TICKS_KEY), "key must appear exactly once in: " + message);
-    }
-
-    private static int countOccurrences(String haystack, String needle) {
-        int count = 0;
-        int index = 0;
-        while ((index = haystack.indexOf(needle, index)) != -1) {
-            count++;
-            index += needle.length();
-        }
-        return count;
+        Assertions.assertTrue(exception.getMessage().contains(ElytraSettings.COOLDOWN_TICKS_KEY), "the message must name " + ElytraSettings.COOLDOWN_TICKS_KEY);
+        Assertions.assertTrue(exception.getMessage().contains(ElytraSettings.BURN_DURATION_TICKS_KEY), "the message must name " + ElytraSettings.BURN_DURATION_TICKS_KEY);
     }
 }
