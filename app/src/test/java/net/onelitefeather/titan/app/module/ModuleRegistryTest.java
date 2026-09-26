@@ -28,6 +28,7 @@ import net.minestom.server.event.trait.PlayerEvent;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
+import net.minestom.server.thread.TickSchedulerThread;
 import net.minestom.server.timer.TaskSchedule;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
@@ -68,8 +69,8 @@ class ModuleRegistryTest {
 
     /**
      * A minimal test-only {@link FeatureFlags}: a name {@link #known} contains exists; nothing
-     * else does. Mirrors {@code TogglzFeatureFlags}' behaviour for a name it has never heard of,
-     * without needing a real {@code flags.properties} file - see this codebase's F.I.R.S.T. rule
+     * else does. Mirrors {@code ConfigFeatureFlags}' behaviour for a name it has never heard of,
+     * without needing a real {@code application.yaml} file - see this codebase's F.I.R.S.T. rule
      * against that in a unit test.
      */
     private record TestFeatureFlags(Set<String> known) implements FeatureFlags {
@@ -99,6 +100,24 @@ class ModuleRegistryTest {
         registry.enableAll();
 
         Assertions.assertEquals(List.of("enable:a", "enable:b", "enable:c"), log);
+    }
+
+    @DisplayName("moduleIds() reports every registered module in registration order, whether or not it is running")
+    @Test
+    void moduleIdsReportsRegistrationOrder(Env env) {
+        List<String> log = new ArrayList<>();
+        EventNode<Event> parent = EventNode.all("test-module-ids");
+        ModuleRegistry registry = builder(env, parent).modules(new RecordingModule("c", log), new RecordingModule("a", log), new RecordingModule("b", log)).build();
+
+        Assertions.assertEquals(
+                List.of("c", "a", "b"), registry.moduleIds(), "must reflect registration order, not alphabetical or any other order, and not require enableAll() first");
+
+        registry.enableAll();
+
+        Assertions.assertEquals(List.of("c", "a", "b"), registry.moduleIds(), "must stay the same after modules are started");
+
+        Assertions.assertThrows(
+                UnsupportedOperationException.class, () -> registry.moduleIds().add("d"), "must be unmodifiable");
     }
 
     @DisplayName("Modules stop in the reverse of their registration order")
@@ -258,5 +277,21 @@ class ModuleRegistryTest {
 
         Assertions.assertTrue(thrown.getMessage().contains("teaser.entries"), "the message must name the entry's origin module, not 'navigator', was: " + thrown.getMessage());
         Assertions.assertTrue(thrown.getMessage().contains("TYPO"), "the message must name the unknown flag");
+    }
+
+    @DisplayName("The default tick-thread guard accepts Minestom's own tick scheduler thread and rejects an ordinary thread")
+    @Test
+    void defaultTickThreadGuardAcceptsTheTickSchedulerThreadAndRejectsAnOrdinaryThread(Env env) {
+        // Constructed, never started: ConfigChangeBootstrap wires the scheduler manager itself as
+        // ConfigChangeHandler's tick executor, and SchedulerManager's own tasks run on exactly this
+        // thread type (see ModuleRegistry.isTickSchedulerThread's Javadoc) - starting it here would
+        // spin up a second, real tick loop racing the one Env already drives.
+        Thread tickSchedulerThread = new TickSchedulerThread(env.process());
+        Thread ordinaryThread = new Thread("not-a-tick-thread");
+
+        Assertions.assertTrue(
+                ModuleRegistry.isTickSchedulerThread(tickSchedulerThread), "must accept Minestom's own tick scheduler thread, the thread every production restart() call runs on"
+        );
+        Assertions.assertFalse(ModuleRegistry.isTickSchedulerThread(ordinaryThread), "must reject a thread that is not the tick scheduler thread");
     }
 }

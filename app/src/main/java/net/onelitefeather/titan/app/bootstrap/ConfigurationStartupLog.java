@@ -31,22 +31,29 @@ import org.slf4j.LoggerFactory;
  */
 public final class ConfigurationStartupLog {
 
+    /**
+     * The {@code avaje-config} key holding the currently active configuration profiles - the same
+     * key {@code avaje-config} itself populates from {@code AVAJE_PROFILES}/
+     * {@code -Davaje.profiles} (see
+     * {@code openspec/changes/standardized-config-profiles/design.md}, decision 6).
+     */
+    public static final String ACTIVE_PROFILES_KEY = "avaje.profiles";
+
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigurationStartupLog.class);
 
     private ConfigurationStartupLog() {
     }
 
     /**
-     * Logs the currently active configuration profiles - the {@code avaje.profiles} key {@code
-     * avaje-config} itself populates from {@code AVAJE_PROFILES}/{@code -Davaje.profiles} (see
-     * {@code openspec/changes/standardized-config-profiles/design.md}, decision 6 - as a single
-     * parameterised INFO line, even when no profile is active (an empty list). Reads {@link
-     * Config#asConfiguration()} itself (see {@code openspec/changes/avaje-config-facade/design.md},
-     * decision 1) rather than taking the already-built instance as a parameter, since {@link
-     * Titan#Titan()} has nothing else to build it for any more.
+     * Logs the currently active configuration profiles - {@link #ACTIVE_PROFILES_KEY} - as a
+     * single parameterised INFO line, even when no profile is active (an empty list). Reads
+     * {@link Config#asConfiguration()} itself (see
+     * {@code openspec/changes/avaje-config-facade/design.md}, decision 1) rather than taking the
+     * already-built instance as a parameter, since {@link Titan#Titan()} has nothing else to build
+     * it for any more.
      */
     public static void activeProfiles() {
-        List<String> profiles = Config.asConfiguration().list().of("avaje.profiles");
+        List<String> profiles = Config.asConfiguration().list().of(ACTIVE_PROFILES_KEY);
         LOGGER.info("Active configuration profiles: {}", profiles);
     }
 }

@@ -24,11 +24,11 @@ import net.onelitefeather.titan.common.feature.FeatureFlags;
  * "exists"; its current state is whatever {@link #set(String, boolean)} last set it to. A name
  * never
  * declared does not exist and is never active - mirroring an unknown name in
- * {@code net.onelitefeather.titan.common.feature.TogglzFeatureFlags}.
+ * {@code net.onelitefeather.titan.common.feature.ConfigFeatureFlags}.
  *
  * <p>Exists so {@code NavigatorModule} and {@code NavigatorInventory} tests never need a real
- * {@code flags.properties} file or the static Togglz {@code FeatureContext} - see
- * {@code openspec/changes/lobby-feature-modules/design.md}, decision 13, and this codebase's
+ * classpath {@code application.yaml} file or the static {@code io.avaje.config.Config} facade -
+ * see {@code openspec/changes/lobby-feature-modules/design.md}, decision 13, and this codebase's
  * F.I.R.S.T. rule against a real file or a static singleton in a test.
  */
 final class FakeFeatureFlags implements FeatureFlags {

@@ -127,6 +127,13 @@ navigator:
       icon: minecraft:wooden_axe
       displayName: "<!i><rainbow>Creative</rainbow>"
       destination: MemberBuild
+
+features:
+  NAVIGATOR_CREATIVE: false
+  NAVIGATOR_SLENDER: false
+  NAVIGATOR_MANIS: false
+  NAVIGATOR_SURVIVAL: false
+  NAVIGATOR_ELYTRA: false
 ```
 
 ### Configuration Options Explained
@@ -150,12 +157,15 @@ navigator:
   `survival`) so a profile or an override can change a single entry without repeating the others;
   each entry has a hotbar-chest slot (`0`-`8`), an icon material key, a MiniMessage display name
   and the CloudNet task name a click delivers the player to
-- `navigator.entries.<name>.feature` (optional): the name of a `TitanFeatures` feature flag this
-  destination is gated behind, e.g. `NAVIGATOR_SLENDER`. Omitted, the destination is always
-  visible. A name Togglz does not recognize aborts startup with a message naming
-  `navigator.entries` and the unknown name. A flag missing from `flags.properties` counts as
+- `navigator.entries.<name>.feature` (optional): the name of a flag from the `features` section
+  below this destination is gated behind, e.g. `NAVIGATOR_SLENDER`. Omitted, the destination is
+  always visible. A name that is not one of the shipped `features` keys aborts startup with a
+  message naming `navigator.entries` and the unknown name. A flag not set anywhere counts as
   **off** - Slender, for example, stays hidden until `NAVIGATOR_SLENDER` is explicitly turned on.
-  Toggling a flag takes effect the next time a player opens the navigator, with no restart.
+  Toggling a flag takes effect the next time a player opens the navigator, with no restart of the
+  navigator or the lobby.
+- `features`: plain booleans, one per feature flag, with the same sources and override order as
+  every other key (see "Feature flags" below).
 
 ### Environment variable reference
 
@@ -177,10 +187,96 @@ navigator:
 | `navigator.entries.<name>.displayName` | `NAVIGATOR_ENTRIES_<NAME>_DISPLAYNAME` |
 | `navigator.entries.<name>.destination` | `NAVIGATOR_ENTRIES_<NAME>_DESTINATION` |
 | `navigator.entries.<name>.feature` | `NAVIGATOR_ENTRIES_<NAME>_FEATURE` |
+| `features.<NAME>` | `FEATURES_<NAME>` |
 
 `<NAME>` is the entry's map key, upper-cased - e.g. `navigator.entries.survival.destination`
 becomes `NAVIGATOR_ENTRIES_SURVIVAL_DESTINATION`. The default entries are `elytrarace`,
-`survival`, `slender` and `creative`.
+`survival`, `slender` and `creative`. The same rule applies to a feature flag's own name, e.g.
+`features.NAVIGATOR_SLENDER` becomes `FEATURES_NAVIGATOR_SLENDER`.
+
+## Runtime reloading
+
+The lobby can pick up a change to its configuration files without a restart, using avaje-config's
+own built-in file watcher. It is off by default; an operator turns it on in their own
+working-directory `application.yaml`, an active profile's `application-<profile>.yaml`, or the
+file selected via `CONFIG_FILE`/`config.file`, with:
+
+```yaml
+config.watch.enabled: true
+```
+
+Once enabled, it watches only the configuration files that already existed on disk at startup - a
+file created afterwards is picked up only on the next restart. Every `config.watch.period` seconds
+(default `10`, the first check happening `config.watch.delay` seconds after startup, also default
+`10`) it re-reads every watched file and applies whatever changed.
+
+A changed value only restarts the module whose own section (`<module-id>.*`) it belongs to - every
+other module keeps running untouched. A change under `features.*`, `titan.*` or `config.*` restarts
+no module at all. Restarting a module briefly tears it down and brings it back up, so any state
+that lives only in that module's memory is lost for players who were mid-interaction with it - a
+player sitting down stands back up, and a player mid-elytra-boost loses the tracked boost - while
+their hotbar items and navigator entries are put back automatically. Only modules whose keys
+actually changed are restarted, so this only affects a module an operator is actively
+reconfiguring.
+
+If the new value for a key is invalid, the lobby discards it for that module only: the module keeps
+running with its previous values, and the log names the key and the reason at WARN. The rejected
+value is not removed from the file, so it is read again, and rejected again with the same WARN, the
+next time that file changes for any other reason - until the operator corrects it. If a watched
+file is not valid YAML after a change, avaje-config itself logs the file and the location of the
+error at ERROR and applies no value from it; no module restarts because of that file.
+
+**Accepted limits of this built-in watcher** (see `design.md`, decision 1, in
+`openspec/changes/config-reload-feature-flags`):
+
+- an environment variable or system property override for a key is displaced by a changed file's
+  value for that same key, until the lobby is next restarted;
+- a key deleted from a changed file stays active with its old value until the next restart;
+- a file created after startup is only picked up on the next restart;
+- there is no manual trigger - a change takes effect only once the watcher notices it, at most
+  `config.watch.delay` plus `config.watch.period` after it was made.
+
+## Feature flags
+
+Feature flags are plain booleans under the `features` section, one per flag name (e.g.
+`features.NAVIGATOR_SLENDER: true`), with the same sources and override order as every other
+configuration key - a profile's file, an external file, an environment variable
+(`FEATURES_NAVIGATOR_SLENDER`), or a system property. The five flags the lobby ships with, all
+`false` by default: `NAVIGATOR_CREATIVE`, `NAVIGATOR_SLENDER`, `NAVIGATOR_MANIS`,
+`NAVIGATOR_SURVIVAL` and `NAVIGATOR_ELYTRA`. A flag not listed in the shipped defaults is unknown -
+a navigator entry naming it aborts startup, and changing a navigator entry to name it while
+running is discarded on reload instead. Changing a flag's value takes effect the next time the
+navigator is opened, without restarting any module or the lobby.
+
+### Migrating from `flags.properties`
+
+`flags.properties` and Togglz are no longer read. Move every line over by hand:
+
+| `flags.properties` | `application.yaml` | or environment variable |
+| --- | --- | --- |
+| `NAME=true` | `features.NAME: true` | `FEATURES_NAME=true` |
+
+Remove `flags.properties` from the working directory once its values are migrated - a leftover
+copy has no effect any more.
+
+### Local testing with every flag on
+
+For local testing, create an `application-local.yaml` next to `application.yaml` with every flag
+turned on. It also turns on the file watcher from "Runtime reloading" above, so a flag flipped
+back off in the file takes effect without a restart while testing:
+
+```yaml
+features:
+  NAVIGATOR_CREATIVE: true
+  NAVIGATOR_SLENDER: true
+  NAVIGATOR_MANIS: true
+  NAVIGATOR_SURVIVAL: true
+  NAVIGATOR_ELYTRA: true
+config.watch.enabled: true
+```
+
+Activate the `local` profile with the environment variable `AVAJE_PROFILES=local` or the system
+property `-Davaje.profiles=local` (see "Profiles and overrides" above).
 
 ### Upgrading from an app.json-based release
 
@@ -201,6 +297,19 @@ It only reads `spawn.simulationDistance` (default `2`) from the same configurati
 A CloudNet template, a Docker image or a Kubernetes deployment delivers `application.yaml` (or an
 external file referenced via `CONFIG_FILE`) into the working directory and sets `AVAJE_PROFILES`
 for the environment it runs in.
+
+Before rolling this change out to an existing deployment, migrate every `flags.properties` line to
+`features.*` in `application.yaml` or to an environment variable, as described in "Migrating from
+`flags.properties`" above, then remove `flags.properties` from the template. Add
+`config.watch.enabled: true` to the deployment's own `application.yaml`/profile file/`CONFIG_FILE`
+if it should pick up configuration changes without a restart.
+
+After rolling out, the start log's "Active configuration profiles" line confirms which profiles are
+active. If the file watcher is enabled, changing a watched key and waiting up to
+`config.watch.delay` plus `config.watch.period` confirms the reload works: the log shows the INFO
+line naming the restarted module and its changed keys. **Rollback:** deploy the previous jar and
+restore `flags.properties` - a leftover `features.*` section or `config.watch.*` setting in
+`application.yaml` does not affect the previous jar.
 
 ## Development
 
@@ -246,6 +355,10 @@ Avaje Inject - there is no central module list to edit:
   the lobby quietly running without that module.
 - The actual start order is visible at runtime in one INFO log line:
   `Lobby modules enabled in order: {}`.
+- A module needs nothing extra to support the runtime reload described under "Runtime reloading"
+  above: as long as everything it registers goes through `ModuleContext` (`listen`, `items`,
+  `navigator`, `commands`, `tasks`), a restart tears it down and brings it back up the same way
+  startup and shutdown already do.
 
 See [`docs/lobby-modules.md`](docs/lobby-modules.md) (German) for the full walkthrough - module
 anatomy, `ModuleContext` dock points, tick-thread rules, test setup with `ModuleHarness`, the

@@ -45,7 +45,7 @@ public class TitanApplication {
     private static final Path VELOCITY_SECRET_FILE = Path.of("forwarding.secret");
 
     public static void main(String[] args) {
-        // First statement: anything logged before this reaches the console but not Sentry.
+        // Anything logged before this reaches the console but not Sentry.
         TitanObservability.bootstrap();
 
         // minestom-extensions loads platform extensions (the CloudNet bridge among

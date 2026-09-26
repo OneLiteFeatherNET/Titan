@@ -317,23 +317,33 @@ wird.
 **Einträge hinter einer Feature-Flag verstecken:** `NavigatorEntry` (und, für
 den Navigator selbst, die gelesenen Rohwerte, die
 `NavigatorEntryValidation#buildEntry` prüft) trägt ein optionales Feld
-`feature` - den Namen einer `TitanFeatures`-Konstante, z. B.
-`"NAVIGATOR_SLENDER"`. Ist die Flag aus (oder fehlt sie ganz in
-`flags.properties` - ein sicherer Standard), rendert `NavigatorInventory` an
+`feature` - den Namen einer Flag aus dem Abschnitt `features` der
+Konfiguration, z. B. `"NAVIGATOR_SLENDER"`. Ist die Flag aus (oder steht sie
+nirgends gesetzt - ein sicherer Standard), rendert `NavigatorInventory` an
 dieser Stelle die normale graue Glasscheibe statt des Eintrags; ist sie an,
 erscheint der Eintrag wie gewohnt. Geprüft wird über die kleine
 `net.onelitefeather.titan.common.feature.FeatureFlags`-Schnittstelle, die dem
 `NavigatorModule` per Konstruktor übergeben wird - produktiv
-`TogglzFeatureFlags` (steckt hinter `TitanFeatures`/Togglz), in Tests eine
-Attrappe, damit Tests ohne echte `flags.properties`-Datei und ohne den
-statischen `FeatureContext` auskommen. Ein Eintrag mit einem Namen, den
-`FeatureFlags` nicht kennt, bricht den Start ab (`IllegalArgumentException`,
-nennt `navigator.entries` und den unbekannten Namen). Das gilt auch für Einträge,
-die ein anderes Modul über `context.navigator().add(...)` beisteuert, nicht
-nur für die Einträge aus der `navigator`-Config selbst - das Feld sitzt auf
+`ConfigFeatureFlags` (liest `features.<name>` über die statische Fassade
+`Config`, s. `openspec/changes/config-reload-feature-flags/design.md`,
+Entscheidung 4), in Tests eine Attrappe (`FakeFeatureFlags`), damit Tests ohne
+echte Konfigurationsdatei auskommen. Bekannt ist eine Flag nur, wenn sie unter
+`features` in der mitgelieferten Classpath-`application.yaml` steht - eine
+Betreiber-Datei kann diese Menge nicht erweitern, nur die einzelnen Flags
+an- oder ausschalten. Ein Eintrag mit einem Namen, den `FeatureFlags` nicht
+kennt, bricht den Start ab (`IllegalArgumentException`, nennt
+`navigator.entries` und den unbekannten Namen); ändert sich ein Eintrag beim
+Neuladen auf eine unbekannte Flag, verwirft der Reloader nur diese Änderung
+und der Navigator zeigt weiter die bisherigen Ziele (s. "Konfiguration
+neu laden zur Laufzeit" unten). Das gilt auch für Einträge, die ein anderes
+Modul über `context.navigator().add(...)` beisteuert, nicht nur für die
+Einträge aus der `navigator`-Config selbst - das Feld sitzt auf
 `NavigatorEntry` und damit auf jedem Eintrag gleichermaßen, statt in einer
 separaten Tabelle, die der Navigator sonst parallel zur Registry pflegen
-müsste.
+müsste. Togglz und `flags.properties` sind entfernt: Eine Flag ist ein ganz
+normaler Konfigurationswert unter `features.<NAME>`, mit denselben Quellen
+und derselben Rangfolge wie jeder andere Schlüssel (s. README, Abschnitt
+"Feature flags").
 
 ### `commands` - einen Befehl anmelden
 
@@ -398,6 +408,42 @@ registriert wurde, läuft **auf dem Tick-Thread**. Daraus folgen vier Regeln:
    gehört ein wiederkehrender Task, der pro Spieler arbeitet, über
    `context.tasks()` angemeldet (automatischer Abbruch beim Abschalten des
    Moduls) statt über einen selbst verwalteten Thread.
+
+## Neu laden zur Laufzeit: ein Modul muss nichts dafür tun
+
+Seit `config-reload-feature-flags` kann die Lobby ein einzelnes Modul im
+laufenden Betrieb neu starten, ohne die übrigen Module zu berühren -
+ausgelöst durch avaje-configs eingebaute Dateiüberwachung
+(`config.watch.enabled`, standardmäßig aus; der Betreiber schaltet sie in
+seiner eigenen `application.yaml`/Profil-Datei/`CONFIG_FILE` ein, s. README,
+Abschnitt "Runtime reloading", für die Schalter `config.watch.delay`/
+`config.watch.period`, was dabei für Spieler verloren geht und die Grenzen
+der eingebauten Lösung). `ModuleRegistry#restart(String)`
+(`app/src/main/java/net/onelitefeather/titan/app/module/ModuleRegistry.java`)
+macht dafür beim betroffenen Modul genau das, was `disableAll()`/
+`enableAll()` beim Start und Herunterfahren ohnehin tun: Event-Node abhängen,
+Tasks abbrechen, die über den Kontext angemeldeten Dinge abräumen,
+`disable()` aufrufen, dann mit einem frischen `ModuleContext` neu
+`enable(ModuleContext)` aufrufen.
+
+Daraus folgt für ein Modul, das die Andockpunkte oben (`listen`, `items`,
+`navigator`, `commands`, `tasks`) statt eigener Listener, Felder oder Threads
+nutzt: **Es muss für den Neustart nichts Eigenes tun.** Alles, was es beim
+ersten `enable()` angemeldet hat, wird beim Abschalten automatisch entfernt,
+und `enable()` meldet es beim Neustart einfach noch einmal an - derselbe Code
+läuft ohnehin schon bei jedem normalen Start. Ein Modul, das stattdessen
+außerhalb des Kontexts eigenen Zustand hält (ein selbst verwalteter Thread,
+ein roher `EventNode`), muss diesen Zustand selbst in `disable()` aufräumen,
+sonst bleibt er nach einem Neustart doppelt oder inkonsistent - ein weiterer
+Grund, warum die Andockpunkte oben und nicht die rohe Plattform-API der Weg
+sind, um etwas anzumelden.
+
+Ein Neuladen startet nur die Module neu, deren eigener Konfigurationsabschnitt
+(`<modul-id>.*`) sich geändert hat; Änderungen unter `features.*`, `titan.*`
+oder `config.*` starten kein Modul. Ein Modul, das nur über `Config` liest
+(s. "Konfiguration lesen" oben) und keinen eigenen Zustand außerhalb des
+Kontexts hält, braucht für diese ganze Change also keine einzige geänderte
+Zeile.
 
 ## Tests: Aufbau und `ModuleHarness`
 

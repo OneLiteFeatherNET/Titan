@@ -25,6 +25,7 @@ import net.onelitefeather.butterfly.minestom.Butterfly;
 import net.onelitefeather.titan.app.bootstrap.ConfigurationStartupLog;
 import net.onelitefeather.titan.app.bootstrap.ModuleStartupLog;
 import net.onelitefeather.titan.app.bootstrap.PlatformBeans;
+import net.onelitefeather.titan.app.bootstrap.reload.ConfigChangeBootstrap;
 import net.onelitefeather.titan.app.commands.EndCommand;
 import net.onelitefeather.titan.app.commands.StopCommand;
 import net.onelitefeather.titan.app.module.LobbyModule;
@@ -129,6 +130,8 @@ public final class Titan {
     private void initCommands() {
         MinecraftServer.getCommandManager().register(new EndCommand());
         MinecraftServer.getCommandManager().register(new StopCommand());
+
+        ConfigChangeBootstrap.install(this.moduleRegistry);
     }
 
     public static Titan instance() {

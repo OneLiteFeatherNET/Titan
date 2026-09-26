@@ -136,7 +136,7 @@ class NavigatorFeatureFlagTest {
 
         // FeatureFlags wired into the harness/registry itself, for
         // ModuleRegistry#enableAll()'s NavigatorEntries#validate(FeatureFlags) check - exactly like
-        // Titan wires the real TogglzFeatureFlags in.
+        // Titan wires the real ConfigFeatureFlags in.
         IllegalArgumentException thrown = Assertions.assertThrows(IllegalArgumentException.class, () -> ModuleHarness.start(env, flags, (navigator, items) -> new LobbyModule[]{navigatorEntrySource}));
 
         Assertions.assertTrue(thrown.getMessage().contains("navigator.entries"), "a config-sourced entry's origin module is 'navigator', message was: " + thrown.getMessage());
