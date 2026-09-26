@@ -13,20 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.app.bootstrap.reload;
+package net.onelitefeather.titan.app.bootstrap;
 
 import net.onelitefeather.titan.common.feature.ConfigFeatureFlags;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
 
 /**
- * The child process entry point {@code ConfigChangeFileWatchIntegrationTest} launches for its
+ * The child process entry point {@link ConfigFileWatchIntegrationTest} launches for its
  * feature-flag scenarios: builds the production {@link FeatureFlags} exactly like
  * {@code PlatformBeans#featureFlags()} does - {@link ConfigFeatureFlags#fromClasspathDefaults()} -
  * and prints whether {@code NAVIGATOR_SLENDER} is active, then exits. Proves an environment
  * variable ({@code FEATURES_NAVIGATOR_SLENDER}) turns the flag on, and that a leftover
  * {@code flags.properties} in the working directory (the pre-{@code config-reload-feature-flags}
  * file, no longer read at all) has no effect - see
- * {@code openspec/changes/config-reload-feature-flags/tasks.md}, task 5.1.
+ * {@code openspec/changes/config-reload-feature-flags/tasks.md}, task 3.7.
  */
 public final class FeatureFlagChildMain {
 

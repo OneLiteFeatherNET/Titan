@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.app.bootstrap.reload;
+package net.onelitefeather.titan.app.bootstrap;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,10 +38,11 @@ import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Integration coverage (child JVM, no Minestom server) for avaje-config's built-in file watcher
- * ({@code config.watch.enabled}) driving a {@link ConfigChangeHandler}, and for
+ * ({@code config.watch.enabled}) making a changed value visible through the static {@code Config}
+ * facade on the next read - with no module restart and no handler reacting to the change - and for
  * {@code ConfigFeatureFlags} reading a flag from an environment variable rather than the removed
- * {@code flags.properties}. See {@code openspec/changes/config-reload-feature-flags/tasks.md}, task
- * 5.1, and {@code design.md}, decision 1.
+ * {@code flags.properties}. See {@code openspec/changes/config-reload-feature-flags/design.md},
+ * decision 1, and {@code tasks.md}, task 3.7.
  *
  * <p>Each scenario runs in its own child JVM, started via {@link ProcessBuilder} with a
  * {@code @TempDir} as its working directory - {@code avaje-config} resolves files against the real
@@ -51,45 +53,51 @@ import org.junit.jupiter.api.io.TempDir;
  * from this test or the child mains it drives - see
  * {@code openspec/changes/avaje-config-facade/design.md}, decision 5.
  */
-class ConfigChangeFileWatchIntegrationTest {
+class ConfigFileWatchIntegrationTest {
 
     private static final Duration TIMEOUT = Duration.ofSeconds(20);
 
-    @DisplayName("A changed module key restarts only that module, picked up by avaje-config's own file watcher")
+    @DisplayName("A value changed in a watched file becomes visible through the facade on the next read, with no restart")
     @Test
-    void aChangedModuleKeyRestartsOnlyThatModule(@TempDir Path workingDir) throws IOException, InterruptedException {
+    void changedValueBecomesVisibleThroughTheFacadeWithNoRestart(@TempDir Path workingDir) throws IOException, InterruptedException {
         Files.writeString(workingDir.resolve("application.yaml"), """
                 config.watch.enabled: true
                 config.watch.delay: 1
                 config.watch.period: 1
-                sit:
-                  offset:
-                    y: 0.25
+                tickle:
+                  cooldownMillis: 4000
                 """);
 
-        ChildProcess child = ChildProcess.start(workingDir, Map.of(), ConfigWatchChildMain.class);
-        try {
+        try (ChildProcess child = ChildProcess.start(workingDir, Map.of(), ConfigReadChildMain.class)) {
             child.awaitLine("READY"::equals, TIMEOUT);
 
-            // Changing only the digit count (0.25 -> 0.999) also changes the file's length, not
-            // only its last-modified time - avaje-config's FileWatch compares lastModified OR
-            // length, so this guarantees the change is detected regardless of the filesystem's
-            // mtime granularity (see tasks.md, task 5.1).
+            Assertions.assertEquals("VALUE 4000", child.request(TIMEOUT), "the first read must resolve the file's own value");
+
+            // Changing only the digit count (4000 -> 9999) also changes the file's length, not only
+            // its last-modified time - avaje-config's FileWatch compares lastModified OR length, so
+            // this guarantees the change is detected regardless of the filesystem's mtime
+            // granularity.
             Files.writeString(workingDir.resolve("application.yaml"), """
                     config.watch.enabled: true
                     config.watch.delay: 1
                     config.watch.period: 1
-                    sit:
-                      offset:
-                        y: 0.999
+                    tickle:
+                      cooldownMillis: 9999
                     """);
 
-            String restarted = child.awaitLine(line -> line.startsWith("RESTARTED "), TIMEOUT);
-
-            Assertions.assertEquals(
-                    "RESTARTED sit", restarted, "only the module whose own key changed (sit) must restart, not tickle; output so far:\n" + String.join("\n", child.linesSoFar()));
-        } finally {
-            child.close();
+            // A condition wait bounded by an overall deadline, never a fixed sleep: repeatedly asks
+            // the still-running child for its current read of the facade until avaje-config's own
+            // "ConfigTimer" daemon thread has noticed the change and applied it, or the deadline
+            // passes.
+            long deadlineNanos = System.nanoTime() + TIMEOUT.toNanos();
+            String lastValue = null;
+            while (!"VALUE 9999".equals(lastValue)) {
+                long remainingNanos = deadlineNanos - System.nanoTime();
+                if (remainingNanos <= 0) {
+                    throw new AssertionError("timed out after " + TIMEOUT + " waiting for the reloaded value, last read was: " + lastValue + ", output so far:\n" + String.join("\n", child.linesSoFar()));
+                }
+                lastValue = child.request(Duration.ofNanos(remainingNanos));
+            }
         }
     }
 
@@ -118,28 +126,32 @@ class ConfigChangeFileWatchIntegrationTest {
      * it to exit within {@link #TIMEOUT}, asserts a clean exit, and returns every line it printed.
      */
     private static List<String> runOneShot(Path workingDir, Map<String, String> env, Class<?> mainClass) throws IOException, InterruptedException {
-        ChildProcess child = ChildProcess.start(workingDir, env, mainClass);
-        boolean finished = child.waitForExit(TIMEOUT);
-        List<String> lines = child.linesSoFar();
-        Assertions.assertTrue(finished, "the child process must finish within " + TIMEOUT + ", output so far:\n" + String.join("\n", lines));
-        Assertions.assertEquals(0, child.exitValue(), "the child process must exit cleanly; output was:\n" + String.join("\n", lines));
-        return lines;
+        try (ChildProcess child = ChildProcess.start(workingDir, env, mainClass)) {
+            boolean finished = child.waitForExit(TIMEOUT);
+            List<String> lines = child.linesSoFar();
+            Assertions.assertTrue(finished, "the child process must finish within " + TIMEOUT + ", output so far:\n" + String.join("\n", lines));
+            Assertions.assertEquals(0, child.exitValue(), "the child process must exit cleanly; output was:\n" + String.join("\n", lines));
+            return lines;
+        }
     }
 
     /**
      * A child {@link Process} whose stdout/stderr (merged) is drained on a background thread into
-     * both a {@link BlockingQueue} ({@link #awaitLine}, condition wait with an overall timeout, no
-     * fixed sleep) and a plain, ever-growing list ({@link #linesSoFar()}, for failure messages).
+     * both a {@link BlockingQueue} ({@link #awaitLine}/{@link #request}, condition wait with an
+     * overall timeout, no fixed sleep) and a plain, ever-growing list ({@link #linesSoFar()}, for
+     * failure messages).
      */
     private static final class ChildProcess implements AutoCloseable {
 
         private final Process process;
+        private final OutputStream stdin;
         private final BlockingQueue<String> pending = new LinkedBlockingQueue<>();
         private final List<String> seen = Collections.synchronizedList(new ArrayList<>());
         private final Thread outputReader;
 
         private ChildProcess(Process process) {
             this.process = process;
+            this.stdin = process.getOutputStream();
             this.outputReader = new Thread(() -> {
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
                     String line;
@@ -150,7 +162,7 @@ class ConfigChangeFileWatchIntegrationTest {
                 } catch (IOException ignored) {
                     // the child closed its stdout as part of exiting; nothing left to read
                 }
-            }, "config-change-integration-test-output-reader");
+            }, "config-file-watch-integration-test-output-reader");
             this.outputReader.setDaemon(true);
             this.outputReader.start();
         }
@@ -170,6 +182,17 @@ class ConfigChangeFileWatchIntegrationTest {
             processBuilder.environment().putAll(env);
             processBuilder.redirectErrorStream(true);
             return new ChildProcess(processBuilder.start());
+        }
+
+        /**
+         * Sends one line to the child's stdin - {@link ConfigReadChildMain} prints a fresh read of
+         * the facade in response - and returns that response line, waiting no longer than
+         * {@code timeout}.
+         */
+        String request(Duration timeout) throws IOException, InterruptedException {
+            this.stdin.write("poll\n".getBytes(StandardCharsets.UTF_8));
+            this.stdin.flush();
+            return awaitLine(line -> line.startsWith("VALUE "), timeout);
         }
 
         /**
@@ -207,12 +230,12 @@ class ConfigChangeFileWatchIntegrationTest {
         }
 
         /**
-         * Closes the child's stdin - {@link ConfigWatchChildMain} exits cleanly once it sees EOF -
-         * then waits briefly for a clean exit, force-destroying it otherwise.
+         * Closes the child's stdin - both child mains exit cleanly once they see EOF - then waits
+         * briefly for a clean exit, force-destroying it otherwise.
          */
         @Override
         public void close() throws IOException, InterruptedException {
-            this.process.getOutputStream().close();
+            this.stdin.close();
             if (!this.process.waitFor(5, TimeUnit.SECONDS)) {
                 this.process.destroyForcibly();
             }
