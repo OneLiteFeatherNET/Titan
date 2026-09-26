@@ -20,7 +20,6 @@ import io.avaje.inject.Priority;
 import jakarta.inject.Singleton;
 import java.util.List;
 import net.kyori.adventure.key.Key;
-import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.Entity;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.EventDispatcher;
@@ -65,14 +64,19 @@ public final class SitModule implements LobbyModule {
 
     @Override
     public void enable(ModuleContext context) {
-        Vec offset = new Vec(
-                Config.getAs(SitSettings.OFFSET_X_KEY, Double::parseDouble), Config.getAs(SitSettings.OFFSET_Y_KEY, Double::parseDouble), Config.getAs(SitSettings.OFFSET_Z_KEY, Double::parseDouble));
-        List<Key> allowedBlocks = SitSettings.allowedBlocks(Config.list().of(SitSettings.ALLOWED_BLOCKS_KEY).stream().map(SitSettings::parseBlock).toList());
-        Seats seats = new Seats(offset);
+        // Abort startup on an invalid value (unchanged behaviour); neither result is kept - the
+        // PlayerBlockInteractEvent listener below reads the live values again on every
+        // interaction (see design.md, decision 1).
+        Config.getAs(SitSettings.OFFSET_X_KEY, Double::parseDouble);
+        Config.getAs(SitSettings.OFFSET_Y_KEY, Double::parseDouble);
+        Config.getAs(SitSettings.OFFSET_Z_KEY, Double::parseDouble);
+        SitSettings.allowedBlocks(Config.list().of(SitSettings.ALLOWED_BLOCKS_KEY).stream().map(SitSettings::parseBlock).toList());
+        Seats seats = new Seats();
 
         context.listen(PlayerBlockInteractEvent.class, event -> {
+            List<Key> allowedBlocks = SitSettings.currentAllowedBlocks();
             if (isAllowedBlock(allowedBlocks, event.getBlock().key())) {
-                seats.sit(event.getPlayer(), event.getBlockPosition());
+                seats.sit(event.getPlayer(), event.getBlockPosition(), SitSettings.currentOffset());
             }
         });
 

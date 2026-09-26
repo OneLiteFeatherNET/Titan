@@ -30,8 +30,12 @@ import net.minestom.server.tag.Tag;
 /**
  * Sits players down on an invisible, silent arrow entity and stands them back up.
  *
- * <p>The {@link #offset} a seat is placed at is fixed once, at construction, and every tag this
- * class uses is namespaced to this feature. See {@code design.md}, decision 9.
+ * <p>The offset a seat is placed at is read fresh on every {@link #sit(Player, Point, Vec)} call
+ * rather than fixed once at construction (see {@code openspec/changes/config-reload-feature-flags/
+ * design.md}, decision 1): a player already sitting is unaffected by a later offset change, since
+ * their seat entity keeps the position it was placed at; only the next {@link #sit(Player, Point,
+ * Vec)} call uses the new offset. Every tag this class uses is namespaced to this feature. See
+ * {@code design.md}, decision 9.
  *
  * <p>Package-private: only {@link SitModule} constructs and uses this.
  */
@@ -43,20 +47,16 @@ final class Seats {
     /** The position a sitting player is teleported back to when they stand up. */
     private static final Tag<Pos> ORIGIN = Tag.Structure("titan:sit/origin", Pos.class);
 
-    private final Vec offset;
-
-    Seats(Vec offset) {
-        this.offset = Objects.requireNonNull(offset, "offset");
-    }
-
     /**
-     * Sits {@code player} down at {@code sitLocation} (offset by this instance's {@link #offset}).
-     * A player who is already sitting is stood up first, then sat down again at the new location.
+     * Sits {@code player} down at {@code sitLocation}, offset by {@code offset}. A player who is
+     * already sitting is stood up first, then sat down again at the new location.
      *
      * @param player      the player to sit down
      * @param sitLocation the location - typically a clicked block's position - to sit at
+     * @param offset      the current seat offset, read live by the caller
      */
-    void sit(Player player, Point sitLocation) {
+    void sit(Player player, Point sitLocation, Vec offset) {
+        Objects.requireNonNull(offset, "offset");
         Instance instance = player.getInstance();
         if (instance == null) {
             return;
@@ -66,7 +66,7 @@ final class Seats {
         }
         Pos playerLocation = player.getPosition();
         SeatEntity arrow = new SeatEntity();
-        arrow.setInstance(instance, sitLocation.add(this.offset));
+        arrow.setInstance(instance, sitLocation.add(offset));
         arrow.setInvisible(true);
         arrow.setSilent(true);
 
