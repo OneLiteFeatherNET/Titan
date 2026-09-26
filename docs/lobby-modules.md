@@ -413,10 +413,12 @@ registriert wurde, läuft **auf dem Tick-Thread**. Daraus folgen vier Regeln:
 
 Seit `config-reload-feature-flags` kann die Lobby ein einzelnes Modul im
 laufenden Betrieb neu starten, ohne die übrigen Module zu berühren -
-ausgelöst durch eine geänderte Konfigurationsdatei (abgefragt im Intervall
-`titan.config.reload.intervalSeconds`) oder den Befehl `/titanreload` (s.
-README, Abschnitt "Runtime reloading", für Auslöser, Berechtigung und was
-dabei für Spieler verloren geht). `ModuleRegistry#restart(String)`
+ausgelöst durch avaje-configs eingebaute Dateiüberwachung
+(`config.watch.enabled`, standardmäßig aus; der Betreiber schaltet sie in
+seiner eigenen `application.yaml`/Profil-Datei/`CONFIG_FILE` ein, s. README,
+Abschnitt "Runtime reloading", für die Schalter `config.watch.delay`/
+`config.watch.period`, was dabei für Spieler verloren geht und die Grenzen
+der eingebauten Lösung). `ModuleRegistry#restart(String)`
 (`app/src/main/java/net/onelitefeather/titan/app/module/ModuleRegistry.java`)
 macht dafür beim betroffenen Modul genau das, was `disableAll()`/
 `enableAll()` beim Start und Herunterfahren ohnehin tun: Event-Node abhängen,
