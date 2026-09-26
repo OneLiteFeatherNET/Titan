@@ -19,6 +19,8 @@ import io.avaje.config.Configuration;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +39,13 @@ import org.slf4j.LoggerFactory;
  * class knows nothing about any module's own keys or validation rules; it only loads the
  * shipped defaults and deduplicates the warning.
  *
+ * <p>{@link #resolve(String, Object, Function, Supplier)} is the generic counterpart of
+ * {@link #fallback(String, Object, String, Object)} a hot-path read (a tickle attack, a sit
+ * interaction, an elytra boost, a spawn height check) resolves through instead: it evaluates
+ * {@code shippedDefault} lazily - only once a live value turns out invalid, never on every call
+ * - and remembers a persistently invalid raw value together with its resolved fallback, so it is
+ * parsed and validated exactly once rather than on every read.
+ *
  * <p>Instantiable, not a static-only utility, precisely so a test can build a fresh instance -
  * from a plain, in-memory {@link Configuration} (see the two-argument constructor) or from a
  * fixture classpath resource - instead of sharing the one production instance {@link #shared()}
@@ -50,6 +59,7 @@ public final class RuntimeConfigFallback {
 
     private final Configuration shippedDefaults;
     private final ConcurrentMap<String, Object> lastWarnedInvalidValue = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, CacheEntry<?>> invalidValueCache = new ConcurrentHashMap<>();
 
     /**
      * @param shippedDefaults the shipped configuration defaults this instance falls back to; a
@@ -120,6 +130,86 @@ public final class RuntimeConfigFallback {
         if (!Objects.equals(previousInvalidValue, invalidValue)) {
             log.warn("Invalid configuration value for {}: {} ({}), using shipped default {}", key, invalidValue, reason, shippedDefaultValue);
         }
+    }
+
+    /**
+     * The generic runtime fallback every module's own {@code current()} (or
+     * {@code currentXxx()}) method resolves one live value - or a small group of them,
+     * cross-validated together - through, replacing a hand-written try/parseAndValidate/catch
+     * per value: {@code shippedDefault} is evaluated lazily, only when {@code rawValue} turns out
+     * invalid, never on a valid call, and a persistently invalid {@code rawValue} is remembered
+     * per {@code key} together with the fallback it resolved to, so a repeated call with the same
+     * invalid {@code rawValue} returns that cached fallback directly, without invoking
+     * {@code parseAndValidate} again.
+     *
+     * <p>{@code rawValue} stands for whatever the live value(s) being resolved are, read fresh on
+     * every call (this method never caches a <em>valid</em> value): a single raw string for one
+     * key (e.g. {@code Config.get("tickle.cooldownMillis")}), a {@code List<String>} for a whole
+     * list-valued key (e.g. {@code sit.allowedBlocks}), or a small record/map bundling the raw
+     * values of a cross-validated group of keys (e.g. {@code spawn.minHeight} together with
+     * {@code spawn.maxHeight}, since a valid {@code minHeight} depends on the already-resolved
+     * {@code maxHeight}) - identified by one composite {@code key} the caller chooses for that
+     * group. Whatever type is used, it must have a meaningful {@link Object#equals(Object)} - a
+     * plain {@code String}, {@code List}, {@code Map} or {@code record} all qualify.
+     *
+     * <p>A new invalid {@code rawValue} for {@code key} logs a deduplicated WARN naming
+     * {@code key}, {@code rawValue}, the failure's message and the shipped default used; the same
+     * {@code rawValue} seen again for {@code key} does not log again, and a different, later
+     * invalid {@code rawValue} for the same {@code key} logs again.
+     *
+     * @param key              the full configuration key (or, for a cross-validated group, a
+     *                         composite name the caller chooses) {@code rawValue} was read from -
+     *                         also the WARN-dedup and invalid-value-cache key
+     * @param rawValue         the current live value(s), read fresh by the caller on every call
+     * @param parseAndValidate parses and validates {@code rawValue}, throwing a
+     *                         {@link RuntimeException} if it is invalid
+     * @param shippedDefault   evaluated only when {@code parseAndValidate} throws - never for a
+     *                         valid {@code rawValue}, and never twice for the same persistently
+     *                         invalid one - to obtain the shipped classpath default to fall back
+     *                         to
+     * @param <R>              the raw value's type
+     * @param <T>              the resolved value's type
+     * @return {@code rawValue} parsed and validated, or the shipped default if it is invalid
+     */
+    public <R, T> T resolve(String key, R rawValue, Function<R, T> parseAndValidate, Supplier<T> shippedDefault) {
+        Objects.requireNonNull(key, "key must not be null");
+        Objects.requireNonNull(parseAndValidate, "parseAndValidate must not be null");
+        Objects.requireNonNull(shippedDefault, "shippedDefault must not be null");
+
+        CacheEntry<T> cached = this.<T>cacheEntry(key);
+        if (cached != null && Objects.equals(cached.rawValue(), rawValue)) {
+            return cached.fallbackValue();
+        }
+
+        try {
+            T value = parseAndValidate.apply(rawValue);
+            this.invalidValueCache.remove(key);
+            return value;
+        } catch (RuntimeException e) {
+            T fallbackValue = shippedDefault.get();
+            boolean isNewInvalidValue = cached == null || !Objects.equals(cached.rawValue(), rawValue);
+            this.invalidValueCache.put(key, new CacheEntry<>(rawValue, fallbackValue));
+            if (isNewInvalidValue) {
+                log.warn("Invalid configuration value for {}: {} ({}), using shipped default {}", key, rawValue, e.getMessage(), fallbackValue);
+            }
+            return fallbackValue;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> CacheEntry<T> cacheEntry(String key) {
+        return (CacheEntry<T>) this.invalidValueCache.get(key);
+    }
+
+    /**
+     * One key's (or key group's) last invalid raw value together with the fallback it resolved
+     * to - so a persistently invalid value is parsed and validated exactly once.
+     *
+     * @param rawValue      the invalid raw value(s) this entry was cached for
+     * @param fallbackValue the shipped default {@code rawValue} resolved to
+     * @param <T>           the resolved value's type
+     */
+    private record CacheEntry<T>(Object rawValue, T fallbackValue) {
     }
 
     /**
