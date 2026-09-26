@@ -15,6 +15,10 @@
  */
 package net.onelitefeather.titan.app.feature.elytra;
 
+import io.avaje.config.Config;
+import io.avaje.config.Configuration;
+import net.onelitefeather.titan.common.config.RuntimeConfigFallback;
+
 /**
  * Pure parsing and validation for the {@code elytra} module's configuration values (see
  * {@code openspec/changes/avaje-config-facade/design.md}, decisions 3 and 4).
@@ -77,5 +81,70 @@ final class ElytraSettings {
             throw new IllegalArgumentException(COOLDOWN_TICKS_KEY + " (" + cooldownTicks + ") must be longer than " + BURN_DURATION_TICKS_KEY + " (" + burnDurationTicks + ")");
         }
         return cooldownTicks;
+    }
+
+    /**
+     * Both live boost settings, read together since {@link #cooldownTicks(int, int)} is a
+     * cross-field check against the (possibly already-fallen-back) burn duration.
+     *
+     * @param burnDurationTicks how many ticks one rocket boosts for
+     * @param cooldownTicks     how many ticks after a boost starts before another may be used
+     */
+    record BoostSettings(int burnDurationTicks, int cooldownTicks) {
+    }
+
+    /**
+     * The runtime counterpart of {@link #burnDurationTicks(String)}: a valid {@code raw} passes
+     * through unchanged; an invalid one falls back to {@code shippedDefault}, after
+     * {@code fallback} logs a deduplicated WARN naming {@link #BURN_DURATION_TICKS_KEY}.
+     *
+     * @param raw            the configured burn duration, as read live from the facade
+     * @param shippedDefault the shipped classpath default for {@link #BURN_DURATION_TICKS_KEY}
+     * @param fallback       deduplicates the WARN line for a repeated invalid value
+     * @return {@code raw}, parsed and validated, or {@code shippedDefault} if invalid
+     */
+    static int resolveBurnDurationTicks(String raw, int shippedDefault, RuntimeConfigFallback fallback) {
+        try {
+            return burnDurationTicks(raw);
+        } catch (RuntimeException e) {
+            return fallback.fallback(BURN_DURATION_TICKS_KEY, raw, e.getMessage(), shippedDefault);
+        }
+    }
+
+    /**
+     * The runtime counterpart of {@link #cooldownTicks(int, int)}: a valid {@code raw} passes
+     * through unchanged; an invalid one - not strictly longer than {@code burnDurationTicks} - falls
+     * back to {@code shippedDefault}, after {@code fallback} logs a deduplicated WARN naming
+     * {@link #COOLDOWN_TICKS_KEY}.
+     *
+     * @param raw               the configured cooldown, as read live from the facade
+     * @param burnDurationTicks the already-resolved burn duration to compare against
+     * @param shippedDefault    the shipped classpath default for {@link #COOLDOWN_TICKS_KEY}
+     * @param fallback          deduplicates the WARN line for a repeated invalid value
+     * @return {@code raw}, parsed and validated, or {@code shippedDefault} if invalid
+     */
+    static int resolveCooldownTicks(String raw, int burnDurationTicks, int shippedDefault, RuntimeConfigFallback fallback) {
+        try {
+            return cooldownTicks(Integer.parseInt(raw), burnDurationTicks);
+        } catch (RuntimeException e) {
+            return fallback.fallback(COOLDOWN_TICKS_KEY, raw, e.getMessage(), shippedDefault);
+        }
+    }
+
+    /**
+     * Reads both boost settings live through the static facade, resolving an invalid runtime
+     * value to its shipped default via the process-wide {@link RuntimeConfigFallback}. Called
+     * directly by the {@code titan:firework} item's use handler on every boost (see
+     * {@code openspec/changes/config-reload-feature-flags/design.md}, decision 1), so a changed
+     * value applies to the very next boost without a module restart.
+     *
+     * @return the current, valid boost settings
+     */
+    static BoostSettings current() {
+        RuntimeConfigFallback fallback = RuntimeConfigFallback.shared();
+        Configuration shipped = fallback.shippedDefaults();
+        int burnDurationTicks = resolveBurnDurationTicks(Config.get(BURN_DURATION_TICKS_KEY), shipped.getAs(BURN_DURATION_TICKS_KEY, Integer::parseInt), fallback);
+        int cooldownTicks = resolveCooldownTicks(Config.get(COOLDOWN_TICKS_KEY), burnDurationTicks, shipped.getAs(COOLDOWN_TICKS_KEY, Integer::parseInt), fallback);
+        return new BoostSettings(burnDurationTicks, cooldownTicks);
     }
 }
