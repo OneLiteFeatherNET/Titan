@@ -196,39 +196,45 @@ becomes `NAVIGATOR_ENTRIES_SURVIVAL_DESTINATION`. The default entries are `elytr
 
 ## Runtime reloading
 
-The lobby notices a change to its configuration files without a restart. It polls
-`application.{yaml,yml,properties}` in the working directory, the same three names per active
-profile (e.g. `application-dev.yaml`), and the file selected via `CONFIG_FILE`/`config.file` - none
-of these need to exist yet - for a changed existence, modification time or size, at the interval
-set by `titan.config.reload.intervalSeconds` (default `10` seconds, `0` turns polling off). The
-interval is read once at startup; changing it in a running lobby has no effect until the next
-restart. `config.watch.enabled`, avaje-config's own built-in file watcher, is deliberately left
-`false` (see the comment next to it in `application.yaml`): on reload it does not re-apply
-environment/system-property overrides, leaves a deleted key in place, never notices a newly
-created file, and partially applies a change when one of several files is broken. The lobby's own
-reloader rebuilds the whole configuration through the same pipeline used on startup instead, so
-overrides, deleted keys and new files all behave exactly like a fresh start.
+The lobby can pick up a change to its configuration files without a restart, using avaje-config's
+own built-in file watcher. It is off by default; an operator turns it on in their own
+working-directory `application.yaml`, an active profile's `application-<profile>.yaml`, or the
+file selected via `CONFIG_FILE`/`config.file`, with:
 
-The command `/titanreload` reloads immediately instead of waiting for the next poll. It requires
-the permission `titan.command.reload`; the console may always run it, and a player without the
-permission cannot see or run it at all (it never appears in their tab-completion). Grant the
-permission to the admin group in LuckPerms as part of rolling this out.
+```yaml
+config.watch.enabled: true
+```
 
-A reload only restarts the module whose own section (`<module-id>.*`) actually changed a key -
-every other module keeps running untouched. A change under `features.*`, `titan.*` or `config.*`
-restarts no module at all. Restarting a module briefly tears it down and brings it back up, so any
-state that lives only in that module's memory is lost for players who were mid-interaction with
-it - a player sitting down stands back up, and a player mid-elytra-boost loses the tracked boost
-- while their hotbar items and navigator entries are put back automatically. Only modules whose
-keys actually changed are restarted, so this only affects a module an operator is actively
+Once enabled, it watches only the configuration files that already existed on disk at startup - a
+file created afterwards is picked up only on the next restart. Every `config.watch.period` seconds
+(default `10`, the first check happening `config.watch.delay` seconds after startup, also default
+`10`) it re-reads every watched file and applies whatever changed.
+
+A changed value only restarts the module whose own section (`<module-id>.*`) it belongs to - every
+other module keeps running untouched. A change under `features.*`, `titan.*` or `config.*` restarts
+no module at all. Restarting a module briefly tears it down and brings it back up, so any state
+that lives only in that module's memory is lost for players who were mid-interaction with it - a
+player sitting down stands back up, and a player mid-elytra-boost loses the tracked boost - while
+their hotbar items and navigator entries are put back automatically. Only modules whose keys
+actually changed are restarted, so this only affects a module an operator is actively
 reconfiguring.
 
-If the new value for a key is invalid, the lobby discards it for that module only: the module
-keeps running with its previous values, the log names the key and the reason at WARN, and the
-`/titanreload` reply lists the rejected key. If the file itself is not valid YAML after a change,
-the whole reload is discarded - no key changes at all - and the reply names the file and the
-location of the error. An environment variable or system property override still wins after a
-reload, exactly as it does on startup.
+If the new value for a key is invalid, the lobby discards it for that module only: the module keeps
+running with its previous values, and the log names the key and the reason at WARN. The rejected
+value is not removed from the file, so it is read again, and rejected again with the same WARN, the
+next time that file changes for any other reason - until the operator corrects it. If a watched
+file is not valid YAML after a change, avaje-config itself logs the file and the location of the
+error at ERROR and applies no value from it; no module restarts because of that file.
+
+**Accepted limits of this built-in watcher** (see `design.md`, decision 1, in
+`openspec/changes/config-reload-feature-flags`):
+
+- an environment variable or system property override for a key is displaced by a changed file's
+  value for that same key, until the lobby is next restarted;
+- a key deleted from a changed file stays active with its old value until the next restart;
+- a file created after startup is only picked up on the next restart;
+- there is no manual trigger - a change takes effect only once the watcher notices it, at most
+  `config.watch.delay` plus `config.watch.period` after it was made.
 
 ## Feature flags
 
@@ -256,7 +262,8 @@ copy has no effect any more.
 ### Local testing with every flag on
 
 For local testing, create an `application-local.yaml` next to `application.yaml` with every flag
-turned on:
+turned on. It also turns on the file watcher from "Runtime reloading" above, so a flag flipped
+back off in the file takes effect without a restart while testing:
 
 ```yaml
 features:
@@ -265,6 +272,7 @@ features:
   NAVIGATOR_MANIS: true
   NAVIGATOR_SURVIVAL: true
   NAVIGATOR_ELYTRA: true
+config.watch.enabled: true
 ```
 
 Activate the `local` profile with the environment variable `AVAJE_PROFILES=local` or the system
@@ -290,17 +298,18 @@ A CloudNet template, a Docker image or a Kubernetes deployment delivers `applica
 external file referenced via `CONFIG_FILE`) into the working directory and sets `AVAJE_PROFILES`
 for the environment it runs in.
 
-Before rolling this change out to an existing deployment:
+Before rolling this change out to an existing deployment, migrate every `flags.properties` line to
+`features.*` in `application.yaml` or to an environment variable, as described in "Migrating from
+`flags.properties`" above, then remove `flags.properties` from the template. Add
+`config.watch.enabled: true` to the deployment's own `application.yaml`/profile file/`CONFIG_FILE`
+if it should pick up configuration changes without a restart.
 
-1. migrate every `flags.properties` line to `features.*` in `application.yaml` or to an
-   environment variable, as described in "Migrating from `flags.properties`" above, then remove
-   `flags.properties` from the template,
-2. grant the `titan.command.reload` permission to the admin group in LuckPerms.
-
-After rolling out, changing a key and either waiting for the next poll or running `/titanreload`
-confirms the reload works; the start log's "Active configuration profiles" line confirms which
-profiles are active. **Rollback:** deploy the previous jar and restore `flags.properties` - a
-leftover `features.*` section in `application.yaml` does not affect the previous jar.
+After rolling out, the start log's "Active configuration profiles" line confirms which profiles are
+active. If the file watcher is enabled, changing a watched key and waiting up to
+`config.watch.delay` plus `config.watch.period` confirms the reload works: the log shows the INFO
+line naming the restarted module and its changed keys. **Rollback:** deploy the previous jar and
+restore `flags.properties` - a leftover `features.*` section or `config.watch.*` setting in
+`application.yaml` does not affect the previous jar.
 
 ## Development
 
