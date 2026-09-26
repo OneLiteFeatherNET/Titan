@@ -25,15 +25,16 @@ import net.minestom.server.event.player.PlayerMoveEvent;
 /**
  * Teleports a player back to the lobby spawn once they leave the configured height bounds. The
  * actual bounds check is delegated to {@link HeightBounds}, a pure rule this listener merely
- * reacts to.
+ * reacts to - built fresh on every move from {@link SpawnSettings#currentHeightBounds()} rather
+ * than once at construction, so a changed {@code spawn.minHeight}/{@code maxHeight} applies to
+ * the very next height check, without a module restart (see
+ * {@code openspec/changes/config-reload-feature-flags/design.md}, decision 1).
  */
 final class SpawnBoundsListener implements Consumer<PlayerMoveEvent> {
 
-    private final HeightBounds heightBounds;
     private final Supplier<Pos> spawnPosition;
 
-    SpawnBoundsListener(HeightBounds heightBounds, Supplier<Pos> spawnPosition) {
-        this.heightBounds = heightBounds;
+    SpawnBoundsListener(Supplier<Pos> spawnPosition) {
         this.spawnPosition = spawnPosition;
     }
 
@@ -43,7 +44,9 @@ final class SpawnBoundsListener implements Consumer<PlayerMoveEvent> {
         if (player.getInstance() == null) {
             return;
         }
-        if (this.heightBounds.isOutOfBounds(player.getPosition().y())) {
+        SpawnSettings.HeightSettings heightSettings = SpawnSettings.currentHeightBounds();
+        HeightBounds heightBounds = new HeightBounds(heightSettings.minHeight(), heightSettings.maxHeight());
+        if (heightBounds.isOutOfBounds(player.getPosition().y())) {
             Optional.ofNullable(this.spawnPosition.get()).ifPresent(player::teleport);
         }
     }

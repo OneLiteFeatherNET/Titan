@@ -15,9 +15,15 @@
  */
 package net.onelitefeather.titan.app.feature.spawn;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+import io.avaje.config.Configuration;
+import net.onelitefeather.titan.common.config.RuntimeConfigFallback;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 
 /**
  * Plain unit tests for {@link SpawnSettings}: no {@code Config}, no server needed - just the pure
@@ -71,5 +77,84 @@ class SpawnSettingsTest {
     @Test
     void nonNumericSimulationDistanceFailsToParse() {
         Assertions.assertThrows(NumberFormatException.class, () -> SpawnSettings.simulationDistance("abc"));
+    }
+
+    private static RuntimeConfigFallback freshFallback() {
+        return new RuntimeConfigFallback(Configuration.builder().build());
+    }
+
+    @DisplayName("resolveMaxHeight passes a valid value through unchanged")
+    @Test
+    void resolveMaxHeightPassesAValidValueThrough() {
+        Assertions.assertEquals(310, SpawnSettings.resolveMaxHeight("310", 310, freshFallback()));
+    }
+
+    @DisplayName("resolveMaxHeight falls back to the shipped default and warns once for a non-numeric value")
+    @Test
+    void resolveMaxHeightFallsBackAndWarnsForANonNumericValue() {
+        Logger logger = (Logger) LoggerFactory.getLogger(RuntimeConfigFallback.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+
+        try {
+            int result = SpawnSettings.resolveMaxHeight("abc", 310, freshFallback());
+
+            Assertions.assertEquals(310, result);
+            Assertions.assertEquals(1, appender.list.size(), "exactly one WARN must be logged for a new invalid value");
+            Assertions.assertEquals(SpawnSettings.MAX_HEIGHT_KEY, appender.list.get(0).getArgumentArray()[0]);
+        } finally {
+            logger.detachAppender(appender);
+        }
+    }
+
+    @DisplayName("resolveMinHeight passes a valid value through unchanged")
+    @Test
+    void resolveMinHeightPassesAValidValueThrough() {
+        Assertions.assertEquals(-64, SpawnSettings.resolveMinHeight("-64", 310, -64, freshFallback()));
+    }
+
+    @DisplayName("resolveMinHeight falls back to the shipped default and warns once when not less than maxHeight")
+    @Test
+    void resolveMinHeightFallsBackAndWarnsWhenNotLessThanMaxHeight() {
+        Logger logger = (Logger) LoggerFactory.getLogger(RuntimeConfigFallback.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+
+        try {
+            int result = SpawnSettings.resolveMinHeight("400", 300, -64, freshFallback());
+
+            Assertions.assertEquals(-64, result, "a minHeight above maxHeight must fall back to the shipped default");
+            Assertions.assertEquals(1, appender.list.size(), "exactly one WARN must be logged for a new invalid value");
+            Assertions.assertEquals(SpawnSettings.MIN_HEIGHT_KEY, appender.list.get(0).getArgumentArray()[0]);
+        } finally {
+            logger.detachAppender(appender);
+        }
+    }
+
+    @DisplayName("resolveSimulationDistance passes a valid value through unchanged")
+    @Test
+    void resolveSimulationDistancePassesAValidValueThrough() {
+        Assertions.assertEquals(2, SpawnSettings.resolveSimulationDistance("2", 2, freshFallback()));
+    }
+
+    @DisplayName("resolveSimulationDistance falls back to the shipped default and warns once for a zero value")
+    @Test
+    void resolveSimulationDistanceFallsBackAndWarnsForAZeroValue() {
+        Logger logger = (Logger) LoggerFactory.getLogger(RuntimeConfigFallback.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+
+        try {
+            int result = SpawnSettings.resolveSimulationDistance("0", 2, freshFallback());
+
+            Assertions.assertEquals(2, result);
+            Assertions.assertEquals(1, appender.list.size(), "exactly one WARN must be logged for a new invalid value");
+            Assertions.assertEquals(SpawnSettings.SIMULATION_DISTANCE_KEY, appender.list.get(0).getArgumentArray()[0]);
+        } finally {
+            logger.detachAppender(appender);
+        }
     }
 }
