@@ -55,9 +55,8 @@ final class ModuleKeys {
      * @return every module id at least one of {@code keys} belongs to, per {@link #moduleIdOf} -
      *         never {@code features}/{@code titan}/{@code config}. The caller (
      *         {@link ConfigChangeHandler}) restarts the ids this method returns that its own
-     *         {@link ModuleRestarter#moduleOrder()} actually knows, in <em>that</em> registration
-     *         order - not this method's own (alphabetical, for a stable/deterministic result)
-     *         order.
+     *         module order supplier actually knows, in <em>that</em> registration order - not this
+     *         method's own (alphabetical, for a stable/deterministic result) order.
      */
     static Set<String> affectedModuleIds(Set<String> keys) {
         Set<String> ids = new TreeSet<>();

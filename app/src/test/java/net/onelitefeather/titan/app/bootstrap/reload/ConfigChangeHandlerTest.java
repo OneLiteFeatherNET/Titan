@@ -30,14 +30,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executor;
+import net.onelitefeather.titan.app.module.RestartOutcome;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 
 /**
- * Unit coverage for {@link ConfigChangeHandler} against fakes of {@link ModuleRestarter} and
- * {@link ConfigRevertWriter}, with a direct ({@link Runnable#run()}) or recording tick executor -
+ * Unit coverage for {@link ConfigChangeHandler} against a fake restart operation/module order (see
+ * {@link FakeRestarter}) and a fake {@link ConfigRevertWriter}, with a direct
+ * ({@link Runnable#run()}) or recording tick executor -
  * never the real {@code Config} facade (no {@code Config} mutator belongs in a unit test, see
  * {@code openspec/changes/avaje-config-facade/design.md}, decision 5). The fake
  * {@code ModificationEvent}'s own {@link Configuration} is a standalone, in-memory instance built
@@ -53,7 +55,7 @@ class ConfigChangeHandlerTest {
         RecordingRevertWriter revertWriter = new RecordingRevertWriter();
         Map<String, String> snapshot = new LinkedHashMap<>(Map.of(
                 "sit.offset.y", "0.5", "elytra.burnDurationTicks", "200", "tickle.cooldownMillis", "4000"));
-        ConfigChangeHandler handler = new ConfigChangeHandler(restarter, revertWriter, Runnable::run, snapshot);
+        ConfigChangeHandler handler = new ConfigChangeHandler(restarter::restart, restarter::moduleOrder, revertWriter, Runnable::run, snapshot);
         ModificationEvent event = event("reload", Set.of("sit.offset.y", "elytra.burnDurationTicks"), Map.of(
                 "sit.offset.y", "0.8", "elytra.burnDurationTicks", "400", "tickle.cooldownMillis", "4000"));
 
@@ -69,7 +71,7 @@ class ConfigChangeHandlerTest {
         FakeRestarter restarter = new FakeRestarter(List.of("sit"));
         RecordingRevertWriter revertWriter = new RecordingRevertWriter();
         Map<String, String> snapshot = new LinkedHashMap<>(Map.of("spawn.simulationDistance", "6"));
-        ConfigChangeHandler handler = new ConfigChangeHandler(restarter, revertWriter, Runnable::run, snapshot);
+        ConfigChangeHandler handler = new ConfigChangeHandler(restarter::restart, restarter::moduleOrder, revertWriter, Runnable::run, snapshot);
         // "spawn" is deliberately absent from the restarter's known module ids.
         ModificationEvent event = event("reload", Set.of("spawn.simulationDistance"), Map.of("spawn.simulationDistance", "10"));
 
@@ -86,7 +88,7 @@ class ConfigChangeHandlerTest {
         RecordingRevertWriter revertWriter = new RecordingRevertWriter();
         RecordingExecutor tickExecutor = new RecordingExecutor();
         Map<String, String> snapshot = new LinkedHashMap<>(Map.of("sit.offset.y", "0.5"));
-        ConfigChangeHandler handler = new ConfigChangeHandler(restarter, revertWriter, tickExecutor, snapshot);
+        ConfigChangeHandler handler = new ConfigChangeHandler(restarter::restart, restarter::moduleOrder, revertWriter, tickExecutor, snapshot);
         ModificationEvent event = event("reload-revert", Set.of("sit.offset.y"), Map.of("sit.offset.y", "0.2"));
 
         handler.accept(event);
@@ -102,7 +104,7 @@ class ConfigChangeHandlerTest {
         RecordingRevertWriter revertWriter = new RecordingRevertWriter();
         RecordingExecutor tickExecutor = new RecordingExecutor();
         Map<String, String> snapshot = new LinkedHashMap<>(Map.of("sit.offset.y", "0.5"));
-        ConfigChangeHandler handler = new ConfigChangeHandler(restarter, revertWriter, tickExecutor, snapshot);
+        ConfigChangeHandler handler = new ConfigChangeHandler(restarter::restart, restarter::moduleOrder, revertWriter, tickExecutor, snapshot);
         ModificationEvent event = event("reload", Set.of("sit.offset.y"), Map.of("sit.offset.y", "0.8"));
 
         handler.accept(event);
@@ -120,10 +122,10 @@ class ConfigChangeHandlerTest {
     void failedRestartRevertsFromSnapshotRetriesAndWarns() {
         FakeRestarter restarter = new FakeRestarter(List.of("tickle"));
         RuntimeException cause = new IllegalArgumentException("must not be negative, was -5");
-        restarter.willReturn("tickle", new ModuleRestartOutcome.Failed(cause), new ModuleRestartOutcome.Restarted());
+        restarter.willReturn("tickle", new RestartOutcome.Failed(cause), new RestartOutcome.Restarted());
         RecordingRevertWriter revertWriter = new RecordingRevertWriter();
         Map<String, String> snapshot = new LinkedHashMap<>(Map.of("tickle.cooldownMillis", "4000"));
-        ConfigChangeHandler handler = new ConfigChangeHandler(restarter, revertWriter, Runnable::run, snapshot);
+        ConfigChangeHandler handler = new ConfigChangeHandler(restarter::restart, restarter::moduleOrder, revertWriter, Runnable::run, snapshot);
         ModificationEvent event = event("reload", Set.of("tickle.cooldownMillis"), Map.of("tickle.cooldownMillis", "-5"));
 
         List<ILoggingEvent> events = captureLogs(() -> handler.accept(event));
@@ -145,10 +147,10 @@ class ConfigChangeHandlerTest {
         RuntimeException innerCause = new IllegalArgumentException("must not be negative, was -5");
         RuntimeException avajeWrapper = new IllegalStateException(
                 "Failed to convert key: tickle.cooldownMillis with the provided function", innerCause);
-        restarter.willReturn("tickle", new ModuleRestartOutcome.Failed(avajeWrapper), new ModuleRestartOutcome.Restarted());
+        restarter.willReturn("tickle", new RestartOutcome.Failed(avajeWrapper), new RestartOutcome.Restarted());
         RecordingRevertWriter revertWriter = new RecordingRevertWriter();
         Map<String, String> snapshot = new LinkedHashMap<>(Map.of("tickle.cooldownMillis", "4000"));
-        ConfigChangeHandler handler = new ConfigChangeHandler(restarter, revertWriter, Runnable::run, snapshot);
+        ConfigChangeHandler handler = new ConfigChangeHandler(restarter::restart, restarter::moduleOrder, revertWriter, Runnable::run, snapshot);
         ModificationEvent event = event("reload", Set.of("tickle.cooldownMillis"), Map.of("tickle.cooldownMillis", "-5"));
 
         List<ILoggingEvent> events = captureLogs(() -> handler.accept(event));
@@ -163,11 +165,11 @@ class ConfigChangeHandlerTest {
     @Test
     void revertRemovesAKeyThatWasAbsentFromTheSnapshot() {
         FakeRestarter restarter = new FakeRestarter(List.of("tickle"));
-        restarter.willReturn("tickle", new ModuleRestartOutcome.Failed(new IllegalStateException("boom")), new ModuleRestartOutcome.Restarted());
+        restarter.willReturn("tickle", new RestartOutcome.Failed(new IllegalStateException("boom")), new RestartOutcome.Restarted());
         RecordingRevertWriter revertWriter = new RecordingRevertWriter();
         // tickle.cooldownMillis was never in the snapshot before - a newly added key.
         Map<String, String> snapshot = new LinkedHashMap<>();
-        ConfigChangeHandler handler = new ConfigChangeHandler(restarter, revertWriter, Runnable::run, snapshot);
+        ConfigChangeHandler handler = new ConfigChangeHandler(restarter::restart, restarter::moduleOrder, revertWriter, Runnable::run, snapshot);
         ModificationEvent event = event("reload", Set.of("tickle.cooldownMillis"), Map.of("tickle.cooldownMillis", "-5"));
 
         handler.accept(event);
@@ -182,10 +184,10 @@ class ConfigChangeHandlerTest {
     void secondFailureDisablesTheModuleWithError() {
         FakeRestarter restarter = new FakeRestarter(List.of("tickle"));
         restarter.willReturn(
-                "tickle", new ModuleRestartOutcome.Failed(new IllegalStateException("boom")), new ModuleRestartOutcome.Failed(new IllegalStateException("boom again")));
+                "tickle", new RestartOutcome.Failed(new IllegalStateException("boom")), new RestartOutcome.Failed(new IllegalStateException("boom again")));
         RecordingRevertWriter revertWriter = new RecordingRevertWriter();
         Map<String, String> snapshot = new LinkedHashMap<>(Map.of("tickle.cooldownMillis", "4000"));
-        ConfigChangeHandler handler = new ConfigChangeHandler(restarter, revertWriter, Runnable::run, snapshot);
+        ConfigChangeHandler handler = new ConfigChangeHandler(restarter::restart, restarter::moduleOrder, revertWriter, Runnable::run, snapshot);
         ModificationEvent event = event("reload", Set.of("tickle.cooldownMillis"), Map.of("tickle.cooldownMillis", "-5"));
 
         List<ILoggingEvent> events = captureLogs(() -> handler.accept(event));
@@ -200,7 +202,7 @@ class ConfigChangeHandlerTest {
         FakeRestarter restarter = new FakeRestarter(List.of("sit", "tickle"));
         RecordingRevertWriter revertWriter = new RecordingRevertWriter();
         Map<String, String> snapshot = new LinkedHashMap<>(Map.of("features.NAVIGATOR_SLENDER", "false"));
-        ConfigChangeHandler handler = new ConfigChangeHandler(restarter, revertWriter, Runnable::run, snapshot);
+        ConfigChangeHandler handler = new ConfigChangeHandler(restarter::restart, restarter::moduleOrder, revertWriter, Runnable::run, snapshot);
         ModificationEvent event = event("reload", Set.of("features.NAVIGATOR_SLENDER"), Map.of("features.NAVIGATOR_SLENDER", "true"));
 
         List<ILoggingEvent> events = captureLogs(() -> handler.accept(event));
@@ -215,10 +217,10 @@ class ConfigChangeHandlerTest {
     void oneModuleFailingDoesNotAffectAnotherSucceedingInTheSameEvent() {
         FakeRestarter restarter = new FakeRestarter(List.of("sit", "tickle"));
         restarter.willReturn(
-                "tickle", new ModuleRestartOutcome.Failed(new IllegalArgumentException("must not be negative, was -5")), new ModuleRestartOutcome.Restarted());
+                "tickle", new RestartOutcome.Failed(new IllegalArgumentException("must not be negative, was -5")), new RestartOutcome.Restarted());
         RecordingRevertWriter revertWriter = new RecordingRevertWriter();
         Map<String, String> snapshot = new LinkedHashMap<>(Map.of("sit.offset.y", "0.25", "tickle.cooldownMillis", "4000"));
-        ConfigChangeHandler handler = new ConfigChangeHandler(restarter, revertWriter, Runnable::run, snapshot);
+        ConfigChangeHandler handler = new ConfigChangeHandler(restarter::restart, restarter::moduleOrder, revertWriter, Runnable::run, snapshot);
         ModificationEvent event = event("reload", Set.of("sit.offset.y", "tickle.cooldownMillis"), Map.of("sit.offset.y", "0.5", "tickle.cooldownMillis", "-5"));
 
         handler.accept(event);
@@ -272,36 +274,36 @@ class ConfigChangeHandlerTest {
     }
 
     /**
-     * A {@link ModuleRestarter} fake whose outcome per module id can be scripted call by call;
-     * {@link #moduleOrder()} is fixed at construction, mirroring a restarter that knows a fixed set
-     * of modules in registration order.
+     * A fake restart operation/module order pair whose outcome per module id can be scripted call
+     * by call; {@link #moduleOrder()} is fixed at construction, mirroring a restarter that knows a
+     * fixed set of modules in registration order. {@link ConfigChangeHandler} is handed
+     * {@link #restart(String)} and {@link #moduleOrder()} as method references, exactly as
+     * {@code ConfigChangeBootstrap} hands it {@code ModuleRegistry::restart}/{@code ::moduleIds}.
      */
-    private static final class FakeRestarter implements ModuleRestarter {
+    private static final class FakeRestarter {
 
         private final List<String> order;
-        private final Map<String, Deque<ModuleRestartOutcome>> scripts = new HashMap<>();
+        private final Map<String, Deque<RestartOutcome>> scripts = new HashMap<>();
         final List<String> restartCalls = new ArrayList<>();
 
         FakeRestarter(List<String> order) {
             this.order = List.copyOf(order);
         }
 
-        void willReturn(String moduleId, ModuleRestartOutcome... outcomes) {
+        void willReturn(String moduleId, RestartOutcome... outcomes) {
             this.scripts.computeIfAbsent(moduleId, id -> new ArrayDeque<>()).addAll(List.of(outcomes));
         }
 
-        @Override
-        public ModuleRestartOutcome restart(String moduleId) {
+        RestartOutcome restart(String moduleId) {
             this.restartCalls.add(moduleId);
-            Deque<ModuleRestartOutcome> script = this.scripts.get(moduleId);
+            Deque<RestartOutcome> script = this.scripts.get(moduleId);
             if (script != null && !script.isEmpty()) {
                 return script.removeFirst();
             }
-            return new ModuleRestartOutcome.Restarted();
+            return new RestartOutcome.Restarted();
         }
 
-        @Override
-        public List<String> moduleOrder() {
+        List<String> moduleOrder() {
             return this.order;
         }
     }

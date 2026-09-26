@@ -139,12 +139,12 @@ public final class ModuleRegistry {
 
     /**
      * @return every registered module's id ({@link LobbyModule#id()}), in registration order - an
-     *         unmodifiable snapshot, independent of whether each module is currently running. Used
-     *         as the ordering seam {@code ModuleRestarterAdapter} hands to
-     *         {@code ModuleRestarter#moduleOrder()}, so a configuration reload restarts affected
-     *         modules in this same order rather than in whatever order their diff keys happen to
-     *         sort in; see {@code openspec/changes/config-reload-feature-flags/design.md}, decision
-     *         3.
+     *         unmodifiable snapshot, independent of whether each module is currently running.
+     *         Passed
+     *         straight through to {@code ConfigChangeHandler} as its module order supplier
+     *         ({@code ConfigChangeBootstrap}), so a configuration reload restarts affected modules
+     *         in this same order rather than in whatever order their diff keys happen to sort in;
+     *         see {@code openspec/changes/config-reload-feature-flags/design.md}, decision 3.
      */
     public List<String> moduleIds() {
         return this.modules.stream().map(LobbyModule::id).toList();

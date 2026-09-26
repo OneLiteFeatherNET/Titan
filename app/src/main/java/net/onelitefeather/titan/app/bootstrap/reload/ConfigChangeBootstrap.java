@@ -29,6 +29,11 @@ import net.onelitefeather.titan.app.module.ModuleRegistry;
  * {@code Config.onChange(...)}. See
  * {@code openspec/changes/config-reload-feature-flags/design.md}, decision 1.
  *
+ * <p>Passes {@code moduleRegistry}'s own {@code restart(String)} and {@code moduleIds()} methods
+ * straight through to {@link ConfigChangeHandler} as its restart operation and registration order
+ * - no adapter of our own needed, since {@link ConfigChangeHandler} already depends on
+ * {@code net.onelitefeather.titan.app.module.RestartOutcome} directly.
+ *
  * <p>Deliberately a plain static factory called from {@code Titan}, not an Avaje Inject bean:
  * {@code ModuleRegistry} itself is built the same way (see {@code PlatformBeans}'s own javadoc),
  * and wiring this here rather than as a bean keeps a test that only builds the {@code BeanScope}
@@ -43,7 +48,8 @@ public final class ConfigChangeBootstrap {
 
     /**
      * @param moduleRegistry the lobby's module registry - {@link ConfigChangeHandler} restarts run
-     *                       through it via a {@link ModuleRestarterAdapter}
+     *                       straight through its {@code restart(String)}/{@code moduleIds()}
+     *                       methods
      * @return the {@link ConfigChangeHandler} that was registered with {@code Config.onChange(...)}
      *         - its own starting snapshot is the configuration's current flat values at the moment
      *         this method runs
@@ -52,11 +58,11 @@ public final class ConfigChangeBootstrap {
         Objects.requireNonNull(moduleRegistry, "moduleRegistry");
 
         Map<String, String> initialSnapshot = FlatConfigValues.of(Config.asConfiguration().asProperties());
-        ModuleRestarter restarter = new ModuleRestarterAdapter(moduleRegistry);
         // Scheduler extends Executor and its own execute(Runnable) proxies to
         // scheduleNextTick(Runnable) - so the scheduler manager itself is the tick executor, with
         // no adapter of our own needed.
-        ConfigChangeHandler handler = new ConfigChangeHandler(restarter, ConfigChangeBootstrap::revert, MinecraftServer.getSchedulerManager(), initialSnapshot);
+        ConfigChangeHandler handler = new ConfigChangeHandler(
+                moduleRegistry::restart, moduleRegistry::moduleIds, ConfigChangeBootstrap::revert, MinecraftServer.getSchedulerManager(), initialSnapshot);
 
         Config.onChange(handler);
         return handler;

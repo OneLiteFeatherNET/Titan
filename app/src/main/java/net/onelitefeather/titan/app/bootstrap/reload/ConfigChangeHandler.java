@@ -25,6 +25,9 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import net.onelitefeather.titan.app.module.RestartOutcome;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +69,8 @@ public final class ConfigChangeHandler implements Consumer<ModificationEvent> {
      */
     private static final String REVERT_EVENT_NAME = "reload-revert";
 
-    private final ModuleRestarter restarter;
+    private final Function<String, RestartOutcome> restart;
+    private final Supplier<List<String>> moduleOrder;
     private final ConfigRevertWriter revertWriter;
     private final Executor tickExecutor;
 
@@ -74,8 +78,9 @@ public final class ConfigChangeHandler implements Consumer<ModificationEvent> {
     private Map<String, String> snapshot;
 
     public ConfigChangeHandler(
-                               ModuleRestarter restarter, ConfigRevertWriter revertWriter, Executor tickExecutor, Map<String, String> initialSnapshot) {
-        this.restarter = Objects.requireNonNull(restarter, "restarter");
+                               Function<String, RestartOutcome> restart, Supplier<List<String>> moduleOrder, ConfigRevertWriter revertWriter, Executor tickExecutor, Map<String, String> initialSnapshot) {
+        this.restart = Objects.requireNonNull(restart, "restart");
+        this.moduleOrder = Objects.requireNonNull(moduleOrder, "moduleOrder");
         this.revertWriter = Objects.requireNonNull(revertWriter, "revertWriter");
         this.tickExecutor = Objects.requireNonNull(tickExecutor, "tickExecutor");
         this.snapshot = Map.copyOf(Objects.requireNonNull(initialSnapshot, "initialSnapshot"));
@@ -105,7 +110,7 @@ public final class ConfigChangeHandler implements Consumer<ModificationEvent> {
     private void handle(ModificationEvent event) {
         Set<String> keys = event.modifiedKeys();
         Set<String> affected = ModuleKeys.affectedModuleIds(keys);
-        List<String> toRestart = this.restarter.moduleOrder().stream().filter(affected::contains).toList();
+        List<String> toRestart = this.moduleOrder.get().stream().filter(affected::contains).toList();
 
         if (toRestart.isEmpty()) {
             LOGGER.debug("Configuration changed with no affected module: {}", keys);
@@ -123,13 +128,13 @@ public final class ConfigChangeHandler implements Consumer<ModificationEvent> {
 
     private void restartModule(String moduleId, Set<String> allKeys, Map<String, String> snapshotBeforeEvent, Set<String> revertedKeys) {
         Set<String> keysForModule = ModuleKeys.keysForModule(moduleId, allKeys);
-        switch (this.restarter.restart(moduleId)) {
-            case ModuleRestartOutcome.Restarted() ->
+        switch (this.restart.apply(moduleId)) {
+            case RestartOutcome.Restarted() ->
                 LOGGER.info("Module {} restarted, changed keys: {}", moduleId, keysForModule);
-            case ModuleRestartOutcome.Failed(Throwable cause) -> {
+            case RestartOutcome.Failed(Throwable cause) -> {
                 revert(keysForModule, snapshotBeforeEvent);
                 revertedKeys.addAll(keysForModule);
-                if (this.restarter.restart(moduleId) instanceof ModuleRestartOutcome.Restarted) {
+                if (this.restart.apply(moduleId) instanceof RestartOutcome.Restarted) {
                     String reason = Causes.rootMessage(cause);
                     LOGGER.warn("Module {} rejected new configuration, keeping previous values: {} ({})", moduleId, keysForModule, reason);
                 } else {

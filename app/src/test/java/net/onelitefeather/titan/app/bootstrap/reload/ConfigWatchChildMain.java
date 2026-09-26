@@ -23,20 +23,22 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import net.onelitefeather.titan.app.module.RestartOutcome;
 
 /**
  * The child process entry point {@code ConfigChangeFileWatchIntegrationTest} launches: touches the
  * static {@code io.avaje.config.Config} facade exactly like {@code Titan} does - built-in first,
  * no factory of its own in between - takes its current flat values as a {@link ConfigChangeHandler}
- * snapshot, wires that handler with a printing fake {@link ModuleRestarter} (fixed module order
- * {@code sit, tickle}) and a direct ({@link Runnable#run()}) tick executor, registers it via
- * {@code Config.onChange(...)}, prints {@code READY}, then blocks reading stdin until the parent
- * test closes it - so this JVM stays alive long enough for avaje-config's own "ConfigTimer" daemon
- * thread to notice a file change the parent test makes after seeing {@code READY}.
+ * snapshot, wires that handler with a printing fake restart operation ({@link PrintingRestarter},
+ * fixed module order {@code sit, tickle}) and a direct ({@link Runnable#run()}) tick executor,
+ * registers it via {@code Config.onChange(...)}, prints
+ * {@code READY}, then blocks reading stdin until the parent test closes it - so this JVM stays
+ * alive long enough for avaje-config's own "ConfigTimer" daemon thread to notice a file change the
+ * parent test makes after seeing {@code READY}.
  *
- * <p>No Minestom server is started here at all: {@link ConfigChangeHandler} needs only an
- * {@link ModuleRestarter} and a tick {@link java.util.concurrent.Executor}, neither of which this
- * test cares comes from Minestom (see
+ * <p>No Minestom server is started here at all: {@link ConfigChangeHandler} needs only a restart
+ * operation/module order pair and a tick {@link java.util.concurrent.Executor}, neither of which
+ * this test cares comes from Minestom (see
  * {@code openspec/changes/config-reload-feature-flags/tasks.md},
  * task 5.1). No {@code Config} mutator is ever called from this class or the test that drives it -
  * {@link #revertWriter} would only be reached by an actually rejected module, which this test's
@@ -52,11 +54,11 @@ public final class ConfigWatchChildMain {
         Configuration configuration = Config.asConfiguration();
         Map<String, String> snapshot = FlatConfigValues.of(configuration.asProperties());
 
-        ModuleRestarter restarter = new PrintingModuleRestarter(List.of("sit", "tickle"));
+        PrintingRestarter restarter = new PrintingRestarter(List.of("sit", "tickle"));
         ConfigRevertWriter revertWriter = (puts, removals) -> {
             throw new AssertionError("this scenario must never need a revert");
         };
-        ConfigChangeHandler handler = new ConfigChangeHandler(restarter, revertWriter, Runnable::run, snapshot);
+        ConfigChangeHandler handler = new ConfigChangeHandler(restarter::restart, restarter::moduleOrder, revertWriter, Runnable::run, snapshot);
         Config.onChange(handler);
 
         System.out.println("READY");
@@ -71,23 +73,21 @@ public final class ConfigWatchChildMain {
     }
 
     /** Prints {@code "RESTARTED " + moduleId} on every {@link #restart(String)} call. */
-    private static final class PrintingModuleRestarter implements ModuleRestarter {
+    private static final class PrintingRestarter {
 
         private final List<String> order;
 
-        PrintingModuleRestarter(List<String> order) {
+        PrintingRestarter(List<String> order) {
             this.order = order;
         }
 
-        @Override
-        public ModuleRestartOutcome restart(String moduleId) {
+        RestartOutcome restart(String moduleId) {
             System.out.println("RESTARTED " + moduleId);
             System.out.flush();
-            return new ModuleRestartOutcome.Restarted();
+            return new RestartOutcome.Restarted();
         }
 
-        @Override
-        public List<String> moduleOrder() {
+        List<String> moduleOrder() {
             return this.order;
         }
     }
