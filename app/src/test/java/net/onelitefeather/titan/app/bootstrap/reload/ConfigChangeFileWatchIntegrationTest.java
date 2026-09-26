@@ -128,9 +128,8 @@ class ConfigChangeFileWatchIntegrationTest {
 
     /**
      * A child {@link Process} whose stdout/stderr (merged) is drained on a background thread into
-     * both a {@link BlockingQueue} ({@link #awaitLine}, condition wait with an overall timeout - no
-     * {@code Thread.sleep}) and a plain, ever-growing list ({@link #linesSoFar()}, for failure
-     * messages).
+     * both a {@link BlockingQueue} ({@link #awaitLine}, condition wait with an overall timeout, no
+     * fixed sleep) and a plain, ever-growing list ({@link #linesSoFar()}, for failure messages).
      */
     private static final class ChildProcess implements AutoCloseable {
 
@@ -176,7 +175,7 @@ class ConfigChangeFileWatchIntegrationTest {
         /**
          * Blocks until a line matching {@code predicate} arrives, or fails the test once
          * {@code timeout} has elapsed without one - a condition wait bounded by an overall
-         * deadline, never a fixed {@code Thread.sleep}.
+         * deadline, never a fixed wall-clock sleep.
          */
         String awaitLine(Predicate<String> predicate, Duration timeout) throws InterruptedException {
             long deadlineNanos = System.nanoTime() + timeout.toNanos();

@@ -110,7 +110,7 @@ public final class ModuleRegistry {
      *         {@code SchedulerManager} ticks scheduled tasks on - a {@link TickSchedulerThread}
      *         (name {@code Ms-TickScheduler}, see
      *         {@link MinecraftServer#THREAD_NAME_TICK_SCHEDULER}). That is the thread
-     *         {@code ConfigReloadBootstrap} wires as {@code ConfigReloader}'s tick executor
+     *         {@code ConfigChangeBootstrap} wires as {@code ConfigChangeHandler}'s tick executor
      *         ({@code SchedulerManager#scheduleNextTick}/{@code Scheduler#execute}), so it is the
      *         thread every production call to {@link #restart(String)} actually runs on.
      *
@@ -140,7 +140,7 @@ public final class ModuleRegistry {
     /**
      * @return every registered module's id ({@link LobbyModule#id()}), in registration order - an
      *         unmodifiable snapshot, independent of whether each module is currently running. Used
-     *         as the ordering seam a {@code ConfigReloader} adapter hands to
+     *         as the ordering seam {@code ModuleRestarterAdapter} hands to
      *         {@code ModuleRestarter#moduleOrder()}, so a configuration reload restarts affected
      *         modules in this same order rather than in whatever order their diff keys happen to
      *         sort in; see {@code openspec/changes/config-reload-feature-flags/design.md}, decision
@@ -239,7 +239,7 @@ public final class ModuleRegistry {
      *
      * <p>If starting the module or that validation fails, the partial start is torn down the same
      * way step 1 tears a running module down, and this method returns {@link RestartOutcome.Failed}
-     * instead of throwing - the caller (a later {@code ConfigReloader}) decides whether to restore
+     * instead of throwing - the caller ({@code ConfigChangeHandler}) decides whether to restore
      * the module's previous configuration values and restart it again. Every other module is left
      * running untouched, whichever outcome this call ends in.
      *
