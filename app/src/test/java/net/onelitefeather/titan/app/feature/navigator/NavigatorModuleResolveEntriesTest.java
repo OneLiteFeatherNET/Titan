@@ -21,6 +21,7 @@ import ch.qos.logback.core.read.ListAppender;
 import io.avaje.config.Configuration;
 import java.util.List;
 import net.minestom.server.item.Material;
+import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntry;
 import net.onelitefeather.titan.common.config.RuntimeConfigFallback;
@@ -38,8 +39,16 @@ import org.slf4j.LoggerFactory;
  * {@link Configuration} instances directly and its own {@link RuntimeConfigFallback} (F.I.R.S.T. -
  * Independent); none of this mutates {@code io.avaje.config.Config}.
  *
- * <p>{@link MicrotusExtension} is only needed because {@link Material#fromKey(String)} - reached
- * through {@link NavigatorEntryValidation#buildEntry} - resolves against Minestom's registry data.
+ * <p>{@link MicrotusExtension} is needed because {@link NavigatorModule#toNavigatorEntry} builds a
+ * real {@code ItemStack} for each entry's icon (unlike {@link NavigatorEntryValidation#buildEntry},
+ * whose own {@link Material#fromKey(String)} check needs no booted registry at all - see that
+ * class's Javadoc) - which needs Minestom's registry bound, not merely {@link Material#fromKey}
+ * resolving the key. {@link MicrotusExtension} only binds that registry once its {@code Env}
+ * parameter is actually resolved (see {@link net.minestom.testing.extension.MicrotusExtension}),
+ * so every test method below declares one, exactly like {@link NavigatorModuleTest} and
+ * {@link NavigatorFeatureFlagTest} do - unused otherwise, since
+ * {@link NavigatorModule#resolveEntries}
+ * itself needs no {@code Env} at all.
  */
 @ExtendWith(MicrotusExtension.class)
 class NavigatorModuleResolveEntriesTest {
@@ -58,7 +67,7 @@ class NavigatorModuleResolveEntriesTest {
 
     @DisplayName("A valid live configuration with only known features passes through unchanged, without warning")
     @Test
-    void validLiveConfigurationPassesThroughUnchanged() {
+    void validLiveConfigurationPassesThroughUnchanged(Env env) {
         Configuration live = oneValidEntry("survival", 4, null);
         Configuration shipped = oneValidEntry("shipped-survival", 4, null);
         Logger logger = (Logger) LoggerFactory.getLogger(RuntimeConfigFallback.class);
@@ -79,7 +88,7 @@ class NavigatorModuleResolveEntriesTest {
 
     @DisplayName("An unknown feature name falls the whole set back to the shipped entries and warns once")
     @Test
-    void unknownFeatureNameFallsBackToShippedEntriesAndWarnsOnce() {
+    void unknownFeatureNameFallsBackToShippedEntriesAndWarnsOnce(Env env) {
         Configuration live = oneValidEntry("survival", 4, "GIBT_ES_NICHT");
         Configuration shipped = oneValidEntry("shipped-survival", 4, null);
         FakeFeatureFlags featureFlags = new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", true);
@@ -102,7 +111,7 @@ class NavigatorModuleResolveEntriesTest {
 
     @DisplayName("An out-of-range slot falls the whole set back to the shipped entries")
     @Test
-    void outOfRangeSlotFallsBackToShippedEntries() {
+    void outOfRangeSlotFallsBackToShippedEntries(Env env) {
         Configuration live = oneValidEntry("survival", 9, null);
         Configuration shipped = oneValidEntry("shipped-survival", 4, null);
 
@@ -113,7 +122,7 @@ class NavigatorModuleResolveEntriesTest {
 
     @DisplayName("The same invalid configuration seen again does not warn a second time")
     @Test
-    void sameInvalidConfigurationDoesNotWarnAgain() {
+    void sameInvalidConfigurationDoesNotWarnAgain(Env env) {
         Configuration live = oneValidEntry("survival", 4, "GIBT_ES_NICHT");
         Configuration shipped = oneValidEntry("shipped-survival", 4, null);
         RuntimeConfigFallback fallback = freshFallback();
