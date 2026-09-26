@@ -89,7 +89,7 @@ class SitSettingsTest {
         return new RuntimeConfigFallback(Configuration.builder().build());
     }
 
-    @DisplayName("resolveOffsetComponent passes a valid value through unchanged, without warning")
+    @DisplayName("resolve passes a valid offset component through unchanged, without warning")
     @Test
     void resolveOffsetComponentPassesAValidValueThrough() {
         Logger logger = (Logger) LoggerFactory.getLogger(RuntimeConfigFallback.class);
@@ -98,7 +98,7 @@ class SitSettingsTest {
         logger.addAppender(appender);
 
         try {
-            double result = SitSettings.resolveOffsetComponent(SitSettings.OFFSET_Y_KEY, "0.25", 0.5, freshFallback());
+            double result = freshFallback().resolve(SitSettings.OFFSET_Y_KEY, "0.25", SitSettings::parseOffsetComponent, () -> 0.5);
 
             Assertions.assertEquals(0.25, result, "a valid value must pass through unchanged");
             Assertions.assertTrue(appender.list.isEmpty(), "a valid value must never warn");
@@ -107,7 +107,7 @@ class SitSettingsTest {
         }
     }
 
-    @DisplayName("resolveOffsetComponent falls back to the shipped default and warns once for a non-numeric value")
+    @DisplayName("resolve falls back to the shipped default and warns once for a non-numeric offset component")
     @Test
     void resolveOffsetComponentFallsBackAndWarnsForANonNumericValue() {
         Logger logger = (Logger) LoggerFactory.getLogger(RuntimeConfigFallback.class);
@@ -116,7 +116,7 @@ class SitSettingsTest {
         logger.addAppender(appender);
 
         try {
-            double result = SitSettings.resolveOffsetComponent(SitSettings.OFFSET_Y_KEY, "abc", 0.5, freshFallback());
+            double result = freshFallback().resolve(SitSettings.OFFSET_Y_KEY, "abc", SitSettings::parseOffsetComponent, () -> 0.5);
 
             Assertions.assertEquals(0.5, result, "an invalid value must fall back to the shipped default");
             Assertions.assertEquals(1, appender.list.size(), "exactly one WARN must be logged for a new invalid value");
@@ -128,17 +128,17 @@ class SitSettingsTest {
         }
     }
 
-    @DisplayName("resolveAllowedBlocks passes a valid list through unchanged")
+    @DisplayName("resolve passes a valid allowedBlocks list through unchanged")
     @Test
     void resolveAllowedBlocksPassesAValidListThrough() {
         List<Key> shippedDefault = List.of(Key.key("minecraft:spruce_stairs"));
 
-        List<Key> result = SitSettings.resolveAllowedBlocks(List.of("minecraft:oak_stairs"), shippedDefault, freshFallback());
+        List<Key> result = freshFallback().resolve(SitSettings.ALLOWED_BLOCKS_KEY, List.of("minecraft:oak_stairs"), SitSettings::parseAllowedBlocks, () -> shippedDefault);
 
         Assertions.assertEquals(List.of(Key.key("minecraft:oak_stairs")), result);
     }
 
-    @DisplayName("resolveAllowedBlocks falls back to the shipped default list and warns once for an unknown block")
+    @DisplayName("resolve falls back to the shipped allowedBlocks list and warns once for an unknown block")
     @Test
     void resolveAllowedBlocksFallsBackAndWarnsForAnUnknownBlock() {
         Logger logger = (Logger) LoggerFactory.getLogger(RuntimeConfigFallback.class);
@@ -148,7 +148,7 @@ class SitSettingsTest {
         List<Key> shippedDefault = List.of(Key.key("minecraft:spruce_stairs"));
 
         try {
-            List<Key> result = SitSettings.resolveAllowedBlocks(List.of("minecraft:not_a_block"), shippedDefault, freshFallback());
+            List<Key> result = freshFallback().resolve(SitSettings.ALLOWED_BLOCKS_KEY, List.of("minecraft:not_a_block"), SitSettings::parseAllowedBlocks, () -> shippedDefault);
 
             Assertions.assertEquals(shippedDefault, result, "an unknown block must fall the whole list back to the shipped default");
             Assertions.assertEquals(1, appender.list.size(), "exactly one WARN must be logged for a new invalid value");
@@ -159,12 +159,12 @@ class SitSettingsTest {
         }
     }
 
-    @DisplayName("resolveAllowedBlocks falls back to the shipped default list for an empty list")
+    @DisplayName("resolve falls back to the shipped allowedBlocks list for an empty list")
     @Test
     void resolveAllowedBlocksFallsBackForAnEmptyList() {
         List<Key> shippedDefault = List.of(Key.key("minecraft:spruce_stairs"));
 
-        List<Key> result = SitSettings.resolveAllowedBlocks(List.of(), shippedDefault, freshFallback());
+        List<Key> result = freshFallback().resolve(SitSettings.ALLOWED_BLOCKS_KEY, List.<String>of(), SitSettings::parseAllowedBlocks, () -> shippedDefault);
 
         Assertions.assertEquals(shippedDefault, result, "an empty list must fall back to the shipped default too");
     }

@@ -34,17 +34,11 @@ import org.slf4j.LoggerFactory;
  *
  * <p>A module's own {@code *Settings} class reuses its already-existing, pure validation
  * functions (the ones {@code enable()} still runs once, unchanged, to abort startup on an
- * invalid value) and calls {@link #fallback(String, Object, String, Object)} only when
- * validation fails at runtime - see e.g. {@code TickleSettings#resolveCooldownMillis}. This
- * class knows nothing about any module's own keys or validation rules; it only loads the
- * shipped defaults and deduplicates the warning.
- *
- * <p>{@link #resolve(String, Object, Function, Supplier)} is the generic counterpart of
- * {@link #fallback(String, Object, String, Object)} a hot-path read (a tickle attack, a sit
- * interaction, an elytra boost, a spawn height check) resolves through instead: it evaluates
- * {@code shippedDefault} lazily - only once a live value turns out invalid, never on every call
- * - and remembers a persistently invalid raw value together with its resolved fallback, so it is
- * parsed and validated exactly once rather than on every read.
+ * invalid value) and calls {@link #resolve(String, Object, Function, Supplier)} for every value -
+ * or small group of cross-validated values - it reads live; see e.g.
+ * {@code TickleSettings#current()}. This class knows nothing about any module's own keys or
+ * validation rules; it only loads the shipped defaults, remembers the last invalid raw value seen
+ * per key and deduplicates the warning.
  *
  * <p>Instantiable, not a static-only utility, precisely so a test can build a fresh instance -
  * from a plain, in-memory {@link Configuration} (see the two-argument constructor) or from a
@@ -58,7 +52,6 @@ public final class RuntimeConfigFallback {
     private static final Logger log = LoggerFactory.getLogger(RuntimeConfigFallback.class);
 
     private final Configuration shippedDefaults;
-    private final ConcurrentMap<String, Object> lastWarnedInvalidValue = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, CacheEntry<?>> invalidValueCache = new ConcurrentHashMap<>();
 
     /**
@@ -86,50 +79,6 @@ public final class RuntimeConfigFallback {
      */
     public Configuration shippedDefaults() {
         return this.shippedDefaults;
-    }
-
-    /**
-     * Logs a WARN line naming {@code key}, {@code invalidValue} and {@code reason} - deduplicated
-     * per {@code key}: the same {@code invalidValue} seen again for the same {@code key} does not
-     * log a second time, but a different {@code invalidValue} for that same {@code key} does -
-     * then returns {@code shippedDefaultValue} unchanged, so a call site can use this method
-     * directly as its fallback expression.
-     *
-     * @param key                 the full configuration key the invalid value was read from, e.g.
-     *                            {@code "tickle.cooldownMillis"}
-     * @param invalidValue        the value that failed validation, as read (or as a whole, for a
-     *                            setting with no single scalar, e.g. a list or a set of entries)
-     * @param reason              why {@code invalidValue} was rejected, e.g. a caught exception's
-     *                            own message
-     * @param shippedDefaultValue the shipped default to fall back to and to return
-     * @param <T>                 the value's type
-     * @return {@code shippedDefaultValue}, unchanged
-     */
-    public <T> T fallback(String key, Object invalidValue, String reason, T shippedDefaultValue) {
-        warnInvalid(key, invalidValue, reason, shippedDefaultValue);
-        return shippedDefaultValue;
-    }
-
-    /**
-     * Same deduplicated WARN line as {@link #fallback(String, Object, String, Object)}, without
-     * returning a value - for a call site (e.g. the navigator's entries, which fall back as a
-     * whole list rather than one substitutable scalar) that already has its own way of obtaining
-     * the shipped default and only needs the logging, deduplicated the same way.
-     *
-     * @param key                 the full configuration key (or section) the invalid value was
-     *                            read from
-     * @param invalidValue        the value that failed validation
-     * @param reason              why {@code invalidValue} was rejected
-     * @param shippedDefaultValue the shipped default the caller is falling back to, named in the
-     *                            log line only
-     */
-    public void warnInvalid(String key, Object invalidValue, String reason, Object shippedDefaultValue) {
-        Objects.requireNonNull(key, "key must not be null");
-        Objects.requireNonNull(reason, "reason must not be null");
-        Object previousInvalidValue = this.lastWarnedInvalidValue.put(key, invalidValue);
-        if (!Objects.equals(previousInvalidValue, invalidValue)) {
-            log.warn("Invalid configuration value for {}: {} ({}), using shipped default {}", key, invalidValue, reason, shippedDefaultValue);
-        }
     }
 
     /**

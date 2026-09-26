@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -185,14 +187,18 @@ public final class NavigatorModule implements LobbyModule {
 
     /**
      * The runtime counterpart of {@link #enable}'s strict entry read: reads every entry under
-     * {@code navigator.entries} from {@code live}, additionally checking every entry's optional
-     * feature name against {@code featureFlags} (unlike {@link #readEntries(Configuration)} alone,
-     * which knows nothing about feature flags at all). If that fails for any reason - an unknown
-     * feature name, an out-of-range slot, an unknown material, a blank destination - the whole set
-     * falls back to {@code shipped}'s own entries instead (see {@code design.md}, decision 2:
-     * there is no meaningful "just this one entry's own shipped default" to substitute for a
-     * setting that is a whole list), and {@code fallback} logs a deduplicated WARN naming
-     * {@link #ENTRIES_PATH} and the reason.
+     * {@code navigator.entries} from {@code live} as a raw, not-yet-parsed snapshot (see
+     * {@link #rawEntrySection(Configuration)}) - so a repeated call with an unchanged section
+     * never re-parses or re-validates it, via {@link RuntimeConfigFallback#resolve} - then builds
+     * and validates it, additionally checking every entry's optional feature name against
+     * {@code featureFlags} (unlike {@link #readEntries(Configuration)} alone, which knows nothing
+     * about feature flags at all). If that fails for any reason - an unknown feature name, an
+     * out-of-range slot, an unknown material, a blank destination - the whole set falls back to
+     * {@code shipped}'s own entries instead (see {@code design.md}, decision 2: there is no
+     * meaningful "just this one entry's own shipped default" to substitute for a setting that is
+     * a whole list), and {@code fallback} logs a deduplicated WARN naming {@link #ENTRIES_PATH}
+     * and the reason. {@code shipped} is read only if {@code live} turns out invalid, never on
+     * every call.
      *
      * <p>Takes {@code live}, {@code shipped} and {@code fallback} as plain parameters - never
      * touching the static {@code io.avaje.config.Config} facade itself - so a test can build both
@@ -209,15 +215,21 @@ public final class NavigatorModule implements LobbyModule {
      *         {@code live}'s is invalid
      */
     static List<NavigatorEntry> resolveEntries(Configuration live, Configuration shipped, FeatureFlags featureFlags, RuntimeConfigFallback fallback) {
-        try {
-            List<NavigatorEntry> liveEntries = readEntries(live);
-            requireKnownFeatures(liveEntries, featureFlags);
-            return liveEntries;
-        } catch (RuntimeException e) {
-            List<NavigatorEntry> shippedEntries = readEntries(shipped);
-            fallback.warnInvalid(ENTRIES_PATH, e.getMessage(), e.getMessage(), shippedEntries);
-            return shippedEntries;
-        }
+        SortedMap<String, String> raw = rawEntrySection(live);
+        return fallback.resolve(ENTRIES_PATH, raw, section -> buildKnownEntries(section, featureFlags), () -> readEntries(shipped));
+    }
+
+    /**
+     * @param raw          one {@code navigator.entries} section's raw, not-yet-parsed values (see
+     *                     {@link #rawEntrySection(Configuration)})
+     * @param featureFlags the source of truth an entry's optional feature gate is checked against
+     * @return every entry {@code raw} describes, built and validated, including the feature check
+     * @throws RuntimeException if any entry is invalid, or names an unknown feature
+     */
+    private static List<NavigatorEntry> buildKnownEntries(SortedMap<String, String> raw, FeatureFlags featureFlags) {
+        List<NavigatorEntry> entries = buildEntries(raw);
+        requireKnownFeatures(entries, featureFlags);
+        return entries;
     }
 
     /**
@@ -248,29 +260,68 @@ public final class NavigatorModule implements LobbyModule {
     }
 
     /**
-     * Reads every entry under {@code navigator.entries} from {@code configuration}: the entry
-     * names come from {@link NavigatorEntryKeys#names(Set)} applied to
-     * {@code configuration.forPath(ENTRIES_PATH).keys()}, each name's own {@code slot},
-     * {@code icon}, {@code displayName}, {@code destination} and optional {@code feature} are read
-     * and validated by {@link NavigatorEntryValidation#buildEntry}, and the result is turned into a
-     * renderable {@link NavigatorEntry} by {@link #toNavigatorEntry}. Takes the source as a
-     * parameter - the live facade or the shipped classpath defaults - rather than always reading
-     * the static facade, so {@link #currentEntries()} can reuse this exact logic against either
-     * one (see design.md, decision 2: DRY, one reading/validating path).
+     * Reads every entry under {@code navigator.entries} from {@code configuration}, built and
+     * validated by {@link #buildEntries(SortedMap)} - see that method's Javadoc for the
+     * reading/building split. Takes the source as a parameter - the live facade or the shipped
+     * classpath defaults - rather than always reading the static facade, so {@link #resolveEntries}
+     * can reuse this exact logic for the shipped fallback (see design.md, decision 2: DRY, one
+     * reading/validating path).
      *
      * @param configuration the source to read {@code navigator.entries} from
      * @return every entry {@code configuration} describes, ready to register
      */
     private static List<NavigatorEntry> readEntries(Configuration configuration) {
-        Set<String> names = NavigatorEntryKeys.names(configuration.forPath(ENTRIES_PATH).keys());
+        return buildEntries(rawEntrySection(configuration));
+    }
+
+    /**
+     * Reads {@code navigator.entries} from {@code configuration} as a raw, not-yet-parsed
+     * snapshot: every relative key {@code configuration.forPath(ENTRIES_PATH).keys()} returns
+     * (e.g. {@code survival.slot}, {@code survival.icon}) mapped to its plain string value. A
+     * {@link SortedMap} rather than {@link Configuration} itself, precisely so two calls against
+     * an unchanged section produce {@code equals()} results - the raw value
+     * {@link RuntimeConfigFallback#resolve} compares to detect a persistently invalid section
+     * without re-parsing or re-validating it.
+     *
+     * @param configuration the source to read {@code navigator.entries} from
+     * @return every relative key under {@code navigator.entries}, mapped to its raw value
+     */
+    private static SortedMap<String, String> rawEntrySection(Configuration configuration) {
+        Set<String> relativeKeys = configuration.forPath(ENTRIES_PATH).keys();
+        SortedMap<String, String> raw = new TreeMap<>();
+        for (String relativeKey : relativeKeys) {
+            raw.put(relativeKey, configuration.getNullable(ENTRIES_PATH + "." + relativeKey));
+        }
+        return raw;
+    }
+
+    /**
+     * Builds and validates every entry {@code raw} describes: the entry names come from
+     * {@link NavigatorEntryKeys#names(Set)} applied to {@code raw}'s keys, each name's own
+     * {@code slot}, {@code icon}, {@code displayName}, {@code destination} and optional
+     * {@code feature} are read out of {@code raw} and validated by
+     * {@link NavigatorEntryValidation#buildEntry}, and the result is turned into a renderable
+     * {@link NavigatorEntry} by {@link #toNavigatorEntry}. Deliberately free of any
+     * {@code io.avaje.config.Config}/{@link Configuration} type - unlike {@link #readEntries},
+     * this does not know whether {@code raw} came from the live facade or the shipped classpath
+     * defaults - so {@link #buildKnownEntries} can run it against a raw snapshot
+     * {@link RuntimeConfigFallback#resolve} has already decided is worth (re-)validating.
+     *
+     * @param raw one {@code navigator.entries} section's raw, not-yet-parsed values (see
+     *            {@link #rawEntrySection(Configuration)})
+     * @return every entry {@code raw} describes, ready to register
+     * @throws RuntimeException if any entry is invalid
+     */
+    private static List<NavigatorEntry> buildEntries(SortedMap<String, String> raw) {
+        Set<String> names = NavigatorEntryKeys.names(raw.keySet());
         List<NavigatorEntry> entries = new ArrayList<>();
         for (String name : names) {
-            String prefix = ENTRIES_PATH + "." + name + ".";
-            int slot = configuration.getAs(prefix + "slot", Integer::parseInt);
-            String icon = configuration.get(prefix + "icon");
-            String displayName = configuration.get(prefix + "displayName");
-            String destination = configuration.get(prefix + "destination");
-            String feature = configuration.getNullable(prefix + "feature");
+            String prefix = name + ".";
+            int slot = Integer.parseInt(raw.get(prefix + "slot"));
+            String icon = raw.get(prefix + "icon");
+            String displayName = raw.get(prefix + "displayName");
+            String destination = raw.get(prefix + "destination");
+            String feature = raw.get(prefix + "feature");
             NavigatorEntryValidation.ConfiguredNavigatorEntry configured = NavigatorEntryValidation.buildEntry(name, slot, icon, displayName, destination, feature);
             entries.add(toNavigatorEntry(configured));
         }

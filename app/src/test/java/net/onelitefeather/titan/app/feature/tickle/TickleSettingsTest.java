@@ -90,7 +90,7 @@ class TickleSettingsTest {
         return new RuntimeConfigFallback(Configuration.builder().put(TickleSettings.COOLDOWN_KEY, "4000").build());
     }
 
-    @DisplayName("resolveCooldownMillis passes a valid value through unchanged, without warning")
+    @DisplayName("resolve passes a valid value through unchanged, without warning")
     @Test
     void resolveCooldownMillisPassesAValidValueThrough() {
         Logger logger = (Logger) LoggerFactory.getLogger(RuntimeConfigFallback.class);
@@ -99,7 +99,7 @@ class TickleSettingsTest {
         logger.addAppender(appender);
 
         try {
-            long result = TickleSettings.resolveCooldownMillis("1500", 4000L, freshFallback());
+            long result = freshFallback().resolve(TickleSettings.COOLDOWN_KEY, "1500", TickleSettings::cooldownMillis, () -> 4000L);
 
             Assertions.assertEquals(1500L, result, "a valid value must pass through unchanged");
             Assertions.assertTrue(appender.list.isEmpty(), "a valid value must never warn");
@@ -108,7 +108,7 @@ class TickleSettingsTest {
         }
     }
 
-    @DisplayName("resolveCooldownMillis falls back to the shipped default and warns once for a negative value")
+    @DisplayName("resolve falls back to the shipped default and warns once for a negative value")
     @Test
     void resolveCooldownMillisFallsBackAndWarnsForANegativeValue() {
         Logger logger = (Logger) LoggerFactory.getLogger(RuntimeConfigFallback.class);
@@ -117,7 +117,7 @@ class TickleSettingsTest {
         logger.addAppender(appender);
 
         try {
-            long result = TickleSettings.resolveCooldownMillis("-5", 4000L, freshFallback());
+            long result = freshFallback().resolve(TickleSettings.COOLDOWN_KEY, "-5", TickleSettings::cooldownMillis, () -> 4000L);
 
             Assertions.assertEquals(4000L, result, "an invalid value must fall back to the shipped default");
             Assertions.assertEquals(1, appender.list.size(), "exactly one WARN must be logged for a new invalid value");
@@ -131,10 +131,10 @@ class TickleSettingsTest {
         }
     }
 
-    @DisplayName("resolveCooldownMillis falls back to the shipped default for a non-numeric value")
+    @DisplayName("resolve falls back to the shipped default for a non-numeric value")
     @Test
     void resolveCooldownMillisFallsBackForANonNumericValue() {
-        long result = TickleSettings.resolveCooldownMillis("abc", 4000L, freshFallback());
+        long result = freshFallback().resolve(TickleSettings.COOLDOWN_KEY, "abc", TickleSettings::cooldownMillis, () -> 4000L);
 
         Assertions.assertEquals(4000L, result, "a non-numeric value must fall back to the shipped default too");
     }

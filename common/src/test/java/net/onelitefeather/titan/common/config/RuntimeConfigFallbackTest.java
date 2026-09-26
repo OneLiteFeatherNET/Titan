@@ -19,7 +19,6 @@ import io.avaje.config.Configuration;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import net.onelitefeather.titan.common.config.testing.CapturingLoggerFactory;
 import org.junit.jupiter.api.Assertions;
@@ -28,12 +27,14 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit coverage for {@link RuntimeConfigFallback} (see
- * {@code openspec/changes/config-reload-feature-flags/tasks.md}, task 3.1): a new invalid value
- * warns once, the same invalid value again does not, a different invalid value for the same key
- * warns again, and the shipped defaults are loaded exactly once. Every test builds its own, fresh
- * instance (F.I.R.S.T. - Independent): none of this shares state with another test, and none of
- * it calls {@code io.avaje.config.Config}.
+ * Unit coverage for {@link RuntimeConfigFallback#resolve}: a valid raw value is returned
+ * unchanged without ever evaluating the shipped default; a new invalid raw value is parsed
+ * exactly once and warns exactly once; the very same invalid raw value seen again is not parsed
+ * a second time and does not warn again; a different invalid raw value for the same key is
+ * parsed again and warns again; a valid raw value seen after an invalid one recovers and drops
+ * the cached entry; and the shipped defaults are loaded exactly once. Every test builds its own,
+ * fresh instance (F.I.R.S.T. - Independent): none of this shares state with another test, and
+ * none of it calls {@code io.avaje.config.Config}.
  *
  * <p>Log lines are asserted through {@link CapturingLoggerFactory}, the SLF4J test binding
  * registered for the {@code common} module's test sources - see {@code
@@ -52,57 +53,6 @@ class RuntimeConfigFallbackTest {
     private static RuntimeConfigFallback fallbackWithShippedDefault(long shippedDefault) {
         Configuration shipped = Configuration.builder().put(KEY, Long.toString(shippedDefault)).build();
         return new RuntimeConfigFallback(shipped);
-    }
-
-    @DisplayName("A new invalid value returns the shipped default and warns once")
-    @Test
-    void newInvalidValueWarnsOnce() {
-        RuntimeConfigFallback fallback = fallbackWithShippedDefault(4000L);
-
-        long result = fallback.fallback(KEY, "-5", "must not be negative, was -5", 4000L);
-
-        Assertions.assertEquals(4000L, result, "the shipped default must be returned");
-        Assertions.assertEquals(1, CapturingLoggerFactory.messages().size(), "exactly one WARN must be logged");
-        String logged = CapturingLoggerFactory.messages().getFirst();
-        Assertions.assertTrue(logged.startsWith("WARN "), "must log at WARN, was: " + logged);
-        Assertions.assertTrue(logged.contains(KEY), "must name the key, was: " + logged);
-        Assertions.assertTrue(logged.contains("-5"), "must name the invalid value, was: " + logged);
-        Assertions.assertTrue(logged.contains("must not be negative"), "must name the reason, was: " + logged);
-        Assertions.assertTrue(logged.contains("4000"), "must name the shipped default, was: " + logged);
-    }
-
-    @DisplayName("The same invalid value seen again does not warn a second time")
-    @Test
-    void sameInvalidValueDoesNotWarnAgain() {
-        RuntimeConfigFallback fallback = fallbackWithShippedDefault(4000L);
-
-        fallback.fallback(KEY, "-5", "must not be negative, was -5", 4000L);
-        fallback.fallback(KEY, "-5", "must not be negative, was -5", 4000L);
-        fallback.fallback(KEY, "-5", "must not be negative, was -5", 4000L);
-
-        Assertions.assertEquals(1, CapturingLoggerFactory.messages().size(), "a repeated, unchanged invalid value must warn only once");
-    }
-
-    @DisplayName("A different invalid value for the same key warns again")
-    @Test
-    void differentInvalidValueForSameKeyWarnsAgain() {
-        RuntimeConfigFallback fallback = fallbackWithShippedDefault(4000L);
-
-        fallback.fallback(KEY, "-5", "must not be negative, was -5", 4000L);
-        fallback.fallback(KEY, "-9", "must not be negative, was -9", 4000L);
-
-        Assertions.assertEquals(2, CapturingLoggerFactory.messages().size(), "a newly seen, different invalid value for the same key must warn again");
-    }
-
-    @DisplayName("warnInvalid deduplicates exactly like fallback, without returning a value")
-    @Test
-    void warnInvalidDeduplicatesTheSameWay() {
-        RuntimeConfigFallback fallback = fallbackWithShippedDefault(4000L);
-
-        fallback.warnInvalid("navigator.entries", "bad-reason", "bad-reason", List.of("shipped-entry"));
-        fallback.warnInvalid("navigator.entries", "bad-reason", "bad-reason", List.of("shipped-entry"));
-
-        Assertions.assertEquals(1, CapturingLoggerFactory.messages().size(), "warnInvalid must dedupe exactly like fallback");
     }
 
     private static long cooldownMillis(String raw) {

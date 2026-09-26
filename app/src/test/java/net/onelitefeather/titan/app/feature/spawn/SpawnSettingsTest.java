@@ -83,63 +83,91 @@ class SpawnSettingsTest {
         return new RuntimeConfigFallback(Configuration.builder().build());
     }
 
-    @DisplayName("resolveMaxHeight passes a valid value through unchanged")
+    @DisplayName("parseHeightBounds passes a valid pair through unchanged")
     @Test
-    void resolveMaxHeightPassesAValidValueThrough() {
-        Assertions.assertEquals(310, SpawnSettings.resolveMaxHeight("310", 310, freshFallback()));
+    void parseHeightBoundsPassesAValidPairThrough() {
+        SpawnSettings.HeightSettings result = SpawnSettings.parseHeightBounds(new SpawnSettings.RawHeightBounds("-64", "310"));
+
+        Assertions.assertEquals(-64, result.minHeight());
+        Assertions.assertEquals(310, result.maxHeight());
     }
 
-    @DisplayName("resolveMaxHeight falls back to the shipped default and warns once for a non-numeric value")
+    @DisplayName("parseHeightBounds rejects a minHeight not less than maxHeight, naming both full keys")
     @Test
-    void resolveMaxHeightFallsBackAndWarnsForANonNumericValue() {
+    void parseHeightBoundsRejectsAMinHeightNotLessThanMaxHeight() {
+        IllegalArgumentException thrown = Assertions.assertThrows(IllegalArgumentException.class, () -> SpawnSettings.parseHeightBounds(new SpawnSettings.RawHeightBounds("400", "300")));
+
+        Assertions.assertTrue(thrown.getMessage().contains(SpawnSettings.MIN_HEIGHT_KEY), "the message must name " + SpawnSettings.MIN_HEIGHT_KEY);
+        Assertions.assertTrue(thrown.getMessage().contains(SpawnSettings.MAX_HEIGHT_KEY), "the message must name " + SpawnSettings.MAX_HEIGHT_KEY);
+    }
+
+    @DisplayName("parseHeightBounds rejects a non-numeric maxHeight, naming its own key")
+    @Test
+    void parseHeightBoundsRejectsANonNumericMaxHeight() {
+        NumberFormatException thrown = Assertions.assertThrows(NumberFormatException.class, () -> SpawnSettings.parseHeightBounds(new SpawnSettings.RawHeightBounds("-64", "abc")));
+
+        Assertions.assertTrue(thrown.getMessage().contains(SpawnSettings.MAX_HEIGHT_KEY), "the message must name " + SpawnSettings.MAX_HEIGHT_KEY);
+    }
+
+    @DisplayName("resolve passes a valid height bounds pair through unchanged, without warning")
+    @Test
+    void resolveHeightBoundsPassesAValidPairThrough() {
         Logger logger = (Logger) LoggerFactory.getLogger(RuntimeConfigFallback.class);
         ListAppender<ILoggingEvent> appender = new ListAppender<>();
         appender.start();
         logger.addAppender(appender);
 
         try {
-            int result = SpawnSettings.resolveMaxHeight("abc", 310, freshFallback());
+            SpawnSettings.HeightSettings result = freshFallback().resolve(SpawnSettings.HEIGHT_BOUNDS_KEY, new SpawnSettings.RawHeightBounds("-64", "310"), SpawnSettings::parseHeightBounds, () -> new SpawnSettings.HeightSettings(0, 100));
 
-            Assertions.assertEquals(310, result);
-            Assertions.assertEquals(1, appender.list.size(), "exactly one WARN must be logged for a new invalid value");
-            Assertions.assertEquals(SpawnSettings.MAX_HEIGHT_KEY, appender.list.get(0).getArgumentArray()[0]);
+            Assertions.assertEquals(-64, result.minHeight());
+            Assertions.assertEquals(310, result.maxHeight());
+            Assertions.assertTrue(appender.list.isEmpty(), "a valid pair must never warn");
         } finally {
             logger.detachAppender(appender);
         }
     }
 
-    @DisplayName("resolveMinHeight passes a valid value through unchanged")
+    @DisplayName("resolve falls back to the shipped height bounds and warns once when minHeight is not less than maxHeight")
     @Test
-    void resolveMinHeightPassesAValidValueThrough() {
-        Assertions.assertEquals(-64, SpawnSettings.resolveMinHeight("-64", 310, -64, freshFallback()));
-    }
-
-    @DisplayName("resolveMinHeight falls back to the shipped default and warns once when not less than maxHeight")
-    @Test
-    void resolveMinHeightFallsBackAndWarnsWhenNotLessThanMaxHeight() {
+    void resolveHeightBoundsFallsBackAndWarnsWhenNotLessThanMaxHeight() {
         Logger logger = (Logger) LoggerFactory.getLogger(RuntimeConfigFallback.class);
         ListAppender<ILoggingEvent> appender = new ListAppender<>();
         appender.start();
         logger.addAppender(appender);
 
         try {
-            int result = SpawnSettings.resolveMinHeight("400", 300, -64, freshFallback());
+            SpawnSettings.HeightSettings shippedDefault = new SpawnSettings.HeightSettings(-64, 310);
+            SpawnSettings.HeightSettings result = freshFallback().resolve(SpawnSettings.HEIGHT_BOUNDS_KEY, new SpawnSettings.RawHeightBounds("400", "300"), SpawnSettings::parseHeightBounds, () -> shippedDefault);
 
-            Assertions.assertEquals(-64, result, "a minHeight above maxHeight must fall back to the shipped default");
-            Assertions.assertEquals(1, appender.list.size(), "exactly one WARN must be logged for a new invalid value");
-            Assertions.assertEquals(SpawnSettings.MIN_HEIGHT_KEY, appender.list.get(0).getArgumentArray()[0]);
+            Assertions.assertEquals(shippedDefault, result, "an invalid pair must fall back to the shipped height bounds");
+            Assertions.assertEquals(1, appender.list.size(), "exactly one WARN must be logged for a new invalid pair");
+            Assertions.assertEquals(SpawnSettings.HEIGHT_BOUNDS_KEY, appender.list.get(0).getArgumentArray()[0]);
         } finally {
             logger.detachAppender(appender);
         }
     }
 
-    @DisplayName("resolveSimulationDistance passes a valid value through unchanged")
+    @DisplayName("shippedHeightBounds reads minHeight and maxHeight from the given configuration")
+    @Test
+    void shippedHeightBoundsReadsFromTheGivenConfiguration() {
+        Configuration shipped = Configuration.builder().put(SpawnSettings.MIN_HEIGHT_KEY, "-64").put(SpawnSettings.MAX_HEIGHT_KEY, "310").build();
+
+        SpawnSettings.HeightSettings result = SpawnSettings.shippedHeightBounds(shipped);
+
+        Assertions.assertEquals(-64, result.minHeight());
+        Assertions.assertEquals(310, result.maxHeight());
+    }
+
+    @DisplayName("resolve passes a valid simulationDistance through unchanged")
     @Test
     void resolveSimulationDistancePassesAValidValueThrough() {
-        Assertions.assertEquals(2, SpawnSettings.resolveSimulationDistance("2", 2, freshFallback()));
+        int result = freshFallback().resolve(SpawnSettings.SIMULATION_DISTANCE_KEY, "2", SpawnSettings::simulationDistance, () -> 2);
+
+        Assertions.assertEquals(2, result);
     }
 
-    @DisplayName("resolveSimulationDistance falls back to the shipped default and warns once for a zero value")
+    @DisplayName("resolve falls back to the shipped simulationDistance and warns once for a zero value")
     @Test
     void resolveSimulationDistanceFallsBackAndWarnsForAZeroValue() {
         Logger logger = (Logger) LoggerFactory.getLogger(RuntimeConfigFallback.class);
@@ -148,7 +176,7 @@ class SpawnSettingsTest {
         logger.addAppender(appender);
 
         try {
-            int result = SpawnSettings.resolveSimulationDistance("0", 2, freshFallback());
+            int result = freshFallback().resolve(SpawnSettings.SIMULATION_DISTANCE_KEY, "0", SpawnSettings::simulationDistance, () -> 2);
 
             Assertions.assertEquals(2, result);
             Assertions.assertEquals(1, appender.list.size(), "exactly one WARN must be logged for a new invalid value");

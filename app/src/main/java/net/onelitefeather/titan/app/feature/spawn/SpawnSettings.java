@@ -40,6 +40,15 @@ final class SpawnSettings {
     static final String MAX_HEIGHT_KEY = "spawn.maxHeight";
     static final String SIMULATION_DISTANCE_KEY = "spawn.simulationDistance";
 
+    /**
+     * The composite {@link RuntimeConfigFallback#resolve} key for {@link #currentHeightBounds()}:
+     * {@link #MIN_HEIGHT_KEY} and {@link #MAX_HEIGHT_KEY} are cross-validated together (a valid
+     * {@code minHeight} depends on the already-parsed {@code maxHeight}), so there is no single
+     * "one key's own shipped default" to substitute for just one of them - an invalid group falls
+     * the pair back to the shipped defaults together.
+     */
+    static final String HEIGHT_BOUNDS_KEY = "spawn.heightBounds";
+
     private SpawnSettings() {
     }
 
@@ -91,75 +100,70 @@ final class SpawnSettings {
     }
 
     /**
-     * The runtime counterpart of {@code spawn.maxHeight}'s parsing: a valid {@code raw} passes
-     * through unchanged; an invalid one falls back to {@code shippedDefault}, after
-     * {@code fallback} logs a deduplicated WARN naming {@link #MAX_HEIGHT_KEY}.
+     * {@link #MIN_HEIGHT_KEY}'s and {@link #MAX_HEIGHT_KEY}'s raw, not-yet-parsed live values,
+     * read together since a valid {@code minHeightRaw} can only be checked against the
+     * already-parsed {@code maxHeightRaw} - the raw pair {@link RuntimeConfigFallback#resolve}
+     * caches per {@link #HEIGHT_BOUNDS_KEY} to detect a persistently invalid group without
+     * re-parsing it.
      *
-     * @param raw            the configured max height, as read live from the facade
-     * @param shippedDefault the shipped classpath default for {@link #MAX_HEIGHT_KEY}
-     * @param fallback       deduplicates the WARN line for a repeated invalid value
-     * @return {@code raw}, parsed, or {@code shippedDefault} if it does not parse
+     * @param minHeightRaw the configured min height, as text
+     * @param maxHeightRaw the configured max height, as text
      */
-    static int resolveMaxHeight(String raw, int shippedDefault, RuntimeConfigFallback fallback) {
+    record RawHeightBounds(String minHeightRaw, String maxHeightRaw) {
+    }
+
+    /**
+     * Parses and cross-validates {@link #MIN_HEIGHT_KEY} and {@link #MAX_HEIGHT_KEY} together -
+     * the {@link RuntimeConfigFallback#resolve} {@code parseAndValidate} function for
+     * {@link #currentHeightBounds()}. Built on {@link #minHeight(int, int)} rather than
+     * duplicating its rule.
+     *
+     * @param raw the raw live pair to parse and cross-validate
+     * @return the parsed, valid height bounds
+     * @throws NumberFormatException    if either raw value does not parse as an {@code int}; the
+     *                                  message names whichever of {@link #MIN_HEIGHT_KEY} or
+     *                                  {@link #MAX_HEIGHT_KEY} failed to parse
+     * @throws IllegalArgumentException if {@code minHeightRaw} is not less than
+     *                                  {@code maxHeightRaw}; see {@link #minHeight(int, int)}
+     */
+    static HeightSettings parseHeightBounds(RawHeightBounds raw) {
+        int maxHeight = parseHeightComponent(MAX_HEIGHT_KEY, raw.maxHeightRaw());
+        int parsedMinHeight = parseHeightComponent(MIN_HEIGHT_KEY, raw.minHeightRaw());
+        return new HeightSettings(minHeight(parsedMinHeight, maxHeight), maxHeight);
+    }
+
+    private static int parseHeightComponent(String key, String raw) {
         try {
             return Integer.parseInt(raw);
         } catch (NumberFormatException e) {
-            return fallback.fallback(MAX_HEIGHT_KEY, raw, e.getMessage(), shippedDefault);
+            throw new NumberFormatException(key + ": " + e.getMessage());
         }
     }
 
     /**
-     * The runtime counterpart of {@link #minHeight(int, int)}: a valid {@code raw} passes through
-     * unchanged; an invalid one - not strictly less than {@code maxHeight} - falls back to
-     * {@code shippedDefault}, after {@code fallback} logs a deduplicated WARN naming
-     * {@link #MIN_HEIGHT_KEY}.
-     *
-     * @param raw            the configured min height, as read live from the facade
-     * @param maxHeight      the already-resolved max height to compare against
-     * @param shippedDefault the shipped classpath default for {@link #MIN_HEIGHT_KEY}
-     * @param fallback       deduplicates the WARN line for a repeated invalid value
-     * @return {@code raw}, parsed and validated, or {@code shippedDefault} if invalid
+     * @param shipped the shipped classpath defaults to read {@link #MIN_HEIGHT_KEY} and
+     *                {@link #MAX_HEIGHT_KEY} from
+     * @return the shipped height bounds - the {@link RuntimeConfigFallback#resolve}
+     *         {@code shippedDefault} supplier for {@link #currentHeightBounds()}, evaluated only
+     *         if the live pair is invalid
      */
-    static int resolveMinHeight(String raw, int maxHeight, int shippedDefault, RuntimeConfigFallback fallback) {
-        try {
-            return minHeight(Integer.parseInt(raw), maxHeight);
-        } catch (RuntimeException e) {
-            return fallback.fallback(MIN_HEIGHT_KEY, raw, e.getMessage(), shippedDefault);
-        }
+    static HeightSettings shippedHeightBounds(Configuration shipped) {
+        return new HeightSettings(shipped.getInt(MIN_HEIGHT_KEY), shipped.getInt(MAX_HEIGHT_KEY));
     }
 
     /**
-     * The runtime counterpart of {@link #simulationDistance(String)}: a valid {@code raw} passes
-     * through unchanged; an invalid one falls back to {@code shippedDefault}, after
-     * {@code fallback} logs a deduplicated WARN naming {@link #SIMULATION_DISTANCE_KEY}.
-     *
-     * @param raw            the configured simulation distance, as read live from the facade
-     * @param shippedDefault the shipped classpath default for {@link #SIMULATION_DISTANCE_KEY}
-     * @param fallback       deduplicates the WARN line for a repeated invalid value
-     * @return {@code raw}, parsed and validated, or {@code shippedDefault} if invalid
-     */
-    static int resolveSimulationDistance(String raw, int shippedDefault, RuntimeConfigFallback fallback) {
-        try {
-            return simulationDistance(raw);
-        } catch (RuntimeException e) {
-            return fallback.fallback(SIMULATION_DISTANCE_KEY, raw, e.getMessage(), shippedDefault);
-        }
-    }
-
-    /**
-     * Reads both height bounds live through the static facade, resolving an invalid runtime value
-     * to its shipped default via the process-wide {@link RuntimeConfigFallback}. Called directly
-     * by {@link SpawnBoundsListener} on every move (see
-     * {@code openspec/changes/config-reload-feature-flags/design.md}, decision 1).
+     * Reads both height bounds live through the static facade, resolving an invalid or
+     * persistently-invalid runtime value to its shipped default via the process-wide
+     * {@link RuntimeConfigFallback}. Called directly by {@link SpawnBoundsListener} on every move
+     * (see {@code openspec/changes/config-reload-feature-flags/design.md}, decision 1) - the
+     * shipped defaults are read only if the live pair turns out invalid, never on every call.
      *
      * @return the current, valid height bounds
      */
     static HeightSettings currentHeightBounds() {
         RuntimeConfigFallback fallback = RuntimeConfigFallback.shared();
-        Configuration shipped = fallback.shippedDefaults();
-        int maxHeight = resolveMaxHeight(Config.get(MAX_HEIGHT_KEY), shipped.getInt(MAX_HEIGHT_KEY), fallback);
-        int minHeight = resolveMinHeight(Config.get(MIN_HEIGHT_KEY), maxHeight, shipped.getInt(MIN_HEIGHT_KEY), fallback);
-        return new HeightSettings(minHeight, maxHeight);
+        RawHeightBounds raw = new RawHeightBounds(Config.get(MIN_HEIGHT_KEY), Config.get(MAX_HEIGHT_KEY));
+        return fallback.resolve(HEIGHT_BOUNDS_KEY, raw, SpawnSettings::parseHeightBounds, () -> shippedHeightBounds(fallback.shippedDefaults()));
     }
 
     /**
@@ -171,6 +175,6 @@ final class SpawnSettings {
      */
     static int currentSimulationDistance() {
         RuntimeConfigFallback fallback = RuntimeConfigFallback.shared();
-        return resolveSimulationDistance(Config.get(SIMULATION_DISTANCE_KEY), fallback.shippedDefaults().getInt(SIMULATION_DISTANCE_KEY), fallback);
+        return fallback.resolve(SIMULATION_DISTANCE_KEY, Config.get(SIMULATION_DISTANCE_KEY), SpawnSettings::simulationDistance, () -> fallback.shippedDefaults().getInt(SIMULATION_DISTANCE_KEY));
     }
 }
