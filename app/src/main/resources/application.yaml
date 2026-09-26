@@ -111,22 +111,26 @@ features:
 
 # Configuration reload (see openspec/changes/config-reload-feature-flags/design.md, decision 1).
 #
-# Turns on avaje-config's own built-in file watcher. Every "config.watch.period" seconds (the
-# first check after "config.watch.delay" seconds since startup), it re-reads every configuration
-# file that existed on disk at startup - the working directory's own "application.yaml" (if an
-# operator placed one next to the jar), any active profile's "application-<profile>.yaml", and an
-# external file selected via CONFIG_FILE/config.file - and applies whatever changed. It never
-# watches the shipped classpath defaults above: those are baked into the jar, not a file on disk.
-# A changed module section restarts only that module, on the tick thread; a value that module
-# rejects is discarded and the module keeps running with its previous values (see the
-# lobby-module-config spec).
+# Off by default. The operator turns on avaje-config's own built-in file watcher in their own
+# file - their working-directory "application.yaml", an active profile's
+# "application-<profile>.yaml", or an external file selected via CONFIG_FILE/config.file - with
+# "config.watch.enabled: true". It defaults to off here because, with only the shipped classpath
+# defaults above (baked into the jar, not a file on disk) and no operator file on disk, avaje-config
+# finds no file to watch and logs "No files to watch?" on ERROR on every startup (and to Sentry too,
+# where TITAN_SENTRY_DSN is set) - exactly the case for the allowed classpath-only deployment.
+#
+# Once enabled, every "config.watch.period" seconds (the first check after "config.watch.delay"
+# seconds since startup) it re-reads every configuration file that existed on disk at startup and
+# applies whatever changed. A changed module section restarts only that module, on the tick
+# thread; a value that module rejects is discarded and the module keeps running with its previous
+# values (see the lobby-module-config spec).
 #
 # Accepted limits of this built-in watcher (see design.md, decision 1, and its "Grenzen"/"Risks"):
-# an env/system-property override for a key whose file changes is displaced by the file's value
-# until the lobby restarts; a key deleted from a changed file stays active until then too; a file
-# created after startup is only picked up on the next restart; and there is no manual trigger - a
-# change is only ever picked up by this watcher, at the latest after "config.watch.delay" plus
-# "config.watch.period".
-config.watch.enabled: true
+# - an override for a key in a changed file is displaced by the file's value until the next
+#   restart;
+# - a key deleted from a changed file stays active until the next restart;
+# - a file created after startup is only picked up on the next restart;
+# - a rejected value that is left in the file is retried on every later change of that file.
+config.watch.enabled: false
 config.watch.delay: 10
 config.watch.period: 10
