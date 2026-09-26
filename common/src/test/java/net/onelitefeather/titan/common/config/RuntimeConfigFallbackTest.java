@@ -19,6 +19,13 @@ import io.avaje.config.Configuration;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import net.onelitefeather.titan.common.config.testing.CapturingLoggerFactory;
 import org.junit.jupiter.api.Assertions;
@@ -151,6 +158,44 @@ class RuntimeConfigFallbackTest {
         Assertions.assertEquals(4000L, resultAfterSameInvalidAgain, "the same invalid value seen again after a recovery must warn again");
         Assertions.assertEquals(1, parserInvocations.get(), "the recovery must have dropped the stale cached entry, so this is parsed again");
         Assertions.assertEquals(2, CapturingLoggerFactory.messages().size(), "the invalid value seen again after a recovery must warn again");
+    }
+
+    @DisplayName("Two threads racing on the very same new invalid raw value warn exactly once between them")
+    @Test
+    void concurrentThreadsWithTheSameNewInvalidValueWarnOnce() throws InterruptedException {
+        RuntimeConfigFallback fallback = fallbackWithShippedDefault(4000L);
+        int threadCount = 16;
+        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch ready = new CountDownLatch(threadCount);
+        CountDownLatch start = new CountDownLatch(1);
+        try {
+            List<Future<Long>> futures = new ArrayList<>();
+            for (int i = 0; i < threadCount; i++) {
+                futures.add(executor.submit(() -> {
+                    ready.countDown();
+                    start.await();
+                    return fallback.resolve(KEY, "-5", RuntimeConfigFallbackTest::cooldownMillis, () -> 4000L);
+                }));
+            }
+            ready.await();
+            start.countDown();
+            for (Future<Long> future : futures) {
+                Assertions.assertEquals(4000L, awaitResult(future), "every racing thread must observe the shipped default");
+            }
+        } finally {
+            executor.shutdown();
+            Assertions.assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS), "the executor must terminate promptly");
+        }
+
+        Assertions.assertEquals(1, CapturingLoggerFactory.messages().size(), "concurrent threads seeing the same new invalid value must warn exactly once between them");
+    }
+
+    private static long awaitResult(Future<Long> future) {
+        try {
+            return future.get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new AssertionError("a racing thread failed", e);
+        }
     }
 
     @DisplayName("The shipped defaults are loaded exactly once, at construction")

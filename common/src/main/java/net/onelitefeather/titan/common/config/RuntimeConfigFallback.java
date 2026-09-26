@@ -104,7 +104,10 @@ public final class RuntimeConfigFallback {
      * <p>A new invalid {@code rawValue} for {@code key} logs a deduplicated WARN naming
      * {@code key}, {@code rawValue}, the failure's message and the shipped default used; the same
      * {@code rawValue} seen again for {@code key} does not log again, and a different, later
-     * invalid {@code rawValue} for the same {@code key} logs again.
+     * invalid {@code rawValue} for the same {@code key} logs again. That decision is made
+     * atomically via {@link #replaceCacheEntry}'s own {@link ConcurrentMap#put} return value -
+     * never by a separate, non-atomic read followed by a write - so two threads racing on the
+     * very same new invalid {@code rawValue} for {@code key} log exactly once between them.
      *
      * @param key              the full configuration key (or, for a cross-validated group, a
      *                         composite name the caller chooses) {@code rawValue} was read from -
@@ -136,9 +139,9 @@ public final class RuntimeConfigFallback {
             return value;
         } catch (RuntimeException e) {
             T fallbackValue = shippedDefault.get();
-            boolean isNewInvalidValue = cached == null || !Objects.equals(cached.rawValue(), rawValue);
-            this.invalidValueCache.put(key, new CacheEntry<>(rawValue, fallbackValue));
-            if (isNewInvalidValue) {
+            CacheEntry<T> newEntry = new CacheEntry<>(rawValue, fallbackValue);
+            CacheEntry<T> previous = this.<T>replaceCacheEntry(key, newEntry);
+            if (previous == null || !Objects.equals(previous.rawValue(), rawValue)) {
                 log.warn("Invalid configuration value for {}: {} ({}), using shipped default {}", key, rawValue, e.getMessage(), fallbackValue);
             }
             return fallbackValue;
@@ -148,6 +151,26 @@ public final class RuntimeConfigFallback {
     @SuppressWarnings("unchecked")
     private <T> CacheEntry<T> cacheEntry(String key) {
         return (CacheEntry<T>) this.invalidValueCache.get(key);
+    }
+
+    /**
+     * Atomically replaces {@code key}'s cache entry with {@code newEntry} and returns whatever was
+     * cached for {@code key} immediately before this call - the single {@link ConcurrentMap#put}
+     * {@link #resolve} bases its WARN-dedup decision on, rather than a separate, earlier read: two
+     * threads racing {@link #resolve} with the very same new invalid raw value both reach this
+     * call, {@link ConcurrentHashMap} linearizes the two {@code put}s on {@code key}, and only the
+     * one whose {@code put} lands second sees a {@code previous} entry whose raw value already
+     * equals its own - so exactly one of the two logs.
+     *
+     * @param key      the cache key to replace the entry for
+     * @param newEntry the entry to store
+     * @param <T>      the resolved value's type
+     * @return whatever was cached for {@code key} immediately before this call, or {@code null}
+     *         if nothing was
+     */
+    @SuppressWarnings("unchecked")
+    private <T> CacheEntry<T> replaceCacheEntry(String key, CacheEntry<T> newEntry) {
+        return (CacheEntry<T>) this.invalidValueCache.put(key, newEntry);
     }
 
     /**
