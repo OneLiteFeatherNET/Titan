@@ -282,8 +282,8 @@ class ModuleRegistryTest {
     @DisplayName("The default tick-thread guard accepts Minestom's own tick scheduler thread and rejects an ordinary thread")
     @Test
     void defaultTickThreadGuardAcceptsTheTickSchedulerThreadAndRejectsAnOrdinaryThread(Env env) {
-        // Constructed, never started: ConfigReloadBootstrap wires the scheduler manager itself as
-        // ConfigReloader's tick executor, and SchedulerManager's own tasks run on exactly this
+        // Constructed, never started: ConfigChangeBootstrap wires the scheduler manager itself as
+        // ConfigChangeHandler's tick executor, and SchedulerManager's own tasks run on exactly this
         // thread type (see ModuleRegistry.isTickSchedulerThread's Javadoc) - starting it here would
         // spin up a second, real tick loop racing the one Env already drives.
         Thread tickSchedulerThread = new TickSchedulerThread(env.process());

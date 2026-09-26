@@ -32,9 +32,9 @@ import java.util.Objects;
  * attempt - no listener, task or item - is left behind.</li>
  * </ul>
  *
- * <p>Neither case ever throws out of {@link ModuleRegistry#restart(String)}: a later
- * {@code ConfigReloader} is the caller that decides what {@link Failed#cause()} means - typically
- * restoring the module's previous values in the configuration facade and calling
+ * <p>Neither case ever throws out of {@link ModuleRegistry#restart(String)}: the caller,
+ * {@code ConfigChangeHandler}, is the one that decides what {@link Failed#cause()} means -
+ * typically restoring the module's previous values in the configuration facade and calling
  * {@link ModuleRegistry#restart(String)} again.
  */
 public sealed interface RestartOutcome {
