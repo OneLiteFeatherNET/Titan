@@ -42,6 +42,15 @@ final class ElytraSettings {
      */
     static final String COOLDOWN_TICKS_KEY = "elytra.cooldownTicks";
 
+    /**
+     * The composite {@link RuntimeConfigFallback#resolve} key for {@link #current()}:
+     * {@link #BURN_DURATION_TICKS_KEY} and {@link #COOLDOWN_TICKS_KEY} are cross-validated
+     * together (a valid {@code cooldownTicks} depends on the already-parsed
+     * {@code burnDurationTicks}), so an invalid group falls the pair back to the shipped
+     * defaults together.
+     */
+    static final String BOOST_SETTINGS_KEY = "elytra.boostSettings";
+
     private ElytraSettings() {
     }
 
@@ -94,58 +103,63 @@ final class ElytraSettings {
     }
 
     /**
-     * The runtime counterpart of {@link #burnDurationTicks(String)}: a valid {@code raw} passes
-     * through unchanged; an invalid one falls back to {@code shippedDefault}, after
-     * {@code fallback} logs a deduplicated WARN naming {@link #BURN_DURATION_TICKS_KEY}.
+     * {@link #BURN_DURATION_TICKS_KEY}'s and {@link #COOLDOWN_TICKS_KEY}'s raw, not-yet-parsed
+     * live values, read together since a valid {@code cooldownTicksRaw} can only be checked
+     * against the already-parsed {@code burnDurationTicksRaw} - the raw pair
+     * {@link RuntimeConfigFallback#resolve} caches per {@link #BOOST_SETTINGS_KEY} to detect a
+     * persistently invalid group without re-parsing it.
      *
-     * @param raw            the configured burn duration, as read live from the facade
-     * @param shippedDefault the shipped classpath default for {@link #BURN_DURATION_TICKS_KEY}
-     * @param fallback       deduplicates the WARN line for a repeated invalid value
-     * @return {@code raw}, parsed and validated, or {@code shippedDefault} if invalid
+     * @param burnDurationTicksRaw the configured burn duration, as text
+     * @param cooldownTicksRaw     the configured cooldown, as text
      */
-    static int resolveBurnDurationTicks(String raw, int shippedDefault, RuntimeConfigFallback fallback) {
-        try {
-            return burnDurationTicks(raw);
-        } catch (RuntimeException e) {
-            return fallback.fallback(BURN_DURATION_TICKS_KEY, raw, e.getMessage(), shippedDefault);
-        }
+    record RawBoostSettings(String burnDurationTicksRaw, String cooldownTicksRaw) {
     }
 
     /**
-     * The runtime counterpart of {@link #cooldownTicks(int, int)}: a valid {@code raw} passes
-     * through unchanged; an invalid one - not strictly longer than {@code burnDurationTicks} -
-     * falls
-     * back to {@code shippedDefault}, after {@code fallback} logs a deduplicated WARN naming
-     * {@link #COOLDOWN_TICKS_KEY}.
+     * Parses and cross-validates {@link #BURN_DURATION_TICKS_KEY} and {@link #COOLDOWN_TICKS_KEY}
+     * together - the {@link RuntimeConfigFallback#resolve} {@code parseAndValidate} function for
+     * {@link #current()}. Built on {@link #burnDurationTicks(String)} and
+     * {@link #cooldownTicks(int, int)} rather than duplicating their rules.
      *
-     * @param raw               the configured cooldown, as read live from the facade
-     * @param burnDurationTicks the already-resolved burn duration to compare against
-     * @param shippedDefault    the shipped classpath default for {@link #COOLDOWN_TICKS_KEY}
-     * @param fallback          deduplicates the WARN line for a repeated invalid value
-     * @return {@code raw}, parsed and validated, or {@code shippedDefault} if invalid
+     * @param raw the raw live pair to parse and cross-validate
+     * @return the parsed, valid boost settings
+     * @throws NumberFormatException    if either raw value does not parse as an {@code int}
+     * @throws IllegalArgumentException if either value fails its own check, or
+     *                                  {@code cooldownTicksRaw} is not strictly longer than
+     *                                  {@code burnDurationTicksRaw}
      */
-    static int resolveCooldownTicks(String raw, int burnDurationTicks, int shippedDefault, RuntimeConfigFallback fallback) {
-        try {
-            return cooldownTicks(Integer.parseInt(raw), burnDurationTicks);
-        } catch (RuntimeException e) {
-            return fallback.fallback(COOLDOWN_TICKS_KEY, raw, e.getMessage(), shippedDefault);
-        }
+    static BoostSettings parseBoostSettings(RawBoostSettings raw) {
+        int burnDurationTicks = burnDurationTicks(raw.burnDurationTicksRaw());
+        int cooldownTicks = cooldownTicks(Integer.parseInt(raw.cooldownTicksRaw()), burnDurationTicks);
+        return new BoostSettings(burnDurationTicks, cooldownTicks);
     }
 
     /**
-     * Reads both boost settings live through the static facade, resolving an invalid runtime
-     * value to its shipped default via the process-wide {@link RuntimeConfigFallback}. Called
-     * directly by the {@code titan:firework} item's use handler on every boost (see
-     * {@code openspec/changes/config-reload-feature-flags/design.md}, decision 1), so a changed
-     * value applies to the very next boost without a module restart.
+     * @param shipped the shipped classpath defaults to read {@link #BURN_DURATION_TICKS_KEY} and
+     *                {@link #COOLDOWN_TICKS_KEY} from
+     * @return the shipped boost settings - the {@link RuntimeConfigFallback#resolve}
+     *         {@code shippedDefault} supplier for {@link #current()}, evaluated only if the live
+     *         pair is invalid
+     */
+    static BoostSettings shippedBoostSettings(Configuration shipped) {
+        int burnDurationTicks = shipped.getAs(BURN_DURATION_TICKS_KEY, Integer::parseInt);
+        int cooldownTicks = shipped.getAs(COOLDOWN_TICKS_KEY, Integer::parseInt);
+        return new BoostSettings(burnDurationTicks, cooldownTicks);
+    }
+
+    /**
+     * Reads both boost settings live through the static facade, resolving an invalid or
+     * persistently-invalid runtime value to its shipped default via the process-wide
+     * {@link RuntimeConfigFallback}. Called directly by the {@code titan:firework} item's use
+     * handler on every boost (see {@code openspec/changes/config-reload-feature-flags/design.md},
+     * decision 1), so a changed value applies to the very next boost without a module restart -
+     * the shipped defaults are read only if the live pair turns out invalid, never on every call.
      *
      * @return the current, valid boost settings
      */
     static BoostSettings current() {
         RuntimeConfigFallback fallback = RuntimeConfigFallback.shared();
-        Configuration shipped = fallback.shippedDefaults();
-        int burnDurationTicks = resolveBurnDurationTicks(Config.get(BURN_DURATION_TICKS_KEY), shipped.getAs(BURN_DURATION_TICKS_KEY, Integer::parseInt), fallback);
-        int cooldownTicks = resolveCooldownTicks(Config.get(COOLDOWN_TICKS_KEY), burnDurationTicks, shipped.getAs(COOLDOWN_TICKS_KEY, Integer::parseInt), fallback);
-        return new BoostSettings(burnDurationTicks, cooldownTicks);
+        RawBoostSettings raw = new RawBoostSettings(Config.get(BURN_DURATION_TICKS_KEY), Config.get(COOLDOWN_TICKS_KEY));
+        return fallback.resolve(BOOST_SETTINGS_KEY, raw, ElytraSettings::parseBoostSettings, () -> shippedBoostSettings(fallback.shippedDefaults()));
     }
 }

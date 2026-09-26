@@ -83,67 +83,71 @@ class ElytraSettingsTest {
         return new RuntimeConfigFallback(Configuration.builder().build());
     }
 
-    @DisplayName("resolveBurnDurationTicks passes a valid value through unchanged, without warning")
+    @DisplayName("parseBoostSettings passes a valid pair through unchanged")
     @Test
-    void resolveBurnDurationTicksPassesAValidValueThrough() {
+    void parseBoostSettingsPassesAValidPairThrough() {
+        ElytraSettings.BoostSettings result = ElytraSettings.parseBoostSettings(new ElytraSettings.RawBoostSettings("30", "40"));
+
+        Assertions.assertEquals(30, result.burnDurationTicks());
+        Assertions.assertEquals(40, result.cooldownTicks());
+    }
+
+    @DisplayName("parseBoostSettings rejects a cooldown not longer than the burn, naming both full keys")
+    @Test
+    void parseBoostSettingsRejectsACooldownNotLongerThanTheBurn() {
+        IllegalArgumentException thrown = Assertions.assertThrows(IllegalArgumentException.class, () -> ElytraSettings.parseBoostSettings(new ElytraSettings.RawBoostSettings("30", "10")));
+
+        Assertions.assertTrue(thrown.getMessage().contains(ElytraSettings.COOLDOWN_TICKS_KEY), "the message must name " + ElytraSettings.COOLDOWN_TICKS_KEY);
+        Assertions.assertTrue(thrown.getMessage().contains(ElytraSettings.BURN_DURATION_TICKS_KEY), "the message must name " + ElytraSettings.BURN_DURATION_TICKS_KEY);
+    }
+
+    @DisplayName("resolve passes a valid boost settings pair through unchanged, without warning")
+    @Test
+    void resolveBoostSettingsPassesAValidPairThrough() {
         Logger logger = (Logger) LoggerFactory.getLogger(RuntimeConfigFallback.class);
         ListAppender<ILoggingEvent> appender = new ListAppender<>();
         appender.start();
         logger.addAppender(appender);
 
         try {
-            int result = ElytraSettings.resolveBurnDurationTicks("30", 30, freshFallback());
+            ElytraSettings.BoostSettings result = freshFallback().resolve(ElytraSettings.BOOST_SETTINGS_KEY, new ElytraSettings.RawBoostSettings("30", "40"), ElytraSettings::parseBoostSettings, () -> new ElytraSettings.BoostSettings(1, 2));
 
-            Assertions.assertEquals(30, result);
-            Assertions.assertTrue(appender.list.isEmpty(), "a valid value must never warn");
+            Assertions.assertEquals(30, result.burnDurationTicks());
+            Assertions.assertEquals(40, result.cooldownTicks());
+            Assertions.assertTrue(appender.list.isEmpty(), "a valid pair must never warn");
         } finally {
             logger.detachAppender(appender);
         }
     }
 
-    @DisplayName("resolveBurnDurationTicks falls back to the shipped default and warns once for a zero value")
+    @DisplayName("resolve falls back to the shipped boost settings and warns once when the cooldown is not longer than the burn")
     @Test
-    void resolveBurnDurationTicksFallsBackAndWarnsForAZeroValue() {
+    void resolveBoostSettingsFallsBackAndWarnsWhenNotLongerThanTheBurn() {
         Logger logger = (Logger) LoggerFactory.getLogger(RuntimeConfigFallback.class);
         ListAppender<ILoggingEvent> appender = new ListAppender<>();
         appender.start();
         logger.addAppender(appender);
 
         try {
-            int result = ElytraSettings.resolveBurnDurationTicks("0", 30, freshFallback());
+            ElytraSettings.BoostSettings shippedDefault = new ElytraSettings.BoostSettings(30, 40);
+            ElytraSettings.BoostSettings result = freshFallback().resolve(ElytraSettings.BOOST_SETTINGS_KEY, new ElytraSettings.RawBoostSettings("30", "10"), ElytraSettings::parseBoostSettings, () -> shippedDefault);
 
-            Assertions.assertEquals(30, result, "an invalid value must fall back to the shipped default");
-            Assertions.assertEquals(1, appender.list.size(), "exactly one WARN must be logged for a new invalid value");
-            Assertions.assertEquals(ElytraSettings.BURN_DURATION_TICKS_KEY, appender.list.get(0).getArgumentArray()[0]);
+            Assertions.assertEquals(shippedDefault, result, "an invalid pair must fall back to the shipped boost settings");
+            Assertions.assertEquals(1, appender.list.size(), "exactly one WARN must be logged for a new invalid pair");
+            Assertions.assertEquals(ElytraSettings.BOOST_SETTINGS_KEY, appender.list.get(0).getArgumentArray()[0]);
         } finally {
             logger.detachAppender(appender);
         }
     }
 
-    @DisplayName("resolveCooldownTicks passes a valid value through unchanged")
+    @DisplayName("shippedBoostSettings reads burnDurationTicks and cooldownTicks from the given configuration")
     @Test
-    void resolveCooldownTicksPassesAValidValueThrough() {
-        int result = ElytraSettings.resolveCooldownTicks("40", 30, 40, freshFallback());
+    void shippedBoostSettingsReadsFromTheGivenConfiguration() {
+        Configuration shipped = Configuration.builder().put(ElytraSettings.BURN_DURATION_TICKS_KEY, "30").put(ElytraSettings.COOLDOWN_TICKS_KEY, "40").build();
 
-        Assertions.assertEquals(40, result);
-    }
+        ElytraSettings.BoostSettings result = ElytraSettings.shippedBoostSettings(shipped);
 
-    @DisplayName("resolveCooldownTicks falls back to the shipped default and warns once when not longer than the burn")
-    @Test
-    void resolveCooldownTicksFallsBackAndWarnsWhenNotLongerThanTheBurn() {
-        Logger logger = (Logger) LoggerFactory.getLogger(RuntimeConfigFallback.class);
-        ListAppender<ILoggingEvent> appender = new ListAppender<>();
-        appender.start();
-        logger.addAppender(appender);
-
-        try {
-            int result = ElytraSettings.resolveCooldownTicks("10", 30, 40, freshFallback());
-
-            Assertions.assertEquals(40, result, "a cooldown not longer than the burn must fall back to the shipped default");
-            Assertions.assertEquals(1, appender.list.size(), "exactly one WARN must be logged for a new invalid value");
-            Assertions.assertEquals(ElytraSettings.COOLDOWN_TICKS_KEY, appender.list.get(0).getArgumentArray()[0]);
-        } finally {
-            logger.detachAppender(appender);
-        }
+        Assertions.assertEquals(30, result.burnDurationTicks());
+        Assertions.assertEquals(40, result.cooldownTicks());
     }
 }
