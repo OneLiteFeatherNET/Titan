@@ -208,23 +208,38 @@ config.watch.enabled: true
 Once enabled, it watches only the configuration files that already existed on disk at startup - a
 file created afterwards is picked up only on the next restart. Every `config.watch.period` seconds
 (default `10`, the first check happening `config.watch.delay` seconds after startup, also default
-`10`) it re-reads every watched file and applies whatever changed.
+`10`) it re-reads every watched file and applies whatever changed behind the
+`io.avaje.config.Config` facade.
 
-A changed value only restarts the module whose own section (`<module-id>.*`) it belongs to - every
-other module keeps running untouched. A change under `features.*`, `titan.*` or `config.*` restarts
-no module at all. Restarting a module briefly tears it down and brings it back up, so any state
-that lives only in that module's memory is lost for players who were mid-interaction with it - a
-player sitting down stands back up, and a player mid-elytra-boost loses the tracked boost - while
-their hotbar items and navigator entries are put back automatically. Only modules whose keys
-actually changed are restarted, so this only affects a module an operator is actively
-reconfiguring.
+**No module, and no part of the lobby, ever restarts to pick up a change.** Instead, every module
+reads its settings live, at the moment it needs them, rather than once at startup: tickle reads
+`tickle.cooldownMillis` on every attack, sit reads `sit.offset.*`/`sit.allowedBlocks` on every block
+interaction, elytra reads `elytra.burnDurationTicks`/`elytra.cooldownTicks` on every boost, spawn
+reads `spawn.minHeight`/`spawn.maxHeight` on every height check and `spawn.simulationDistance` on
+every join, and the navigator reads `navigator.title`/`navigator.entries` every time it is opened.
+Once the watcher applies a change behind the facade, the very next such read sees the new value.
+Because nothing restarts, no in-flight, per-player state is ever lost - a player who is already
+sitting stays sitting even if `sit.offset.*` changes underneath them, and a player mid-elytra-boost
+keeps that boost even if `elytra.burnDurationTicks`/`elytra.cooldownTicks` change; the new value
+only applies the next time each is used.
 
-If the new value for a key is invalid, the lobby discards it for that module only: the module keeps
-running with its previous values, and the log names the key and the reason at WARN. The rejected
-value is not removed from the file, so it is read again, and rejected again with the same WARN, the
-next time that file changes for any other reason - until the operator corrects it. If a watched
-file is not valid YAML after a change, avaje-config itself logs the file and the location of the
-error at ERROR and applies no value from it; no module restarts because of that file.
+If the live value for a key - or, for a few settings that are validated together
+(`spawn.minHeight`/`spawn.maxHeight`, `elytra.burnDurationTicks`/`elytra.cooldownTicks`), the whole
+group; the navigator's `navigator.entries` falls back as its entire set - turns out invalid, the
+lobby uses the shipped classpath default for that one setting instead, without affecting any other
+setting or module. The log names the key and the reason at WARN, once per key per newly seen
+invalid value:
+
+```
+Invalid configuration value for {}: {} ({}), using shipped default {}
+```
+
+The same invalid value does not warn again on a later read; a different invalid value for the same
+key warns again. This fallback only applies to a value that becomes invalid at runtime - an invalid
+value found at startup still aborts the start, unchanged from before. If a watched file is not
+valid YAML after a change, avaje-config itself logs the file and the location of the error at
+ERROR (over `java.util.logging`, not the lobby's own SLF4J-backed logs) and applies no value from
+it; every other changed file is still applied.
 
 **Accepted limits of this built-in watcher** (see `design.md`, decision 1, in
 `openspec/changes/config-reload-feature-flags`):
@@ -234,7 +249,9 @@ error at ERROR and applies no value from it; no module restarts because of that 
 - a key deleted from a changed file stays active with its old value until the next restart;
 - a file created after startup is only picked up on the next restart;
 - there is no manual trigger - a change takes effect only once the watcher notices it, at most
-  `config.watch.delay` plus `config.watch.period` after it was made.
+  `config.watch.delay` plus `config.watch.period` after it was made;
+- a syntactically broken file is logged by avaje-config itself over `java.util.logging`, not
+  SLF4J, so that ERROR line may not appear alongside the rest of the lobby's own logs.
 
 ## Feature flags
 
@@ -244,9 +261,11 @@ configuration key - a profile's file, an external file, an environment variable
 (`FEATURES_NAVIGATOR_SLENDER`), or a system property. The five flags the lobby ships with, all
 `false` by default: `NAVIGATOR_CREATIVE`, `NAVIGATOR_SLENDER`, `NAVIGATOR_MANIS`,
 `NAVIGATOR_SURVIVAL` and `NAVIGATOR_ELYTRA`. A flag not listed in the shipped defaults is unknown -
-a navigator entry naming it aborts startup, and changing a navigator entry to name it while
-running is discarded on reload instead. Changing a flag's value takes effect the next time the
-navigator is opened, without restarting any module or the lobby.
+a navigator entry naming it aborts startup. Changed later, while the lobby is running, to name an
+unknown flag (or to an otherwise invalid entry), the navigator falls back to the shipped default
+entries the next time it is opened instead, and the log names `navigator.entries` and the reason at
+WARN. Changing a flag's own value takes effect the next time the navigator is opened, without
+restarting any module or the lobby.
 
 ### Migrating from `flags.properties`
 
@@ -306,10 +325,11 @@ if it should pick up configuration changes without a restart.
 
 After rolling out, the start log's "Active configuration profiles" line confirms which profiles are
 active. If the file watcher is enabled, changing a watched key and waiting up to
-`config.watch.delay` plus `config.watch.period` confirms the reload works: the log shows the INFO
-line naming the restarted module and its changed keys. **Rollback:** deploy the previous jar and
-restore `flags.properties` - a leftover `features.*` section or `config.watch.*` setting in
-`application.yaml` does not affect the previous jar.
+`config.watch.delay` plus `config.watch.period` confirms the reload works: exercising the affected
+module afterwards (e.g. triggering a tickle attack after changing `tickle.cooldownMillis`) shows
+the new value took effect, with no restart of any kind appearing in the log. **Rollback:** deploy
+the previous jar and restore `flags.properties` - a leftover `features.*` section or
+`config.watch.*` setting in `application.yaml` does not affect the previous jar.
 
 ## Development
 
@@ -355,10 +375,11 @@ Avaje Inject - there is no central module list to edit:
   the lobby quietly running without that module.
 - The actual start order is visible at runtime in one INFO log line:
   `Lobby modules enabled in order: {}`.
-- A module needs nothing extra to support the runtime reload described under "Runtime reloading"
-  above: as long as everything it registers goes through `ModuleContext` (`listen`, `items`,
-  `navigator`, `commands`, `tasks`), a restart tears it down and brings it back up the same way
-  startup and shutdown already do.
+- A module that reads configuration reads it live, at the point it is used, not just once in
+  `enable()` - see [`docs/lobby-modules.md`](docs/lobby-modules.md) for the pattern (a
+  `current()`-style method on the module's own `*Settings`, backed by the shared
+  `RuntimeConfigFallback`). That is what makes the runtime reload described under "Runtime
+  reloading" above apply to a module without it ever restarting.
 
 See [`docs/lobby-modules.md`](docs/lobby-modules.md) (German) for the full walkthrough - module
 anatomy, `ModuleContext` dock points, tick-thread rules, test setup with `ModuleHarness`, the
