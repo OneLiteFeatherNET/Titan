@@ -111,17 +111,22 @@ features:
 
 # Configuration reload (see openspec/changes/config-reload-feature-flags/design.md, decision 1).
 #
-# avaje-config's own built-in file watcher is deliberately left off: on reload it does not
-# re-apply env/system-property overrides, leaves a deleted key in place, never notices a newly
-# created file, and partially applies a change if one of several files is broken. The lobby's own
-# reloader (the "/titanreload" command, and this file's own polling below) rebuilds the whole
-# configuration through the same pipeline used on startup instead, so overrides, deleted keys and
-# new files all behave exactly like a fresh start, and a broken file changes nothing at all.
-config.watch.enabled: false
-
-# How often, in seconds, the lobby polls application.{yaml,yml,properties} (base and per active
-# profile) plus CONFIG_FILE/config.file for changes and triggers a reload if one is found. Read
-# once at startup; "0" turns polling off entirely (the "/titanreload" command still works either
-# way). Commented out here since 10 is already the lobby's own built-in default - uncomment only
-# to change it.
-# titan.config.reload.intervalSeconds: 10
+# Turns on avaje-config's own built-in file watcher. Every "config.watch.period" seconds (the
+# first check after "config.watch.delay" seconds since startup), it re-reads every configuration
+# file that existed on disk at startup - the working directory's own "application.yaml" (if an
+# operator placed one next to the jar), any active profile's "application-<profile>.yaml", and an
+# external file selected via CONFIG_FILE/config.file - and applies whatever changed. It never
+# watches the shipped classpath defaults above: those are baked into the jar, not a file on disk.
+# A changed module section restarts only that module, on the tick thread; a value that module
+# rejects is discarded and the module keeps running with its previous values (see the
+# lobby-module-config spec).
+#
+# Accepted limits of this built-in watcher (see design.md, decision 1, and its "Grenzen"/"Risks"):
+# an env/system-property override for a key whose file changes is displaced by the file's value
+# until the lobby restarts; a key deleted from a changed file stays active until then too; a file
+# created after startup is only picked up on the next restart; and there is no manual trigger - a
+# change is only ever picked up by this watcher, at the latest after "config.watch.delay" plus
+# "config.watch.period".
+config.watch.enabled: true
+config.watch.delay: 10
+config.watch.period: 10

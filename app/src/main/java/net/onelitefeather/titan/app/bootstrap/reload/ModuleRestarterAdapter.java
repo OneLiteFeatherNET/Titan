@@ -23,7 +23,7 @@ import net.onelitefeather.titan.app.module.RestartOutcome;
 /**
  * Production {@link ModuleRestarter}: delegates to {@link ModuleRegistry#restart(String)} and maps
  * its own sealed {@link RestartOutcome} to this package's {@link ModuleRestartOutcome} - see that
- * type's javadoc for why {@link ConfigReloader} does not depend on the {@code module} package
+ * type's javadoc for why {@link ConfigChangeHandler} does not depend on the {@code module} package
  * directly. {@link #moduleOrder()} is backed the same way, by {@link ModuleRegistry#moduleIds()}.
  */
 final class ModuleRestarterAdapter implements ModuleRestarter {
