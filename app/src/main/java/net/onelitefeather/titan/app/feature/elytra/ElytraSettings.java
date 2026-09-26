@@ -113,7 +113,8 @@ final class ElytraSettings {
 
     /**
      * The runtime counterpart of {@link #cooldownTicks(int, int)}: a valid {@code raw} passes
-     * through unchanged; an invalid one - not strictly longer than {@code burnDurationTicks} - falls
+     * through unchanged; an invalid one - not strictly longer than {@code burnDurationTicks} -
+     * falls
      * back to {@code shippedDefault}, after {@code fallback} logs a deduplicated WARN naming
      * {@link #COOLDOWN_TICKS_KEY}.
      *
