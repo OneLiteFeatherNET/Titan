@@ -21,23 +21,25 @@ import java.util.function.Supplier;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.player.PlayerSpawnEvent;
-import net.minestom.server.network.packet.server.CachedPacket;
 import net.minestom.server.network.packet.server.play.UpdateSimulationDistancePacket;
 import net.onelitefeather.titan.app.module.item.ModuleItems;
 
 /**
  * Reacts to a player spawning in the lobby: sends the configured simulation distance, teleports
  * the player to the lobby spawn, and equips them with the platform-wide standard loadout via
- * {@link ModuleItems#equip(Player)}.
+ * {@link ModuleItems#equip(Player)}. Reads {@code spawn.simulationDistance} itself, via
+ * {@link SpawnSettings#currentSimulationDistance()}, on every join rather than once at
+ * construction - see {@code openspec/changes/config-reload-feature-flags/design.md}, decision 1:
+ * a changed value applies to the next player who joins, without a module restart. Joining is far
+ * less frequent than a tick, so building a fresh packet per join (instead of a
+ * {@code CachedPacket} built once) is unremarkable.
  */
 final class SpawnJoinListener implements Consumer<PlayerSpawnEvent> {
 
-    private final CachedPacket simulationDistancePacket;
     private final Supplier<Pos> spawnPosition;
     private final ModuleItems items;
 
-    SpawnJoinListener(int simulationDistance, Supplier<Pos> spawnPosition, ModuleItems items) {
-        this.simulationDistancePacket = new CachedPacket(new UpdateSimulationDistancePacket(simulationDistance));
+    SpawnJoinListener(Supplier<Pos> spawnPosition, ModuleItems items) {
         this.spawnPosition = spawnPosition;
         this.items = items;
     }
@@ -45,7 +47,7 @@ final class SpawnJoinListener implements Consumer<PlayerSpawnEvent> {
     @Override
     public void accept(PlayerSpawnEvent event) {
         Player player = event.getPlayer();
-        player.sendPacket(this.simulationDistancePacket);
+        player.sendPacket(new UpdateSimulationDistancePacket(SpawnSettings.currentSimulationDistance()));
         Optional.ofNullable(this.spawnPosition.get()).ifPresent(player::teleport);
         this.items.equip(player);
     }

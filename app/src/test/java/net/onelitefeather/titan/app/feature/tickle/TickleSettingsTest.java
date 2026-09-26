@@ -15,10 +15,15 @@
  */
 package net.onelitefeather.titan.app.feature.tickle;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import io.avaje.config.Configuration;
+import net.onelitefeather.titan.common.config.RuntimeConfigFallback;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 
 /**
  * Unit tests for {@link TickleSettings#cooldownMillis(String)}: the {@code cooldownMillis}
@@ -79,5 +84,58 @@ class TickleSettingsTest {
         Assertions.assertTrue(thrown.getMessage().contains(TickleSettings.COOLDOWN_KEY), "the message must name " + TickleSettings.COOLDOWN_KEY + ", was: " + thrown.getMessage());
         Assertions.assertInstanceOf(IllegalArgumentException.class, thrown.getCause(), "the cause must be this class's own validation failure");
         Assertions.assertTrue(thrown.getCause().getMessage().contains("-5"), "the cause must keep the offending value, was: " + thrown.getCause().getMessage());
+    }
+
+    private static RuntimeConfigFallback freshFallback() {
+        return new RuntimeConfigFallback(Configuration.builder().put(TickleSettings.COOLDOWN_KEY, "4000").build());
+    }
+
+    @DisplayName("resolveCooldownMillis passes a valid value through unchanged, without warning")
+    @Test
+    void resolveCooldownMillisPassesAValidValueThrough() {
+        Logger logger = (Logger) LoggerFactory.getLogger(RuntimeConfigFallback.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+
+        try {
+            long result = TickleSettings.resolveCooldownMillis("1500", 4000L, freshFallback());
+
+            Assertions.assertEquals(1500L, result, "a valid value must pass through unchanged");
+            Assertions.assertTrue(appender.list.isEmpty(), "a valid value must never warn");
+        } finally {
+            logger.detachAppender(appender);
+        }
+    }
+
+    @DisplayName("resolveCooldownMillis falls back to the shipped default and warns once for a negative value")
+    @Test
+    void resolveCooldownMillisFallsBackAndWarnsForANegativeValue() {
+        Logger logger = (Logger) LoggerFactory.getLogger(RuntimeConfigFallback.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+
+        try {
+            long result = TickleSettings.resolveCooldownMillis("-5", 4000L, freshFallback());
+
+            Assertions.assertEquals(4000L, result, "an invalid value must fall back to the shipped default");
+            Assertions.assertEquals(1, appender.list.size(), "exactly one WARN must be logged for a new invalid value");
+            ILoggingEvent event = appender.list.get(0);
+            Assertions.assertEquals(ch.qos.logback.classic.Level.WARN, event.getLevel());
+            Assertions.assertEquals(TickleSettings.COOLDOWN_KEY, event.getArgumentArray()[0], "the first argument must be the full key");
+            Assertions.assertEquals("-5", event.getArgumentArray()[1], "the second argument must be the offending raw value");
+            Assertions.assertEquals(4000L, event.getArgumentArray()[3], "the fourth argument must be the shipped default");
+        } finally {
+            logger.detachAppender(appender);
+        }
+    }
+
+    @DisplayName("resolveCooldownMillis falls back to the shipped default for a non-numeric value")
+    @Test
+    void resolveCooldownMillisFallsBackForANonNumericValue() {
+        long result = TickleSettings.resolveCooldownMillis("abc", 4000L, freshFallback());
+
+        Assertions.assertEquals(4000L, result, "a non-numeric value must fall back to the shipped default too");
     }
 }

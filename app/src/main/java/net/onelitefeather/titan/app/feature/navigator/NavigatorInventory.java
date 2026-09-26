@@ -72,6 +72,7 @@ final class NavigatorInventory {
     private final BiConsumer<Player, NavigatorEntry> onSelect;
     private final GlobalInventoryBuilder builder;
     private List<NavigatorEntry> appliedVisibleEntries;
+    private Component appliedTitle;
 
     /**
      * @param title        the inventory's title
@@ -87,6 +88,28 @@ final class NavigatorInventory {
         this.featureFlags = featureFlags;
         this.onSelect = onSelect;
         this.builder = new GlobalInventoryBuilder(title, InventoryType.CHEST_1_ROW);
+        this.appliedTitle = title;
+    }
+
+    /**
+     * Applies {@code title} to the shared inventory if it differs from the one last applied here
+     * (at construction, or by an earlier call to this method) - a no-op otherwise, so opening the
+     * navigator without a title change never resends the inventory's open-window packet to
+     * whichever other players still have it open (see {@code net.minestom.server.inventory.
+     * Inventory#setTitle}).
+     *
+     * <p>Called on every open, alongside {@link #current()} - see {@code NavigatorModule#enable} -
+     * so a changed {@code navigator.title} applies the next time any player opens the navigator,
+     * without a module restart (see {@code openspec/changes/config-reload-feature-flags/
+     * design.md}, decision 1).
+     *
+     * @param title the current title, read live from the configuration
+     */
+    synchronized void applyTitleIfChanged(Component title) {
+        if (!title.equals(this.appliedTitle)) {
+            this.builder.setTitleComponent(title);
+            this.appliedTitle = title;
+        }
     }
 
     /**

@@ -69,15 +69,19 @@ public final class ElytraModule implements LobbyModule {
 
     @Override
     public void enable(ModuleContext context) {
-        int burnDurationTicks = Config.getAs(ElytraSettings.BURN_DURATION_TICKS_KEY, ElytraSettings::burnDurationTicks);
-        int cooldownTicks = ElytraSettings.cooldownTicks(Config.getAs(ElytraSettings.COOLDOWN_TICKS_KEY, Integer::parseInt), burnDurationTicks);
+        // Abort startup on an invalid value (unchanged behaviour); neither result is kept - the
+        // firework's use handler below reads the live values again on every boost (see design.md,
+        // decision 1).
+        int burnDurationTicksAtStartup = Config.getAs(ElytraSettings.BURN_DURATION_TICKS_KEY, ElytraSettings::burnDurationTicks);
+        ElytraSettings.cooldownTicks(Config.getAs(ElytraSettings.COOLDOWN_TICKS_KEY, Integer::parseInt), burnDurationTicksAtStartup);
         FireworkBoostTracker boosts = new FireworkBoostTracker();
 
         context.items().register(new LobbyItem(Key.key("titan:elytra"), ElytraItems.ELYTRA, ItemSlot.equipment(EquipmentSlot.CHESTPLATE), (player, event) -> {
         }));
         ItemStack stampedFirework = context.items().register(new LobbyItem(Key.key("titan:firework"), ElytraItems.FIREWORK, ItemSlot.unplaced(), (player, event) -> {
-            if (boosts.requestBoost(player.getUuid(), burnDurationTicks, cooldownTicks, player.isFlyingWithElytra())) {
-                FireworkRockets.fire(player, burnDurationTicks, cooldownTicks);
+            ElytraSettings.BoostSettings settings = ElytraSettings.current();
+            if (boosts.requestBoost(player.getUuid(), settings.burnDurationTicks(), settings.cooldownTicks(), player.isFlyingWithElytra())) {
+                FireworkRockets.fire(player, settings.burnDurationTicks(), settings.cooldownTicks());
             }
         }));
 

@@ -121,9 +121,11 @@ features:
 #
 # Once enabled, every "config.watch.period" seconds (the first check after "config.watch.delay"
 # seconds since startup) it re-reads every configuration file that existed on disk at startup and
-# applies whatever changed. A changed module section restarts only that module, on the tick
-# thread; a value that module rejects is discarded and the module keeps running with its previous
-# values (see the lobby-module-config spec).
+# applies whatever changed behind the io.avaje.config.Config facade. No module restarts: every
+# module reads its own settings live, at the moment it needs them (e.g. tickle on every attack,
+# the navigator on every open), so the new value applies the next time it is read - no module or
+# player state is ever lost. A value a module rejects at that point falls back to the shipped
+# classpath default for that one setting instead (see the lobby-module-config spec).
 #
 # Accepted limits of this built-in watcher (see design.md, decision 1, and its "Grenzen"/"Risks"):
 # - an override for a key in a changed file is displaced by the file's value until the next

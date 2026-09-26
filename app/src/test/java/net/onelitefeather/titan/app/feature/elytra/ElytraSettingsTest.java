@@ -15,9 +15,15 @@
  */
 package net.onelitefeather.titan.app.feature.elytra;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+import io.avaje.config.Configuration;
+import net.onelitefeather.titan.common.config.RuntimeConfigFallback;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 
 /**
  * Unit coverage for {@link ElytraSettings}'s validation of {@code burnDurationTicks} and
@@ -71,5 +77,73 @@ class ElytraSettingsTest {
 
         Assertions.assertTrue(exception.getMessage().contains(ElytraSettings.COOLDOWN_TICKS_KEY), "the message must name " + ElytraSettings.COOLDOWN_TICKS_KEY);
         Assertions.assertTrue(exception.getMessage().contains(ElytraSettings.BURN_DURATION_TICKS_KEY), "the message must name " + ElytraSettings.BURN_DURATION_TICKS_KEY);
+    }
+
+    private static RuntimeConfigFallback freshFallback() {
+        return new RuntimeConfigFallback(Configuration.builder().build());
+    }
+
+    @DisplayName("resolveBurnDurationTicks passes a valid value through unchanged, without warning")
+    @Test
+    void resolveBurnDurationTicksPassesAValidValueThrough() {
+        Logger logger = (Logger) LoggerFactory.getLogger(RuntimeConfigFallback.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+
+        try {
+            int result = ElytraSettings.resolveBurnDurationTicks("30", 30, freshFallback());
+
+            Assertions.assertEquals(30, result);
+            Assertions.assertTrue(appender.list.isEmpty(), "a valid value must never warn");
+        } finally {
+            logger.detachAppender(appender);
+        }
+    }
+
+    @DisplayName("resolveBurnDurationTicks falls back to the shipped default and warns once for a zero value")
+    @Test
+    void resolveBurnDurationTicksFallsBackAndWarnsForAZeroValue() {
+        Logger logger = (Logger) LoggerFactory.getLogger(RuntimeConfigFallback.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+
+        try {
+            int result = ElytraSettings.resolveBurnDurationTicks("0", 30, freshFallback());
+
+            Assertions.assertEquals(30, result, "an invalid value must fall back to the shipped default");
+            Assertions.assertEquals(1, appender.list.size(), "exactly one WARN must be logged for a new invalid value");
+            Assertions.assertEquals(ElytraSettings.BURN_DURATION_TICKS_KEY, appender.list.get(0).getArgumentArray()[0]);
+        } finally {
+            logger.detachAppender(appender);
+        }
+    }
+
+    @DisplayName("resolveCooldownTicks passes a valid value through unchanged")
+    @Test
+    void resolveCooldownTicksPassesAValidValueThrough() {
+        int result = ElytraSettings.resolveCooldownTicks("40", 30, 40, freshFallback());
+
+        Assertions.assertEquals(40, result);
+    }
+
+    @DisplayName("resolveCooldownTicks falls back to the shipped default and warns once when not longer than the burn")
+    @Test
+    void resolveCooldownTicksFallsBackAndWarnsWhenNotLongerThanTheBurn() {
+        Logger logger = (Logger) LoggerFactory.getLogger(RuntimeConfigFallback.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+
+        try {
+            int result = ElytraSettings.resolveCooldownTicks("10", 30, 40, freshFallback());
+
+            Assertions.assertEquals(40, result, "a cooldown not longer than the burn must fall back to the shipped default");
+            Assertions.assertEquals(1, appender.list.size(), "exactly one WARN must be logged for a new invalid value");
+            Assertions.assertEquals(ElytraSettings.COOLDOWN_TICKS_KEY, appender.list.get(0).getArgumentArray()[0]);
+        } finally {
+            logger.detachAppender(appender);
+        }
     }
 }

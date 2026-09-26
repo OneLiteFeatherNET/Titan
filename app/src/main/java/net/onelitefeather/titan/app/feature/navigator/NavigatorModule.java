@@ -16,6 +16,7 @@
 package net.onelitefeather.titan.app.feature.navigator;
 
 import io.avaje.config.Config;
+import io.avaje.config.Configuration;
 import io.avaje.inject.Priority;
 import jakarta.inject.Singleton;
 import java.util.ArrayList;
@@ -37,6 +38,7 @@ import net.onelitefeather.titan.app.module.item.ItemSlot;
 import net.onelitefeather.titan.app.module.item.LobbyItem;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntry;
+import net.onelitefeather.titan.common.config.RuntimeConfigFallback;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
 
 /**
@@ -73,14 +75,28 @@ import net.onelitefeather.titan.common.feature.FeatureFlags;
  * {@code feature()} besides - is validated up front, once every module has enabled, by
  * {@link NavigatorEntries#validate(FeatureFlags)}, not by this module itself.
  *
- * <p>{@link #enable} reads its title and entries directly from the {@code io.avaje.config.Config}
- * static facade - the title via {@code Config.get("navigator.title")}, the entries by turning the
- * keys {@code Config.asConfiguration().forPath("navigator.entries").keys()} returns into names via
+ * <p>{@link #enable} reads its title and entries once, directly from the
+ * {@code io.avaje.config.Config} static facade - the title via
+ * {@code Config.get("navigator.title")},
+ * the entries by turning the keys
+ * {@code Config.asConfiguration().forPath("navigator.entries").keys()} returns into names via
  * {@link NavigatorEntryKeys#names(Set)}, validating each one's values with
  * {@link NavigatorEntryValidation#buildEntry} and deserializing the result into a renderable
  * {@link NavigatorEntry} - per {@code openspec/changes/avaje-config-facade/design.md}, decision 6.
- * No default values are supplied in code; every key is expected to exist in the shipped classpath
- * {@code application.yaml}.
+ * That first read is strict: an unknown feature name or an invalid entry still aborts startup
+ * (unchanged behaviour), since {@code ModuleRegistry#enableAll()} runs
+ * {@link NavigatorEntries#validate(FeatureFlags)} once every module has enabled.
+ *
+ * <p>Every later open re-reads title and entries the same way (see
+ * {@code openspec/changes/config-reload-feature-flags/design.md}, decisions 1 and 2): the
+ * {@code titan:navigator} item's use handler calls {@link #refreshFromConfig()} before opening the
+ * inventory, which reads {@link #currentTitle()} - applied via
+ * {@link NavigatorInventory#applyTitleIfChanged(Component)} - and {@link #currentEntries()},
+ * which it re-attributes to this module's own id in {@link #entries} (replacing this module's
+ * previous contribution, leaving any other module's entries untouched). Unlike the one strict
+ * read in {@link #enable}, an unknown feature name or an invalid entry found on a later open does
+ * not abort anything: it falls back to the shipped default entries instead, via the shared
+ * {@link RuntimeConfigFallback}, logging a deduplicated WARN.
  */
 @Singleton
 @Priority(400)
@@ -115,39 +131,146 @@ public final class NavigatorModule implements LobbyModule {
 
     @Override
     public void enable(ModuleContext context) {
-        Component title = MiniMessage.miniMessage().deserialize(Config.get(TITLE_KEY));
+        // Strict, one-time read: an unknown feature name or an invalid entry here still aborts
+        // startup, via NavigatorEntries#validate(FeatureFlags) in ModuleRegistry#enableAll()
+        // (unchanged behaviour).
+        Component title = readTitle(Config.asConfiguration());
         this.navigatorInventory = new NavigatorInventory(title, this.entries, this.featureFlags, this::onSelect);
 
-        for (NavigatorEntry entry : readEntries()) {
+        for (NavigatorEntry entry : readEntries(Config.asConfiguration())) {
             context.navigator().add(entry);
         }
 
         ItemStack feather = ItemStack.builder(Material.FEATHER).customName(MiniMessage.miniMessage().deserialize("<!i><aqua>Navigator")).build();
-        context.items().register(new LobbyItem(ITEM_KEY, feather, ItemSlot.hotbar(HOTBAR_SLOT), (player, event) -> player.openInventory(this.navigatorInventory.current())));
+        context.items().register(new LobbyItem(ITEM_KEY, feather, ItemSlot.hotbar(HOTBAR_SLOT), (player, event) -> {
+            refreshFromConfig();
+            player.openInventory(this.navigatorInventory.current());
+        }));
 
         this.navigatorInventory.register();
     }
 
     /**
-     * Reads every entry under {@code navigator.entries}: the entry names come from
-     * {@link NavigatorEntryKeys#names(Set)} applied to
-     * {@code Config.asConfiguration().forPath(ENTRIES_PATH).keys()}, each name's own {@code slot},
+     * Re-reads title and entries from the live configuration and applies them - called on every
+     * open, before {@link NavigatorInventory#current()} (see {@code openspec/changes/
+     * config-reload-feature-flags/design.md}, decisions 1 and 2): a changed
+     * {@code navigator.title} or {@code navigator.entries} applies to the very next open, without
+     * a module restart. Unlike {@link #enable}'s one strict read, an invalid value found here
+     * falls back to the shipped default instead of aborting anything - see
+     * {@link #currentTitle()} and {@link #currentEntries()}.
+     */
+    private void refreshFromConfig() {
+        this.navigatorInventory.applyTitleIfChanged(currentTitle());
+
+        this.entries.removeAll(ID);
+        for (NavigatorEntry entry : currentEntries()) {
+            this.entries.add(ID, entry);
+        }
+    }
+
+    /**
+     * @return the current {@code navigator.title}, read live through the facade
+     */
+    private static Component currentTitle() {
+        return readTitle(Config.asConfiguration());
+    }
+
+    /**
+     * @return the current, valid navigator entries, resolved via {@link #resolveEntries}
+     */
+    private List<NavigatorEntry> currentEntries() {
+        RuntimeConfigFallback fallback = RuntimeConfigFallback.shared();
+        return resolveEntries(Config.asConfiguration(), fallback.shippedDefaults(), this.featureFlags, fallback);
+    }
+
+    /**
+     * The runtime counterpart of {@link #enable}'s strict entry read: reads every entry under
+     * {@code navigator.entries} from {@code live}, additionally checking every entry's optional
+     * feature name against {@code featureFlags} (unlike {@link #readEntries(Configuration)} alone,
+     * which knows nothing about feature flags at all). If that fails for any reason - an unknown
+     * feature name, an out-of-range slot, an unknown material, a blank destination - the whole set
+     * falls back to {@code shipped}'s own entries instead (see {@code design.md}, decision 2:
+     * there is no meaningful "just this one entry's own shipped default" to substitute for a
+     * setting that is a whole list), and {@code fallback} logs a deduplicated WARN naming
+     * {@link #ENTRIES_PATH} and the reason.
+     *
+     * <p>Takes {@code live}, {@code shipped} and {@code fallback} as plain parameters - never
+     * touching the static {@code io.avaje.config.Config} facade itself - so a test can build both
+     * {@link Configuration} instances directly (e.g.
+     * {@code Configuration.builder().put(key, value).build()}) instead of relying on a real
+     * classpath resource (see {@code openspec/changes/config-reload-feature-flags/tasks.md}, task
+     * 3.6: "Unit-Tests prüfen die reinen Prüf- und Rückfallfunktionen mit einfachen Werten").
+     *
+     * @param live         the live configuration to read {@code navigator.entries} from
+     * @param shipped      the shipped classpath defaults to fall back to as a whole
+     * @param featureFlags the source of truth an entry's optional feature gate is checked against
+     * @param fallback     deduplicates the WARN line for a repeated invalid value
+     * @return the resolved navigator entries: {@code live}'s own, or {@code shipped}'s if any of
+     *         {@code live}'s is invalid
+     */
+    static List<NavigatorEntry> resolveEntries(Configuration live, Configuration shipped, FeatureFlags featureFlags, RuntimeConfigFallback fallback) {
+        try {
+            List<NavigatorEntry> liveEntries = readEntries(live);
+            requireKnownFeatures(liveEntries, featureFlags);
+            return liveEntries;
+        } catch (RuntimeException e) {
+            List<NavigatorEntry> shippedEntries = readEntries(shipped);
+            fallback.warnInvalid(ENTRIES_PATH, e.getMessage(), e.getMessage(), shippedEntries);
+            return shippedEntries;
+        }
+    }
+
+    /**
+     * @param entries      the entries to check
+     * @param featureFlags the source of truth to check each entry's optional feature name against
+     * @throws IllegalArgumentException if any entry names a feature {@code featureFlags} does not
+     *                                  recognize
+     */
+    private static void requireKnownFeatures(List<NavigatorEntry> entries, FeatureFlags featureFlags) {
+        for (NavigatorEntry entry : entries) {
+            String feature = entry.feature();
+            if (feature != null && !featureFlags.exists(feature)) {
+                throw new IllegalArgumentException(ENTRIES_PATH + ": entry '" + entry.destination() + "' uses unknown feature flag '" + feature + "'");
+            }
+        }
+    }
+
+    /**
+     * @param configuration the source to read {@link #TITLE_KEY} from - the live facade
+     *                      ({@link #enable}, {@link #currentTitle()}) or the shipped classpath
+     *                      defaults (never needed today: {@code navigator.title} has no
+     *                      validation that can fail, but kept symmetric with
+     *                      {@link #readEntries(Configuration)})
+     * @return the deserialized title
+     */
+    private static Component readTitle(Configuration configuration) {
+        return MiniMessage.miniMessage().deserialize(configuration.get(TITLE_KEY));
+    }
+
+    /**
+     * Reads every entry under {@code navigator.entries} from {@code configuration}: the entry
+     * names come from {@link NavigatorEntryKeys#names(Set)} applied to
+     * {@code configuration.forPath(ENTRIES_PATH).keys()}, each name's own {@code slot},
      * {@code icon}, {@code displayName}, {@code destination} and optional {@code feature} are read
      * and validated by {@link NavigatorEntryValidation#buildEntry}, and the result is turned into a
-     * renderable {@link NavigatorEntry} by {@link #toNavigatorEntry}.
+     * renderable {@link NavigatorEntry} by {@link #toNavigatorEntry}. Takes the source as a
+     * parameter - the live facade or the shipped classpath defaults - rather than always reading
+     * the static facade, so {@link #currentEntries()} can reuse this exact logic against either
+     * one (see design.md, decision 2: DRY, one reading/validating path).
      *
-     * @return every configured navigator entry, ready to register
+     * @param configuration the source to read {@code navigator.entries} from
+     * @return every entry {@code configuration} describes, ready to register
      */
-    private static List<NavigatorEntry> readEntries() {
-        Set<String> names = NavigatorEntryKeys.names(Config.asConfiguration().forPath(ENTRIES_PATH).keys());
+    private static List<NavigatorEntry> readEntries(Configuration configuration) {
+        Set<String> names = NavigatorEntryKeys.names(configuration.forPath(ENTRIES_PATH).keys());
         List<NavigatorEntry> entries = new ArrayList<>();
         for (String name : names) {
             String prefix = ENTRIES_PATH + "." + name + ".";
-            int slot = Config.getAs(prefix + "slot", Integer::parseInt);
-            String icon = Config.get(prefix + "icon");
-            String displayName = Config.get(prefix + "displayName");
-            String destination = Config.get(prefix + "destination");
-            String feature = Config.getNullable(prefix + "feature");
+            int slot = configuration.getAs(prefix + "slot", Integer::parseInt);
+            String icon = configuration.get(prefix + "icon");
+            String displayName = configuration.get(prefix + "displayName");
+            String destination = configuration.get(prefix + "destination");
+            String feature = configuration.getNullable(prefix + "feature");
             NavigatorEntryValidation.ConfiguredNavigatorEntry configured = NavigatorEntryValidation.buildEntry(name, slot, icon, displayName, destination, feature);
             entries.add(toNavigatorEntry(configured));
         }

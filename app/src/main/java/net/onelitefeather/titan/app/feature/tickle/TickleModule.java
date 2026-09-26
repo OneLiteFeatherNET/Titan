@@ -33,6 +33,13 @@ import net.onelitefeather.titan.app.module.ModuleContext;
  * before this module existed. See {@link TickleAttackHandler} and {@link TickleCooldownRule} for
  * the implementation, and {@link TickleSettings} for this module's own configuration key and
  * validation.
+ *
+ * <p>{@link #enable} reads {@link TickleSettings#COOLDOWN_KEY} exactly once, through
+ * {@link TickleSettings#cooldownMillis(String)}'s strict validation, purely to abort startup on
+ * an invalid value (unchanged behaviour from {@code avaje-config-facade}); the result is
+ * discarded. {@link TickleAttackHandler} reads the live value itself, on every attack, via
+ * {@link TickleSettings#current()} - see {@code openspec/changes/config-reload-feature-flags/
+ * design.md}, decision 1.
  */
 @Singleton
 @Priority(600)
@@ -59,7 +66,9 @@ public final class TickleModule implements LobbyModule {
 
     @Override
     public void enable(ModuleContext context) {
-        long cooldownMillis = Config.getAs(TickleSettings.COOLDOWN_KEY, TickleSettings::cooldownMillis);
-        context.listen(EntityAttackEvent.class, new TickleAttackHandler(this.clock, cooldownMillis));
+        // Abort startup on an invalid value (unchanged behaviour); the parsed value itself is not
+        // kept - TickleAttackHandler reads the live value again on every attack.
+        Config.getAs(TickleSettings.COOLDOWN_KEY, TickleSettings::cooldownMillis);
+        context.listen(EntityAttackEvent.class, new TickleAttackHandler(this.clock));
     }
 }

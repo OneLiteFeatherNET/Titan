@@ -15,6 +15,10 @@
  */
 package net.onelitefeather.titan.app.feature.spawn;
 
+import io.avaje.config.Config;
+import io.avaje.config.Configuration;
+import net.onelitefeather.titan.common.config.RuntimeConfigFallback;
+
 /**
  * Pure parsing and validation for the {@code spawn} section's values, kept apart from however
  * those values are read ({@link SpawnModule#enable}, via {@code io.avaje.config.Config}).
@@ -74,5 +78,99 @@ final class SpawnSettings {
             throw new IllegalArgumentException("must be greater than 0, was " + simulationDistance);
         }
         return simulationDistance;
+    }
+
+    /**
+     * Both live height bounds, read together since {@link #minHeight(int, int)} is a cross-field
+     * check against the (possibly already-fallen-back) max height.
+     *
+     * @param minHeight the lowest {@code y} coordinate a player may fall to
+     * @param maxHeight the highest {@code y} coordinate a player may rise to
+     */
+    record HeightSettings(int minHeight, int maxHeight) {
+    }
+
+    /**
+     * The runtime counterpart of {@code spawn.maxHeight}'s parsing: a valid {@code raw} passes
+     * through unchanged; an invalid one falls back to {@code shippedDefault}, after
+     * {@code fallback} logs a deduplicated WARN naming {@link #MAX_HEIGHT_KEY}.
+     *
+     * @param raw            the configured max height, as read live from the facade
+     * @param shippedDefault the shipped classpath default for {@link #MAX_HEIGHT_KEY}
+     * @param fallback       deduplicates the WARN line for a repeated invalid value
+     * @return {@code raw}, parsed, or {@code shippedDefault} if it does not parse
+     */
+    static int resolveMaxHeight(String raw, int shippedDefault, RuntimeConfigFallback fallback) {
+        try {
+            return Integer.parseInt(raw);
+        } catch (NumberFormatException e) {
+            return fallback.fallback(MAX_HEIGHT_KEY, raw, e.getMessage(), shippedDefault);
+        }
+    }
+
+    /**
+     * The runtime counterpart of {@link #minHeight(int, int)}: a valid {@code raw} passes through
+     * unchanged; an invalid one - not strictly less than {@code maxHeight} - falls back to
+     * {@code shippedDefault}, after {@code fallback} logs a deduplicated WARN naming
+     * {@link #MIN_HEIGHT_KEY}.
+     *
+     * @param raw            the configured min height, as read live from the facade
+     * @param maxHeight      the already-resolved max height to compare against
+     * @param shippedDefault the shipped classpath default for {@link #MIN_HEIGHT_KEY}
+     * @param fallback       deduplicates the WARN line for a repeated invalid value
+     * @return {@code raw}, parsed and validated, or {@code shippedDefault} if invalid
+     */
+    static int resolveMinHeight(String raw, int maxHeight, int shippedDefault, RuntimeConfigFallback fallback) {
+        try {
+            return minHeight(Integer.parseInt(raw), maxHeight);
+        } catch (RuntimeException e) {
+            return fallback.fallback(MIN_HEIGHT_KEY, raw, e.getMessage(), shippedDefault);
+        }
+    }
+
+    /**
+     * The runtime counterpart of {@link #simulationDistance(String)}: a valid {@code raw} passes
+     * through unchanged; an invalid one falls back to {@code shippedDefault}, after
+     * {@code fallback} logs a deduplicated WARN naming {@link #SIMULATION_DISTANCE_KEY}.
+     *
+     * @param raw            the configured simulation distance, as read live from the facade
+     * @param shippedDefault the shipped classpath default for {@link #SIMULATION_DISTANCE_KEY}
+     * @param fallback       deduplicates the WARN line for a repeated invalid value
+     * @return {@code raw}, parsed and validated, or {@code shippedDefault} if invalid
+     */
+    static int resolveSimulationDistance(String raw, int shippedDefault, RuntimeConfigFallback fallback) {
+        try {
+            return simulationDistance(raw);
+        } catch (RuntimeException e) {
+            return fallback.fallback(SIMULATION_DISTANCE_KEY, raw, e.getMessage(), shippedDefault);
+        }
+    }
+
+    /**
+     * Reads both height bounds live through the static facade, resolving an invalid runtime value
+     * to its shipped default via the process-wide {@link RuntimeConfigFallback}. Called directly
+     * by {@link SpawnBoundsListener} on every move (see
+     * {@code openspec/changes/config-reload-feature-flags/design.md}, decision 1).
+     *
+     * @return the current, valid height bounds
+     */
+    static HeightSettings currentHeightBounds() {
+        RuntimeConfigFallback fallback = RuntimeConfigFallback.shared();
+        Configuration shipped = fallback.shippedDefaults();
+        int maxHeight = resolveMaxHeight(Config.get(MAX_HEIGHT_KEY), shipped.getInt(MAX_HEIGHT_KEY), fallback);
+        int minHeight = resolveMinHeight(Config.get(MIN_HEIGHT_KEY), maxHeight, shipped.getInt(MIN_HEIGHT_KEY), fallback);
+        return new HeightSettings(minHeight, maxHeight);
+    }
+
+    /**
+     * Reads the simulation distance live through the static facade, resolving an invalid runtime
+     * value to the shipped default via the process-wide {@link RuntimeConfigFallback}. Called
+     * directly by {@link SpawnJoinListener} on every join.
+     *
+     * @return the current, valid simulation distance
+     */
+    static int currentSimulationDistance() {
+        RuntimeConfigFallback fallback = RuntimeConfigFallback.shared();
+        return resolveSimulationDistance(Config.get(SIMULATION_DISTANCE_KEY), fallback.shippedDefaults().getInt(SIMULATION_DISTANCE_KEY), fallback);
     }
 }

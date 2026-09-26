@@ -30,7 +30,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * Covers {@link Seats} directly, one level below the full {@link SitModule} wiring covered by
  * {@link SitModuleIntegrationTest}: sitting places an invisible, silent seat entity at the offset
  * position and mounts the player on it; standing up removes the tag, teleports the player back and
- * removes the now-passenger-less seat entity.
+ * removes the now-passenger-less seat entity. {@link Seats} itself no longer holds an offset - see
+ * {@code openspec/changes/config-reload-feature-flags/design.md}, decision 1 - so every test here
+ * passes {@link #OFFSET} into {@link Seats#sit(net.minestom.server.entity.Player,
+ * net.minestom.server.coordinate.Point, Vec)} directly, the way {@link SitModule} passes in the
+ * value it just read live from the configuration.
  */
 @ExtendWith(MicrotusExtension.class)
 class SeatsTest {
@@ -43,10 +47,10 @@ class SeatsTest {
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
         player.teleport(new Pos(0, 64, 0));
-        Seats seats = new Seats(OFFSET);
+        Seats seats = new Seats();
 
         Pos sitLocation = new Pos(1, 65, 1);
-        seats.sit(player, sitLocation);
+        seats.sit(player, sitLocation, OFFSET);
 
         Assertions.assertTrue(seats.isSitting(player));
         Assertions.assertNotNull(player.getVehicle(), "the player must be riding the seat entity");
@@ -65,8 +69,8 @@ class SeatsTest {
         Player player = env.createPlayer(instance);
         Pos originalPosition = new Pos(3, 70, 3);
         player.teleport(originalPosition);
-        Seats seats = new Seats(OFFSET);
-        seats.sit(player, new Pos(5, 65, 5));
+        Seats seats = new Seats();
+        seats.sit(player, new Pos(5, 65, 5), OFFSET);
         var seat = player.getVehicle();
 
         seats.standUp(player);
@@ -83,7 +87,7 @@ class SeatsTest {
     void standUpOnANonSittingPlayerIsANoop(Env env) {
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
-        Seats seats = new Seats(OFFSET);
+        Seats seats = new Seats();
 
         Assertions.assertDoesNotThrow(() -> seats.standUp(player));
         Assertions.assertFalse(seats.isSitting(player));
@@ -95,11 +99,11 @@ class SeatsTest {
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
         player.teleport(new Pos(0, 64, 0));
-        Seats seats = new Seats(OFFSET);
-        seats.sit(player, new Pos(0, 64, 0));
+        Seats seats = new Seats();
+        seats.sit(player, new Pos(0, 64, 0), OFFSET);
         var firstSeat = player.getVehicle();
 
-        seats.sit(player, new Pos(10, 64, 10));
+        seats.sit(player, new Pos(10, 64, 10), OFFSET);
         var secondSeat = player.getVehicle();
 
         Assertions.assertTrue(seats.isSitting(player));
