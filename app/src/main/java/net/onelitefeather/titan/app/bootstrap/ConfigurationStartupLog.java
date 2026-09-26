@@ -35,9 +35,7 @@ public final class ConfigurationStartupLog {
      * The {@code avaje-config} key holding the currently active configuration profiles - the same
      * key {@code avaje-config} itself populates from {@code AVAJE_PROFILES}/
      * {@code -Davaje.profiles} (see
-     * {@code openspec/changes/standardized-config-profiles/design.md}, decision 6). Shared with
-     * {@code ConfigReloadBootstrap}, which reads it for the same reason ({@code
-     * ConfigFileWatcher.pathsFor}'s profile-specific files), so the literal exists exactly once.
+     * {@code openspec/changes/standardized-config-profiles/design.md}, decision 6).
      */
     public static final String ACTIVE_PROFILES_KEY = "avaje.profiles";
 

@@ -21,10 +21,9 @@ import java.util.Properties;
 
 /**
  * Flattens an {@code io.avaje.config.Configuration#asProperties()} result into the plain
- * {@code Map<String, String>} view {@link ConfigSnapshotSource} and {@link LiveConfig} both need -
- * shared by {@link AvajeConfigSnapshotSource} (a freshly built {@code Configuration}) and
- * {@link AvajeLiveConfig} (the live {@code Config.asConfiguration()}), so the two production
- * adapters agree on exactly one flattening rule.
+ * {@code Map<String, String>} view {@link ConfigChangeHandler}'s snapshot needs - used by
+ * {@link ConfigChangeBootstrap} to take that snapshot from {@code Config.asConfiguration()} at
+ * startup.
  */
 final class FlatConfigValues {
 

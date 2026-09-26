@@ -17,12 +17,12 @@ package net.onelitefeather.titan.app.bootstrap.reload;
 
 /**
  * Walks a {@link Throwable}'s cause chain down to its innermost cause and returns that cause's own
- * message - the piece both {@link ConfigFailureDetails} and {@link ConfigReloader} need, since a
- * wrapping exception's own message often names nothing but the fact that something was wrapped.
+ * message - the piece {@link ConfigChangeHandler} needs for its WARN line, since a wrapping
+ * exception's own message often names nothing but the fact that something was wrapped.
  *
  * <p>avaje-config 5.2's {@code Config.getAs(key, fn)} wraps any exception a module's conversion
  * function throws as {@code new IllegalStateException("Failed to convert key: " + key + " with
- * the provided function", e)} - so {@link ConfigReloader#describe} reusing this same walk is what
+ * the provided function", e)} - so {@link ConfigChangeHandler} reusing this same walk is what
  * turns that wrapper back into the module's own rejection reason (e.g. "must not be negative, was
  * -5") instead of "Failed to convert key: ...". See
  * {@code openspec/changes/config-reload-feature-flags/design.md}, decision 1 (DRY).
