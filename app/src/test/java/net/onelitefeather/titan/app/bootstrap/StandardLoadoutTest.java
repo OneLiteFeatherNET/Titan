@@ -13,48 +13,55 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.app.feature.elytra;
+package net.onelitefeather.titan.app.bootstrap;
 
+import io.avaje.inject.BeanScope;
 import java.util.List;
-import java.util.UUID;
+import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.EquipmentSlot;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.PlayerHand;
-import net.minestom.server.event.Event;
-import net.minestom.server.event.EventNode;
 import net.minestom.server.event.player.PlayerUseItemEvent;
+import net.minestom.server.instance.Instance;
+import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.inventory.AbstractInventory;
 import net.minestom.server.inventory.Inventory;
 import net.minestom.server.inventory.InventoryType;
-import net.minestom.server.instance.Instance;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
-import net.minestom.server.timer.Scheduler;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.app.feature.navigator.NavigatorItems;
+import net.onelitefeather.titan.app.feature.elytra.ElytraModule;
 import net.onelitefeather.titan.app.feature.navigator.NavigatorModule;
-import net.onelitefeather.titan.app.module.item.LobbyItem;
 import net.onelitefeather.titan.app.module.item.LobbyItems;
-import net.onelitefeather.titan.app.testutils.DummyDeliver;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
+import net.onelitefeather.titan.common.map.LobbyMap;
+import net.onelitefeather.titan.common.map.MapProvider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
 
 /**
- * Cross-feature coverage for the {@code lobby-hotbar} spec's "Standardausstattung": once
+ * Cross-feature coverage for the {@code lobby-hotbar} spec's "Standardausstattung", moved here (see
+ * {@code openspec/changes/dissolve-module-platform/tasks.md}, task 3 review fixes) once
+ * {@link NavigatorModule}'s lifecycle methods went back to package-private: a joining player must
+ * end up with exactly the feather in hotbar slot 4 and the elytra on the chestplate - nothing else
+ * - and using the feather must still open the (single, shared) navigator inventory, once
  * {@link NavigatorModule} and {@link ElytraModule} are both bean-based features contributing their
- * items through {@link LobbyItems}, a joining player must still end up with exactly the feather in
- * hotbar slot 4 and the elytra on the chestplate - nothing else - and using the feather must still
- * open the (single, shared) navigator inventory.
+ * items through {@link LobbyItems}.
  *
- * <p>Builds both features directly on one shared {@code titan} node, the way {@code PlatformBeans}
- * wires them in production, without a running {@code BeanScope} - see
- * {@code openspec/changes/dissolve-module-platform/tasks.md}, task 2.7's "mixed state" note: bean
- * items are dispatched only through {@link LobbyItems}, and equipping still yields the same lobby
- * loadout as before this change.
+ * <p>Driven through the real {@link BeanScope} - exactly the wiring {@code Titan} builds in
+ * production - rather than direct construction, since neither module's {@code start()}/
+ * {@code stop()} is reachable from this package any more.
+ *
+ * <p><strong>Why the scope is bound to {@code env}'s own instance:</strong> see
+ * {@code NavigatorProtectionOrderingTest}'s class Javadoc - the same real {@code SpawnModule}
+ * would otherwise redirect this test's joining player to {@code PlatformBeans}' own, ungenerated
+ * {@link InstanceContainer} and hang {@link Env#createPlayer} forever waiting for chunks that never
+ * load.
  */
 @ExtendWith(MicrotusExtension.class)
 class StandardLoadoutTest {
@@ -67,39 +74,16 @@ class StandardLoadoutTest {
 
     @DisplayName("A joining player gets exactly the feather (slot 4) and the elytra (chestplate), and the feather opens the navigator")
     @Test
+    @Timeout(30)
     void standardLoadoutHoldsAndTheFeatherOpensTheNavigator(Env env) {
-        EventNode<Event> titan = EventNode.all("test-titan-" + UUID.randomUUID());
-        env.process().eventHandler().addChild(titan);
+        Instance instance = env.createFlatInstance();
+        BeanScope scope = BeanScope.builder().forTesting().mock(FeatureFlags.class).mock(MapProvider.class, mapProvider -> Mockito.when(mapProvider.getActiveLobby()).thenReturn(new LobbyMap("test", new Pos(0, 65, 0), List.of()))).bean(InstanceContainer.class, (InstanceContainer) instance).bean(Instance.class, instance).build();
 
-        FeatureFlags alwaysActive = new FeatureFlags() {
-            @Override
-            public boolean exists(String featureName) {
-                return true;
-            }
-
-            @Override
-            public boolean isActive(String featureName) {
-                return true;
-            }
-        };
-        NavigatorModule navigator = new NavigatorModule(titan, DummyDeliver.instance(), alwaysActive);
-        FireworkBoostTracker boosts = new FireworkBoostTracker();
-        Scheduler scheduler = env.process().scheduler();
-        // ElytraModule needs LobbyItems before it can start (its offhand listener reads the
-        // stamped firework stack from it), so LobbyItems is built first from both features' real
-        // items - mirroring the order Avaje itself must use, since LobbyItems depends on the item
-        // beans, not on ElytraModule.
-        LobbyItem navigatorFeather = new NavigatorItems().navigatorFeather(navigator);
-        ElytraLobbyItems elytraItems = new ElytraLobbyItems();
-        LobbyItem elytraChestplate = elytraItems.elytraChestplate();
-        LobbyItem firework = elytraItems.firework(boosts);
-        LobbyItems lobbyItems = new LobbyItems(List.of(navigatorFeather, elytraChestplate, firework), titan);
-        ElytraModule elytra = new ElytraModule(titan, lobbyItems, boosts, scheduler);
-
-        navigator.start();
-        elytra.start();
         try {
-            Instance instance = env.createFlatInstance();
+            Assertions.assertNotNull(scope.get(NavigatorModule.class));
+            Assertions.assertNotNull(scope.get(ElytraModule.class));
+            LobbyItems lobbyItems = scope.get(LobbyItems.class);
+
             Player player = env.createPlayer(instance);
 
             lobbyItems.equip(player);
@@ -126,10 +110,7 @@ class StandardLoadoutTest {
             AbstractInventory reopened = openNavigatorFeather(env, player);
             Assertions.assertSame(openInventory, reopened, "the feather must always open the one shared navigator inventory, never a new one");
         } finally {
-            elytra.stop();
-            navigator.stop();
-            lobbyItems.stop();
-            env.process().eventHandler().removeChild(titan);
+            scope.close();
         }
     }
 }

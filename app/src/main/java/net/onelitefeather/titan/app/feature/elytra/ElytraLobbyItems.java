@@ -39,13 +39,12 @@ import net.onelitefeather.titan.app.module.item.LobbyItem;
  * io.avaje.config.Config.getInt} - see {@link ElytraSettings}'s own Javadoc for why: the
  * cross-field check only ever runs once, at {@link ElytraModule#start()}.
  *
- * <p>Public, unlike the rest of this feature's internals, because Avaje Inject's generated wiring
- * needs to reach these {@code @Bean} methods from outside this package once other factories are
- * aggregated - see {@code ArchitectureTest}'s {@code onlyModuleTypesArePublicInFeatures} rule and
- * this change's task list for the resulting exemption.
+ * <p>Package-private, like the rest of this feature's internals: Avaje Inject's generated wiring
+ * lives in the same package as the class it annotates, so it reaches these {@code @Bean} methods
+ * without either needing to be public.
  */
 @Factory
-public final class ElytraLobbyItems {
+final class ElytraLobbyItems {
 
     /**
      * The identity of the {@code titan:elytra} chestplate item; also read by {@link ElytraModule}.
@@ -64,7 +63,7 @@ public final class ElytraLobbyItems {
      */
     @Bean
     @Named("elytra-chestplate")
-    public LobbyItem elytraChestplate() {
+    LobbyItem elytraChestplate() {
         return new LobbyItem(FEATURE_ID, ELYTRA_KEY, ElytraItems.ELYTRA, ItemSlot.equipment(EquipmentSlot.CHESTPLATE), (player, event) -> {
         });
     }
@@ -77,7 +76,7 @@ public final class ElytraLobbyItems {
      */
     @Bean
     @Named("elytra-firework")
-    public LobbyItem firework(FireworkBoostTracker boosts) {
+    LobbyItem firework(FireworkBoostTracker boosts) {
         return new LobbyItem(FEATURE_ID, FIREWORK_KEY, ElytraItems.FIREWORK, ItemSlot.unplaced(), (player, event) -> {
             // Live, unvalidated read on every boost (see ElytraSettings' Javadoc): the strict,
             // cross-field check only ever runs once, in ElytraModule#start().

@@ -77,26 +77,15 @@ public final class ProtectionModule {
         this.titan = titan;
     }
 
-    /**
-     * Attaches this feature's own event node and registers every cancelling listener on it.
-     *
-     * <p>Public, unlike a typical feature's lifecycle methods, because
-     * {@code NavigatorProtectionOrderingTest} (in {@code app.feature.navigator}) builds this
-     * feature directly, alongside {@code NavigatorModule}, on one shared node to prove the two are
-     * independent of each other's start order.
-     */
+    /** Attaches this feature's own event node and registers every cancelling listener on it. */
     @PostConstruct
-    public void start() {
+    void start() {
         this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY).on(PickupItemEvent.class, Cancelable::cancel).on(InventoryPreClickEvent.class, Cancelable::cancel).on(PlayerBlockBreakEvent.class, Cancelable::cancel).on(PlayerBlockPlaceEvent.class, Cancelable::cancel).on(PlayerSwapItemEvent.class, Cancelable::cancel).on(ItemDropEvent.class, Cancelable::cancel);
     }
 
-    /**
-     * Detaches this feature's own event node, so none of the listeners above run again.
-     *
-     * <p>Public for the same reason as {@link #start()}.
-     */
+    /** Detaches this feature's own event node, so none of the listeners above run again. */
     @PreDestroy
-    public void stop() {
+    void stop() {
         this.node.close();
     }
 }

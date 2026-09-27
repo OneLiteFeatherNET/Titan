@@ -109,6 +109,14 @@ public final class LobbyItems {
     }
 
     /**
+     * @return how many {@link LobbyItem} beans this instance was built from - for a wiring/smoke
+     *         test to assert against, without exposing the items themselves
+     */
+    public int itemCount() {
+        return this.itemsByKey.size();
+    }
+
+    /**
      * @param key an item's key
      * @return the stamped stack for that item - for handing out an item with no fixed placement,
      *         such as the elytra feature's firework

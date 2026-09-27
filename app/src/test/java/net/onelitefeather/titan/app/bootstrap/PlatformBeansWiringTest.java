@@ -25,22 +25,23 @@ import net.onelitefeather.titan.common.map.MapProvider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Builds the real Avaje Inject {@link BeanScope}, exactly like {@code ModuleWiringTest}, and
- * proves the two beans {@link PlatformBeans} adds in this wave actually wire: {@link Scheduler}
- * resolves to the real scheduler manager, and {@link LobbyItems} builds successfully even though no
- * feature contributes a {@code @Bean LobbyItem} yet. Avaje Inject's list injection point for
- * {@code List<LobbyItem>} must tolerate being empty - if it did not, building the scope below would
- * throw. See {@code openspec/changes/dissolve-module-platform/tasks.md}, task 1.4.
+ * Builds the real Avaje Inject {@link BeanScope}, exactly like {@code WiringTest}, and proves the
+ * two platform beans {@link PlatformBeans} adds actually wire: {@link Scheduler} resolves to the
+ * real scheduler manager, and {@link LobbyItems} builds successfully from the item beans the
+ * features contribute. See {@code openspec/changes/dissolve-module-platform/tasks.md}, task 1.4;
+ * {@code WiringTest} additionally covers the exact item count and every feature bean.
  */
 @ExtendWith(MicrotusExtension.class)
+@Timeout(30)
 class PlatformBeansWiringTest {
 
-    @DisplayName("The scope resolves Scheduler and builds LobbyItems with an empty item list")
+    @DisplayName("The scope resolves Scheduler and builds LobbyItems")
     @Test
-    void scopeResolvesSchedulerAndBuildsLobbyItemsWithNoItems(Env env) {
+    void scopeResolvesSchedulerAndBuildsLobbyItems(Env env) {
         BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class).build();
 
         try {
@@ -48,7 +49,7 @@ class PlatformBeansWiringTest {
             LobbyItems lobbyItems = scope.get(LobbyItems.class);
 
             Assertions.assertNotNull(scheduler, "Scheduler must resolve to the real scheduler manager");
-            Assertions.assertNotNull(lobbyItems, "LobbyItems must build even with no LobbyItem beans contributed yet");
+            Assertions.assertNotNull(lobbyItems, "LobbyItems must build from the features' item beans");
         } finally {
             Assertions.assertDoesNotThrow(scope::close, "closing a fully built scope must not throw");
         }

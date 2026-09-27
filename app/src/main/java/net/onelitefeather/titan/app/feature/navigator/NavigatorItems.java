@@ -30,14 +30,12 @@ import net.onelitefeather.titan.app.module.item.LobbyItem;
  * NavigatorModule} used to register directly through {@code context.items()} (see {@code
  * openspec/changes/dissolve-module-platform/design.md}, decision 2).
  *
- * <p>Public, unlike the rest of this feature's internals, because Avaje Inject's generated wiring
- * needs to reach {@link #navigatorFeather(NavigatorModule)} from outside this package once other
- * factories are aggregated - see {@code ArchitectureTest}'s
- * {@code onlyModuleTypesArePublicInFeatures}
- * rule and this change's task list for the resulting exemption.
+ * <p>Package-private, like the rest of this feature's internals: Avaje Inject's generated wiring
+ * lives in the same package as the class it annotates, so it reaches
+ * {@link #navigatorFeather(NavigatorModule)} without either needing to be public.
  */
 @Factory
-public final class NavigatorItems {
+final class NavigatorItems {
 
     private static final String FEATURE_ID = "navigator";
     private static final Key ITEM_KEY = Key.key("titan:navigator");
@@ -49,7 +47,7 @@ public final class NavigatorItems {
      * @return the {@code titan:navigator} feather, fixed to hotbar slot {@value #HOTBAR_SLOT}
      */
     @Bean
-    public LobbyItem navigatorFeather(NavigatorModule navigator) {
+    LobbyItem navigatorFeather(NavigatorModule navigator) {
         ItemStack feather = ItemStack.builder(Material.FEATHER).customName(MiniMessage.miniMessage().deserialize("<!i><aqua>Navigator")).build();
         return new LobbyItem(FEATURE_ID, ITEM_KEY, feather, ItemSlot.hotbar(HOTBAR_SLOT), (player, event) -> navigator.open(player));
     }

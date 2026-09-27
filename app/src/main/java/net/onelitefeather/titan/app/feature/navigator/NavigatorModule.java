@@ -106,14 +106,9 @@ public final class NavigatorModule {
     /**
      * Attaches this feature's own (listener-less) event node, applies the current layout and
      * registers the shared Aves inventory.
-     *
-     * <p>Public, unlike a typical feature's lifecycle methods, because
-     * {@code StandardLoadoutTest} (in {@code app.feature.elytra}) builds this feature directly,
-     * alongside {@code ElytraModule}, to prove the standard lobby loadout still holds once both
-     * contribute their items as beans.
      */
     @PostConstruct
-    public void start() {
+    void start() {
         this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY);
         applyLayoutIfChanged();
         this.builder.register();
@@ -122,11 +117,9 @@ public final class NavigatorModule {
     /**
      * Detaches this feature's own event node, then unregisters the shared Aves inventory so no
      * further click reaches it.
-     *
-     * <p>Public for the same reason as {@link #start()}.
      */
     @PreDestroy
-    public void stop() {
+    void stop() {
         this.node.close();
         this.builder.unregister();
     }
