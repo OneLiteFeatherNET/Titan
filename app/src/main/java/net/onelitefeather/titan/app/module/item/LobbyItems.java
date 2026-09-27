@@ -51,6 +51,14 @@ import net.onelitefeather.titan.common.observability.TitanObservability;
  * placement - the standard lobby loadout is platform-wide, not limited to one feature's own items.
  * {@link #stack(Key)} hands back the stamped stack for an item with no fixed placement (the elytra
  * feature's firework, for instance), which a feature gives out and takes back itself.
+ *
+ * <h2>Threading</h2>
+ *
+ * <p>No synchronization guards {@link #itemsByKey}, {@link #hotbar} or {@link #equipment}: all three
+ * are immutable ({@link Map#copyOf}) and fully built by the constructor before
+ * {@link #dispatcher} - the only thing that reads them afterwards, on the tick thread, for every
+ * {@link PlayerUseItemEvent} - is ever registered. A reader can therefore never observe a partially
+ * built state, and nothing here is ever written again after construction.
  */
 @Singleton
 public final class LobbyItems {
@@ -80,8 +88,9 @@ public final class LobbyItems {
         ItemConflicts.check(items);
         this.titan = titan;
         this.itemsByKey = stampAll(items);
-        this.hotbar = hotbarOf(this.itemsByKey.values());
-        this.equipment = equipmentOf(this.itemsByKey.values());
+        Placements placements = placementsOf(this.itemsByKey.values());
+        this.hotbar = placements.hotbar();
+        this.equipment = placements.equipment();
         this.dispatcher = EventListener.of(PlayerUseItemEvent.class, this::dispatch);
         this.titan.addListener(this.dispatcher);
     }
@@ -127,24 +136,27 @@ public final class LobbyItems {
         return Map.copyOf(stamped);
     }
 
-    private static Map<Integer, ItemStack> hotbarOf(Collection<LobbyItem> items) {
-        Map<Integer, ItemStack> hotbarSlots = new LinkedHashMap<>();
-        for (LobbyItem item : items) {
-            if (item.placement() instanceof ItemSlot.Hotbar slot) {
-                hotbarSlots.put(slot.slot(), item.itemStack());
-            }
-        }
-        return Map.copyOf(hotbarSlots);
+    /**
+     * The hotbar and equipment slots {@link #equip(Player)} fills, computed once in a single pass
+     * over every item - mirroring {@link EquipPlan#from(Collection)}.
+     */
+    private record Placements(Map<Integer, ItemStack> hotbar, Map<EquipmentSlot, ItemStack> equipment) {
     }
 
-    private static Map<EquipmentSlot, ItemStack> equipmentOf(Collection<LobbyItem> items) {
+    private static Placements placementsOf(Collection<LobbyItem> items) {
+        Map<Integer, ItemStack> hotbarSlots = new LinkedHashMap<>();
         Map<EquipmentSlot, ItemStack> equipmentSlots = new LinkedHashMap<>();
         for (LobbyItem item : items) {
-            if (item.placement() instanceof ItemSlot.Equipment slot) {
-                equipmentSlots.put(slot.slot(), item.itemStack());
+            switch (item.placement()) {
+                case ItemSlot.Hotbar slot -> hotbarSlots.put(slot.slot(), item.itemStack());
+                case ItemSlot.Equipment slot -> equipmentSlots.put(slot.slot(), item.itemStack());
+                case ItemSlot.Unplaced ignored -> {
+                    // Given out and taken back by the owning feature itself; equip() never places
+                    // it.
+                }
             }
         }
-        return Map.copyOf(equipmentSlots);
+        return new Placements(Map.copyOf(hotbarSlots), Map.copyOf(equipmentSlots));
     }
 
     private void dispatch(PlayerUseItemEvent event) {
