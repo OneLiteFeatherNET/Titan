@@ -26,6 +26,7 @@ import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.InstanceContainer;
+import net.minestom.server.timer.Scheduler;
 import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.app.module.LobbySpawn;
 import net.onelitefeather.titan.app.module.item.ItemRegistry;
@@ -152,5 +153,15 @@ public final class PlatformBeans {
     @Bean
     public Clock clock() {
         return Clock.systemUTC();
+    }
+
+    /**
+     * @return the server's scheduler manager, so a feature that plans a task (e.g. the elytra
+     *         boost) asks for a {@link Scheduler} through its constructor instead of reaching for
+     *         {@link MinecraftServer#getSchedulerManager()} itself
+     */
+    @Bean
+    public Scheduler scheduler() {
+        return MinecraftServer.getSchedulerManager();
     }
 }
