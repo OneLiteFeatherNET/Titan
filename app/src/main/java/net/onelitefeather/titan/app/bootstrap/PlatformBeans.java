@@ -20,6 +20,7 @@ import io.avaje.inject.Factory;
 import jakarta.inject.Named;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.util.List;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
@@ -28,6 +29,7 @@ import net.minestom.server.instance.InstanceContainer;
 import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.app.module.LobbySpawn;
 import net.onelitefeather.titan.app.module.item.ItemRegistry;
+import net.onelitefeather.titan.app.module.item.LobbyItem;
 import net.onelitefeather.titan.common.deliver.DeliverProvider;
 import net.onelitefeather.titan.common.feature.ConfigFeatureFlags;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
@@ -117,11 +119,18 @@ public final class PlatformBeans {
     /**
      * @param titanNode the shared event node {@link #titanEventNode()} attached to the global
      *                  handler; the registry's dispatch listener attaches to it immediately
+     * @param items     every {@link LobbyItem} bean a migrated feature already contributes,
+     *                  bridged into this registry too - see {@code items}' Javadoc and
+     *                  {@link ItemRegistry#registerBridged(List)}. TODO(dissolve-module-platform,
+     *                  task 3.1): remove this parameter and the bridge call below once
+     *                  {@code ItemRegistry} is deleted
      * @return the platform-wide registry of hotbar/equipment items every module registers through
      */
     @Bean
-    public ItemRegistry itemRegistry(@Named(TITAN_NODE_NAME) EventNode<Event> titanNode) {
-        return new ItemRegistry(titanNode);
+    public ItemRegistry itemRegistry(@Named(TITAN_NODE_NAME) EventNode<Event> titanNode, List<LobbyItem> items) {
+        ItemRegistry registry = new ItemRegistry(titanNode);
+        registry.registerBridged(items);
+        return registry;
     }
 
     /**

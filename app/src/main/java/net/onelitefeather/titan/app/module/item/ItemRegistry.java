@@ -64,6 +64,13 @@ public final class ItemRegistry {
      */
     public static final Tag<String> IDENTITY_TAG = Tag.String("titan:item");
 
+    /**
+     * TODO(dissolve-module-platform, task 3.1): remove alongside {@link #registerBridged(List)}.
+     * The synthetic "module id" a bean-provided {@link LobbyItem} is attributed to once
+     * {@link #registerBridged(List)} registers it here.
+     */
+    private static final String BRIDGE_MODULE_ID = "lobby-items-bridge";
+
     private final Map<String, Registration> registrations = new LinkedHashMap<>();
     private final List<DuplicateItemKeyDetector.Claim> keyClaims = new ArrayList<>();
     private final DuplicateItemKeyDetector duplicateKeyDetector = new DuplicateItemKeyDetector();
@@ -85,6 +92,24 @@ public final class ItemRegistry {
      */
     public ModuleItems contextView(String moduleId, Consumer<Runnable> onDisable) {
         return new ModuleItemsImpl(moduleId, this, onDisable);
+    }
+
+    /**
+     * TODO(dissolve-module-platform, task 3.1): remove this bridge once {@code ItemRegistry} is
+     * deleted.
+     *
+     * <p>Registers every {@link LobbyItem} bean {@code LobbyItems} was built from here too, so a
+     * feature that has not yet migrated off {@code ModuleItems} still equips players with them via
+     * {@code context.items().equip(...)} - see
+     * {@code openspec/changes/dissolve-module-platform/tasks.md}, task 1.3 execution plan. Harmless
+     * while {@code items} is empty, which it is until the first {@code @Bean LobbyItem} exists.
+     *
+     * @param items every item {@code PlatformBeans} collected as a bean, in injection order
+     */
+    public void registerBridged(List<LobbyItem> items) {
+        for (LobbyItem item : items) {
+            register(BRIDGE_MODULE_ID, item);
+        }
     }
 
     /**
