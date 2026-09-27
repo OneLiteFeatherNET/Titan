@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
  * One destination shown in the shared navigator inventory - fixed in code, per
  * {@code openspec/changes/navigator-entries-in-code/design.md}, decision 2: the navigator's
  * targets change rarely and only alongside a release, so a Java {@code enum} replaces the former
- * {@code navigator.entries} configuration section and the platform-wide entry registry.
+ * navigator configuration section and the platform-wide entry registry.
  *
  * <p>Slot, icon and display name match the values the lobby shipped in
  * {@code application.yaml} before this change - see the {@code lobby-navigator} spec's
