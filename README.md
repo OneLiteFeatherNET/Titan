@@ -223,23 +223,14 @@ sitting stays sitting even if `sit.offset.*` changes underneath them, and a play
 keeps that boost even if `elytra.burnDurationTicks`/`elytra.cooldownTicks` change; the new value
 only applies the next time each is used.
 
-If the live value for a key - or, for a few settings that are validated together
-(`spawn.minHeight`/`spawn.maxHeight`, `elytra.burnDurationTicks`/`elytra.cooldownTicks`), the whole
-group; the navigator's `navigator.entries` falls back as its entire set - turns out invalid, the
-lobby uses the shipped classpath default for that one setting instead, without affecting any other
-setting or module. The log names the key and the reason at WARN, once per key per newly seen
-invalid value:
-
-```
-Invalid configuration value for {}: {} ({}), using shipped default {}
-```
-
-The same invalid value does not warn again on a later read; a different invalid value for the same
-key warns again. This fallback only applies to a value that becomes invalid at runtime - an invalid
-value found at startup still aborts the start, unchanged from before. If a watched file is not
-valid YAML after a change, avaje-config itself logs the file and the location of the error at
-ERROR (over `java.util.logging`, not the lobby's own SLF4J-backed logs) and applies no value from
-it; every other changed file is still applied.
+Configuration is validated only once, at startup - an invalid value found there still aborts the
+start, unchanged from before. A live read, at the point of use, is never re-validated and never
+falls back to a shipped classpath default: an invalid value simply takes effect (e.g. a negative
+`tickle.cooldownMillis`) or makes that one read/action fail (e.g. the navigator's next open, if
+`navigator.entries` turns out invalid), until an operator corrects the file - validate a value
+before saving it. If a watched file is not valid YAML after a change, avaje-config itself logs the
+file and the location of the error at ERROR (over `java.util.logging`, not the lobby's own
+SLF4J-backed logs) and applies no value from it; every other changed file is still applied.
 
 **Accepted limits of this built-in watcher** (see `design.md`, decision 1, in
 `openspec/changes/config-reload-feature-flags`):
@@ -261,11 +252,11 @@ configuration key - a profile's file, an external file, an environment variable
 (`FEATURES_NAVIGATOR_SLENDER`), or a system property. The five flags the lobby ships with, all
 `false` by default: `NAVIGATOR_CREATIVE`, `NAVIGATOR_SLENDER`, `NAVIGATOR_MANIS`,
 `NAVIGATOR_SURVIVAL` and `NAVIGATOR_ELYTRA`. A flag not listed in the shipped defaults is unknown -
-a navigator entry naming it aborts startup. Changed later, while the lobby is running, to name an
-unknown flag (or to an otherwise invalid entry), the navigator falls back to the shipped default
-entries the next time it is opened instead, and the log names `navigator.entries` and the reason at
-WARN. Changing a flag's own value takes effect the next time the navigator is opened, without
-restarting any module or the lobby.
+a navigator entry naming it aborts startup. Configuration is validated only once, at startup:
+changed later, while the lobby is running, to name an unknown flag (or to an otherwise invalid
+entry), the navigator does not fall back to anything - the next open simply fails instead, until
+an operator corrects the entry. Changing a flag's own value takes effect the next time the
+navigator is opened, without restarting any module or the lobby.
 
 ### Migrating from `flags.properties`
 
@@ -376,10 +367,10 @@ Avaje Inject - there is no central module list to edit:
 - The actual start order is visible at runtime in one INFO log line:
   `Lobby modules enabled in order: {}`.
 - A module that reads configuration reads it live, at the point it is used, not just once in
-  `enable()` - see [`docs/lobby-modules.md`](docs/lobby-modules.md) for the pattern (a
-  `current()`-style method on the module's own `*Settings`, backed by the shared
-  `RuntimeConfigFallback`). That is what makes the runtime reload described under "Runtime
-  reloading" above apply to a module without it ever restarting.
+  `enable()` - see [`docs/lobby-modules.md`](docs/lobby-modules.md) for the pattern (a direct
+  `Config.<method>(key)` call at the use site, unvalidated - configuration is validated only once,
+  at startup). That is what makes the runtime reload described under "Runtime reloading" above
+  apply to a module without it ever restarting.
 
 See [`docs/lobby-modules.md`](docs/lobby-modules.md) (German) for the full walkthrough - module
 anatomy, `ModuleContext` dock points, tick-thread rules, test setup with `ModuleHarness`, the
