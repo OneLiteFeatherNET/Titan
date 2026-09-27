@@ -97,7 +97,7 @@ public final class NavigatorModule implements LobbyModule {
         applyLayoutIfChanged();
 
         ItemStack feather = ItemStack.builder(Material.FEATHER).customName(MiniMessage.miniMessage().deserialize("<!i><aqua>Navigator")).build();
-        context.items().register(new LobbyItem(ITEM_KEY, feather, ItemSlot.hotbar(HOTBAR_SLOT), (player, event) -> {
+        context.items().register(new LobbyItem(ID, ITEM_KEY, feather, ItemSlot.hotbar(HOTBAR_SLOT), (player, event) -> {
             applyLayoutIfChanged();
             player.openInventory(this.builder.getInventory());
         }));

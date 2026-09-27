@@ -61,7 +61,7 @@ class RespawnModuleTest {
 
         @Override
         public void enable(ModuleContext context) {
-            context.items().register(new LobbyItem(TEST_ITEM_KEY, ItemStack.of(Material.FEATHER), ItemSlot.hotbar(0), (usedBy, event) -> {
+            context.items().register(new LobbyItem("respawn-test-item", TEST_ITEM_KEY, ItemStack.of(Material.FEATHER), ItemSlot.hotbar(0), (usedBy, event) -> {
             }));
         }
     }

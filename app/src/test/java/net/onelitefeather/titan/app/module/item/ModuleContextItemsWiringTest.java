@@ -64,7 +64,7 @@ class ModuleContextItemsWiringTest {
 
             @Override
             public void enable(ModuleContext context) {
-                context.items().register(new LobbyItem(Key.key(key), ItemStack.of(Material.FEATHER), placement, (player, event) -> {
+                context.items().register(new LobbyItem(id, Key.key(key), ItemStack.of(Material.FEATHER), placement, (player, event) -> {
                 }));
             }
         };
@@ -98,7 +98,7 @@ class ModuleContextItemsWiringTest {
             @Override
             public void enable(ModuleContext context) {
                 capturedContext.set(context);
-                context.items().register(new LobbyItem(Key.key("titan:elytra"), ItemStack.of(Material.ELYTRA), ItemSlot.equipment(EquipmentSlot.CHESTPLATE), (player, event) -> {
+                context.items().register(new LobbyItem("elytra", Key.key("titan:elytra"), ItemStack.of(Material.ELYTRA), ItemSlot.equipment(EquipmentSlot.CHESTPLATE), (player, event) -> {
                 }));
             }
         };
@@ -132,7 +132,7 @@ class ModuleContextItemsWiringTest {
             @Override
             public void enable(ModuleContext context) {
                 itemsView.set(context.items());
-                stampedStack.set(context.items().register(new LobbyItem(Key.key("titan:navigator"), ItemStack.of(Material.FEATHER), ItemSlot.hotbar(4), (usedBy, event) -> handledFor.add(usedBy))));
+                stampedStack.set(context.items().register(new LobbyItem("navigator", Key.key("titan:navigator"), ItemStack.of(Material.FEATHER), ItemSlot.hotbar(4), (usedBy, event) -> handledFor.add(usedBy))));
             }
         };
         ModuleRegistry registry = builder(env, parent).modules(module).build();

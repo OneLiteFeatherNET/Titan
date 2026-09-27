@@ -70,7 +70,7 @@ class SpawnModuleTest {
 
         @Override
         public void enable(ModuleContext context) {
-            context.items().register(new LobbyItem(Key.key("titan:test-dummy"), ItemStack.of(Material.STICK), ItemSlot.hotbar(0), (player, event) -> {
+            context.items().register(new LobbyItem("dummy-item", Key.key("titan:test-dummy"), ItemStack.of(Material.STICK), ItemSlot.hotbar(0), (player, event) -> {
             }));
         }
     }

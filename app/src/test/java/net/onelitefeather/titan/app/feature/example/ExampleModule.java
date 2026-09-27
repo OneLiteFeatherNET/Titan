@@ -144,7 +144,7 @@ public final class ExampleModule implements LobbyModule {
 
         // items(): register a hotbar item; ItemRegistry stamps it and dispatches its use back to
         // the handler below - see ModuleItems#register.
-        context.items().register(new LobbyItem(Key.key("titan:example"), ExampleItems.GREETING_TOKEN, ItemSlot.hotbar(GREETING_TOKEN_SLOT), (player, event) -> greet(player, tracker)));
+        context.items().register(new LobbyItem("example", Key.key("titan:example"), ExampleItems.GREETING_TOKEN, ItemSlot.hotbar(GREETING_TOKEN_SLOT), (player, event) -> greet(player, tracker)));
 
         // commands(): register a command; ModuleCommands unregisters it again once this module is
         // disabled - see ModuleCommands#register.

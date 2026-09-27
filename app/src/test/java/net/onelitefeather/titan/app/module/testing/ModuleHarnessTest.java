@@ -153,7 +153,7 @@ class ModuleHarnessTest {
 
             @Override
             public void enable(ModuleContext context) {
-                context.items().register(new LobbyItem(Key.key("titan:test-item"), ItemStack.of(Material.FEATHER), ItemSlot.hotbar(0), (usedBy, event) -> {
+                context.items().register(new LobbyItem("wiring", Key.key("titan:test-item"), ItemStack.of(Material.FEATHER), ItemSlot.hotbar(0), (usedBy, event) -> {
                 }));
             }
         };
@@ -217,7 +217,7 @@ class ModuleHarnessTest {
             // Registers through the exact instance this module was constructed with, the same way
             // a module needing the harness's registry up front - before enable() runs - would.
             this.constructedWith.contextView(this.id(), cleanup -> {
-            }).register(new LobbyItem(Key.key("titan:needs-item-registry"), ItemStack.of(Material.COMPASS), ItemSlot.hotbar(0), (usedBy, event) -> {
+            }).register(new LobbyItem(this.id(), Key.key("titan:needs-item-registry"), ItemStack.of(Material.COMPASS), ItemSlot.hotbar(0), (usedBy, event) -> {
             }));
         }
     }

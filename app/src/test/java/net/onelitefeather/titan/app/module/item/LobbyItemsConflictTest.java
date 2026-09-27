@@ -35,7 +35,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 class LobbyItemsConflictTest {
 
     private static LobbyItem item(String key, Material material, ItemSlot placement) {
-        return new LobbyItem(Key.key(key), ItemStack.of(material), placement, (player, event) -> {
+        return new LobbyItem("test-feature", Key.key(key), ItemStack.of(material), placement, (player, event) -> {
         });
     }
 

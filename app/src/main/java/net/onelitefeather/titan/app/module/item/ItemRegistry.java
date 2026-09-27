@@ -150,7 +150,7 @@ public final class ItemRegistry {
     synchronized ItemStack register(String moduleId, LobbyItem item) {
         this.keyClaims.add(new DuplicateItemKeyDetector.Claim(moduleId, item.key().asString()));
         ItemStack stamped = item.itemStack().withTag(IDENTITY_TAG, item.key().asString());
-        LobbyItem stampedItem = new LobbyItem(item.key(), stamped, item.placement(), item.onUse());
+        LobbyItem stampedItem = new LobbyItem(item.featureId(), item.key(), stamped, item.placement(), item.onUse());
         this.registrations.put(item.key().asString(), new Registration(moduleId, stampedItem));
         return stamped;
     }

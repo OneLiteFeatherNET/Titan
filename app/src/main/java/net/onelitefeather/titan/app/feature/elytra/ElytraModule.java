@@ -76,9 +76,9 @@ public final class ElytraModule implements LobbyModule {
         ElytraSettings.cooldownTicks(Config.getAs(ElytraSettings.COOLDOWN_TICKS_KEY, Integer::parseInt), burnDurationTicksAtStartup);
         FireworkBoostTracker boosts = new FireworkBoostTracker();
 
-        context.items().register(new LobbyItem(Key.key("titan:elytra"), ElytraItems.ELYTRA, ItemSlot.equipment(EquipmentSlot.CHESTPLATE), (player, event) -> {
+        context.items().register(new LobbyItem("elytra", Key.key("titan:elytra"), ElytraItems.ELYTRA, ItemSlot.equipment(EquipmentSlot.CHESTPLATE), (player, event) -> {
         }));
-        ItemStack stampedFirework = context.items().register(new LobbyItem(Key.key("titan:firework"), ElytraItems.FIREWORK, ItemSlot.unplaced(), (player, event) -> {
+        ItemStack stampedFirework = context.items().register(new LobbyItem("elytra", Key.key("titan:firework"), ElytraItems.FIREWORK, ItemSlot.unplaced(), (player, event) -> {
             // Live, unvalidated read on every boost (see design.md, decision 1): the strict,
             // cross-field check above only ever runs once, at startup
             // (refactor/drop-runtime-fallback).

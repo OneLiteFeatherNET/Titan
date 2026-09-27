@@ -122,7 +122,7 @@ public final class LobbyItems {
         Map<String, LobbyItem> stamped = new LinkedHashMap<>();
         for (LobbyItem item : items) {
             ItemStack stampedStack = item.itemStack().withTag(IDENTITY_TAG, item.key().asString());
-            stamped.put(item.key().asString(), new LobbyItem(item.key(), stampedStack, item.placement(), item.onUse()));
+            stamped.put(item.key().asString(), new LobbyItem(item.featureId(), item.key(), stampedStack, item.placement(), item.onUse()));
         }
         return Map.copyOf(stamped);
     }
@@ -156,7 +156,7 @@ public final class LobbyItems {
         if (item == null) {
             return;
         }
-        Consumer<PlayerUseItemEvent> handler = TitanObservability.guard(keyValue, (PlayerUseItemEvent guardedEvent) -> item.onUse().handle(guardedEvent.getPlayer(), guardedEvent));
+        Consumer<PlayerUseItemEvent> handler = TitanObservability.guard(item.featureId(), (PlayerUseItemEvent guardedEvent) -> item.onUse().handle(guardedEvent.getPlayer(), guardedEvent));
         handler.accept(event);
     }
 }

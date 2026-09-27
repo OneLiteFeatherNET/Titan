@@ -54,7 +54,7 @@ class ItemRegistryIntegrationTest {
         List<Player> handledFor = new ArrayList<>();
         ModuleItems items = registry.contextView("navigator", cleanup -> {
         });
-        ItemStack stamped = items.register(new LobbyItem(Key.key("titan:navigator"), ItemStack.of(Material.FEATHER), ItemSlot.hotbar(4), (usedBy, event) -> handledFor.add(usedBy)));
+        ItemStack stamped = items.register(new LobbyItem("navigator", Key.key("titan:navigator"), ItemStack.of(Material.FEATHER), ItemSlot.hotbar(4), (usedBy, event) -> handledFor.add(usedBy)));
 
         platformNode.call(new PlayerUseItemEvent(player, PlayerHand.MAIN, stamped, 0L));
 
@@ -70,7 +70,7 @@ class ItemRegistryIntegrationTest {
         Player player = env.createPlayer(instance);
         List<Player> handledFor = new ArrayList<>();
         registry.contextView("navigator", cleanup -> {
-        }).register(new LobbyItem(Key.key("titan:navigator"), ItemStack.of(Material.FEATHER), ItemSlot.hotbar(4), (usedBy, event) -> handledFor.add(usedBy)));
+        }).register(new LobbyItem("navigator", Key.key("titan:navigator"), ItemStack.of(Material.FEATHER), ItemSlot.hotbar(4), (usedBy, event) -> handledFor.add(usedBy)));
 
         platformNode.call(new PlayerUseItemEvent(player, PlayerHand.MAIN, ItemStack.of(Material.FEATHER), 0L));
 
@@ -86,9 +86,9 @@ class ItemRegistryIntegrationTest {
         Player player = env.createPlayer(instance);
         ModuleItems items = registry.contextView("spawn", cleanup -> {
         });
-        ItemStack navigatorStack = items.register(new LobbyItem(Key.key("titan:navigator"), ItemStack.of(Material.FEATHER), ItemSlot.hotbar(4), (usedBy, event) -> {
+        ItemStack navigatorStack = items.register(new LobbyItem("spawn", Key.key("titan:navigator"), ItemStack.of(Material.FEATHER), ItemSlot.hotbar(4), (usedBy, event) -> {
         }));
-        ItemStack elytraStack = items.register(new LobbyItem(Key.key("titan:elytra"), ItemStack.of(Material.ELYTRA), ItemSlot.equipment(EquipmentSlot.CHESTPLATE), (usedBy, event) -> {
+        ItemStack elytraStack = items.register(new LobbyItem("spawn", Key.key("titan:elytra"), ItemStack.of(Material.ELYTRA), ItemSlot.equipment(EquipmentSlot.CHESTPLATE), (usedBy, event) -> {
         }));
 
         registry.equip(player);

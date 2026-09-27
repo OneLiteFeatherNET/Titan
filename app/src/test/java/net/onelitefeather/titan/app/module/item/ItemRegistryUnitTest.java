@@ -42,7 +42,7 @@ class ItemRegistryUnitTest {
     }
 
     private static LobbyItem item(String key, ItemSlot placement) {
-        return new LobbyItem(Key.key(key), ItemStack.of(Material.FEATHER), placement, (player, event) -> {
+        return new LobbyItem("test-feature", Key.key(key), ItemStack.of(Material.FEATHER), placement, (player, event) -> {
         });
     }
 

@@ -35,7 +35,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 class EquipPlanTest {
 
     private static LobbyItem item(String key, ItemStack stack, ItemSlot placement) {
-        return new LobbyItem(Key.key(key), stack, placement, (player, event) -> {
+        return new LobbyItem("test-feature", Key.key(key), stack, placement, (player, event) -> {
         });
     }
 
