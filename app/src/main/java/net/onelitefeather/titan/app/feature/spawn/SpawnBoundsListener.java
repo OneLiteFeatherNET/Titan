@@ -31,7 +31,7 @@ import net.minestom.server.event.player.PlayerMoveEvent;
  * {@code Config.getInt(...)}, rather than once at construction, so a changed
  * {@code spawn.minHeight}/{@code maxHeight} applies to the very next height check, without a
  * module restart (see {@code openspec/changes/config-reload-feature-flags/design.md}, decision
- * 1). The cross-field check in {@link SpawnModule#enable} only ever runs once, at startup
+ * 1). The cross-field check in {@link SpawnModule#start()} only ever runs once, at startup
  * (see {@code refactor/drop-runtime-fallback}): this per-move read is never re-validated and
  * never falls back to a shipped default.
  */

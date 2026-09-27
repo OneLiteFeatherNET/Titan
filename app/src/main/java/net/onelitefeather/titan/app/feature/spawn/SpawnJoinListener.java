@@ -23,27 +23,27 @@ import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.player.PlayerSpawnEvent;
 import net.minestom.server.network.packet.server.play.UpdateSimulationDistancePacket;
-import net.onelitefeather.titan.app.module.item.ModuleItems;
+import net.onelitefeather.titan.app.module.item.ItemRegistry;
 
 /**
  * Reacts to a player spawning in the lobby: sends the configured simulation distance, teleports
  * the player to the lobby spawn, and equips them with the platform-wide standard loadout via
- * {@link ModuleItems#equip(Player)}. Reads {@link SpawnSettings#SIMULATION_DISTANCE_KEY} itself,
+ * {@link ItemRegistry#equip(Player)}. Reads {@link SpawnSettings#SIMULATION_DISTANCE_KEY} itself,
  * live and unvalidated via {@code Config.getInt(...)}, on every join rather than once at
  * construction - see {@code openspec/changes/config-reload-feature-flags/design.md}, decision 1:
  * a changed value applies to the next player who joins, without a module restart. The strict
- * check in {@link SpawnModule#enable} only ever runs once, at startup (see
+ * check in {@link SpawnModule#start()} only ever runs once, at startup (see
  * {@code refactor/drop-runtime-fallback}). Joining is far less frequent than a tick, so building a
  * fresh packet per join (instead of a {@code CachedPacket} built once) is unremarkable.
  */
 final class SpawnJoinListener implements Consumer<PlayerSpawnEvent> {
 
     private final Supplier<Pos> spawnPosition;
-    private final ModuleItems items;
+    private final ItemRegistry itemRegistry;
 
-    SpawnJoinListener(Supplier<Pos> spawnPosition, ModuleItems items) {
+    SpawnJoinListener(Supplier<Pos> spawnPosition, ItemRegistry itemRegistry) {
         this.spawnPosition = spawnPosition;
-        this.items = items;
+        this.itemRegistry = itemRegistry;
     }
 
     @Override
@@ -51,6 +51,6 @@ final class SpawnJoinListener implements Consumer<PlayerSpawnEvent> {
         Player player = event.getPlayer();
         player.sendPacket(new UpdateSimulationDistancePacket(Config.getInt(SpawnSettings.SIMULATION_DISTANCE_KEY)));
         Optional.ofNullable(this.spawnPosition.get()).ifPresent(player::teleport);
-        this.items.equip(player);
+        this.itemRegistry.equip(player);
     }
 }

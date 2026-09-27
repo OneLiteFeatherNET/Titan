@@ -16,16 +16,20 @@
 package net.onelitefeather.titan.app.feature.spawn;
 
 import io.avaje.config.Config;
-import io.avaje.inject.Priority;
+import io.avaje.inject.PostConstruct;
+import io.avaje.inject.PreDestroy;
+import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import java.util.Objects;
+import net.minestom.server.event.Event;
+import net.minestom.server.event.EventNode;
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent;
 import net.minestom.server.event.player.PlayerMoveEvent;
 import net.minestom.server.event.player.PlayerSpawnEvent;
 import net.minestom.server.instance.Instance;
-import net.onelitefeather.titan.app.module.LobbyModule;
+import net.onelitefeather.titan.app.module.FeatureNode;
 import net.onelitefeather.titan.app.module.LobbySpawn;
-import net.onelitefeather.titan.app.module.ModuleContext;
+import net.onelitefeather.titan.app.module.item.ItemRegistry;
 
 /**
  * Puts a joining player into the lobby and keeps them inside its height bounds.
@@ -49,32 +53,47 @@ import net.onelitefeather.titan.app.module.ModuleContext;
  * hand in a plain {@code () -> pos} instead of building a real map provider. {@link LobbySpawn}
  * rather than a bare {@code Supplier<Pos>} is what makes this bean unambiguous for the dependency
  * injection container to wire - see that decision for why.
+ *
+ * <p>An {@code @Singleton} bean (see
+ * {@code openspec/changes/dissolve-module-platform/design.md}, decision 1): {@link #start()}
+ * attaches this feature's own {@link FeatureNode} once the container builds this bean, and
+ * {@link #stop()} detaches it again when the container is closed - there is no separate
+ * enable/disable step outside the bean lifecycle any more.
  */
 @Singleton
-@Priority(200)
-public final class SpawnModule implements LobbyModule {
+public final class SpawnModule {
+
+    static final int EVENT_PRIORITY = 200;
 
     private final Instance instance;
     private final LobbySpawn spawnPosition;
+    private final EventNode<Event> titan;
+    private final ItemRegistry itemRegistry;
+    private FeatureNode node;
 
     /**
      * @param instance      the instance a configuring player spawns into
      * @param spawnPosition supplies the current lobby spawn position; may return {@code null} if
      *                      the lobby map has none, in which case no respawn point or teleport is
      *                      applied
+     * @param titan         the shared event node this feature's own node attaches under
+     * @param itemRegistry  equips the joining player with the platform's standard loadout.
+     *                      TODO(dissolve-module-platform, task 3.1): read from the
+     *                      {@code LobbyItems} bean directly once every feature's items are beans -
+     *                      until then this bridges to items that not-yet-migrated features (e.g.
+     *                      navigator, elytra) still register with the old platform, see
+     *                      {@code openspec/changes/dissolve-module-platform/tasks.md} execution
+     *                      plan
      */
-    public SpawnModule(Instance instance, LobbySpawn spawnPosition) {
+    public SpawnModule(Instance instance, LobbySpawn spawnPosition, @Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, ItemRegistry itemRegistry) {
         this.instance = Objects.requireNonNull(instance, "instance");
         this.spawnPosition = Objects.requireNonNull(spawnPosition, "spawnPosition");
+        this.titan = Objects.requireNonNull(titan, "titan");
+        this.itemRegistry = Objects.requireNonNull(itemRegistry, "itemRegistry");
     }
 
-    @Override
-    public String id() {
-        return "spawn";
-    }
-
-    @Override
-    public void enable(ModuleContext context) {
+    @PostConstruct
+    void start() {
         // Abort startup on an invalid value (unchanged behaviour); neither result is kept - the
         // listeners below read the live values again on every join/move (see design.md,
         // decision 1).
@@ -82,8 +101,11 @@ public final class SpawnModule implements LobbyModule {
         SpawnSettings.minHeight(Config.getAs(SpawnSettings.MIN_HEIGHT_KEY, Integer::parseInt), maxHeightAtStartup);
         Config.getAs(SpawnSettings.SIMULATION_DISTANCE_KEY, SpawnSettings::simulationDistance);
 
-        context.listen(AsyncPlayerConfigurationEvent.class, new SpawnConfigurationListener(this.instance, this.spawnPosition::position));
-        context.listen(PlayerSpawnEvent.class, new SpawnJoinListener(this.spawnPosition::position, context.items()));
-        context.listen(PlayerMoveEvent.class, new SpawnBoundsListener(this.spawnPosition::position));
+        this.node = FeatureNode.attach(this.titan, "spawn", EVENT_PRIORITY).on(AsyncPlayerConfigurationEvent.class, new SpawnConfigurationListener(this.instance, this.spawnPosition::position)).on(PlayerSpawnEvent.class, new SpawnJoinListener(this.spawnPosition::position, this.itemRegistry)).on(PlayerMoveEvent.class, new SpawnBoundsListener(this.spawnPosition::position));
+    }
+
+    @PreDestroy
+    void stop() {
+        this.node.close();
     }
 }
