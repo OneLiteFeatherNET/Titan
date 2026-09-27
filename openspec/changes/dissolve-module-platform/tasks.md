@@ -46,7 +46,7 @@ Pro Feature, test-first: bestehende Integrationstests auf direkten Aufbau umstel
 
 ## 4. Review
 
-- [ ] 4.1 Design-Review (Sonnet) und Mechanik-Review (Haiku) parallel, beide read-only, gegen die Deltas von `lobby-modules` und `lobby-hotbar`, KISS, built-in first und F.I.R.S.T. Nachweis: Beide Berichte sind ohne offene Befunde, oder die Befunde sind von einem Sonnet-Agent behoben.
+- [x] 4.1 Design-Review (Sonnet) und Mechanik-Review (Haiku) parallel, beide read-only, gegen die Deltas von `lobby-modules` und `lobby-hotbar`, KISS, built-in first und F.I.R.S.T. Nachweis: Beide Berichte sind ohne offene Befunde, oder die Befunde sind von einem Sonnet-Agent behoben.
 
 ## 5. Pull Request
 
