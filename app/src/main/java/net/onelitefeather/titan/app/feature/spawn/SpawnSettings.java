@@ -15,10 +15,6 @@
  */
 package net.onelitefeather.titan.app.feature.spawn;
 
-import io.avaje.config.Config;
-import io.avaje.config.Configuration;
-import net.onelitefeather.titan.common.config.RuntimeConfigFallback;
-
 /**
  * Pure parsing and validation for the {@code spawn} section's values, kept apart from however
  * those values are read ({@link SpawnModule#enable}, via {@code io.avaje.config.Config}).
@@ -28,7 +24,12 @@ import net.onelitefeather.titan.common.config.RuntimeConfigFallback;
  * {@code getAs} wraps any exception it throws into an {@code IllegalStateException} naming the key
  * once, keeping this method's own exception as the cause. {@link #minHeight(int, int)} is a
  * cross-field check - it needs both already-parsed heights - so {@link SpawnModule#enable} calls
- * it itself, after reading both values; its own message therefore names both full keys.
+ * it itself, after reading both values; its own message therefore names both full keys. Both
+ * checks run exactly once, at startup: {@link SpawnBoundsListener} and {@link SpawnJoinListener}
+ * read their keys again on every move/join, live and unvalidated, via
+ * {@code io.avaje.config.Config.getInt} - see {@code openspec/changes/config-reload-feature-flags/
+ * design.md}, decision 2, as amended by {@code refactor/drop-runtime-fallback}: a runtime read is
+ * never re-validated and never falls back to a shipped default.
  *
  * <p>The keys themselves are declared here as constants, the one place this module's config
  * section is named (see {@code design.md}, decision 3), and reused by {@link SpawnModule#enable}
@@ -39,15 +40,6 @@ final class SpawnSettings {
     static final String MIN_HEIGHT_KEY = "spawn.minHeight";
     static final String MAX_HEIGHT_KEY = "spawn.maxHeight";
     static final String SIMULATION_DISTANCE_KEY = "spawn.simulationDistance";
-
-    /**
-     * The composite {@link RuntimeConfigFallback#resolve} key for {@link #currentHeightBounds()}:
-     * {@link #MIN_HEIGHT_KEY} and {@link #MAX_HEIGHT_KEY} are cross-validated together (a valid
-     * {@code minHeight} depends on the already-parsed {@code maxHeight}), so there is no single
-     * "one key's own shipped default" to substitute for just one of them - an invalid group falls
-     * the pair back to the shipped defaults together.
-     */
-    static final String HEIGHT_BOUNDS_KEY = "spawn.heightBounds";
 
     private SpawnSettings() {
     }
@@ -89,92 +81,4 @@ final class SpawnSettings {
         return simulationDistance;
     }
 
-    /**
-     * Both live height bounds, read together since {@link #minHeight(int, int)} is a cross-field
-     * check against the (possibly already-fallen-back) max height.
-     *
-     * @param minHeight the lowest {@code y} coordinate a player may fall to
-     * @param maxHeight the highest {@code y} coordinate a player may rise to
-     */
-    record HeightSettings(int minHeight, int maxHeight) {
-    }
-
-    /**
-     * {@link #MIN_HEIGHT_KEY}'s and {@link #MAX_HEIGHT_KEY}'s raw, not-yet-parsed live values,
-     * read together since a valid {@code minHeightRaw} can only be checked against the
-     * already-parsed {@code maxHeightRaw} - the raw pair {@link RuntimeConfigFallback#resolve}
-     * caches per {@link #HEIGHT_BOUNDS_KEY} to detect a persistently invalid group without
-     * re-parsing it.
-     *
-     * @param minHeightRaw the configured min height, as text
-     * @param maxHeightRaw the configured max height, as text
-     */
-    record RawHeightBounds(String minHeightRaw, String maxHeightRaw) {
-    }
-
-    /**
-     * Parses and cross-validates {@link #MIN_HEIGHT_KEY} and {@link #MAX_HEIGHT_KEY} together -
-     * the {@link RuntimeConfigFallback#resolve} {@code parseAndValidate} function for
-     * {@link #currentHeightBounds()}. Built on {@link #minHeight(int, int)} rather than
-     * duplicating its rule.
-     *
-     * @param raw the raw live pair to parse and cross-validate
-     * @return the parsed, valid height bounds
-     * @throws NumberFormatException    if either raw value does not parse as an {@code int}; the
-     *                                  message names whichever of {@link #MIN_HEIGHT_KEY} or
-     *                                  {@link #MAX_HEIGHT_KEY} failed to parse
-     * @throws IllegalArgumentException if {@code minHeightRaw} is not less than
-     *                                  {@code maxHeightRaw}; see {@link #minHeight(int, int)}
-     */
-    static HeightSettings parseHeightBounds(RawHeightBounds raw) {
-        int maxHeight = parseHeightComponent(MAX_HEIGHT_KEY, raw.maxHeightRaw());
-        int parsedMinHeight = parseHeightComponent(MIN_HEIGHT_KEY, raw.minHeightRaw());
-        return new HeightSettings(minHeight(parsedMinHeight, maxHeight), maxHeight);
-    }
-
-    private static int parseHeightComponent(String key, String raw) {
-        try {
-            return Integer.parseInt(raw);
-        } catch (NumberFormatException e) {
-            throw new NumberFormatException(key + ": " + e.getMessage());
-        }
-    }
-
-    /**
-     * @param shipped the shipped classpath defaults to read {@link #MIN_HEIGHT_KEY} and
-     *                {@link #MAX_HEIGHT_KEY} from
-     * @return the shipped height bounds - the {@link RuntimeConfigFallback#resolve}
-     *         {@code shippedDefault} supplier for {@link #currentHeightBounds()}, evaluated only
-     *         if the live pair is invalid
-     */
-    static HeightSettings shippedHeightBounds(Configuration shipped) {
-        return new HeightSettings(shipped.getInt(MIN_HEIGHT_KEY), shipped.getInt(MAX_HEIGHT_KEY));
-    }
-
-    /**
-     * Reads both height bounds live through the static facade, resolving an invalid or
-     * persistently-invalid runtime value to its shipped default via the process-wide
-     * {@link RuntimeConfigFallback}. Called directly by {@link SpawnBoundsListener} on every move
-     * (see {@code openspec/changes/config-reload-feature-flags/design.md}, decision 1) - the
-     * shipped defaults are read only if the live pair turns out invalid, never on every call.
-     *
-     * @return the current, valid height bounds
-     */
-    static HeightSettings currentHeightBounds() {
-        RuntimeConfigFallback fallback = RuntimeConfigFallback.shared();
-        RawHeightBounds raw = new RawHeightBounds(Config.get(MIN_HEIGHT_KEY), Config.get(MAX_HEIGHT_KEY));
-        return fallback.resolve(HEIGHT_BOUNDS_KEY, raw, SpawnSettings::parseHeightBounds, () -> shippedHeightBounds(fallback.shippedDefaults()));
-    }
-
-    /**
-     * Reads the simulation distance live through the static facade, resolving an invalid runtime
-     * value to the shipped default via the process-wide {@link RuntimeConfigFallback}. Called
-     * directly by {@link SpawnJoinListener} on every join.
-     *
-     * @return the current, valid simulation distance
-     */
-    static int currentSimulationDistance() {
-        RuntimeConfigFallback fallback = RuntimeConfigFallback.shared();
-        return fallback.resolve(SIMULATION_DISTANCE_KEY, Config.get(SIMULATION_DISTANCE_KEY), SpawnSettings::simulationDistance, () -> fallback.shippedDefaults().getInt(SIMULATION_DISTANCE_KEY));
-    }
 }

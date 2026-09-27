@@ -15,19 +15,16 @@
  */
 package net.onelitefeather.titan.app.feature.elytra;
 
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
-import io.avaje.config.Configuration;
-import net.onelitefeather.titan.common.config.RuntimeConfigFallback;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.slf4j.LoggerFactory;
 
 /**
  * Unit coverage for {@link ElytraSettings}'s validation of {@code burnDurationTicks} and
- * {@code cooldownTicks} - no {@code Config} and no server involved.
+ * {@code cooldownTicks} - no {@code Config} and no server involved. Both checks run only once, at
+ * startup, in {@link ElytraModule#enable}: the {@code titan:firework} item's use handler reads
+ * both keys again on every boost, live and unvalidated, via {@code Config.getInt(...)} (see
+ * {@code refactor/drop-runtime-fallback}), so there is no runtime counterpart to test here.
  */
 class ElytraSettingsTest {
 
@@ -77,77 +74,5 @@ class ElytraSettingsTest {
 
         Assertions.assertTrue(exception.getMessage().contains(ElytraSettings.COOLDOWN_TICKS_KEY), "the message must name " + ElytraSettings.COOLDOWN_TICKS_KEY);
         Assertions.assertTrue(exception.getMessage().contains(ElytraSettings.BURN_DURATION_TICKS_KEY), "the message must name " + ElytraSettings.BURN_DURATION_TICKS_KEY);
-    }
-
-    private static RuntimeConfigFallback freshFallback() {
-        return new RuntimeConfigFallback(Configuration.builder().build());
-    }
-
-    @DisplayName("parseBoostSettings passes a valid pair through unchanged")
-    @Test
-    void parseBoostSettingsPassesAValidPairThrough() {
-        ElytraSettings.BoostSettings result = ElytraSettings.parseBoostSettings(new ElytraSettings.RawBoostSettings("30", "40"));
-
-        Assertions.assertEquals(30, result.burnDurationTicks());
-        Assertions.assertEquals(40, result.cooldownTicks());
-    }
-
-    @DisplayName("parseBoostSettings rejects a cooldown not longer than the burn, naming both full keys")
-    @Test
-    void parseBoostSettingsRejectsACooldownNotLongerThanTheBurn() {
-        IllegalArgumentException thrown = Assertions.assertThrows(IllegalArgumentException.class, () -> ElytraSettings.parseBoostSettings(new ElytraSettings.RawBoostSettings("30", "10")));
-
-        Assertions.assertTrue(thrown.getMessage().contains(ElytraSettings.COOLDOWN_TICKS_KEY), "the message must name " + ElytraSettings.COOLDOWN_TICKS_KEY);
-        Assertions.assertTrue(thrown.getMessage().contains(ElytraSettings.BURN_DURATION_TICKS_KEY), "the message must name " + ElytraSettings.BURN_DURATION_TICKS_KEY);
-    }
-
-    @DisplayName("resolve passes a valid boost settings pair through unchanged, without warning")
-    @Test
-    void resolveBoostSettingsPassesAValidPairThrough() {
-        Logger logger = (Logger) LoggerFactory.getLogger(RuntimeConfigFallback.class);
-        ListAppender<ILoggingEvent> appender = new ListAppender<>();
-        appender.start();
-        logger.addAppender(appender);
-
-        try {
-            ElytraSettings.BoostSettings result = freshFallback().resolve(ElytraSettings.BOOST_SETTINGS_KEY, new ElytraSettings.RawBoostSettings("30", "40"), ElytraSettings::parseBoostSettings, () -> new ElytraSettings.BoostSettings(1, 2));
-
-            Assertions.assertEquals(30, result.burnDurationTicks());
-            Assertions.assertEquals(40, result.cooldownTicks());
-            Assertions.assertTrue(appender.list.isEmpty(), "a valid pair must never warn");
-        } finally {
-            logger.detachAppender(appender);
-        }
-    }
-
-    @DisplayName("resolve falls back to the shipped boost settings and warns once when the cooldown is not longer than the burn")
-    @Test
-    void resolveBoostSettingsFallsBackAndWarnsWhenNotLongerThanTheBurn() {
-        Logger logger = (Logger) LoggerFactory.getLogger(RuntimeConfigFallback.class);
-        ListAppender<ILoggingEvent> appender = new ListAppender<>();
-        appender.start();
-        logger.addAppender(appender);
-
-        try {
-            ElytraSettings.BoostSettings shippedDefault = new ElytraSettings.BoostSettings(30, 40);
-            ElytraSettings.BoostSettings result = freshFallback().resolve(ElytraSettings.BOOST_SETTINGS_KEY, new ElytraSettings.RawBoostSettings("30", "10"), ElytraSettings::parseBoostSettings, () -> shippedDefault);
-
-            Assertions.assertEquals(shippedDefault, result, "an invalid pair must fall back to the shipped boost settings");
-            Assertions.assertEquals(1, appender.list.size(), "exactly one WARN must be logged for a new invalid pair");
-            Assertions.assertEquals(ElytraSettings.BOOST_SETTINGS_KEY, appender.list.get(0).getArgumentArray()[0]);
-        } finally {
-            logger.detachAppender(appender);
-        }
-    }
-
-    @DisplayName("shippedBoostSettings reads burnDurationTicks and cooldownTicks from the given configuration")
-    @Test
-    void shippedBoostSettingsReadsFromTheGivenConfiguration() {
-        Configuration shipped = Configuration.builder().put(ElytraSettings.BURN_DURATION_TICKS_KEY, "30").put(ElytraSettings.COOLDOWN_TICKS_KEY, "40").build();
-
-        ElytraSettings.BoostSettings result = ElytraSettings.shippedBoostSettings(shipped);
-
-        Assertions.assertEquals(30, result.burnDurationTicks());
-        Assertions.assertEquals(40, result.cooldownTicks());
     }
 }

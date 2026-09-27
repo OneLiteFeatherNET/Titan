@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.app.feature.tickle;
 
+import io.avaje.config.Config;
 import java.time.Clock;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -34,10 +35,12 @@ import net.minestom.server.tag.Tag;
  *
  * <p>Reads "now" from an injected {@link Clock} instead of {@link System#currentTimeMillis()} and
  * parses the tickle message once per attack - sent to the {@linkplain Instance instance's} own
- * audience - instead of once per recipient. Reads the configured cooldown itself, via
- * {@link TickleSettings#current()}, on every attack rather than once at construction - see
- * {@code openspec/changes/config-reload-feature-flags/design.md}, decision 1: a changed value
- * applies to the very next attack, without a module restart.
+ * audience - instead of once per recipient. Reads the configured cooldown itself, live, via
+ * {@code Config.getLong(TickleSettings.COOLDOWN_KEY)}, on every attack rather than once at
+ * construction - see {@code openspec/changes/config-reload-feature-flags/design.md}, decision 1: a
+ * changed value applies to the very next attack, without a module restart. That read is never
+ * re-validated (the strict check in {@link TickleModule#enable} only ever runs once, at startup);
+ * an invalid live value simply takes effect.
  *
  * <p>Keeps today's observable behaviour unchanged, including its two known bugs, tracked by the
  * follow-up change {@code tickle-cooldown} rather than fixed here: the {@link SetCooldownPacket}
@@ -88,7 +91,7 @@ final class TickleAttackHandler implements Consumer<EntityAttackEvent> {
     }
 
     private void tickle(Player player, Player target, Instance instance, long now) {
-        long cooldownExpiryMillis = TickleCooldownRule.expiryAfter(now, TickleSettings.current());
+        long cooldownExpiryMillis = TickleCooldownRule.expiryAfter(now, Config.getLong(TickleSettings.COOLDOWN_KEY));
         player.setTag(COOLDOWN_EXPIRY, cooldownExpiryMillis);
 
         SetCooldownPacket cooldownPacket = new SetCooldownPacket(player.getItemInOffHand().material().name(), (int) (cooldownExpiryMillis / 20));

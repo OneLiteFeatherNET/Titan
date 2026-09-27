@@ -79,9 +79,13 @@ public final class ElytraModule implements LobbyModule {
         context.items().register(new LobbyItem(Key.key("titan:elytra"), ElytraItems.ELYTRA, ItemSlot.equipment(EquipmentSlot.CHESTPLATE), (player, event) -> {
         }));
         ItemStack stampedFirework = context.items().register(new LobbyItem(Key.key("titan:firework"), ElytraItems.FIREWORK, ItemSlot.unplaced(), (player, event) -> {
-            ElytraSettings.BoostSettings settings = ElytraSettings.current();
-            if (boosts.requestBoost(player.getUuid(), settings.burnDurationTicks(), settings.cooldownTicks(), player.isFlyingWithElytra())) {
-                FireworkRockets.fire(player, settings.burnDurationTicks(), settings.cooldownTicks());
+            // Live, unvalidated read on every boost (see design.md, decision 1): the strict,
+            // cross-field check above only ever runs once, at startup
+            // (refactor/drop-runtime-fallback).
+            int burnDurationTicks = Config.getInt(ElytraSettings.BURN_DURATION_TICKS_KEY);
+            int cooldownTicks = Config.getInt(ElytraSettings.COOLDOWN_TICKS_KEY);
+            if (boosts.requestBoost(player.getUuid(), burnDurationTicks, cooldownTicks, player.isFlyingWithElytra())) {
+                FireworkRockets.fire(player, burnDurationTicks, cooldownTicks);
             }
         }));
 

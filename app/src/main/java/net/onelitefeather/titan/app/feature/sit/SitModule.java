@@ -20,6 +20,7 @@ import io.avaje.inject.Priority;
 import jakarta.inject.Singleton;
 import java.util.List;
 import net.kyori.adventure.key.Key;
+import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.Entity;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.EventDispatcher;
@@ -74,9 +75,14 @@ public final class SitModule implements LobbyModule {
         Seats seats = new Seats();
 
         context.listen(PlayerBlockInteractEvent.class, event -> {
-            List<Key> allowedBlocks = SitSettings.currentAllowedBlocks();
+            // Live, unvalidated read on every interaction (see design.md, decision 1): the
+            // strict check above only ever runs once, at startup (refactor/drop-runtime-fallback).
+            List<Key> allowedBlocks = Config.list().of(SitSettings.ALLOWED_BLOCKS_KEY).stream().map(SitSettings::parseBlock).toList();
             if (isAllowedBlock(allowedBlocks, event.getBlock().key())) {
-                seats.sit(event.getPlayer(), event.getBlockPosition(), SitSettings.currentOffset());
+                double x = Config.getAs(SitSettings.OFFSET_X_KEY, Double::parseDouble);
+                double y = Config.getAs(SitSettings.OFFSET_Y_KEY, Double::parseDouble);
+                double z = Config.getAs(SitSettings.OFFSET_Z_KEY, Double::parseDouble);
+                seats.sit(event.getPlayer(), event.getBlockPosition(), new Vec(x, y, z));
             }
         });
 

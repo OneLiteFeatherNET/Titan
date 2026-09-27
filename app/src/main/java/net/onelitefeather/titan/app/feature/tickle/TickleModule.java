@@ -38,8 +38,9 @@ import net.onelitefeather.titan.app.module.ModuleContext;
  * {@link TickleSettings#cooldownMillis(String)}'s strict validation, purely to abort startup on
  * an invalid value (unchanged behaviour from {@code avaje-config-facade}); the result is
  * discarded. {@link TickleAttackHandler} reads the live value itself, on every attack, via
- * {@link TickleSettings#current()} - see {@code openspec/changes/config-reload-feature-flags/
- * design.md}, decision 1.
+ * {@code Config.getLong(TickleSettings.COOLDOWN_KEY)} - see {@code openspec/changes/
+ * config-reload-feature-flags/design.md}, decision 1 - without re-validating it: configuration is
+ * validated only at startup (see {@code refactor/drop-runtime-fallback}).
  */
 @Singleton
 @Priority(600)

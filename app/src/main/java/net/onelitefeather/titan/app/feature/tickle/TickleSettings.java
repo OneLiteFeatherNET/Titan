@@ -15,9 +15,6 @@
  */
 package net.onelitefeather.titan.app.feature.tickle;
 
-import io.avaje.config.Config;
-import net.onelitefeather.titan.common.config.RuntimeConfigFallback;
-
 /**
  * Pure parsing and validation for the {@code tickle} module's configuration value (see
  * {@code openspec/changes/avaje-config-facade/design.md}, decisions 3 and 4).
@@ -31,13 +28,14 @@ import net.onelitefeather.titan.common.config.RuntimeConfigFallback;
  * exception as the cause (key in the message, reason in the cause chain - verified against
  * avaje-config 5.2's {@code CoreConfiguration#getAs}).
  *
- * <p>{@link #current()} is the runtime counterpart (see {@code openspec/changes/
- * config-reload-feature-flags/design.md}, decision 2): it reads the live value through the
- * facade and resolves it via the shared {@link RuntimeConfigFallback#resolve}, built on top of
- * {@link #cooldownMillis(String)} rather than duplicating its rule - an invalid or
- * persistently-invalid value falls back to the shipped default instead of throwing, with the WARN
- * deduplicated by {@link RuntimeConfigFallback}. Used by {@link TickleAttackHandler} on every
- * attack.
+ * <p>{@link TickleAttackHandler} reads {@link #COOLDOWN_KEY} itself, live, via
+ * {@code io.avaje.config.Config.getLong(COOLDOWN_KEY)} on every attack (see
+ * {@code openspec/changes/config-reload-feature-flags/design.md}, decision 2, as amended by
+ * {@code refactor/drop-runtime-fallback}): configuration is validated only once, at startup, in
+ * {@link TickleModule#enable}; a runtime read is never re-validated and never falls back to a
+ * shipped default - an invalid live value simply takes effect (here, a negative or unparsable
+ * value would throw out of {@link TickleAttackHandler}, failing that one attack) until an
+ * operator corrects it.
  */
 final class TickleSettings {
 
@@ -62,21 +60,5 @@ final class TickleSettings {
             throw new IllegalArgumentException("must not be negative, was " + millis);
         }
         return millis;
-    }
-
-    /**
-     * Reads {@link #COOLDOWN_KEY} live through the static facade, resolving an invalid or
-     * persistently-invalid runtime value to the shipped default via the process-wide
-     * {@link RuntimeConfigFallback}. Called directly by {@link TickleAttackHandler} on every
-     * attack (see design.md, decision 1: a pull, not a push) rather than once in
-     * {@link TickleModule#enable}, so a changed value applies to the very next attack without a
-     * module restart - the shipped default is read only if the live value turns out invalid,
-     * never on every call.
-     *
-     * @return the current, valid cooldown in milliseconds
-     */
-    static long current() {
-        RuntimeConfigFallback fallback = RuntimeConfigFallback.shared();
-        return fallback.resolve(COOLDOWN_KEY, Config.get(COOLDOWN_KEY), TickleSettings::cooldownMillis, () -> fallback.shippedDefaults().getAs(COOLDOWN_KEY, Long::parseLong));
     }
 }

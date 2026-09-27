@@ -40,7 +40,6 @@ import net.onelitefeather.titan.app.module.item.ItemSlot;
 import net.onelitefeather.titan.app.module.item.LobbyItem;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntry;
-import net.onelitefeather.titan.common.config.RuntimeConfigFallback;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
 
 /**
@@ -95,10 +94,13 @@ import net.onelitefeather.titan.common.feature.FeatureFlags;
  * inventory, which reads {@link #currentTitle()} - applied via
  * {@link NavigatorInventory#applyTitleIfChanged(Component)} - and {@link #currentEntries()},
  * which it re-attributes to this module's own id in {@link #entries} (replacing this module's
- * previous contribution, leaving any other module's entries untouched). Unlike the one strict
- * read in {@link #enable}, an unknown feature name or an invalid entry found on a later open does
- * not abort anything: it falls back to the shipped default entries instead, via the shared
- * {@link RuntimeConfigFallback}, logging a deduplicated WARN.
+ * previous contribution, leaving any other module's entries untouched). Configuration is
+ * validated only once, at startup: unlike the one strict read in {@link #enable} - which still
+ * aborts the whole start on an unknown feature name or an invalid entry - a later open never
+ * re-validates or falls back to a shipped default (see {@code refactor/drop-runtime-fallback}).
+ * An unknown feature name or an invalid entry found on a later open therefore fails that one open
+ * instead: {@link #currentEntries()} throws out of the item's use handler, so the inventory does
+ * not open for that click, until an operator corrects the value.
  */
 @Singleton
 @Priority(400)
@@ -157,9 +159,10 @@ public final class NavigatorModule implements LobbyModule {
      * open, before {@link NavigatorInventory#current()} (see {@code openspec/changes/
      * config-reload-feature-flags/design.md}, decisions 1 and 2): a changed
      * {@code navigator.title} or {@code navigator.entries} applies to the very next open, without
-     * a module restart. Unlike {@link #enable}'s one strict read, an invalid value found here
-     * falls back to the shipped default instead of aborting anything - see
-     * {@link #currentTitle()} and {@link #currentEntries()}.
+     * a module restart. Unlike {@link #enable}'s one strict read, an invalid value found here is
+     * never re-validated against a fallback - it simply fails this one open (see
+     * {@code refactor/drop-runtime-fallback}) - see {@link #currentTitle()} and
+     * {@link #currentEntries()}.
      */
     private void refreshFromConfig() {
         this.navigatorInventory.applyTitleIfChanged(currentTitle());
@@ -181,42 +184,32 @@ public final class NavigatorModule implements LobbyModule {
      * @return the current, valid navigator entries, resolved via {@link #resolveEntries}
      */
     private List<NavigatorEntry> currentEntries() {
-        RuntimeConfigFallback fallback = RuntimeConfigFallback.shared();
-        return resolveEntries(Config.asConfiguration(), fallback.shippedDefaults(), this.featureFlags, fallback);
+        return resolveEntries(Config.asConfiguration(), this.featureFlags);
     }
 
     /**
      * The runtime counterpart of {@link #enable}'s strict entry read: reads every entry under
      * {@code navigator.entries} from {@code live} as a raw, not-yet-parsed snapshot (see
-     * {@link #rawEntrySection(Configuration)}) - so a repeated call with an unchanged section
-     * never re-parses or re-validates it, via {@link RuntimeConfigFallback#resolve} - then builds
-     * and validates it, additionally checking every entry's optional feature name against
-     * {@code featureFlags} (unlike {@link #readEntries(Configuration)} alone, which knows nothing
-     * about feature flags at all). If that fails for any reason - an unknown feature name, an
-     * out-of-range slot, an unknown material, a blank destination - the whole set falls back to
-     * {@code shipped}'s own entries instead (see {@code design.md}, decision 2: there is no
-     * meaningful "just this one entry's own shipped default" to substitute for a setting that is
-     * a whole list), and {@code fallback} logs a deduplicated WARN naming {@link #ENTRIES_PATH}
-     * and the reason. {@code shipped} is read only if {@code live} turns out invalid, never on
-     * every call.
+     * {@link #rawEntrySection(Configuration)}), then builds and validates it, additionally
+     * checking every entry's optional feature name against {@code featureFlags} (unlike
+     * {@link #readEntries(Configuration)} alone, which knows nothing about feature flags at all).
+     * Configuration is validated only once, at startup (see {@code refactor/drop-runtime-fallback}
+     * ): if that fails for any reason - an unknown feature name, an out-of-range slot, an unknown
+     * material, a blank destination - it throws, failing this one open, instead of falling back to
+     * a shipped default.
      *
-     * <p>Takes {@code live}, {@code shipped} and {@code fallback} as plain parameters - never
-     * touching the static {@code io.avaje.config.Config} facade itself - so a test can build both
-     * {@link Configuration} instances directly (e.g.
-     * {@code Configuration.builder().put(key, value).build()}) instead of relying on a real
-     * classpath resource (see {@code openspec/changes/config-reload-feature-flags/tasks.md}, task
-     * 3.6: "Unit-Tests prüfen die reinen Prüf- und Rückfallfunktionen mit einfachen Werten").
+     * <p>Takes {@code live} as a plain parameter - never touching the static
+     * {@code io.avaje.config.Config} facade itself - so a test can build a {@link Configuration}
+     * instance directly (e.g. {@code Configuration.builder().put(key, value).build()}) instead of
+     * relying on a real classpath resource.
      *
      * @param live         the live configuration to read {@code navigator.entries} from
-     * @param shipped      the shipped classpath defaults to fall back to as a whole
      * @param featureFlags the source of truth an entry's optional feature gate is checked against
-     * @param fallback     deduplicates the WARN line for a repeated invalid value
-     * @return the resolved navigator entries: {@code live}'s own, or {@code shipped}'s if any of
-     *         {@code live}'s is invalid
+     * @return the resolved navigator entries
+     * @throws RuntimeException if any entry is invalid, or names an unknown feature
      */
-    static List<NavigatorEntry> resolveEntries(Configuration live, Configuration shipped, FeatureFlags featureFlags, RuntimeConfigFallback fallback) {
-        SortedMap<String, String> raw = rawEntrySection(live);
-        return fallback.resolve(ENTRIES_PATH, raw, section -> buildKnownEntries(section, featureFlags), () -> readEntries(shipped));
+    static List<NavigatorEntry> resolveEntries(Configuration live, FeatureFlags featureFlags) {
+        return buildKnownEntries(rawEntrySection(live), featureFlags);
     }
 
     /**
@@ -278,10 +271,8 @@ public final class NavigatorModule implements LobbyModule {
      * Reads {@code navigator.entries} from {@code configuration} as a raw, not-yet-parsed
      * snapshot: every relative key {@code configuration.forPath(ENTRIES_PATH).keys()} returns
      * (e.g. {@code survival.slot}, {@code survival.icon}) mapped to its plain string value. A
-     * {@link SortedMap} rather than {@link Configuration} itself, precisely so two calls against
-     * an unchanged section produce {@code equals()} results - the raw value
-     * {@link RuntimeConfigFallback#resolve} compares to detect a persistently invalid section
-     * without re-parsing or re-validating it.
+     * {@link SortedMap} rather than {@link Configuration} itself, so {@link #buildEntries} can
+     * read it without any {@code io.avaje.config.Config}/{@link Configuration} type of its own.
      *
      * @param configuration the source to read {@code navigator.entries} from
      * @return every relative key under {@code navigator.entries}, mapped to its raw value
@@ -304,8 +295,7 @@ public final class NavigatorModule implements LobbyModule {
      * {@link NavigatorEntry} by {@link #toNavigatorEntry}. Deliberately free of any
      * {@code io.avaje.config.Config}/{@link Configuration} type - unlike {@link #readEntries},
      * this does not know whether {@code raw} came from the live facade or the shipped classpath
-     * defaults - so {@link #buildKnownEntries} can run it against a raw snapshot
-     * {@link RuntimeConfigFallback#resolve} has already decided is worth (re-)validating.
+     * defaults - so {@link #buildKnownEntries} can reuse it for the live, unvalidated re-read too.
      *
      * @param raw one {@code navigator.entries} section's raw, not-yet-parsed values (see
      *            {@link #rawEntrySection(Configuration)})
