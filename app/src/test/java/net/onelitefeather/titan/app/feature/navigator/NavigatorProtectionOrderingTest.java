@@ -41,15 +41,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * on its own, module-scoped event node, via the default, cancellation-skipping
  * {@code ModuleContext#listen}. {@link NavigatorModule} registers no
  * {@link InventoryPreClickEvent} listener of its own at all, on any node, so it is never in a race
- * with {@link ProtectionModule} to begin with: its navigator inventory is built by Aves
- * ({@code feature.navigator.NavigatorInventory}), whose click handler is mapped directly onto that
- * inventory rather than hung off a regular {@link net.minestom.server.event.EventNode}, and
- * Minestom dispatches a mapped inventory's handlers before it walks any event node's listener chain
- * - including {@link ProtectionModule}'s. By the time {@link ProtectionModule}'s node could cancel
- * the click, Aves' handler has already cancelled it, forwarded the click through {@code Deliver}
- * and
- * closed the inventory. Both enable orders are exercised here to demonstrate that this ordering
- * never depended on which module started first.
+ * with {@link ProtectionModule} to begin with: its shared inventory is built by Aves, whose click
+ * handler is mapped directly onto that inventory rather than hung off a regular
+ * {@link net.minestom.server.event.EventNode}, and Minestom dispatches a mapped inventory's
+ * handlers before it walks any event node's listener chain - including {@link ProtectionModule}'s.
+ * By the time {@link ProtectionModule}'s node could cancel the click, Aves' handler has already
+ * cancelled it, forwarded the click through {@code Deliver} and closed the inventory. Both enable
+ * orders are exercised here to demonstrate that this ordering never depended on which module
+ * started first.
  */
 @ExtendWith(MicrotusExtension.class)
 class NavigatorProtectionOrderingTest {
@@ -68,12 +67,11 @@ class NavigatorProtectionOrderingTest {
 
     private void assertNavigatorClickForwards(Env env, boolean navigatorFirst) {
         RecordingDeliver deliver = new RecordingDeliver();
+        NavigatorModule navigatorModule = new NavigatorModule(deliver, new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", true));
+        ProtectionModule protectionModule = new ProtectionModule();
+        LobbyModule[] modules = navigatorFirst ? new LobbyModule[]{navigatorModule, protectionModule} : new LobbyModule[]{protectionModule, navigatorModule};
 
-        try (ModuleHarness harness = ModuleHarness.start(env, (navigator, items) -> {
-            NavigatorModule navigatorModule = new NavigatorModule(deliver, navigator, new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", true));
-            ProtectionModule protectionModule = new ProtectionModule();
-            return navigatorFirst ? new LobbyModule[]{navigatorModule, protectionModule} : new LobbyModule[]{protectionModule, navigatorModule};
-        })) {
+        try (ModuleHarness harness = ModuleHarness.start(env, modules)) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             harness.items().equip(player);

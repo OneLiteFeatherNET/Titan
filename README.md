@@ -71,10 +71,6 @@ system property is `-Dspawn.simulationDistance=...`. A list value is set as a si
 comma-separated value via an environment variable or system property, e.g.
 `SIT_ALLOWEDBLOCKS=minecraft:oak_stairs,minecraft:spruce_stairs`.
 
-A navigator entry is a named map entry rather than a plain record field, so its keys follow the
-pattern `NAVIGATOR_ENTRIES_<NAME>_<FIELD>`, `<NAME>` being the entry's map key, upper-cased - e.g.
-`navigator.entries.survival.destination` becomes `NAVIGATOR_ENTRIES_SURVIVAL_DESTINATION`.
-
 An invalid value - from `application.yaml`, a profile or an override - aborts startup with a
 message naming the full key (`<module-id>.<field>`) and the reason (e.g. a negative cooldown, or
 `spawn.minHeight` not less than `spawn.maxHeight`). An unknown or misspelled key is no longer
@@ -103,31 +99,6 @@ elytra:
   burnDurationTicks: 30
   cooldownTicks: 40
 
-navigator:
-  title: "<yellow>Navigator"
-  entries:
-    elytrarace:
-      slot: 0
-      icon: minecraft:elytra
-      displayName: "<!i><gradient:#fcba03:#03fc8c>ElytraRace</gradient>"
-      destination: ElytraRace
-    survival:
-      slot: 4
-      icon: minecraft:grass_block
-      displayName: "<!i><green>Survival"
-      destination: Survival
-    slender:
-      slot: 5
-      icon: minecraft:enderman_spawn_egg
-      displayName: "<!i><gradient:#616161:#e80000c>Slender</gradient>"
-      destination: cygnus
-      feature: NAVIGATOR_SLENDER
-    creative:
-      slot: 8
-      icon: minecraft:wooden_axe
-      displayName: "<!i><rainbow>Creative</rainbow>"
-      destination: MemberBuild
-
 features:
   NAVIGATOR_CREATIVE: false
   NAVIGATOR_SLENDER: false
@@ -152,20 +123,15 @@ features:
 - `elytra.cooldownTicks`: how many ticks after a boost starts before the player may use another
   rocket; must be strictly greater than `elytra.burnDurationTicks`, since it is measured from the
   burn's start
-- `navigator.title`: the shared navigator inventory's title, as a MiniMessage string
-- `navigator.entries`: a map of the navigator's destinations, keyed by a unique name (e.g.
-  `survival`) so a profile or an override can change a single entry without repeating the others;
-  each entry has a hotbar-chest slot (`0`-`8`), an icon material key, a MiniMessage display name
-  and the CloudNet task name a click delivers the player to
-- `navigator.entries.<name>.feature` (optional): the name of a flag from the `features` section
-  below this destination is gated behind, e.g. `NAVIGATOR_SLENDER`. Omitted, the destination is
-  always visible. A name that is not one of the shipped `features` keys aborts startup with a
-  message naming `navigator.entries` and the unknown name. A flag not set anywhere counts as
-  **off** - Slender, for example, stays hidden until `NAVIGATOR_SLENDER` is explicitly turned on.
-  Toggling a flag takes effect the next time a player opens the navigator, with no restart of the
-  navigator or the lobby.
 - `features`: plain booleans, one per feature flag, with the same sources and override order as
   every other key (see "Feature flags" below).
+
+The navigator - a feather in hotbar slot 4 opening a shared inventory with ElytraRace, Survival,
+Slender and Creative - has no configuration section: its title and destinations are fixed in code
+(`NavigatorModule`/`Destination`), not read from `application.yaml`. A `navigator.*` key set here
+or anywhere else has no effect. Only Slender is gated behind a flag, `features.NAVIGATOR_SLENDER`
+(see "Feature flags" below) - toggling it takes effect the next time a player opens the navigator,
+with no restart of the navigator or the lobby.
 
 ### Environment variable reference
 
@@ -181,18 +147,12 @@ features:
 | `tickle.cooldownMillis` | `TICKLE_COOLDOWNMILLIS` |
 | `elytra.burnDurationTicks` | `ELYTRA_BURNDURATIONTICKS` |
 | `elytra.cooldownTicks` | `ELYTRA_COOLDOWNTICKS` |
-| `navigator.title` | `NAVIGATOR_TITLE` |
-| `navigator.entries.<name>.slot` | `NAVIGATOR_ENTRIES_<NAME>_SLOT` |
-| `navigator.entries.<name>.icon` | `NAVIGATOR_ENTRIES_<NAME>_ICON` |
-| `navigator.entries.<name>.displayName` | `NAVIGATOR_ENTRIES_<NAME>_DISPLAYNAME` |
-| `navigator.entries.<name>.destination` | `NAVIGATOR_ENTRIES_<NAME>_DESTINATION` |
-| `navigator.entries.<name>.feature` | `NAVIGATOR_ENTRIES_<NAME>_FEATURE` |
 | `features.<NAME>` | `FEATURES_<NAME>` |
 
-`<NAME>` is the entry's map key, upper-cased - e.g. `navigator.entries.survival.destination`
-becomes `NAVIGATOR_ENTRIES_SURVIVAL_DESTINATION`. The default entries are `elytrarace`,
-`survival`, `slender` and `creative`. The same rule applies to a feature flag's own name, e.g.
-`features.NAVIGATOR_SLENDER` becomes `FEATURES_NAVIGATOR_SLENDER`.
+`<NAME>` is a feature flag's own name, upper-cased - e.g. `features.NAVIGATOR_SLENDER` becomes
+`FEATURES_NAVIGATOR_SLENDER`. There is no environment variable for the navigator's title or
+destinations - they are fixed in code, not configuration (see "Configuration Options Explained"
+above).
 
 ## Runtime reloading
 
@@ -216,7 +176,8 @@ reads its settings live, at the moment it needs them, rather than once at startu
 `tickle.cooldownMillis` on every attack, sit reads `sit.offset.*`/`sit.allowedBlocks` on every block
 interaction, elytra reads `elytra.burnDurationTicks`/`elytra.cooldownTicks` on every boost, spawn
 reads `spawn.minHeight`/`spawn.maxHeight` on every height check and `spawn.simulationDistance` on
-every join, and the navigator reads `navigator.title`/`navigator.entries` every time it is opened.
+every join, and the navigator evaluates `features.NAVIGATOR_SLENDER` every time it is opened - its
+title and destinations are otherwise fixed in code, not read from configuration at all.
 Once the watcher applies a change behind the facade, the very next such read sees the new value.
 Because nothing restarts, no in-flight, per-player state is ever lost - a player who is already
 sitting stays sitting even if `sit.offset.*` changes underneath them, and a player mid-elytra-boost
@@ -226,9 +187,8 @@ only applies the next time each is used.
 Configuration is validated only once, at startup - an invalid value found there still aborts the
 start, unchanged from before. A live read, at the point of use, is never re-validated and never
 falls back to a shipped classpath default: an invalid value simply takes effect (e.g. a negative
-`tickle.cooldownMillis`) or makes that one read/action fail (e.g. the navigator's next open, if
-`navigator.entries` turns out invalid), until an operator corrects the file - validate a value
-before saving it. If a watched file is not valid YAML after a change, avaje-config itself logs the
+`tickle.cooldownMillis`) until an operator corrects the file - validate a value before saving it.
+If a watched file is not valid YAML after a change, avaje-config itself logs the
 file and the location of the error at ERROR (over `java.util.logging`, not the lobby's own
 SLF4J-backed logs) and applies no value from it; every other changed file is still applied.
 
@@ -251,12 +211,9 @@ Feature flags are plain booleans under the `features` section, one per flag name
 configuration key - a profile's file, an external file, an environment variable
 (`FEATURES_NAVIGATOR_SLENDER`), or a system property. The five flags the lobby ships with, all
 `false` by default: `NAVIGATOR_CREATIVE`, `NAVIGATOR_SLENDER`, `NAVIGATOR_MANIS`,
-`NAVIGATOR_SURVIVAL` and `NAVIGATOR_ELYTRA`. A flag not listed in the shipped defaults is unknown -
-a navigator entry naming it aborts startup. Configuration is validated only once, at startup:
-changed later, while the lobby is running, to name an unknown flag (or to an otherwise invalid
-entry), the navigator does not fall back to anything - the next open simply fails instead, until
-an operator corrects the entry. Changing a flag's own value takes effect the next time the
-navigator is opened, without restarting any module or the lobby.
+`NAVIGATOR_SURVIVAL` and `NAVIGATOR_ELYTRA`. Only `NAVIGATOR_SLENDER` currently gates anything -
+the navigator's Slender destination. Changing its value takes effect the next time a player opens
+the navigator, without restarting any module or the lobby.
 
 ### Migrating from `flags.properties`
 

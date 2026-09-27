@@ -28,7 +28,6 @@ import net.minestom.server.instance.InstanceContainer;
 import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.app.module.LobbySpawn;
 import net.onelitefeather.titan.app.module.item.ItemRegistry;
-import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
 import net.onelitefeather.titan.common.deliver.DeliverProvider;
 import net.onelitefeather.titan.common.feature.ConfigFeatureFlags;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
@@ -126,15 +125,7 @@ public final class PlatformBeans {
     }
 
     /**
-     * @return the platform-wide registry of navigator destinations every module contributes to
-     */
-    @Bean
-    public NavigatorEntries navigatorEntries() {
-        return new NavigatorEntries();
-    }
-
-    /**
-     * @return the source of truth a navigator entry's optional feature gate is checked against - a
+     * @return the source of truth a feature module's optional feature gate is checked against - a
      *         flag is a plain configuration value under {@code features.*}, with the known flags
      *         read from the lobby's own classpath {@code application.yaml} (see
      *         {@code openspec/changes/config-reload-feature-flags/design.md}, decision 4)

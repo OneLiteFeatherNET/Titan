@@ -22,13 +22,15 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Guards the shipped classpath {@code application.yaml} against a default navigator entry that
- * gates
- * itself behind a feature flag the {@code features} section does not list - see
- * {@code openspec/changes/config-reload-feature-flags/design.md}, decision 4: a flag not in the
- * shipped defaults is "unknown", and {@code NavigatorEntries#validate(FeatureFlags)} aborts startup
- * for one. This test would have failed the moment {@code features.NAVIGATOR_SLENDER} was missing
- * while {@code navigator.entries.slender.feature: NAVIGATOR_SLENDER} still stood.
+ * Guards the shipped classpath {@code application.yaml} against a {@link Destination} that gates
+ * itself behind a feature flag the {@code features} section does not list.
+ *
+ * <p>Unlike before {@code openspec/changes/navigator-entries-in-code},
+ * {@link Destination#feature()}
+ * is fixed in code rather than read from configuration, so this can no longer fail at start-up via
+ * a registry validation - it is a plain unit test instead, guarding the shipped defaults directly.
+ * This test would have failed the moment {@code features.NAVIGATOR_SLENDER} was missing while
+ * {@link Destination#SLENDER} still names it.
  *
  * <p>Loads {@code application.yaml} as its own, independent {@link Configuration} instance -
  * exactly like {@link net.onelitefeather.titan.common.feature.ConfigFeatureFlags} does in
@@ -38,23 +40,18 @@ import org.junit.jupiter.api.Test;
  */
 class DefaultNavigatorFeatureFlagsTest {
 
-    private static final String ENTRIES_PATH = "navigator.entries";
     private static final String FEATURES_SECTION = "features";
 
-    @DisplayName("Every default navigator entry's feature flag is listed in the features section")
+    @DisplayName("Every destination's feature flag is listed in the shipped features section")
     @Test
-    void everyDefaultNavigatorEntryFeatureIsKnown() {
+    void everyDestinationFeatureIsKnown() {
         Configuration classpathOnly = Configuration.builder().resourceLoader(getClass().getClassLoader()::getResourceAsStream).load("application.yaml").build();
-
         Set<String> knownFlags = classpathOnly.forPath(FEATURES_SECTION).keys();
-        Set<String> entryNames = NavigatorEntryKeys.names(classpathOnly.forPath(ENTRIES_PATH).keys());
 
-        Assertions.assertFalse(entryNames.isEmpty(), "the classpath application.yaml must declare at least one navigator entry");
-
-        for (String entryName : entryNames) {
-            String feature = classpathOnly.getNullable(ENTRIES_PATH + "." + entryName + ".feature");
+        for (Destination destination : Destination.values()) {
+            String feature = destination.feature();
             if (feature != null) {
-                Assertions.assertTrue(knownFlags.contains(feature), () -> "navigator entry '" + entryName + "' uses feature '" + feature + "', which is missing from the 'features' section of application.yaml");
+                Assertions.assertTrue(knownFlags.contains(feature), () -> "destination '" + destination + "' uses feature '" + feature + "', which is missing from the 'features' section of application.yaml");
             }
         }
     }

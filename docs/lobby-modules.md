@@ -31,11 +31,10 @@ public interface LobbyModule {
   dient.
 - `enable(ModuleContext)` läuft genau einmal, bevor ein Spieler die Lobby
   erreichen kann. Hier - und nur hier - meldet ein Modul alles an, was es
-  braucht: Listener, Konfiguration, Items, Befehle, Tasks, Navigator-Einträge.
+  braucht: Listener, Konfiguration, Items, Befehle, Tasks.
 - `disable()` läuft, nachdem `ModuleRegistry` den Event-Node bereits abgehängt,
   die Tasks abgebrochen und alle über den Kontext registrierten Dinge (Befehle,
-  Items, Navigator-Einträge) entfernt hat. Die meisten Module brauchen kein
-  eigenes `disable()`.
+  Items) entfernt hat. Die meisten Module brauchen kein eigenes `disable()`.
 
 `ModuleRegistry` startet alle Module in der konfigurierten Reihenfolge und
 fährt beim Herunterfahren in umgekehrter Reihenfolge herunter. Jedes Modul
@@ -121,7 +120,7 @@ Build fehlschlagen.
 **Abhängigkeiten kommen über den Konstruktor.** Avaje löst sie aus dem
 `BeanScope` auf - ein `Deliver`, eine `Instance`, ein `Clock` werden einfach
 als Konstruktorparameter angefordert (s. `NavigatorModule(Deliver,
-NavigatorEntries, FeatureFlags)`, `SpawnModule(Instance, LobbySpawn)`).
+FeatureFlags)`, `SpawnModule(Instance, LobbySpawn)`).
 `@Inject` (`jakarta.inject.Inject`) auf dem Konstruktor braucht nur eine
 Klasse mit **mehr als einem** Konstruktor, damit Avaje weiß, welchen sie
 nehmen soll (s. `TickleModule`, dessen einziger echter Konstruktor `@Inject
@@ -132,8 +131,8 @@ Welche Plattform-Dienste als Bean zur Verfügung stehen, steht in
 `app/src/main/java/net/onelitefeather/titan/app/bootstrap/PlatformBeans.java`
 (`@Factory` mit einer `@Bean`-Methode je Dienst: `InstanceContainer`,
 `MapProvider`, `LobbySpawn`, `Deliver`, der `@Named("titan")` qualifizierte
-`EventNode<Event>`, `ItemRegistry`, `NavigatorEntries`, `FeatureFlags`,
-`Clock`). Konfiguration kommt nicht über eine Bean - ein Modul liest sie
+`EventNode<Event>`, `ItemRegistry`, `FeatureFlags`, `Clock`). Konfiguration
+kommt nicht über eine Bean - ein Modul liest sie
 direkt über die statische Fassade `io.avaje.config.Config` (s. "Konfiguration
 lesen" unten). Braucht ein neues Feature einen **neuen** geteilten Dienst:
 
@@ -205,8 +204,8 @@ und kann das Event zusätzlich selbst abbrechen.
 
 Kein heutiges Feature-Modul braucht das: Der Navigator etwa reagiert nicht
 über einen eigenen `InventoryPreClickEvent`-Listener auf Klicks, sondern über
-Aves' eigenen Click-Handler, den `NavigatorInventory` direkt auf dem gebauten
-Inventar registriert (s. `NavigatorInventory`, Javadoc, und
+Aves' eigenen Click-Handler, den `NavigatorModule` direkt auf dem gebauten
+Inventar registriert (s. `NavigatorModule`, Javadoc, und
 `NavigatorProtectionOrderingTest`) - der läuft vor jedem regulären
 Event-Node und damit vor `ProtectionModule`s Abbruch, unabhängig von der
 Einschaltreihenfolge, ganz ohne `listenIncludingCancelled`.
@@ -291,7 +290,7 @@ Datei wird angelegt oder verändert.
 ### Live lesen am Gebrauchsort
 
 Für jeden Wert, der sich zur Laufzeit ändern soll - heute jeder Wert von
-tickle, sit, elytra, spawn und dem Navigator (s.
+tickle, sit, elytra und spawn (s.
 `openspec/changes/config-reload-feature-flags/design.md`, Entscheidungen 1
 und 2) -, liest der zuständige Handler den Wert bei **jedem** Gebrauch selbst
 frisch über die statische Fassade, statt sich einen fertigen Wert einmalig
@@ -314,14 +313,15 @@ zur Laufzeit auftaucht (z. B. weil eine Betreiber-Datei geändert wurde),
 wirkt entweder einfach (eine negative `tickle.cooldownMillis` würde als
 negative Zahl weiterverarbeitet) oder lässt genau diesen einen Lesevorgang
 bzw. diese eine Aktion fehlschlagen (z. B. wirft `Config.getLong` selbst eine
-Exception bei einem nicht-numerischen Rohwert, oder ein ungültiger
-Navigator-Eintrag lässt das nächste Öffnen fehlschlagen, s. unten) - nichts
-davon wird geloggt oder abgefangen. Ein Wert, der so gelesen wird, braucht
-trotzdem eine eigene reine Prüffunktion für den einen strengen Start-Read in
-`enable()` (s. "Konfiguration lesen" oben); nur die ist wiederverwendbar, wo
-das Parsen selbst unvermeidlich ist (z. B. `SitSettings.parseBlock` für einen
-Blockschlüssel, oder der Navigator, der einen Eintrag beim Öffnen genauso
-zusammenbaut wie beim Start - s. `NavigatorModule#buildEntries`).
+Exception bei einem nicht-numerischen Rohwert) - nichts davon wird geloggt
+oder abgefangen. Ein Wert, der so gelesen wird, braucht trotzdem eine eigene
+reine Prüffunktion für den einen strengen Start-Read in `enable()` (s.
+"Konfiguration lesen" oben); nur die ist wiederverwendbar, wo das Parsen
+selbst unvermeidlich ist (z. B. `SitSettings.parseBlock` für einen
+Blockschlüssel). Der Navigator liest über diesen Weg nichts mehr - seine
+Ziele stehen fest im `enum Destination`, nicht in der Konfiguration (s.
+"navigator ist fest verdrahtet" unten); nur die Feature-Flag
+`NAVIGATOR_SLENDER` wird bei jedem Öffnen über `FeatureFlags` ausgewertet.
 
 Für zusammen geprüfte Felder (`spawn.minHeight`/`maxHeight`,
 `elytra.burnDurationTicks`/`cooldownTicks`) liest die Lesestelle beide
@@ -370,51 +370,31 @@ und bricht den Start sonst ab. `items().equip(player)` räumt das Inventar und
 setzt alle Items mit festem Platz - das rufen Spawn- und Respawn-Modul auf,
 nicht jedes Feature selbst.
 
-### `navigator` - einen Eintrag im gemeinsamen Navigator anbieten
+### navigator ist fest verdrahtet, kein Andockpunkt
 
-```java
-context.navigator().add(new NavigatorEntry(slot, icon, displayName, destination));
-```
+Der Navigator ist **kein** Andockpunkt des `ModuleContext` mehr (s.
+`openspec/changes/navigator-entries-in-code/design.md`): Seine vier Ziele
+(ElytraRace, Survival, Slender, Creative) stehen fest im package-privaten
+`enum Destination` neben `NavigatorModule`
+(`app/src/main/java/net/onelitefeather/titan/app/feature/navigator/`). Ein
+neues oder geändertes Ziel ist eine Codeänderung an diesem einen Modul. Den
+früheren Andockpunkt, über den ein anderes Modul ein Ziel beisteuern konnte,
+gibt es nicht mehr, ebenso wenig wie die frühere plattformweite
+Eintrags-Registry samt Konfliktprüfung. `NavigatorModule` baut sein
+Aves-Inventar (`GlobalInventoryBuilder`) direkt selbst, einmal in
+`enable()`.
 
-(sinngemäß `NavigatorModule#enable`, dort aus der eigenen Config gebaut).
-`context.navigator()` liefert nur die schmale, reine Hinzufügen-Sicht
-(`NavigatorEntries.View`) auf die plattformweite `NavigatorEntries` - jedes
-Modul kann Ziele beisteuern, ohne vom `NavigatorModule` selbst abzuhängen. Ist
-das `NavigatorModule` ausgeschaltet, bleiben die Einträge einfach ungenutzt.
-Die Einträge eines Moduls verschwinden automatisch, wenn es abgeschaltet
-wird.
-
-**Einträge hinter einer Feature-Flag verstecken:** `NavigatorEntry` (und, für
-den Navigator selbst, die gelesenen Rohwerte, die
-`NavigatorEntryValidation#buildEntry` prüft) trägt ein optionales Feld
-`feature` - den Namen einer Flag aus dem Abschnitt `features` der
-Konfiguration, z. B. `"NAVIGATOR_SLENDER"`. Ist die Flag aus (oder steht sie
-nirgends gesetzt - ein sicherer Standard), rendert `NavigatorInventory` an
-dieser Stelle die normale graue Glasscheibe statt des Eintrags; ist sie an,
-erscheint der Eintrag wie gewohnt. Geprüft wird über die kleine
-`net.onelitefeather.titan.common.feature.FeatureFlags`-Schnittstelle, die dem
-`NavigatorModule` per Konstruktor übergeben wird - produktiv
-`ConfigFeatureFlags` (liest `features.<name>` über die statische Fassade
-`Config`, s. `openspec/changes/config-reload-feature-flags/design.md`,
-Entscheidung 4), in Tests eine Attrappe (`FakeFeatureFlags`), damit Tests ohne
-echte Konfigurationsdatei auskommen. Bekannt ist eine Flag nur, wenn sie unter
-`features` in der mitgelieferten Classpath-`application.yaml` steht - eine
-Betreiber-Datei kann diese Menge nicht erweitern, nur die einzelnen Flags
-an- oder ausschalten. Ein Eintrag mit einem Namen, den `FeatureFlags` nicht
-kennt, bricht den Start ab (`IllegalArgumentException`, nennt
-`navigator.entries` und den unbekannten Namen); taucht eine unbekannte Flag
-oder ein sonst ungültiger Eintrag erst zur Laufzeit auf, fällt der Navigator
-auf nichts zurück - das nächste Öffnen schlägt stattdessen einfach fehl, bis
-ein Betreiber den Eintrag korrigiert (s. "Live lesen am Gebrauchsort" oben,
-und `refactor/drop-runtime-fallback`). Das gilt auch für Einträge, die ein
-anderes Modul über `context.navigator().add(...)` beisteuert, nicht nur für
-die Einträge aus der `navigator`-Config selbst - das Feld sitzt auf
-`NavigatorEntry` und damit auf jedem Eintrag gleichermaßen, statt in einer
-separaten Tabelle, die der Navigator sonst parallel zur Registry pflegen
-müsste. Togglz und `flags.properties` sind entfernt: Eine Flag ist ein ganz
-normaler Konfigurationswert unter `features.<NAME>`, mit denselben Quellen
-und derselben Rangfolge wie jeder andere Schlüssel (s. README, Abschnitt
-"Feature flags").
+Nur `Destination.SLENDER` bleibt hinter einer Feature-Flag versteckt:
+`Destination#feature()` trägt für dieses eine Ziel den Namen
+`"NAVIGATOR_SLENDER"`, ausgewertet über dieselbe kleine
+`net.onelitefeather.titan.common.feature.FeatureFlags`-Schnittstelle wie
+jedes andere gate-fähige Feature - dem `NavigatorModule` per Konstruktor
+übergeben, produktiv `ConfigFeatureFlags` (liest `features.NAVIGATOR_SLENDER`
+über die statische Fassade `Config`), in Tests eine Attrappe
+(`FakeFeatureFlags`). `Destination.visible(FeatureFlags)` wertet das bei
+jedem Öffnen neu aus, sodass ein zur Laufzeit umgeschalteter Flag-Wert beim
+nächsten Öffnen sichtbar wird, ohne Neustart von Navigator oder Lobby. Ist
+die Flag aus, liegt an Slenders Platz die normale graue Glasscheibe.
 
 ### `commands` - einen Befehl anmelden
 
@@ -465,11 +445,10 @@ registriert wurde, läuft **auf dem Tick-Thread**. Daraus folgen vier Regeln:
 3. **Pakete/Components zwischenspeichern statt neu bauen.** `ExampleItems`
    baut die feste Rückmeldung `ON_COOLDOWN` einmal als `static final
    Component` statt bei jeder Benutzung neu - dasselbe Prinzip, in größerem
-   Maßstab, hinter `NavigatorModule`s `NavigatorInventory`: Das geteilte
-   Inventar wird nur neu gebaut, wenn sich die sichtbare Eintragsmenge
-   geändert hat - weil sich `NavigatorEntries.version()` geändert hat (ein
-   Eintrag kam hinzu oder fiel weg) oder weil sich der Zustand einer
-   Feature-Flag geändert hat -, nicht bei jedem Öffnen.
+   Maßstab, hinter `NavigatorModule`: Das geteilte Aves-Inventar wird nur neu
+   gelegt, wenn sich die sichtbare Zielmenge geändert hat - heute nur möglich,
+   weil sich der Zustand von `Destination.SLENDER`s Feature-Flag geändert
+   hat -, nicht bei jedem Öffnen.
 4. **Spielerbezogener Zustand gehört aufgeräumt.** Zustand, der pro Spieler
    gehalten wird (z. B. ein Cooldown-Zeitstempel), muss bei
    `PlayerDisconnectEvent` entfernt werden, sonst wächst er über die
@@ -495,7 +474,7 @@ am Gebrauchsort über `Config.<Methode>(key)` liest, sieht eine übernommene
 Änderung automatisch beim nächsten Lesevorgang.
 
 Daraus folgt für ein Modul, das die Andockpunkte oben (`listen`, `items`,
-`navigator`, `commands`, `tasks`) statt eigener Listener, Felder oder Threads
+`commands`, `tasks`) statt eigener Listener, Felder oder Threads
 nutzt, und das jeden Wert, der sich ändern soll, am Gebrauchsort über
 `Config.<Methode>(key)` statt einmalig in `enable()` liest: **Es muss für das
 Neuladen nichts Eigenes tun.** Es gibt kein Abschalten und kein erneutes
@@ -555,7 +534,7 @@ Meldung.
 
 `net.onelitefeather.titan.app.module.testing.ModuleHarness` startet ein oder
 mehrere `LobbyModule`s über eine echte `ModuleRegistry`, ohne dass jeder Test
-Registry, `ItemRegistry` und `NavigatorEntries` von Hand aufbauen muss:
+Registry und `ItemRegistry` von Hand aufbauen muss:
 
 ```java
 @ExtendWith(MicrotusExtension.class)
@@ -563,7 +542,7 @@ class ExampleModuleTest {
     @Test
     void usingTheGreetingTokenSendsTheConfiguredGreeting(Env env) {
         try (ModuleHarness harness = ModuleHarness.start(env, new ExampleModule())) {
-            // harness.items(), harness.navigator(), harness.registry() ...
+            // harness.items(), harness.registry() ...
         }
     }
 }
@@ -582,10 +561,9 @@ class ExampleModuleTest {
   Standardwerten aus der Classpath-`application.yaml` - es gibt **keine**
   `application-test.yaml`, damit Tests die ausgelieferten Standardwerte
   prüfen und nicht eine eigene Testwelt (s. Tests-Abschnitt oben).
-- Ein Modul, dessen Konstruktor schon die plattformweite `NavigatorEntries`
-  oder `ItemRegistry` braucht (z. B. `NavigatorModule`, das beim Öffnen jedes
-  Moduls Einträge zurückliest, nicht nur die eigenen), nutzt die
-  `ModuleHarness.ModuleFactory`-Überladung: Der Harness baut Registry und
+- Ein Modul, dessen Konstruktor schon die plattformweite `ItemRegistry`
+  braucht, bevor `enable()` läuft, nutzt die
+  `ModuleHarness.ModuleFactory`-Überladung: Der Harness baut die
   Item-Registry zuerst und reicht sie der Factory.
 - `close()` (bzw. Try-with-Resources) ruft `ModuleRegistry.disableAll()` und
   hängt den Harness-Node wieder ab - ohne das leckt ein Test Listener in den
@@ -623,6 +601,9 @@ prüft im Build, nicht nur per Konvention (s. `design.md`, Entscheidung 10):
 7. Die `@Priority`-Werte aller Module in `..app.feature..` sind eindeutig
    (`ArchitectureTest#modulePrioritiesAreUnique`, ein Reflection-Test statt
    einer `ArchRule`).
+8. `..app.feature.navigator..` hängt nicht von `io.avaje.config..` ab - der
+   Navigator liest seine (fest verdrahteten) Ziele nie aus der Konfiguration
+   (s. "navigator ist fest verdrahtet" oben).
 
 ## Checkliste: neues Feature = neues Paket, null geänderte Zeilen außerhalb
 
@@ -647,8 +628,7 @@ prüft im Build, nicht nur per Konvention (s. `design.md`, Entscheidung 10):
    Werte (kein Andockpunkt auf `ModuleContext`, s. "Konfiguration lesen"
    oben), dazu
    `context.items().register(...)`, `context.commands().register(...)`,
-   `context.navigator().add(...)`, `context.listen(...)`/
-   `listenIncludingCancelled(...)`, `context.tasks()`.
+   `context.listen(...)`/`listenIncludingCancelled(...)`, `context.tasks()`.
 5. Tests schreiben, bevor (oder während) der Code entsteht: Unit-Tests für die
    reine Logik und die Config-Validierung, ein Env-Integrationstest über
    `ModuleHarness` für alles, was einen `Player` braucht.

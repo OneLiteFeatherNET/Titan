@@ -18,7 +18,6 @@ package net.onelitefeather.titan.app.module;
 import net.minestom.server.command.CommandManager;
 import net.minestom.server.timer.Scheduler;
 import net.onelitefeather.titan.app.module.item.ItemRegistry;
-import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
 
 /**
  * The platform-wide services every {@link ModuleContext} is built from: one instance per
@@ -27,17 +26,14 @@ import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
  * <p>Deliberately package-private and never handed to a module directly - it is not a service bag
  * in the public API. A module only ever sees the narrow, per-module views {@link ModuleContext}
  * builds from it ({@link ModuleContext#tasks()}, {@link ModuleContext#commands()},
- * {@link ModuleContext#items()}, {@link ModuleContext#navigator()}). Keeping every platform
- * service in one record here, instead of one {@link ModuleContext} constructor overload per
- * service, is what lets a later wave add another platform service without adding another
- * constructor.
+ * {@link ModuleContext#items()}). Keeping every platform service in one record here, instead of
+ * one {@link ModuleContext} constructor overload per service, is what lets a later wave add
+ * another platform service without adding another constructor.
  *
  * @param scheduler      the scheduler modules' tasks run on
  * @param commandManager the command manager modules register commands on
  * @param items          the platform-wide item registry modules register {@link
  *                       net.onelitefeather.titan.app.module.item.LobbyItem}s through
- * @param navigator      the platform-wide registry modules contribute navigator entries to
  */
-record ModulePlatform(Scheduler scheduler, CommandManager commandManager,
-                      ItemRegistry items, NavigatorEntries navigator) {
+record ModulePlatform(Scheduler scheduler, CommandManager commandManager, ItemRegistry items) {
 }

@@ -22,7 +22,6 @@ import net.minestom.server.event.Event;
 import net.minestom.server.event.EventListener;
 import net.minestom.server.event.EventNode;
 import net.onelitefeather.titan.app.module.item.ModuleItems;
-import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
 import net.onelitefeather.titan.common.observability.TitanObservability;
 
 /**
@@ -39,11 +38,10 @@ import net.onelitefeather.titan.common.observability.TitanObservability;
  *
  * <p>Built from a single {@link ModulePlatform}, the package-private parameter object every
  * platform service ({@link ModulePlatform#scheduler()}, {@link ModulePlatform#commandManager()},
- * {@link ModulePlatform#items()}, {@link ModulePlatform#navigator()})
- * lives on. {@link ModulePlatform} itself is never exposed to a module - only the narrow,
- * per-module
- * views built from it here, each backed by the {@link #onDisable} cleanup hook, so adding another
- * platform service never needs another {@link ModuleContext} constructor.
+ * {@link ModulePlatform#items()}) lives on. {@link ModulePlatform} itself is never exposed to a
+ * module - only the narrow, per-module views built from it here, each backed by the
+ * {@link #onDisable} cleanup hook, so adding another platform service never needs another
+ * {@link ModuleContext} constructor.
  */
 public final class ModuleContext {
 
@@ -52,7 +50,6 @@ public final class ModuleContext {
     private final ModuleTasksImpl tasks;
     private final ModuleCommandsImpl commands;
     private final ModulePlatform platform;
-    private final NavigatorEntries.View navigator;
     private final ModuleItems items;
     private final Deque<Runnable> cleanupHooks = new ArrayDeque<>();
     private volatile boolean listeningClosed;
@@ -63,7 +60,6 @@ public final class ModuleContext {
         this.tasks = new ModuleTasksImpl(platform.scheduler());
         this.commands = new ModuleCommandsImpl(platform.commandManager(), this);
         this.platform = platform;
-        this.navigator = platform.navigator().forModule(moduleId, this::onDisable);
         this.items = platform.items().contextView(moduleId, this::onDisable);
     }
 
@@ -159,14 +155,6 @@ public final class ModuleContext {
     }
 
     /**
-     * @return this module's own view of the platform's navigator entries; every entry added through
-     *         it disappears again once this module is disabled
-     */
-    public NavigatorEntries.View navigator() {
-        return this.navigator;
-    }
-
-    /**
      * @return this module's own view of the platform-wide item registry
      */
     public ModuleItems items() {
@@ -174,8 +162,8 @@ public final class ModuleContext {
     }
 
     /**
-     * Queues {@code cleanup} to run when this module is disabled. Later registrars (commands, items
-     * and navigator entries today) call this instead of {@link ModuleRegistry}
+     * Queues {@code cleanup} to run when this module is disabled. Later registrars (commands and
+     * items today) call this instead of {@link ModuleRegistry}
      * having to know about them individually. Hooks run in reverse of the order they were added,
      * mirroring how the module registered things in the first place.
      *

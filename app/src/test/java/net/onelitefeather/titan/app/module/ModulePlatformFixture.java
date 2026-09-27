@@ -21,13 +21,12 @@ import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.timer.Scheduler;
 import net.onelitefeather.titan.app.module.item.ItemRegistry;
-import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
 
 /**
  * Builds a fresh {@link ModulePlatform} for tests that need one directly, without going through
- * {@link ModuleRegistry}. Every call returns its own, unshared {@link ItemRegistry} and
- * {@link NavigatorEntries}, backed by their own event node, so tests using this fixture stay
- * independent of each other (F.I.R.S.T) instead of sharing platform state through a static field.
+ * {@link ModuleRegistry}. Every call returns its own, unshared {@link ItemRegistry}, backed by its
+ * own event node, so tests using this fixture stay independent of each other (F.I.R.S.T) instead of
+ * sharing platform state through a static field.
  *
  * <p>Production code never uses this - {@link ModuleRegistry} builds its one {@link ModulePlatform}
  * from its {@link ModuleRegistry.Builder} instead, with the platform's own defaults.
@@ -40,10 +39,10 @@ final class ModulePlatformFixture {
     /**
      * @param scheduler      the scheduler to back the platform with
      * @param commandManager the command manager to back the platform with
-     * @return a fresh platform, with its own, unshared item registry and navigator entries
+     * @return a fresh platform, with its own, unshared item registry
      */
     static ModulePlatform create(Scheduler scheduler, CommandManager commandManager) {
         EventNode<Event> platformNode = EventNode.all("test-module-platform-fixture/" + UUID.randomUUID());
-        return new ModulePlatform(scheduler, commandManager, new ItemRegistry(platformNode), new NavigatorEntries());
+        return new ModulePlatform(scheduler, commandManager, new ItemRegistry(platformNode));
     }
 }

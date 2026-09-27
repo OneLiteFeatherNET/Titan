@@ -185,27 +185,21 @@ class ConfigurationPrecedenceTest {
         Assertions.assertEquals("2", resolved.get("spawn.simulationDistance"), "an untouched module must keep its shipped default");
     }
 
-    @DisplayName("A navigator entry added in application.yaml appears alongside the shipped defaults")
+    @DisplayName("A file adding a brand-new key group merges it alongside the shipped defaults")
     @Test
-    void fileAddingANavigatorEntryAppearsAlongsideTheShippedDefaults(@TempDir Path workingDir) throws IOException, InterruptedException {
+    void fileAddingANewKeyGroupMergesAlongsideTheShippedDefaults(@TempDir Path workingDir) throws IOException, InterruptedException {
         Files.writeString(workingDir.resolve("application.yaml"), """
-                navigator:
-                  entries:
-                    parkour:
-                      slot: 2
-                      icon: minecraft:slime_block
-                      displayName: "<green>Parkour"
-                      destination: Parkour
+                parkour:
+                  checkpoint:
+                    slot: 5
                 """);
 
-        // Plain print mode alone proves the merge: the added entry's own key resolves, and a
-        // shipped default entry's key still resolves alongside it. Grouping these flat keys into
-        // entry names is NavigatorEntryKeys's job, covered without a child JVM by
-        // NavigatorEntryKeysTest.
-        Map<String, String> resolved = run(workingDir, Map.of(), List.of(), List.of("navigator.entries.parkour.slot", "navigator.entries.survival.slot"));
+        // Plain print mode alone proves the merge: the added key resolves, and an unrelated shipped
+        // default still resolves alongside it.
+        Map<String, String> resolved = run(workingDir, Map.of(), List.of(), List.of("parkour.checkpoint.slot", "spawn.simulationDistance"));
 
-        Assertions.assertEquals("2", resolved.get("navigator.entries.parkour.slot"), "the added entry's own key must resolve");
-        Assertions.assertEquals("4", resolved.get("navigator.entries.survival.slot"), "a shipped default entry's key must still resolve alongside the added one");
+        Assertions.assertEquals("5", resolved.get("parkour.checkpoint.slot"), "the added key must resolve");
+        Assertions.assertEquals("2", resolved.get("spawn.simulationDistance"), "an untouched shipped default must still resolve alongside the added key");
     }
 
     @DisplayName("With AVAJE_PROFILES=dev, the startup log names dev as the active configuration profile")

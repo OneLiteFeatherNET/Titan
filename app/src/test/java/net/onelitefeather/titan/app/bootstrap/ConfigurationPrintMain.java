@@ -38,11 +38,10 @@ import io.avaje.config.Configuration;
  * regular output (see {@link ConfigurationPrecedenceTest#startAndWait}).</li>
  * <li>anything else: every argument is a configuration key to print, in order, via
  * {@code Configuration.get(key, "<absent>")} - the original, plain read mode. This mode alone
- * covers reading a nested key such as {@code navigator.entries.parkour.slot} - printing it
+ * covers reading a nested, freshly-added key such as {@code parkour.checkpoint.slot} - printing it
  * demonstrates that a working-directory entry merges alongside the shipped defaults, without a
  * validation bridge of its own (see {@code openspec/changes/avaje-config-facade/design.md},
- * decision 6, and {@link NavigatorEntryKeysTest} for the pure name-grouping this stops short
- * of).</li>
+ * decision 6).</li>
  * </ul>
  * A module's own read-and-validate path (e.g. {@code tickle.cooldownMillis} through
  * {@code Config.getAs(key, TickleSettings::cooldownMillis)}) is covered by that module's own unit
