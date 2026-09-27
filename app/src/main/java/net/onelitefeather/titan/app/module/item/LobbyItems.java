@@ -54,7 +54,8 @@ import net.onelitefeather.titan.common.observability.TitanObservability;
  *
  * <h2>Threading</h2>
  *
- * <p>No synchronization guards {@link #itemsByKey}, {@link #hotbar} or {@link #equipment}: all three
+ * <p>No synchronization guards {@link #itemsByKey}, {@link #hotbar} or {@link #equipment}: all
+ * three
  * are immutable ({@link Map#copyOf}) and fully built by the constructor before
  * {@link #dispatcher} - the only thing that reads them afterwards, on the tick thread, for every
  * {@link PlayerUseItemEvent} - is ever registered. A reader can therefore never observe a partially
@@ -140,7 +141,8 @@ public final class LobbyItems {
      * The hotbar and equipment slots {@link #equip(Player)} fills, computed once in a single pass
      * over every item - mirroring {@link EquipPlan#from(Collection)}.
      */
-    private record Placements(Map<Integer, ItemStack> hotbar, Map<EquipmentSlot, ItemStack> equipment) {
+    private record Placements(Map<Integer, ItemStack> hotbar,
+                              Map<EquipmentSlot, ItemStack> equipment) {
     }
 
     private static Placements placementsOf(Collection<LobbyItem> items) {

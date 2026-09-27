@@ -31,7 +31,8 @@ import net.minestom.server.item.ItemStack;
  * feature rather than to the item's own key, which is an implementation detail a player never sees
  * (see {@code openspec/changes/dissolve-module-platform/design.md} decision 2).
  */
-public record LobbyItem(String featureId, Key key, ItemStack itemStack, ItemSlot placement, ItemUseHandler onUse) {
+public record LobbyItem(String featureId, Key key, ItemStack itemStack, ItemSlot placement,
+                        ItemUseHandler onUse) {
 
     public LobbyItem {
         Objects.requireNonNull(featureId, "featureId");

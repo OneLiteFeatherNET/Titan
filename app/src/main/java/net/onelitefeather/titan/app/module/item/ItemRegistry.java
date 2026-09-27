@@ -105,7 +105,8 @@ public final class ItemRegistry {
      * while {@code items} is empty, which it is until the first {@code @Bean LobbyItem} exists.
      *
      * <p>{@link #dispatch} deliberately skips every registration made through this method: a bean
-     * item's {@code onUse} is already dispatched exactly once by {@code LobbyItems}' own listener on
+     * item's {@code onUse} is already dispatched exactly once by {@code LobbyItems}' own listener
+     * on
      * the same event node, so dispatching it here too would run it twice. This method only ever
      * feeds {@link #currentPlan()} - {@code equip()} for a not-yet-migrated module.
      *

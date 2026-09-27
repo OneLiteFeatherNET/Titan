@@ -38,7 +38,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * {@link ItemRegistry} and the new {@link LobbyItems} (see
  * {@code openspec/changes/dissolve-module-platform/design.md}, decision 2, and
  * {@link ItemRegistry#registerBridged(List)}): a bean-provided {@link LobbyItem} is registered with
- * both on the same event node, but a use must reach its handler exactly once - {@link LobbyItems} is
+ * both on the same event node, but a use must reach its handler exactly once - {@link LobbyItems}
+ * is
  * the single owner of {@code onUse} for bean items, {@link ItemRegistry}'s own dispatcher must skip
  * a bridged registration - while the old {@link ItemRegistry#equip(Player)} must still place it,
  * since a not-yet-migrated module still equips through it.
