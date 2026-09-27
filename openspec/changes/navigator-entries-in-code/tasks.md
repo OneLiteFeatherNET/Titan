@@ -33,7 +33,7 @@ Ein einzelner Sonnet-Agent in einem Worktree vom aktuellen `origin/main`. Der Ch
 
 ## 5. Review
 
-- [ ] 5.1 Review-Agent (Haiku, read-only) prüft den Diff gegen die Deltas von `lobby-navigator`, `lobby-module-config` und `lobby-modules`, gegen KISS (keine übrig gebliebenen Abstraktionen) und gegen F.I.R.S.T. (keine Sleeps, keine Systemzeit, kein geteilter statischer Zustand, jeder Test mit Assertion). Nachweis: Bericht ohne offene Befunde oder Befunde behoben.
+- [x] 5.1 Review-Agent (Haiku, read-only) prüft den Diff gegen die Deltas von `lobby-navigator`, `lobby-module-config` und `lobby-modules`, gegen KISS (keine übrig gebliebenen Abstraktionen) und gegen F.I.R.S.T. (keine Sleeps, keine Systemzeit, kein geteilter statischer Zustand, jeder Test mit Assertion). Nachweis: Bericht ohne offene Befunde oder Befunde behoben.
 
 ## 6. Pull Request
 
