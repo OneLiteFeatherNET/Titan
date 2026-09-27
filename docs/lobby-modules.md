@@ -1,107 +1,86 @@
-# Lobby-Feature-Module bauen
+# Lobby-Features bauen
 
-Dieses Dokument erklärt, wie ein Lobby-Feature als eigenständiges
-`LobbyModule` gebaut wird: den Aufbau eines Moduls, die Andockpunkte des
-`ModuleContext`, die Regeln für den Tick-Thread, den Testaufbau und die
-Checkliste für ein neues Feature. Alle Codebeispiele stammen, wo nicht anders
-vermerkt, aus dem lauffähigen Vorlagemodul
-`app/src/test/java/net/onelitefeather/titan/app/feature/example/`
-(`ExampleModule`, `ExampleGreetingRule`, `ExampleGreetingSettings`,
-`ExampleGreetingTracker`, `ExampleItems`) - kopierbar als Ausgangspunkt für ein
-echtes Feature. Es ist bewusst test-only (`app/src/test`, nicht
-`app/src/main`), damit es nie als echtes Modul mitläuft - s. "Gefunden
-werden" unten, warum das trotz `@Singleton`/`@Priority` an der Klasse
-funktioniert.
+Ein Lobby-Feature ist eine ganz normale [Avaje Inject](https://avaje.io/inject/)-Bean, kein
+eigener Plattformtyp mehr. Dieses Dokument erklärt den Aufbau, die Regeln für den Tick-Thread, den
+Testaufbau ohne Harness und die Checkliste für ein neues Feature. Alle Codebeispiele stammen, wo
+nicht anders vermerkt, aus dem lauffähigen Vorlagefeature
+`app/src/test/java/net/onelitefeather/titan/app/feature/example/` (`ExampleModule`,
+`ExampleGreetingItems`, `ExampleGreetingRule`, `ExampleGreetingSettings`, `ExampleGreetingTracker`)
+- kopierbar als Ausgangspunkt für ein echtes Feature. Es ist bewusst test-only (`app/src/test`,
+nicht `app/src/main`), damit es nie als echtes Feature mitläuft: Avaje Inject prozessiert
+Annotationen nur für `app/src/main` (kein `testAnnotationProcessor`, s. `app/build.gradle.kts`).
 
-## Aufbau eines Moduls
+## Aufbau eines Features
 
-Ein Feature ist eine Klasse, die
-`net.onelitefeather.titan.app.module.LobbyModule` implementiert:
-
-```java
-public interface LobbyModule {
-    String id();
-    void enable(ModuleContext context);
-    default void disable() { }
-}
-```
-
-- `id()` ist eine kurze, stabile Kennung (z. B. `"example"`), die als Name des
-  Modul-eigenen Event-Node (`"titan/" + id()`) und als SLF4J-MDC-Wert `module`
-  dient.
-- `enable(ModuleContext)` läuft genau einmal, bevor ein Spieler die Lobby
-  erreichen kann. Hier - und nur hier - meldet ein Modul alles an, was es
-  braucht: Listener, Konfiguration, Items, Befehle, Tasks.
-- `disable()` läuft, nachdem `ModuleRegistry` den Event-Node bereits abgehängt,
-  die Tasks abgebrochen und alle über den Kontext registrierten Dinge (Befehle,
-  Items) entfernt hat. Die meisten Module brauchen kein eigenes `disable()`.
-
-`ModuleRegistry` startet alle Module in der konfigurierten Reihenfolge und
-fährt beim Herunterfahren in umgekehrter Reihenfolge herunter. Jedes Modul
-bekommt dabei einen eigenen `ModuleContext` - das einzige Objekt, über das ein
-Modul die Plattform erreicht. Der rohe `EventNode` wird nie herausgegeben (s.
-`design.md`, Entscheidung 3): alles, was ein Modul über den Kontext anmeldet,
-räumt sich beim Abschalten von selbst auf.
-
-Abhängigkeiten, die ein Modul braucht (z. B. `Deliver`, eine `Instance`),
-kommen über den **Konstruktor**, nicht über den Kontext - `ExampleModule`
-nimmt z. B. optional einen `Clock` entgegen, damit ein Test "jetzt" festlegen
-kann, statt sich auf `System.currentTimeMillis()` zu verlassen (das gleiche
-Muster wie `TickleModule`).
-
-Ein Feature-Paket unter `app/feature/<name>` folgt einer festen Sichtbarkeit
-(s. `design.md`, Entscheidung 10, und `ArchitectureTest`, unten): nur die
-Klasse `<Name>Module` ist `public`, alles andere - Handler, Vorlagen, Items,
-Tags, die paketprivaten Prüffunktionen aus "Konfiguration lesen" unten - ist
-paketprivat. Das ist kein Stilwunsch,
-sondern wird im Build geprüft - allerdings nur für Produktionscode unter
-`app/src/main`: `ArchitectureTest` analysiert mit
-`ImportOption.DoNotIncludeTests`, das test-only Vorlagemodul unter
-`app/src/test/.../feature/example/` läuft also nicht mit und hält diese
-Regel nur per Konvention ein. Erst ein echtes Feature, das aus der Vorlage
-nach `app/src/main` kopiert wird, wird von der Prüfung erfasst.
-
-## Gefunden werden: `@Singleton` und `@Priority`
-
-Seit `avaje-dependency-injection` gibt es keine zentrale Modulliste mehr:
-`Titan` holt nach dem Aufbau des `BeanScope` alle Module über
-`scope.listByPriority(LobbyModule.class)` (Dependency-Injection-Container
-[Avaje Inject](https://avaje.io/inject/)). Damit ein Modul dabei gefunden
-wird, braucht seine Klasse zwei Annotationen:
+Ein Feature ist eine `@Singleton`-Klasse ohne gemeinsame Schnittstelle. Es hängt in
+`@PostConstruct` seinen eigenen Event-Node an den geteilten `titan`-Node und trennt sich in
+`@PreDestroy` zuerst wieder davon, bevor die restliche Abschaltlogik läuft:
 
 ```java
 @Singleton
-@Priority(400)
-public final class NavigatorModule implements LobbyModule {
-    // ...
+public final class TickleModule {
+    static final int EVENT_PRIORITY = 600;
+    private final EventNode<Event> titan;
+    private FeatureNode node;
+
+    TickleModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Clock clock) { ... }
+
+    @PostConstruct
+    void start() {
+        Config.getAs(TickleSettings.COOLDOWN_KEY, TickleSettings::cooldownMillis); // Startprüfung
+        this.node = FeatureNode.attach(this.titan, "tickle", EVENT_PRIORITY)
+                .on(EntityAttackEvent.class, new TickleAttackHandler(this.clock));
+    }
+
+    @PreDestroy
+    void stop() { this.node.close(); }
 }
 ```
 
-(`NavigatorModule`, `app/src/main/java/net/onelitefeather/titan/app/feature/navigator/NavigatorModule.java`)
+(`app/src/main/java/net/onelitefeather/titan/app/feature/tickle/TickleModule.java`)
 
-- **`@Singleton`** (`jakarta.inject.Singleton`) macht die Klasse zu einer
-  Avaje-Bean - ohne sie sieht der Container das Modul überhaupt nicht.
-- **`@Priority`** (`io.avaje.inject.Priority`) legt die Startreihenfolge fest:
-  `scope.listByPriority(...)` sortiert aufsteigend, niedrigere Werte zuerst.
-  Jeder Wert muss **eindeutig** sein - das prüft
-  `ArchitectureTest#modulePrioritiesAreUnique`
-  (`app/src/test/java/net/onelitefeather/titan/app/architecture/ArchitectureTest.java`).
+- Der Avaje-Container ruft `@PostConstruct` beim Aufbau des `BeanScope` auf - also bevor ein
+  Spieler die Lobby erreichen kann - und `@PreDestroy` beim Schließen des `BeanScope`
+  (`Titan#initialize` schedult `beanScope::close` als Shutdown-Task). Es gibt keinen separaten
+  Enable-/Disable-Schritt außerhalb des Bean-Lebenszyklus mehr.
+- `FeatureNode.attach(parent, featureId, priority)` legt den Feature-eigenen Event-Node an,
+  registriert ihn beim geteilten `titan`-Node und setzt seine Priorität. `on(type, listener)`
+  registriert einen Listener, gekapselt in `TitanObservability.guard(featureId, listener)`, damit
+  ein Fehler dem Feature und - falls vorhanden - dem Spieler zugeordnet wird.
+  `onIncludingCancelled(type, listener)` liefert das Event auch, wenn es beim Erreichen des
+  Feature-Node schon abgebrochen ist (Minestoms Standardverhalten für einen `Consumer`-Listener
+  überspringt ein bereits abgebrochenes `CancellableEvent` sonst). Kein heutiges Feature braucht
+  das - der Navigator etwa reagiert gar nicht über einen Event-Node-Listener auf Klicks, sondern
+  über Aves' eigenen, direkt aufs Inventar gemappten Click-Handler, der vor jedem regulären
+  Event-Node läuft (s. `NavigatorModule`, Javadoc).
+- `node.close()` in `@PreDestroy` hängt den Feature-Node ab, **bevor** die übrige Abschaltlogik
+  läuft (s. `ElytraModule#stop()`, das erst `node.close()`, dann `task.cancel()` aufruft) - so
+  erreicht kein Event mehr das Feature, während es sich selbst abbaut.
+- Abhängigkeiten kommen über den **Konstruktor**: eine `Instance`, ein `Deliver`, ein `Clock`
+  werden einfach angefordert (s. `NavigatorModule(EventNode, Deliver, FeatureFlags)`,
+  `SpawnModule(Instance, LobbySpawn, EventNode, LobbyItems)`). `@Inject` braucht nur eine Klasse
+  mit **mehr als einem** Konstruktor (s. `TickleModule`, dessen echter Konstruktor `@Inject
+  TickleModule(EventNode, Clock)` trägt).
+- Ein Feature-Paket unter `app/feature/<name>` folgt einer festen Sichtbarkeit (s.
+  `ArchitectureTest`, unten): nur die Klasse `<Name>Module` ist `public`, alles andere - Handler,
+  Item-Factory, Tags, paketprivate Prüffunktionen - ist paketprivat. Avaje Inject generiert seine
+  Verdrahtung in derselben Package wie die annotierte Klasse, braucht also nirgends eine `public`
+  Item-Factory. Geprüft wird das nur für Produktionscode unter `app/src/main` - das test-only
+  Vorlagefeature läuft mit `ImportOption.DoNotIncludeTests` nicht mit.
 
-**Warnung: Nie ein `List<LobbyModule>` injizieren, um die Startreihenfolge zu
-bekommen.** Nur `BeanScope.listByPriority(...)` sortiert nach `@Priority` -
-ein konstruktorinjiziertes `List<LobbyModule>` (oder jedes `List<T>` von
-`@Priority`-Beans) liefert Avaje in Registrierungsreihenfolge, **nicht**
-sortiert. Und `listByPriority(...)` funktioniert erst, **nachdem**
-`BeanScope.builder().build()` zurückgekehrt ist - ein Aufruf während des
-Scope-Aufbaus (also aus einem `@Factory`/`@Bean`, dem der Scope selbst
-injiziert wurde) wirft `IllegalStateException`. Die Startreihenfolge kommt
-deshalb ausschließlich aus `Titan`s eigenem
-`scope.listByPriority(LobbyModule.class)`, aufgerufen nachdem
-`BeanScope.builder().build()` fertig ist (s. `Titan.java`).
+## Gefunden werden: `@Singleton` genügt
 
-Die heutigen sieben Module, in Hunderterschritten mit Platz dazwischen:
+Es gibt keine zentrale Feature-Liste. `Titan` baut im Konstruktor `BeanScope.builder().build()` -
+das allein reicht, damit jedes `@Singleton`-Feature gebaut und über sein `@PostConstruct`
+gestartet wird. Fehlt `@Singleton` an einer Klasse mit `@PostConstruct`, wird sie nie gebaut und
+ihr `start()` läuft nie - `ArchitectureTest#classesWithPostConstructInFeaturesAreSingleton` lässt
+den Build in diesem Fall fehlschlagen.
 
-| Modul | Priorität |
+**Die Reihenfolge, in der zwei Features dasselbe Event verarbeiten, legt `EVENT_PRIORITY` fest**,
+nicht mehr eine Startreihenfolge - Minestoms `EventNode#setPriority(int)` ordnet Geschwisterknoten.
+Die heutigen sieben Features, in Hunderterschritten mit Platz dazwischen:
+
+| Feature | `EVENT_PRIORITY` |
 |---|---|
 | protection | 100 |
 | spawn | 200 |
@@ -111,550 +90,253 @@ Die heutigen sieben Module, in Hunderterschritten mit Platz dazwischen:
 | tickle | 600 |
 | elytra | 700 |
 
-Ein neues Modul wählt eine freie Zahl aus der Lücke, an der es einschalten
-soll. Fehlt `@Singleton` oder `@Priority` an einer Klasse, die `LobbyModule`
-implementiert, verschwindet das Modul nicht etwa unbemerkt aus der Lobby:
-`ArchitectureTest#featureLobbyModulesAreSingletonWithPriority` lässt den
-Build fehlschlagen.
+Ein neues Feature wählt eine freie Zahl aus der Lücke. Zwei Features mit demselben Wert lässt
+`ArchitectureTest#eventPriorityValuesAreUniqueAcrossFeatures` fehlschlagen und nennt beide.
 
-**Abhängigkeiten kommen über den Konstruktor.** Avaje löst sie aus dem
-`BeanScope` auf - ein `Deliver`, eine `Instance`, ein `Clock` werden einfach
-als Konstruktorparameter angefordert (s. `NavigatorModule(Deliver,
-FeatureFlags)`, `SpawnModule(Instance, LobbySpawn)`).
-`@Inject` (`jakarta.inject.Inject`) auf dem Konstruktor braucht nur eine
-Klasse mit **mehr als einem** Konstruktor, damit Avaje weiß, welchen sie
-nehmen soll (s. `TickleModule`, dessen einziger echter Konstruktor `@Inject
-TickleModule(Clock)` trägt); mit genau einem Konstruktor reicht der ohne
-`@Inject`.
+**Fehlt eine Konstruktor-Abhängigkeit ganz** (kein passender `@Bean`/`@Singleton` im Scope), bricht
+`BeanScope.builder().build()` mit einer Exception ab, die den fehlenden Typ nennt - noch bevor ein
+Spieler verbinden kann. `TitanApplication.main` fängt jede `RuntimeException`/`Error` aus
+`new Titan()`/`titan.initialize()` ab, loggt sie als `Titan failed to start: …` und beendet den
+Prozess mit Exit-Code 1.
 
 Welche Plattform-Dienste als Bean zur Verfügung stehen, steht in
-`app/src/main/java/net/onelitefeather/titan/app/bootstrap/PlatformBeans.java`
-(`@Factory` mit einer `@Bean`-Methode je Dienst: `InstanceContainer`,
-`MapProvider`, `LobbySpawn`, `Deliver`, der `@Named("titan")` qualifizierte
-`EventNode<Event>`, `ItemRegistry`, `FeatureFlags`, `Clock`). Konfiguration
-kommt nicht über eine Bean - ein Modul liest sie
-direkt über die statische Fassade `io.avaje.config.Config` (s. "Konfiguration
-lesen" unten). Braucht ein neues Feature einen **neuen** geteilten Dienst:
+`app/src/main/java/net/onelitefeather/titan/app/bootstrap/PlatformBeans.java` (`@Factory` mit
+einer `@Bean`-Methode je Dienst: `InstanceContainer`, `MapProvider`, `LobbySpawn`, `Deliver`, der
+`@Named("titan")`-qualifizierte `EventNode<Event>`, `FeatureFlags`, `Clock`, `Scheduler`).
+`LobbyItems` ist selbst eine `@Singleton`-Bean im Paket `app.module.item` (s. unten). Braucht ein
+neues Feature einen **neuen** geteilten Dienst, der im Kern ein Plattformtyp aus `common` oder
+Minestom ist, kommt eine weitere `@Bean`-Methode in dieselbe `PlatformBeans`-Factory dazu; trägt er
+selbst feature-übergreifende Logik, wird er eine eigene `@Singleton`-Klasse, die betroffene
+Features per Konstruktor anfordern.
 
-- Ist er im Kern ein Plattform-Typ aus `common` oder Minestom, den mehrere
-  Module brauchen (wie die bestehenden Beans oben), kommt eine weitere
-  `@Bean`-Methode in dieselbe `PlatformBeans`-Factory dazu.
-- Trägt er selbst Feature-übergreifende Logik, statt nur einen fremden Typ
-  einzuhüllen, wird er eine eigene `@Singleton`-Klasse (ohne `@Priority` -
-  das brauchen nur `LobbyModule`-Implementierungen), die betroffene Module
-  dann per Konstruktor anfordern.
+## Items als Beans: `LobbyItem`, `@Factory`, `LobbyItems`
 
-**Fehlt eine Abhängigkeit ganz** (kein passender `@Bean`/`@Singleton` im
-Scope für einen Konstruktorparameter), bricht `BeanScope.builder().build()`
-mit einer Exception ab, die den fehlenden Typ nennt. `Titan` baut den Scope
-im Konstruktor; `TitanApplication.main` fängt jede `RuntimeException` aus
-`new Titan()`/`titan.initialize()` ab, loggt sie als `Titan failed to
-start: …` und beendet den Prozess mit Exit-Code 1 - der Fehler fällt beim
-Start auf, nicht erst, wenn ein Spieler das Feature benutzt. Eine vergessene
-`@Singleton`- oder `@Priority`-Annotation dagegen fällt schon beim Build auf,
-über die ArchUnit-Regel oben.
-
-Sind alle Module eingeschaltet, loggt `Titan#initialize()` einmal die
-tatsächliche Startreihenfolge auf INFO-Level: `Lobby modules enabled in
-order: {}`, gefüllt mit den `id()`-Werten in der Reihenfolge von
-`scope.listByPriority(LobbyModule.class)`. Das macht die Reihenfolge aus der
-Tabelle oben auch zur Laufzeit sichtbar, ohne dass sie noch an einer Stelle
-im Code als Liste steht.
-
-## Andockpunkte des `ModuleContext`
-
-Der `ModuleContext`, den `enable(ModuleContext)` bekommt, bietet genau diese
-Andockpunkte:
-
-### `listen` - Events abonnieren
+Ein Hotbar- oder Ausrüstungsitem meldet ein Feature nicht mehr über einen Kontext an, sondern
+stellt es als `@Bean LobbyItem` in einer eigenen, paketprivaten `@Factory`-Klasse bereit:
 
 ```java
-context.listen(PlayerDisconnectEvent.class, event -> tracker.clear(event.getPlayer().getUuid()));
-```
-
-(`ExampleModule#enable`). Der Listener läuft in
-`TitanObservability.guard(moduleId, listener)` gekapselt, damit ein Fehler
-Modul und - falls vorhanden - Spieler zugeordnet werden kann, und hängt am
-Modul-eigenen Event-Node. Bei einem
-`net.minestom.server.event.trait.CancellableEvent` wird der Listener
-übersprungen, sobald das Event beim Erreichen dieses Knotens schon abgebrochen
-ist - das normale Verhalten eines `Consumer`-Listeners in Minestom.
-
-`listen` funktioniert **nur, während `enable()` läuft**; ein späterer Aufruf
-wirft `IllegalStateException`. Module melden alles an, was sie brauchen, beim
-Start - nie erst, wenn ein Spieler joint oder ein Menü öffnet.
-
-### `listenIncludingCancelled` - trotzdem reagieren
-
-```java
-context.listenIncludingCancelled(SomeCancellableEvent.class, this::onEvent);
-```
-
-Diese Variante liefert das Event auch dann, wenn es beim Erreichen des
-Moduls schon abgebrochen ist - anders als `listen`, das einen
-`Consumer`-Listener für ein bereits abgebrochenes `CancellableEvent`
-überspringt (Minestoms Standardverhalten für diese Art Listener). Sie ist die
-Plattform-Option für ein Modul, das auf ein `CancellableEvent` reagieren
-**muss**, egal was ein anderes Modul vorher damit gemacht hat - etwa
-`feature.protection.ProtectionModule`, das jedes `InventoryPreClickEvent`
-bedingungslos abbricht - und das dabei unabhängig von der Einschaltreihenfolge
-der beiden Module bleiben soll (s. `lobby-modules`-Spec, "Module sind
-voneinander unabhängig"). Der Handler sieht `isCancelled()` weiterhin selbst
-und kann das Event zusätzlich selbst abbrechen.
-
-Kein heutiges Feature-Modul braucht das: Der Navigator etwa reagiert nicht
-über einen eigenen `InventoryPreClickEvent`-Listener auf Klicks, sondern über
-Aves' eigenen Click-Handler, den `NavigatorModule` direkt auf dem gebauten
-Inventar registriert (s. `NavigatorModule`, Javadoc, und
-`NavigatorProtectionOrderingTest`) - der läuft vor jedem regulären
-Event-Node und damit vor `ProtectionModule`s Abbruch, unabhängig von der
-Einschaltreihenfolge, ganz ohne `listenIncludingCancelled`.
-
-Faustregel: `listen`, solange ein anderes Modul das Event nicht schon
-abbrechen könnte; `listenIncludingCancelled` nur, wenn ein über
-`context.listen` angemeldeter Handler wirklich in jedem Fall laufen muss.
-
-### Konfiguration lesen: die statische Fassade `Config`
-
-Anders als bei den übrigen Andockpunkten gibt es dafür **keine** Methode auf
-`ModuleContext`: Ein Modul liest seine Werte direkt über die statische
-Fassade `io.avaje.config.Config` (avaje-config) - bewusst eine Ausnahme von
-der Projektregel „keine statischen Singletons“ (s. `design.md`, Entscheidung
-1). Das passiert an zwei Stellen mit unterschiedlichem Zweck (s.
-`openspec/changes/config-reload-feature-flags/design.md`, Entscheidung 2, wie
-mit `refactor/drop-runtime-fallback` geändert): einmal streng in
-`enable(ModuleContext)` - dort bricht ein ungültiger Wert weiterhin den Start
-ab, unverändertes Verhalten aus `avaje-config-facade` -, und, für jeden Wert,
-der sich zur Laufzeit ändern soll, ein zweites Mal am eigentlichen
-Gebrauchsort, direkt über `Config.<Methode>(key)`, ohne erneute Prüfung und
-ohne Rückfall (s. "Live lesen am Gebrauchsort" unten). Konfiguration wird nur
-einmal geprüft, beim Start - ein Handler bekommt einen solchen Wert deshalb
-nicht fertig über den Konstruktor, sondern liest ihn bei jedem Gebrauch selbst
-frisch, z. B. `TickleAttackHandler`, das bei jedem Angriff
-`Config.getLong(TickleSettings.COOLDOWN_KEY)` aufruft.
-
-```java
-// TickleModule.enable()
-long cooldownMillis = Config.getAs(TickleSettings.COOLDOWN_KEY, TickleSettings::cooldownMillis);
-```
-
-- **Strings** kommen über `Config.get(key)`, **Listen** über
-  `Config.list().of(key)`, **Wahrheitswerte** über `Config.getBool(key)`.
-- **Zahlen** (`int`/`long`/`double`) kommen über
-  `Config.getAs(key, Integer::parseInt)` (entsprechend `Long::parseLong`,
-  `Double::parseDouble`) statt über `Config.getInt/getLong/getDecimal`: Die
-  Fassade wirft bei einem ungültigen Zahlenwert über diese drei bloß eine
-  `NumberFormatException` ohne Schlüssel, aber `Config.getAs(key, fn)` fängt
-  einen Fehler von `fn` selbst ab und wirft eine `IllegalStateException`, die
-  den vollen Schlüssel einmal benennt und die ursprüngliche Exception (mit
-  dem ungültigen Rohwert oder dem Ablehnungsgrund in ihrer eigenen Meldung)
-  als `cause` behält - Schlüssel in der Meldung, Grund in der
-  Ursachenkette.
-- Der **Schlüssel** ist eine `private static final String`-Konstante im
-  Modul, nach dem Schema `<modul-id>.<feld>` (z. B. `"tickle.cooldownMillis"`)
-  - kein Config-Record mehr, das den Abschnitt beschreibt.
-- Die **Prüfung** liegt in einer reinen, statischen, paketprivaten Funktion.
-  Für einen **Einzelwert** parst und prüft sie in einem Schritt und dient
-  direkt als `getAs`-Funktion - `TickleSettings.cooldownMillis(String)` oben
-  prüft z. B. nur „nicht negativ“ und wirft dafür ein einfaches
-  `IllegalArgumentException("must not be negative, was -5")`, ohne den
-  Schlüssel selbst zu nennen: Das übernimmt `Config.getAs` bereits. Eine
-  reine Zahl ohne eigene Prüfung braucht gar keine eigene Funktion
-  (`Integer::parseInt` reicht). Für eine **Prüfung über mehrere Felder**
-  (z. B. `spawn.minHeight` gegen `spawn.maxHeight`) oder eine Prüfung, die
-  nicht über `getAs` läuft (z. B. `sit.allowedBlocks`, eine über
-  `Config.list().of` gelesene Liste), nennt die Funktion beide bzw. den
-  vollen Schlüssel selbst im Meldungstext, weil dort kein `getAs` das mehr
-  übernimmt. Beide Formen werfen ein einfaches `IllegalArgumentException` -
-  es gibt keine eigene Exception-Klasse dafür. So bleibt die Prüfung ohne
-  `Config` und ohne Server testbar (s. „Tests“ unten).
-
-**Standardwerte gehören in `application.yaml`, nicht in den Code.** Ein
-Modul liest ohne eigenen Fallback im Code (`Config.get(key)`, nicht
-`Config.get(key, "…")`) - die Standardwerte für jeden Schlüssel stehen einmal
-in der mitgelieferten `app/src/main/resources/application.yaml`, die
-avaje-config vor der Datei im Arbeitsverzeichnis aus dem Classpath lädt.
-Fehlt ein Schlüssel dort, ist das ein Programmierfehler: Der Start bricht mit
-`Missing required configuration parameter [key]` ab, nicht mit einem stillen
-Fallback im Code. Ein neues Feature trägt seine Schlüssel samt Standardwert
-deshalb in `app/src/main/resources/application.yaml` ein (s. Checkliste,
-Schritt 6).
-
-Die alte Bindung an ein Config-Record (`context.config(Typ, DEFAULTS)`, eine
-Validierung im Compact Constructor) gibt es nicht mehr - die Bindeschicht
-dahinter ist mit dieser Change vollständig entfernt.
-
-Die Lobby schreibt keine Konfiguration mehr: Es gibt kein `flush()`, keine
-Datei wird angelegt oder verändert.
-
-### Live lesen am Gebrauchsort
-
-Für jeden Wert, der sich zur Laufzeit ändern soll - heute jeder Wert von
-tickle, sit, elytra und spawn (s.
-`openspec/changes/config-reload-feature-flags/design.md`, Entscheidungen 1
-und 2) -, liest der zuständige Handler den Wert bei **jedem** Gebrauch selbst
-frisch über die statische Fassade, statt sich einen fertigen Wert einmalig
-über den Konstruktor geben zu lassen - `TickleAttackHandler` z. B. bei jedem
-Angriff:
-
-```java
-// TickleAttackHandler.tickle(...)
-long cooldownExpiryMillis = TickleCooldownRule.expiryAfter(now, Config.getLong(TickleSettings.COOLDOWN_KEY));
-```
-
-(`app/src/main/java/net/onelitefeather/titan/app/feature/tickle/TickleAttackHandler.java`)
-
-Konfiguration wird **nur einmal geprüft, beim Start**, in `enable()` (s.
-`refactor/drop-runtime-fallback`): Ein Lesevorgang am Gebrauchsort ruft
-`Config.<Methode>(key)` (`getLong`, `getInt`, `get`, `list().of(...)`, ...)
-direkt auf, ohne die Prüffunktion aus `enable()` erneut aufzurufen und ohne
-einen Rückfall auf den Classpath-Standardwert. Ein ungültiger Wert, der erst
-zur Laufzeit auftaucht (z. B. weil eine Betreiber-Datei geändert wurde),
-wirkt entweder einfach (eine negative `tickle.cooldownMillis` würde als
-negative Zahl weiterverarbeitet) oder lässt genau diesen einen Lesevorgang
-bzw. diese eine Aktion fehlschlagen (z. B. wirft `Config.getLong` selbst eine
-Exception bei einem nicht-numerischen Rohwert) - nichts davon wird geloggt
-oder abgefangen. Ein Wert, der so gelesen wird, braucht trotzdem eine eigene
-reine Prüffunktion für den einen strengen Start-Read in `enable()` (s.
-"Konfiguration lesen" oben); nur die ist wiederverwendbar, wo das Parsen
-selbst unvermeidlich ist (z. B. `SitSettings.parseBlock` für einen
-Blockschlüssel). Der Navigator liest über diesen Weg nichts mehr - seine
-Ziele stehen fest im `enum Destination`, nicht in der Konfiguration (s.
-"navigator ist fest verdrahtet" unten); nur die Feature-Flag
-`NAVIGATOR_SLENDER` wird bei jedem Öffnen über `FeatureFlags` ausgewertet.
-
-Für zusammen geprüfte Felder (`spawn.minHeight`/`maxHeight`,
-`elytra.burnDurationTicks`/`cooldownTicks`) liest die Lesestelle beide
-Schlüssel einfach mit zwei getrennten `Config`-Aufrufen, ohne die
-Cross-Feld-Prüfung aus `enable()` erneut anzuwenden - z. B.
-`SpawnBoundsListener` bei jedem Move:
-
-```java
-// SpawnBoundsListener.accept(...)
-HeightBounds heightBounds = new HeightBounds(
-    Config.getInt(SpawnSettings.MIN_HEIGHT_KEY),
-    Config.getInt(SpawnSettings.MAX_HEIGHT_KEY));
-```
-
-Für ein Modul, das seine Werte so liest, kostet eine Konfigurationsänderung
-keinen Modulzustand mehr: Es gibt kein Abschalten und Neustarten, das
-Zustand verlöre - ein sitzender Spieler bleibt sitzen, ein laufender
-Elytra-Flug läuft weiter, während der nächste Sitzversuch bzw. der nächste
-Boost schon den neuen Wert sieht (s. README, Abschnitt "Runtime reloading").
-Ein Wert, der sich praktisch nie zur Laufzeit ändern soll, braucht keine
-eigene Lesestelle am Gebrauchsort - `enable()`s strenge Prüfung bleibt dann
-die einzige Lesestelle. Ein `current()`/`currentXxx()`-Wrapper auf der
-`*Settings`-Klasse lohnt sich nur, wenn er echte Duplizierung entfernt
-(z. B. weil mehrere Aufrufer denselben zusammengesetzten Wert brauchen);
-sonst ruft der Handler `Config.<Methode>(key)` direkt an seiner
-Verwendungsstelle auf.
-
-### `items` - ein Hotbar- oder Ausrüstungsitem anmelden
-
-```java
-context.items().register(new LobbyItem(
-    Key.key("titan:example"),
-    ExampleItems.GREETING_TOKEN,
-    ItemSlot.hotbar(GREETING_TOKEN_SLOT),
-    (player, event) -> greet(player, tracker)));
-```
-
-`ItemRegistry` stempelt beim Registrieren einen Identitäts-Tag auf den Stack
-und dispatcht **ein einziges** `PlayerUseItemEvent` am Plattform-Node an den
-passenden `onUse`-Handler zurück - ein Modul braucht dafür keinen eigenen
-Listener. `ItemSlot` ist `hotbar(0..8)`, `equipment(EquipmentSlot)` oder
-`unplaced()` für ein Item ohne festen Platz (z. B. das Elytra-Feuerwerk, das
-nur während des Fliegens in der Nebenhand liegt). Nach `enableAll()` prüft
-`ItemRegistry.validate()`, ob zwei Module denselben festen Platz beanspruchen,
-und bricht den Start sonst ab. `items().equip(player)` räumt das Inventar und
-setzt alle Items mit festem Platz - das rufen Spawn- und Respawn-Modul auf,
-nicht jedes Feature selbst.
-
-### navigator ist fest verdrahtet, kein Andockpunkt
-
-Der Navigator ist **kein** Andockpunkt des `ModuleContext` mehr (s.
-`openspec/changes/navigator-entries-in-code/design.md`): Seine vier Ziele
-(ElytraRace, Survival, Slender, Creative) stehen fest im package-privaten
-`enum Destination` neben `NavigatorModule`
-(`app/src/main/java/net/onelitefeather/titan/app/feature/navigator/`). Ein
-neues oder geändertes Ziel ist eine Codeänderung an diesem einen Modul. Den
-früheren Andockpunkt, über den ein anderes Modul ein Ziel beisteuern konnte,
-gibt es nicht mehr, ebenso wenig wie die frühere plattformweite
-Eintrags-Registry samt Konfliktprüfung. `NavigatorModule` baut sein
-Aves-Inventar (`GlobalInventoryBuilder`) direkt selbst, einmal in
-`enable()`.
-
-Nur `Destination.SLENDER` bleibt hinter einer Feature-Flag versteckt:
-`Destination#feature()` trägt für dieses eine Ziel den Namen
-`"NAVIGATOR_SLENDER"`, ausgewertet über dieselbe kleine
-`net.onelitefeather.titan.common.feature.FeatureFlags`-Schnittstelle wie
-jedes andere gate-fähige Feature - dem `NavigatorModule` per Konstruktor
-übergeben, produktiv `ConfigFeatureFlags` (liest `features.NAVIGATOR_SLENDER`
-über die statische Fassade `Config`), in Tests eine Attrappe
-(`FakeFeatureFlags`). `Destination.visible(FeatureFlags)` wertet das bei
-jedem Öffnen neu aus, sodass ein zur Laufzeit umgeschalteter Flag-Wert beim
-nächsten Öffnen sichtbar wird, ohne Neustart von Navigator oder Lobby. Ist
-die Flag aus, liegt an Slenders Platz die normale graue Glasscheibe.
-
-### `commands` - einen Befehl anmelden
-
-```java
-Command command = new Command(COMMAND_NAME);
-command.addSyntax((sender, commandContext) -> {
-    if (sender instanceof Player player) {
-        greet(player, tracker);
-    }
-});
-context.commands().register(command);
-```
-
-(`ExampleModule#enable`). `ModuleCommands.register(Command)` registriert den
-Befehl sofort bei Minestoms `CommandManager` und meldet gleichzeitig dessen
-Abmeldung beim Abschalten des Moduls an - ein Modul muss sich nie selbst um
-`unregister` kümmern.
-
-### `tasks` - wiederkehrende Arbeit planen
-
-```java
-context.tasks().schedule(this::tick, TaskSchedule.seconds(1), TaskSchedule.seconds(1));
-```
-
-`ModuleTasks#schedule(Runnable, TaskSchedule delay, TaskSchedule repeat)`
-plant eine Aufgabe beim Scheduler des Moduls; sie wird beim Abschalten des
-Moduls automatisch abgebrochen, ohne dass das Modul sich das zurückgegebene
-`Task`-Objekt merken muss (es kann es trotzdem behalten, um früher selbst
-abzubrechen). Kein heutiges Feature-Modul braucht das - das Beispiel oben ist
-illustrativ, nicht aus `ExampleModule` übernommen.
-
-## Regeln für den Tick-Thread
-
-`enable(ModuleContext)` läuft beim Start; alles, was danach über `listen`
-registriert wurde, läuft **auf dem Tick-Thread**. Daraus folgen vier Regeln:
-
-1. **Keine Listener-Registrierung zur Laufzeit.** `listen`, `listenIncludingCancelled`
-   und `config` funktionieren nur, während `enable()` läuft - danach wirft
-   `ModuleContext` `IllegalStateException`. Das ist kein Zufall: Der
-   Navigator-Speicherleck auf `main` (s. `design.md`, Kontext) entstand genau
-   dadurch, dass pro Spieler zur Laufzeit neue Listener angemeldet wurden, ohne
-   sie je wieder abzumelden.
-2. **Kein blockierendes IO/HTTP in Handlern.** Ein Listener, der z. B. auf eine
-   HTTP-Antwort wartet, blockiert den gesamten Tick und damit jeden Spieler in
-   der Lobby. Braucht ein Handler externe Daten, müssen sie vorher geladen
-   (z. B. beim Start in `enable()`) oder asynchron nachgeladen und dann
-   thread-sicher zwischengespeichert werden.
-3. **Pakete/Components zwischenspeichern statt neu bauen.** `ExampleItems`
-   baut die feste Rückmeldung `ON_COOLDOWN` einmal als `static final
-   Component` statt bei jeder Benutzung neu - dasselbe Prinzip, in größerem
-   Maßstab, hinter `NavigatorModule`: Das geteilte Aves-Inventar wird nur neu
-   gelegt, wenn sich die sichtbare Zielmenge geändert hat - heute nur möglich,
-   weil sich der Zustand von `Destination.SLENDER`s Feature-Flag geändert
-   hat -, nicht bei jedem Öffnen.
-4. **Spielerbezogener Zustand gehört aufgeräumt.** Zustand, der pro Spieler
-   gehalten wird (z. B. ein Cooldown-Zeitstempel), muss bei
-   `PlayerDisconnectEvent` entfernt werden, sonst wächst er über die
-   Serverlaufzeit unbegrenzt. `ExampleGreetingTracker#clear`, angestoßen aus
-   `ExampleModule`s `PlayerDisconnectEvent`-Listener, und
-   `FireworkBoostTracker#clear` in `ElytraModule` folgen diesem Muster. Ebenso
-   gehört ein wiederkehrender Task, der pro Spieler arbeitet, über
-   `context.tasks()` angemeldet (automatischer Abbruch beim Abschalten des
-   Moduls) statt über einen selbst verwalteten Thread.
-
-## Neu laden zur Laufzeit: kein Modul startet neu
-
-Seit `config-reload-feature-flags` übernimmt die Lobby eine Konfigurations-
-änderung im laufenden Betrieb, ohne dass ein Modul oder die Lobby selbst neu
-startet - ausgelöst durch avaje-configs eingebaute Dateiüberwachung
-(`config.watch.enabled`, standardmäßig aus; der Betreiber schaltet sie in
-seiner eigenen `application.yaml`/Profil-Datei/`CONFIG_FILE` ein, s. README,
-Abschnitt "Runtime reloading", für die Schalter `config.watch.delay`/
-`config.watch.period` und die Grenzen der eingebauten Lösung). Es gibt dafür
-keinen `ConfigChangeHandler` und keine Zuordnung von Schlüsseln zu Modulen -
-ein Modul, das seine Werte wie unter "Live lesen am Gebrauchsort" oben direkt
-am Gebrauchsort über `Config.<Methode>(key)` liest, sieht eine übernommene
-Änderung automatisch beim nächsten Lesevorgang.
-
-Daraus folgt für ein Modul, das die Andockpunkte oben (`listen`, `items`,
-`commands`, `tasks`) statt eigener Listener, Felder oder Threads
-nutzt, und das jeden Wert, der sich ändern soll, am Gebrauchsort über
-`Config.<Methode>(key)` statt einmalig in `enable()` liest: **Es muss für das
-Neuladen nichts Eigenes tun.** Es gibt kein Abschalten und kein erneutes
-`enable()` - der geänderte Wert gilt einfach beim nächsten Gebrauch, ohne dass
-irgendetwas am Modul selbst, seinen Listenern oder seinem sonstigen Zustand
-angefasst wird. Zustand, der während der Konfigurationsänderung schon
-existiert (ein sitzender Spieler, ein laufender Elytra-Flug), bleibt deshalb
-unverändert bestehen - er wurde ja nie abgebaut.
-
-Eine Änderung unter `features.*`, `titan.*` oder `config.*` betrifft ohnehin
-kein einzelnes Modul: Flags liest jeder Aufrufer über `FeatureFlags` bei
-Bedarf, und `config.*` steuert nur die Dateiüberwachung selbst. Ein Modul,
-das nur über `Config` liest (s. "Konfiguration lesen" und "Live lesen am
-Gebrauchsort" oben) und keinen eigenen Zustand außerhalb des Kontexts hält,
-braucht für diese ganze Change also keine einzige geänderte Zeile in seinem
-eigenen `LobbyModule`.
-
-## Tests: Aufbau und `ModuleHarness`
-
-Tests folgen der Testpyramide - viele schnelle, reine Unit-Tests unten, wenige
-Env-Integrationstests oben - und dem F.I.R.S.T.-Prinzip (**F**ast,
-**I**ndependent, **R**epeatable, **S**elf-validating, **T**imely): Tests
-laufen schnell, unabhängig voneinander, liefern bei jedem Lauf dasselbe
-Ergebnis (deshalb ein fester `Clock.fixed(...)` statt der Systemzeit, s.
-`ExampleModuleTest`/`TickleModuleTest`), prüfen sich selbst über Assertions
-statt manueller Log-Kontrolle, und entstehen zusammen mit dem Code, nicht
-danach.
-
-Weil `Config` globaler, pro JVM einmal geladener und danach unveränderlicher
-Zustand ist (s. `design.md`, Entscheidung 5), gilt zusätzlich: **Kein Test**
-ruft `Config.setProperty`, `Config.putAll`, `Config.clearProperty` oder
-`Config.eventBuilder` auf - das wäre gemeinsamer, veränderlicher Zustand und
-bricht "Independent". Es gibt auch **keine** `application-test.yaml`. Ein
-Unit-Test liest grundsätzlich keine Config; er testet die reinen
-Prüffunktionen (s. "Konfiguration lesen" oben) und die Klassen darunter mit
-Werten per Konstruktor. Dass `Config.getAs` einen Fehler der eigenen
-Prüffunktion in eine `IllegalStateException` mit dem vollen Schlüssel
-übersetzt, lässt sich ebenfalls ohne Kind-JVM testen: eine **lokale**
-`Configuration.builder().put(key, wert).build()`-Instanz (nicht die statische
-Fassade) genügt, wie `TickleSettingsTest` es für einen ungültigen und einen
-negativen Rohwert vormacht. Ein Test, der einen abweichenden Wert der
-statischen Fassade selbst braucht (Rangfolge, Profil, Env, kaputte Datei),
-läuft in einer eigenen Kind-JVM mit `@TempDir` als Arbeitsverzeichnis, wie
-`ConfigurationPrecedenceTest`.
-
-### Unten: reine Unit-Tests
-
-Reine Entscheidungs- und Formatierungslogik gehört in eine eigene,
-paketprivate Klasse ohne Minestom-Abhängigkeit -
-`ExampleGreetingRuleTest` prüft `ExampleGreetingRule.isOnCooldown(...)` und
-`ExampleGreetingRule.greeting(...)` ganz ohne `Env` oder `Player`. Genauso
-prüft ein Unit-Test die paketprivate Prüffunktion aus "Konfiguration lesen"
-oben direkt, ganz ohne `Config`: gültige Grenzwerte, ungültige Werte, Text der
-Meldung.
-
-### Oben: Env-Integrationstests über `ModuleHarness`
-
-`net.onelitefeather.titan.app.module.testing.ModuleHarness` startet ein oder
-mehrere `LobbyModule`s über eine echte `ModuleRegistry`, ohne dass jeder Test
-Registry und `ItemRegistry` von Hand aufbauen muss:
-
-```java
-@ExtendWith(MicrotusExtension.class)
-class ExampleModuleTest {
-    @Test
-    void usingTheGreetingTokenSendsTheConfiguredGreeting(Env env) {
-        try (ModuleHarness harness = ModuleHarness.start(env, new ExampleModule())) {
-            // harness.items(), harness.registry() ...
-        }
+@Factory
+final class NavigatorItems {
+    @Bean
+    LobbyItem navigatorFeather(NavigatorModule navigator) {
+        ItemStack feather = ItemStack.builder(Material.FEATHER)
+                .customName(MiniMessage.miniMessage().deserialize("<!i><aqua>Navigator")).build();
+        return new LobbyItem("navigator", Key.key("titan:navigator"), feather,
+                ItemSlot.hotbar(4), (player, event) -> navigator.open(player));
     }
 }
 ```
 
-- `ModuleHarness.start(Env, LobbyModule...)` hängt einen frischen Kind-Node
-  unter `env.process().eventHandler()` und nimmt Scheduler/`CommandManager`
-  des `Env` - für ein Modul, dessen Verhalten einen echten `Player` oder eine
-  `Instance` braucht.
-- `ModuleHarness.startStandalone(LobbyModule...)` baut stattdessen einen
-  eigenständigen Scheduler, `CommandManager` und Event-Node ohne `Env` - für
-  reine Verdrahtungstests, die keinen Spieler brauchen (s.
-  `ModuleContextTest`).
-- `ModuleHarness` nimmt keinen Konfigurationsparameter mehr entgegen. Ein
-  Modul-Integrationstest aktiviert das Modul mit den ausgelieferten
-  Standardwerten aus der Classpath-`application.yaml` - es gibt **keine**
-  `application-test.yaml`, damit Tests die ausgelieferten Standardwerte
-  prüfen und nicht eine eigene Testwelt (s. Tests-Abschnitt oben).
-- Ein Modul, dessen Konstruktor schon die plattformweite `ItemRegistry`
-  braucht, bevor `enable()` läuft, nutzt die
-  `ModuleHarness.ModuleFactory`-Überladung: Der Harness baut die
-  Item-Registry zuerst und reicht sie der Factory.
-- `close()` (bzw. Try-with-Resources) ruft `ModuleRegistry.disableAll()` und
-  hängt den Harness-Node wieder ab - ohne das leckt ein Test Listener in den
-  nächsten.
+(`app/src/main/java/net/onelitefeather/titan/app/feature/navigator/NavigatorItems.java`)
 
-Item-Dispatch wird über ein direkt gefeuertes `PlayerUseItemEvent` getestet
-(`env.process().eventHandler().call(new PlayerUseItemEvent(player, hand,
-stampedStack, sequence))`), Chat-Ausgaben über
-`TestConnection#trackIncoming(SystemChatPacket.class)`. Achtung:
-`Collector#collect()` (und die `assertSingle()`/`assertEmpty()`-Kurzformen,
-die es aufrufen) **entnimmt** den Tracker aus der Verbindung - nach dem ersten
-`collect()` werden keine weiteren Pakete mehr mitgeschnitten. Für einen Test
-mit mehreren Aktionen deshalb erst alle Events feuern und danach genau einmal
-`collect()` aufrufen, nicht dazwischen (s. `ExampleModuleTest`).
+Die Plattform-Bean `LobbyItems` (`app/src/main/java/net/onelitefeather/titan/app/module/item/`)
+bekommt jedes `LobbyItem` per Listen-Injektion (`List<LobbyItem>`), stempelt es mit dem
+Identitäts-Tag `LobbyItems.IDENTITY_TAG` und dispatcht ein einziges `PlayerUseItemEvent` am
+`titan`-Node an den passenden `onUse`-Handler - ein Feature braucht dafür keinen eigenen Listener.
+Zwei Items mit demselben `key()` oder demselben festen `ItemSlot` (`hotbar(0..8)` oder
+`equipment(EquipmentSlot)`) lassen den `LobbyItems`-Konstruktor mit `IllegalStateException`
+abbrechen, die beide Items nennt; `ItemSlot.unplaced()` (z. B. das Elytra-Feuerwerk, das nur
+während des Fliegens in der Nebenhand liegt) ist davon ausgenommen. `LobbyItems#equip(player)`
+räumt das Inventar und setzt alle Items mit festem Platz - das rufen Spawn- und Respawn-Feature auf
+(`LobbyItems#equip`), nicht jedes Feature selbst; `LobbyItems#stack(key)` gibt den gestempelten
+Stack für ein unplatziertes Item heraus, das ein Feature selbst aushändigt (`ElytraModule`s
+Feuerwerk).
+
+Der Navigator ist der einzige Sonderfall ohne Andockpunkt: Seine vier Ziele stehen fest im
+package-privaten `enum Destination` (s. `openspec/changes/navigator-entries-in-code/design.md`).
+Nur `Destination.SLENDER` bleibt hinter der Feature-Flag `NAVIGATOR_SLENDER` versteckt, ausgewertet
+über `FeatureFlags`, dem `NavigatorModule` per Konstruktor übergeben.
+
+## Tasks über den injizierten `Scheduler`
+
+Ein wiederkehrender Task wird direkt über den injizierten Minestom-`Scheduler` geplant, nicht über
+einen eigenen Andockpunkt:
+
+```java
+this.task = this.scheduler.scheduleTask(this.boosts::advance, TaskSchedule.tick(1), TaskSchedule.tick(1));
+```
+
+(`app/src/main/java/net/onelitefeather/titan/app/feature/elytra/ElytraModule.java`, `start()`).
+`stop()` bricht ihn **nach** `node.close()` ab (s. oben, "Aufbau eines Features") - erst der
+Event-Node weg, dann der Task.
+
+## Konfiguration lesen: die statische Fassade `Config`
+
+Unverändert gegenüber vorherigen Changes (s. `openspec/changes/avaje-config-facade/design.md` und
+`openspec/changes/config-reload-feature-flags/design.md`): Ein Feature liest seine Werte direkt
+über die statische Fassade `io.avaje.config.Config`, an zwei Stellen mit unterschiedlichem Zweck.
+
+**Einmal streng in `start()`**, wo ein ungültiger Wert weiterhin den Start abbricht:
+
+```java
+// TickleModule.start()
+long cooldownMillis = Config.getAs(TickleSettings.COOLDOWN_KEY, TickleSettings::cooldownMillis);
+```
+
+- **Zahlen** kommen über `Config.getAs(key, Integer::parseInt)` (entsprechend `Long::parseLong`,
+  `Double::parseDouble`), nicht über `Config.getInt/getLong/getDecimal`: `getAs` fängt einen Fehler
+  der eigenen Funktion ab und wirft eine `IllegalStateException`, die den vollen Schlüssel nennt
+  und die ursprüngliche Exception als `cause` behält.
+- Der **Schlüssel** ist eine `private static final String`-Konstante im Feature, nach dem Schema
+  `<feature-id>.<feld>` (z. B. `"tickle.cooldownMillis"`).
+- Die **Prüfung** liegt in einer reinen, statischen, paketprivaten Funktion - für einen Einzelwert
+  dient sie direkt als `getAs`-Funktion (`TickleSettings.cooldownMillis(String)`); für eine Prüfung
+  über mehrere Felder (`spawn.minHeight`/`maxHeight`) oder eine, die nicht über `getAs` läuft
+  (`sit.allowedBlocks`), nennt sie den vollen Schlüssel selbst.
+- **Standardwerte gehören in `application.yaml`**, nicht in den Code - ein Feature liest ohne
+  eigenen Fallback (`Config.get(key)`, nicht `Config.get(key, "…")`). Fehlt ein Schlüssel, bricht
+  der Start mit `Missing required configuration parameter [key]` ab.
+
+**Ein zweites Mal am Gebrauchsort**, für jeden Wert, der sich zur Laufzeit ändern soll (heute jeder
+Wert von tickle, sit, elytra und spawn): direkt über `Config.<Methode>(key)`, ohne erneute Prüfung
+und ohne Rückfall, z. B. `TickleAttackHandler` bei jedem Angriff. Konfiguration wird nur einmal
+geprüft, beim Start; ein Lesevorgang am Gebrauchsort kann bei einem zur Laufzeit ungültig
+gewordenen Wert entweder einfach falsch wirken oder fehlschlagen - nichts davon wird geloggt oder
+abgefangen. Ein Wert, der so gelesen wird, hat trotzdem seine eigene Prüffunktion für den einen
+strengen Start-Read (s. oben).
+
+Es gibt seit `dissolve-module-platform` keine Bindung an ein Config-Record und keinen
+`ConfigChangeHandler` mehr. Ein Feature, das seine Werte am Gebrauchsort liest, braucht für ein
+Neuladen der Konfiguration zur Laufzeit (avaje-configs Dateiüberwachung, s. README, Abschnitt
+"Runtime reloading") nichts Eigenes zu tun: Der geänderte Wert gilt beim nächsten Lesevorgang, ohne
+Abschalten oder erneutes `start()`.
+
+## Regeln für den Tick-Thread
+
+`start()` läuft beim Aufbau des `BeanScope`; jeder darüber registrierte Listener läuft danach auf
+dem Tick-Thread. Daraus folgen vier Regeln:
+
+1. **Keine Listener-Registrierung zur Laufzeit.** Ein Feature registriert alles, was es braucht,
+   in `start()` - nie erst, wenn ein Spieler joint oder ein Menü öffnet. Der Navigator-Speicherleck
+   auf `main`, der diese Regel motiviert hat, entstand genau dadurch, dass pro Spieler zur Laufzeit
+   neue Listener angemeldet wurden, ohne sie je wieder abzumelden.
+2. **Kein blockierendes IO/HTTP in Handlern.** Ein Listener, der auf eine HTTP-Antwort wartet,
+   blockiert den gesamten Tick und damit jeden Spieler in der Lobby.
+3. **Pakete/Components zwischenspeichern statt neu bauen.** `ExampleItems` baut die feste
+   Rückmeldung `ON_COOLDOWN` einmal als `static final Component`; `NavigatorModule` legt das
+   geteilte Aves-Inventar nur neu an, wenn sich die sichtbare Zielmenge geändert hat, nicht bei
+   jedem Öffnen.
+4. **Spielerbezogener Zustand gehört aufgeräumt.** Zustand pro Spieler (ein Cooldown-Zeitstempel)
+   muss bei `PlayerDisconnectEvent` entfernt werden, sonst wächst er unbegrenzt -
+   `ExampleGreetingTracker#clear` und `FireworkBoostTracker#forget` folgen diesem Muster.
+
+## Tests: ohne Harness
+
+Es gibt keinen eigenen Test-Harness mehr. Ein Feature-Test baut das Feature entweder direkt oder
+über einen echten `BeanScope`.
+
+### Unten: reine Unit-Tests
+
+Reine Entscheidungs- und Formatierungslogik gehört in eine eigene, paketprivate Klasse ohne
+Minestom-Abhängigkeit - `ExampleGreetingRuleTest` prüft `ExampleGreetingRule.isOnCooldown(...)` und
+`.greeting(...)` ganz ohne `Env` oder `Player`. Ein Unit-Test prüft ebenso die paketprivate
+Prüffunktion aus "Konfiguration lesen" direkt, ganz ohne `Config`.
+
+### Mitte: direkte Konstruktion mit `TestTitanNode`
+
+Ein Env-Integrationstest baut das Feature mit Fakes und einem frischen Test-`titan`-Node:
+
+```java
+try (TestTitanNode titan = TestTitanNode.attach(env)) {
+    TickleModule module = new TickleModule(titan.node(), Clock.fixed(NOW, ZoneOffset.UTC));
+    module.start();
+    try {
+        env.process().eventHandler().call(new EntityAttackEvent(attacker, target));
+        // ...
+    } finally {
+        module.stop();
+    }
+}
+```
+
+`net.onelitefeather.titan.app.testutils.TestTitanNode` (s. `ProtectionModuleTest`, `SpawnModuleTest`,
+`TickleModuleTest`, `ElytraFixture`, `NavigatorFixture`) hängt einen frisch benannten Node unter
+`env.process().eventHandler()` und hebt ihn beim `close()` wieder ab - genau das, was
+`PlatformBeans` in Produktion tut, ohne den `BeanScope`. Ein Feature mit eigenen Items baut daneben
+eine eigene `LobbyItems`-Instanz aus den Items, die dessen `@Factory`-Klasse liefert (s.
+`SpawnModuleTest`, `ElytraFixture`). Ein Test, der prüft, dass nach `stop()` keines der Events mehr
+Code des Features auslöst, ist Pflicht für jedes Feature (s. `SpawnModuleTest#stopLeavesNoListenerBehind`
+u. Ä.).
+
+### Oben: der echte `BeanScope`
+
+Ein Test, der die reale Verdrahtung mehrerer Features zusammen prüft (z. B. dass ein
+Navigator-Klick trotz `ProtectionModule`s Abbruch weiterleitet), baut den echten `BeanScope` -
+`app/src/test/java/net/onelitefeather/titan/app/bootstrap/WiringTest.java`,
+`NavigatorProtectionOrderingTest`, `StandardLoadoutTest` (alle in `app.bootstrap`, neben der
+Kompositionswurzel, nicht in einem einzelnen Feature-Paket):
+
+```java
+BeanScope scope = BeanScope.builder().forTesting()
+        .mock(MapProvider.class).mock(FeatureFlags.class).build();
+try {
+    NavigatorModule navigator = scope.get(NavigatorModule.class);
+    // ...
+} finally {
+    scope.close();
+}
+```
+
+`BeanScope.builder().forTesting().mock(Type)` registriert vor dem Aufbau einen Mockito-Mock für
+Typen, die die Filesystem oder eine statische Fassade berühren (`MapProvider`, `FeatureFlags`) -
+jede generierte `@Bean`-Methode prüft, ob ihr Typ schon geliefert wurde, bevor sie ihn selbst baut.
+Jedes andere Bean (alle sieben Features, `LobbyItems`, `Deliver`, `Clock`, `Scheduler`) wird exakt
+so gebaut wie in Produktion. `.bean(Type, instance)` liefert statt eines Mocks eine echte
+Testinstanz (z. B. einen aufzeichnenden `Deliver`).
+
+Item-Dispatch wird über ein direkt gefeuertes `PlayerUseItemEvent` getestet, Chat-Ausgaben über
+`TestConnection#trackIncoming(SystemChatPacket.class)`. `Collector#collect()` (und die
+`assertSingle()`/`assertEmpty()`-Kurzformen) **entnimmt** den Tracker aus der Verbindung - für
+einen Test mit mehreren Aktionen deshalb erst alle Events feuern und danach genau einmal
+`collect()` aufrufen.
 
 ## Architekturregeln (ArchUnit)
 
-`app/src/test/java/net/onelitefeather/titan/app/architecture/ArchitectureTest`
-prüft im Build, nicht nur per Konvention (s. `design.md`, Entscheidung 10):
+`app/src/test/java/net/onelitefeather/titan/app/architecture/ArchitectureTest` prüft im Build,
+nicht nur per Konvention:
 
 1. Feature-Pakete unter `..app.feature.(*)..` hängen nicht voneinander ab.
-2. Klassen in `..app.module..` und `..titan.common..` hängen nicht von
-   `..app.feature..` ab.
-3. In `..app.feature..` ist nur `*Module` `public`, dazu die von Avaje Inject
-   generierten `$DI`-Klassen (Verdrahtungscode, keine handgeschriebene
-   Feature-Oberfläche).
-4. Nur Plattform-Code (`..app.module..`) und die Kompositionswurzel (`Titan`,
-   `TitanApplication`, `PlatformBeans`) rufen
-   `EventNode#addListener`/`GlobalEventHandler#addListener` direkt auf - ein
-   Feature-Modul geht immer über `context.listen`/`listenIncludingCancelled`.
-5. Jede `LobbyModule`-Implementierung in `..app.feature..` trägt `@Singleton`
-   **und** `@io.avaje.inject.Priority` (s. "Gefunden werden" oben).
-6. Kein Feature-Code hängt von `io.avaje.inject.BeanScope` ab - Abhängigkeiten
-   kommen ausschließlich über den Konstruktor, kein Service-Locator.
-7. Die `@Priority`-Werte aller Module in `..app.feature..` sind eindeutig
-   (`ArchitectureTest#modulePrioritiesAreUnique`, ein Reflection-Test statt
-   einer `ArchRule`).
-8. `..app.feature.navigator..` hängt nicht von `io.avaje.config..` ab - der
-   Navigator liest seine (fest verdrahteten) Ziele nie aus der Konfiguration
-   (s. "navigator ist fest verdrahtet" oben).
+2. Klassen in `..app.module..` und `..titan.common..` hängen nicht von `..app.feature..` ab.
+3. In `..app.feature..` ist nur `*Module` `public`, dazu die von Avaje Inject generierten
+   `$DI`-Klassen.
+4. Klassen in `..app.feature..` rufen `EventNode#addListener`/`#addChild` oder
+   `MinecraftServer#getGlobalEventHandler()` nie direkt auf - nur über `FeatureNode`.
+5. Jede Klasse in `..app.feature..` mit einer `@PostConstruct`-Methode trägt `@Singleton`.
+6. Kein Feature-Code hängt von `io.avaje.inject.BeanScope` ab - Abhängigkeiten kommen
+   ausschließlich über den Konstruktor.
+7. Die Werte von `EVENT_PRIORITY` sind über alle Features eindeutig
+   (`ArchitectureTest#eventPriorityValuesAreUniqueAcrossFeatures`, Reflection statt `ArchRule`).
+8. `..app.feature.navigator..` hängt nicht von `io.avaje.config..` ab.
+9. `..app.module..` (die Plattform) hängt nicht von `..app.bootstrap..` (der Kompositionswurzel)
+   ab.
 
-## Checkliste: neues Feature = neues Paket, null geänderte Zeilen außerhalb
+## Checkliste: neues Feature = neues Paket
 
-1. Neues Paket `app/src/main/java/net/onelitefeather/titan/app/feature/<name>/`
-   anlegen - `app/src/test/.../feature/example/` als Kopiervorlage nehmen.
-2. `<Name>Module` (public, implementiert `LobbyModule`, trägt `@Singleton`
-   und ein noch nicht vergebenes `@Priority(n)` - s. "Gefunden werden" oben
-   und die Prioritätstabelle dort) anlegen. Braucht das Feature Konfiguration,
-   kommen die Schlüssel-Konstanten und das Lesen über `Config` (inklusive
-   `Config.getAs` für Zahlen) in dieselbe Klasse, die Validierung in eine
-   reine, paketprivate Funktion
-   (s. "Konfiguration lesen" oben) - kein eigenes Config-Record mehr. Alles
-   andere - Handler, reine Logik, Item-/Tag-Konstanten - bleibt paketprivat.
-3. Abhängigkeiten (eine `Instance`, ein `Deliver`, ein `Clock`, ...) über den
-   Konstruktor anfordern, `@Inject` nur, falls die Klasse mehr als einen
-   Konstruktor hat (s. "Gefunden werden" oben). Braucht das Feature einen
-   Plattform-Dienst, den es noch nicht gibt, kommt der entweder als weiteres
-   `@Bean` in `PlatformBeans` oder, falls er selbst Feature-übergreifende
-   Logik trägt, als eigene `@Singleton`-Klasse dazu.
-4. In `enable(ModuleContext context)` die gebrauchten Andockpunkte verdrahten:
-   `Config` (inklusive `Config.getAs` für Zahlen) fürs Lesen der eigenen
-   Werte (kein Andockpunkt auf `ModuleContext`, s. "Konfiguration lesen"
-   oben), dazu
-   `context.items().register(...)`, `context.commands().register(...)`,
-   `context.listen(...)`/`listenIncludingCancelled(...)`, `context.tasks()`.
-5. Tests schreiben, bevor (oder während) der Code entsteht: Unit-Tests für die
-   reine Logik und die Config-Validierung, ein Env-Integrationstest über
-   `ModuleHarness` für alles, was einen `Player` braucht.
-6. Falls das Feature Konfiguration hat: die neuen Schlüssel samt Standardwert
-   in `app/src/main/resources/application.yaml` eintragen - das ist die
-   einzige Stelle, an der der Standardwert steht (s. "Konfiguration lesen"
-   oben) - und die Felder, ihre Standardwerte und Env-Variablen-Namen im
-   README unter "Configuration Options Explained" bzw. "Environment variable
-   reference" dokumentieren.
+1. Neues Paket `app/src/main/java/net/onelitefeather/titan/app/feature/<name>/` anlegen -
+   `app/src/test/.../feature/example/` als Kopiervorlage nehmen.
+2. `<Name>Module` (public, `@Singleton`, ein noch nicht vergebenes `EVENT_PRIORITY` - s. "Gefunden
+   werden" oben und die Tabelle dort) anlegen: `@PostConstruct start()` hängt den `FeatureNode` an
+   und registriert die Listener, `@PreDestroy stop()` ruft `node.close()` (und danach ggf.
+   `task.cancel()`).
+3. Braucht das Feature Konfiguration: Schlüssel-Konstanten und das strenge Lesen über `Config`
+   (inklusive `Config.getAs` für Zahlen) in `start()`, die Validierung in einer reinen,
+   paketprivaten Funktion (s. "Konfiguration lesen" oben).
+4. Braucht das Feature ein Hotbar- oder Ausrüstungsitem: eine eigene, paketprivate `@Factory`-Klasse
+   mit einer `@Bean LobbyItem`-Methode (s. "Items als Beans" oben).
+5. Abhängigkeiten (eine `Instance`, ein `Deliver`, ein `Clock`, der `Scheduler`, ...) über den
+   Konstruktor anfordern. Braucht das Feature einen Plattform-Dienst, den es noch nicht gibt, kommt
+   der entweder als weiteres `@Bean` in `PlatformBeans` oder, falls er selbst
+   feature-übergreifende Logik trägt, als eigene `@Singleton`-Klasse dazu.
+6. Tests schreiben, bevor (oder während) der Code entsteht: Unit-Tests für die reine Logik und die
+   Config-Validierung, ein Env-Integrationstest über direkte Konstruktion mit `TestTitanNode` für
+   alles, was einen `Player` braucht - inklusive eines Tests, dass `stop()` keinen weiteren
+   Event-Effekt mehr hat.
+7. Falls das Feature Konfiguration hat: die neuen Schlüssel samt Standardwert in
+   `app/src/main/resources/application.yaml` eintragen und im README unter "Configuration Options
+   Explained" bzw. "Environment variable reference" dokumentieren.
 
-Das war's - **keine** zentrale Modulliste mehr zu pflegen: `@Singleton` plus
-`@Priority` genügen, damit `Titan` das neue Modul über
-`scope.listByPriority(LobbyModule.class)` findet und an der richtigen Stelle
-startet (s. `lobby-modules`-Spec, Szenario "Beispielmodul aus der Vorlage").
-Die einzige Ausnahme von "null geänderte Zeilen außerhalb des eigenen
-Pakets" ist ein brandneuer, geteilter Plattform-Dienst (Schritt 3): Der
-berührt zwangsläufig `PlatformBeans`, weil dort - und nur dort - Plattform-
-Typen zu Avaje-Beans werden.
-
-`ExampleModule` selbst bleibt test-only (`app/src/test`, nicht
-`app/src/main`) und trägt trotzdem `@Singleton`/`@Priority(800)` (mit einem
-Kommentar, dass ein echtes Modul einen noch nicht vergebenen Wert braucht)
-sowie `@Inject` auf seinem `Clock`-Konstruktor, damit die Vorlage als Ganzes
-korrekt kopierbar bleibt. Gefunden wird es trotzdem nicht: Der
-Annotation-Processor läuft nicht für Testquellen
-(`testAnnotationProcessor` ist nicht gesetzt), `ModuleWiringTest` sieht also
-weiterhin genau die sieben Module aus der Tabelle oben, nicht acht. Als
-reguläres Feature bräuchte es genau die Annotationen aus Schritt 2, sonst
-keine Änderung außerhalb seines eigenen Pakets.
+Das war's - **keine** zentrale Feature-Liste zu pflegen: `@Singleton` genügt, damit `Titan` das
+neue Feature beim Aufbau des `BeanScope` findet und startet. Die einzige Ausnahme von "kein
+geänderter Code außerhalb des eigenen Pakets" ist ein brandneuer, geteilter Plattform-Dienst
+(Schritt 5): Der berührt zwangsläufig `PlatformBeans`, weil dort - und nur dort - Plattform-Typen
+zu Avaje-Beans werden.
