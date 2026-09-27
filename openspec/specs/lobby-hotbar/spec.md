@@ -1,12 +1,12 @@
 # lobby-hotbar Specification
 
 ## Purpose
-Legt fest, wie Module ihre Lobby-Items (Hotbar und Ausrüstung) anmelden, wie Konflikte um denselben Platz verhindert werden und wie ein benutztes Item beim richtigen Modul ankommt.
+Legt fest, wie Features ihre Lobby-Items (Hotbar und Ausrüstung) als Beans bereitstellen, wie Konflikte um Platz oder Schlüssel beim Start erkannt werden und wie ein benutztes Item beim richtigen Feature ankommt.
 
 ## Requirements
 
 ### Requirement: Module melden Items mit festem Platz an
-Ein Modul MUSS ein Lobby-Item zusammen mit seinem Platz anmelden können, entweder als Hotbar-Slot oder als Ausrüstungsplatz. Beim Betreten der Lobby und nach einem Respawn MUSS der Spieler genau die angemeldeten Items auf ihren Plätzen erhalten. Sein Inventar enthält danach sonst nichts.
+Ein Feature MUSS ein Lobby-Item zusammen mit seinem Platz bereitstellen können, entweder als Hotbar-Slot oder als Ausrüstungsplatz, ohne die Plattform zu ändern. Beim Betreten der Lobby und nach einem Respawn MUSS der Spieler genau die bereitgestellten Items auf ihren Plätzen erhalten. Sein Inventar enthält danach sonst nichts.
 
 #### Scenario: Standardausstattung
 - **WHEN** ein Spieler die Lobby betritt
@@ -17,11 +17,19 @@ Ein Modul MUSS ein Lobby-Item zusammen mit seinem Platz anmelden können, entwed
 - **THEN** hat er wieder genau die Standardausstattung
 
 ### Requirement: Platzkonflikte werden beim Start erkannt
-Melden zwei Module ein Item für denselben Platz an, MUSS die Lobby den Start abbrechen. Die Fehlermeldung MUSS den Platz und beide Module nennen.
+Stellen zwei Items denselben Platz oder denselben Schlüssel bereit, MUSS die Lobby den Start abbrechen. Die Fehlermeldung MUSS den Platz bzw. den Schlüssel und beide Items nennen.
 
 #### Scenario: Zwei Module wollen Slot 4
-- **WHEN** das Modul „navigator“ und ein Modul „friends“ beide ein Item für Hotbar-Slot 4 anmelden
-- **THEN** startet die Lobby nicht und meldet den Konflikt um Slot 4 zwischen „navigator“ und „friends“
+- **WHEN** die Navigator-Feder und ein Item „friends“ beide Hotbar-Slot 4 beanspruchen
+- **THEN** startet die Lobby nicht und meldet den Konflikt um Slot 4 zwischen beiden Items
+
+#### Scenario: Doppelter Schlüssel
+- **WHEN** zwei Items denselben Schlüssel `titan:navigator` tragen
+- **THEN** startet die Lobby nicht und meldet den doppelten Schlüssel mit beiden Items
+
+#### Scenario: Items ohne festen Platz
+- **WHEN** zwei Items ohne festen Platz bereitgestellt werden
+- **THEN** ist das kein Konflikt
 
 ### Requirement: Benutzte Items erreichen ihr Modul
 Benutzt ein Spieler ein angemeldetes Item, MUSS genau das Modul die Benutzung erhalten, das das Item angemeldet hat. Die Zuordnung MUSS über die Identität des Items erfolgen, nicht über Aussehen, Material oder Namen.
