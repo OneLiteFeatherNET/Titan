@@ -20,7 +20,10 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.UUID;
 import net.minestom.server.entity.Player;
+import net.minestom.server.event.Event;
+import net.minestom.server.event.EventNode;
 import net.minestom.server.event.entity.EntityAttackEvent;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.item.ItemStack;
@@ -31,7 +34,6 @@ import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.TestConnection;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.app.module.testing.ModuleHarness;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
@@ -39,10 +41,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Env integration coverage for {@link TickleModule}, started through {@link ModuleHarness}: the
- * scenarios a pure {@link TickleCooldownRuleTest} cannot reach because they need a real {@link
- * Player} and {@link Instance} - a feather-holding attack broadcasting the tickle message, an
- * attack without a feather doing nothing, and a second hit within the cooldown doing nothing.
+ * Env integration coverage for {@link TickleModule}, built directly with a fresh {@code titan}
+ * node and a fixed clock - see {@code openspec/changes/dissolve-module-platform/tasks.md}, task
+ * 2.6: the scenarios a pure {@link TickleCooldownRuleTest} cannot reach because they need a real
+ * {@link Player} and {@link Instance} - a feather-holding attack broadcasting the tickle message,
+ * an attack without a feather doing nothing, and a second hit within the cooldown doing nothing.
  *
  * <p>Every test uses a fixed {@link Clock} (F.I.R.S.T. - repeatable), so "now" never depends on
  * when the test happens to run.
@@ -59,8 +62,14 @@ class TickleModuleTest {
      */
     private static final long DEFAULT_COOLDOWN_MILLIS = Config.getAs(TickleSettings.COOLDOWN_KEY, Long::parseLong);
 
-    private static TickleModule fixedClockModule() {
-        return new TickleModule(Clock.fixed(NOW, ZoneOffset.UTC));
+    private static EventNode<Event> attachTitanNode(Env env) {
+        EventNode<Event> titan = EventNode.all("test-titan-" + UUID.randomUUID());
+        env.process().eventHandler().addChild(titan);
+        return titan;
+    }
+
+    private static TickleModule fixedClockModule(EventNode<Event> titan) {
+        return new TickleModule(titan, Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
     @DisplayName("Attacking another player with a feather broadcasts the tickle message and sets the cooldown")
@@ -77,7 +86,10 @@ class TickleModuleTest {
         Collector<SystemChatPacket> targetMessages = targetConnection.trackIncoming(SystemChatPacket.class);
         Collector<SetCooldownPacket> cooldownPackets = attackerConnection.trackIncoming(SetCooldownPacket.class);
 
-        try (ModuleHarness harness = ModuleHarness.start(env, fixedClockModule())) {
+        EventNode<Event> titan = attachTitanNode(env);
+        TickleModule module = fixedClockModule(titan);
+        module.start();
+        try {
             env.process().eventHandler().call(new EntityAttackEvent(attacker, target));
 
             attackerMessages.assertSingle();
@@ -85,6 +97,9 @@ class TickleModuleTest {
             cooldownPackets.assertSingle();
             Assertions.assertTrue(attacker.hasTag(TickleAttackHandler.COOLDOWN_EXPIRY), "attacker must carry the cooldown tag after tickling");
             Assertions.assertEquals(Long.valueOf(NOW.toEpochMilli() + DEFAULT_COOLDOWN_MILLIS), attacker.getTag(TickleAttackHandler.COOLDOWN_EXPIRY));
+        } finally {
+            module.stop();
+            env.process().eventHandler().removeChild(titan);
         }
     }
 
@@ -101,13 +116,19 @@ class TickleModuleTest {
         Collector<SystemChatPacket> targetMessages = targetConnection.trackIncoming(SystemChatPacket.class);
         Collector<SetCooldownPacket> cooldownPackets = attackerConnection.trackIncoming(SetCooldownPacket.class);
 
-        try (ModuleHarness harness = ModuleHarness.start(env, fixedClockModule())) {
+        EventNode<Event> titan = attachTitanNode(env);
+        TickleModule module = fixedClockModule(titan);
+        module.start();
+        try {
             env.process().eventHandler().call(new EntityAttackEvent(attacker, target));
 
             attackerMessages.assertEmpty();
             targetMessages.assertEmpty();
             cooldownPackets.assertEmpty();
             Assertions.assertFalse(attacker.hasTag(TickleAttackHandler.COOLDOWN_EXPIRY), "attacker must not carry a cooldown tag without a feather");
+        } finally {
+            module.stop();
+            env.process().eventHandler().removeChild(titan);
         }
     }
 
@@ -124,12 +145,44 @@ class TickleModuleTest {
         Collector<SystemChatPacket> attackerMessages = attackerConnection.trackIncoming(SystemChatPacket.class);
         Collector<SetCooldownPacket> cooldownPackets = attackerConnection.trackIncoming(SetCooldownPacket.class);
 
-        try (ModuleHarness harness = ModuleHarness.start(env, fixedClockModule())) {
+        EventNode<Event> titan = attachTitanNode(env);
+        TickleModule module = fixedClockModule(titan);
+        module.start();
+        try {
             env.process().eventHandler().call(new EntityAttackEvent(attacker, target));
             env.process().eventHandler().call(new EntityAttackEvent(attacker, target));
 
             Assertions.assertEquals(1, attackerMessages.collect().size(), "a second hit inside the cooldown must not tickle again");
             Assertions.assertEquals(1, cooldownPackets.collect().size(), "a second hit inside the cooldown must not send another cooldown packet");
+        } finally {
+            module.stop();
+            env.process().eventHandler().removeChild(titan);
+        }
+    }
+
+    @DisplayName("Once stopped, an attack with a feather no longer tickles")
+    @Test
+    void stopLeavesNoListenerBehind(Env env) {
+        Instance instance = env.createFlatInstance();
+        TestConnection attackerConnection = env.createConnection();
+        Player attacker = attackerConnection.connect(instance);
+        TestConnection targetConnection = env.createConnection();
+        Player target = targetConnection.connect(instance);
+        attacker.setItemInOffHand(ItemStack.of(Material.FEATHER));
+
+        EventNode<Event> titan = attachTitanNode(env);
+        TickleModule module = fixedClockModule(titan);
+        module.start();
+        module.stop();
+        try {
+            Collector<SystemChatPacket> attackerMessages = attackerConnection.trackIncoming(SystemChatPacket.class);
+
+            env.process().eventHandler().call(new EntityAttackEvent(attacker, target));
+
+            attackerMessages.assertEmpty();
+            Assertions.assertFalse(attacker.hasTag(TickleAttackHandler.COOLDOWN_EXPIRY), "a stopped feature must not react to an attack any more");
+        } finally {
+            env.process().eventHandler().removeChild(titan);
         }
     }
 
@@ -148,7 +201,10 @@ class TickleModuleTest {
         Collector<SystemChatPacket> attackerMessages = attackerConnection.trackIncoming(SystemChatPacket.class);
         Collector<SetCooldownPacket> cooldownPackets = attackerConnection.trackIncoming(SetCooldownPacket.class);
 
-        try (ModuleHarness harness = ModuleHarness.start(env, new TickleModule(clock))) {
+        EventNode<Event> titan = attachTitanNode(env);
+        TickleModule module = new TickleModule(titan, clock);
+        module.start();
+        try {
             env.process().eventHandler().call(new EntityAttackEvent(attacker, target));
 
             // Move past the cooldown and attack again - desired behaviour is a second tickle, not
@@ -161,6 +217,9 @@ class TickleModuleTest {
             for (SetCooldownPacket packet : cooldownPackets.collect()) {
                 Assertions.assertEquals(expectedTicks, packet.cooldownTicks(), "the cooldown packet must carry a tick count (cooldownMillis / 50), not a millisecond timestamp");
             }
+        } finally {
+            module.stop();
+            env.process().eventHandler().removeChild(titan);
         }
     }
 }
