@@ -38,6 +38,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
 
 /**
  * Builds the real Avaje Inject {@link BeanScope} - the same discovery {@code Titan} runs at
@@ -45,8 +46,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * decisions 1 and 4 describe: every one of the seven lobby features is a bean the scope builds
  * (each starting itself through its own {@code @PostConstruct}), {@link LobbyItems} collects
  * exactly the three item beans the features contribute, closing the scope detaches every feature's
- * event node again, and a feature whose start fails aborts the whole build with a message naming
- * it.
+ * event node again, and a feature whose start fails aborts the whole build with an exception whose
+ * stack trace names it.
  *
  * <p>Replaces the previous wiring test, which asserted the module-list-based discovery this change
  * removes (see task 3.2).
@@ -111,28 +112,38 @@ class WiringTest {
     }
 
     /**
-     * A feature's own {@code @PostConstruct} runs as part of building the {@link BeanScope}, on
-     * the same construction path {@link BeanScopeBuilder#addPostConstruct(Runnable)} hooks into -
-     * so a callback registered there that throws exercises the same "does a failure abort the
-     * whole build" behaviour a real feature's failing {@code start()} would, without needing a
-     * feature that only ever fails for this one test (a production test hook this change's rules
-     * forbid). The callback names the class it stands in for itself, exactly like the report a real
-     * failing feature's exception carries.
+     * Avaje does not wrap a {@code @PostConstruct} failure in any exception of its own: {@code
+     * DBeanScope#start()} calls a bean's {@code start()} inline, so a real feature's exception
+     * propagates to {@link BeanScopeBuilder#build()}'s caller completely unchanged - same type,
+     * same message, same {@link Throwable#getStackTrace()} - with no cause added and no wrapper
+     * naming the bean anywhere in its message (confirmed against Avaje Inject 12.7 by instrumenting
+     * this exact failure path). The only place the failing feature's class is guaranteed to show up
+     * is that original stack trace, because Avaje invoked its {@code start()} method directly.
+     *
+     * <p>So this test makes a real feature fail for real: {@link NavigatorModule#start()} calls
+     * {@code Destination#visible(FeatureFlags)}, which calls {@link FeatureFlags#isActive(String)}
+     * on the constructor-injected {@link FeatureFlags} - the exact seam the class's own Javadoc
+     * says exists so a test can hand in a fake. Mocking that one collaborator to throw (Avaje's
+     * {@code forTesting().mock(Type, Consumer)}, the same test-only escape hatch the other tests in
+     * this class use for {@link MapProvider}) fails {@link NavigatorModule#start()} itself, without
+     * a self-chosen production test hook.
      */
-    @DisplayName("A feature whose start fails aborts the whole build, naming the failing feature")
+    @DisplayName("A feature whose start fails aborts the whole build, and the exception's stack trace names the failing feature")
     @Test
     void aFailingFeatureAbortsTheBuildNamingIt(Env env) {
-        RuntimeException thrown = Assertions.assertThrows(RuntimeException.class, () -> BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class).addPostConstruct(() -> {
-            throw new IllegalStateException("SimulatedFailingFeature deliberately failed to start (WiringTest)");
-        }).build(), "a feature failing its start must abort building the scope instead of silently continuing");
+        RuntimeException thrown = Assertions.assertThrows(RuntimeException.class, () -> BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class, flags -> Mockito.when(flags.isActive(Mockito.anyString())).thenAnswer(invocation -> {
+            throw new IllegalStateException("feature flag lookup failed (WiringTest)");
+        })).build(), "a feature failing its start must abort building the scope instead of silently continuing");
 
-        Assertions.assertTrue(namesFailingFeature(thrown), "the exception (or one of its causes) must name the failing feature; was: " + describeChain(thrown));
+        Assertions.assertTrue(namesFailingFeature(thrown, NavigatorModule.class), "the exception's stack trace (or one of its causes') must contain a frame in the failing feature's class; was: " + describeChain(thrown));
     }
 
-    private static boolean namesFailingFeature(Throwable thrown) {
+    private static boolean namesFailingFeature(Throwable thrown, Class<?> featureType) {
         for (Throwable current = thrown; current != null; current = current.getCause()) {
-            if (String.valueOf(current.getMessage()).contains("SimulatedFailingFeature")) {
-                return true;
+            for (StackTraceElement frame : current.getStackTrace()) {
+                if (featureType.getName().equals(frame.getClassName())) {
+                    return true;
+                }
             }
         }
         return false;
