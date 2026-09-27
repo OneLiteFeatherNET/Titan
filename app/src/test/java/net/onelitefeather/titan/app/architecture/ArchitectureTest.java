@@ -31,52 +31,43 @@ import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.conditions.ArchConditions;
 import io.avaje.inject.BeanScope;
-import io.avaje.inject.Priority;
+import io.avaje.inject.PostConstruct;
 import io.avaje.inject.spi.Generated;
 import jakarta.inject.Singleton;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.lang.classfile.Attribute;
+import java.lang.classfile.ClassFile;
+import java.lang.classfile.ClassModel;
+import java.lang.classfile.FieldModel;
+import java.lang.classfile.attribute.ConstantValueAttribute;
+import java.lang.classfile.constantpool.IntegerEntry;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.TreeMap;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.event.EventNode;
-import net.onelitefeather.titan.app.Titan;
-import net.onelitefeather.titan.app.TitanApplication;
-import net.onelitefeather.titan.app.bootstrap.PlatformBeans;
-import net.onelitefeather.titan.app.module.LobbyModule;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 /**
- * Enforces the module boundaries decided in
- * {@code openspec/changes/lobby-feature-modules/design.md}, decision 10, and the
- * {@code lobby-modules} spec requirement "Module sind voneinander unabhängig": feature modules
+ * Enforces the feature boundaries decided in
+ * {@code openspec/changes/dissolve-module-platform/design.md}, decision 5, and the
+ * {@code lobby-modules} spec requirement "Module sind voneinander unabhängig": features
  * (protection, spawn, respawn, navigator, sit, tickle, elytra) neither depend on each other nor
- * leak internals, the platform and shared libraries never depend on a feature, and only the
- * platform touches the raw Minestom event tree.
+ * leak internals, the platform and shared libraries never depend on a feature, and only
+ * {@link net.onelitefeather.titan.app.module.FeatureNode} touches the raw Minestom event tree on a
+ * feature's behalf.
  *
  * <p><strong>Test sources are not analyzed:</strong> {@link AnalyzeClasses} below is configured
  * with {@link ImportOption.DoNotIncludeTests}, so these rules only check production code under
- * {@code app/src/main}. The test-only template module under
- * {@code app/src/test/.../feature/example/} (see {@code docs/lobby-modules.md}) is therefore
- * never scanned; it follows the same rules by convention only. A real feature copied from that
- * template into {@code app/src/main} is checked like any other feature.
- *
- * <p><strong>Scope of {@link #onlyThePlatformRegistersListenersDirectly}:</strong> this class
- * analyzes the whole {@code net.onelitefeather.titan} codebase (see {@link AnalyzeClasses}
- * above), which also covers {@code common} and the separate {@code setup} artifact. Direct calls
- * to {@code EventNode#addListener}/{@code #addChild} or
- * {@code MinecraftServer#getGlobalEventHandler()} exist there too, outside
- * {@code app.module} and outside this module system entirely:
- * {@code common.map.MapProvider} registers a chunk-load relight listener directly on a world
- * instance's own event node, and {@code setup.Titan} is the {@code setup} artifact's own,
- * unrelated composition root with its own small, hand-wired listener set. Both are legitimate,
- * already-reviewed direct uses of the Minestom event API that predate and sit outside the lobby
- * module system this rule protects. Rather than silently widening the rule to allow direct
- * registration anywhere, the rule below is deliberately scoped to
- * {@code net.onelitefeather.titan.app..} only, so it keeps guarding the one place - the lobby
- * app - where {@link net.onelitefeather.titan.app.module.ModuleContext#listen} must be the only
- * door to the event tree.
+ * {@code app/src/main}. The test-only template feature under
+ * {@code app/src/test/.../feature/example/} (see {@code docs/lobby-modules.md}) is therefore never
+ * scanned; it follows the same rules by convention only. A real feature copied from that template
+ * into {@code app/src/main} is checked like any other feature.
  */
 @AnalyzeClasses(packages = "net.onelitefeather.titan", importOptions = ImportOption.DoNotIncludeTests.class)
 class ArchitectureTest {
@@ -84,7 +75,6 @@ class ArchitectureTest {
     private static final String FEATURE_PACKAGE = "net.onelitefeather.titan.app.feature..";
     private static final String MODULE_PACKAGE = "net.onelitefeather.titan.app.module..";
     private static final String COMMON_PACKAGE = "net.onelitefeather.titan.common..";
-    private static final String APP_PACKAGE = "net.onelitefeather.titan.app..";
     private static final String NAVIGATOR_PACKAGE = "net.onelitefeather.titan.app.feature.navigator..";
     private static final String AVAJE_CONFIG_PACKAGE = "io.avaje.config..";
     private static final String BOOTSTRAP_PACKAGE = "net.onelitefeather.titan.app.bootstrap..";
@@ -92,156 +82,158 @@ class ArchitectureTest {
     /**
      * True for a class named {@code *Module}, or a class Avaje Inject's annotation processor
      * generated (e.g. {@code ElytraModule$DI}) - generated wiring code, not hand-authored feature
-     * surface, so decision 10.3's "only *Module is public" intent does not apply to it; see
-     * {@code openspec/changes/avaje-dependency-injection/design.md}. Config records no longer
-     * exist - every module reads its configuration through the {@code io.avaje.config.Config}
-     * facade instead (see {@code openspec/changes/avaje-config-facade/design.md}, decision 3), so
-     * this predicate no longer exempts a {@code *Config} type. The generated-class check requires
-     * both the {@code $DI} simple-name suffix Avaje Inject's generator uses and the
-     * {@link Generated} marker it stamps on every class it emits, so the relaxation cannot
-     * accidentally widen to some other, unrelated generated type that happens to carry the same
-     * annotation.
+     * surface. Every feature's own item factory (e.g. {@code NavigatorItems},
+     * {@code ElytraLobbyItems}) is package-private, like the rest of a feature's internals: Avaje
+     * Inject's generated wiring lives in the same package as the class it annotates, so it never
+     * needs a factory itself to be public - see
+     * {@code openspec/changes/dissolve-module-platform/tasks.md}, task 3 review fixes.
      */
     private static final DescribedPredicate<JavaClass> PUBLIC_FEATURE_API = DescribedPredicate.describe("named '*Module', or generated by Avaje Inject", javaClass -> isModuleType(javaClass) || isAvajeGeneratedType(javaClass));
 
     /**
-     * True for {@link Titan}, {@link TitanApplication}, or {@link PlatformBeans} - the lobby's
-     * composition root. Since {@code avaje-dependency-injection}, {@code PlatformBeans} does what
-     * {@code Titan} used to do directly (creating the lobby {@code InstanceContainer}, attaching
-     * the shared {@code titan} event node to the global handler), so it is part of the composition
-     * root for the purposes of this rule too - see
-     * {@code openspec/changes/avaje-dependency-injection/design.md}, decision 3. Matched by class,
-     * like {@link Titan} and {@link TitanApplication}, rather than by exempting the whole
-     * {@code app.bootstrap} package: {@code app.bootstrap.ModuleStartupLog} is a plain logging
-     * helper, not part of the composition root, and stays subject to rule 4 like any other class.
+     * True for a call to {@code EventNode#addListener}, {@code EventNode#addChild} or
+     * {@code MinecraftServer#getGlobalEventHandler()} - the raw Minestom event API a feature must
+     * never reach for directly.
      */
-    private static final DescribedPredicate<JavaClass> IS_COMPOSITION_ROOT = DescribedPredicate.describe("is the composition root (Titan, TitanApplication, or PlatformBeans)", javaClass -> javaClass.isEquivalentTo(Titan.class) || javaClass.isEquivalentTo(TitanApplication.class) || javaClass.isEquivalentTo(PlatformBeans.class));
+    private static final DescribedPredicate<JavaMethodCall> TOUCHES_THE_RAW_EVENT_TREE = DescribedPredicate.describe("calls EventNode#addListener, EventNode#addChild or MinecraftServer#getGlobalEventHandler", ArchitectureTest::touchesTheRawEventTree);
 
     /**
-     * True for a class residing in {@code net.onelitefeather.titan.app..} that is neither part of
-     * the module platform ({@code app.module..}) nor the composition root ({@link Titan} or
-     * {@link TitanApplication}).
+     * True for a class residing in {@code net.onelitefeather.titan.app.feature..} that declares at
+     * least one method annotated with {@link PostConstruct}.
      */
-    private static final DescribedPredicate<JavaClass> MUST_NOT_REGISTER_LISTENERS_DIRECTLY = JavaClass.Predicates.resideInAPackage(APP_PACKAGE).and(DescribedPredicate.not(JavaClass.Predicates.resideInAPackage(MODULE_PACKAGE))).and(DescribedPredicate.not(IS_COMPOSITION_ROOT));
+    private static final DescribedPredicate<JavaClass> DECLARES_POST_CONSTRUCT = DescribedPredicate.describe("declares a method annotated with @PostConstruct", javaClass -> javaClass.getMethods().stream().anyMatch(method -> method.isAnnotatedWith(PostConstruct.class)));
 
     /**
-     * True for a method call to {@code EventNode#addListener}, {@code EventNode#addChild} (which
-     * also covers {@code GlobalEventHandler}, since it extends {@code EventNode}), or
-     * {@code MinecraftServer#getGlobalEventHandler()}.
-     */
-    private static final DescribedPredicate<JavaMethodCall> REGISTERS_LISTENERS_OR_LOOKS_UP_GLOBAL_HANDLER = DescribedPredicate.describe("calls EventNode#addListener, EventNode#addChild or MinecraftServer#getGlobalEventHandler", ArchitectureTest::registersListenersOrLooksUpGlobalHandler);
-
-    /**
-     * Rule 1 (design.md decision 10.1): a feature must never reach into another feature's
-     * package. Anything two features both need belongs behind a {@code ModuleContext} dock point
-     * or in a shared library outside {@code app.feature}.
+     * Rule 1 ({@code design.md}, decision 5): a feature must never reach into another feature's
+     * package. Anything two features both need belongs behind a platform bean or a shared library
+     * outside {@code app.feature}.
      */
     @ArchTest
-    static final ArchRule featureModulesDoNotDependOnEachOther = slices().matching("net.onelitefeather.titan.app.feature.(*)..").should().notDependOnEachOther().because("each feature module (protection, spawn, respawn, navigator, sit, tickle, elytra) must stand on its own; a feature needing something from another one has to go through the module context's dock points (listen/items/navigator/commands/tasks) or a shared library outside app.feature - see design.md decision 10.1 and the lobby-modules spec requirement \"Module sind voneinander unabhängig\"");
+    static final ArchRule featureModulesDoNotDependOnEachOther = slices().matching("net.onelitefeather.titan.app.feature.(*)..").should().notDependOnEachOther().because("each feature (protection, spawn, respawn, navigator, sit, tickle, elytra) must stand on its own; a feature needing something from another one has to go through a platform bean (e.g. LobbyItems) or a shared library outside app.feature - see openspec/changes/dissolve-module-platform/design.md, decision 5, and the lobby-modules spec requirement \"Module sind voneinander unabhängig\"");
 
     /**
-     * Rule 2 (design.md decision 10.2): the platform ({@code app.module}) and the shared
-     * libraries ({@code titan.common}) are what feature modules depend on, never the reverse.
+     * Rule 2 ({@code design.md}, decision 5): the platform ({@code app.module}) and the shared
+     * libraries ({@code titan.common}) are what features depend on, never the reverse.
      */
     @ArchTest
-    static final ArchRule platformAndCommonDoNotDependOnFeatures = noClasses().that().resideInAnyPackage(MODULE_PACKAGE, COMMON_PACKAGE).should().dependOnClassesThat().resideInAPackage(FEATURE_PACKAGE).because("the platform (app.module) and the shared libraries (titan.common) must stay usable without any particular feature present; a platform or common class referencing a feature type would make the platform's behaviour depend on which features happen to be registered - see design.md decision 10.2 and the lobby-modules spec requirement \"Gemeinsame Bibliotheken DÜRFEN NICHT von Feature-Modulen abhängen\"");
+    static final ArchRule platformAndCommonDoNotDependOnFeatures = noClasses().that().resideInAnyPackage(MODULE_PACKAGE, COMMON_PACKAGE).should().dependOnClassesThat().resideInAPackage(FEATURE_PACKAGE).because("the platform (app.module) and the shared libraries (titan.common) must stay usable without any particular feature present; a platform or common class referencing a feature type would make the platform's behaviour depend on which features happen to exist - see openspec/changes/dissolve-module-platform/design.md, decision 5, and the lobby-modules spec requirement \"Gemeinsame Bibliotheken DÜRFEN NICHT von Feature-Modulen abhängen\"");
 
     /**
-     * Rule 3 (design.md decision 10.3, updated by
-     * {@code openspec/changes/avaje-config-facade/design.md} decision 3): a feature's only
-     * declared surface is its {@code *Module} entry point. Config records no longer exist - a
-     * module reads its configuration through the {@code io.avaje.config.Config} facade at the
-     * edge of {@code enable()} instead, validated by package-private, pure functions underneath
-     * it. Everything else - listeners, helpers, internal state - stays package-private so no other
-     * feature or platform class can reach into it.
+     * Rule 3 ({@code design.md}, decision 5): a feature's only declared surface is its
+     * {@code *Module} entry point. Everything else - listeners, item factories, helpers, internal
+     * state - stays package-private so no other feature or platform class can reach into it.
      */
     @ArchTest
-    static final ArchRule onlyModuleTypesArePublicInFeatures = classes().that().resideInAPackage(FEATURE_PACKAGE).and().haveModifier(JavaModifier.PUBLIC).should(ArchConditions.be(PUBLIC_FEATURE_API)).because("a feature module's declared surface is its *Module entry point; per-module configuration types no longer exist, so everything else must be package-private so it cannot be depended on from outside the feature - see design.md decision 10.3, updated by openspec/changes/avaje-config-facade/design.md decision 3");
+    static final ArchRule onlyModuleTypesArePublicInFeatures = classes().that().resideInAPackage(FEATURE_PACKAGE).and().haveModifier(JavaModifier.PUBLIC).should(ArchConditions.be(PUBLIC_FEATURE_API)).because("a feature's declared surface is its *Module entry point; everything else, including its own @Factory item class, must be package-private so it cannot be depended on from outside the feature - see openspec/changes/dissolve-module-platform/design.md, decision 5");
 
     /**
-     * Rule 4 (design.md decision 10.4): only the module platform is allowed to touch the raw
-     * Minestom event tree. A feature module registers exclusively through
-     * {@link net.onelitefeather.titan.app.module.ModuleContext#listen}, which guarantees cleanup
-     * and error attribution on disable; registering directly would bypass both. See also this
-     * class's Javadoc for why the rule is scoped to {@code net.onelitefeather.titan.app..} rather
-     * than the whole analyzed codebase.
+     * Rule 4 ({@code design.md}, decision 1 and 5): a feature registers a listener only through
+     * {@link net.onelitefeather.titan.app.module.FeatureNode}, which guarantees error attribution
+     * and that {@code stop()} detaches it again. Calling {@code EventNode#addListener} (or
+     * {@code #addChild}, or reaching for the global handler) directly from a feature would bypass
+     * both.
      */
     @ArchTest
-    static final ArchRule onlyThePlatformRegistersListenersDirectly = noClasses().that(MUST_NOT_REGISTER_LISTENERS_DIRECTLY).should().callMethodWhere(REGISTERS_LISTENERS_OR_LOOKS_UP_GLOBAL_HANDLER).because("no class outside net.onelitefeather.titan.app.module.. (and outside the composition root Titan/TitanApplication) may call EventNode#addListener, EventNode#addChild or MinecraftServer#getGlobalEventHandler; a feature module registers through ModuleContext#listen instead, which guarantees cleanup and error attribution on disable - see design.md decision 10.4 and the lobby-modules spec requirement \"Keine Listener-Registrierung zur Laufzeit\". Scoped to net.onelitefeather.titan.app.. only; see this class's Javadoc for why common.map.MapProvider and the separate setup.Titan composition root are out of scope rather than silently exempted everywhere");
+    static final ArchRule featuresRegisterListenersOnlyThroughFeatureNode = noClasses().that().resideInAPackage(FEATURE_PACKAGE).should().callMethodWhere(TOUCHES_THE_RAW_EVENT_TREE).because("a class in app.feature must never call EventNode#addListener, EventNode#addChild or MinecraftServer#getGlobalEventHandler directly; a feature registers through FeatureNode instead, which guarantees cleanup and error attribution on stop() - see openspec/changes/dissolve-module-platform/design.md, decisions 1 and 5, and the lobby-modules spec requirement \"Keine Listener-Registrierung zur Laufzeit\"");
 
     /**
-     * Rule 5 ({@code openspec/changes/avaje-dependency-injection/design.md}, decision 6): a lobby
-     * module can only be found by {@code BeanScope.listByPriority(LobbyModule.class)} if it
-     * declares both {@code @Singleton} (so Avaje Inject registers it as a bean at all) and
-     * {@code @Priority} (so the sort in decision 2 has something to sort by). Without this rule, a
-     * feature module missing either annotation would simply not be discovered - it would go
-     * missing from the running lobby with no build or start failure at all.
+     * Rule 5 ({@code design.md}, decision 1): a class in {@code app.feature} that declares an
+     * {@code @PostConstruct} method is only ever run by Avaje Inject if it is also a
+     * {@code @Singleton} bean. Without this rule, a feature missing the annotation would simply
+     * never be discovered - it would go missing from the running lobby with no build or start
+     * failure at all.
      */
     @ArchTest
-    static final ArchRule featureLobbyModulesAreSingletonWithPriority = classes().that().resideInAPackage(FEATURE_PACKAGE).and().areAssignableTo(LobbyModule.class).should().beAnnotatedWith(Singleton.class).andShould().beAnnotatedWith(Priority.class).because("a LobbyModule implementation under app.feature is only discovered by BeanScope.listByPriority(LobbyModule.class) if it is a @Singleton bean with a declared @Priority; missing either annotation would make the module vanish silently instead of failing the build - see design.md decision 6");
+    static final ArchRule classesWithPostConstructInFeaturesAreSingleton = classes().that(DECLARES_POST_CONSTRUCT).should().beAnnotatedWith(Singleton.class).because("a class under app.feature with an @PostConstruct method is only ever built and started by Avaje Inject if it is also a @Singleton bean; missing the annotation would make the feature vanish silently instead of failing the build - see openspec/changes/dissolve-module-platform/design.md, decision 1");
 
     /**
-     * Rule 6 ({@code design.md}, decision 6): a feature module is built through constructor
-     * injection only, never by reaching into the {@link BeanScope} itself - that would be the
-     * service-locator anti-pattern DI is meant to replace, and would make a module's dependencies
-     * invisible at its constructor.
+     * Rule 6 ({@code design.md}, decision 1): a feature is built through constructor injection
+     * only, never by reaching into the {@link BeanScope} itself - that would be the service-locator
+     * anti-pattern DI is meant to replace, and would make a feature's dependencies invisible at its
+     * constructor.
      */
     @ArchTest
-    static final ArchRule featureModulesDoNotUseBeanScope = noClasses().that().resideInAPackage(FEATURE_PACKAGE).should().dependOnClassesThat().areAssignableTo(BeanScope.class).because("a feature module must ask for its dependencies through its constructor, never look them up itself via BeanScope - that would be the service-locator pattern dependency injection is meant to replace - see design.md decision 6");
+    static final ArchRule featureModulesDoNotUseBeanScope = noClasses().that().resideInAPackage(FEATURE_PACKAGE).should().dependOnClassesThat().areAssignableTo(BeanScope.class).because("a feature must ask for its dependencies through its constructor, never look them up itself via BeanScope - that would be the service-locator pattern dependency injection is meant to replace - see openspec/changes/dissolve-module-platform/design.md, decision 1");
 
     /**
      * Rule 8 ({@code openspec/changes/navigator-entries-in-code/design.md}, decision 4): the
      * navigator's destinations are fixed in code, not read from the {@code io.avaje.config}
      * facade - a {@code navigator.*} key in an operator's configuration must stay without effect.
-     * This rule fails as soon as any class under {@code app.feature.navigator} touches
-     * {@code io.avaje.config} again, without needing a running lobby or a configuration file to
-     * prove it (see the {@code lobby-navigator} spec's "Navigator-Werte in der Konfiguration
-     * werden ignoriert" scenario).
      */
     @ArchTest
     static final ArchRule navigatorDoesNotDependOnAvajeConfig = noClasses().that().resideInAPackage(NAVIGATOR_PACKAGE).should().dependOnClassesThat().resideInAPackage(AVAJE_CONFIG_PACKAGE).because("the navigator's title and destinations are fixed in NavigatorModule/Destination, not read from configuration - see design.md decision 4 and the lobby-navigator spec requirement \"Navigator-Ziele sind im Navigator-Modul festgelegt\"");
 
     /**
-     * Rule 9 ({@code openspec/changes/dissolve-module-platform/design.md}, decision 1 and 5): the
+     * Rule 9 ({@code openspec/changes/dissolve-module-platform/design.md}, decisions 1 and 5): the
      * platform ({@code app.module}) must stay usable while the composition root
      * ({@code app.bootstrap}) is being assembled - {@code app.bootstrap} beans are built from
      * {@code app.module} types (e.g. {@link net.onelitefeather.titan.app.module.LobbySpawn}), never
-     * the other way around. A platform class importing something from {@code app.bootstrap} - the
-     * shared {@code titan} event node qualifier, for instance - would create the reverse dependency
-     * and, with it, a package cycle between the two.
+     * the other way around.
      */
     @ArchTest
-    static final ArchRule platformDoesNotDependOnCompositionRoot = noClasses().that().resideInAPackage(MODULE_PACKAGE).should().dependOnClassesThat().resideInAPackage(BOOTSTRAP_PACKAGE).because("the platform (app.module) must not depend on the composition root (app.bootstrap) - app.bootstrap wires platform beans from app.module types, never the reverse, and a dependency back into app.bootstrap would create a package cycle - see openspec/changes/dissolve-module-platform/design.md decisions 1 and 5");
+    static final ArchRule platformDoesNotDependOnCompositionRoot = noClasses().that().resideInAPackage(MODULE_PACKAGE).should().dependOnClassesThat().resideInAPackage(BOOTSTRAP_PACKAGE).because("the platform (app.module) must not depend on the composition root (app.bootstrap) - app.bootstrap wires platform beans from app.module types, never the reverse, and a dependency back into app.bootstrap would create a package cycle - see openspec/changes/dissolve-module-platform/design.md, decisions 1 and 5");
 
     ArchitectureTest() {
     }
 
     /**
-     * Rule 7 ({@code design.md}, decision 6): two modules sharing a {@code @Priority} value would
-     * make the enable/disable order depend on an undocumented tie-break (see design.md decision 2,
-     * "Gleiche Priorität") instead of the deterministic order the {@code lobby-modules} spec
-     * requires. Plain reflection rather than an {@code ArchRule}, because ArchUnit has no built-in
-     * "annotation attribute values are unique across a set of classes" condition; scanning is done
-     * here, once, with {@link ClassFileImporter} rather than relying on the class-level
-     * {@link AnalyzeClasses} cache, so this method stays independent of the other rules in this
-     * class (F.I.R.S.T.).
+     * Rule 7 ({@code design.md}, decision 1): two features sharing an {@code EVENT_PRIORITY} value
+     * would make the order in which they process the same event depend on an undocumented
+     * tie-break instead of the deterministic order the {@code lobby-modules} spec requires. Plain
+     * bytecode inspection rather than an {@code ArchRule}, because ArchUnit has no built-in "static
+     * field values are unique across a set of classes" condition; scanning is done here, once, with
+     * {@link ClassFileImporter} rather than relying on the class-level {@link AnalyzeClasses}
+     * cache, so this method stays independent of the other rules in this class (F.I.R.S.T.).
+     *
+     * <p>Reads {@code EVENT_PRIORITY}'s value straight from the field's {@code ConstantValue}
+     * bytecode attribute via the built-in {@link ClassFile} API (Java 25), instead of
+     * {@code java.lang.reflect.Field#getInt}: reflectively reading a static field - even a
+     * compile-time constant one - forces the JVM to initialize its declaring class first. For a
+     * feature whose static initializer builds an {@code ItemStack} (e.g. {@code NavigatorModule}),
+     * that would fail outside a running Minestom server, and would permanently poison the class for
+     * every later test in the same JVM. Reading the constant from the class file bytes never loads
+     * or initializes the class at all.
      */
     @Test
-    void modulePrioritiesAreUnique() {
+    void eventPriorityValuesAreUniqueAcrossFeatures() {
         JavaClasses classes = new ClassFileImporter().withImportOption(new ImportOption.DoNotIncludeTests()).importPackages("net.onelitefeather.titan.app.feature");
-        Map<Integer, List<String>> moduleIdsByPriority = new TreeMap<>();
+        Map<Integer, List<String>> classNamesByPriority = new TreeMap<>();
         for (JavaClass javaClass : classes) {
-            if (!javaClass.isAssignableTo(LobbyModule.class) || !javaClass.isAnnotatedWith(Priority.class)) {
-                continue;
-            }
-            int priority = javaClass.reflect().getAnnotation(Priority.class).value();
-            moduleIdsByPriority.computeIfAbsent(priority, unused -> new ArrayList<>()).add(javaClass.getSimpleName());
+            eventPriorityOf(javaClass).ifPresent(priority -> classNamesByPriority.computeIfAbsent(priority, unused -> new ArrayList<>()).add(javaClass.getSimpleName()));
         }
-        List<String> duplicates = moduleIdsByPriority.entrySet().stream().filter(entry -> entry.getValue().size() > 1).map(entry -> entry.getKey() + ": " + entry.getValue()).toList();
-        Assertions.assertTrue(duplicates.isEmpty(), "@Priority values must be unique across every LobbyModule in app.feature, but found duplicates: " + duplicates);
+        List<String> duplicates = classNamesByPriority.entrySet().stream().filter(entry -> entry.getValue().size() > 1).map(entry -> entry.getKey() + ": " + entry.getValue()).toList();
+        Assertions.assertTrue(duplicates.isEmpty(), "EVENT_PRIORITY values must be unique across every feature in app.feature, but found duplicates naming both: " + duplicates);
     }
 
-    private static boolean registersListenersOrLooksUpGlobalHandler(JavaMethodCall call) {
+    /**
+     * @param javaClass a class found in {@code net.onelitefeather.titan.app.feature}
+     * @return the {@code int} value of {@code javaClass}'s own {@code EVENT_PRIORITY} field, read
+     *         from its class file's {@code ConstantValue} attribute, or empty if it declares none
+     */
+    private static OptionalInt eventPriorityOf(JavaClass javaClass) {
+        String resourceName = javaClass.getName().replace('.', '/') + ".class";
+        try (InputStream classBytes = ArchitectureTest.class.getClassLoader().getResourceAsStream(resourceName)) {
+            if (classBytes == null) {
+                return OptionalInt.empty();
+            }
+            ClassModel classModel = ClassFile.of().parse(classBytes.readAllBytes());
+            for (FieldModel field : classModel.fields()) {
+                if (!"EVENT_PRIORITY".equals(field.fieldName().stringValue())) {
+                    continue;
+                }
+                for (Attribute<?> attribute : field.attributes()) {
+                    if (attribute instanceof ConstantValueAttribute constantValue && constantValue.constant() instanceof IntegerEntry integerEntry) {
+                        return OptionalInt.of(integerEntry.intValue());
+                    }
+                }
+            }
+            return OptionalInt.empty();
+        } catch (IOException exception) {
+            throw new UncheckedIOException("Unable to read the class file for " + javaClass.getName(), exception);
+        }
+    }
+
+    private static boolean touchesTheRawEventTree(JavaMethodCall call) {
         JavaClass owner = call.getTargetOwner();
         String methodName = call.getTarget().getName();
         boolean onEventNode = owner.isAssignableTo(EventNode.class) && ("addListener".equals(methodName) || "addChild".equals(methodName));
