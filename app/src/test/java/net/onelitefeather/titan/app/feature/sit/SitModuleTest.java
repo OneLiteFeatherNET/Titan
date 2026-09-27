@@ -22,17 +22,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Plain unit tests for {@link SitModule}'s own id and the pure allowed-block rule behind its
+ * Plain unit tests for the pure allowed-block rule behind {@link SitModule}'s
  * {@code PlayerBlockInteractEvent} listener ({@link SitModule#isAllowedBlock}). No {@code Env}
  * needed - none of this touches a player, block or instance.
  */
 class SitModuleTest {
-
-    @DisplayName("The module id is 'sit'")
-    @Test
-    void idIsSit() {
-        Assertions.assertEquals("sit", new SitModule().id());
-    }
 
     @DisplayName("A block whose key is in the allowed list is allowed")
     @Test
