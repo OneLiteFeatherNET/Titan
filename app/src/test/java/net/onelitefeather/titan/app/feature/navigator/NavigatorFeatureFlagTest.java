@@ -26,7 +26,6 @@ import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.app.module.testing.ModuleHarness;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -45,10 +44,10 @@ class NavigatorFeatureFlagTest {
     @Test
     void slenderHiddenWhenFlagIsOff(Env env) {
         FakeFeatureFlags flags = new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", false);
-        try (ModuleHarness harness = ModuleHarness.start(env, new NavigatorModule(new RecordingDeliver(), flags))) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), flags)) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
-            harness.items().equip(player);
+            fixture.equip(player);
             ItemStack feather = player.getInventory().getItemStack(4);
 
             env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, feather, 0L));
@@ -67,10 +66,10 @@ class NavigatorFeatureFlagTest {
     void slenderShownAndForwardsWhenFlagIsOn(Env env) {
         FakeFeatureFlags flags = new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", true);
         RecordingDeliver deliver = new RecordingDeliver();
-        try (ModuleHarness harness = ModuleHarness.start(env, new NavigatorModule(deliver, flags))) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, flags)) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
-            harness.items().equip(player);
+            fixture.equip(player);
             ItemStack feather = player.getInventory().getItemStack(4);
             env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, feather, 0L));
             AbstractInventory openInventory = player.getOpenInventory();
@@ -90,10 +89,10 @@ class NavigatorFeatureFlagTest {
     @Test
     void togglingTheFlagBetweenTwoOpensShowsSlenderOnTheSecondOpen(Env env) {
         FakeFeatureFlags flags = new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", false);
-        try (ModuleHarness harness = ModuleHarness.start(env, new NavigatorModule(new RecordingDeliver(), flags))) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), flags)) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
-            harness.items().equip(player);
+            fixture.equip(player);
             ItemStack feather = player.getInventory().getItemStack(4);
 
             env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, feather, 0L));

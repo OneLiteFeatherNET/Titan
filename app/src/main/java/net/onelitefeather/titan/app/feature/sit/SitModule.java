@@ -16,20 +16,24 @@
 package net.onelitefeather.titan.app.feature.sit;
 
 import io.avaje.config.Config;
-import io.avaje.inject.Priority;
+import io.avaje.inject.PostConstruct;
+import io.avaje.inject.PreDestroy;
+import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import java.util.List;
+import java.util.Objects;
 import net.kyori.adventure.key.Key;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.Entity;
 import net.minestom.server.entity.Player;
+import net.minestom.server.event.Event;
 import net.minestom.server.event.EventDispatcher;
+import net.minestom.server.event.EventNode;
 import net.minestom.server.event.player.PlayerBlockInteractEvent;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.event.player.PlayerPacketEvent;
 import net.minestom.server.network.packet.client.play.ClientInputPacket;
-import net.onelitefeather.titan.app.module.LobbyModule;
-import net.onelitefeather.titan.app.module.ModuleContext;
+import net.onelitefeather.titan.app.module.FeatureNode;
 import net.onelitefeather.titan.common.event.EntityDismountEvent;
 
 /**
@@ -39,8 +43,8 @@ import net.onelitefeather.titan.common.event.EntityDismountEvent;
  * <p>See {@code design.md}, decision 11, and the {@code lobby-modules} spec, scenario "Sitzen und
  * Aufstehen". The actual seating logic lives in the package-private {@link Seats}.
  *
- * <p>Behaviour, in terms of the four listeners this module registers through
- * {@link ModuleContext#listen}:
+ * <p>Behaviour, in terms of the four listeners this module registers through its own
+ * {@link FeatureNode}:
  * <ol>
  * <li>{@link PlayerBlockInteractEvent}: clicking a block whose key is in the configured
  * {@code sit.allowedBlocks} sits the player down there.</li>
@@ -53,18 +57,31 @@ import net.onelitefeather.titan.common.event.EntityDismountEvent;
  * <li>{@link PlayerDisconnectEvent}: stands a disconnecting player back up, so no seat entity is
  * left behind.</li>
  * </ol>
+ *
+ * <p>An {@code @Singleton} bean (see
+ * {@code openspec/changes/dissolve-module-platform/design.md}, decision 1): {@link #start()}
+ * attaches this feature's own {@link FeatureNode} once the container builds this bean, and
+ * {@link #stop()} detaches it again when the container is closed.
  */
 @Singleton
-@Priority(500)
-public final class SitModule implements LobbyModule {
+public final class SitModule {
 
-    @Override
-    public String id() {
-        return "sit";
+    static final int EVENT_PRIORITY = 500;
+
+    private static final String ID = "sit";
+
+    private final EventNode<Event> titan;
+    private FeatureNode node;
+
+    /**
+     * @param titan the shared event node this feature's own node attaches under
+     */
+    public SitModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan) {
+        this.titan = Objects.requireNonNull(titan, "titan");
     }
 
-    @Override
-    public void enable(ModuleContext context) {
+    @PostConstruct
+    void start() {
         // Abort startup on an invalid value (unchanged behaviour); neither result is kept - the
         // PlayerBlockInteractEvent listener below reads the live values again on every
         // interaction (see design.md, decision 1).
@@ -74,7 +91,9 @@ public final class SitModule implements LobbyModule {
         SitSettings.allowedBlocks(Config.list().of(SitSettings.ALLOWED_BLOCKS_KEY).stream().map(SitSettings::parseBlock).toList());
         Seats seats = new Seats();
 
-        context.listen(PlayerBlockInteractEvent.class, event -> {
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY);
+
+        this.node.on(PlayerBlockInteractEvent.class, event -> {
             // Live, unvalidated read on every interaction (see design.md, decision 1): the
             // strict check above only ever runs once, at startup (refactor/drop-runtime-fallback).
             List<Key> allowedBlocks = Config.list().of(SitSettings.ALLOWED_BLOCKS_KEY).stream().map(SitSettings::parseBlock).toList();
@@ -89,7 +108,7 @@ public final class SitModule implements LobbyModule {
         // Stand up (dismount) when the sitting player presses sneak. Use the shift() accessor
         // rather than testing the raw flags: the sneak bit is 0x20, not 0x02 (that is backward),
         // and shift() also matches when other movement keys are held at the same time.
-        context.listen(PlayerPacketEvent.class, event -> {
+        this.node.on(PlayerPacketEvent.class, event -> {
             if (event.getPacket() instanceof ClientInputPacket input && input.shift()) {
                 Entity vehicle = event.getPlayer().getVehicle();
                 if (vehicle != null) {
@@ -98,13 +117,18 @@ public final class SitModule implements LobbyModule {
             }
         });
 
-        context.listen(EntityDismountEvent.class, event -> {
+        this.node.on(EntityDismountEvent.class, event -> {
             if (event.rider() instanceof Player player && seats.isSitting(player)) {
                 seats.standUp(player);
             }
         });
 
-        context.listen(PlayerDisconnectEvent.class, event -> seats.standUp(event.getPlayer()));
+        this.node.on(PlayerDisconnectEvent.class, event -> seats.standUp(event.getPlayer()));
+    }
+
+    @PreDestroy
+    void stop() {
+        this.node.close();
     }
 
     /**

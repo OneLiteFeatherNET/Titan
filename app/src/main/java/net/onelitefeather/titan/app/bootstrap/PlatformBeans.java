@@ -25,9 +25,10 @@ import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.InstanceContainer;
+import net.minestom.server.timer.Scheduler;
 import net.onelitefeather.titan.api.deliver.Deliver;
+import net.onelitefeather.titan.app.module.FeatureNode;
 import net.onelitefeather.titan.app.module.LobbySpawn;
-import net.onelitefeather.titan.app.module.item.ItemRegistry;
 import net.onelitefeather.titan.common.deliver.DeliverProvider;
 import net.onelitefeather.titan.common.feature.ConfigFeatureFlags;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
@@ -43,23 +44,13 @@ import net.onelitefeather.titan.common.map.MapProvider;
  * {@code common} itself stays free of any Avaje annotation or dependency; this factory is what
  * turns its library types into beans for {@code app}.
  *
- * <p>{@code ModuleRegistry} is deliberately <em>not</em> a bean here: the spike behind this change
- * found that {@code BeanScope.listByPriority(LobbyModule.class)} - the only way to get modules
- * sorted by {@code @Priority} - can only be called once {@code BeanScope.builder().build()} has
- * returned, never from inside a {@code @Factory} method while the scope is still being built (see
- * design.md, decision 2). Building the registry from the sorted list is therefore
- * {@code Titan}'s job, after the scope exists.
+ * <p>Every lobby feature is discovered as a plain {@code @Singleton} bean, started and stopped by
+ * the {@code BeanScope} itself through {@code @PostConstruct}/{@code @PreDestroy} - see
+ * {@code openspec/changes/dissolve-module-platform/design.md}, decisions 1 and 4. There is no
+ * separate registry of modules for this factory to feed.
  */
 @Factory
 public final class PlatformBeans {
-
-    /**
-     * The {@code @Named} qualifier of the shared {@link EventNode} bean {@link #titanEventNode()}
-     * registers, so any other class that looks the bean up by name - such as
-     * {@link net.onelitefeather.titan.app.Titan} - references this constant instead of duplicating
-     * the literal.
-     */
-    public static final String TITAN_NODE_NAME = "titan";
 
     /**
      * @return the lobby's single {@link InstanceContainer}, registered with the instance manager -
@@ -107,21 +98,11 @@ public final class PlatformBeans {
      *         itself attached to the global event handler
      */
     @Bean
-    @Named(TITAN_NODE_NAME)
+    @Named(FeatureNode.TITAN_NODE)
     public EventNode<Event> titanEventNode() {
-        EventNode<Event> node = EventNode.all(TITAN_NODE_NAME);
+        EventNode<Event> node = EventNode.all(FeatureNode.TITAN_NODE);
         MinecraftServer.getGlobalEventHandler().addChild(node);
         return node;
-    }
-
-    /**
-     * @param titanNode the shared event node {@link #titanEventNode()} attached to the global
-     *                  handler; the registry's dispatch listener attaches to it immediately
-     * @return the platform-wide registry of hotbar/equipment items every module registers through
-     */
-    @Bean
-    public ItemRegistry itemRegistry(@Named(TITAN_NODE_NAME) EventNode<Event> titanNode) {
-        return new ItemRegistry(titanNode);
     }
 
     /**
@@ -143,5 +124,15 @@ public final class PlatformBeans {
     @Bean
     public Clock clock() {
         return Clock.systemUTC();
+    }
+
+    /**
+     * @return the server's scheduler manager, so a feature that plans a task (e.g. the elytra
+     *         boost) asks for a {@link Scheduler} through its constructor instead of reaching for
+     *         {@link MinecraftServer#getSchedulerManager()} itself
+     */
+    @Bean
+    public Scheduler scheduler() {
+        return MinecraftServer.getSchedulerManager();
     }
 }

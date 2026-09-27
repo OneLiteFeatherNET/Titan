@@ -22,10 +22,10 @@ import net.minestom.server.entity.EquipmentSlot;
  * Where a {@link LobbyItem} lives, if anywhere.
  *
  * <p>Sealed to exactly the three shapes the {@code lobby-hotbar} spec allows: a fixed hotbar slot,
- * a fixed equipment slot, or no fixed place at all. {@link ItemRegistry#validate()} only checks the
- * first two for conflicts - two modules may both hand out an unplaced item (the elytra module's
- * firework, for instance) without ever colliding, because neither one reserves a place the other
- * could also claim.
+ * a fixed equipment slot, or no fixed place at all. {@link ItemConflicts#check(java.util.List)}
+ * only checks the first two for conflicts - two features may both hand out an unplaced item (the
+ * elytra feature's firework, for instance) without ever colliding, because neither one reserves a
+ * place the other could also claim.
  */
 public sealed interface ItemSlot {
 

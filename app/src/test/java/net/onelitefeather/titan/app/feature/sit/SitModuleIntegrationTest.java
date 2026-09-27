@@ -29,17 +29,18 @@ import net.minestom.server.instance.block.BlockFace;
 import net.minestom.server.network.packet.client.play.ClientInputPacket;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.app.module.testing.ModuleHarness;
+import net.onelitefeather.titan.app.testutils.TestTitanNode;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * End-to-end coverage of {@link SitModule} started through {@link ModuleHarness}, exercising the
- * full wiring (config, four listeners, {@link Seats}) the way the lobby actually runs it. Covers
- * the {@code lobby-modules} spec scenario "Sitzen und Aufstehen": click an allowed block, then
- * stand up by sneaking.
+ * End-to-end coverage of {@link SitModule}, built directly with a fresh {@code titan} node - see
+ * {@code openspec/changes/dissolve-module-platform/tasks.md}, task 2.5 - exercising the full
+ * wiring (config, four listeners, {@link Seats}) the way the lobby actually runs it. Covers the
+ * {@code lobby-modules} spec scenario "Sitzen und Aufstehen": click an allowed block, then stand
+ * up by sneaking.
  */
 @ExtendWith(MicrotusExtension.class)
 class SitModuleIntegrationTest {
@@ -59,10 +60,16 @@ class SitModuleIntegrationTest {
         Player player = env.createPlayer(instance);
         player.teleport(new Pos(0, 64, 0));
 
-        try (ModuleHarness harness = ModuleHarness.start(env, new SitModule())) {
-            env.process().eventHandler().call(clickBlock(player, instance, Block.fromKey("minecraft:spruce_stairs"), new BlockVec(0, 64, 0)));
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            SitModule module = new SitModule(titan.node());
+            module.start();
+            try {
+                env.process().eventHandler().call(clickBlock(player, instance, Block.fromKey("minecraft:spruce_stairs"), new BlockVec(0, 64, 0)));
 
-            Assertions.assertNotNull(player.getVehicle(), "the player must be sitting after clicking an allowed block");
+                Assertions.assertNotNull(player.getVehicle(), "the player must be sitting after clicking an allowed block");
+            } finally {
+                module.stop();
+            }
         }
     }
 
@@ -74,16 +81,22 @@ class SitModuleIntegrationTest {
         Pos before = new Pos(2, 65, 2);
         player.teleport(before);
 
-        try (ModuleHarness harness = ModuleHarness.start(env, new SitModule())) {
-            env.process().eventHandler().call(clickBlock(player, instance, Block.fromKey("minecraft:spruce_stairs"), new BlockVec(2, 65, 2)));
-            Assertions.assertNotNull(player.getVehicle(), "player must be sitting before sneaking");
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            SitModule module = new SitModule(titan.node());
+            module.start();
+            try {
+                env.process().eventHandler().call(clickBlock(player, instance, Block.fromKey("minecraft:spruce_stairs"), new BlockVec(2, 65, 2)));
+                Assertions.assertNotNull(player.getVehicle(), "player must be sitting before sneaking");
 
-            env.process().eventHandler().call(sneak(player));
+                env.process().eventHandler().call(sneak(player));
 
-            Assertions.assertNull(player.getVehicle(), "the player must no longer be riding the seat after sneaking");
-            Assertions.assertEquals(before.x(), player.getPosition().x(), 0.001);
-            Assertions.assertEquals(before.y(), player.getPosition().y(), 0.001);
-            Assertions.assertEquals(before.z(), player.getPosition().z(), 0.001);
+                Assertions.assertNull(player.getVehicle(), "the player must no longer be riding the seat after sneaking");
+                Assertions.assertEquals(before.x(), player.getPosition().x(), 0.001);
+                Assertions.assertEquals(before.y(), player.getPosition().y(), 0.001);
+                Assertions.assertEquals(before.z(), player.getPosition().z(), 0.001);
+            } finally {
+                module.stop();
+            }
         }
     }
 
@@ -94,14 +107,20 @@ class SitModuleIntegrationTest {
         Player player = env.createPlayer(instance);
         player.teleport(new Pos(0, 64, 0));
 
-        try (ModuleHarness harness = ModuleHarness.start(env, new SitModule())) {
-            env.process().eventHandler().call(clickBlock(player, instance, Block.fromKey("minecraft:spruce_stairs"), new BlockVec(0, 64, 0)));
-            var seat = player.getVehicle();
-            Assertions.assertNotNull(seat, "player must be sitting before disconnecting");
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            SitModule module = new SitModule(titan.node());
+            module.start();
+            try {
+                env.process().eventHandler().call(clickBlock(player, instance, Block.fromKey("minecraft:spruce_stairs"), new BlockVec(0, 64, 0)));
+                var seat = player.getVehicle();
+                Assertions.assertNotNull(seat, "player must be sitting before disconnecting");
 
-            env.process().eventHandler().call(new PlayerDisconnectEvent(player));
+                env.process().eventHandler().call(new PlayerDisconnectEvent(player));
 
-            Assertions.assertNull(instance.getEntityByUuid(seat.getUuid()), "the seat entity must be removed on disconnect");
+                Assertions.assertNull(instance.getEntityByUuid(seat.getUuid()), "the seat entity must be removed on disconnect");
+            } finally {
+                module.stop();
+            }
         }
     }
 
@@ -112,24 +131,34 @@ class SitModuleIntegrationTest {
         Player player = env.createPlayer(instance);
         player.teleport(new Pos(0, 64, 0));
 
-        try (ModuleHarness harness = ModuleHarness.start(env, new SitModule())) {
-            env.process().eventHandler().call(clickBlock(player, instance, Block.fromKey("minecraft:stone"), new BlockVec(0, 64, 0)));
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            SitModule module = new SitModule(titan.node());
+            module.start();
+            try {
+                env.process().eventHandler().call(clickBlock(player, instance, Block.fromKey("minecraft:stone"), new BlockVec(0, 64, 0)));
 
-            Assertions.assertNull(player.getVehicle(), "clicking a non-allowed block must not sit the player down");
+                Assertions.assertNull(player.getVehicle(), "clicking a non-allowed block must not sit the player down");
+            } finally {
+                module.stop();
+            }
         }
     }
 
-    @DisplayName("Once the harness is closed, clicking an allowed block no longer sits the player")
+    @DisplayName("Once stopped, clicking an allowed block no longer sits the player")
     @Test
-    void afterHarnessCloseClickingNoLongerSitsThePlayer(Env env) {
+    void afterStopClickingNoLongerSitsThePlayer(Env env) {
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
         player.teleport(new Pos(0, 64, 0));
-        ModuleHarness harness = ModuleHarness.start(env, new SitModule());
-        harness.close();
 
-        env.process().eventHandler().call(clickBlock(player, instance, Block.fromKey("minecraft:spruce_stairs"), new BlockVec(0, 64, 0)));
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            SitModule module = new SitModule(titan.node());
+            module.start();
+            module.stop();
 
-        Assertions.assertNull(player.getVehicle(), "no listener may still be attached once the harness is closed");
+            env.process().eventHandler().call(clickBlock(player, instance, Block.fromKey("minecraft:spruce_stairs"), new BlockVec(0, 64, 0)));
+
+            Assertions.assertNull(player.getVehicle(), "no listener may still be attached once the module is stopped");
+        }
     }
 }

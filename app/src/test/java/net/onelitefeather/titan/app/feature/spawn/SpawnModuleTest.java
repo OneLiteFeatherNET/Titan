@@ -16,6 +16,7 @@
 package net.onelitefeather.titan.app.feature.spawn;
 
 import io.avaje.config.Config;
+import java.util.List;
 import net.kyori.adventure.key.Key;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
@@ -30,23 +31,21 @@ import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.TestConnection;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.app.module.LobbyModule;
-import net.onelitefeather.titan.app.module.ModuleContext;
 import net.onelitefeather.titan.app.module.item.ItemSlot;
 import net.onelitefeather.titan.app.module.item.LobbyItem;
-import net.onelitefeather.titan.app.module.testing.ModuleHarness;
+import net.onelitefeather.titan.app.module.item.LobbyItems;
+import net.onelitefeather.titan.app.testutils.TestTitanNode;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * {@code Env} (Cyano/Microtus) coverage for {@link SpawnModule}, exercising it through
- * {@link ModuleHarness} exactly the way a real
- * {@link net.onelitefeather.titan.app.module.ModuleRegistry}
- * would start it. Covers the {@code lobby-modules}/{@code lobby-hotbar} scenarios task 6.2 carries:
- * spawning instance and respawn point on configuration, teleport plus simulation distance plus
- * equipment on spawn, and the height-bounds teleport.
+ * {@code Env} (Cyano/Microtus) coverage for {@link SpawnModule}, built directly with fakes - see
+ * {@code openspec/changes/dissolve-module-platform/tasks.md}, task 3.1. Covers the
+ * {@code lobby-modules}/{@code lobby-hotbar} scenarios task 6.2 carries: spawning instance and
+ * respawn point on configuration, teleport plus simulation distance plus equipment on spawn, and
+ * the height-bounds teleport - plus that {@link SpawnModule#stop()} leaves no listener behind.
  */
 @ExtendWith(MicrotusExtension.class)
 class SpawnModuleTest {
@@ -60,19 +59,14 @@ class SpawnModuleTest {
     private static final int MAX_HEIGHT = Config.getAs(SpawnSettings.MAX_HEIGHT_KEY, Integer::parseInt);
     private static final int SIMULATION_DISTANCE = Config.getAs(SpawnSettings.SIMULATION_DISTANCE_KEY, Integer::parseInt);
 
-    /** Registers one hotbar item so {@code items().equip(player)} has something to observe. */
-    private static final class DummyItemModule implements LobbyModule {
+    private static LobbyItems noItems(TestTitanNode titan) {
+        return new LobbyItems(List.of(), titan.node());
+    }
 
-        @Override
-        public String id() {
-            return "dummy-item";
-        }
-
-        @Override
-        public void enable(ModuleContext context) {
-            context.items().register(new LobbyItem(Key.key("titan:test-dummy"), ItemStack.of(Material.STICK), ItemSlot.hotbar(0), (player, event) -> {
-            }));
-        }
+    private static LobbyItems oneStickItem(TestTitanNode titan) {
+        LobbyItem stick = new LobbyItem("dummy-item", Key.key("titan:test-dummy"), ItemStack.of(Material.STICK), ItemSlot.hotbar(0), (player, event) -> {
+        });
+        return new LobbyItems(List.of(stick), titan.node());
     }
 
     @DisplayName("The configuration event sets the spawning instance and the player's respawn point")
@@ -80,19 +74,26 @@ class SpawnModuleTest {
     void configurationEventSetsSpawningInstanceAndRespawnPoint(Env env) throws InterruptedException {
         Instance targetInstance = env.createFlatInstance();
         Pos spawnPos = new Pos(1, 2, 3);
-        SpawnModule module = new SpawnModule(targetInstance, () -> spawnPos);
 
-        try (ModuleHarness harness = ModuleHarness.start(env, module)) {
-            Player player = env.createPlayer(targetInstance);
-            AsyncPlayerConfigurationEvent event = new AsyncPlayerConfigurationEvent(player, true);
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            LobbyItems lobbyItems = noItems(titan);
+            SpawnModule module = new SpawnModule(targetInstance, () -> spawnPos, titan.node(), lobbyItems);
+            module.start();
+            try {
+                Player player = env.createPlayer(targetInstance);
+                AsyncPlayerConfigurationEvent event = new AsyncPlayerConfigurationEvent(player, true);
 
-            // AsyncPlayerConfigurationEvent is an AsyncEvent and must be called from a virtual
-            // thread; join it so the assertions below only run once the listener has finished.
-            Thread callingThread = Thread.startVirtualThread(() -> env.process().eventHandler().call(event));
-            callingThread.join();
+                // AsyncPlayerConfigurationEvent is an AsyncEvent and must be called from a virtual
+                // thread; join it so the assertions below only run once the listener has finished.
+                Thread callingThread = Thread.startVirtualThread(() -> env.process().eventHandler().call(event));
+                callingThread.join();
 
-            Assertions.assertEquals(targetInstance, event.getSpawningInstance());
-            Assertions.assertEquals(spawnPos, player.getRespawnPoint());
+                Assertions.assertEquals(targetInstance, event.getSpawningInstance());
+                Assertions.assertEquals(spawnPos, player.getRespawnPoint());
+            } finally {
+                module.stop();
+                lobbyItems.stop();
+            }
         }
     }
 
@@ -101,19 +102,26 @@ class SpawnModuleTest {
     void spawnTeleportsSendsSimulationDistanceAndAppliesEquipment(Env env) {
         Instance instance = env.createFlatInstance();
         Pos spawnPos = new Pos(5, 64, 5);
-        SpawnModule module = new SpawnModule(instance, () -> spawnPos);
 
-        try (ModuleHarness harness = ModuleHarness.start(env, module, new DummyItemModule())) {
-            TestConnection connection = env.createConnection();
-            Player player = connection.connect(instance);
-            Collector<UpdateSimulationDistancePacket> collector = connection.trackIncoming(UpdateSimulationDistancePacket.class);
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            LobbyItems lobbyItems = oneStickItem(titan);
+            SpawnModule module = new SpawnModule(instance, () -> spawnPos, titan.node(), lobbyItems);
+            module.start();
+            try {
+                TestConnection connection = env.createConnection();
+                Player player = connection.connect(instance);
+                Collector<UpdateSimulationDistancePacket> collector = connection.trackIncoming(UpdateSimulationDistancePacket.class);
 
-            env.process().eventHandler().call(new PlayerSpawnEvent(player, instance, true));
+                env.process().eventHandler().call(new PlayerSpawnEvent(player, instance, true));
 
-            collector.assertSingle();
-            Assertions.assertEquals(SIMULATION_DISTANCE, collector.collect().getFirst().simulationDistance());
-            Assertions.assertEquals(spawnPos, player.getPosition());
-            Assertions.assertEquals(Material.STICK, player.getInventory().getItemStack(0).material(), "equip() must have applied the other module's registered item too");
+                collector.assertSingle();
+                Assertions.assertEquals(SIMULATION_DISTANCE, collector.collect().getFirst().simulationDistance());
+                Assertions.assertEquals(spawnPos, player.getPosition());
+                Assertions.assertEquals(Material.STICK, player.getInventory().getItemStack(0).material(), "equip() must have applied the other registered item too");
+            } finally {
+                module.stop();
+                lobbyItems.stop();
+            }
         }
     }
 
@@ -122,16 +130,23 @@ class SpawnModuleTest {
     void fallingBelowMinHeightTeleportsToSpawn(Env env) {
         Instance instance = env.createFlatInstance();
         Pos spawnPos = new Pos(10, 100, 10);
-        SpawnModule module = new SpawnModule(instance, () -> spawnPos);
 
-        try (ModuleHarness harness = ModuleHarness.start(env, module)) {
-            Player player = env.createPlayer(instance);
-            Pos belowMin = new Pos(0, MIN_HEIGHT - 10, 0);
-            player.teleport(belowMin);
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            LobbyItems lobbyItems = noItems(titan);
+            SpawnModule module = new SpawnModule(instance, () -> spawnPos, titan.node(), lobbyItems);
+            module.start();
+            try {
+                Player player = env.createPlayer(instance);
+                Pos belowMin = new Pos(0, MIN_HEIGHT - 10, 0);
+                player.teleport(belowMin);
 
-            env.process().eventHandler().call(new PlayerMoveEvent(player, belowMin, true));
+                env.process().eventHandler().call(new PlayerMoveEvent(player, belowMin, true));
 
-            Assertions.assertEquals(spawnPos, player.getPosition());
+                Assertions.assertEquals(spawnPos, player.getPosition());
+            } finally {
+                module.stop();
+                lobbyItems.stop();
+            }
         }
     }
 
@@ -140,16 +155,23 @@ class SpawnModuleTest {
     void risingAboveMaxHeightTeleportsToSpawn(Env env) {
         Instance instance = env.createFlatInstance();
         Pos spawnPos = new Pos(10, 100, 10);
-        SpawnModule module = new SpawnModule(instance, () -> spawnPos);
 
-        try (ModuleHarness harness = ModuleHarness.start(env, module)) {
-            Player player = env.createPlayer(instance);
-            Pos aboveMax = new Pos(0, MAX_HEIGHT + 10, 0);
-            player.teleport(aboveMax);
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            LobbyItems lobbyItems = noItems(titan);
+            SpawnModule module = new SpawnModule(instance, () -> spawnPos, titan.node(), lobbyItems);
+            module.start();
+            try {
+                Player player = env.createPlayer(instance);
+                Pos aboveMax = new Pos(0, MAX_HEIGHT + 10, 0);
+                player.teleport(aboveMax);
 
-            env.process().eventHandler().call(new PlayerMoveEvent(player, aboveMax, true));
+                env.process().eventHandler().call(new PlayerMoveEvent(player, aboveMax, true));
 
-            Assertions.assertEquals(spawnPos, player.getPosition());
+                Assertions.assertEquals(spawnPos, player.getPosition());
+            } finally {
+                module.stop();
+                lobbyItems.stop();
+            }
         }
     }
 
@@ -158,16 +180,48 @@ class SpawnModuleTest {
     void withinHeightBoundsDoesNotTeleport(Env env) {
         Instance instance = env.createFlatInstance();
         Pos spawnPos = new Pos(10, 100, 10);
-        SpawnModule module = new SpawnModule(instance, () -> spawnPos);
 
-        try (ModuleHarness harness = ModuleHarness.start(env, module)) {
-            Player player = env.createPlayer(instance);
-            Pos withinBounds = new Pos(0, (MIN_HEIGHT + MAX_HEIGHT) / 2.0, 0);
-            player.teleport(withinBounds);
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            LobbyItems lobbyItems = noItems(titan);
+            SpawnModule module = new SpawnModule(instance, () -> spawnPos, titan.node(), lobbyItems);
+            module.start();
+            try {
+                Player player = env.createPlayer(instance);
+                Pos withinBounds = new Pos(0, (MIN_HEIGHT + MAX_HEIGHT) / 2.0, 0);
+                player.teleport(withinBounds);
 
-            env.process().eventHandler().call(new PlayerMoveEvent(player, withinBounds, true));
+                env.process().eventHandler().call(new PlayerMoveEvent(player, withinBounds, true));
 
-            Assertions.assertEquals(withinBounds, player.getPosition());
+                Assertions.assertEquals(withinBounds, player.getPosition());
+            } finally {
+                module.stop();
+                lobbyItems.stop();
+            }
+        }
+    }
+
+    @DisplayName("Once stopped, spawning no longer teleports, equips or sends the simulation distance")
+    @Test
+    void stopLeavesNoListenerBehind(Env env) {
+        Instance instance = env.createFlatInstance();
+        Pos spawnPos = new Pos(5, 64, 5);
+
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            LobbyItems lobbyItems = noItems(titan);
+            SpawnModule module = new SpawnModule(instance, () -> spawnPos, titan.node(), lobbyItems);
+            module.start();
+            module.stop();
+            lobbyItems.stop();
+
+            TestConnection connection = env.createConnection();
+            Player player = connection.connect(instance);
+            Collector<UpdateSimulationDistancePacket> collector = connection.trackIncoming(UpdateSimulationDistancePacket.class);
+            Pos before = player.getPosition();
+
+            env.process().eventHandler().call(new PlayerSpawnEvent(player, instance, true));
+
+            collector.assertEmpty();
+            Assertions.assertEquals(before, player.getPosition(), "a stopped feature must not teleport the player to spawn any more");
         }
     }
 }

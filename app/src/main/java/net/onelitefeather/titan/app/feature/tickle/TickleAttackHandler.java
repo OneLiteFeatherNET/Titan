@@ -39,7 +39,7 @@ import net.minestom.server.tag.Tag;
  * {@code Config.getLong(TickleSettings.COOLDOWN_KEY)}, on every attack rather than once at
  * construction - see {@code openspec/changes/config-reload-feature-flags/design.md}, decision 1: a
  * changed value applies to the very next attack, without a module restart. That read is never
- * re-validated (the strict check in {@link TickleModule#enable} only ever runs once, at startup);
+ * re-validated (the strict check in {@link TickleModule#start()} only ever runs once, at startup);
  * an invalid live value simply takes effect.
  *
  * <p>Keeps today's observable behaviour unchanged, including its two known bugs, tracked by the
@@ -49,7 +49,7 @@ import net.minestom.server.tag.Tag;
  * {@link TickleCooldownRule.Decision#CLEAR_EXPIRED_TAG}) instead of tickling again.
  *
  * <p>Package-private: {@link TickleModule} is the only class outside this package that sees this
- * handler, wiring it up via {@code context.listen(EntityAttackEvent.class, ...)}.
+ * handler, wiring it up via its own {@code FeatureNode}.
  */
 final class TickleAttackHandler implements Consumer<EntityAttackEvent> {
 

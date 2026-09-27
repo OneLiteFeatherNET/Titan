@@ -16,14 +16,17 @@
 package net.onelitefeather.titan.app.feature.tickle;
 
 import io.avaje.config.Config;
-import io.avaje.inject.Priority;
+import io.avaje.inject.PostConstruct;
+import io.avaje.inject.PreDestroy;
 import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import java.time.Clock;
 import java.util.Objects;
+import net.minestom.server.event.Event;
+import net.minestom.server.event.EventNode;
 import net.minestom.server.event.entity.EntityAttackEvent;
-import net.onelitefeather.titan.app.module.LobbyModule;
-import net.onelitefeather.titan.app.module.ModuleContext;
+import net.onelitefeather.titan.app.module.FeatureNode;
 
 /**
  * Lets a player tickle another player by attacking them while holding a feather in either hand:
@@ -34,42 +37,54 @@ import net.onelitefeather.titan.app.module.ModuleContext;
  * the implementation, and {@link TickleSettings} for this module's own configuration key and
  * validation.
  *
- * <p>{@link #enable} reads {@link TickleSettings#COOLDOWN_KEY} exactly once, through
+ * <p>{@link #start()} reads {@link TickleSettings#COOLDOWN_KEY} exactly once, through
  * {@link TickleSettings#cooldownMillis(String)}'s strict validation, purely to abort startup on
  * an invalid value (unchanged behaviour from {@code avaje-config-facade}); the result is
  * discarded. {@link TickleAttackHandler} reads the live value itself, on every attack, via
  * {@code Config.getLong(TickleSettings.COOLDOWN_KEY)} - see {@code openspec/changes/
  * config-reload-feature-flags/design.md}, decision 1 - without re-validating it: configuration is
  * validated only at startup (see {@code refactor/drop-runtime-fallback}).
+ *
+ * <p>An {@code @Singleton} bean (see
+ * {@code openspec/changes/dissolve-module-platform/design.md}, decision 1): {@link #start()}
+ * attaches this feature's own {@link FeatureNode} once the container builds this bean, and
+ * {@link #stop()} detaches it again when the container is closed.
  */
 @Singleton
-@Priority(600)
-public final class TickleModule implements LobbyModule {
+public final class TickleModule {
 
+    static final int EVENT_PRIORITY = 600;
+
+    private static final String ID = "tickle";
+
+    private final EventNode<Event> titan;
     private final Clock clock;
+    private FeatureNode node;
 
     /**
      * Creates a module backed by {@code clock} - the platform's {@code Clock} bean is the system
      * clock in production, so a test can control what "now" is instead of the module depending on
      * {@link System#currentTimeMillis()}.
      *
+     * @param titan the shared event node this feature's own node attaches under
      * @param clock the clock to read the current time from
      */
     @Inject
-    public TickleModule(Clock clock) {
+    public TickleModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Clock clock) {
+        this.titan = Objects.requireNonNull(titan, "titan");
         this.clock = Objects.requireNonNull(clock, "clock");
     }
 
-    @Override
-    public String id() {
-        return "tickle";
-    }
-
-    @Override
-    public void enable(ModuleContext context) {
+    @PostConstruct
+    void start() {
         // Abort startup on an invalid value (unchanged behaviour); the parsed value itself is not
         // kept - TickleAttackHandler reads the live value again on every attack.
         Config.getAs(TickleSettings.COOLDOWN_KEY, TickleSettings::cooldownMillis);
-        context.listen(EntityAttackEvent.class, new TickleAttackHandler(this.clock));
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY).on(EntityAttackEvent.class, new TickleAttackHandler(this.clock));
+    }
+
+    @PreDestroy
+    void stop() {
+        this.node.close();
     }
 }

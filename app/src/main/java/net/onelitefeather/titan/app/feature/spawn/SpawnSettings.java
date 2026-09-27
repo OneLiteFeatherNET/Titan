@@ -17,13 +17,13 @@ package net.onelitefeather.titan.app.feature.spawn;
 
 /**
  * Pure parsing and validation for the {@code spawn} section's values, kept apart from however
- * those values are read ({@link SpawnModule#enable}, via {@code io.avaje.config.Config}).
+ * those values are read ({@link SpawnModule#start()}, via {@code io.avaje.config.Config}).
  *
  * <p>{@link #simulationDistance(String)} is a single-value check, used directly as the mapping
  * function of {@code Config.getAs(SIMULATION_DISTANCE_KEY, SpawnSettings::simulationDistance)} -
  * {@code getAs} wraps any exception it throws into an {@code IllegalStateException} naming the key
  * once, keeping this method's own exception as the cause. {@link #minHeight(int, int)} is a
- * cross-field check - it needs both already-parsed heights - so {@link SpawnModule#enable} calls
+ * cross-field check - it needs both already-parsed heights - so {@link SpawnModule#start()} calls
  * it itself, after reading both values; its own message therefore names both full keys. Both
  * checks run exactly once, at startup: {@link SpawnBoundsListener} and {@link SpawnJoinListener}
  * read their keys again on every move/join, live and unvalidated, via
@@ -32,7 +32,7 @@ package net.onelitefeather.titan.app.feature.spawn;
  * never re-validated and never falls back to a shipped default.
  *
  * <p>The keys themselves are declared here as constants, the one place this module's config
- * section is named (see {@code design.md}, decision 3), and reused by {@link SpawnModule#enable}
+ * section is named (see {@code design.md}, decision 3), and reused by {@link SpawnModule#start()}
  * to read the raw values.
  */
 final class SpawnSettings {

@@ -298,40 +298,44 @@ Run tests using:
 
 Code coverage reports are generated using JaCoCo and can be found in `build/reports/jacoco/`.
 
-### Adding a Lobby Feature Module
+### Adding a Lobby Feature
 
 A lobby feature is a self-contained package under
 `app/src/main/java/net/onelitefeather/titan/app/feature/<name>/`, discovered automatically by
-Avaje Inject - there is no central module list to edit:
+Avaje Inject - there is no central feature list to edit:
 
-- New package, copied from the template module at
+- New package, copied from the template feature at
   `app/src/test/java/net/onelitefeather/titan/app/feature/example/` (`ExampleModule` and friends).
-- The `<Name>Module` class implements `LobbyModule` and carries `@jakarta.inject.Singleton` plus a
-  unique `@io.avaje.inject.Priority(n)` - ascending priority is start order, the seven existing
-  modules use gaps of 100 (protection 100, spawn 200, respawn 300, navigator 400, sit 500,
-  tickle 600, elytra 700). Missing either annotation fails the build (ArchUnit), not just the
-  running lobby.
-- Dependencies (a platform service such as `Deliver`, an `Instance`, a `Clock`, ...) are requested
-  through the constructor; `@jakarta.inject.Inject` is only needed on a constructor when the class
-  has more than one. A brand-new shared platform service is added as another `@Bean` in
-  `app/src/main/java/net/onelitefeather/titan/app/bootstrap/PlatformBeans.java`, or, if it carries
-  feature-spanning logic of its own rather than wrapping a platform type, as its own
-  `@Singleton` class.
+- The `<Name>Module` class is a plain `@jakarta.inject.Singleton` bean with a unique
+  `static final int EVENT_PRIORITY` - it decides the order in which two features process the same
+  event, not a start order; the seven existing features use gaps of 100 (protection 100, spawn 200,
+  respawn 300, navigator 400, sit 500, tickle 600, elytra 700). A class with an `@PostConstruct`
+  method that is missing `@Singleton`, or two features sharing an `EVENT_PRIORITY`, fails the build
+  (ArchUnit), not just the running lobby. `@PostConstruct start()` attaches the feature's own
+  `FeatureNode`; `@PreDestroy stop()` detaches it again.
+- Dependencies (a platform service such as `Deliver`, an `Instance`, a `Clock`, the `Scheduler`,
+  ...) are requested through the constructor; `@jakarta.inject.Inject` is only needed on a
+  constructor when the class has more than one. A brand-new shared platform service is added as
+  another `@Bean` in `app/src/main/java/net/onelitefeather/titan/app/bootstrap/PlatformBeans.java`,
+  or, if it carries feature-spanning logic of its own rather than wrapping a platform type, as its
+  own `@Singleton` class.
+- A hotbar or equipment item is a `@Bean LobbyItem` from the feature's own, package-private
+  `@Factory` class, collected by the platform-wide `LobbyItems` bean.
 - Zero changed lines outside the new package - except a brand-new shared platform service, which
   necessarily touches `PlatformBeans`.
-- A dependency nothing provides fails the build or the start, naming the missing type, instead of
-  the lobby quietly running without that module.
+- A dependency nothing provides fails building the `BeanScope` (and with it, the lobby's start),
+  naming the missing type, instead of the lobby quietly running without that feature.
 - The actual start order is visible at runtime in one INFO log line:
-  `Lobby modules enabled in order: {}`.
-- A module that reads configuration reads it live, at the point it is used, not just once in
-  `enable()` - see [`docs/lobby-modules.md`](docs/lobby-modules.md) for the pattern (a direct
+  `Lobby features started in event order: {}`.
+- A feature that reads configuration reads it live, at the point it is used, not just once in
+  `start()` - see [`docs/lobby-modules.md`](docs/lobby-modules.md) for the pattern (a direct
   `Config.<method>(key)` call at the use site, unvalidated - configuration is validated only once,
   at startup). That is what makes the runtime reload described under "Runtime reloading" above
-  apply to a module without it ever restarting.
+  apply to a feature without it ever restarting.
 
-See [`docs/lobby-modules.md`](docs/lobby-modules.md) (German) for the full walkthrough - module
-anatomy, `ModuleContext` dock points, tick-thread rules, test setup with `ModuleHarness`, the
-ArchUnit rules, and a copyable template module with its tests.
+See [`docs/lobby-modules.md`](docs/lobby-modules.md) (German) for the full walkthrough - feature
+anatomy, `FeatureNode`, items and tasks as beans, tick-thread rules, test setup without a harness,
+the ArchUnit rules, and a copyable template feature with its tests.
 
 ## License
 

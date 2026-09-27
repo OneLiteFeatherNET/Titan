@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
  * {@code io.avaje.config.Config}
  * facade has been initialised.
  *
- * <p>Pulled out on its own, mirroring {@link ModuleStartupLog}, so the log line can be
+ * <p>Pulled out on its own, mirroring {@link FeatureStartupLog}, so the log line can be
  * unit-tested with a captured appender.
  */
 public final class ConfigurationStartupLog {

@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
  * ({@code net.elytrarace.voyager.platform.flight.FireworkBoostTrackerTest}): the burn is pure
  * arithmetic and is tested as such - no {@code Env}, no {@code Player}, no rocket. F.I.R.S.T., test
  * pyramid: this is the pure unit layer for {@link FireworkBoostTracker}; {@link ElytraModuleTest}
- * covers the entity/event half through a real {@code ModuleHarness}.
+ * covers the entity/event half through a real {@link ElytraFixture}.
  *
  * <h2>What the fixtures are built to tell apart</h2>
  *

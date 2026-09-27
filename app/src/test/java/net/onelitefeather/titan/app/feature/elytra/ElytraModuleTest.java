@@ -34,20 +34,19 @@ import net.minestom.server.item.Material;
 import net.minestom.server.utils.Unit;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.app.module.item.ItemRegistry;
-import net.onelitefeather.titan.app.module.testing.ModuleHarness;
+import net.onelitefeather.titan.app.module.item.LobbyItems;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * End-to-end coverage for {@link ElytraModule} through a real {@link ModuleHarness}: the
- * {@code lobby-hotbar} spec scenarios "Standardausstattung" (the elytra half), "Feuerwerk beim
- * Fliegen", "Feuerwerk nach dem Landen" and "Boost beim Fliegen" - the last one now ported from
- * Voyager (see {@link FireworkBoostTracker} and {@link FireworkRockets}): using the firework while
- * flying spawns a real rocket entity the client boosts itself with, instead of the lobby pushing a
- * velocity. Drives ticks with {@link Env#tick()}; no sleeps.
+ * End-to-end coverage for {@link ElytraModule} through direct construction (see
+ * {@link ElytraFixture}): the {@code lobby-hotbar} spec scenarios "Standardausstattung" (the elytra
+ * half), "Feuerwerk beim Fliegen", "Feuerwerk nach dem Landen" and "Boost beim Fliegen" - ported
+ * from Voyager (see {@link FireworkBoostTracker} and {@link FireworkRockets}): using the firework
+ * while flying spawns a real rocket entity the client boosts itself with, instead of the lobby
+ * pushing a velocity. Drives ticks with {@link Env#tick()}; no sleeps.
  */
 @ExtendWith(MicrotusExtension.class)
 class ElytraModuleTest {
@@ -63,10 +62,10 @@ class ElytraModuleTest {
     @DisplayName("equip() puts an unbreakable elytra on the chestplate")
     @Test
     void equipPutsAnUnbreakableElytraOnTheChestplate(Env env) {
-        try (ModuleHarness harness = ModuleHarness.start(env, new ElytraModule())) {
+        try (ElytraFixture fixture = ElytraFixture.start(env)) {
             Player player = env.createPlayer(env.createFlatInstance());
 
-            harness.items().equip(player);
+            fixture.equip(player);
 
             ItemStack chestplate = player.getEquipment(EquipmentSlot.CHESTPLATE);
             Assertions.assertEquals(Material.ELYTRA, chestplate.material());
@@ -77,21 +76,21 @@ class ElytraModuleTest {
     @DisplayName("Starting to fly gives the player the registry-stamped firework in the offhand")
     @Test
     void startingToFlyGivesTheStampedFireworkInTheOffHand(Env env) {
-        try (ModuleHarness harness = ModuleHarness.start(env, new ElytraModule())) {
+        try (ElytraFixture fixture = ElytraFixture.start(env)) {
             Player player = env.createPlayer(env.createFlatInstance());
 
             env.process().eventHandler().call(new PlayerStartFlyingWithElytraEvent(player));
 
             ItemStack offHand = player.getItemInOffHand();
             Assertions.assertEquals(Material.FIREWORK_ROCKET, offHand.material());
-            Assertions.assertEquals("titan:firework", offHand.getTag(ItemRegistry.IDENTITY_TAG), "the handed-out stack must carry the registry's identity tag so its use reaches this module");
+            Assertions.assertEquals("titan:firework", offHand.getTag(LobbyItems.IDENTITY_TAG), "the handed-out stack must carry the platform's identity tag so its use reaches this feature");
         }
     }
 
     @DisplayName("Stopping flight empties the offhand again")
     @Test
     void stoppingFlightEmptiesTheOffHandAgain(Env env) {
-        try (ModuleHarness harness = ModuleHarness.start(env, new ElytraModule())) {
+        try (ElytraFixture fixture = ElytraFixture.start(env)) {
             Player player = env.createPlayer(env.createFlatInstance());
             env.process().eventHandler().call(new PlayerStartFlyingWithElytraEvent(player));
 
@@ -104,7 +103,7 @@ class ElytraModuleTest {
     @DisplayName("Using the stamped firework while flying spawns a rocket entity attached to the player")
     @Test
     void usingTheStampedFireworkWhileFlyingSpawnsARocketAttachedToThePlayer(Env env) {
-        try (ModuleHarness harness = ModuleHarness.start(env, new ElytraModule())) {
+        try (ElytraFixture fixture = ElytraFixture.start(env)) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             player.setFlyingWithElytra(true);
@@ -131,21 +130,21 @@ class ElytraModuleTest {
     @DisplayName("Using a look-alike firework that was never registered does not spawn a rocket")
     @Test
     void usingAnUnregisteredLookAlikeFireworkDoesNotSpawnARocket(Env env) {
-        try (ModuleHarness harness = ModuleHarness.start(env, new ElytraModule())) {
+        try (ElytraFixture fixture = ElytraFixture.start(env)) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             player.setFlyingWithElytra(true);
 
             env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, ItemStack.of(Material.FIREWORK_ROCKET), 1));
 
-            Assertions.assertTrue(rocketsIn(instance).isEmpty(), "a look-alike stack without the registry's identity tag must never reach the elytra module's handler");
+            Assertions.assertTrue(rocketsIn(instance).isEmpty(), "a look-alike stack without the platform's identity tag must never reach the elytra feature's handler");
         }
     }
 
     @DisplayName("A second use during the burn and its cooldown is refused and spawns no second rocket")
     @Test
     void aSecondUseDuringTheBurnAndItsCooldownIsRefused(Env env) {
-        try (ModuleHarness harness = ModuleHarness.start(env, new ElytraModule())) {
+        try (ElytraFixture fixture = ElytraFixture.start(env)) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             player.setFlyingWithElytra(true);
@@ -162,7 +161,7 @@ class ElytraModuleTest {
     @DisplayName("Stopping flight clears any active boost, so flying again allows an immediate new one")
     @Test
     void stoppingFlightClearsAnyActiveBoostSoFlyingAgainAllowsAnImmediateNewOne(Env env) {
-        try (ModuleHarness harness = ModuleHarness.start(env, new ElytraModule())) {
+        try (ElytraFixture fixture = ElytraFixture.start(env)) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             player.setFlyingWithElytra(true);
@@ -173,8 +172,9 @@ class ElytraModuleTest {
             player.setFlyingWithElytra(false);
             env.process().eventHandler().call(new PlayerStopFlyingWithElytraEvent(player));
 
-            // If the module had not forgotten the boost on stop-flying, this second use would still
-            // be refused by the still-running cooldown - a no-op that never spawns a second rocket.
+            // If the feature had not forgotten the boost on stop-flying, this second use would
+            // still be refused by the still-running cooldown - a no-op that never spawns a second
+            // rocket.
             player.setFlyingWithElytra(true);
             env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.OFF, stampedFirework, 1));
 
@@ -185,7 +185,7 @@ class ElytraModuleTest {
     @DisplayName("Ticking past the burn and its cooldown while still flying allows a second rocket")
     @Test
     void tickingPastTheBurnAndItsCooldownWhileStillFlyingAllowsASecondRocket(Env env) {
-        try (ModuleHarness harness = ModuleHarness.start(env, new ElytraModule())) {
+        try (ElytraFixture fixture = ElytraFixture.start(env)) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             player.setFlyingWithElytra(true);
@@ -222,7 +222,7 @@ class ElytraModuleTest {
     @DisplayName("A PlayerDisconnectEvent clears the player's boost state, so a reconnecting player may boost immediately")
     @Test
     void playerDisconnectClearsAnyActiveBoostSoAReconnectingPlayerMayBoostImmediately(Env env) {
-        try (ModuleHarness harness = ModuleHarness.start(env, new ElytraModule())) {
+        try (ElytraFixture fixture = ElytraFixture.start(env)) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             player.setFlyingWithElytra(true);
@@ -232,12 +232,53 @@ class ElytraModuleTest {
 
             env.process().eventHandler().call(new PlayerDisconnectEvent(player));
 
-            // If the module had not forgotten the boost on disconnect, this second use - standing
+            // If the feature had not forgotten the boost on disconnect, this second use - standing
             // in for the same player reconnecting and flying again - would still be refused by the
             // still-running cooldown, a no-op that never spawns a second rocket.
             env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.OFF, stampedFirework, 1));
 
             Assertions.assertEquals(2, rocketsIn(instance).size(), "a PlayerDisconnectEvent must clear the previous boost so a new use lights a brand-new rocket");
+        }
+    }
+
+    @DisplayName("The per-tick boost task advances the tracker before stop() and no longer afterwards")
+    @Test
+    void theBoostTaskAdvancesBeforeStopAndNotAfterwards(Env env) {
+        ElytraFixture fixture = ElytraFixture.start(env);
+        try {
+            Player player = env.createPlayer(env.createFlatInstance());
+            player.setFlyingWithElytra(true);
+            env.process().eventHandler().call(new PlayerStartFlyingWithElytraEvent(player));
+            ItemStack stampedFirework = player.getItemInOffHand();
+            env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.OFF, stampedFirework, 1));
+
+            env.tick();
+            int cooldownAfterOneTick = fixture.boosts().cooldownTicksRemaining(player.getUuid());
+            Assertions.assertTrue(cooldownAfterOneTick < DEFAULT_COOLDOWN_TICKS, "the scheduled task must advance the tracker at least once before stop() runs");
+
+            fixture.stopModule();
+            env.tick();
+            env.tick();
+
+            Assertions.assertEquals(cooldownAfterOneTick, fixture.boosts().cooldownTicksRemaining(player.getUuid()), "no further tick may advance the tracker once the module has stopped");
+        } finally {
+            fixture.close();
+        }
+    }
+
+    @DisplayName("Once the module is stopped, starting to fly no longer hands out the firework")
+    @Test
+    void startingToFlyDoesNothingOnceTheModuleIsStopped(Env env) {
+        ElytraFixture fixture = ElytraFixture.start(env);
+        try {
+            Player player = env.createPlayer(env.createFlatInstance());
+
+            fixture.stopModule();
+            env.process().eventHandler().call(new PlayerStartFlyingWithElytraEvent(player));
+
+            Assertions.assertEquals(ItemStack.AIR, player.getItemInOffHand(), "no feature code may run once the module has stopped");
+        } finally {
+            fixture.close();
         }
     }
 

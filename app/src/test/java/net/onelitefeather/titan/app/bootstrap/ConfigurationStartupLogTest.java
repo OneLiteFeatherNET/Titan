@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * openspec/changes/standardized-config-profiles/design.md}, decision 6), pulled out on its own so
  * this can be asserted with a captured appender. Builds its own {@link ListAppender} and detaches
  * it in a {@code finally}, per test (F.I.R.S.T. - Independent), the same pattern
- * {@link ModuleStartupLogTest} uses.
+ * {@link FeatureStartupLogTest} uses.
  *
  * <p>Since {@code openspec/changes/avaje-config-facade/design.md} decision 1,
  * {@link ConfigurationStartupLog#activeProfiles()} reads the static {@code Config} facade itself
