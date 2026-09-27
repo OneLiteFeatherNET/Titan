@@ -16,12 +16,10 @@
 package net.onelitefeather.titan.app.feature.spawn;
 
 import io.avaje.config.Config;
-import java.util.UUID;
+import java.util.List;
 import net.kyori.adventure.key.Key;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
-import net.minestom.server.event.Event;
-import net.minestom.server.event.EventNode;
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent;
 import net.minestom.server.event.player.PlayerMoveEvent;
 import net.minestom.server.event.player.PlayerSpawnEvent;
@@ -33,9 +31,10 @@ import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.TestConnection;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.app.module.item.ItemRegistry;
 import net.onelitefeather.titan.app.module.item.ItemSlot;
 import net.onelitefeather.titan.app.module.item.LobbyItem;
+import net.onelitefeather.titan.app.module.item.LobbyItems;
+import net.onelitefeather.titan.app.testutils.TestTitanNode;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -43,7 +42,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * {@code Env} (Cyano/Microtus) coverage for {@link SpawnModule}, built directly with fakes - see
- * {@code openspec/changes/dissolve-module-platform/tasks.md}, task 2.2. Covers the
+ * {@code openspec/changes/dissolve-module-platform/tasks.md}, task 3.1. Covers the
  * {@code lobby-modules}/{@code lobby-hotbar} scenarios task 6.2 carries: spawning instance and
  * respawn point on configuration, teleport plus simulation distance plus equipment on spawn, and
  * the height-bounds teleport - plus that {@link SpawnModule#stop()} leaves no listener behind.
@@ -60,41 +59,14 @@ class SpawnModuleTest {
     private static final int MAX_HEIGHT = Config.getAs(SpawnSettings.MAX_HEIGHT_KEY, Integer::parseInt);
     private static final int SIMULATION_DISTANCE = Config.getAs(SpawnSettings.SIMULATION_DISTANCE_KEY, Integer::parseInt);
 
-    /**
-     * A fresh {@code titan} node attached under the given {@code Env}'s global event handler, and
-     * its own, unshared {@link ItemRegistry} - the bridge {@link SpawnModule} still equips through
-     * until {@code TODO(dissolve-module-platform, task 3.1)} switches it to the {@code LobbyItems}
-     * bean. A new instance per test keeps tests independent (F.I.R.S.T.).
-     */
-    private static final class TestPlatform implements AutoCloseable {
+    private static LobbyItems noItems(TestTitanNode titan) {
+        return new LobbyItems(List.of(), titan.node());
+    }
 
-        private final EventNode<Event> global;
-        private final EventNode<Event> titan;
-        private final ItemRegistry itemRegistry;
-
-        private TestPlatform(EventNode<Event> global) {
-            this.global = global;
-            this.titan = EventNode.all("test-titan-" + UUID.randomUUID());
-            this.global.addChild(this.titan);
-            this.itemRegistry = new ItemRegistry(this.titan);
-        }
-
-        static TestPlatform attach(Env env) {
-            return new TestPlatform(env.process().eventHandler());
-        }
-
-        EventNode<Event> titan() {
-            return this.titan;
-        }
-
-        ItemRegistry itemRegistry() {
-            return this.itemRegistry;
-        }
-
-        @Override
-        public void close() {
-            this.global.removeChild(this.titan);
-        }
+    private static LobbyItems oneStickItem(TestTitanNode titan) {
+        LobbyItem stick = new LobbyItem("dummy-item", Key.key("titan:test-dummy"), ItemStack.of(Material.STICK), ItemSlot.hotbar(0), (player, event) -> {
+        });
+        return new LobbyItems(List.of(stick), titan.node());
     }
 
     @DisplayName("The configuration event sets the spawning instance and the player's respawn point")
@@ -103,8 +75,9 @@ class SpawnModuleTest {
         Instance targetInstance = env.createFlatInstance();
         Pos spawnPos = new Pos(1, 2, 3);
 
-        try (TestPlatform platform = TestPlatform.attach(env)) {
-            SpawnModule module = new SpawnModule(targetInstance, () -> spawnPos, platform.titan(), platform.itemRegistry());
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            LobbyItems lobbyItems = noItems(titan);
+            SpawnModule module = new SpawnModule(targetInstance, () -> spawnPos, titan.node(), lobbyItems);
             module.start();
             try {
                 Player player = env.createPlayer(targetInstance);
@@ -119,6 +92,7 @@ class SpawnModuleTest {
                 Assertions.assertEquals(spawnPos, player.getRespawnPoint());
             } finally {
                 module.stop();
+                lobbyItems.stop();
             }
         }
     }
@@ -129,11 +103,9 @@ class SpawnModuleTest {
         Instance instance = env.createFlatInstance();
         Pos spawnPos = new Pos(5, 64, 5);
 
-        try (TestPlatform platform = TestPlatform.attach(env)) {
-            platform.itemRegistry().contextView("dummy-item", cleanup -> {
-            }).register(new LobbyItem("dummy-item", Key.key("titan:test-dummy"), ItemStack.of(Material.STICK), ItemSlot.hotbar(0), (player, event) -> {
-            }));
-            SpawnModule module = new SpawnModule(instance, () -> spawnPos, platform.titan(), platform.itemRegistry());
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            LobbyItems lobbyItems = oneStickItem(titan);
+            SpawnModule module = new SpawnModule(instance, () -> spawnPos, titan.node(), lobbyItems);
             module.start();
             try {
                 TestConnection connection = env.createConnection();
@@ -148,6 +120,7 @@ class SpawnModuleTest {
                 Assertions.assertEquals(Material.STICK, player.getInventory().getItemStack(0).material(), "equip() must have applied the other registered item too");
             } finally {
                 module.stop();
+                lobbyItems.stop();
             }
         }
     }
@@ -158,8 +131,9 @@ class SpawnModuleTest {
         Instance instance = env.createFlatInstance();
         Pos spawnPos = new Pos(10, 100, 10);
 
-        try (TestPlatform platform = TestPlatform.attach(env)) {
-            SpawnModule module = new SpawnModule(instance, () -> spawnPos, platform.titan(), platform.itemRegistry());
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            LobbyItems lobbyItems = noItems(titan);
+            SpawnModule module = new SpawnModule(instance, () -> spawnPos, titan.node(), lobbyItems);
             module.start();
             try {
                 Player player = env.createPlayer(instance);
@@ -171,6 +145,7 @@ class SpawnModuleTest {
                 Assertions.assertEquals(spawnPos, player.getPosition());
             } finally {
                 module.stop();
+                lobbyItems.stop();
             }
         }
     }
@@ -181,8 +156,9 @@ class SpawnModuleTest {
         Instance instance = env.createFlatInstance();
         Pos spawnPos = new Pos(10, 100, 10);
 
-        try (TestPlatform platform = TestPlatform.attach(env)) {
-            SpawnModule module = new SpawnModule(instance, () -> spawnPos, platform.titan(), platform.itemRegistry());
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            LobbyItems lobbyItems = noItems(titan);
+            SpawnModule module = new SpawnModule(instance, () -> spawnPos, titan.node(), lobbyItems);
             module.start();
             try {
                 Player player = env.createPlayer(instance);
@@ -194,6 +170,7 @@ class SpawnModuleTest {
                 Assertions.assertEquals(spawnPos, player.getPosition());
             } finally {
                 module.stop();
+                lobbyItems.stop();
             }
         }
     }
@@ -204,8 +181,9 @@ class SpawnModuleTest {
         Instance instance = env.createFlatInstance();
         Pos spawnPos = new Pos(10, 100, 10);
 
-        try (TestPlatform platform = TestPlatform.attach(env)) {
-            SpawnModule module = new SpawnModule(instance, () -> spawnPos, platform.titan(), platform.itemRegistry());
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            LobbyItems lobbyItems = noItems(titan);
+            SpawnModule module = new SpawnModule(instance, () -> spawnPos, titan.node(), lobbyItems);
             module.start();
             try {
                 Player player = env.createPlayer(instance);
@@ -217,6 +195,7 @@ class SpawnModuleTest {
                 Assertions.assertEquals(withinBounds, player.getPosition());
             } finally {
                 module.stop();
+                lobbyItems.stop();
             }
         }
     }
@@ -227,10 +206,12 @@ class SpawnModuleTest {
         Instance instance = env.createFlatInstance();
         Pos spawnPos = new Pos(5, 64, 5);
 
-        try (TestPlatform platform = TestPlatform.attach(env)) {
-            SpawnModule module = new SpawnModule(instance, () -> spawnPos, platform.titan(), platform.itemRegistry());
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            LobbyItems lobbyItems = noItems(titan);
+            SpawnModule module = new SpawnModule(instance, () -> spawnPos, titan.node(), lobbyItems);
             module.start();
             module.stop();
+            lobbyItems.stop();
 
             TestConnection connection = env.createConnection();
             Player player = connection.connect(instance);

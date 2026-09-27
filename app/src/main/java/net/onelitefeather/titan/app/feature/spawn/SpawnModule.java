@@ -29,7 +29,7 @@ import net.minestom.server.event.player.PlayerSpawnEvent;
 import net.minestom.server.instance.Instance;
 import net.onelitefeather.titan.app.module.FeatureNode;
 import net.onelitefeather.titan.app.module.LobbySpawn;
-import net.onelitefeather.titan.app.module.item.ItemRegistry;
+import net.onelitefeather.titan.app.module.item.LobbyItems;
 
 /**
  * Puts a joining player into the lobby and keeps them inside its height bounds.
@@ -68,7 +68,7 @@ public final class SpawnModule {
     private final Instance instance;
     private final LobbySpawn spawnPosition;
     private final EventNode<Event> titan;
-    private final ItemRegistry itemRegistry;
+    private final LobbyItems lobbyItems;
     private FeatureNode node;
 
     /**
@@ -77,19 +77,13 @@ public final class SpawnModule {
      *                      the lobby map has none, in which case no respawn point or teleport is
      *                      applied
      * @param titan         the shared event node this feature's own node attaches under
-     * @param itemRegistry  equips the joining player with the platform's standard loadout.
-     *                      TODO(dissolve-module-platform, task 3.1): read from the
-     *                      {@code LobbyItems} bean directly once every feature's items are beans -
-     *                      until then this bridges to items that not-yet-migrated features (e.g.
-     *                      navigator, elytra) still register with the old platform, see
-     *                      {@code openspec/changes/dissolve-module-platform/tasks.md} execution
-     *                      plan
+     * @param lobbyItems    equips the joining player with the platform's standard loadout
      */
-    public SpawnModule(Instance instance, LobbySpawn spawnPosition, @Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, ItemRegistry itemRegistry) {
+    public SpawnModule(Instance instance, LobbySpawn spawnPosition, @Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbyItems lobbyItems) {
         this.instance = Objects.requireNonNull(instance, "instance");
         this.spawnPosition = Objects.requireNonNull(spawnPosition, "spawnPosition");
         this.titan = Objects.requireNonNull(titan, "titan");
-        this.itemRegistry = Objects.requireNonNull(itemRegistry, "itemRegistry");
+        this.lobbyItems = Objects.requireNonNull(lobbyItems, "lobbyItems");
     }
 
     @PostConstruct
@@ -101,7 +95,7 @@ public final class SpawnModule {
         SpawnSettings.minHeight(Config.getAs(SpawnSettings.MIN_HEIGHT_KEY, Integer::parseInt), maxHeightAtStartup);
         Config.getAs(SpawnSettings.SIMULATION_DISTANCE_KEY, SpawnSettings::simulationDistance);
 
-        this.node = FeatureNode.attach(this.titan, "spawn", EVENT_PRIORITY).on(AsyncPlayerConfigurationEvent.class, new SpawnConfigurationListener(this.instance, this.spawnPosition::position)).on(PlayerSpawnEvent.class, new SpawnJoinListener(this.spawnPosition::position, this.itemRegistry)).on(PlayerMoveEvent.class, new SpawnBoundsListener(this.spawnPosition::position));
+        this.node = FeatureNode.attach(this.titan, "spawn", EVENT_PRIORITY).on(AsyncPlayerConfigurationEvent.class, new SpawnConfigurationListener(this.instance, this.spawnPosition::position)).on(PlayerSpawnEvent.class, new SpawnJoinListener(this.spawnPosition::position, this.lobbyItems)).on(PlayerMoveEvent.class, new SpawnBoundsListener(this.spawnPosition::position));
     }
 
     @PreDestroy

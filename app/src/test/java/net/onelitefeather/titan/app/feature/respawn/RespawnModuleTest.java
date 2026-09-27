@@ -15,13 +15,11 @@
  */
 package net.onelitefeather.titan.app.feature.respawn;
 
-import java.util.UUID;
+import java.util.List;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.entity.Player;
-import net.minestom.server.event.Event;
 import net.minestom.server.event.EventFilter;
-import net.minestom.server.event.EventNode;
 import net.minestom.server.event.player.PlayerDeathEvent;
 import net.minestom.server.event.player.PlayerRespawnEvent;
 import net.minestom.server.instance.Instance;
@@ -31,9 +29,10 @@ import net.minestom.server.item.Material;
 import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.app.module.item.ItemRegistry;
 import net.onelitefeather.titan.app.module.item.ItemSlot;
 import net.onelitefeather.titan.app.module.item.LobbyItem;
+import net.onelitefeather.titan.app.module.item.LobbyItems;
+import net.onelitefeather.titan.app.testutils.TestTitanNode;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,7 +40,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Env integration coverage for {@link RespawnModule}, built directly with fakes - see
- * {@code openspec/changes/dissolve-module-platform/tasks.md}, task 2.3: a real death must produce
+ * {@code openspec/changes/dissolve-module-platform/tasks.md}, task 3.1: a real death must produce
  * no message and a respawn by the next tick (see the class Javadoc on {@link RespawnModule} for
  * why it cannot be synchronous), and a real respawn must hand the player back exactly the
  * platform's currently registered loadout. Calling {@link RespawnModule#stop()} must leave the
@@ -52,51 +51,18 @@ class RespawnModuleTest {
 
     private static final Key TEST_ITEM_KEY = Key.key("titan:respawn-module-test-item");
 
-    /**
-     * A fresh {@code titan} node attached under the given {@code Env}'s global event handler, and
-     * its own, unshared {@link ItemRegistry} - the bridge {@link RespawnModule} still equips
-     * through until {@code TODO(dissolve-module-platform, task 3.1)} switches it to the
-     * {@code LobbyItems} bean. A new instance per test keeps tests independent (F.I.R.S.T.).
-     */
-    private static final class TestPlatform implements AutoCloseable {
-
-        private final EventNode<Event> global;
-        private final EventNode<Event> titan;
-        private final ItemRegistry itemRegistry;
-
-        private TestPlatform(EventNode<Event> global) {
-            this.global = global;
-            this.titan = EventNode.all("test-titan-" + UUID.randomUUID());
-            this.global.addChild(this.titan);
-            this.itemRegistry = new ItemRegistry(this.titan);
-        }
-
-        static TestPlatform attach(Env env) {
-            return new TestPlatform(env.process().eventHandler());
-        }
-
-        EventNode<Event> titan() {
-            return this.titan;
-        }
-
-        ItemRegistry itemRegistry() {
-            return this.itemRegistry;
-        }
-
-        void registerFeatherItem() {
-            this.itemRegistry.contextView("respawn-test-item", cleanup -> {
-            }).register(new LobbyItem("respawn-test-item", TEST_ITEM_KEY, ItemStack.of(Material.FEATHER), ItemSlot.hotbar(0), (usedBy, event) -> {
-            }));
-        }
-
-        @Override
-        public void close() {
-            this.global.removeChild(this.titan);
-        }
+    private static LobbyItems noItems(TestTitanNode titan) {
+        return new LobbyItems(List.of(), titan.node());
     }
 
-    private static RespawnModule startedModule(TestPlatform platform) {
-        RespawnModule module = new RespawnModule(platform.titan(), platform.itemRegistry());
+    private static LobbyItems featherItem(TestTitanNode titan) {
+        LobbyItem feather = new LobbyItem("respawn-test-item", TEST_ITEM_KEY, ItemStack.of(Material.FEATHER), ItemSlot.hotbar(0), (usedBy, event) -> {
+        });
+        return new LobbyItems(List.of(feather), titan.node());
+    }
+
+    private static RespawnModule startedModule(TestTitanNode titan, LobbyItems lobbyItems) {
+        RespawnModule module = new RespawnModule(titan.node(), lobbyItems);
         module.start();
         return module;
     }
@@ -107,8 +73,9 @@ class RespawnModuleTest {
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
 
-        try (TestPlatform platform = TestPlatform.attach(env)) {
-            RespawnModule module = startedModule(platform);
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            LobbyItems lobbyItems = noItems(titan);
+            RespawnModule module = startedModule(titan, lobbyItems);
             try {
                 Collector<PlayerDeathEvent> collector = env.trackEvent(PlayerDeathEvent.class, EventFilter.PLAYER, player);
 
@@ -119,6 +86,7 @@ class RespawnModuleTest {
                 Assertions.assertEquals(Component.empty(), first.getDeathText());
             } finally {
                 module.stop();
+                lobbyItems.stop();
             }
         }
     }
@@ -129,9 +97,9 @@ class RespawnModuleTest {
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
 
-        try (TestPlatform platform = TestPlatform.attach(env)) {
-            platform.registerFeatherItem();
-            RespawnModule module = startedModule(platform);
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            LobbyItems lobbyItems = featherItem(titan);
+            RespawnModule module = startedModule(titan, lobbyItems);
             try {
                 Collector<PlayerDeathEvent> deathCollector = env.trackEvent(PlayerDeathEvent.class, EventFilter.PLAYER, player);
                 Collector<PlayerRespawnEvent> respawnCollector = env.trackEvent(PlayerRespawnEvent.class, EventFilter.PLAYER, player);
@@ -158,6 +126,7 @@ class RespawnModuleTest {
                 Assertions.assertEquals(Material.FEATHER, player.getInventory().getItemStack(0).material(), "the registered item must be placed again once the player respawns");
             } finally {
                 module.stop();
+                lobbyItems.stop();
             }
         }
     }
@@ -168,9 +137,9 @@ class RespawnModuleTest {
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
 
-        try (TestPlatform platform = TestPlatform.attach(env)) {
-            platform.registerFeatherItem();
-            RespawnModule module = startedModule(platform);
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            LobbyItems lobbyItems = featherItem(titan);
+            RespawnModule module = startedModule(titan, lobbyItems);
             try {
                 env.process().eventHandler().call(new PlayerRespawnEvent(player));
 
@@ -180,6 +149,7 @@ class RespawnModuleTest {
                 }
             } finally {
                 module.stop();
+                lobbyItems.stop();
             }
         }
     }
@@ -190,9 +160,9 @@ class RespawnModuleTest {
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
 
-        try (TestPlatform platform = TestPlatform.attach(env)) {
-            platform.registerFeatherItem();
-            RespawnModule module = startedModule(platform);
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            LobbyItems lobbyItems = featherItem(titan);
+            RespawnModule module = startedModule(titan, lobbyItems);
             module.stop();
 
             Collector<PlayerDeathEvent> deathCollector = env.trackEvent(PlayerDeathEvent.class, EventFilter.PLAYER, player);
@@ -206,6 +176,8 @@ class RespawnModuleTest {
 
             env.process().eventHandler().call(new PlayerRespawnEvent(player));
             Assertions.assertTrue(player.getInventory().getItemStack(0).isAir(), "equip must not run once the module is stopped");
+
+            lobbyItems.stop();
         }
     }
 }

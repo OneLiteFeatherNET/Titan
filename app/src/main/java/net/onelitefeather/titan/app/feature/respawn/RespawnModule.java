@@ -27,14 +27,14 @@ import net.minestom.server.event.EventNode;
 import net.minestom.server.event.player.PlayerDeathEvent;
 import net.minestom.server.event.player.PlayerRespawnEvent;
 import net.onelitefeather.titan.app.module.FeatureNode;
-import net.onelitefeather.titan.app.module.item.ItemRegistry;
+import net.onelitefeather.titan.app.module.item.LobbyItems;
 
 /**
  * Handles a lobby player's death and respawn.
  *
  * <p>On {@link PlayerDeathEvent}, this module blanks the death text and respawns the player right
  * away - there is no death screen in the lobby. On {@link PlayerRespawnEvent}, it hands the player
- * back the platform's standard loadout through {@link ItemRegistry#equip(Player)}, the same call
+ * back the platform's standard loadout through {@link LobbyItems#equip(Player)}, the same call
  * the spawn module makes on join.
  *
  * <p>Minestom's {@code Player#kill()} dispatches {@link PlayerDeathEvent} <em>before</em> it marks
@@ -65,27 +65,21 @@ public final class RespawnModule {
     static final int EVENT_PRIORITY = 300;
 
     private final EventNode<Event> titan;
-    private final ItemRegistry itemRegistry;
+    private final LobbyItems lobbyItems;
     private FeatureNode node;
 
     /**
-     * @param titan        the shared event node this feature's own node attaches under
-     * @param itemRegistry equips the respawning player with the platform's standard loadout.
-     *                     TODO(dissolve-module-platform, task 3.1): read from the
-     *                     {@code LobbyItems} bean directly once every feature's items are beans -
-     *                     until then this bridges to items that not-yet-migrated features (e.g.
-     *                     navigator, elytra) still register with the old platform, see
-     *                     {@code openspec/changes/dissolve-module-platform/tasks.md} execution
-     *                     plan
+     * @param titan      the shared event node this feature's own node attaches under
+     * @param lobbyItems equips the respawning player with the platform's standard loadout
      */
-    public RespawnModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, ItemRegistry itemRegistry) {
+    public RespawnModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbyItems lobbyItems) {
         this.titan = Objects.requireNonNull(titan, "titan");
-        this.itemRegistry = Objects.requireNonNull(itemRegistry, "itemRegistry");
+        this.lobbyItems = Objects.requireNonNull(lobbyItems, "lobbyItems");
     }
 
     @PostConstruct
     void start() {
-        this.node = FeatureNode.attach(this.titan, "respawn", EVENT_PRIORITY).on(PlayerDeathEvent.class, RespawnModule::onDeath).on(PlayerRespawnEvent.class, event -> this.itemRegistry.equip(event.getPlayer()));
+        this.node = FeatureNode.attach(this.titan, "respawn", EVENT_PRIORITY).on(PlayerDeathEvent.class, RespawnModule::onDeath).on(PlayerRespawnEvent.class, event -> this.lobbyItems.equip(event.getPlayer()));
     }
 
     @PreDestroy
