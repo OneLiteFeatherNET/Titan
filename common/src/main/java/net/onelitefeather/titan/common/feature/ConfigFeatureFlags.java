@@ -20,7 +20,6 @@ import io.avaje.config.Configuration;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
-import net.onelitefeather.titan.common.config.ClasspathConfiguration;
 
 /**
  * The production {@link FeatureFlags}: a flag is a plain configuration value, read like any other
@@ -120,7 +119,9 @@ public final class ConfigFeatureFlags implements FeatureFlags {
      *         resource is not found or has no such section
      */
     static Set<String> knownFlagsIn(String classpathResource, ClassLoader classLoader) {
-        Configuration resourceOnly = ClasspathConfiguration.load(classpathResource, classLoader);
+        Objects.requireNonNull(classpathResource, "classpathResource must not be null");
+        Objects.requireNonNull(classLoader, "classLoader must not be null");
+        Configuration resourceOnly = Configuration.builder().resourceLoader(classLoader::getResourceAsStream).load(classpathResource).build();
         return resourceOnly.forPath(SECTION).keys();
     }
 }

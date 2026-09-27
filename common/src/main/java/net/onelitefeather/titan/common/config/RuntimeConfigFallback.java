@@ -70,7 +70,13 @@ public final class RuntimeConfigFallback {
      * @param classLoader       the class loader {@code classpathResource} is resolved against
      */
     public RuntimeConfigFallback(String classpathResource, ClassLoader classLoader) {
-        this(ClasspathConfiguration.load(classpathResource, classLoader));
+        this(shippedDefaultsFrom(classpathResource, classLoader));
+    }
+
+    private static Configuration shippedDefaultsFrom(String classpathResource, ClassLoader classLoader) {
+        Objects.requireNonNull(classpathResource, "classpathResource must not be null");
+        Objects.requireNonNull(classLoader, "classLoader must not be null");
+        return Configuration.builder().resourceLoader(classLoader::getResourceAsStream).load(classpathResource).build();
     }
 
     /**
