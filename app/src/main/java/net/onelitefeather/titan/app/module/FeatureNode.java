@@ -49,6 +49,20 @@ import net.onelitefeather.titan.common.observability.TitanObservability;
  */
 public final class FeatureNode implements AutoCloseable {
 
+    /**
+     * The {@code @Named} qualifier of the shared {@code titan} {@link EventNode} bean every
+     * feature's own node attaches under - {@code app.bootstrap.PlatformBeans} registers the bean
+     * under this name, and any platform class that looks it up by name (such as
+     * {@link net.onelitefeather.titan.app.module.item.LobbyItems LobbyItems} or {@code Titan})
+     * references this constant instead of duplicating the literal.
+     *
+     * <p>Lives here rather than on {@code PlatformBeans} so the platform ({@code app.module}) never
+     * has to import the composition root ({@code app.bootstrap}) just to name this qualifier - see
+     * {@code openspec/changes/dissolve-module-platform/design.md}, decision 1, and
+     * {@code ArchitectureTest#platformDoesNotDependOnCompositionRoot}.
+     */
+    public static final String TITAN_NODE = "titan";
+
     private final EventNode<Event> parent;
     private final EventNode<Event> node;
     private final String featureId;

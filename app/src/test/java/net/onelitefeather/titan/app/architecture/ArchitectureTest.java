@@ -87,6 +87,7 @@ class ArchitectureTest {
     private static final String APP_PACKAGE = "net.onelitefeather.titan.app..";
     private static final String NAVIGATOR_PACKAGE = "net.onelitefeather.titan.app.feature.navigator..";
     private static final String AVAJE_CONFIG_PACKAGE = "io.avaje.config..";
+    private static final String BOOTSTRAP_PACKAGE = "net.onelitefeather.titan.app.bootstrap..";
 
     /**
      * True for a class named {@code *Module}, or a class Avaje Inject's annotation processor
@@ -199,6 +200,18 @@ class ArchitectureTest {
      */
     @ArchTest
     static final ArchRule navigatorDoesNotDependOnAvajeConfig = noClasses().that().resideInAPackage(NAVIGATOR_PACKAGE).should().dependOnClassesThat().resideInAPackage(AVAJE_CONFIG_PACKAGE).because("the navigator's title and destinations are fixed in NavigatorModule/Destination, not read from configuration - see design.md decision 4 and the lobby-navigator spec requirement \"Navigator-Ziele sind im Navigator-Modul festgelegt\"");
+
+    /**
+     * Rule 9 ({@code openspec/changes/dissolve-module-platform/design.md}, decision 1 and 5): the
+     * platform ({@code app.module}) must stay usable while the composition root
+     * ({@code app.bootstrap}) is being assembled - {@code app.bootstrap} beans are built from
+     * {@code app.module} types (e.g. {@link net.onelitefeather.titan.app.module.LobbySpawn}), never
+     * the other way around. A platform class importing something from {@code app.bootstrap} - the
+     * shared {@code titan} event node qualifier, for instance - would create the reverse dependency
+     * and, with it, a package cycle between the two.
+     */
+    @ArchTest
+    static final ArchRule platformDoesNotDependOnCompositionRoot = noClasses().that().resideInAPackage(MODULE_PACKAGE).should().dependOnClassesThat().resideInAPackage(BOOTSTRAP_PACKAGE).because("the platform (app.module) must not depend on the composition root (app.bootstrap) - app.bootstrap wires platform beans from app.module types, never the reverse, and a dependency back into app.bootstrap would create a package cycle - see openspec/changes/dissolve-module-platform/design.md decisions 1 and 5");
 
     ArchitectureTest() {
     }

@@ -32,7 +32,7 @@ import net.minestom.server.event.EventNode;
 import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.tag.Tag;
-import net.onelitefeather.titan.app.bootstrap.PlatformBeans;
+import net.onelitefeather.titan.app.module.FeatureNode;
 import net.onelitefeather.titan.common.observability.TitanObservability;
 
 /**
@@ -76,7 +76,7 @@ public final class LobbyItems {
      *              instance's dispatcher attaches to it directly
      * @throws IllegalStateException if two items conflict; see {@link ItemConflicts#check(List)}
      */
-    public LobbyItems(List<LobbyItem> items, @Named(PlatformBeans.TITAN_NODE_NAME) EventNode<Event> titan) {
+    public LobbyItems(List<LobbyItem> items, @Named(FeatureNode.TITAN_NODE) EventNode<Event> titan) {
         ItemConflicts.check(items);
         this.titan = titan;
         this.itemsByKey = stampAll(items);

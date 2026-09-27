@@ -28,6 +28,7 @@ import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.timer.Scheduler;
 import net.onelitefeather.titan.api.deliver.Deliver;
+import net.onelitefeather.titan.app.module.FeatureNode;
 import net.onelitefeather.titan.app.module.LobbySpawn;
 import net.onelitefeather.titan.app.module.item.ItemRegistry;
 import net.onelitefeather.titan.app.module.item.LobbyItem;
@@ -55,14 +56,6 @@ import net.onelitefeather.titan.common.map.MapProvider;
  */
 @Factory
 public final class PlatformBeans {
-
-    /**
-     * The {@code @Named} qualifier of the shared {@link EventNode} bean {@link #titanEventNode()}
-     * registers, so any other class that looks the bean up by name - such as
-     * {@link net.onelitefeather.titan.app.Titan} - references this constant instead of duplicating
-     * the literal.
-     */
-    public static final String TITAN_NODE_NAME = "titan";
 
     /**
      * @return the lobby's single {@link InstanceContainer}, registered with the instance manager -
@@ -110,9 +103,9 @@ public final class PlatformBeans {
      *         itself attached to the global event handler
      */
     @Bean
-    @Named(TITAN_NODE_NAME)
+    @Named(FeatureNode.TITAN_NODE)
     public EventNode<Event> titanEventNode() {
-        EventNode<Event> node = EventNode.all(TITAN_NODE_NAME);
+        EventNode<Event> node = EventNode.all(FeatureNode.TITAN_NODE);
         MinecraftServer.getGlobalEventHandler().addChild(node);
         return node;
     }
@@ -128,7 +121,7 @@ public final class PlatformBeans {
      * @return the platform-wide registry of hotbar/equipment items every module registers through
      */
     @Bean
-    public ItemRegistry itemRegistry(@Named(TITAN_NODE_NAME) EventNode<Event> titanNode, List<LobbyItem> items) {
+    public ItemRegistry itemRegistry(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titanNode, List<LobbyItem> items) {
         ItemRegistry registry = new ItemRegistry(titanNode);
         registry.registerBridged(items);
         return registry;
