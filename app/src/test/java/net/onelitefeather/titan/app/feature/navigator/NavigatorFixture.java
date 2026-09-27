@@ -16,14 +16,12 @@
 package net.onelitefeather.titan.app.feature.navigator;
 
 import java.util.List;
-import java.util.UUID;
 import net.minestom.server.entity.Player;
-import net.minestom.server.event.Event;
-import net.minestom.server.event.EventNode;
 import net.minestom.testing.Env;
 import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.app.module.item.LobbyItem;
 import net.onelitefeather.titan.app.module.item.LobbyItems;
+import net.onelitefeather.titan.app.testutils.TestTitanNode;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
 
 /**
@@ -41,28 +39,25 @@ import net.onelitefeather.titan.common.feature.FeatureFlags;
  */
 final class NavigatorFixture implements AutoCloseable {
 
-    private final Env env;
-    private final EventNode<Event> titan;
+    private final TestTitanNode titan;
     private final NavigatorModule module;
     private final LobbyItems lobbyItems;
     private boolean moduleStopped;
     private boolean closed;
 
-    private NavigatorFixture(Env env, EventNode<Event> titan, NavigatorModule module, LobbyItems lobbyItems) {
-        this.env = env;
+    private NavigatorFixture(TestTitanNode titan, NavigatorModule module, LobbyItems lobbyItems) {
         this.titan = titan;
         this.module = module;
         this.lobbyItems = lobbyItems;
     }
 
     static NavigatorFixture start(Env env, Deliver deliver, FeatureFlags featureFlags) {
-        EventNode<Event> titan = EventNode.all("test-titan-" + UUID.randomUUID());
-        env.process().eventHandler().addChild(titan);
-        NavigatorModule module = new NavigatorModule(titan, deliver, featureFlags);
+        TestTitanNode titan = TestTitanNode.attach(env);
+        NavigatorModule module = new NavigatorModule(titan.node(), deliver, featureFlags);
         module.start();
         LobbyItem feather = new NavigatorItems().navigatorFeather(module);
-        LobbyItems lobbyItems = new LobbyItems(List.of(feather), titan);
-        return new NavigatorFixture(env, titan, module, lobbyItems);
+        LobbyItems lobbyItems = new LobbyItems(List.of(feather), titan.node());
+        return new NavigatorFixture(titan, module, lobbyItems);
     }
 
     NavigatorModule module() {
@@ -93,6 +88,6 @@ final class NavigatorFixture implements AutoCloseable {
         this.closed = true;
         stopModule();
         this.lobbyItems.stop();
-        this.env.process().eventHandler().removeChild(this.titan);
+        this.titan.close();
     }
 }

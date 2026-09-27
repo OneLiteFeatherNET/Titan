@@ -20,7 +20,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.util.UUID;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
@@ -34,6 +33,7 @@ import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.TestConnection;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.app.testutils.TestTitanNode;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
@@ -62,12 +62,6 @@ class TickleModuleTest {
      */
     private static final long DEFAULT_COOLDOWN_MILLIS = Config.getAs(TickleSettings.COOLDOWN_KEY, Long::parseLong);
 
-    private static EventNode<Event> attachTitanNode(Env env) {
-        EventNode<Event> titan = EventNode.all("test-titan-" + UUID.randomUUID());
-        env.process().eventHandler().addChild(titan);
-        return titan;
-    }
-
     private static TickleModule fixedClockModule(EventNode<Event> titan) {
         return new TickleModule(titan, Clock.fixed(NOW, ZoneOffset.UTC));
     }
@@ -86,7 +80,8 @@ class TickleModuleTest {
         Collector<SystemChatPacket> targetMessages = targetConnection.trackIncoming(SystemChatPacket.class);
         Collector<SetCooldownPacket> cooldownPackets = attackerConnection.trackIncoming(SetCooldownPacket.class);
 
-        EventNode<Event> titan = attachTitanNode(env);
+        TestTitanNode titanNode = TestTitanNode.attach(env);
+        EventNode<Event> titan = titanNode.node();
         TickleModule module = fixedClockModule(titan);
         module.start();
         try {
@@ -99,7 +94,7 @@ class TickleModuleTest {
             Assertions.assertEquals(Long.valueOf(NOW.toEpochMilli() + DEFAULT_COOLDOWN_MILLIS), attacker.getTag(TickleAttackHandler.COOLDOWN_EXPIRY));
         } finally {
             module.stop();
-            env.process().eventHandler().removeChild(titan);
+            titanNode.close();
         }
     }
 
@@ -116,7 +111,8 @@ class TickleModuleTest {
         Collector<SystemChatPacket> targetMessages = targetConnection.trackIncoming(SystemChatPacket.class);
         Collector<SetCooldownPacket> cooldownPackets = attackerConnection.trackIncoming(SetCooldownPacket.class);
 
-        EventNode<Event> titan = attachTitanNode(env);
+        TestTitanNode titanNode = TestTitanNode.attach(env);
+        EventNode<Event> titan = titanNode.node();
         TickleModule module = fixedClockModule(titan);
         module.start();
         try {
@@ -128,7 +124,7 @@ class TickleModuleTest {
             Assertions.assertFalse(attacker.hasTag(TickleAttackHandler.COOLDOWN_EXPIRY), "attacker must not carry a cooldown tag without a feather");
         } finally {
             module.stop();
-            env.process().eventHandler().removeChild(titan);
+            titanNode.close();
         }
     }
 
@@ -145,7 +141,8 @@ class TickleModuleTest {
         Collector<SystemChatPacket> attackerMessages = attackerConnection.trackIncoming(SystemChatPacket.class);
         Collector<SetCooldownPacket> cooldownPackets = attackerConnection.trackIncoming(SetCooldownPacket.class);
 
-        EventNode<Event> titan = attachTitanNode(env);
+        TestTitanNode titanNode = TestTitanNode.attach(env);
+        EventNode<Event> titan = titanNode.node();
         TickleModule module = fixedClockModule(titan);
         module.start();
         try {
@@ -156,7 +153,7 @@ class TickleModuleTest {
             Assertions.assertEquals(1, cooldownPackets.collect().size(), "a second hit inside the cooldown must not send another cooldown packet");
         } finally {
             module.stop();
-            env.process().eventHandler().removeChild(titan);
+            titanNode.close();
         }
     }
 
@@ -170,7 +167,8 @@ class TickleModuleTest {
         Player target = targetConnection.connect(instance);
         attacker.setItemInOffHand(ItemStack.of(Material.FEATHER));
 
-        EventNode<Event> titan = attachTitanNode(env);
+        TestTitanNode titanNode = TestTitanNode.attach(env);
+        EventNode<Event> titan = titanNode.node();
         TickleModule module = fixedClockModule(titan);
         module.start();
         module.stop();
@@ -182,7 +180,7 @@ class TickleModuleTest {
             attackerMessages.assertEmpty();
             Assertions.assertFalse(attacker.hasTag(TickleAttackHandler.COOLDOWN_EXPIRY), "a stopped feature must not react to an attack any more");
         } finally {
-            env.process().eventHandler().removeChild(titan);
+            titanNode.close();
         }
     }
 
@@ -201,7 +199,8 @@ class TickleModuleTest {
         Collector<SystemChatPacket> attackerMessages = attackerConnection.trackIncoming(SystemChatPacket.class);
         Collector<SetCooldownPacket> cooldownPackets = attackerConnection.trackIncoming(SetCooldownPacket.class);
 
-        EventNode<Event> titan = attachTitanNode(env);
+        TestTitanNode titanNode = TestTitanNode.attach(env);
+        EventNode<Event> titan = titanNode.node();
         TickleModule module = new TickleModule(titan, clock);
         module.start();
         try {
@@ -219,7 +218,7 @@ class TickleModuleTest {
             }
         } finally {
             module.stop();
-            env.process().eventHandler().removeChild(titan);
+            titanNode.close();
         }
     }
 }

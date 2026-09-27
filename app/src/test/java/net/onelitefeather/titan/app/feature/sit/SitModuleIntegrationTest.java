@@ -15,14 +15,11 @@
  */
 package net.onelitefeather.titan.app.feature.sit;
 
-import java.util.UUID;
 import net.minestom.server.coordinate.BlockVec;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.PlayerHand;
-import net.minestom.server.event.Event;
-import net.minestom.server.event.EventNode;
 import net.minestom.server.event.player.PlayerBlockInteractEvent;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.event.player.PlayerPacketEvent;
@@ -32,6 +29,7 @@ import net.minestom.server.instance.block.BlockFace;
 import net.minestom.server.network.packet.client.play.ClientInputPacket;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.app.testutils.TestTitanNode;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -55,29 +53,23 @@ class SitModuleIntegrationTest {
         return new PlayerPacketEvent(player, new ClientInputPacket(false, false, false, false, false, true, false));
     }
 
-    private static EventNode<Event> attachTitanNode(Env env) {
-        EventNode<Event> titan = EventNode.all("test-titan-" + UUID.randomUUID());
-        env.process().eventHandler().addChild(titan);
-        return titan;
-    }
-
     @DisplayName("Clicking an allowed block sits the player down")
     @Test
     void clickingAnAllowedBlockSitsThePlayer(Env env) {
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
         player.teleport(new Pos(0, 64, 0));
-        EventNode<Event> titan = attachTitanNode(env);
 
-        SitModule module = new SitModule(titan);
-        module.start();
-        try {
-            env.process().eventHandler().call(clickBlock(player, instance, Block.fromKey("minecraft:spruce_stairs"), new BlockVec(0, 64, 0)));
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            SitModule module = new SitModule(titan.node());
+            module.start();
+            try {
+                env.process().eventHandler().call(clickBlock(player, instance, Block.fromKey("minecraft:spruce_stairs"), new BlockVec(0, 64, 0)));
 
-            Assertions.assertNotNull(player.getVehicle(), "the player must be sitting after clicking an allowed block");
-        } finally {
-            module.stop();
-            env.process().eventHandler().removeChild(titan);
+                Assertions.assertNotNull(player.getVehicle(), "the player must be sitting after clicking an allowed block");
+            } finally {
+                module.stop();
+            }
         }
     }
 
@@ -88,23 +80,23 @@ class SitModuleIntegrationTest {
         Player player = env.createPlayer(instance);
         Pos before = new Pos(2, 65, 2);
         player.teleport(before);
-        EventNode<Event> titan = attachTitanNode(env);
 
-        SitModule module = new SitModule(titan);
-        module.start();
-        try {
-            env.process().eventHandler().call(clickBlock(player, instance, Block.fromKey("minecraft:spruce_stairs"), new BlockVec(2, 65, 2)));
-            Assertions.assertNotNull(player.getVehicle(), "player must be sitting before sneaking");
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            SitModule module = new SitModule(titan.node());
+            module.start();
+            try {
+                env.process().eventHandler().call(clickBlock(player, instance, Block.fromKey("minecraft:spruce_stairs"), new BlockVec(2, 65, 2)));
+                Assertions.assertNotNull(player.getVehicle(), "player must be sitting before sneaking");
 
-            env.process().eventHandler().call(sneak(player));
+                env.process().eventHandler().call(sneak(player));
 
-            Assertions.assertNull(player.getVehicle(), "the player must no longer be riding the seat after sneaking");
-            Assertions.assertEquals(before.x(), player.getPosition().x(), 0.001);
-            Assertions.assertEquals(before.y(), player.getPosition().y(), 0.001);
-            Assertions.assertEquals(before.z(), player.getPosition().z(), 0.001);
-        } finally {
-            module.stop();
-            env.process().eventHandler().removeChild(titan);
+                Assertions.assertNull(player.getVehicle(), "the player must no longer be riding the seat after sneaking");
+                Assertions.assertEquals(before.x(), player.getPosition().x(), 0.001);
+                Assertions.assertEquals(before.y(), player.getPosition().y(), 0.001);
+                Assertions.assertEquals(before.z(), player.getPosition().z(), 0.001);
+            } finally {
+                module.stop();
+            }
         }
     }
 
@@ -114,21 +106,21 @@ class SitModuleIntegrationTest {
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
         player.teleport(new Pos(0, 64, 0));
-        EventNode<Event> titan = attachTitanNode(env);
 
-        SitModule module = new SitModule(titan);
-        module.start();
-        try {
-            env.process().eventHandler().call(clickBlock(player, instance, Block.fromKey("minecraft:spruce_stairs"), new BlockVec(0, 64, 0)));
-            var seat = player.getVehicle();
-            Assertions.assertNotNull(seat, "player must be sitting before disconnecting");
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            SitModule module = new SitModule(titan.node());
+            module.start();
+            try {
+                env.process().eventHandler().call(clickBlock(player, instance, Block.fromKey("minecraft:spruce_stairs"), new BlockVec(0, 64, 0)));
+                var seat = player.getVehicle();
+                Assertions.assertNotNull(seat, "player must be sitting before disconnecting");
 
-            env.process().eventHandler().call(new PlayerDisconnectEvent(player));
+                env.process().eventHandler().call(new PlayerDisconnectEvent(player));
 
-            Assertions.assertNull(instance.getEntityByUuid(seat.getUuid()), "the seat entity must be removed on disconnect");
-        } finally {
-            module.stop();
-            env.process().eventHandler().removeChild(titan);
+                Assertions.assertNull(instance.getEntityByUuid(seat.getUuid()), "the seat entity must be removed on disconnect");
+            } finally {
+                module.stop();
+            }
         }
     }
 
@@ -138,17 +130,17 @@ class SitModuleIntegrationTest {
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
         player.teleport(new Pos(0, 64, 0));
-        EventNode<Event> titan = attachTitanNode(env);
 
-        SitModule module = new SitModule(titan);
-        module.start();
-        try {
-            env.process().eventHandler().call(clickBlock(player, instance, Block.fromKey("minecraft:stone"), new BlockVec(0, 64, 0)));
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            SitModule module = new SitModule(titan.node());
+            module.start();
+            try {
+                env.process().eventHandler().call(clickBlock(player, instance, Block.fromKey("minecraft:stone"), new BlockVec(0, 64, 0)));
 
-            Assertions.assertNull(player.getVehicle(), "clicking a non-allowed block must not sit the player down");
-        } finally {
-            module.stop();
-            env.process().eventHandler().removeChild(titan);
+                Assertions.assertNull(player.getVehicle(), "clicking a non-allowed block must not sit the player down");
+            } finally {
+                module.stop();
+            }
         }
     }
 
@@ -158,17 +150,15 @@ class SitModuleIntegrationTest {
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
         player.teleport(new Pos(0, 64, 0));
-        EventNode<Event> titan = attachTitanNode(env);
-        SitModule module = new SitModule(titan);
-        module.start();
-        module.stop();
 
-        try {
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            SitModule module = new SitModule(titan.node());
+            module.start();
+            module.stop();
+
             env.process().eventHandler().call(clickBlock(player, instance, Block.fromKey("minecraft:spruce_stairs"), new BlockVec(0, 64, 0)));
 
             Assertions.assertNull(player.getVehicle(), "no listener may still be attached once the module is stopped");
-        } finally {
-            env.process().eventHandler().removeChild(titan);
         }
     }
 }

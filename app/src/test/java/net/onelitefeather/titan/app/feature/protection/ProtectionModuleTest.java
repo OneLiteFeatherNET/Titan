@@ -15,13 +15,10 @@
  */
 package net.onelitefeather.titan.app.feature.protection;
 
-import java.util.UUID;
 import net.minestom.server.coordinate.BlockVec;
 import net.minestom.server.entity.ItemEntity;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.PlayerHand;
-import net.minestom.server.event.Event;
-import net.minestom.server.event.EventNode;
 import net.minestom.server.event.inventory.InventoryPreClickEvent;
 import net.minestom.server.event.item.ItemDropEvent;
 import net.minestom.server.event.item.PickupItemEvent;
@@ -36,6 +33,7 @@ import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.app.testutils.TestTitanNode;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -53,24 +51,23 @@ import org.junit.jupiter.api.extension.ExtendWith;
 class ProtectionModuleTest {
 
     /**
-     * Attaches a fresh {@code titan} node under {@code env}'s global event handler, builds and
-     * starts a {@link ProtectionModule} against it, and hands both back so a test can tear them
-     * down again with {@link #stop(Env, EventNode, ProtectionModule)}.
+     * Attaches a fresh {@code titan} test node, builds and starts a {@link ProtectionModule}
+     * against it, and hands both back so a test can tear them down again with
+     * {@link #stop(Fixture)}.
      */
-    private record Fixture(EventNode<Event> titan, ProtectionModule module) {
+    private record Fixture(TestTitanNode titan, ProtectionModule module) {
 
         static Fixture start(Env env) {
-            EventNode<Event> titan = EventNode.all("test-titan-" + UUID.randomUUID());
-            env.process().eventHandler().addChild(titan);
-            ProtectionModule module = new ProtectionModule(titan);
+            TestTitanNode titan = TestTitanNode.attach(env);
+            ProtectionModule module = new ProtectionModule(titan.node());
             module.start();
             return new Fixture(titan, module);
         }
     }
 
-    private static void stop(Env env, Fixture fixture) {
+    private static void stop(Fixture fixture) {
         fixture.module().stop();
-        env.process().eventHandler().removeChild(fixture.titan());
+        fixture.titan().close();
     }
 
     @DisplayName("Picking up an item is cancelled while the module is started")
@@ -87,7 +84,7 @@ class ProtectionModuleTest {
 
             Assertions.assertTrue(event.isCancelled());
         } finally {
-            stop(env, fixture);
+            stop(fixture);
         }
     }
 
@@ -104,7 +101,7 @@ class ProtectionModuleTest {
 
             Assertions.assertTrue(event.isCancelled());
         } finally {
-            stop(env, fixture);
+            stop(fixture);
         }
     }
 
@@ -121,7 +118,7 @@ class ProtectionModuleTest {
 
             Assertions.assertTrue(event.isCancelled());
         } finally {
-            stop(env, fixture);
+            stop(fixture);
         }
     }
 
@@ -138,7 +135,7 @@ class ProtectionModuleTest {
 
             Assertions.assertTrue(event.isCancelled());
         } finally {
-            stop(env, fixture);
+            stop(fixture);
         }
     }
 
@@ -155,7 +152,7 @@ class ProtectionModuleTest {
 
             Assertions.assertTrue(event.isCancelled());
         } finally {
-            stop(env, fixture);
+            stop(fixture);
         }
     }
 
@@ -172,7 +169,7 @@ class ProtectionModuleTest {
 
             Assertions.assertTrue(event.isCancelled());
         } finally {
-            stop(env, fixture);
+            stop(fixture);
         }
     }
 
@@ -183,7 +180,7 @@ class ProtectionModuleTest {
         Player player = env.createPlayer(flatInstance);
         Fixture fixture = Fixture.start(env);
 
-        stop(env, fixture);
+        stop(fixture);
 
         ItemDropEvent event = new ItemDropEvent(player, ItemStack.of(Material.DIAMOND));
         env.process().eventHandler().call(event);
