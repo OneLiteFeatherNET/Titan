@@ -27,7 +27,6 @@ import net.minestom.server.instance.Instance;
 import net.minestom.server.item.ItemStack;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.app.module.testing.ModuleHarness;
 import net.onelitefeather.titan.app.testutils.EventListenerCounter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -41,19 +40,20 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * opening it once and leaving, must never change the number of listeners registered - neither on
  * the module's own event node, nor on the event node Aves registered its click listener on.
  *
- * <p>{@link NavigatorModule} registers no listener of its own at all: it calls Aves'
- * {@code GlobalInventoryBuilder#register()} exactly once, in {@link NavigatorModule#enable}, which
- * registers exactly one click listener on the built inventory's own event node - see
- * {@link NavigatorModule#sharedInventory()}. Nothing here registers a listener again after
- * {@code enable()} returns, for any player, on any open. This test proves that structurally: the
- * listener counts on both the module's own {@code titan/navigator} node and the shared inventory's
- * own node, read via {@link EventListenerCounter} (see its own Javadoc on why reflection is needed
- * -
- * Minestom has no public API for this), stay exactly the same no matter how many times the
- * navigator is opened or how many players pass through it.
+ * <p>{@link NavigatorModule} registers no listener of its own at all:
+ * {@link NavigatorModule#start()}
+ * attaches an otherwise empty {@link net.onelitefeather.titan.app.module.FeatureNode} and calls
+ * Aves' {@code GlobalInventoryBuilder#register()} exactly once, which registers exactly one click
+ * listener on the built inventory's own event node - see {@link NavigatorModule#sharedInventory()}.
+ * Nothing here registers a listener again after {@code start()} returns, for any player, on any
+ * open. This test proves that structurally: the listener counts on both the module's own
+ * {@code titan/navigator} node and the shared inventory's own node, read via
+ * {@link EventListenerCounter} (see its own Javadoc on why reflection is needed - Minestom has no
+ * public API for this), stay exactly the same no matter how many times the navigator is opened or
+ * how many players pass through it.
  *
  * <p>Teardown always runs through try-with-resources, so a failed assertion can never leak the
- * harness's listeners into a later test.
+ * fixture's listeners into a later test.
  */
 @ExtendWith(MicrotusExtension.class)
 class NavigatorModuleLeakTest {
@@ -73,14 +73,13 @@ class NavigatorModuleLeakTest {
     @DisplayName("Opening and closing the navigator 50 times registers no extra listeners")
     @Test
     void openingAndClosingRepeatedlyDoesNotLeakListeners(Env env) {
-        NavigatorModule module = new NavigatorModule(new RecordingDeliver(), new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", true));
-        try (ModuleHarness harness = ModuleHarness.start(env, module)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", true))) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
-            harness.items().equip(player);
+            fixture.equip(player);
             ItemStack feather = player.getInventory().getItemStack(4);
             EventNode<Event> navigatorNode = navigatorNode(env);
-            EventNode<InventoryEvent> avesInventoryNode = module.sharedInventory().eventNode();
+            EventNode<InventoryEvent> avesInventoryNode = fixture.module().sharedInventory().eventNode();
             int moduleListenersBefore = EventListenerCounter.countListeners(navigatorNode);
             int avesListenersBefore = EventListenerCounter.countListeners(avesInventoryNode);
 
@@ -97,17 +96,16 @@ class NavigatorModuleLeakTest {
     @DisplayName("100 players joining, opening the navigator once and leaving leaves the listener count unchanged")
     @Test
     void manyPlayersJoinOpenAndLeaveWithoutLeakingListeners(Env env) {
-        NavigatorModule module = new NavigatorModule(new RecordingDeliver(), new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", true));
-        try (ModuleHarness harness = ModuleHarness.start(env, module)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", true))) {
             Instance instance = env.createFlatInstance();
             EventNode<Event> navigatorNode = navigatorNode(env);
-            EventNode<InventoryEvent> avesInventoryNode = module.sharedInventory().eventNode();
+            EventNode<InventoryEvent> avesInventoryNode = fixture.module().sharedInventory().eventNode();
             int moduleListenersBefore = EventListenerCounter.countListeners(navigatorNode);
             int avesListenersBefore = EventListenerCounter.countListeners(avesInventoryNode);
 
             for (int i = 0; i < PLAYER_COUNT; i++) {
                 Player player = env.createPlayer(instance);
-                harness.items().equip(player);
+                fixture.equip(player);
                 ItemStack feather = player.getInventory().getItemStack(4);
 
                 env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, feather, 0L));
