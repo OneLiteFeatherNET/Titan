@@ -104,6 +104,11 @@ public final class ItemRegistry {
      * {@code openspec/changes/dissolve-module-platform/tasks.md}, task 1.3 execution plan. Harmless
      * while {@code items} is empty, which it is until the first {@code @Bean LobbyItem} exists.
      *
+     * <p>{@link #dispatch} deliberately skips every registration made through this method: a bean
+     * item's {@code onUse} is already dispatched exactly once by {@code LobbyItems}' own listener on
+     * the same event node, so dispatching it here too would run it twice. This method only ever
+     * feeds {@link #currentPlan()} - {@code equip()} for a not-yet-migrated module.
+     *
      * @param items every item {@code PlatformBeans} collected as a bean, in injection order
      */
     public void registerBridged(List<LobbyItem> items) {
@@ -189,6 +194,15 @@ public final class ItemRegistry {
             registration = this.registrations.get(keyValue);
         }
         if (registration == null) {
+            return;
+        }
+        if (BRIDGE_MODULE_ID.equals(registration.moduleId())) {
+            // TODO(dissolve-module-platform, task 3.1): remove this guard alongside
+            // registerBridged(List) once ItemRegistry is deleted. A bridged item is a bean
+            // LobbyItems already owns; equip() still needs the registration above (so a
+            // not-yet-migrated module still equips it), but dispatching it here too would run its
+            // onUse a second time, since LobbyItems' own dispatcher on the same node already ran
+            // it once.
             return;
         }
         Consumer<PlayerUseItemEvent> handler = TitanObservability.guard(registration.moduleId(), (PlayerUseItemEvent guardedEvent) -> registration.item().onUse().handle(guardedEvent.getPlayer(), guardedEvent));
