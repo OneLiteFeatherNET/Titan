@@ -20,7 +20,6 @@ import io.avaje.inject.Factory;
 import jakarta.inject.Named;
 import java.nio.file.Path;
 import java.time.Clock;
-import java.util.List;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
@@ -30,8 +29,6 @@ import net.minestom.server.timer.Scheduler;
 import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.app.module.FeatureNode;
 import net.onelitefeather.titan.app.module.LobbySpawn;
-import net.onelitefeather.titan.app.module.item.ItemRegistry;
-import net.onelitefeather.titan.app.module.item.LobbyItem;
 import net.onelitefeather.titan.common.deliver.DeliverProvider;
 import net.onelitefeather.titan.common.feature.ConfigFeatureFlags;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
@@ -47,12 +44,10 @@ import net.onelitefeather.titan.common.map.MapProvider;
  * {@code common} itself stays free of any Avaje annotation or dependency; this factory is what
  * turns its library types into beans for {@code app}.
  *
- * <p>{@code ModuleRegistry} is deliberately <em>not</em> a bean here: the spike behind this change
- * found that {@code BeanScope.listByPriority(LobbyModule.class)} - the only way to get modules
- * sorted by {@code @Priority} - can only be called once {@code BeanScope.builder().build()} has
- * returned, never from inside a {@code @Factory} method while the scope is still being built (see
- * design.md, decision 2). Building the registry from the sorted list is therefore
- * {@code Titan}'s job, after the scope exists.
+ * <p>Every lobby feature is discovered as a plain {@code @Singleton} bean, started and stopped by
+ * the {@code BeanScope} itself through {@code @PostConstruct}/{@code @PreDestroy} - see
+ * {@code openspec/changes/dissolve-module-platform/design.md}, decisions 1 and 4. There is no
+ * separate registry of modules for this factory to feed.
  */
 @Factory
 public final class PlatformBeans {
@@ -108,23 +103,6 @@ public final class PlatformBeans {
         EventNode<Event> node = EventNode.all(FeatureNode.TITAN_NODE);
         MinecraftServer.getGlobalEventHandler().addChild(node);
         return node;
-    }
-
-    /**
-     * @param titanNode the shared event node {@link #titanEventNode()} attached to the global
-     *                  handler; the registry's dispatch listener attaches to it immediately
-     * @param items     every {@link LobbyItem} bean a migrated feature already contributes,
-     *                  bridged into this registry too - see {@code items}' Javadoc and
-     *                  {@link ItemRegistry#registerBridged(List)}. TODO(dissolve-module-platform,
-     *                  task 3.1): remove this parameter and the bridge call below once
-     *                  {@code ItemRegistry} is deleted
-     * @return the platform-wide registry of hotbar/equipment items every module registers through
-     */
-    @Bean
-    public ItemRegistry itemRegistry(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titanNode, List<LobbyItem> items) {
-        ItemRegistry registry = new ItemRegistry(titanNode);
-        registry.registerBridged(items);
-        return registry;
     }
 
     /**

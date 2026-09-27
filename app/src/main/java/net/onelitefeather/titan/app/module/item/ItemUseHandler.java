@@ -19,8 +19,8 @@ import net.minestom.server.entity.Player;
 import net.minestom.server.event.player.PlayerUseItemEvent;
 
 /**
- * Handles a player using a {@link LobbyItem}, once {@link ItemRegistry} has already resolved the
- * used stack's identity tag back to this handler's owning module.
+ * Handles a player using a {@link LobbyItem}, once {@link LobbyItems} has already resolved the
+ * used stack's identity tag back to this handler's owning feature.
  */
 @FunctionalInterface
 public interface ItemUseHandler {

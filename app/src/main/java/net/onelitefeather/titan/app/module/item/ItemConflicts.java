@@ -23,9 +23,8 @@ import java.util.Map;
  * Pure conflict detection for {@link LobbyItem} beans, used by {@link LobbyItems} on construction
  * (see {@code openspec/changes/dissolve-module-platform/design.md}, decision 2).
  *
- * <p>Mirrors what {@code DuplicateItemKeyDetector} and {@code SlotConflictDetector} did for the
- * old {@code ItemRegistry} - kept free of {@link LobbyItems} and everything else that needs a
- * running server, so the rule itself - "first item wins, a later item claiming the same key or the
+ * <p>Kept free of {@link LobbyItems} and everything else that needs a running server, so the rule
+ * itself - "first item wins, a later item claiming the same key or the
  * same fixed placement is a conflict, {@link ItemSlot.Unplaced} never conflicts" - is testable as
  * plain data in, exception out. Two conflict kinds share one pass over {@code items} because both
  * are checked in registration order and a `LobbyItems` build only needs to abort on the first one

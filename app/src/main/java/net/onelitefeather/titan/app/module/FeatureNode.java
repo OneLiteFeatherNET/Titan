@@ -24,9 +24,9 @@ import net.onelitefeather.titan.common.observability.TitanObservability;
 /**
  * A feature's own event node, attached under the shared {@code titan} node.
  *
- * <p>Replaces {@code ModuleContext} as the door a feature bean uses to reach the Minestom event
- * tree (see {@code openspec/changes/dissolve-module-platform/design.md}, decision 1): a feature
- * calls {@link #attach(EventNode, String, int)} in its own {@code @PostConstruct}, registers
+ * <p>The one door a feature bean uses to reach the Minestom event tree (see
+ * {@code openspec/changes/dissolve-module-platform/design.md}, decision 1): a feature calls
+ * {@link #attach(EventNode, String, int)} in its own {@code @PostConstruct}, registers
  * through {@link #on(Class, Consumer)} or {@link #onIncludingCancelled(Class, Consumer)}, and
  * disconnects with {@link #close()} in its {@code @PreDestroy} - before any other shutdown logic
  * runs, so no event reaches the feature while it tears itself down.
@@ -44,8 +44,8 @@ import net.onelitefeather.titan.common.observability.TitanObservability;
  *
  * <p>Every listener registered here is wrapped in
  * {@link TitanObservability#guard(String, Consumer)}
- * with {@code featureId}, exactly like {@code ModuleContext#listen} did: a failure keeps the lobby
- * running and the report names the feature and, if the event carries one, the player.
+ * with {@code featureId}: a failure keeps the lobby running and the report names the feature and,
+ * if the event carries one, the player.
  */
 public final class FeatureNode implements AutoCloseable {
 

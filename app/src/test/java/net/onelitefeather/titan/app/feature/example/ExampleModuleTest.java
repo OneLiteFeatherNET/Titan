@@ -31,20 +31,22 @@ import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.TestConnection;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.app.module.item.ItemRegistry;
-import net.onelitefeather.titan.app.module.testing.ModuleHarness;
+import net.onelitefeather.titan.app.module.item.ItemSlot;
+import net.onelitefeather.titan.app.module.item.LobbyItem;
+import net.onelitefeather.titan.app.module.item.LobbyItems;
+import net.onelitefeather.titan.app.testutils.TestTitanNode;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Env integration coverage for {@link ExampleModule} through a real {@link ModuleHarness} - the
- * top of the test pyramid described in {@code docs/lobby-modules.md}: item use dispatch and the
- * command's lifecycle. The pure cooldown and formatting rule already has its own coverage in
- * {@link ExampleGreetingRuleTest}, and the pure validation of the module's configuration values in
- * {@code ExampleGreetingSettingsTest}; this class only checks that the module wires everything to
- * the platform correctly.
+ * Env integration coverage for {@link ExampleModule}, built directly with a fresh {@code titan}
+ * node - the top of the test pyramid described in {@code docs/lobby-modules.md}: item use dispatch
+ * through {@link LobbyItems} and the disconnect cleanup listener. The pure cooldown and formatting
+ * rule already has its own coverage in {@link ExampleGreetingRuleTest}, and the pure validation of
+ * the feature's configuration values in {@code ExampleGreetingSettingsTest}; this class only checks
+ * that the feature wires everything to the platform correctly.
  *
  * <p>Every test uses a fixed {@link Clock} (F.I.R.S.T. - repeatable), so "now" never depends on
  * when the test happens to run.
@@ -54,8 +56,13 @@ class ExampleModuleTest {
 
     private static final Instant NOW = Instant.parse("2026-01-01T00:00:00Z");
 
-    private static ExampleModule fixedClockModule() {
-        return new ExampleModule(Clock.fixed(NOW, ZoneOffset.UTC));
+    private static ExampleModule fixedClockModule(TestTitanNode titan) {
+        return new ExampleModule(titan.node(), Clock.fixed(NOW, ZoneOffset.UTC));
+    }
+
+    private static LobbyItems itemsFor(TestTitanNode titan, ExampleModule module) {
+        LobbyItem token = new ExampleGreetingItems().greetingToken(module);
+        return new LobbyItems(List.of(token), titan.node());
     }
 
     @DisplayName("Using the greeting token sends the configured greeting")
@@ -66,15 +73,23 @@ class ExampleModuleTest {
         Player player = connection.connect(instance);
         Collector<SystemChatPacket> messages = connection.trackIncoming(SystemChatPacket.class);
 
-        try (ModuleHarness harness = ModuleHarness.start(env, fixedClockModule())) {
-            harness.items().equip(player);
-            ItemStack token = player.getInventory().getItemStack(ExampleModule.GREETING_TOKEN_SLOT);
-            Assertions.assertEquals(Material.FEATHER, token.material(), "equip() must place the greeting token on its configured hotbar slot");
-            Assertions.assertEquals("titan:example", token.getTag(ItemRegistry.IDENTITY_TAG), "the handed-out stack must carry the registry's identity tag so its use reaches this module");
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            ExampleModule module = fixedClockModule(titan);
+            module.start();
+            LobbyItems lobbyItems = itemsFor(titan, module);
+            try {
+                lobbyItems.equip(player);
+                ItemStack token = player.getInventory().getItemStack(ItemSlot.MAX_HOTBAR_SLOT);
+                Assertions.assertEquals(Material.FEATHER, token.material(), "equip() must place the greeting token on its configured hotbar slot");
+                Assertions.assertEquals("titan:example", token.getTag(LobbyItems.IDENTITY_TAG), "the handed-out stack must carry LobbyItems' identity tag so its use reaches this feature");
 
-            env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, token, 0L));
+                env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, token, 0L));
 
-            messages.assertSingle(message -> Assertions.assertEquals(ExampleGreetingRule.greeting(ExampleModule.DEFAULT_GREETING, player.getUsername()), message.message()));
+                messages.assertSingle(message -> Assertions.assertEquals(ExampleGreetingRule.greeting(ExampleModule.DEFAULT_GREETING, player.getUsername()), message.message()));
+            } finally {
+                module.stop();
+                lobbyItems.stop();
+            }
         }
     }
 
@@ -86,23 +101,31 @@ class ExampleModuleTest {
         Player player = connection.connect(instance);
         Collector<SystemChatPacket> messages = connection.trackIncoming(SystemChatPacket.class);
 
-        try (ModuleHarness harness = ModuleHarness.start(env, fixedClockModule())) {
-            harness.items().equip(player);
-            ItemStack token = player.getInventory().getItemStack(ExampleModule.GREETING_TOKEN_SLOT);
-            env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, token, 0L));
-            env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, token, 1L));
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            ExampleModule module = fixedClockModule(titan);
+            module.start();
+            LobbyItems lobbyItems = itemsFor(titan, module);
+            try {
+                lobbyItems.equip(player);
+                ItemStack token = player.getInventory().getItemStack(ItemSlot.MAX_HOTBAR_SLOT);
+                env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, token, 0L));
+                env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, token, 1L));
 
-            // Collector#collect() consumes the tracker (see Cyano's IncomingCollector), so both
-            // uses must happen before the one and only collect() call below - not one collect()
-            // per use.
-            List<SystemChatPacket> collected = messages.collect();
-            Assertions.assertEquals(2, collected.size(), "the second use must still send a message, just not a fresh greeting");
-            Assertions.assertEquals(ExampleGreetingRule.greeting(ExampleModule.DEFAULT_GREETING, player.getUsername()), collected.get(0).message());
-            Assertions.assertEquals(ExampleItems.ON_COOLDOWN, collected.get(1).message(), "a second use within the cooldown must not send a fresh greeting");
+                // Collector#collect() consumes the tracker (see Cyano's IncomingCollector), so both
+                // uses must happen before the one and only collect() call below - not one collect()
+                // per use.
+                List<SystemChatPacket> collected = messages.collect();
+                Assertions.assertEquals(2, collected.size(), "the second use must still send a message, just not a fresh greeting");
+                Assertions.assertEquals(ExampleGreetingRule.greeting(ExampleModule.DEFAULT_GREETING, player.getUsername()), collected.get(0).message());
+                Assertions.assertEquals(ExampleItems.ON_COOLDOWN, collected.get(1).message(), "a second use within the cooldown must not send a fresh greeting");
+            } finally {
+                module.stop();
+                lobbyItems.stop();
+            }
         }
     }
 
-    @DisplayName("Using a look-alike token that was never registered does not dispatch to this module")
+    @DisplayName("Using a look-alike token that was never registered does not dispatch to this feature")
     @Test
     void usingAnUnregisteredLookAlikeTokenDoesNotDispatch(Env env) {
         Instance instance = env.createFlatInstance();
@@ -110,39 +133,19 @@ class ExampleModuleTest {
         Player player = connection.connect(instance);
         Collector<SystemChatPacket> messages = connection.trackIncoming(SystemChatPacket.class);
 
-        try (ModuleHarness harness = ModuleHarness.start(env, fixedClockModule())) {
-            env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, ItemStack.of(Material.FEATHER), 0L));
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            ExampleModule module = fixedClockModule(titan);
+            module.start();
+            LobbyItems lobbyItems = itemsFor(titan, module);
+            try {
+                env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, ItemStack.of(Material.FEATHER), 0L));
 
-            messages.assertEmpty();
+                messages.assertEmpty();
+            } finally {
+                module.stop();
+                lobbyItems.stop();
+            }
         }
-    }
-
-    @DisplayName("Running the command greets the sender")
-    @Test
-    void runningTheCommandGreetsTheSender(Env env) {
-        Instance instance = env.createFlatInstance();
-        TestConnection connection = env.createConnection();
-        Player player = connection.connect(instance);
-        Collector<SystemChatPacket> messages = connection.trackIncoming(SystemChatPacket.class);
-
-        try (ModuleHarness harness = ModuleHarness.start(env, fixedClockModule())) {
-            env.process().command().execute(player, ExampleModule.COMMAND_NAME);
-
-            messages.assertSingle(message -> Assertions.assertEquals(ExampleGreetingRule.greeting(ExampleModule.DEFAULT_GREETING, player.getUsername()), message.message()));
-        }
-    }
-
-    @DisplayName("The command is registered while the module is enabled, and gone once the harness closes")
-    @Test
-    void commandIsRegisteredWhileEnabledAndGoneAfterClose(Env env) {
-        ModuleHarness harness = ModuleHarness.start(env, fixedClockModule());
-        try {
-            Assertions.assertTrue(env.process().command().commandExists(ExampleModule.COMMAND_NAME), "the command must exist while the module is enabled");
-        } finally {
-            harness.close();
-        }
-
-        Assertions.assertFalse(env.process().command().commandExists(ExampleModule.COMMAND_NAME), "the command must be gone once the module is disabled");
     }
 
     @DisplayName("Disconnecting clears a player's cooldown, so a rejoining player is greeted immediately")
@@ -153,18 +156,59 @@ class ExampleModuleTest {
         Player player = connection.connect(instance);
         Collector<SystemChatPacket> messages = connection.trackIncoming(SystemChatPacket.class);
 
-        try (ModuleHarness harness = ModuleHarness.start(env, fixedClockModule())) {
-            harness.items().equip(player);
-            ItemStack token = player.getInventory().getItemStack(ExampleModule.GREETING_TOKEN_SLOT);
-            env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, token, 0L));
-            env.process().eventHandler().call(new PlayerDisconnectEvent(player));
-            env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, token, 1L));
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            ExampleModule module = fixedClockModule(titan);
+            module.start();
+            LobbyItems lobbyItems = itemsFor(titan, module);
+            try {
+                lobbyItems.equip(player);
+                ItemStack token = player.getInventory().getItemStack(ItemSlot.MAX_HOTBAR_SLOT);
+                env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, token, 0L));
+                env.process().eventHandler().call(new PlayerDisconnectEvent(player));
+                env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, token, 1L));
 
-            // Both uses must happen before this one collect() call - see the comment in
-            // usingTheGreetingTokenAgainWithinTheCooldownSendsTheOnCooldownMessage().
-            List<SystemChatPacket> collected = messages.collect();
-            Assertions.assertEquals(2, collected.size());
-            Assertions.assertEquals(ExampleGreetingRule.greeting(ExampleModule.DEFAULT_GREETING, player.getUsername()), collected.get(1).message(), "a disconnected player's cooldown must be forgotten, not carried over");
+                // Both uses must happen before this one collect() call - see the comment in
+                // usingTheGreetingTokenAgainWithinTheCooldownSendsTheOnCooldownMessage().
+                List<SystemChatPacket> collected = messages.collect();
+                Assertions.assertEquals(2, collected.size());
+                Assertions.assertEquals(ExampleGreetingRule.greeting(ExampleModule.DEFAULT_GREETING, player.getUsername()), collected.get(1).message(), "a disconnected player's cooldown must be forgotten, not carried over");
+            } finally {
+                module.stop();
+                lobbyItems.stop();
+            }
+        }
+    }
+
+    @DisplayName("Once stopped, disconnecting no longer clears a player's cooldown")
+    @Test
+    void stopLeavesNoListenerBehind(Env env) {
+        Instance instance = env.createFlatInstance();
+        TestConnection connection = env.createConnection();
+        Player player = connection.connect(instance);
+        Collector<SystemChatPacket> messages = connection.trackIncoming(SystemChatPacket.class);
+
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            ExampleModule module = fixedClockModule(titan);
+            module.start();
+            LobbyItems lobbyItems = itemsFor(titan, module);
+            try {
+                lobbyItems.equip(player);
+                ItemStack token = player.getInventory().getItemStack(ItemSlot.MAX_HOTBAR_SLOT);
+                env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, token, 0L));
+                module.stop();
+
+                // Once stopped, this feature's own event node is detached, so a disconnect no
+                // longer clears the cooldown started above - a second use must still report
+                // "on cooldown" rather than a fresh greeting.
+                env.process().eventHandler().call(new PlayerDisconnectEvent(player));
+                env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, token, 1L));
+
+                List<SystemChatPacket> collected = messages.collect();
+                Assertions.assertEquals(2, collected.size());
+                Assertions.assertEquals(ExampleItems.ON_COOLDOWN, collected.get(1).message(), "a stopped feature must no longer clear a player's cooldown on disconnect");
+            } finally {
+                lobbyItems.stop();
+            }
         }
     }
 }
