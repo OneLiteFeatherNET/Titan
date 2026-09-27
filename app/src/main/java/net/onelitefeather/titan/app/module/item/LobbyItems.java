@@ -147,7 +147,7 @@ public final class LobbyItems {
 
     /**
      * The hotbar and equipment slots {@link #equip(Player)} fills, computed once in a single pass
-     * over every item - mirroring {@link EquipPlan#from(Collection)}.
+     * over every item.
      */
     private record Placements(Map<Integer, ItemStack> hotbar,
                               Map<EquipmentSlot, ItemStack> equipment) {
