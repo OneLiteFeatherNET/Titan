@@ -70,10 +70,10 @@ public class TitanApplication {
             return user.getCachedData().getPermissionData().checkPermission(permission).asBoolean();
         });
 
-        // A module's configuration value rejecting itself (IllegalArgumentException) or two modules
-        // conflicting over an item slot / navigator slot surfaces here as an unchecked exception
-        // from ModuleRegistry#enableAll (see Titan#initialize) or from Titan's own constructor.
-        // Startup must abort with a clear log line instead of leaving the process half-started or
+        // A feature's configuration value rejecting itself (IllegalArgumentException) or two
+        // features conflicting over an item slot / navigator slot surfaces here as an unchecked
+        // exception from building the BeanScope in Titan's own constructor. Startup must abort
+        // with a clear log line instead of leaving the process half-started or
         // hanging on LuckPerms'/the extension bootstrap's already-running threads (see
         // lobby-module-config spec, "Ungültige Werte verhindern den Start" and "Syntaktisch kaputte
         // Datei"). Also catches Error: Titan's constructor touches the static

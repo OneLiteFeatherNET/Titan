@@ -16,46 +16,33 @@
 package net.onelitefeather.titan.app;
 
 import io.avaje.inject.BeanScope;
-import io.avaje.inject.spi.GenericType;
-import java.util.List;
 import net.minestom.server.MinecraftServer;
-import net.minestom.server.event.Event;
-import net.minestom.server.event.EventNode;
 import net.onelitefeather.butterfly.minestom.Butterfly;
 import net.onelitefeather.titan.app.bootstrap.ConfigurationStartupLog;
-import net.onelitefeather.titan.app.bootstrap.ModuleStartupLog;
 import net.onelitefeather.titan.app.commands.EndCommand;
 import net.onelitefeather.titan.app.commands.StopCommand;
-import net.onelitefeather.titan.app.module.FeatureNode;
-import net.onelitefeather.titan.app.module.LobbyModule;
-import net.onelitefeather.titan.app.module.ModuleRegistry;
-import net.onelitefeather.titan.app.module.item.ItemRegistry;
 import net.onelitefeather.titan.app.player.TitanPlayer;
 import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
 
 /**
  * The lobby's composition root.
  *
- * <p>Builds an Avaje Inject {@link BeanScope} - which discovers every lobby feature module as a
+ * <p>Builds an Avaje Inject {@link BeanScope} - which discovers every lobby feature as a plain
  * {@code @Singleton} bean and every platform service {@code app/.../bootstrap/PlatformBeans}
- * provides - then builds a {@link ModuleRegistry} from it: the modules, sorted by
- * {@code @Priority} via {@link BeanScope#listByPriority(Class)}, plus the platform beans the
- * registry itself needs. See {@code openspec/changes/avaje-dependency-injection/design.md},
- * decisions 2 and 5, for why the registry is built here rather than as a bean of its own. What is
- * left outside the module platform is exactly what was never a per-player listener to begin with:
- * the {@code stop}/{@code end} commands and the Butterfly extension bridge.
+ * provides. There is no separate module registry any more: a feature's own
+ * {@code @PostConstruct}/{@code @PreDestroy} methods, run by the {@code BeanScope} itself, are its
+ * whole lifecycle (see {@code openspec/changes/dissolve-module-platform/design.md}, decisions 1 and
+ * 4). What is left outside the feature beans is exactly what was never a per-player listener to
+ * begin with: the {@code stop}/{@code end} commands and the Butterfly extension bridge.
  *
  * <p>See also {@code openspec/changes/lobby-feature-modules/design.md} and task 6.8: before that
  * change, {@code Titan#initListeners()} hand-wired nineteen listeners directly onto a shared event
- * node; every one of those now lives inside its own
- * {@link net.onelitefeather.titan.app.module.LobbyModule}, and this class holds no list of them at
- * all any more - {@link BeanScope#listByPriority(Class)} discovers them.
+ * node; every one of those now lives inside its own feature bean, discovered by
+ * {@link BeanScope#builder()} rather than named here.
  */
 public final class Titan {
 
     private final BeanScope beanScope;
-    private final List<LobbyModule> modules;
-    private final ModuleRegistry moduleRegistry;
 
     /**
      * @throws ExceptionInInitializerError if {@code application.yaml} (or a profile/external file
@@ -65,6 +52,11 @@ public final class Titan {
      *                                     parser failure (file and line/column) as its cause; see
      *                                     the {@code lobby-module-config} spec scenario
      *                                     "Syntaktisch kaputte Datei".
+     * @throws RuntimeException            if a feature's {@code @PostConstruct} throws while the
+     *                                     {@link BeanScope} is being built; the lobby does not
+     *                                     start, and the message names the failing feature's bean
+     *                                     class (see the {@code lobby-modules} spec scenario
+     *                                     "Fehler beim Start eines Features").
      */
     public Titan() {
         MinecraftServer.getConnectionManager().setPlayerProvider(TitanPlayer::new);
@@ -81,45 +73,29 @@ public final class Titan {
         // then just a second read of that instance, not a second first touch.
         ConfigurationStartupLog.activeProfiles();
 
+        // Building the scope runs every bean's @PostConstruct, including every feature's own
+        // start() - so every feature is already attached to the titan event node once this
+        // constructor returns, before any player can connect (lobby-modules spec, "Features
+        // starten vor dem ersten Spieler").
         this.beanScope = BeanScope.builder().build();
-        this.modules = this.beanScope.listByPriority(LobbyModule.class);
-
-        EventNode<Event> titanNode = this.beanScope.get(new GenericType<EventNode<Event>>() {
-        }.type(), FeatureNode.TITAN_NODE);
-        ItemRegistry itemRegistry = this.beanScope.get(ItemRegistry.class);
-
-        this.moduleRegistry = ModuleRegistry.builder().parent(titanNode).items(itemRegistry).modules(this.modules).build();
     }
 
     /**
-     * Starts every lobby feature module, logs the order they were enabled in, registers the
-     * platform commands and loads Butterfly, then schedules shutdown tasks in this order (Minestom
-     * runs {@link net.minestom.server.timer.SchedulerManager} shutdown tasks FIFO, in the order
-     * they were registered): disabling every module, then Butterfly, then closing the
-     * {@link BeanScope}.
-     *
-     * @throws IllegalArgumentException                                     if a module's
-     *                                                                      configuration section
-     *                                                                      contains an invalid
-     *                                                                      value
-     * @throws net.onelitefeather.titan.app.module.ModuleLifecycleException if a module fails to
-     *                                                                      enable
+     * Registers the platform commands and loads Butterfly, then schedules shutdown tasks in this
+     * order (Minestom runs {@link net.minestom.server.timer.SchedulerManager} shutdown tasks FIFO,
+     * in the order they were registered): closing the {@link BeanScope} - which runs every
+     * feature's {@code @PreDestroy}, detaching its event node first (lobby-modules spec, "Features
+     * trennen sich beim Herunterfahren zuerst von Events") - then Butterfly. Feature shutdown ran
+     * before Butterfly before this change too; only the mechanism changed.
      */
     public void initialize() {
-        this.moduleRegistry.enableAll();
-        ModuleStartupLog.enabledInOrder(this.modules.stream().map(LobbyModule::id).toList());
         initCommands();
 
         Butterfly butterfly = Butterfly.create();
         butterfly.load();
 
-        MinecraftServer.getSchedulerManager().buildShutdownTask(this::terminate);
-        MinecraftServer.getSchedulerManager().buildShutdownTask(butterfly::terminate);
         MinecraftServer.getSchedulerManager().buildShutdownTask(this.beanScope::close);
-    }
-
-    public void terminate() {
-        this.moduleRegistry.disableAll();
+        MinecraftServer.getSchedulerManager().buildShutdownTask(butterfly::terminate);
     }
 
     private void initCommands() {
