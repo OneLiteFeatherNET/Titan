@@ -37,5 +37,5 @@ Ein einzelner Sonnet-Agent in einem Worktree vom aktuellen `origin/main`. Der Ch
 
 ## 6. Pull Request
 
-- [ ] 6.1 Pull Request auf `main` öffnen mit dem Titel `refactor(navigator)!: hard-code navigator destinations in a single aves module`, Beschreibung auf Englisch, mit dem `BREAKING CHANGE:`-Footer aus proposal.md. Nachweis: PR-URL, CI grün.
+- [x] 6.1 Pull Request auf `main` öffnen mit dem Titel `refactor(navigator)!: hard-code navigator destinations in a single aves module`, Beschreibung auf Englisch, mit dem `BREAKING CHANGE:`-Footer aus proposal.md. Nachweis: PR-URL, CI grün.
 - [ ] 6.2 Beim Archivieren den `## Purpose`-Absatz in `openspec/specs/lobby-navigator/spec.md` anpassen („Ziele stehen fest im Navigator-Modul; Öffnen häuft nichts an“), Commit `docs(openspec): archive navigator-entries-in-code`. Nachweis: `openspec validate --specs` ohne Fehler.
