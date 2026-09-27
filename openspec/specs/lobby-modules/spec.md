@@ -28,7 +28,7 @@ Beim Herunterfahren MUSS die Lobby die Module in umgekehrter Registrierungsreihe
 - **THEN** reagiert das Modul nicht mehr auf dieses Event
 
 ### Requirement: Abschalten hinterlässt keine Reste
-Alles, was ein Modul über seinen Kontext angemeldet hat (Event-Listener, geplante Aufgaben, Befehle, Hotbar-Items, Navigator-Einträge), MUSS nach dem Abschalten des Moduls vollständig entfernt sein. Das Modul muss sich dafür nichts merken.
+Alles, was ein Modul über seinen Kontext angemeldet hat (Event-Listener, geplante Aufgaben, Befehle, Hotbar-Items), MUSS nach dem Abschalten des Moduls vollständig entfernt sein. Das Modul muss sich dafür nichts merken.
 
 #### Scenario: Listener sind nach dem Abschalten entfernt
 - **WHEN** ein Modul beim Start Listener für drei Event-Typen angemeldet hat und danach abgeschaltet wird

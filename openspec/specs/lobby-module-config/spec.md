@@ -5,21 +5,6 @@ Legt fest, wie jedes Lobby-Modul seine eigene Konfiguration aus den mitgeliefert
 
 ## Requirements
 
-### Requirement: Ein Konfigurationsabschnitt pro Modul
-Die Lobby-Konfiguration MUSS aus je einem benannten Abschnitt pro Modul bestehen. Die Grundlage bildet `application.yaml` im Arbeitsverzeichnis, ergänzt durch die Dateien der aktiven Profile und durch Overrides. Der Abschnittsname MUSS der Modul-ID entsprechen. Jeder Schlüssel eines Moduls MUSS unter seinem eigenen Abschnitt liegen (`<modul-id>.<feld>`). Ein Modul DARF KEINE Werte aus dem Abschnitt eines anderen Moduls lesen. Die Schlüssel und ihre Bedeutung MÜSSEN dokumentiert sein.
-
-#### Scenario: Modul liest seinen Abschnitt
-- **WHEN** `application.yaml` den Abschnitt `sit` mit `offset: {x: 0.5, y: 0.25, z: 0.5}` enthält
-- **THEN** erhält das Modul „sit“ genau diesen Versatz
-
-#### Scenario: Liste von Einträgen
-- **WHEN** `application.yaml` im Abschnitt `navigator` unter `entries` einen Eintrag `parkour` mit Platz 2 enthält
-- **THEN** zeigt der Navigator „Parkour“ auf Platz 2 zusätzlich zu den übrigen Einträgen
-
-#### Scenario: Profil ändert nur einen Wert eines Abschnitts
-- **WHEN** `application-dev.yaml` nur `sit.offset.y: 0.5` setzt und das Profil `dev` aktiv ist
-- **THEN** gilt für „sit“ der Versatz y = 0.5, und x und z behalten ihre Standardwerte
-
 ### Requirement: Fehlende Werte erhalten Standardwerte
 Fehlt ein Abschnitt oder ein einzelner Wert, MUSS das Modul den dokumentierten Standardwert erhalten. Fehlende Werte DÜRFEN NICHT als 0, leer oder `null` ankommen, wenn der Standardwert etwas anderes ist.
 
@@ -130,7 +115,7 @@ Die Dateiüberwachung MUSS standardmäßig ausgeschaltet sein und DARF NUR durch
 - **THEN** ändert sich am Verhalten der Lobby nichts
 
 ### Requirement: Konfigurationswerte werden nur beim Start geprüft
-Die Lobby MUSS einen Konfigurationswert nur beim Start prüfen. Ist ein Wert beim Start ungültig, MUSS die Lobby den Start abbrechen; die Fehlermeldung MUSS den Schlüssel und den Grund nennen. Zur Laufzeit MUSS jede Stelle ihren Wert unvalidiert über die `Config`-Fassade lesen, ohne erneute Prüfung und ohne Rückfall auf einen anderen Wert. Ein zur Laufzeit ungültiger, aber parsbarer Wert MUSS so wirken, wie die einfache Verwendung dieses Werts es ergibt. Ein Wert, der sich nicht parsen lässt, oder ein kaputter Navigator-Eintrag, DARF genau die betroffene Aktion mit einer Exception fehlschlagen lassen; die Lobby DARF NICHT abstürzen, und andere Einstellungen DÜRFEN NICHT betroffen sein. Ist eine Datei beim Neuladen kein gültiges YAML, protokolliert avaje-config die Datei und die Stelle des Fehlers auf ERROR und übernimmt aus dieser Datei keinen Wert; die Lobby DARF deswegen aus ihr keinen Wert anwenden.
+Die Lobby MUSS einen Konfigurationswert nur beim Start prüfen. Ist ein Wert beim Start ungültig, MUSS die Lobby den Start abbrechen; die Fehlermeldung MUSS den Schlüssel und den Grund nennen. Zur Laufzeit MUSS jede Stelle ihren Wert unvalidiert über die `Config`-Fassade lesen, ohne erneute Prüfung und ohne Rückfall auf einen anderen Wert. Ein zur Laufzeit ungültiger, aber parsbarer Wert MUSS so wirken, wie die einfache Verwendung dieses Werts es ergibt. Ein Wert, der sich nicht parsen lässt, DARF genau die betroffene Aktion mit einer Exception fehlschlagen lassen; die Lobby DARF NICHT abstürzen, und andere Einstellungen DÜRFEN NICHT betroffen sein. Ist eine Datei beim Neuladen kein gültiges YAML, protokolliert avaje-config die Datei und die Stelle des Fehlers auf ERROR und übernimmt aus dieser Datei keinen Wert; die Lobby DARF deswegen aus ihr keinen Wert anwenden.
 
 #### Scenario: Ungültiger Wert beim Start bricht den Start ab
 - **WHEN** `tickle.cooldownMillis: -5` bereits beim Start in `application.yaml` steht
@@ -162,3 +147,18 @@ Feature-Flags MÜSSEN als Wahrheitswerte im Abschnitt `features` der Konfigurati
 #### Scenario: Übrig gebliebene flags.properties
 - **WHEN** im Arbeitsverzeichnis noch eine `flags.properties` mit `NAVIGATOR_SLENDER=true` liegt und die Konfiguration die Flag nicht setzt
 - **THEN** ist die Flag aus
+
+### Requirement: Ein Konfigurationsabschnitt pro einstellbarem Modul
+Die Lobby-Konfiguration MUSS aus je einem benannten Abschnitt pro Modul bestehen. Die Grundlage bildet `application.yaml` im Arbeitsverzeichnis, ergänzt durch die Dateien der aktiven Profile und durch Overrides. Der Abschnittsname MUSS der Modul-ID entsprechen. Jeder Schlüssel eines Moduls MUSS unter seinem eigenen Abschnitt liegen (`<modul-id>.<feld>`). Ein Modul DARF KEINE Werte aus dem Abschnitt eines anderen Moduls lesen. Ein Modul ohne einstellbare Werte braucht keinen Abschnitt. Die Schlüssel und ihre Bedeutung MÜSSEN dokumentiert sein.
+
+#### Scenario: Modul liest seinen Abschnitt
+- **WHEN** `application.yaml` den Abschnitt `sit` mit `offset: {x: 0.5, y: 0.25, z: 0.5}` enthält
+- **THEN** erhält das Modul „sit“ genau diesen Versatz
+
+#### Scenario: Profil ändert nur einen Wert eines Abschnitts
+- **WHEN** `application-dev.yaml` nur `sit.offset.y: 0.5` setzt und das Profil `dev` aktiv ist
+- **THEN** gilt für „sit“ der Versatz y = 0.5, und x und z behalten ihre Standardwerte
+
+#### Scenario: Modul ohne Abschnitt
+- **WHEN** die mitgelieferte `application.yaml` keinen Abschnitt `navigator` enthält und die Lobby startet
+- **THEN** startet das Modul „navigator“ ohne Fehler
