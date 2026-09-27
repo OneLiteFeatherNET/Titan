@@ -325,6 +325,8 @@ Avaje Inject - there is no central feature list to edit:
   necessarily touches `PlatformBeans`.
 - A dependency nothing provides fails building the `BeanScope` (and with it, the lobby's start),
   naming the missing type, instead of the lobby quietly running without that feature.
+- The actual start order is visible at runtime in one INFO log line:
+  `Lobby features started in event order: {}`.
 - A feature that reads configuration reads it live, at the point it is used, not just once in
   `start()` - see [`docs/lobby-modules.md`](docs/lobby-modules.md) for the pattern (a direct
   `Config.<method>(key)` call at the use site, unvalidated - configuration is validated only once,

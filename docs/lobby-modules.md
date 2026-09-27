@@ -99,6 +99,12 @@ Spieler verbinden kann. `TitanApplication.main` fängt jede `RuntimeException`/`
 `new Titan()`/`titan.initialize()` ab, loggt sie als `Titan failed to start: …` und beendet den
 Prozess mit Exit-Code 1.
 
+Sind alle Features gestartet, loggt `Titan`s Konstruktor einmal die tatsächliche
+Startreihenfolge auf INFO-Level: `Lobby features started in event order: {}` (siehe
+`app/.../bootstrap/FeatureStartupLog`). Die Liste kommt nicht aus einer gepflegten Feature-Liste,
+sondern aus den Kindknoten des `titan`-Knotens selbst, aufsteigend nach `EventNode#getPriority()`
+sortiert - dieselbe Reihenfolge wie die Tabelle oben.
+
 Welche Plattform-Dienste als Bean zur Verfügung stehen, steht in
 `app/src/main/java/net/onelitefeather/titan/app/bootstrap/PlatformBeans.java` (`@Factory` mit
 einer `@Bean`-Methode je Dienst: `InstanceContainer`, `MapProvider`, `LobbySpawn`, `Deliver`, der

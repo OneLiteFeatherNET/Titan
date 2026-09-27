@@ -16,11 +16,16 @@
 package net.onelitefeather.titan.app;
 
 import io.avaje.inject.BeanScope;
+import io.avaje.inject.spi.GenericType;
 import net.minestom.server.MinecraftServer;
+import net.minestom.server.event.Event;
+import net.minestom.server.event.EventNode;
 import net.onelitefeather.butterfly.minestom.Butterfly;
 import net.onelitefeather.titan.app.bootstrap.ConfigurationStartupLog;
+import net.onelitefeather.titan.app.bootstrap.FeatureStartupLog;
 import net.onelitefeather.titan.app.commands.EndCommand;
 import net.onelitefeather.titan.app.commands.StopCommand;
+import net.onelitefeather.titan.app.module.FeatureNode;
 import net.onelitefeather.titan.app.player.TitanPlayer;
 import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
 
@@ -78,6 +83,13 @@ public final class Titan {
         // constructor returns, before any player can connect (lobby-modules spec, "Features
         // starten vor dem ersten Spieler").
         this.beanScope = BeanScope.builder().build();
+
+        // Reads back the same shared node every feature just attached itself to, purely to report
+        // the actual start order - no list of feature ids is maintained anywhere for this (see
+        // FeatureStartupLog).
+        EventNode<Event> titan = this.beanScope.get(new GenericType<EventNode<Event>>() {
+        }.type(), FeatureNode.TITAN_NODE);
+        FeatureStartupLog.startedInEventOrder(titan);
     }
 
     /**
