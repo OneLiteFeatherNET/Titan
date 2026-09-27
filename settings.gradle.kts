@@ -38,8 +38,6 @@ dependencyResolutionManagement {
 
             version("luckperms", "5.6-SNAPSHOT")
 
-            version("togglz", "4.6.4")
-
             version("tomcat-annotations-api", "6.0.53")
 
             version("guava", "33.7.1-jre")
@@ -71,7 +69,6 @@ dependencyResolutionManagement {
             library("adventure.minimessage", "net.kyori", "adventure-text-minimessage").withoutVersion()
             library("butterfly-minestom", "net.onelitefeather", "butterfly-minestom").versionRef("butterfly")
 
-            library("togglz", "org.togglz", "togglz-core").versionRef("togglz")
             library("tomcat-annotations-api", "org.apache.tomcat", "annotations-api").versionRef("tomcat-annotations-api")
 
             library("cloudnet-bom", "eu.cloudnetservice.cloudnet", "bom").versionRef("cloudnet")

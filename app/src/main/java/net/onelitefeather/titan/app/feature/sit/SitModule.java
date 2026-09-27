@@ -65,14 +65,24 @@ public final class SitModule implements LobbyModule {
 
     @Override
     public void enable(ModuleContext context) {
-        Vec offset = new Vec(
-                Config.getAs(SitSettings.OFFSET_X_KEY, Double::parseDouble), Config.getAs(SitSettings.OFFSET_Y_KEY, Double::parseDouble), Config.getAs(SitSettings.OFFSET_Z_KEY, Double::parseDouble));
-        List<Key> allowedBlocks = SitSettings.allowedBlocks(Config.list().of(SitSettings.ALLOWED_BLOCKS_KEY).stream().map(SitSettings::parseBlock).toList());
-        Seats seats = new Seats(offset);
+        // Abort startup on an invalid value (unchanged behaviour); neither result is kept - the
+        // PlayerBlockInteractEvent listener below reads the live values again on every
+        // interaction (see design.md, decision 1).
+        Config.getAs(SitSettings.OFFSET_X_KEY, Double::parseDouble);
+        Config.getAs(SitSettings.OFFSET_Y_KEY, Double::parseDouble);
+        Config.getAs(SitSettings.OFFSET_Z_KEY, Double::parseDouble);
+        SitSettings.allowedBlocks(Config.list().of(SitSettings.ALLOWED_BLOCKS_KEY).stream().map(SitSettings::parseBlock).toList());
+        Seats seats = new Seats();
 
         context.listen(PlayerBlockInteractEvent.class, event -> {
+            // Live, unvalidated read on every interaction (see design.md, decision 1): the
+            // strict check above only ever runs once, at startup (refactor/drop-runtime-fallback).
+            List<Key> allowedBlocks = Config.list().of(SitSettings.ALLOWED_BLOCKS_KEY).stream().map(SitSettings::parseBlock).toList();
             if (isAllowedBlock(allowedBlocks, event.getBlock().key())) {
-                seats.sit(event.getPlayer(), event.getBlockPosition());
+                double x = Config.getAs(SitSettings.OFFSET_X_KEY, Double::parseDouble);
+                double y = Config.getAs(SitSettings.OFFSET_Y_KEY, Double::parseDouble);
+                double z = Config.getAs(SitSettings.OFFSET_Z_KEY, Double::parseDouble);
+                seats.sit(event.getPlayer(), event.getBlockPosition(), new Vec(x, y, z));
             }
         });
 

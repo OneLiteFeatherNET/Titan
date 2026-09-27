@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.app.feature.spawn;
 
+import io.avaje.config.Config;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -25,15 +26,20 @@ import net.minestom.server.event.player.PlayerMoveEvent;
 /**
  * Teleports a player back to the lobby spawn once they leave the configured height bounds. The
  * actual bounds check is delegated to {@link HeightBounds}, a pure rule this listener merely
- * reacts to.
+ * reacts to - built fresh on every move from {@link SpawnSettings#MIN_HEIGHT_KEY}/
+ * {@link SpawnSettings#MAX_HEIGHT_KEY}, read live and unvalidated via
+ * {@code Config.getInt(...)}, rather than once at construction, so a changed
+ * {@code spawn.minHeight}/{@code maxHeight} applies to the very next height check, without a
+ * module restart (see {@code openspec/changes/config-reload-feature-flags/design.md}, decision
+ * 1). The cross-field check in {@link SpawnModule#enable} only ever runs once, at startup
+ * (see {@code refactor/drop-runtime-fallback}): this per-move read is never re-validated and
+ * never falls back to a shipped default.
  */
 final class SpawnBoundsListener implements Consumer<PlayerMoveEvent> {
 
-    private final HeightBounds heightBounds;
     private final Supplier<Pos> spawnPosition;
 
-    SpawnBoundsListener(HeightBounds heightBounds, Supplier<Pos> spawnPosition) {
-        this.heightBounds = heightBounds;
+    SpawnBoundsListener(Supplier<Pos> spawnPosition) {
         this.spawnPosition = spawnPosition;
     }
 
@@ -43,7 +49,8 @@ final class SpawnBoundsListener implements Consumer<PlayerMoveEvent> {
         if (player.getInstance() == null) {
             return;
         }
-        if (this.heightBounds.isOutOfBounds(player.getPosition().y())) {
+        HeightBounds heightBounds = new HeightBounds(Config.getInt(SpawnSettings.MIN_HEIGHT_KEY), Config.getInt(SpawnSettings.MAX_HEIGHT_KEY));
+        if (heightBounds.isOutOfBounds(player.getPosition().y())) {
             Optional.ofNullable(this.spawnPosition.get()).ifPresent(player::teleport);
         }
     }

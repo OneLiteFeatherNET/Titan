@@ -78,6 +78,17 @@ class ApplicationYamlDefaultsCharacterizationTest {
         Assertions.assertEquals(4000L, configuration.getLong("tickle.cooldownMillis"), "tickle.cooldownMillis");
     }
 
+    @DisplayName("config.watch: application.yaml ships file watching off by default")
+    @Test
+    void configWatchIsDisabledByDefault() {
+        Configuration configuration = load();
+
+        Assertions.assertFalse(
+                configuration.getBool("config.watch.enabled"), "config.watch.enabled must ship off - the operator turns it on in their own file (see openspec/changes/config-reload-feature-flags/design.md, decision 1, and the lobby-module-config spec's \"Überwachung standardmäßig aus\" scenario)");
+        Assertions.assertEquals(10, configuration.getInt("config.watch.delay"), "config.watch.delay");
+        Assertions.assertEquals(10, configuration.getInt("config.watch.period"), "config.watch.period");
+    }
+
     @DisplayName("elytra: application.yaml matches today's shipped defaults (30 / 40 ticks)")
     @Test
     void elytraMatchesDefaults() {

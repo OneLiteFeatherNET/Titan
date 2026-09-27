@@ -7,7 +7,6 @@ dependencies {
     implementation(project(":api"))
     implementation(platform(libs.aonyx.bom))
     implementation(libs.minestom)
-    implementation(libs.togglz)
     // LobbyMap (net.onelitefeather.titan.common.map) extends aves' BaseMap and MapProvider hands
     // it out publicly, so a consumer compiling against MapProvider needs BaseMap on its own
     // compile classpath too - api, not implementation.

@@ -36,8 +36,14 @@ import net.minestom.server.instance.block.Block;
  * there is nothing to reject.
  *
  * <p>The keys themselves are declared here as constants, the one place this module's config
- * section is named (see {@code design.md}, decision 3), and reused by {@link SitModule#enable} to
- * read the raw values.
+ * section is named (see {@code design.md}, decision 3), reused both by {@link SitModule#enable}'s
+ * one strict, startup-only read and by its {@code PlayerBlockInteractEvent} listener's live,
+ * unvalidated read on every interaction (see {@code openspec/changes/config-reload-feature-flags/
+ * design.md}, decision 2, as amended by {@code refactor/drop-runtime-fallback}: a runtime read is
+ * never re-validated and never falls back to a shipped default). {@link #parseBlock(String)} is
+ * reused at both points because it is the only way to turn a raw string into a {@link Key} at all,
+ * not because the runtime read is validated - {@link #allowedBlocks(List)}'s empty-list check, by
+ * contrast, only ever runs once, in {@link SitModule#enable}.
  */
 final class SitSettings {
 
@@ -93,4 +99,5 @@ final class SitSettings {
         }
         return allowedBlocks;
     }
+
 }

@@ -36,8 +36,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
  *
  * <p><strong>Hermetic seam:</strong> two of {@code app.bootstrap.PlatformBeans}' beans touch the
  * filesystem or a process-wide static in production - {@link MapProvider} reads {@code worlds/},
- * and {@link FeatureFlags} (the real {@code TogglzFeatureFlags}) reads {@code flags.properties}
- * through Togglz's own static, JVM-wide cached {@code FeatureContext} (a global neither this test
+ * and {@link FeatureFlags} (the real {@code ConfigFeatureFlags}) reads {@code features.*} through
+ * the static, process-wide {@code io.avaje.config.Config} facade (a global neither this test
  * nor {@code PlatformBeans} controls, and {@code common} - which owns it - is out of scope for
  * this change). Building the scope with those two built for real would make this test read and
  * depend on repository-relative files - not Repeatable, and exactly the untracked {@code worlds/}

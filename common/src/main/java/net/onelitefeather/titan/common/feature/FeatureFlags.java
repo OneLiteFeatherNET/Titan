@@ -17,15 +17,15 @@ package net.onelitefeather.titan.common.feature;
 
 /**
  * A small seam between a feature module and whatever technology decides if a named feature flag is
- * currently on - Togglz in production, a fake in a test.
+ * currently on - the {@code features} section of the configuration in production, a fake in a test.
  *
- * <p>See {@code openspec/changes/lobby-feature-modules/design.md}, decision 13: a feature module
+ * <p>See {@code openspec/changes/lobby-feature-modules/design.md}, decision 13, and
+ * {@code openspec/changes/config-reload-feature-flags/design.md}, decision 4: a feature module
  * that wants to gate part of its behaviour behind a flag asks for it by name through this
- * interface, injected via its constructor, instead of reaching into the static
- * {@code org.togglz.core.context.FeatureContext} (or a concrete {@code TitanFeatures} enum
- * constant) directly. That keeps the module's tests fast, independent and repeatable - a test hands
- * in a trivial fake instead of a real {@code flags.properties} file and the static Togglz
- * {@code FeatureManager} singleton it implies.
+ * interface, injected via its constructor, instead of reaching into a static, global source of
+ * truth directly. That keeps the module's tests fast, independent and repeatable - a test hands in
+ * a trivial fake instead of a real configuration file and whatever static singleton reading it
+ * implies.
  *
  * <p>This lives in {@code titan.common} rather than inside a feature package: it has no feature
  * of its own, both the composition root ({@code net.onelitefeather.titan.app.Titan}) and any

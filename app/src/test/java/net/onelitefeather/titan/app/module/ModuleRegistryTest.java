@@ -68,8 +68,8 @@ class ModuleRegistryTest {
 
     /**
      * A minimal test-only {@link FeatureFlags}: a name {@link #known} contains exists; nothing
-     * else does. Mirrors {@code TogglzFeatureFlags}' behaviour for a name it has never heard of,
-     * without needing a real {@code flags.properties} file - see this codebase's F.I.R.S.T. rule
+     * else does. Mirrors {@code ConfigFeatureFlags}' behaviour for a name it has never heard of,
+     * without needing a real {@code application.yaml} file - see this codebase's F.I.R.S.T. rule
      * against that in a unit test.
      */
     private record TestFeatureFlags(Set<String> known) implements FeatureFlags {

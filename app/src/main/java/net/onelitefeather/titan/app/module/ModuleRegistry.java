@@ -16,7 +16,10 @@
 package net.onelitefeather.titan.app.module;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.command.CommandManager;
@@ -29,6 +32,8 @@ import net.onelitefeather.titan.app.module.navigator.NavigatorConflictException;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Starts and stops the lobby's {@link LobbyModule}s.
@@ -40,6 +45,9 @@ import org.jetbrains.annotations.Nullable;
  * and only then calls {@link LobbyModule#disable()} - so by the time a module's own shutdown code
  * runs, it can no longer receive events or run scheduled work. See {@code design.md}, decision 2,
  * and the {@code lobby-modules} spec.
+ *
+ * <p>{@link #enableAll()} and {@link #disableAll()} share the same per-module enable and disable
+ * steps ({@link #startModule}/{@link #stopModule}) rather than each having their own copy.
  *
  * <p>Once every module is up, {@link #enableAll()} validates the shared {@link ItemRegistry} and
  * {@link NavigatorEntries}, so two modules claiming the same item placement or navigator slot
@@ -54,10 +62,12 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class ModuleRegistry {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(ModuleRegistry.class);
+
     private final EventNode<Event> parent;
     private final ModulePlatform platform;
     private final List<LobbyModule> modules;
-    private final List<ModuleContext> runningContexts = new ArrayList<>();
+    private final Map<String, ModuleContext> runningContexts = new LinkedHashMap<>();
     private final @Nullable FeatureFlags featureFlags;
 
     private ModuleRegistry(Builder builder) {
@@ -115,19 +125,13 @@ public final class ModuleRegistry {
      */
     public void enableAll() {
         for (LobbyModule module : this.modules) {
-            ModuleContext context = new ModuleContext(module.id(), this.platform);
-            this.parent.addChild(context.node());
+            ModuleContext context;
             try {
-                module.enable(context);
+                context = startModule(module);
             } catch (RuntimeException exception) {
-                context.closeForListening();
-                this.parent.removeChild(context.node());
-                context.cancelTasks();
-                context.runCleanupHooks();
                 throw new ModuleLifecycleException(module.id(), exception);
             }
-            context.closeForListening();
-            this.runningContexts.add(context);
+            this.runningContexts.put(module.id(), context);
         }
         this.platform.items().validate();
         if (this.featureFlags != null) {
@@ -144,15 +148,55 @@ public final class ModuleRegistry {
      * {@link LobbyModule#disable()}.
      */
     public void disableAll() {
-        for (int i = this.runningContexts.size() - 1; i >= 0; i--) {
-            ModuleContext context = this.runningContexts.get(i);
-            LobbyModule module = this.modules.get(i);
+        List<LobbyModule> reverseOrder = new ArrayList<>(this.modules);
+        Collections.reverse(reverseOrder);
+        for (LobbyModule module : reverseOrder) {
+            ModuleContext context = this.runningContexts.remove(module.id());
+            if (context != null) {
+                stopModule(module, context);
+            }
+        }
+    }
+
+    /**
+     * Starts a single module: attaches a fresh {@code titan/<id>} event node under {@code parent},
+     * hands it a new {@link ModuleContext} and calls {@link LobbyModule#enable}. On failure, tears
+     * the partial start back down (node, tasks, cleanup hooks - but not {@link LobbyModule#disable}
+     * itself, since the module never finished enabling) and rethrows the original exception, so
+     * {@link #enableAll()} can wrap it into a {@link ModuleLifecycleException}.
+     *
+     * @param module the module to start
+     * @return the module's new, running context
+     */
+    private ModuleContext startModule(LobbyModule module) {
+        ModuleContext context = new ModuleContext(module.id(), this.platform);
+        this.parent.addChild(context.node());
+        try {
+            module.enable(context);
+        } catch (RuntimeException exception) {
+            context.closeForListening();
             this.parent.removeChild(context.node());
             context.cancelTasks();
             context.runCleanupHooks();
-            module.disable();
+            throw exception;
         }
-        this.runningContexts.clear();
+        context.closeForListening();
+        return context;
+    }
+
+    /**
+     * Stops a single module: detaches its event node from {@code parent}, cancels its tasks, runs
+     * its cleanup hooks (most recently added first), and only then calls
+     * {@link LobbyModule#disable()} - used by {@link #disableAll()} for every module.
+     *
+     * @param module  the module to stop
+     * @param context the context {@link #startModule} previously returned for it
+     */
+    private void stopModule(LobbyModule module, ModuleContext context) {
+        this.parent.removeChild(context.node());
+        context.cancelTasks();
+        context.runCleanupHooks();
+        module.disable();
     }
 
     /** Builds a {@link ModuleRegistry}. */

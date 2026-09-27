@@ -218,12 +218,21 @@ abbrechen könnte; `listenIncludingCancelled` nur, wenn ein über
 ### Konfiguration lesen: die statische Fassade `Config`
 
 Anders als bei den übrigen Andockpunkten gibt es dafür **keine** Methode auf
-`ModuleContext`: Ein Modul liest seine Werte in `enable(ModuleContext)` direkt
-über die statische Fassade `io.avaje.config.Config` (avaje-config) - bewusst
-eine Ausnahme von der Projektregel „keine statischen Singletons“ (s.
-`design.md`, Entscheidung 1). Der Zugriff bleibt deshalb auf `enable()`
-beschränkt; alles darunter (Handler, reine Logik) bekommt fertige Werte über
-den Konstruktor, wie jede andere Abhängigkeit auch.
+`ModuleContext`: Ein Modul liest seine Werte direkt über die statische
+Fassade `io.avaje.config.Config` (avaje-config) - bewusst eine Ausnahme von
+der Projektregel „keine statischen Singletons“ (s. `design.md`, Entscheidung
+1). Das passiert an zwei Stellen mit unterschiedlichem Zweck (s.
+`openspec/changes/config-reload-feature-flags/design.md`, Entscheidung 2, wie
+mit `refactor/drop-runtime-fallback` geändert): einmal streng in
+`enable(ModuleContext)` - dort bricht ein ungültiger Wert weiterhin den Start
+ab, unverändertes Verhalten aus `avaje-config-facade` -, und, für jeden Wert,
+der sich zur Laufzeit ändern soll, ein zweites Mal am eigentlichen
+Gebrauchsort, direkt über `Config.<Methode>(key)`, ohne erneute Prüfung und
+ohne Rückfall (s. "Live lesen am Gebrauchsort" unten). Konfiguration wird nur
+einmal geprüft, beim Start - ein Handler bekommt einen solchen Wert deshalb
+nicht fertig über den Konstruktor, sondern liest ihn bei jedem Gebrauch selbst
+frisch, z. B. `TickleAttackHandler`, das bei jedem Angriff
+`Config.getLong(TickleSettings.COOLDOWN_KEY)` aufruft.
 
 ```java
 // TickleModule.enable()
@@ -279,6 +288,67 @@ dahinter ist mit dieser Change vollständig entfernt.
 Die Lobby schreibt keine Konfiguration mehr: Es gibt kein `flush()`, keine
 Datei wird angelegt oder verändert.
 
+### Live lesen am Gebrauchsort
+
+Für jeden Wert, der sich zur Laufzeit ändern soll - heute jeder Wert von
+tickle, sit, elytra, spawn und dem Navigator (s.
+`openspec/changes/config-reload-feature-flags/design.md`, Entscheidungen 1
+und 2) -, liest der zuständige Handler den Wert bei **jedem** Gebrauch selbst
+frisch über die statische Fassade, statt sich einen fertigen Wert einmalig
+über den Konstruktor geben zu lassen - `TickleAttackHandler` z. B. bei jedem
+Angriff:
+
+```java
+// TickleAttackHandler.tickle(...)
+long cooldownExpiryMillis = TickleCooldownRule.expiryAfter(now, Config.getLong(TickleSettings.COOLDOWN_KEY));
+```
+
+(`app/src/main/java/net/onelitefeather/titan/app/feature/tickle/TickleAttackHandler.java`)
+
+Konfiguration wird **nur einmal geprüft, beim Start**, in `enable()` (s.
+`refactor/drop-runtime-fallback`): Ein Lesevorgang am Gebrauchsort ruft
+`Config.<Methode>(key)` (`getLong`, `getInt`, `get`, `list().of(...)`, ...)
+direkt auf, ohne die Prüffunktion aus `enable()` erneut aufzurufen und ohne
+einen Rückfall auf den Classpath-Standardwert. Ein ungültiger Wert, der erst
+zur Laufzeit auftaucht (z. B. weil eine Betreiber-Datei geändert wurde),
+wirkt entweder einfach (eine negative `tickle.cooldownMillis` würde als
+negative Zahl weiterverarbeitet) oder lässt genau diesen einen Lesevorgang
+bzw. diese eine Aktion fehlschlagen (z. B. wirft `Config.getLong` selbst eine
+Exception bei einem nicht-numerischen Rohwert, oder ein ungültiger
+Navigator-Eintrag lässt das nächste Öffnen fehlschlagen, s. unten) - nichts
+davon wird geloggt oder abgefangen. Ein Wert, der so gelesen wird, braucht
+trotzdem eine eigene reine Prüffunktion für den einen strengen Start-Read in
+`enable()` (s. "Konfiguration lesen" oben); nur die ist wiederverwendbar, wo
+das Parsen selbst unvermeidlich ist (z. B. `SitSettings.parseBlock` für einen
+Blockschlüssel, oder der Navigator, der einen Eintrag beim Öffnen genauso
+zusammenbaut wie beim Start - s. `NavigatorModule#buildEntries`).
+
+Für zusammen geprüfte Felder (`spawn.minHeight`/`maxHeight`,
+`elytra.burnDurationTicks`/`cooldownTicks`) liest die Lesestelle beide
+Schlüssel einfach mit zwei getrennten `Config`-Aufrufen, ohne die
+Cross-Feld-Prüfung aus `enable()` erneut anzuwenden - z. B.
+`SpawnBoundsListener` bei jedem Move:
+
+```java
+// SpawnBoundsListener.accept(...)
+HeightBounds heightBounds = new HeightBounds(
+    Config.getInt(SpawnSettings.MIN_HEIGHT_KEY),
+    Config.getInt(SpawnSettings.MAX_HEIGHT_KEY));
+```
+
+Für ein Modul, das seine Werte so liest, kostet eine Konfigurationsänderung
+keinen Modulzustand mehr: Es gibt kein Abschalten und Neustarten, das
+Zustand verlöre - ein sitzender Spieler bleibt sitzen, ein laufender
+Elytra-Flug läuft weiter, während der nächste Sitzversuch bzw. der nächste
+Boost schon den neuen Wert sieht (s. README, Abschnitt "Runtime reloading").
+Ein Wert, der sich praktisch nie zur Laufzeit ändern soll, braucht keine
+eigene Lesestelle am Gebrauchsort - `enable()`s strenge Prüfung bleibt dann
+die einzige Lesestelle. Ein `current()`/`currentXxx()`-Wrapper auf der
+`*Settings`-Klasse lohnt sich nur, wenn er echte Duplizierung entfernt
+(z. B. weil mehrere Aufrufer denselben zusammengesetzten Wert brauchen);
+sonst ruft der Handler `Config.<Methode>(key)` direkt an seiner
+Verwendungsstelle auf.
+
 ### `items` - ein Hotbar- oder Ausrüstungsitem anmelden
 
 ```java
@@ -317,23 +387,34 @@ wird.
 **Einträge hinter einer Feature-Flag verstecken:** `NavigatorEntry` (und, für
 den Navigator selbst, die gelesenen Rohwerte, die
 `NavigatorEntryValidation#buildEntry` prüft) trägt ein optionales Feld
-`feature` - den Namen einer `TitanFeatures`-Konstante, z. B.
-`"NAVIGATOR_SLENDER"`. Ist die Flag aus (oder fehlt sie ganz in
-`flags.properties` - ein sicherer Standard), rendert `NavigatorInventory` an
+`feature` - den Namen einer Flag aus dem Abschnitt `features` der
+Konfiguration, z. B. `"NAVIGATOR_SLENDER"`. Ist die Flag aus (oder steht sie
+nirgends gesetzt - ein sicherer Standard), rendert `NavigatorInventory` an
 dieser Stelle die normale graue Glasscheibe statt des Eintrags; ist sie an,
 erscheint der Eintrag wie gewohnt. Geprüft wird über die kleine
 `net.onelitefeather.titan.common.feature.FeatureFlags`-Schnittstelle, die dem
 `NavigatorModule` per Konstruktor übergeben wird - produktiv
-`TogglzFeatureFlags` (steckt hinter `TitanFeatures`/Togglz), in Tests eine
-Attrappe, damit Tests ohne echte `flags.properties`-Datei und ohne den
-statischen `FeatureContext` auskommen. Ein Eintrag mit einem Namen, den
-`FeatureFlags` nicht kennt, bricht den Start ab (`IllegalArgumentException`,
-nennt `navigator.entries` und den unbekannten Namen). Das gilt auch für Einträge,
-die ein anderes Modul über `context.navigator().add(...)` beisteuert, nicht
-nur für die Einträge aus der `navigator`-Config selbst - das Feld sitzt auf
+`ConfigFeatureFlags` (liest `features.<name>` über die statische Fassade
+`Config`, s. `openspec/changes/config-reload-feature-flags/design.md`,
+Entscheidung 4), in Tests eine Attrappe (`FakeFeatureFlags`), damit Tests ohne
+echte Konfigurationsdatei auskommen. Bekannt ist eine Flag nur, wenn sie unter
+`features` in der mitgelieferten Classpath-`application.yaml` steht - eine
+Betreiber-Datei kann diese Menge nicht erweitern, nur die einzelnen Flags
+an- oder ausschalten. Ein Eintrag mit einem Namen, den `FeatureFlags` nicht
+kennt, bricht den Start ab (`IllegalArgumentException`, nennt
+`navigator.entries` und den unbekannten Namen); taucht eine unbekannte Flag
+oder ein sonst ungültiger Eintrag erst zur Laufzeit auf, fällt der Navigator
+auf nichts zurück - das nächste Öffnen schlägt stattdessen einfach fehl, bis
+ein Betreiber den Eintrag korrigiert (s. "Live lesen am Gebrauchsort" oben,
+und `refactor/drop-runtime-fallback`). Das gilt auch für Einträge, die ein
+anderes Modul über `context.navigator().add(...)` beisteuert, nicht nur für
+die Einträge aus der `navigator`-Config selbst - das Feld sitzt auf
 `NavigatorEntry` und damit auf jedem Eintrag gleichermaßen, statt in einer
 separaten Tabelle, die der Navigator sonst parallel zur Registry pflegen
-müsste.
+müsste. Togglz und `flags.properties` sind entfernt: Eine Flag ist ein ganz
+normaler Konfigurationswert unter `features.<NAME>`, mit denselben Quellen
+und derselben Rangfolge wie jeder andere Schlüssel (s. README, Abschnitt
+"Feature flags").
 
 ### `commands` - einen Befehl anmelden
 
@@ -398,6 +479,39 @@ registriert wurde, läuft **auf dem Tick-Thread**. Daraus folgen vier Regeln:
    gehört ein wiederkehrender Task, der pro Spieler arbeitet, über
    `context.tasks()` angemeldet (automatischer Abbruch beim Abschalten des
    Moduls) statt über einen selbst verwalteten Thread.
+
+## Neu laden zur Laufzeit: kein Modul startet neu
+
+Seit `config-reload-feature-flags` übernimmt die Lobby eine Konfigurations-
+änderung im laufenden Betrieb, ohne dass ein Modul oder die Lobby selbst neu
+startet - ausgelöst durch avaje-configs eingebaute Dateiüberwachung
+(`config.watch.enabled`, standardmäßig aus; der Betreiber schaltet sie in
+seiner eigenen `application.yaml`/Profil-Datei/`CONFIG_FILE` ein, s. README,
+Abschnitt "Runtime reloading", für die Schalter `config.watch.delay`/
+`config.watch.period` und die Grenzen der eingebauten Lösung). Es gibt dafür
+keinen `ConfigChangeHandler` und keine Zuordnung von Schlüsseln zu Modulen -
+ein Modul, das seine Werte wie unter "Live lesen am Gebrauchsort" oben direkt
+am Gebrauchsort über `Config.<Methode>(key)` liest, sieht eine übernommene
+Änderung automatisch beim nächsten Lesevorgang.
+
+Daraus folgt für ein Modul, das die Andockpunkte oben (`listen`, `items`,
+`navigator`, `commands`, `tasks`) statt eigener Listener, Felder oder Threads
+nutzt, und das jeden Wert, der sich ändern soll, am Gebrauchsort über
+`Config.<Methode>(key)` statt einmalig in `enable()` liest: **Es muss für das
+Neuladen nichts Eigenes tun.** Es gibt kein Abschalten und kein erneutes
+`enable()` - der geänderte Wert gilt einfach beim nächsten Gebrauch, ohne dass
+irgendetwas am Modul selbst, seinen Listenern oder seinem sonstigen Zustand
+angefasst wird. Zustand, der während der Konfigurationsänderung schon
+existiert (ein sitzender Spieler, ein laufender Elytra-Flug), bleibt deshalb
+unverändert bestehen - er wurde ja nie abgebaut.
+
+Eine Änderung unter `features.*`, `titan.*` oder `config.*` betrifft ohnehin
+kein einzelnes Modul: Flags liest jeder Aufrufer über `FeatureFlags` bei
+Bedarf, und `config.*` steuert nur die Dateiüberwachung selbst. Ein Modul,
+das nur über `Config` liest (s. "Konfiguration lesen" und "Live lesen am
+Gebrauchsort" oben) und keinen eigenen Zustand außerhalb des Kontexts hält,
+braucht für diese ganze Change also keine einzige geänderte Zeile in seinem
+eigenen `LobbyModule`.
 
 ## Tests: Aufbau und `ModuleHarness`
 

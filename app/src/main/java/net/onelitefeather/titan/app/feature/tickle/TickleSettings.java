@@ -21,12 +21,21 @@ package net.onelitefeather.titan.app.feature.tickle;
  *
  * <p>{@link #cooldownMillis(String)} is used directly as the mapping function of
  * {@code Config.getAs(COOLDOWN_KEY, TickleSettings::cooldownMillis)} in
- * {@link TickleModule#enable}:
- * it never touches {@code io.avaje.config.Config} itself, so it is unit-testable on its own, and
- * {@code getAs} wraps any exception it throws into an {@code IllegalStateException} that names
- * {@link #COOLDOWN_KEY} once and keeps this method's own exception as the cause (key in the
- * message, reason in the cause chain - verified against avaje-config 5.2's
- * {@code CoreConfiguration#getAs}).
+ * {@link TickleModule#enable}, once, to abort startup on an invalid value (unchanged behaviour
+ * from {@code avaje-config-facade}): it never touches {@code io.avaje.config.Config} itself, so
+ * it is unit-testable on its own, and {@code getAs} wraps any exception it throws into an
+ * {@code IllegalStateException} that names {@link #COOLDOWN_KEY} once and keeps this method's own
+ * exception as the cause (key in the message, reason in the cause chain - verified against
+ * avaje-config 5.2's {@code CoreConfiguration#getAs}).
+ *
+ * <p>{@link TickleAttackHandler} reads {@link #COOLDOWN_KEY} itself, live, via
+ * {@code io.avaje.config.Config.getLong(COOLDOWN_KEY)} on every attack (see
+ * {@code openspec/changes/config-reload-feature-flags/design.md}, decision 2, as amended by
+ * {@code refactor/drop-runtime-fallback}): configuration is validated only once, at startup, in
+ * {@link TickleModule#enable}; a runtime read is never re-validated and never falls back to a
+ * shipped default - an invalid live value simply takes effect (here, a negative or unparsable
+ * value would throw out of {@link TickleAttackHandler}, failing that one attack) until an
+ * operator corrects it.
  */
 final class TickleSettings {
 

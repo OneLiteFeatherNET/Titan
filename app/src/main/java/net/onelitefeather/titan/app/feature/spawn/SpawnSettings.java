@@ -24,7 +24,12 @@ package net.onelitefeather.titan.app.feature.spawn;
  * {@code getAs} wraps any exception it throws into an {@code IllegalStateException} naming the key
  * once, keeping this method's own exception as the cause. {@link #minHeight(int, int)} is a
  * cross-field check - it needs both already-parsed heights - so {@link SpawnModule#enable} calls
- * it itself, after reading both values; its own message therefore names both full keys.
+ * it itself, after reading both values; its own message therefore names both full keys. Both
+ * checks run exactly once, at startup: {@link SpawnBoundsListener} and {@link SpawnJoinListener}
+ * read their keys again on every move/join, live and unvalidated, via
+ * {@code io.avaje.config.Config.getInt} - see {@code openspec/changes/config-reload-feature-flags/
+ * design.md}, decision 2, as amended by {@code refactor/drop-runtime-fallback}: a runtime read is
+ * never re-validated and never falls back to a shipped default.
  *
  * <p>The keys themselves are declared here as constants, the one place this module's config
  * section is named (see {@code design.md}, decision 3), and reused by {@link SpawnModule#enable}
@@ -75,4 +80,5 @@ final class SpawnSettings {
         }
         return simulationDistance;
     }
+
 }

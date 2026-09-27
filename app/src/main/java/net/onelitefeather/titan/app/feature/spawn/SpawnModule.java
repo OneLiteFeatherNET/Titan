@@ -75,13 +75,15 @@ public final class SpawnModule implements LobbyModule {
 
     @Override
     public void enable(ModuleContext context) {
-        int maxHeight = Config.getAs(SpawnSettings.MAX_HEIGHT_KEY, Integer::parseInt);
-        int minHeight = SpawnSettings.minHeight(Config.getAs(SpawnSettings.MIN_HEIGHT_KEY, Integer::parseInt), maxHeight);
-        int simulationDistance = Config.getAs(SpawnSettings.SIMULATION_DISTANCE_KEY, SpawnSettings::simulationDistance);
+        // Abort startup on an invalid value (unchanged behaviour); neither result is kept - the
+        // listeners below read the live values again on every join/move (see design.md,
+        // decision 1).
+        int maxHeightAtStartup = Config.getAs(SpawnSettings.MAX_HEIGHT_KEY, Integer::parseInt);
+        SpawnSettings.minHeight(Config.getAs(SpawnSettings.MIN_HEIGHT_KEY, Integer::parseInt), maxHeightAtStartup);
+        Config.getAs(SpawnSettings.SIMULATION_DISTANCE_KEY, SpawnSettings::simulationDistance);
 
-        HeightBounds heightBounds = new HeightBounds(minHeight, maxHeight);
         context.listen(AsyncPlayerConfigurationEvent.class, new SpawnConfigurationListener(this.instance, this.spawnPosition::position));
-        context.listen(PlayerSpawnEvent.class, new SpawnJoinListener(simulationDistance, this.spawnPosition::position, context.items()));
-        context.listen(PlayerMoveEvent.class, new SpawnBoundsListener(heightBounds, this.spawnPosition::position));
+        context.listen(PlayerSpawnEvent.class, new SpawnJoinListener(this.spawnPosition::position, context.items()));
+        context.listen(PlayerMoveEvent.class, new SpawnBoundsListener(this.spawnPosition::position));
     }
 }

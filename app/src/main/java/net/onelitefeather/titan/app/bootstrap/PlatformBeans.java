@@ -30,8 +30,8 @@ import net.onelitefeather.titan.app.module.LobbySpawn;
 import net.onelitefeather.titan.app.module.item.ItemRegistry;
 import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
 import net.onelitefeather.titan.common.deliver.DeliverProvider;
+import net.onelitefeather.titan.common.feature.ConfigFeatureFlags;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
-import net.onelitefeather.titan.common.feature.TogglzFeatureFlags;
 import net.onelitefeather.titan.common.map.MapProvider;
 
 /**
@@ -134,12 +134,14 @@ public final class PlatformBeans {
     }
 
     /**
-     * @return the source of truth a navigator entry's optional feature gate is checked against,
-     *         backed by the static Togglz {@code FeatureContext} and {@code flags.properties}
+     * @return the source of truth a navigator entry's optional feature gate is checked against - a
+     *         flag is a plain configuration value under {@code features.*}, with the known flags
+     *         read from the lobby's own classpath {@code application.yaml} (see
+     *         {@code openspec/changes/config-reload-feature-flags/design.md}, decision 4)
      */
     @Bean
     public FeatureFlags featureFlags() {
-        return new TogglzFeatureFlags();
+        return ConfigFeatureFlags.fromClasspathDefaults();
     }
 
     /**

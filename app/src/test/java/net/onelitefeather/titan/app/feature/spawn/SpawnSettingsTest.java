@@ -21,7 +21,10 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Plain unit tests for {@link SpawnSettings}: no {@code Config}, no server needed - just the pure
- * parsing and validation functions.
+ * parsing and validation functions. Both checks run only once, at startup, in
+ * {@link SpawnModule#enable}: {@link SpawnBoundsListener} and {@link SpawnJoinListener} read their
+ * keys again on every move/join, live and unvalidated, via {@code Config.getInt(...)} (see
+ * {@code refactor/drop-runtime-fallback}), so there is no runtime counterpart to test here.
  */
 class SpawnSettingsTest {
 

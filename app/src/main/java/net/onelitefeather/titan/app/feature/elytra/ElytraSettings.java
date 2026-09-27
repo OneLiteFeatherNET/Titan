@@ -25,8 +25,14 @@ package net.onelitefeather.titan.app.feature.elytra;
  * {@code IllegalStateException} naming the key once, keeping this method's own exception as the
  * cause. {@link #cooldownTicks(int, int)} is a cross-field check - it needs the already-validated
  * burn duration - so {@link ElytraModule#enable} calls it itself, after reading both values; its
- * own
- * message therefore names both full keys.
+ * own message therefore names both full keys. Both checks run exactly once, at startup: the
+ * {@code titan:firework} item's use handler reads {@link #BURN_DURATION_TICKS_KEY} and
+ * {@link #COOLDOWN_TICKS_KEY} again on every boost, live and unvalidated, via
+ * {@code io.avaje.config.Config.getInt} - see {@code openspec/changes/config-reload-feature-flags/
+ * design.md}, decision 2, as amended by {@code refactor/drop-runtime-fallback}: a runtime read is
+ * never re-validated (in particular, an operator-set {@code cooldownTicks} no longer strictly
+ * longer than {@code burnDurationTicks} simply takes effect) and never falls back to a shipped
+ * default.
  */
 final class ElytraSettings {
 
@@ -78,4 +84,5 @@ final class ElytraSettings {
         }
         return cooldownTicks;
     }
+
 }
