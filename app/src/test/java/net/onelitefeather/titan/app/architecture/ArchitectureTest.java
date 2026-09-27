@@ -85,6 +85,8 @@ class ArchitectureTest {
     private static final String MODULE_PACKAGE = "net.onelitefeather.titan.app.module..";
     private static final String COMMON_PACKAGE = "net.onelitefeather.titan.common..";
     private static final String APP_PACKAGE = "net.onelitefeather.titan.app..";
+    private static final String NAVIGATOR_PACKAGE = "net.onelitefeather.titan.app.feature.navigator..";
+    private static final String AVAJE_CONFIG_PACKAGE = "io.avaje.config..";
 
     /**
      * True for a class named {@code *Module}, or a class Avaje Inject's annotation processor
@@ -185,6 +187,18 @@ class ArchitectureTest {
      */
     @ArchTest
     static final ArchRule featureModulesDoNotUseBeanScope = noClasses().that().resideInAPackage(FEATURE_PACKAGE).should().dependOnClassesThat().areAssignableTo(BeanScope.class).because("a feature module must ask for its dependencies through its constructor, never look them up itself via BeanScope - that would be the service-locator pattern dependency injection is meant to replace - see design.md decision 6");
+
+    /**
+     * Rule 8 ({@code openspec/changes/navigator-entries-in-code/design.md}, decision 4): the
+     * navigator's destinations are fixed in code, not read from the {@code io.avaje.config}
+     * facade - a {@code navigator.*} key in an operator's configuration must stay without effect.
+     * This rule fails as soon as any class under {@code app.feature.navigator} touches
+     * {@code io.avaje.config} again, without needing a running lobby or a configuration file to
+     * prove it (see the {@code lobby-navigator} spec's "Navigator-Werte in der Konfiguration
+     * werden ignoriert" scenario).
+     */
+    @ArchTest
+    static final ArchRule navigatorDoesNotDependOnAvajeConfig = noClasses().that().resideInAPackage(NAVIGATOR_PACKAGE).should().dependOnClassesThat().resideInAPackage(AVAJE_CONFIG_PACKAGE).because("the navigator's title and destinations are fixed in NavigatorModule/Destination, not read from configuration - see design.md decision 4 and the lobby-navigator spec requirement \"Navigator-Ziele sind im Navigator-Modul festgelegt\"");
 
     ArchitectureTest() {
     }
