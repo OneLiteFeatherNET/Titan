@@ -19,6 +19,7 @@ import io.avaje.inject.PostConstruct;
 import io.avaje.inject.PreDestroy;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;
+import java.util.Objects;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.event.inventory.InventoryPreClickEvent;
@@ -74,7 +75,7 @@ public final class ProtectionModule {
      * @param titan the shared event node this feature's own node attaches under
      */
     public ProtectionModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan) {
-        this.titan = titan;
+        this.titan = Objects.requireNonNull(titan, "titan must not be null");
     }
 
     /** Attaches this feature's own event node and registers every cancelling listener on it. */

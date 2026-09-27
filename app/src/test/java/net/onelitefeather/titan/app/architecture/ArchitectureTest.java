@@ -156,27 +156,6 @@ class ArchitectureTest {
     static final ArchRule featureModulesDoNotUseBeanScope = noClasses().that().resideInAPackage(FEATURE_PACKAGE).should().dependOnClassesThat().areAssignableTo(BeanScope.class).because("a feature must ask for its dependencies through its constructor, never look them up itself via BeanScope - that would be the service-locator pattern dependency injection is meant to replace - see openspec/changes/dissolve-module-platform/design.md, decision 1");
 
     /**
-     * Rule 8 ({@code openspec/changes/navigator-entries-in-code/design.md}, decision 4): the
-     * navigator's destinations are fixed in code, not read from the {@code io.avaje.config}
-     * facade - a {@code navigator.*} key in an operator's configuration must stay without effect.
-     */
-    @ArchTest
-    static final ArchRule navigatorDoesNotDependOnAvajeConfig = noClasses().that().resideInAPackage(NAVIGATOR_PACKAGE).should().dependOnClassesThat().resideInAPackage(AVAJE_CONFIG_PACKAGE).because("the navigator's title and destinations are fixed in NavigatorModule/Destination, not read from configuration - see design.md decision 4 and the lobby-navigator spec requirement \"Navigator-Ziele sind im Navigator-Modul festgelegt\"");
-
-    /**
-     * Rule 9 ({@code openspec/changes/dissolve-module-platform/design.md}, decisions 1 and 5): the
-     * platform ({@code app.module}) must stay usable while the composition root
-     * ({@code app.bootstrap}) is being assembled - {@code app.bootstrap} beans are built from
-     * {@code app.module} types (e.g. {@link net.onelitefeather.titan.app.module.LobbySpawn}), never
-     * the other way around.
-     */
-    @ArchTest
-    static final ArchRule platformDoesNotDependOnCompositionRoot = noClasses().that().resideInAPackage(MODULE_PACKAGE).should().dependOnClassesThat().resideInAPackage(BOOTSTRAP_PACKAGE).because("the platform (app.module) must not depend on the composition root (app.bootstrap) - app.bootstrap wires platform beans from app.module types, never the reverse, and a dependency back into app.bootstrap would create a package cycle - see openspec/changes/dissolve-module-platform/design.md, decisions 1 and 5");
-
-    ArchitectureTest() {
-    }
-
-    /**
      * Rule 7 ({@code design.md}, decision 1): two features sharing an {@code EVENT_PRIORITY} value
      * would make the order in which they process the same event depend on an undocumented
      * tie-break instead of the deterministic order the {@code lobby-modules} spec requires. Plain
@@ -231,6 +210,27 @@ class ArchitectureTest {
         } catch (IOException exception) {
             throw new UncheckedIOException("Unable to read the class file for " + javaClass.getName(), exception);
         }
+    }
+
+    /**
+     * Rule 8 ({@code openspec/changes/navigator-entries-in-code/design.md}, decision 4): the
+     * navigator's destinations are fixed in code, not read from the {@code io.avaje.config}
+     * facade - a {@code navigator.*} key in an operator's configuration must stay without effect.
+     */
+    @ArchTest
+    static final ArchRule navigatorDoesNotDependOnAvajeConfig = noClasses().that().resideInAPackage(NAVIGATOR_PACKAGE).should().dependOnClassesThat().resideInAPackage(AVAJE_CONFIG_PACKAGE).because("the navigator's title and destinations are fixed in NavigatorModule/Destination, not read from configuration - see design.md decision 4 and the lobby-navigator spec requirement \"Navigator-Ziele sind im Navigator-Modul festgelegt\"");
+
+    /**
+     * Rule 9 ({@code openspec/changes/dissolve-module-platform/design.md}, decisions 1 and 5): the
+     * platform ({@code app.module}) must stay usable while the composition root
+     * ({@code app.bootstrap}) is being assembled - {@code app.bootstrap} beans are built from
+     * {@code app.module} types (e.g. {@link net.onelitefeather.titan.app.module.LobbySpawn}), never
+     * the other way around.
+     */
+    @ArchTest
+    static final ArchRule platformDoesNotDependOnCompositionRoot = noClasses().that().resideInAPackage(MODULE_PACKAGE).should().dependOnClassesThat().resideInAPackage(BOOTSTRAP_PACKAGE).because("the platform (app.module) must not depend on the composition root (app.bootstrap) - app.bootstrap wires platform beans from app.module types, never the reverse, and a dependency back into app.bootstrap would create a package cycle - see openspec/changes/dissolve-module-platform/design.md, decisions 1 and 5");
+
+    ArchitectureTest() {
     }
 
     private static boolean touchesTheRawEventTree(JavaMethodCall call) {

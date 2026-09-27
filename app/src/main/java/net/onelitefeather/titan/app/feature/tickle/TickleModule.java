@@ -55,6 +55,8 @@ public final class TickleModule {
 
     static final int EVENT_PRIORITY = 600;
 
+    private static final String ID = "tickle";
+
     private final EventNode<Event> titan;
     private final Clock clock;
     private FeatureNode node;
@@ -78,7 +80,7 @@ public final class TickleModule {
         // Abort startup on an invalid value (unchanged behaviour); the parsed value itself is not
         // kept - TickleAttackHandler reads the live value again on every attack.
         Config.getAs(TickleSettings.COOLDOWN_KEY, TickleSettings::cooldownMillis);
-        this.node = FeatureNode.attach(this.titan, "tickle", EVENT_PRIORITY).on(EntityAttackEvent.class, new TickleAttackHandler(this.clock));
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY).on(EntityAttackEvent.class, new TickleAttackHandler(this.clock));
     }
 
     @PreDestroy

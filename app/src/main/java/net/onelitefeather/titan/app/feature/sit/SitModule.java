@@ -68,6 +68,8 @@ public final class SitModule {
 
     static final int EVENT_PRIORITY = 500;
 
+    private static final String ID = "sit";
+
     private final EventNode<Event> titan;
     private FeatureNode node;
 
@@ -89,7 +91,7 @@ public final class SitModule {
         SitSettings.allowedBlocks(Config.list().of(SitSettings.ALLOWED_BLOCKS_KEY).stream().map(SitSettings::parseBlock).toList());
         Seats seats = new Seats();
 
-        this.node = FeatureNode.attach(this.titan, "sit", EVENT_PRIORITY);
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY);
 
         this.node.on(PlayerBlockInteractEvent.class, event -> {
             // Live, unvalidated read on every interaction (see design.md, decision 1): the

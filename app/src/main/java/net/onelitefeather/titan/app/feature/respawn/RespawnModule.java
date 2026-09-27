@@ -64,6 +64,8 @@ public final class RespawnModule {
 
     static final int EVENT_PRIORITY = 300;
 
+    private static final String ID = "respawn";
+
     private final EventNode<Event> titan;
     private final LobbyItems lobbyItems;
     private FeatureNode node;
@@ -79,7 +81,7 @@ public final class RespawnModule {
 
     @PostConstruct
     void start() {
-        this.node = FeatureNode.attach(this.titan, "respawn", EVENT_PRIORITY).on(PlayerDeathEvent.class, RespawnModule::onDeath).on(PlayerRespawnEvent.class, event -> this.lobbyItems.equip(event.getPlayer()));
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY).on(PlayerDeathEvent.class, RespawnModule::onDeath).on(PlayerRespawnEvent.class, event -> this.lobbyItems.equip(event.getPlayer()));
     }
 
     @PreDestroy
