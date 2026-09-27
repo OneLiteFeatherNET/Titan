@@ -29,7 +29,6 @@ import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.app.module.testing.ModuleHarness;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -61,10 +60,10 @@ class NavigatorModuleTest {
     @DisplayName("Opening the navigator via the feather shows the four fixed destinations, synchronously")
     @Test
     void openingTheNavigatorShowsTheFourDestinations(Env env) {
-        try (ModuleHarness harness = ModuleHarness.start(env, new NavigatorModule(new RecordingDeliver(), slenderActive()))) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive())) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
-            harness.items().equip(player);
+            fixture.equip(player);
 
             AbstractInventory openInventory = openNavigator(env, player);
 
@@ -85,10 +84,10 @@ class NavigatorModuleTest {
     @Test
     void clickingElytraRaceForwardsToElytraRace(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
-        try (ModuleHarness harness = ModuleHarness.start(env, new NavigatorModule(deliver, slenderActive()))) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive())) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
-            harness.items().equip(player);
+            fixture.equip(player);
             AbstractInventory openInventory = openNavigator(env, player);
 
             InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(0));
@@ -105,10 +104,10 @@ class NavigatorModuleTest {
     @Test
     void clickingSurvivalForwardsToSurvival(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
-        try (ModuleHarness harness = ModuleHarness.start(env, new NavigatorModule(deliver, slenderActive()))) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive())) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
-            harness.items().equip(player);
+            fixture.equip(player);
             AbstractInventory openInventory = openNavigator(env, player);
 
             InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(4));
@@ -125,10 +124,10 @@ class NavigatorModuleTest {
     @Test
     void clickingSlenderForwardsToCygnus(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
-        try (ModuleHarness harness = ModuleHarness.start(env, new NavigatorModule(deliver, slenderActive()))) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive())) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
-            harness.items().equip(player);
+            fixture.equip(player);
             AbstractInventory openInventory = openNavigator(env, player);
 
             InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(5));
@@ -145,10 +144,10 @@ class NavigatorModuleTest {
     @Test
     void clickingCreativeForwardsToMemberBuild(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
-        try (ModuleHarness harness = ModuleHarness.start(env, new NavigatorModule(deliver, slenderActive()))) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive())) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
-            harness.items().equip(player);
+            fixture.equip(player);
             AbstractInventory openInventory = openNavigator(env, player);
 
             InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(8));
@@ -165,10 +164,10 @@ class NavigatorModuleTest {
     @Test
     void clickingABlankSlotTriggersNoDeliveryAndKeepsTheNavigatorOpen(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
-        try (ModuleHarness harness = ModuleHarness.start(env, new NavigatorModule(deliver, slenderActive()))) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive())) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
-            harness.items().equip(player);
+            fixture.equip(player);
             AbstractInventory openInventory = openNavigator(env, player);
 
             InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(2));
@@ -176,6 +175,26 @@ class NavigatorModuleTest {
 
             Assertions.assertTrue(deliver.deliveries().isEmpty(), "clicking a blank glass pane must not trigger a delivery");
             Assertions.assertSame(openInventory, player.getOpenInventory(), "the navigator must stay open after clicking a blank slot");
+        }
+    }
+
+    @DisplayName("Once the module is stopped, a navigator click no longer forwards or cancels")
+    @Test
+    void clicksNoLongerForwardOnceTheModuleIsStopped(Env env) {
+        RecordingDeliver deliver = new RecordingDeliver();
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive())) {
+            Instance instance = env.createFlatInstance();
+            Player player = env.createPlayer(instance);
+            fixture.equip(player);
+            AbstractInventory openInventory = openNavigator(env, player);
+
+            fixture.stopModule();
+
+            InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(4));
+            env.process().eventHandler().call(clickEvent);
+
+            Assertions.assertFalse(clickEvent.isCancelled(), "no feature code may run once the module has stopped");
+            Assertions.assertTrue(deliver.deliveries().isEmpty(), "no delivery may happen once the module has stopped");
         }
     }
 }
