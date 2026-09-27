@@ -17,8 +17,6 @@ package net.onelitefeather.titan.app.bootstrap;
 
 import io.avaje.config.Configuration;
 import java.util.List;
-import java.util.Map;
-import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,10 +25,14 @@ import org.junit.jupiter.api.Test;
  * Locks in that the classpath {@code app/src/main/resources/application.yaml} - the single source
  * of every module's shipped defaults, read directly through {@code io.avaje.config.Config} (see
  * {@code openspec/changes/avaje-config-facade/design.md}, decision 2) - carries exactly the
- * expected defaults of the {@code sit}, {@code spawn}, {@code tickle}, {@code elytra} and
- * {@code navigator} sections, key by key. Each module's own per-field configuration type is gone
- * (see design.md, decision 7), so the expected values are spelled out literally here instead of
- * compared against one.
+ * expected defaults of the {@code sit}, {@code spawn}, {@code tickle} and {@code elytra} sections,
+ * key by key. Each module's own per-field configuration type is gone (see design.md, decision 7),
+ * so the expected values are spelled out literally here instead of compared against one.
+ *
+ * <p>The navigator's destinations are no longer part of this file at all - see
+ * {@code openspec/changes/navigator-entries-in-code/design.md}, decision 2 - so they are guarded by
+ * {@code net.onelitefeather.titan.app.feature.navigator.NavigatorDestinationTest} instead, as a
+ * plain unit test of the {@code Destination} enum.
  *
  * <p>Loads the file as its own {@link Configuration} instance via
  * {@link Configuration.Builder#load(String)} - which reads a classpath resource, never the static
@@ -96,37 +98,5 @@ class ApplicationYamlDefaultsCharacterizationTest {
 
         Assertions.assertEquals(30, configuration.getInt("elytra.burnDurationTicks"), "elytra.burnDurationTicks");
         Assertions.assertEquals(40, configuration.getInt("elytra.cooldownTicks"), "elytra.cooldownTicks");
-    }
-
-    @DisplayName("navigator: application.yaml matches the shipped defaults - ElytraRace, Survival, Slender (gated behind NAVIGATOR_SLENDER) and Creative")
-    @Test
-    void navigatorMatchesDefaults() {
-        Configuration configuration = load();
-
-        Assertions.assertEquals("<yellow>Navigator", configuration.get("navigator.title"), "navigator.title");
-
-        Map<String, ExpectedNavigatorEntry> expectedEntries = Map.of("elytrarace", new ExpectedNavigatorEntry(0, "minecraft:elytra", "<!i><gradient:#fcba03:#03fc8c>ElytraRace</gradient>", "ElytraRace", null), "survival", new ExpectedNavigatorEntry(4, "minecraft:grass_block", "<!i><green>Survival", "Survival", null), "slender", new ExpectedNavigatorEntry(5, "minecraft:enderman_spawn_egg", "<!i><gradient:#616161:#e80000c>Slender</gradient>", "cygnus", "NAVIGATOR_SLENDER"), "creative", new ExpectedNavigatorEntry(8, "minecraft:wooden_axe", "<!i><rainbow>Creative</rainbow>", "MemberBuild", null));
-        Assertions.assertEquals(expectedEntries.keySet(), configuration.forPath("navigator.entries").keys().stream().map(key -> key.split("\\.")[0]).collect(java.util.stream.Collectors.toSet()), "navigator.entries names");
-
-        for (Map.Entry<String, ExpectedNavigatorEntry> entry : expectedEntries.entrySet()) {
-            String name = entry.getKey();
-            ExpectedNavigatorEntry expected = entry.getValue();
-            String prefix = "navigator.entries." + name + ".";
-
-            Assertions.assertEquals(expected.slot(), configuration.getInt(prefix + "slot"), prefix + "slot");
-            Assertions.assertEquals(expected.icon(), configuration.get(prefix + "icon"), prefix + "icon");
-            Assertions.assertEquals(expected.displayName(), configuration.get(prefix + "displayName"), prefix + "displayName");
-            Assertions.assertEquals(expected.destination(), configuration.get(prefix + "destination"), prefix + "destination");
-            Assertions.assertEquals(expected.feature(), configuration.getNullable(prefix + "feature"), prefix + "feature");
-        }
-    }
-
-    /**
-     * A literal stand-in for one expected default navigator entry's fields, spelling them out
-     * instead of comparing against a type, since navigator entries are no longer bound to one (see
-     * {@code openspec/changes/avaje-config-facade/design.md}, decision 6).
-     */
-    private record ExpectedNavigatorEntry(int slot, String icon, String displayName,
-                                          String destination, @Nullable String feature) {
     }
 }

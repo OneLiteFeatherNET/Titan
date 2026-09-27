@@ -33,9 +33,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * test here beyond this parsing).
  *
  * <p>{@link MicrotusExtension} is only needed because {@link SitSettings#parseBlock} resolves a
- * key against Minestom's block registry data (see
- * {@link net.onelitefeather.titan.app.feature.navigator.NavigatorEntryValidationTest}'s Javadoc for
- * the same pattern with {@code Material}).
+ * key against Minestom's block registry data, which is only bound once
+ * {@link net.minestom.testing.extension.MicrotusExtension} actually creates an {@code Env}.
  */
 @ExtendWith(MicrotusExtension.class)
 class SitSettingsTest {

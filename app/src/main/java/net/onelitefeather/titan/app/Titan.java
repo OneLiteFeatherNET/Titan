@@ -30,9 +30,7 @@ import net.onelitefeather.titan.app.commands.StopCommand;
 import net.onelitefeather.titan.app.module.LobbyModule;
 import net.onelitefeather.titan.app.module.ModuleRegistry;
 import net.onelitefeather.titan.app.module.item.ItemRegistry;
-import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
 import net.onelitefeather.titan.app.player.TitanPlayer;
-import net.onelitefeather.titan.common.feature.FeatureFlags;
 import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
 
 /**
@@ -88,11 +86,9 @@ public final class Titan {
 
         EventNode<Event> titanNode = this.beanScope.get(new GenericType<EventNode<Event>>() {
         }.type(), PlatformBeans.TITAN_NODE_NAME);
-        NavigatorEntries navigatorEntries = this.beanScope.get(NavigatorEntries.class);
         ItemRegistry itemRegistry = this.beanScope.get(ItemRegistry.class);
-        FeatureFlags featureFlags = this.beanScope.get(FeatureFlags.class);
 
-        this.moduleRegistry = ModuleRegistry.builder().parent(titanNode).navigator(navigatorEntries).items(itemRegistry).featureFlags(featureFlags).modules(this.modules).build();
+        this.moduleRegistry = ModuleRegistry.builder().parent(titanNode).items(itemRegistry).modules(this.modules).build();
     }
 
     /**

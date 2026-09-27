@@ -15,7 +15,6 @@
  */
 package net.onelitefeather.titan.app.feature.navigator;
 
-import net.kyori.adventure.text.Component;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.PlayerHand;
 import net.minestom.server.event.inventory.InventoryPreClickEvent;
@@ -27,9 +26,6 @@ import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.app.module.LobbyModule;
-import net.onelitefeather.titan.app.module.ModuleContext;
-import net.onelitefeather.titan.app.module.navigator.NavigatorEntry;
 import net.onelitefeather.titan.app.module.testing.ModuleHarness;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -37,20 +33,19 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * End-to-end coverage for the {@code lobby-navigator} spec requirement "Navigator-Ziele können
- * hinter einer Feature-Flag liegen" (design.md decision 13): Slender hidden while
- * {@code NAVIGATOR_SLENDER} is off, shown and forwarding while it is on, becoming visible on the
- * very next open once the flag flips at runtime with no restart, and an unknown feature name in a
- * navigator-sourced entry aborting startup by naming {@code navigator.entries}.
+ * End-to-end coverage for the {@code lobby-navigator} spec requirement "Slender liegt hinter der
+ * Feature-Flag NAVIGATOR_SLENDER": Slender hidden while {@code NAVIGATOR_SLENDER} is off, shown and
+ * forwarding while it is on, and becoming visible on the very next open once the flag flips at
+ * runtime, with no restart.
  */
 @ExtendWith(MicrotusExtension.class)
 class NavigatorFeatureFlagTest {
 
-    @DisplayName("Slender's flag off: slot 5 is a blank glass pane, the other entries are unchanged")
+    @DisplayName("Slender's flag off: slot 5 is a blank glass pane, the other destinations are unchanged")
     @Test
     void slenderHiddenWhenFlagIsOff(Env env) {
         FakeFeatureFlags flags = new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", false);
-        try (ModuleHarness harness = ModuleHarness.start(env, (navigator, items) -> new LobbyModule[]{new NavigatorModule(new RecordingDeliver(), navigator, flags)})) {
+        try (ModuleHarness harness = ModuleHarness.start(env, new NavigatorModule(new RecordingDeliver(), flags))) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             harness.items().equip(player);
@@ -61,9 +56,9 @@ class NavigatorFeatureFlagTest {
             AbstractInventory openInventory = player.getOpenInventory();
             Assertions.assertNotNull(openInventory);
             Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, openInventory.getItemStack(5).material(), "slot 5 must be blank while NAVIGATOR_SLENDER is off");
-            Assertions.assertEquals(Material.ELYTRA, openInventory.getItemStack(0).material(), "unrelated entries must be unaffected");
-            Assertions.assertEquals(Material.GRASS_BLOCK, openInventory.getItemStack(4).material(), "unrelated entries must be unaffected");
-            Assertions.assertEquals(Material.WOODEN_AXE, openInventory.getItemStack(8).material(), "unrelated entries must be unaffected");
+            Assertions.assertEquals(Material.ELYTRA, openInventory.getItemStack(0).material(), "unrelated destinations must be unaffected");
+            Assertions.assertEquals(Material.GRASS_BLOCK, openInventory.getItemStack(4).material(), "unrelated destinations must be unaffected");
+            Assertions.assertEquals(Material.WOODEN_AXE, openInventory.getItemStack(8).material(), "unrelated destinations must be unaffected");
         }
     }
 
@@ -72,7 +67,7 @@ class NavigatorFeatureFlagTest {
     void slenderShownAndForwardsWhenFlagIsOn(Env env) {
         FakeFeatureFlags flags = new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", true);
         RecordingDeliver deliver = new RecordingDeliver();
-        try (ModuleHarness harness = ModuleHarness.start(env, (navigator, items) -> new LobbyModule[]{new NavigatorModule(deliver, navigator, flags)})) {
+        try (ModuleHarness harness = ModuleHarness.start(env, new NavigatorModule(deliver, flags))) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             harness.items().equip(player);
@@ -95,7 +90,7 @@ class NavigatorFeatureFlagTest {
     @Test
     void togglingTheFlagBetweenTwoOpensShowsSlenderOnTheSecondOpen(Env env) {
         FakeFeatureFlags flags = new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", false);
-        try (ModuleHarness harness = ModuleHarness.start(env, (navigator, items) -> new LobbyModule[]{new NavigatorModule(new RecordingDeliver(), navigator, flags)})) {
+        try (ModuleHarness harness = ModuleHarness.start(env, new NavigatorModule(new RecordingDeliver(), flags))) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             harness.items().equip(player);
@@ -110,36 +105,5 @@ class NavigatorFeatureFlagTest {
 
             Assertions.assertEquals(Material.ENDERMAN_SPAWN_EGG, player.getOpenInventory().getItemStack(5).material(), "slot 5 must show Slender on the second open, after the flag flipped, with no restart");
         }
-    }
-
-    @DisplayName("An unknown feature name in a navigator-sourced entry aborts enableAll(), naming navigator.entries and the unknown flag")
-    @Test
-    void unknownFeatureInConfigurationAbortsEnableAll(Env env) {
-        // A stand-in for an unknown feature name in navigator.entries, in place of a
-        // Config-sourced override no longer read by NavigatorModule (design.md, decision 5).
-        // Contributed under the "navigator" module id, the same id a config-sourced entry is
-        // always attributed to.
-        NavigatorEntry slender = new NavigatorEntry(5, ItemStack.of(Material.ENDERMAN_SPAWN_EGG), Component.text("Slender"), "cygnus", "GIBT_ES_NICHT");
-        LobbyModule navigatorEntrySource = new LobbyModule() {
-
-            @Override
-            public String id() {
-                return "navigator";
-            }
-
-            @Override
-            public void enable(ModuleContext context) {
-                context.navigator().add(slender);
-            }
-        };
-        FakeFeatureFlags flags = new FakeFeatureFlags();
-
-        // FeatureFlags wired into the harness/registry itself, for
-        // ModuleRegistry#enableAll()'s NavigatorEntries#validate(FeatureFlags) check - exactly like
-        // Titan wires the real ConfigFeatureFlags in.
-        IllegalArgumentException thrown = Assertions.assertThrows(IllegalArgumentException.class, () -> ModuleHarness.start(env, flags, (navigator, items) -> new LobbyModule[]{navigatorEntrySource}));
-
-        Assertions.assertTrue(thrown.getMessage().contains("navigator.entries"), "a config-sourced entry's origin module is 'navigator', message was: " + thrown.getMessage());
-        Assertions.assertTrue(thrown.getMessage().contains("GIBT_ES_NICHT"), "the message must name the unknown flag");
     }
 }

@@ -51,7 +51,7 @@ import net.onelitefeather.titan.common.utils.Cancelable;
  * {@link InventoryPreClickEvent} in the first place: its click handling runs through Aves, mapped
  * directly onto the inventory it opens rather than through a listener on this module's or its own
  * event node, and Minestom dispatches that mapped handler before any regular event node - including
- * this module's - ever sees the click (see {@code feature.navigator.NavigatorInventory}'s Javadoc).
+ * this module's - ever sees the click (see {@code feature.navigator.NavigatorModule}'s Javadoc).
  */
 @Singleton
 @Priority(100)

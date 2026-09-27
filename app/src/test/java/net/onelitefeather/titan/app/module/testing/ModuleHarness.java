@@ -15,7 +15,6 @@
  */
 package net.onelitefeather.titan.app.module.testing;
 
-import java.util.Objects;
 import java.util.UUID;
 import net.minestom.server.command.CommandManager;
 import net.minestom.server.event.Event;
@@ -25,14 +24,12 @@ import net.minestom.testing.Env;
 import net.onelitefeather.titan.app.module.LobbyModule;
 import net.onelitefeather.titan.app.module.ModuleRegistry;
 import net.onelitefeather.titan.app.module.item.ItemRegistry;
-import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
-import net.onelitefeather.titan.common.feature.FeatureFlags;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * A shared, test-only harness that starts one or more {@link LobbyModule}s through a real
- * {@link ModuleRegistry}, so feature-module tests don't each have to wire up their own registry,
- * item registry and navigator entries.
+ * {@link ModuleRegistry}, so feature-module tests don't each have to wire up their own registry and
+ * item registry.
  *
  * <p>{@link #start(Env, LobbyModule...)} attaches a fresh child node under the given Microtus
  * {@code Env}'s global event handler ({@code env.process().eventHandler()}) as the registry's
@@ -43,8 +40,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>{@link #startStandalone(LobbyModule...)} does the same without an {@code Env}, backed by a
  * standalone {@link Scheduler#newScheduler()}, a plain {@link CommandManager} and a bare {@link
- * EventNode#all(String)} parent - the same pattern {@code NavigatorEntriesWiringTest} already used
- * before this harness existed. Use this whenever a module's logic can be exercised by calling
+ * EventNode#all(String)} parent. Use this whenever a module's logic can be exercised by calling
  * {@link #registry()}'s event node directly, without booting a server.
  *
  * <p>A harness is meant to live for a single test: {@link #close()} (or a try-with-resources block,
@@ -66,25 +62,17 @@ import org.jetbrains.annotations.Nullable;
  *       }
  *       }</pre>
  *
- *       <p>A module whose constructor needs the harness's own {@link NavigatorEntries} or
- *       {@link ItemRegistry} up front - {@code NavigatorModule} reads every module's entries back
- *       at open
- *       time, not just its own, so it cannot go through the narrow, add-only view
- *       {@code ModuleContext#navigator()} would give it - cannot be built before the harness exists
- *       to
- *       hand those instances out. The {@link ModuleFactory} overloads solve that: the harness
- *       builds its
- *       {@link NavigatorEntries} and {@link ItemRegistry} first, then calls the factory with those
- *       exact
- *       instances to build the module(s), and only then starts the registry - so
- *       {@link #navigator()} and
- *       {@link #items()} afterwards are the very instances a module built this way was constructed
+ *       <p>A module whose constructor needs the harness's own {@link ItemRegistry} up front cannot
+ *       be built before the harness exists to hand it out. The {@link ModuleFactory} overloads
+ *       solve that: the harness builds its {@link ItemRegistry} first, then calls the factory with
+ *       that exact instance to build the module(s), and only then starts the registry - so
+ *       {@link #items()} afterwards is the very instance a module built this way was constructed
  *       with.
  *
  *       <pre>{@code
  * try (ModuleHarness harness = ModuleHarness.start(env,
- *         (navigator, items) -> new LobbyModule[] {new NavigatorModule(deliver, navigator)})) {
- *     // harness.navigator() is the exact NavigatorEntries the NavigatorModule above was built with
+ *         items -> new LobbyModule[] {new SomeModule(items)})) {
+ *     // harness.items() is the exact ItemRegistry SomeModule above was built with
  * }
  * }  </pre>
  */
@@ -92,35 +80,31 @@ public final class ModuleHarness implements AutoCloseable {
 
     /**
      * Builds the module(s) a {@link ModuleHarness} should start, given the harness's own
-     * {@link NavigatorEntries} and {@link ItemRegistry} - for a module whose constructor needs
-     * either of them before {@code enable()} runs. See the class-level Javadoc's second example.
+     * {@link ItemRegistry} - for a module whose constructor needs it before {@code enable()} runs.
+     * See the class-level Javadoc's second example.
      */
     @FunctionalInterface
     public interface ModuleFactory {
 
         /**
-         * @param navigator the harness's navigator entry registry, later returned by
-         *                  {@link ModuleHarness#navigator()}
-         * @param items     the harness's item registry, later returned by
-         *                  {@link ModuleHarness#items()}
+         * @param items the harness's item registry, later returned by
+         *              {@link ModuleHarness#items()}
          * @return the modules to start, in registration order
          */
-        LobbyModule[] create(NavigatorEntries navigator, ItemRegistry items);
+        LobbyModule[] create(ItemRegistry items);
     }
 
     private final @Nullable EventNode<Event> attachedTo;
     private final EventNode<Event> parent;
     private final ModuleRegistry registry;
     private final ItemRegistry items;
-    private final NavigatorEntries navigator;
     private boolean closed;
 
-    private ModuleHarness(@Nullable EventNode<Event> attachedTo, EventNode<Event> parent, ModuleRegistry registry, ItemRegistry items, NavigatorEntries navigator) {
+    private ModuleHarness(@Nullable EventNode<Event> attachedTo, EventNode<Event> parent, ModuleRegistry registry, ItemRegistry items) {
         this.attachedTo = attachedTo;
         this.parent = parent;
         this.registry = registry;
         this.items = items;
-        this.navigator = navigator;
     }
 
     /**
@@ -132,51 +116,24 @@ public final class ModuleHarness implements AutoCloseable {
      * @return a started harness; close it (or use try-with-resources) once the test is done
      */
     public static ModuleHarness start(Env env, LobbyModule... modules) {
-        return start(env, (navigator, items) -> modules);
+        return start(env, items -> modules);
     }
 
     /**
      * Starts the module(s) {@code factory} builds against {@code env}. Use this instead of
      * {@link #start(Env, LobbyModule...)} for a module whose constructor needs the harness's
-     * {@link NavigatorEntries} or {@link ItemRegistry} before {@code enable()} runs - see the
-     * class-level Javadoc.
+     * {@link ItemRegistry} before {@code enable()} runs - see the class-level Javadoc.
      *
      * @param env     the Microtus environment to attach to and to take the scheduler and command
      *                manager from
-     * @param factory builds the modules to start from the harness's own navigator entries and item
-     *                registry
+     * @param factory builds the modules to start from the harness's own item registry
      * @return a started harness; close it (or use try-with-resources) once the test is done
      */
     public static ModuleHarness start(Env env, ModuleFactory factory) {
         EventNode<Event> globalNode = env.process().eventHandler();
         EventNode<Event> parent = EventNode.all("module-harness/" + UUID.randomUUID());
         globalNode.addChild(parent);
-        return start(globalNode, parent, env.process().scheduler(), env.process().command(), null, factory);
-    }
-
-    /**
-     * Starts the module(s) {@code factory} builds against {@code env}, with {@code featureFlags}
-     * wired into the registry itself - via {@code ModuleRegistry.Builder#featureFlags} - not just
-     * into whatever module {@code factory} builds from it. Use this instead of
-     * {@link #start(Env, ModuleFactory)} for a test that needs {@link ModuleRegistry#enableAll()}
-     * itself to validate a navigator entry's feature flag - see
-     * {@link net.onelitefeather.titan.app.module.navigator.NavigatorEntries#validate(FeatureFlags)}
-     * - rather than only whatever the built module does with {@code featureFlags} on its own.
-     *
-     * @param env          the Microtus environment to attach to and to take the scheduler and
-     *                     command manager from
-     * @param featureFlags the source of truth {@link ModuleRegistry#enableAll()} checks every
-     *                     navigator entry's feature flag against
-     * @param factory      builds the modules to start from the harness's own navigator entries
-     *                     and item registry
-     * @return a started harness; close it (or use try-with-resources) once the test is done
-     */
-    public static ModuleHarness start(Env env, FeatureFlags featureFlags, ModuleFactory factory) {
-        Objects.requireNonNull(featureFlags, "featureFlags must not be null");
-        EventNode<Event> globalNode = env.process().eventHandler();
-        EventNode<Event> parent = EventNode.all("module-harness/" + UUID.randomUUID());
-        globalNode.addChild(parent);
-        return start(globalNode, parent, env.process().scheduler(), env.process().command(), featureFlags, factory);
+        return start(globalNode, parent, env.process().scheduler(), env.process().command(), factory);
     }
 
     /**
@@ -188,33 +145,27 @@ public final class ModuleHarness implements AutoCloseable {
      * @return a started harness; close it (or use try-with-resources) once the test is done
      */
     public static ModuleHarness startStandalone(LobbyModule... modules) {
-        return startStandalone((navigator, items) -> modules);
+        return startStandalone(items -> modules);
     }
 
     /**
      * Starts the module(s) {@code factory} builds, without a Microtus {@code Env}. See
      * {@link #start(Env, ModuleFactory)} for why a factory is needed instead of pre-built modules.
      *
-     * @param factory builds the modules to start from the harness's own navigator entries and item
-     *                registry
+     * @param factory builds the modules to start from the harness's own item registry
      * @return a started harness; close it (or use try-with-resources) once the test is done
      */
     public static ModuleHarness startStandalone(ModuleFactory factory) {
         EventNode<Event> parent = EventNode.all("module-harness/" + UUID.randomUUID());
-        return start(null, parent, Scheduler.newScheduler(), new CommandManager(), null, factory);
+        return start(null, parent, Scheduler.newScheduler(), new CommandManager(), factory);
     }
 
-    private static ModuleHarness start(@Nullable EventNode<Event> attachedTo, EventNode<Event> parent, Scheduler scheduler, CommandManager commandManager, @Nullable FeatureFlags featureFlags, ModuleFactory factory) {
+    private static ModuleHarness start(@Nullable EventNode<Event> attachedTo, EventNode<Event> parent, Scheduler scheduler, CommandManager commandManager, ModuleFactory factory) {
         ItemRegistry items = new ItemRegistry(parent);
-        NavigatorEntries navigator = new NavigatorEntries();
-        LobbyModule[] modules = factory.create(navigator, items);
-        ModuleRegistry.Builder builder = ModuleRegistry.builder().parent(parent).scheduler(scheduler).commandManager(commandManager).items(items).navigator(navigator).modules(modules);
-        if (featureFlags != null) {
-            builder.featureFlags(featureFlags);
-        }
-        ModuleRegistry registry = builder.build();
+        LobbyModule[] modules = factory.create(items);
+        ModuleRegistry registry = ModuleRegistry.builder().parent(parent).scheduler(scheduler).commandManager(commandManager).items(items).modules(modules).build();
         registry.enableAll();
-        return new ModuleHarness(attachedTo, parent, registry, items, navigator);
+        return new ModuleHarness(attachedTo, parent, registry, items);
     }
 
     /**
@@ -222,13 +173,6 @@ public final class ModuleHarness implements AutoCloseable {
      */
     public ItemRegistry items() {
         return this.items;
-    }
-
-    /**
-     * @return the navigator entries shared by every module started through this harness
-     */
-    public NavigatorEntries navigator() {
-        return this.navigator;
     }
 
     /**

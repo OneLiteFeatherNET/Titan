@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import net.kyori.adventure.key.Key;
-import net.kyori.adventure.text.Component;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.trait.PlayerEvent;
 import net.minestom.server.instance.Instance;
@@ -33,8 +32,6 @@ import net.onelitefeather.titan.app.module.ModuleContext;
 import net.onelitefeather.titan.app.module.item.ItemRegistry;
 import net.onelitefeather.titan.app.module.item.ItemSlot;
 import net.onelitefeather.titan.app.module.item.LobbyItem;
-import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
-import net.onelitefeather.titan.app.module.navigator.NavigatorEntry;
 import net.onelitefeather.titan.app.testutils.EventListenerCounter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -45,8 +42,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * TDD coverage for {@link ModuleHarness} itself: a module started through it must react to an event
  * fired for a real {@code Env} player, must stop reacting once the harness is closed, and closing
  * one harness must not leave anything behind for the next one started in the same test run. Also
- * covers the accessors ({@link ModuleHarness#items()}, {@link ModuleHarness#navigator()}) and the
- * standalone (no {@code Env}) entry point.
+ * covers the {@link ModuleHarness#items()} accessor and the standalone (no {@code Env}) entry
+ * point.
  */
 @ExtendWith(MicrotusExtension.class)
 class ModuleHarnessTest {
@@ -144,9 +141,9 @@ class ModuleHarnessTest {
         Assertions.assertEquals(listenersOnGlobalNodeBefore, EventListenerCounter.countListeners(env.process().eventHandler()), "the harness must only ever attach a child node, never a listener directly on the shared global event handler");
     }
 
-    @DisplayName("items() and navigator() expose the same registries the started modules registered against")
+    @DisplayName("items() exposes the same registry the started modules registered against")
     @Test
-    void itemsAndNavigatorAccessorsExposeTheSharedRegistries(Env env) {
+    void itemsAccessorExposesTheSharedRegistry(Env env) {
         LobbyModule module = new LobbyModule() {
 
             @Override
@@ -158,7 +155,6 @@ class ModuleHarnessTest {
             public void enable(ModuleContext context) {
                 context.items().register(new LobbyItem(Key.key("titan:test-item"), ItemStack.of(Material.FEATHER), ItemSlot.hotbar(0), (usedBy, event) -> {
                 }));
-                context.navigator().add(new NavigatorEntry(0, ItemStack.of(Material.COMPASS), Component.text("Test"), "test"));
             }
         };
 
@@ -169,7 +165,6 @@ class ModuleHarnessTest {
             harness.items().equip(player);
 
             Assertions.assertEquals(Material.FEATHER, player.getInventory().getItemStack(0).material(), "harness.items() must be the same registry the module registered its item through");
-            Assertions.assertEquals(1, harness.navigator().entries().size(), "harness.navigator() must be the same registry the module added its entry through");
         }
     }
 
@@ -203,43 +198,45 @@ class ModuleHarnessTest {
         Assertions.assertEquals(List.of("enabled", "disabled"), log);
     }
 
-    /** A module whose constructor needs the harness's {@link NavigatorEntries} up front. */
-    private static final class NeedsNavigatorEntriesUpFront implements LobbyModule {
+    /** A module whose constructor needs the harness's {@link ItemRegistry} up front. */
+    private static final class NeedsItemRegistryUpFront implements LobbyModule {
 
-        private final NavigatorEntries constructedWith;
+        private final ItemRegistry constructedWith;
 
-        NeedsNavigatorEntriesUpFront(NavigatorEntries constructedWith) {
+        NeedsItemRegistryUpFront(ItemRegistry constructedWith) {
             this.constructedWith = constructedWith;
         }
 
         @Override
         public String id() {
-            return "needs-navigator-entries";
+            return "needs-item-registry";
         }
 
         @Override
         public void enable(ModuleContext context) {
-            // Reading the entries back at enable time - the whole point of needing the exact
-            // instance up front, the way NavigatorModule does - rather than through the narrow,
-            // add-only ModuleContext#navigator() view.
-            this.constructedWith.add(this.id(), new NavigatorEntry(0, ItemStack.of(Material.COMPASS), Component.text("Test"), "test"));
+            // Registers through the exact instance this module was constructed with, the same way
+            // a module needing the harness's registry up front - before enable() runs - would.
+            this.constructedWith.contextView(this.id(), cleanup -> {
+            }).register(new LobbyItem(Key.key("titan:needs-item-registry"), ItemStack.of(Material.COMPASS), ItemSlot.hotbar(0), (usedBy, event) -> {
+            }));
         }
     }
 
-    @DisplayName("start(Env, ModuleFactory) hands the module the harness's own navigator entries and item registry before enable() runs")
+    @DisplayName("start(Env, ModuleFactory) hands the module the harness's own item registry before enable() runs")
     @Test
-    void startWithAModuleFactoryHandsTheModuleTheHarnessOwnRegistries(Env env) {
-        AtomicReference<NavigatorEntries> seenByFactory = new AtomicReference<>();
-        AtomicReference<ItemRegistry> itemsSeenByFactory = new AtomicReference<>();
+    void startWithAModuleFactoryHandsTheModuleTheHarnessOwnItemRegistry(Env env) {
+        AtomicReference<ItemRegistry> seenByFactory = new AtomicReference<>();
 
-        try (ModuleHarness harness = ModuleHarness.start(env, (navigator, items) -> {
-            seenByFactory.set(navigator);
-            itemsSeenByFactory.set(items);
-            return new LobbyModule[]{new NeedsNavigatorEntriesUpFront(navigator)};
+        try (ModuleHarness harness = ModuleHarness.start(env, items -> {
+            seenByFactory.set(items);
+            return new LobbyModule[]{new NeedsItemRegistryUpFront(items)};
         })) {
-            Assertions.assertSame(harness.navigator(), seenByFactory.get(), "the factory must see the exact NavigatorEntries harness.navigator() later returns");
-            Assertions.assertSame(harness.items(), itemsSeenByFactory.get(), "the factory must see the exact ItemRegistry harness.items() later returns");
-            Assertions.assertEquals(1, harness.navigator().entries().size(), "the entry the module added through the instance it was constructed with must show up on harness.navigator()");
+            Instance instance = env.createFlatInstance();
+            Player player = env.createPlayer(instance);
+
+            Assertions.assertSame(harness.items(), seenByFactory.get(), "the factory must see the exact ItemRegistry harness.items() later returns");
+            harness.items().equip(player);
+            Assertions.assertEquals(Material.COMPASS, player.getInventory().getItemStack(0).material(), "the item registered through the instance the module was constructed with must show up via harness.items()");
         }
     }
 }

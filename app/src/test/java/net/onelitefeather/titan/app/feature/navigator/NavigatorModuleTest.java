@@ -16,7 +16,6 @@
 package net.onelitefeather.titan.app.feature.navigator;
 
 import java.util.List;
-import net.kyori.adventure.text.Component;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.PlayerHand;
 import net.minestom.server.event.inventory.InventoryPreClickEvent;
@@ -30,9 +29,6 @@ import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.app.module.LobbyModule;
-import net.onelitefeather.titan.app.module.ModuleContext;
-import net.onelitefeather.titan.app.module.navigator.NavigatorEntry;
 import net.onelitefeather.titan.app.module.testing.ModuleHarness;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -41,18 +37,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * End-to-end coverage for {@link NavigatorModule} against a real {@code Env}: opening the feather
- * shows the configured entries synchronously (no tick needed), clicking an entry forwards through
- * {@code Deliver} and closes the inventory, and an entry contributed by another module appears and
- * disappears once that module's contribution is withdrawn.
+ * shows the four fixed destinations synchronously (no tick needed), clicking a destination forwards
+ * through {@code Deliver} and closes the inventory, and clicking a blank glass pane does neither.
  *
- * <p>Started through {@link ModuleHarness}'s {@link ModuleHarness.ModuleFactory} overloads, which
- * hand the harness's own {@link net.onelitefeather.titan.app.module.navigator.NavigatorEntries}
- * (returned afterwards by {@link ModuleHarness#navigator()}) to {@link NavigatorModule}'s
- * constructor before the registry starts - see {@link ModuleHarness}'s class-level Javadoc. Every
- * test here declares {@code NAVIGATOR_SLENDER} active on its {@link FakeFeatureFlags}, since these
- * tests are not about the feature-flag gate itself (see {@code NavigatorFeatureFlagTest} for that)
- * -
- * they only need Slender to behave exactly as it did before decision 13.
+ * <p>Every test here declares {@code NAVIGATOR_SLENDER} active on its {@link FakeFeatureFlags},
+ * since these tests are not about the feature-flag gate itself (see
+ * {@code NavigatorFeatureFlagTest}
+ * for that) - they only need Slender to behave like any other, always-visible destination.
  */
 @ExtendWith(MicrotusExtension.class)
 class NavigatorModuleTest {
@@ -61,18 +52,22 @@ class NavigatorModuleTest {
         return new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", true);
     }
 
-    @DisplayName("Opening the navigator via the feather shows the four default entries, synchronously")
+    private static AbstractInventory openNavigator(Env env, Player player) {
+        ItemStack feather = player.getInventory().getItemStack(4);
+        env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, feather, 0L));
+        return player.getOpenInventory();
+    }
+
+    @DisplayName("Opening the navigator via the feather shows the four fixed destinations, synchronously")
     @Test
-    void openingTheNavigatorShowsTheFourDefaultEntries(Env env) {
-        try (ModuleHarness harness = ModuleHarness.start(env, (navigator, items) -> new LobbyModule[]{new NavigatorModule(new RecordingDeliver(), navigator, slenderActive())})) {
+    void openingTheNavigatorShowsTheFourDestinations(Env env) {
+        try (ModuleHarness harness = ModuleHarness.start(env, new NavigatorModule(new RecordingDeliver(), slenderActive()))) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             harness.items().equip(player);
-            ItemStack feather = player.getInventory().getItemStack(4);
 
-            env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, feather, 0L));
+            AbstractInventory openInventory = openNavigator(env, player);
 
-            AbstractInventory openInventory = player.getOpenInventory();
             Assertions.assertNotNull(openInventory, "the navigator must open synchronously, without a tick");
             Assertions.assertInstanceOf(Inventory.class, openInventory);
             Assertions.assertEquals(InventoryType.CHEST_1_ROW, ((Inventory) openInventory).getInventoryType());
@@ -86,99 +81,101 @@ class NavigatorModuleTest {
         }
     }
 
-    @DisplayName("Clicking a navigator entry cancels the click, forwards through Deliver and closes the inventory")
+    @DisplayName("Clicking ElytraRace forwards to the ElytraRace task and closes the inventory")
     @Test
-    void clickingAnEntryForwardsAndCloses(Env env) {
+    void clickingElytraRaceForwardsToElytraRace(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
-        try (ModuleHarness harness = ModuleHarness.start(env, (navigator, items) -> new LobbyModule[]{new NavigatorModule(deliver, navigator, slenderActive())})) {
+        try (ModuleHarness harness = ModuleHarness.start(env, new NavigatorModule(deliver, slenderActive()))) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             harness.items().equip(player);
-            ItemStack feather = player.getInventory().getItemStack(4);
-            env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, feather, 0L));
-            AbstractInventory openInventory = player.getOpenInventory();
-            Assertions.assertNotNull(openInventory);
+            AbstractInventory openInventory = openNavigator(env, player);
+
+            InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(0));
+            env.process().eventHandler().call(clickEvent);
+
+            Assertions.assertTrue(clickEvent.isCancelled(), "the click must be cancelled so the icon stays in place");
+            Assertions.assertEquals(1, deliver.deliveries().size(), "exactly one delivery must be recorded");
+            Assertions.assertEquals("ElytraRace", deliver.deliveries().get(0).taskName());
+            Assertions.assertNotSame(openInventory, player.getOpenInventory(), "the navigator must close after a click");
+        }
+    }
+
+    @DisplayName("Clicking Survival forwards to the Survival task and closes the inventory")
+    @Test
+    void clickingSurvivalForwardsToSurvival(Env env) {
+        RecordingDeliver deliver = new RecordingDeliver();
+        try (ModuleHarness harness = ModuleHarness.start(env, new NavigatorModule(deliver, slenderActive()))) {
+            Instance instance = env.createFlatInstance();
+            Player player = env.createPlayer(instance);
+            harness.items().equip(player);
+            AbstractInventory openInventory = openNavigator(env, player);
 
             InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(4));
             env.process().eventHandler().call(clickEvent);
 
-            Assertions.assertTrue(clickEvent.isCancelled(), "the click on a navigator entry must be cancelled so the item stays in place");
-            Assertions.assertEquals(1, deliver.deliveries().size(), "exactly one delivery must be recorded");
-            RecordingDeliver.Delivery delivery = deliver.deliveries().get(0);
-            Assertions.assertEquals(player, delivery.player());
-            Assertions.assertEquals("Survival", delivery.taskName(), "slot 4 must forward to Survival");
-            Assertions.assertNotSame(openInventory, player.getOpenInventory(), "the navigator must be closed after a click");
+            Assertions.assertTrue(clickEvent.isCancelled());
+            Assertions.assertEquals(1, deliver.deliveries().size());
+            Assertions.assertEquals("Survival", deliver.deliveries().get(0).taskName());
+            Assertions.assertNotSame(openInventory, player.getOpenInventory());
         }
     }
 
-    @DisplayName("An additional entry appears in the navigator (Parkour on slot 2)")
+    @DisplayName("Clicking Slender forwards to the cygnus task and closes the inventory")
     @Test
-    void additionalConfiguredEntryAppears(Env env) {
-        // A stand-in for an entry another module contributes through context.navigator().add(...)
-        // rather than through navigator.entries in application.yaml - built directly, the same way
-        // NavigatorModule itself builds a renderable entry once NavigatorEntryValidation#buildEntry
-        // has validated its plain configuration values.
-        NavigatorEntry parkour = new NavigatorEntry(2, ItemStack.of(Material.DIAMOND_PICKAXE), Component.text("Parkour"), "Parkour");
-        LobbyModule parkourModule = new LobbyModule() {
-
-            @Override
-            public String id() {
-                return "parkour";
-            }
-
-            @Override
-            public void enable(ModuleContext context) {
-                context.navigator().add(parkour);
-            }
-        };
-        try (ModuleHarness harness = ModuleHarness.start(env, (navigator, items) -> new LobbyModule[]{new NavigatorModule(new RecordingDeliver(), navigator, slenderActive()), parkourModule})) {
+    void clickingSlenderForwardsToCygnus(Env env) {
+        RecordingDeliver deliver = new RecordingDeliver();
+        try (ModuleHarness harness = ModuleHarness.start(env, new NavigatorModule(deliver, slenderActive()))) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             harness.items().equip(player);
-            ItemStack feather = player.getInventory().getItemStack(4);
+            AbstractInventory openInventory = openNavigator(env, player);
 
-            env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, feather, 0L));
+            InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(5));
+            env.process().eventHandler().call(clickEvent);
 
-            AbstractInventory openInventory = player.getOpenInventory();
-            Assertions.assertNotNull(openInventory);
-            Assertions.assertEquals(Material.DIAMOND_PICKAXE, openInventory.getItemStack(2).material(), "the additional Parkour entry must appear on slot 2");
+            Assertions.assertTrue(clickEvent.isCancelled());
+            Assertions.assertEquals(1, deliver.deliveries().size());
+            Assertions.assertEquals("cygnus", deliver.deliveries().get(0).taskName());
+            Assertions.assertNotSame(openInventory, player.getOpenInventory());
         }
     }
 
-    @DisplayName("An entry contributed by another module appears in the navigator and disappears once withdrawn")
+    @DisplayName("Clicking Creative forwards to the MemberBuild task and closes the inventory")
     @Test
-    void entryFromAnotherModuleAppearsAndDisappears(Env env) {
-        LobbyModule teaser = new LobbyModule() {
-
-            @Override
-            public String id() {
-                return "teaser";
-            }
-
-            @Override
-            public void enable(ModuleContext context) {
-                context.navigator().add(new NavigatorEntry(2, ItemStack.of(Material.ENDER_EYE), Component.text("Voyager"), "Voyager"));
-            }
-        };
-
-        try (ModuleHarness harness = ModuleHarness.start(env, (navigator, items) -> new LobbyModule[]{new NavigatorModule(new RecordingDeliver(), navigator, slenderActive()), teaser})) {
+    void clickingCreativeForwardsToMemberBuild(Env env) {
+        RecordingDeliver deliver = new RecordingDeliver();
+        try (ModuleHarness harness = ModuleHarness.start(env, new NavigatorModule(deliver, slenderActive()))) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             harness.items().equip(player);
-            ItemStack feather = player.getInventory().getItemStack(4);
+            AbstractInventory openInventory = openNavigator(env, player);
 
-            env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, feather, 0L));
-            Assertions.assertEquals(Material.ENDER_EYE, player.getOpenInventory().getItemStack(2).material(), "the teaser module's entry must appear on slot 2");
+            InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(8));
+            env.process().eventHandler().call(clickEvent);
 
-            // Simulates "the teaser module is disabled": ModuleContext#navigator()'s View removes a
-            // module's own entries through exactly this call once the owning module is disabled (see
-            // NavigatorEntries#forModule). Driven directly here, rather than through a second, partial
-            // ModuleRegistry#disableAll(), which would also tear down the navigator module itself.
-            harness.navigator().removeAll("teaser");
-            player.closeInventory();
-            env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, feather, 0L));
+            Assertions.assertTrue(clickEvent.isCancelled());
+            Assertions.assertEquals(1, deliver.deliveries().size());
+            Assertions.assertEquals("MemberBuild", deliver.deliveries().get(0).taskName());
+            Assertions.assertNotSame(openInventory, player.getOpenInventory());
+        }
+    }
 
-            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, player.getOpenInventory().getItemStack(2).material(), "slot 2 must fall back to blank glass once the teaser's entry is gone");
+    @DisplayName("Clicking a blank glass pane triggers no delivery and leaves the navigator open")
+    @Test
+    void clickingABlankSlotTriggersNoDeliveryAndKeepsTheNavigatorOpen(Env env) {
+        RecordingDeliver deliver = new RecordingDeliver();
+        try (ModuleHarness harness = ModuleHarness.start(env, new NavigatorModule(deliver, slenderActive()))) {
+            Instance instance = env.createFlatInstance();
+            Player player = env.createPlayer(instance);
+            harness.items().equip(player);
+            AbstractInventory openInventory = openNavigator(env, player);
+
+            InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(2));
+            env.process().eventHandler().call(clickEvent);
+
+            Assertions.assertTrue(deliver.deliveries().isEmpty(), "clicking a blank glass pane must not trigger a delivery");
+            Assertions.assertSame(openInventory, player.getOpenInventory(), "the navigator must stay open after clicking a blank slot");
         }
     }
 }

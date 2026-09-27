@@ -48,9 +48,8 @@ import net.onelitefeather.titan.common.observability.TitanObservability;
  * {@link #currentPlan()} (via {@link #equip(Player)}) may be called from either. Every read or
  * write
  * of {@link #registrations} - including the lookup {@link #dispatch} does before handing off to a
- * module's own handler - is {@code synchronized} on this instance, the same approach {@link
- * net.onelitefeather.titan.app.module.navigator.NavigatorEntries} takes, so a read during dispatch
- * never observes a registration or unregistration half-applied. A module's own handler itself runs
+ * module's own handler - is {@code synchronized} on this instance, so a read during dispatch never
+ * observes a registration or unregistration half-applied. A module's own handler itself runs
  * outside that lock, so a slow or reentrant handler cannot block a concurrent register() or
  * unregister(). The backing map stays a {@link LinkedHashMap} so {@link #currentPlan()} keeps
  * building {@link EquipPlan} in registration order.

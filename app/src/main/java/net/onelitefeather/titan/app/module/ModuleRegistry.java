@@ -28,10 +28,6 @@ import net.minestom.server.event.EventNode;
 import net.minestom.server.timer.Scheduler;
 import net.onelitefeather.titan.app.module.item.ItemPlacementConflictException;
 import net.onelitefeather.titan.app.module.item.ItemRegistry;
-import net.onelitefeather.titan.app.module.navigator.NavigatorConflictException;
-import net.onelitefeather.titan.app.module.navigator.NavigatorEntries;
-import net.onelitefeather.titan.common.feature.FeatureFlags;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,13 +45,9 @@ import org.slf4j.LoggerFactory;
  * <p>{@link #enableAll()} and {@link #disableAll()} share the same per-module enable and disable
  * steps ({@link #startModule}/{@link #stopModule}) rather than each having their own copy.
  *
- * <p>Once every module is up, {@link #enableAll()} validates the shared {@link ItemRegistry} and
- * {@link NavigatorEntries}, so two modules claiming the same item placement or navigator slot
- * aborts startup instead of silently shadowing one of them. See {@code design.md}, decisions 7 and
- * 8. If a {@link FeatureFlags} source was configured via {@link Builder#featureFlags}, that same
- * {@link NavigatorEntries} validation also checks every entry's optional feature flag - regardless
- * of which module contributed the entry - against it, aborting startup on an unknown name; see
- * {@code design.md}, decision 13.
+ * <p>Once every module is up, {@link #enableAll()} validates the shared {@link ItemRegistry}, so
+ * two modules claiming the same item placement aborts startup instead of silently shadowing one of
+ * them. See {@code design.md}, decision 7.
  *
  * <p>Built through {@link #builder()} rather than a public constructor, so a later wave can add
  * further platform services to the builder without breaking existing callers.
@@ -68,17 +60,14 @@ public final class ModuleRegistry {
     private final ModulePlatform platform;
     private final List<LobbyModule> modules;
     private final Map<String, ModuleContext> runningContexts = new LinkedHashMap<>();
-    private final @Nullable FeatureFlags featureFlags;
 
     private ModuleRegistry(Builder builder) {
         this.parent = builder.parent;
         Scheduler scheduler = builder.scheduler != null ? builder.scheduler : MinecraftServer.getSchedulerManager();
         CommandManager commandManager = builder.commandManager != null ? builder.commandManager : MinecraftServer.getCommandManager();
-        NavigatorEntries navigatorEntries = builder.navigatorEntries != null ? builder.navigatorEntries : new NavigatorEntries();
         ItemRegistry itemRegistry = builder.itemRegistry != null ? builder.itemRegistry : new ItemRegistry(this.parent);
-        this.platform = new ModulePlatform(scheduler, commandManager, itemRegistry, navigatorEntries);
+        this.platform = new ModulePlatform(scheduler, commandManager, itemRegistry);
         this.modules = List.copyOf(builder.modules);
-        this.featureFlags = builder.featureFlags;
     }
 
     /**
@@ -95,8 +84,8 @@ public final class ModuleRegistry {
      * that
      * module's context stops accepting new listeners.
      *
-     * <p>Once every module is enabled, validates the shared {@link ItemRegistry}, then the shared
-     * {@link NavigatorEntries}. Neither validation runs if a module's {@code enable} throws.
+     * <p>Once every module is enabled, validates the shared {@link ItemRegistry}. That validation
+     * does not run if a module's {@code enable} throws.
      *
      * @throws ModuleLifecycleException       if a module's {@code enable} throws; the exception
      *                                        names the failing module and carries the original
@@ -114,14 +103,6 @@ public final class ModuleRegistry {
      * @throws ItemPlacementConflictException if two modules registered an item for the same
      *                                        placement; thrown after every module has enabled, so
      *                                        the message can name both of them
-     * @throws NavigatorConflictException     if, once every module is enabled, two navigator
-     *                                        entries share a slot
-     * @throws IllegalArgumentException       if a {@link FeatureFlags} source was configured via
-     *                                        {@link Builder#featureFlags} and a navigator entry -
-     *                                        contributed by any module, not only through
-     *                                        configuration - names a feature that source does not
-     *                                        recognize; thrown after every module has enabled, so
-     *                                        the message can name the entry's origin module
      */
     public void enableAll() {
         for (LobbyModule module : this.modules) {
@@ -134,11 +115,6 @@ public final class ModuleRegistry {
             this.runningContexts.put(module.id(), context);
         }
         this.platform.items().validate();
-        if (this.featureFlags != null) {
-            this.platform.navigator().validate(this.featureFlags);
-        } else {
-            this.platform.navigator().validate();
-        }
     }
 
     /**
@@ -205,9 +181,7 @@ public final class ModuleRegistry {
         private EventNode<Event> parent;
         private Scheduler scheduler;
         private CommandManager commandManager;
-        private NavigatorEntries navigatorEntries;
         private ItemRegistry itemRegistry;
-        private @Nullable FeatureFlags featureFlags;
         private final List<LobbyModule> modules = new ArrayList<>();
 
         private Builder() {
@@ -249,18 +223,6 @@ public final class ModuleRegistry {
         }
 
         /**
-         * The registry every module's navigator entries are collected in, shared by all modules
-         * built from this registry. Defaults to a fresh, empty {@link NavigatorEntries}.
-         *
-         * @param navigatorEntries the navigator entry registry
-         * @return this builder
-         */
-        public Builder navigator(NavigatorEntries navigatorEntries) {
-            this.navigatorEntries = navigatorEntries;
-            return this;
-        }
-
-        /**
          * The platform-wide item registry modules register {@code LobbyItem}s through. Defaults to
          * a fresh {@link ItemRegistry} attached to {@code parent}.
          *
@@ -269,25 +231,6 @@ public final class ModuleRegistry {
          */
         public Builder items(ItemRegistry itemRegistry) {
             this.itemRegistry = itemRegistry;
-            return this;
-        }
-
-        /**
-         * The source of truth checked, once every module has been enabled, against every navigator
-         * entry's optional feature flag - see {@link NavigatorEntries#validate(FeatureFlags)},
-         * which
-         * this is handed to. Optional: if never set, {@link #enableAll()} still checks navigator
-         * entries for slot conflicts (via {@link NavigatorEntries#validate()}), but skips the
-         * feature-flag check entirely - so a test registry that never adds a feature-gated entry
-         * does not need to wire one up. The composition root ({@code Titan}) always sets this, with
-         * the same {@link FeatureFlags} instance a feature module such as {@code NavigatorModule}
-         * was itself built with.
-         *
-         * @param featureFlags the source of truth for which feature names exist
-         * @return this builder
-         */
-        public Builder featureFlags(FeatureFlags featureFlags) {
-            this.featureFlags = featureFlags;
             return this;
         }
 
