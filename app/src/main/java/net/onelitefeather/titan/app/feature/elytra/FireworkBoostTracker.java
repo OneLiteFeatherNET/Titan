@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.app.feature.elytra;
 
+import jakarta.inject.Singleton;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -40,15 +41,20 @@ import java.util.UUID;
  *
  * <h2>Where {@link #advance()} goes in a tick</h2>
  *
- * <p><strong>{@link ElytraModule} schedules {@link #advance()} once per tick through
- * {@code context.tasks()}.</strong> A tick that both starts a boost and advances it in the same
- * call would spend a tick of the burn before anything had observed it, and a boost configured for
- * 30 ticks would only ever run 29 - see {@link #requestBoost} and {@link #advance()}'s own
- * javadoc.
+ * <p><strong>{@link ElytraModule} schedules {@link #advance()} once per tick through the injected
+ * {@code Scheduler}.</strong> A tick that both starts a boost and advances it in the same call
+ * would spend a tick of the burn before anything had observed it, and a boost configured for 30
+ * ticks would only ever run 29 - see {@link #requestBoost} and {@link #advance()}'s own javadoc.
+ *
+ * <p>A {@code @Singleton} bean - not because two instances would behave any differently, but
+ * because {@link ElytraModule} and {@link ElytraLobbyItems#firework(FireworkBoostTracker)} must
+ * share the very same tracker: the module advances and clears it, the firework's use handler is
+ * the only thing that ever asks it for a boost.
  *
  * <p>Not thread-safe: every method must be called from the single thread driving the tick loop,
  * exactly as in Voyager.
  */
+@Singleton
 final class FireworkBoostTracker {
 
     private final Map<UUID, Burn> burnByPlayer = new HashMap<>();
