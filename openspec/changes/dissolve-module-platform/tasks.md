@@ -50,5 +50,5 @@ Pro Feature, test-first: bestehende Integrationstests auf direkten Aufbau umstel
 
 ## 5. Pull Request
 
-- [ ] 5.1 Pull Request auf `main` mit dem Titel `refactor(app)!: replace the lobby module platform with plain avaje beans`, englische Beschreibung, `BREAKING CHANGE:`-Footer aus proposal.md. Nachweis: PR-URL, CI grün.
+- [x] 5.1 Pull Request auf `main` mit dem Titel `refactor(app)!: replace the lobby module platform with plain avaje beans`, englische Beschreibung, `BREAKING CHANGE:`-Footer aus proposal.md. Nachweis: PR-URL, CI grün.
 - [ ] 5.2 Nach dem Merge archivieren, dabei den `## Purpose` von `lobby-modules` („Features sind Beans …“) und `lobby-hotbar` („Features stellen Items als Beans bereit …“) anpassen. Commit `docs(openspec): archive dissolve-module-platform`. Nachweis: `openspec validate --specs` ohne Fehler.
