@@ -1,7 +1,8 @@
 # Lobby-Features bauen
 
-Ein Lobby-Feature ist eine ganz normale [Avaje Inject](https://avaje.io/inject/)-Bean, kein
-eigener Plattformtyp mehr. Dieses Dokument erklärt den Aufbau, die Regeln für den Tick-Thread, den
+Ein Lobby-Feature ist eine ganz normale [Avaje Inject](https://avaje.io/inject/)-Bean in einer
+eigenen **Column** - einem eigenen Gradle-Modul unter `features/`. Dieses Dokument erklärt die
+Modul- und Varianten-Architektur, den Aufbau eines Features, die Regeln für den Tick-Thread, den
 Testaufbau ohne Harness und die Checkliste für ein neues Feature. Alle Codebeispiele stammen, wo
 nicht anders vermerkt, aus dem lauffähigen Vorlagefeature
 `apps/cloudnet/src/test/java/net/onelitefeather/titan/runtime/feature/example/` (`ExampleModule`,
@@ -9,6 +10,61 @@ nicht anders vermerkt, aus dem lauffähigen Vorlagefeature
 - kopierbar als Ausgangspunkt für ein echtes Feature. Es ist bewusst test-only, damit es nie als
 echtes Feature mitläuft: Avaje Inject prozessiert Annotationen nur für `src/main` (kein
 `testAnnotationProcessor`, s. `buildSrc/src/main/kotlin/titan.app-variant.gradle.kts`).
+
+## Module: Columns, `core`, `runtime`, App-Varianten
+
+```
+apps/cloudnet ─┐
+apps/local ────┼─▶ runtime ─▶ common ─▶ core
+               └─▶ features/* ──────────▶ core
+```
+
+- **`core`** enthält nur APIs, keine Implementierung: die Andockpunkte einer Column
+  (`net.onelitefeather.titan.core.module.FeatureNode`, `LobbySpawn`, `LobbyItem`, `ItemSlot`,
+  `ItemUseHandler`, `net.onelitefeather.titan.core.module.item.LobbyItems`), `FeatureFlags`,
+  `EntityDismountEvent`, `Cancelable` sowie `Deliver` (`net.onelitefeather.titan.api.deliver`).
+  Dazu kommen `testFixtures` - `TestTitanNode`, `DummyDeliver`, `EventListenerCounter` und die
+  geteilten ArchUnit-Regeln `ColumnArchitectureRules` (s. "Architekturregeln" unten).
+- **`features/<name>`** (Paket `net.onelitefeather.titan.feature.<name>`) ist eine Column: ein
+  eigenes Gradle-Modul, das die Convention `titan.column` anwendet und **nur** an `core` hängt -
+  nie an einer anderen Column, nie an `runtime` oder einer App-Variante. Die neun heutigen
+  Columns: `protection`, `spawn`, `respawn`, `navigator`, `sit`, `tickle`, `elytra`, `hotbar`
+  (Hotbar-/Ausrüstungsitems, `LobbyItems`-Implementierung) und `admin` (`/stop`, `/end`).
+- **`runtime`** ist der gemeinsame Starter: `TitanApplication` (`main`), `Titan` (baut den
+  `BeanScope`), `PlatformBeans`-Äquivalent (`runtime`s eigene `package-info.java` deklariert die
+  Plattform-Typen als `provides`), die Start-Logs, LuckPerms (`TitanPlayer`) und Butterfly.
+- **`apps/cloudnet`** (Produktion, mit AOT-Cache, veröffentlicht als `titan-cloudnet`) und
+  **`apps/local`** (Entwicklung, ohne AOT-Cache, nicht veröffentlicht) sind dünne
+  Assembly-Module: eigener Code nur als Querschnitts-Tests (`WiringTest`,
+  `NavigatorProtectionOrderingTest`, `StandardLoadoutTest`, ...), sonst nur eine
+  `build.gradle.kts`, die `titan.app-variant` anwendet.
+- **`settings.gradle.kts`** bindet `features/*` und `apps/*` per Verzeichnis-Scan ein - jedes
+  Unterverzeichnis mit eigener `build.gradle.kts` wird automatisch ein Projekt. Eine neue Column
+  oder eine neue Variante braucht dafür keine Änderung an `settings.gradle.kts`.
+
+### App-Varianten
+
+`titan.app-variant` (Convention-Plugin in `buildSrc`) hängt eine Variante standardmäßig an
+`runtime` und an **jede** Column unter `features/*`. Eine Variante lässt einzelne Columns über
+`titanVariant { exclude("<name>") }` weg - z. B. in `apps/local/build.gradle.kts`, falls eine
+Entwicklungsvariante künftig eine Column nicht mitbringen soll. Heute enthalten `apps/cloudnet`
+und `apps/local` dieselben Columns. Die Liste der Columns einer Variante steht damit an genau
+einer Stelle (dem Verzeichnis-Scan in `settings.gradle.kts`), nicht pro Variante gepflegt.
+
+`titan.app-variant` erzeugt außerdem:
+
+- den Shadow-Jar `titan-<variantname>.jar` (z. B. `titan-cloudnet.jar`, `titan-local.jar`) mit
+  `mergeServiceFiles()` und einer auf `META-INF/services/**` beschränkten
+  `duplicatesStrategy = DuplicatesStrategy.INCLUDE` - ohne die zweite Einstellung wirft Shadows
+  eigener Default (`DuplicatesStrategy.EXCLUDE`) jede doppelte `META-INF/services/...`-Datei schon
+  *vor* dem Merge-Transformer weg, und nur eine Column würde im Jar landen (s. "Wie eine Column
+  Plattform-Beans bekommt" unten);
+- `META-INF/titan/variant.properties` mit dem Variantennamen und der Liste der erwarteten
+  Avaje-Modulnamen (s. "Erwartete Columns einer Variante" unten);
+- die zusammengeführte `application.yaml` sowie `application.example.yaml` in der Distribution
+  (s. "Standardwerte je Column" unten);
+- bei `titanVariant { aotCache.set(true) }` (nur `apps/cloudnet`) den AOT-Cache
+  `titan-<variantname>.aot`.
 
 ## Aufbau eines Features
 
@@ -37,16 +93,16 @@ public final class TickleModule {
 }
 ```
 
-(`app/src/main/java/net/onelitefeather/titan/app/feature/tickle/TickleModule.java`)
+(`features/tickle/src/main/java/net/onelitefeather/titan/feature/tickle/TickleModule.java`)
 
 - Der Avaje-Container ruft `@PostConstruct` beim Aufbau des `BeanScope` auf - also bevor ein
   Spieler die Lobby erreichen kann - und `@PreDestroy` beim Schließen des `BeanScope`
   (`Titan#initialize` schedult `beanScope::close` als Shutdown-Task). Es gibt keinen separaten
   Enable-/Disable-Schritt außerhalb des Bean-Lebenszyklus mehr.
-- `FeatureNode.attach(parent, featureId, priority)` legt den Feature-eigenen Event-Node an,
-  registriert ihn beim geteilten `titan`-Node und setzt seine Priorität. `on(type, listener)`
-  registriert einen Listener, gekapselt in `TitanObservability.guard(featureId, listener)`, damit
-  ein Fehler dem Feature und - falls vorhanden - dem Spieler zugeordnet wird.
+- `FeatureNode.attach(parent, featureId, priority)` (in `core`) legt den Feature-eigenen
+  Event-Node an, registriert ihn beim geteilten `titan`-Node und setzt seine Priorität. `on(type,
+  listener)` registriert einen Listener, gekapselt in `ListenerGuard.guard(featureId, listener)`,
+  damit ein Fehler dem Feature und - falls vorhanden - dem Spieler zugeordnet wird.
   `onIncludingCancelled(type, listener)` liefert das Event auch, wenn es beim Erreichen des
   Feature-Node schon abgebrochen ist (Minestoms Standardverhalten für einen `Consumer`-Listener
   überspringt ein bereits abgebrochenes `CancellableEvent` sonst). Kein heutiges Feature braucht
@@ -61,25 +117,19 @@ public final class TickleModule {
   `SpawnModule(Instance, LobbySpawn, EventNode, LobbyItems)`). `@Inject` braucht nur eine Klasse
   mit **mehr als einem** Konstruktor (s. `TickleModule`, dessen echter Konstruktor `@Inject
   TickleModule(EventNode, Clock)` trägt).
-- Ein Feature-Paket unter `app/feature/<name>` folgt einer festen Sichtbarkeit (s.
-  `ArchitectureTest`, unten): nur die Klasse `<Name>Module` ist `public`, alles andere - Handler,
-  Item-Factory, Tags, paketprivate Prüffunktionen - ist paketprivat. Avaje Inject generiert seine
-  Verdrahtung in derselben Package wie die annotierte Klasse, braucht also nirgends eine `public`
-  Item-Factory. Geprüft wird das nur für Produktionscode unter `app/src/main` - das test-only
-  Vorlagefeature läuft mit `ImportOption.DoNotIncludeTests` nicht mit.
 
 ## Gefunden werden: `@Singleton` genügt
 
 Es gibt keine zentrale Feature-Liste. `Titan` baut im Konstruktor `BeanScope.builder().build()` -
-das allein reicht, damit jedes `@Singleton`-Feature gebaut und über sein `@PostConstruct`
-gestartet wird. Fehlt `@Singleton` an einer Klasse mit `@PostConstruct`, wird sie nie gebaut und
-ihr `start()` läuft nie - `AppFeatureColumnArchitectureTest#classesWithPostConstructAreSingleton`
-(bzw. je Column deren eigener `ColumnArchitectureTest`) lässt den Build in diesem Fall
-fehlschlagen.
+das allein reicht, damit jedes `@Singleton`-Feature aus jeder in die Variante eingebundenen Column
+gebaut und über sein `@PostConstruct` gestartet wird. Fehlt `@Singleton` an einer Klasse mit
+`@PostConstruct`, wird sie nie gebaut und ihr `start()` läuft nie -
+`ColumnArchitectureRules.CLASSES_WITH_POST_CONSTRUCT_ARE_SINGLETON`, angewendet über den
+`ColumnArchitectureTest` jeder Column, lässt den Build in diesem Fall fehlschlagen.
 
 **Die Reihenfolge, in der zwei Features dasselbe Event verarbeiten, legt `EVENT_PRIORITY` fest**,
-nicht mehr eine Startreihenfolge - Minestoms `EventNode#setPriority(int)` ordnet Geschwisterknoten.
-Die heutigen sieben Features, in Hunderterschritten mit Platz dazwischen:
+nicht eine Startreihenfolge - Minestoms `EventNode#setPriority(int)` ordnet Geschwisterknoten. Die
+heutigen neun Features, in Hunderterschritten mit Platz dazwischen:
 
 | Feature | `EVENT_PRIORITY` |
 |---|---|
@@ -91,10 +141,15 @@ Die heutigen sieben Features, in Hunderterschritten mit Platz dazwischen:
 | tickle | 600 |
 | elytra | 700 |
 
-Ein neues Feature wählt eine freie Zahl aus der Lücke. Eindeutigkeit ist kein ArchUnit-Test,
+(`hotbar` und `admin` reagieren nicht über einen eigenen Feature-Node auf ein Event, das mit einem
+anderen Feature kollidieren könnte, und tragen deshalb kein `EVENT_PRIORITY`.)
+
+Ein neues Feature wählt eine freie Zahl aus der Lücke. Eindeutigkeit ist **kein Build-Test**,
 sondern eine Startlaufzeit-Prüfung: `FeatureNode.attach(parent, featureId, priority)` wirft eine
 `IllegalStateException`, sobald `parent` bereits ein Kind mit derselben `priority` hat, und nennt
-darin beide Feature-Ids sowie die kollidierende Position.
+darin beide Feature-Ids sowie die kollidierende Position. Diese Prüfung ersetzt eine frühere
+Bytecode-Prüfung über ein einziges Modul - die geht nicht mehr, weil seit der Column-Architektur
+keine Column mehr alle anderen Columns kennt (jede Column sieht beim Kompilieren nur `core`).
 
 **Fehlt eine Konstruktor-Abhängigkeit ganz** (kein passender `@Bean`/`@Singleton` im Scope), bricht
 `BeanScope.builder().build()` mit einer Exception ab, die den fehlenden Typ nennt - noch bevor ein
@@ -103,25 +158,27 @@ Spieler verbinden kann. `TitanApplication.main` fängt jede `RuntimeException`/`
 Prozess mit Exit-Code 1.
 
 Sind alle Features gestartet, loggt `Titan`s Konstruktor einmal die tatsächliche
-Startreihenfolge auf INFO-Level: `Lobby features started in event order: {}` (siehe
-`app/.../bootstrap/FeatureStartupLog`). Die Liste kommt nicht aus einer gepflegten Feature-Liste,
-sondern aus den Kindknoten des `titan`-Knotens selbst, aufsteigend nach `EventNode#getPriority()`
-sortiert - dieselbe Reihenfolge wie die Tabelle oben.
+Startreihenfolge auf INFO-Level: `Lobby features started in event order: {}` (s.
+`runtime/src/main/java/net/onelitefeather/titan/runtime/bootstrap/FeatureStartupLog.java`). Die
+Liste kommt nicht aus einer gepflegten Feature-Liste, sondern aus den Kindknoten des
+`titan`-Knotens selbst, aufsteigend nach `EventNode#getPriority()` sortiert - dieselbe Reihenfolge
+wie die Tabelle oben. Direkt davor prüft `VariantStartupCheck` (s. "Erwartete Columns einer
+Variante" unten), dass alle für diese Variante erwarteten Columns tatsächlich geladen wurden.
 
-Welche Plattform-Dienste als Bean zur Verfügung stehen, steht in
-`app/src/main/java/net/onelitefeather/titan/app/bootstrap/PlatformBeans.java` (`@Factory` mit
-einer `@Bean`-Methode je Dienst: `InstanceContainer`, `MapProvider`, `LobbySpawn`, `Deliver`, der
-`@Named("titan")`-qualifizierte `EventNode<Event>`, `FeatureFlags`, `Clock`, `Scheduler`).
-`LobbyItems` ist selbst eine `@Singleton`-Bean im Paket `app.module.item` (s. unten). Braucht ein
-neues Feature einen **neuen** geteilten Dienst, der im Kern ein Plattformtyp aus `common` oder
-Minestom ist, kommt eine weitere `@Bean`-Methode in dieselbe `PlatformBeans`-Factory dazu; trägt er
-selbst feature-übergreifende Logik, wird er eine eigene `@Singleton`-Klasse, die betroffene
-Features per Konstruktor anfordern.
+Welche Plattform-Dienste als Bean zur Verfügung stehen, steht in `runtime`s eigener
+`package-info.java` (`@InjectModule(provides = {...})`): `InstanceContainer`, `MapProvider` (aus
+`common`), `LobbySpawn`, `Deliver`, der `@Named("titan")`-qualifizierte `EventNode<Event>`,
+`FeatureFlags`, `Clock`, `Scheduler`, `CommandManager`. `LobbyItems` ist selbst eine
+`@Singleton`-Bean, implementiert in der Column `features/hotbar` (s. unten). Braucht ein neues
+Feature einen **neuen** geteilten Dienst, der im Kern ein Plattformtyp aus `common` oder Minestom
+ist, kommt eine weitere `@Bean`-Methode in `runtime`s Plattform-Factory dazu; trägt er selbst
+feature-übergreifende Logik, wird er eine eigene `@Singleton`-Klasse, die betroffene Features per
+Konstruktor anfordern.
 
 ## Items als Beans: `LobbyItem`, `@Factory`, `LobbyItems`
 
-Ein Hotbar- oder Ausrüstungsitem meldet ein Feature nicht mehr über einen Kontext an, sondern
-stellt es als `@Bean LobbyItem` in einer eigenen, paketprivaten `@Factory`-Klasse bereit:
+Ein Hotbar- oder Ausrüstungsitem meldet ein Feature nicht über einen Kontext an, sondern stellt es
+als `@Bean LobbyItem` in einer eigenen, paketprivaten `@Factory`-Klasse bereit:
 
 ```java
 @Factory
@@ -136,20 +193,21 @@ final class NavigatorItems {
 }
 ```
 
-(`app/src/main/java/net/onelitefeather/titan/app/feature/navigator/NavigatorItems.java`)
+(`features/navigator/src/main/java/net/onelitefeather/titan/feature/navigator/NavigatorItems.java`)
 
-Die Plattform-Bean `LobbyItems` (`app/src/main/java/net/onelitefeather/titan/app/module/item/`)
-bekommt jedes `LobbyItem` per Listen-Injektion (`List<LobbyItem>`), stempelt es mit dem
-Identitäts-Tag `LobbyItems.IDENTITY_TAG` und dispatcht ein einziges `PlayerUseItemEvent` am
-`titan`-Node an den passenden `onUse`-Handler - ein Feature braucht dafür keinen eigenen Listener.
-Zwei Items mit demselben `key()` oder demselben festen `ItemSlot` (`hotbar(0..8)` oder
-`equipment(EquipmentSlot)`) lassen den `LobbyItems`-Konstruktor mit `IllegalStateException`
-abbrechen, die beide Items nennt; `ItemSlot.unplaced()` (z. B. das Elytra-Feuerwerk, das nur
-während des Fliegens in der Nebenhand liegt) ist davon ausgenommen. `LobbyItems#equip(player)`
-räumt das Inventar und setzt alle Items mit festem Platz - das rufen Spawn- und Respawn-Feature auf
-(`LobbyItems#equip`), nicht jedes Feature selbst; `LobbyItems#stack(key)` gibt den gestempelten
-Stack für ein unplatziertes Item heraus, das ein Feature selbst aushändigt (`ElytraModule`s
-Feuerwerk).
+Die `LobbyItems`-Implementierung (Column `features/hotbar`,
+`net.onelitefeather.titan.feature.hotbar.HotbarLobbyItems`, gegen die Schnittstelle
+`net.onelitefeather.titan.core.module.item.LobbyItems` aus `core`) bekommt jedes `LobbyItem` per
+Listen-Injektion (`List<LobbyItem>`), stempelt es mit dem Identitäts-Tag `LobbyItems.IDENTITY_TAG`
+und dispatcht ein einziges `PlayerUseItemEvent` am `titan`-Node an den passenden `onUse`-Handler -
+ein Feature braucht dafür keinen eigenen Listener. Zwei Items mit demselben `key()` oder demselben
+festen `ItemSlot` (`hotbar(0..8)` oder `equipment(EquipmentSlot)`) lassen den
+`HotbarLobbyItems`-Konstruktor mit `IllegalStateException` abbrechen, die beide Items nennt;
+`ItemSlot.unplaced()` (z. B. das Elytra-Feuerwerk, das nur während des Fliegens in der Nebenhand
+liegt) ist davon ausgenommen. `LobbyItems#equip(player)` räumt das Inventar und setzt alle Items
+mit festem Platz - das rufen Spawn- und Respawn-Feature auf, nicht jedes Feature selbst;
+`LobbyItems#stack(key)` gibt den gestempelten Stack für ein unplatziertes Item heraus, das ein
+Feature selbst aushändigt (`ElytraModule`s Feuerwerk).
 
 Der Navigator ist der einzige Sonderfall ohne Andockpunkt: Seine vier Ziele stehen fest im
 package-privaten `enum Destination` (s. `openspec/changes/navigator-entries-in-code/design.md`).
@@ -165,9 +223,9 @@ einen eigenen Andockpunkt:
 this.task = this.scheduler.scheduleTask(this.boosts::advance, TaskSchedule.tick(1), TaskSchedule.tick(1));
 ```
 
-(`app/src/main/java/net/onelitefeather/titan/app/feature/elytra/ElytraModule.java`, `start()`).
-`stop()` bricht ihn **nach** `node.close()` ab (s. oben, "Aufbau eines Features") - erst der
-Event-Node weg, dann der Task.
+(`features/elytra/src/main/java/net/onelitefeather/titan/feature/elytra/ElytraModule.java`,
+`start()`). `stop()` bricht ihn **nach** `node.close()` ab (s. oben, "Aufbau eines Features") -
+erst der Event-Node weg, dann der Task.
 
 ## Konfiguration lesen: die statische Fassade `Config`
 
@@ -192,9 +250,10 @@ long cooldownMillis = Config.getAs(TickleSettings.COOLDOWN_KEY, TickleSettings::
   dient sie direkt als `getAs`-Funktion (`TickleSettings.cooldownMillis(String)`); für eine Prüfung
   über mehrere Felder (`spawn.minHeight`/`maxHeight`) oder eine, die nicht über `getAs` läuft
   (`sit.allowedBlocks`), nennt sie den vollen Schlüssel selbst.
-- **Standardwerte gehören in `application.yaml`**, nicht in den Code - ein Feature liest ohne
-  eigenen Fallback (`Config.get(key)`, nicht `Config.get(key, "…")`). Fehlt ein Schlüssel, bricht
-  der Start mit `Missing required configuration parameter [key]` ab.
+- **Standardwerte gehören in die Column-eigene `titan/defaults/<column>.yaml`** (s. "Standardwerte
+  je Column" unten), nicht in den Code - ein Feature liest ohne eigenen Fallback (`Config.get(key)`,
+  nicht `Config.get(key, "…")`). Fehlt ein Schlüssel, bricht der Start mit `Missing required
+  configuration parameter [key]` ab.
 
 **Ein zweites Mal am Gebrauchsort**, für jeden Wert, der sich zur Laufzeit ändern soll (heute jeder
 Wert von tickle, sit, elytra und spawn): direkt über `Config.<Methode>(key)`, ohne erneute Prüfung
@@ -209,6 +268,53 @@ Es gibt seit `dissolve-module-platform` keine Bindung an ein Config-Record und k
 Neuladen der Konfiguration zur Laufzeit (avaje-configs Dateiüberwachung, s. README, Abschnitt
 "Runtime reloading") nichts Eigenes zu tun: Der geänderte Wert gilt beim nächsten Lesevorgang, ohne
 Abschalten oder erneutes `start()`.
+
+## Standardwerte je Column
+
+Jede konfigurierbare Column liefert ihre eigenen Standardwerte als
+`src/main/resources/titan/defaults/<column>.yaml`, kommentiert, mit genau ihrem Abschnitt (z. B.
+`features/spawn/src/main/resources/titan/defaults/spawn.yaml` mit dem Abschnitt `spawn`;
+`navigator` liefert den Abschnitt `features` mit allen `NAVIGATOR_*`-Flags). `runtime` liefert
+`runtime/src/main/resources/titan/defaults/runtime.yaml` (`config.watch.*`). Eine Column ohne
+eigene Konfiguration (`protection`, `respawn`, `hotbar`, `admin`) liefert keine Default-Datei.
+
+Beim Bauen einer App-Variante verkettet `titan.app-variant`s `MergeApplicationDefaultsTask` alle
+`titan/defaults/*.yaml`-Dateien von `runtime` und jeder in die Variante eingebundenen Column
+(sortiert nach Dateiname) zu einer klassenpfad-`application.yaml` - das ist derselbe Mechanismus,
+der auch die per-Column `application-test.yaml` einer einzelnen Column für ihre eigenen Tests
+erzeugt (`titan.column`s `mergeTestDefaults`-Task). Die Dateien werden **verkettet, nicht tief
+zusammengeführt** - Kommentare für Betreiber bleiben dadurch erhalten. Davor prüft
+`DefaultsMerger`/`DefaultsMergerTask` (SnakeYAML mit `allowDuplicateKeys=false`, flach gemacht auf
+Punkt-Schlüssel), ob zwei Dateien denselben Schlüssel setzen - dann schlägt der Build fehl, mit
+einer Meldung, die beide Dateien und den Schlüssel nennt (`DefaultsConflictException`). Ein
+Top-Level-Abschnitt (z. B. `features`) darf deshalb nur in einer Datei einer Variante stehen.
+
+Die zusammengeführte Datei wird zusätzlich, unverändert, als `application.example.yaml` in die
+Distribution kopiert, damit ein Betreiber eine kommentierte Kopie neben dem Jar hat; geladen wird
+sie nicht - die shipped Defaults kommen aus der klassenpfad-`application.yaml` im Jar selbst. Die
+Rangfolge aus `lobby-module-config` (Shipped-Default < `application.yaml` < Profil < externe Datei
+< Umgebungsvariable < System-Property) bleibt dadurch unverändert gültig.
+
+## Erwartete Columns einer Variante
+
+`titan.app-variant` schreibt beim Bauen die Avaje-Modulnamen aller in eine Variante eingebundenen
+Columns (`<name>Column`) in die Ressource `META-INF/titan/variant.properties`
+(`name=<variantname>`, `modules=<kommagetrennte Liste>`). `Titan`s Konstruktor ruft direkt nach dem
+Aufbau des `BeanScope` `net.onelitefeather.titan.runtime.variant.VariantStartupCheck.verify(...)`
+auf: Sie liest `variant.properties` über den Classloader, vergleicht die erwartete Liste mit den
+tatsächlich geladenen Avaje-Modulen (`LoadedModules.discover`) und wirft eine
+`IllegalStateException` mit den fehlenden Modulnamen, falls eine erwartete Column nicht geladen
+wurde. `TitanApplication.main` fängt diese Exception wie jeden anderen Startfehler ab und beendet
+den Prozess. Sind alle Columns geladen, loggt die Prüfung einmal auf INFO:
+
+```
+Variant {} started with modules {}
+```
+
+Diese Zeile kommt **vor** `Lobby features started in event order: {}` und ersetzt keine bestehende
+Log-Zeile. Ein Modul, das `mergeServiceFiles()` beim Shaden verliert (s. "Wie eine Column
+Plattform-Beans bekommt" unten), führt so zu einem klaren Startabbruch statt zu einer Lobby, die
+still ohne ein Feature läuft.
 
 ## Regeln für den Tick-Thread
 
@@ -258,22 +364,22 @@ try (TestTitanNode titan = TestTitanNode.attach(env)) {
 }
 ```
 
-`net.onelitefeather.titan.app.testutils.TestTitanNode` (s. `ProtectionModuleTest`, `SpawnModuleTest`,
-`TickleModuleTest`, `ElytraFixture`, `NavigatorFixture`) hängt einen frisch benannten Node unter
-`env.process().eventHandler()` und hebt ihn beim `close()` wieder ab - genau das, was
-`PlatformBeans` in Produktion tut, ohne den `BeanScope`. Ein Feature mit eigenen Items baut daneben
-eine eigene `LobbyItems`-Instanz aus den Items, die dessen `@Factory`-Klasse liefert (s.
-`SpawnModuleTest`, `ElytraFixture`). Ein Test, der prüft, dass nach `stop()` keines der Events mehr
-Code des Features auslöst, ist Pflicht für jedes Feature (s. `SpawnModuleTest#stopLeavesNoListenerBehind`
-u. Ä.).
+`net.onelitefeather.titan.core.testfixtures.TestTitanNode` (aus `core`s `testFixtures`, s.
+`ProtectionModuleTest`, `SpawnModuleTest`, `TickleModuleTest`, `ElytraFixture`,
+`NavigatorFixture`) hängt einen frisch benannten Node unter `env.process().eventHandler()` und
+hebt ihn beim `close()` wieder ab - genau das, was `runtime` in Produktion tut, ohne den
+`BeanScope`. Ein Feature mit eigenen Items baut daneben eine eigene `LobbyItems`-Instanz aus den
+Items, die dessen `@Factory`-Klasse liefert (s. `SpawnModuleTest`, `ElytraFixture`). Ein Test, der
+prüft, dass nach `stop()` keines der Events mehr Code des Features auslöst, ist Pflicht für jedes
+Feature (s. `SpawnModuleTest#stopLeavesNoListenerBehind` u. Ä.).
 
 ### Oben: der echte `BeanScope`
 
 Ein Test, der die reale Verdrahtung mehrerer Features zusammen prüft (z. B. dass ein
 Navigator-Klick trotz `ProtectionModule`s Abbruch weiterleitet), baut den echten `BeanScope` -
-`app/src/test/java/net/onelitefeather/titan/app/bootstrap/WiringTest.java`,
-`NavigatorProtectionOrderingTest`, `StandardLoadoutTest` (alle in `app.bootstrap`, neben der
-Kompositionswurzel, nicht in einem einzelnen Feature-Paket):
+`apps/cloudnet/src/test/java/net/onelitefeather/titan/runtime/bootstrap/WiringTest.java`,
+`NavigatorProtectionOrderingTest`, `StandardLoadoutTest` (alle Querschnitts-Tests einer Variante,
+nicht in einem einzelnen Feature-Paket):
 
 ```java
 BeanScope scope = BeanScope.builder().forTesting()
@@ -289,9 +395,9 @@ try {
 `BeanScope.builder().forTesting().mock(Type)` registriert vor dem Aufbau einen Mockito-Mock für
 Typen, die die Filesystem oder eine statische Fassade berühren (`MapProvider`, `FeatureFlags`) -
 jede generierte `@Bean`-Methode prüft, ob ihr Typ schon geliefert wurde, bevor sie ihn selbst baut.
-Jedes andere Bean (alle sieben Features, `LobbyItems`, `Deliver`, `Clock`, `Scheduler`) wird exakt
-so gebaut wie in Produktion. `.bean(Type, instance)` liefert statt eines Mocks eine echte
-Testinstanz (z. B. einen aufzeichnenden `Deliver`).
+Jedes andere Bean (alle Features, `LobbyItems`, `Deliver`, `Clock`, `Scheduler`) wird exakt so
+gebaut wie in Produktion. `.bean(Type, instance)` liefert statt eines Mocks eine echte Testinstanz
+(z. B. einen aufzeichnenden `Deliver`).
 
 Item-Dispatch wird über ein direkt gefeuertes `PlayerUseItemEvent` getestet, Chat-Ausgaben über
 `TestConnection#trackIncoming(SystemChatPacket.class)`. `Collector#collect()` (und die
@@ -299,37 +405,53 @@ Item-Dispatch wird über ein direkt gefeuertes `PlayerUseItemEvent` getestet, Ch
 einen Test mit mehreren Aktionen deshalb erst alle Events feuern und danach genau einmal
 `collect()` aufrufen.
 
-## Architekturregeln (ArchUnit)
+## Architekturregeln
 
-`app/src/test/java/net/onelitefeather/titan/app/architecture/ArchitectureTest` und
-`AppFeatureColumnArchitectureTest` (wendet `core`s `ColumnArchitectureRules`-Testfixtures auf
-`..app.feature..` an) prüfen im Build, nicht nur per Konvention:
+Ein Teil der früheren ArchUnit-Regeln ist mit der Column-Architektur überflüssig geworden, weil
+die Modulstruktur sie schon beim Kompilieren erzwingt: "Features hängen nicht voneinander ab" und
+"Plattform hängt nicht an Features" gelten automatisch, weil eine Column nur `core` als
+Abhängigkeit deklariert und deshalb keinen Code einer anderen Column oder von `runtime` überhaupt
+sehen kann. Die Regel "nur `*Module` ist in einer Column public" ist ebenfalls entfallen - eine
+fremde Column sieht ohnehin nichts, und `runtime` findet eine Column nur über Avajes eigene
+Modul-Discovery, nicht über einen öffentlichen Typ.
 
-1. Feature-Pakete unter `..app.feature.(*)..` hängen nicht voneinander ab.
-2. Klassen in `..app.module..` und `..titan.common..` hängen nicht von `..app.feature..` ab.
-3. In `..app.feature..` ist nur `*Module` `public`, dazu die von Avaje Inject generierten
-   `$DI`-Klassen.
-4. Klassen in `..app.feature..` rufen `EventNode#addListener`/`#addChild` oder
-   `MinecraftServer#getGlobalEventHandler()` nie direkt auf - nur über `FeatureNode`
-   (`ColumnArchitectureRules.FEATURES_REGISTER_LISTENERS_ONLY_THROUGH_FEATURE_NODE`).
-5. Jede Klasse in `..app.feature..` mit einer `@PostConstruct`-Methode trägt `@Singleton`
-   (`ColumnArchitectureRules.CLASSES_WITH_POST_CONSTRUCT_ARE_SINGLETON`).
-6. Kein Feature-Code hängt von `io.avaje.inject.BeanScope` ab - Abhängigkeiten kommen
-   ausschließlich über den Konstruktor
-   (`ColumnArchitectureRules.FEATURE_MODULES_DO_NOT_USE_BEAN_SCOPE`).
-7. `..app.feature.navigator..` hängt nicht von `io.avaje.config..` ab.
-8. `..app.module..` (die Plattform) hängt nicht von `..app.bootstrap..` (der Kompositionswurzel)
-   ab.
+Die verbleibenden, geteilten Regeln laufen als `ColumnArchitectureRules`
+(`core`s `testFixtures`, `net.onelitefeather.titan.core.testfixtures.architecture`) - jede Column
+hat einen kleinen `ColumnArchitectureTest`, der sie per `@ArchTest` auf ihr eigenes Paket anwendet:
+
+```java
+@AnalyzeClasses(packages = "net.onelitefeather.titan.feature.protection", importOptions = ImportOption.DoNotIncludeTests.class)
+class ColumnArchitectureTest {
+    @ArchTest
+    static final ArchRule featuresRegisterListenersOnlyThroughFeatureNode = ColumnArchitectureRules.FEATURES_REGISTER_LISTENERS_ONLY_THROUGH_FEATURE_NODE;
+    @ArchTest
+    static final ArchRule classesWithPostConstructAreSingleton = ColumnArchitectureRules.CLASSES_WITH_POST_CONSTRUCT_ARE_SINGLETON;
+    @ArchTest
+    static final ArchRule featureModulesDoNotUseBeanScope = ColumnArchitectureRules.FEATURE_MODULES_DO_NOT_USE_BEAN_SCOPE;
+}
+```
+
+Die drei geteilten Regeln:
+
+1. Eine Klasse ruft `EventNode#addListener`/`#addChild` oder
+   `MinecraftServer#getGlobalEventHandler()` nie direkt auf - nur über `FeatureNode`.
+2. Jede Klasse mit einer `@PostConstruct`-Methode trägt `@Singleton`.
+3. Kein Feature-Code hängt von `io.avaje.inject.BeanScope` ab - Abhängigkeiten kommen
+   ausschließlich über den Konstruktor.
+
+`features/navigator`s `ColumnArchitectureTest` fügt eine eigene, vierte Regel hinzu:
+`..feature.navigator..` hängt nicht von `io.avaje.config..` ab, weil die Ziele des Navigators fest
+im Code stehen, nicht aus Konfiguration gelesen werden.
 
 Die Eindeutigkeit von `EVENT_PRIORITY` ist keine ArchUnit-Regel, sondern eine
 Startlaufzeit-Prüfung in `FeatureNode.attach` (s. oben, "Gefunden werden: `@Singleton` genügt").
 
 ## Wie eine Column Plattform-Beans bekommt
 
-Ab der Column-Architektur (`openspec/changes/split-titan-into-columns`) hängt eine Column nur an
-`core`, nie an `:app` (später `runtime`). Beans wie den geteilten `@Named("titan") EventNode<Event>`
-sieht sie beim Kompilieren also nicht - ein Fall, den der Spike an `features/protection` klärt
-(design.md, Entscheidung D2). Die drei Spike-Fragen und ihre Antworten:
+Eine Column hängt nur an `core`, nie an `runtime`. Beans wie den geteilten
+`@Named("titan") EventNode<Event>` sieht sie beim Kompilieren also nicht - ein Fall, den der Spike
+an `features/protection` geklärt hat (design.md, Entscheidung D2). Die drei Spike-Fragen und ihre
+Antworten:
 
 1. **Passt `requires` mit dem qualifizierten, generischen `EventNode<Event>` zur Übersetzung?**
    Nein, nicht mit der einfachen `Class<?>`-Form. `@InjectModule(requires = {EventNode.class})`
@@ -348,38 +470,36 @@ sieht sie beim Kompilieren also nicht - ein Fall, den der Spike an `features/pro
    ```java
    @InjectModule(requires = {EventNode.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"})
    ```
-   Spiegelbildlich braucht `:app` (später `runtime`) nur die einfache Form -
+   Spiegelbildlich braucht `runtime` nur die einfache Form -
    `@InjectModule(provides = {EventNode.class})` -, weil es die Bean selbst definiert und keine
    eigene Übersetzungsprüfung dafür braucht. `provides` **und** `providesString` zusammen auf
    diesem (unbenannten) Standard-Scope-Modul auszuprobieren, hat in avaje-inject-generator 12.7
-   einen Codegen-Fehler ausgelöst: Im generierten `AppModule` fehlte das Komma zwischen den beiden
+   einen Codegen-Fehler ausgelöst: Im generierten Modul fehlte das Komma zwischen den beiden
    Attributen, ein nicht mehr übersetzbares `@InjectModule(provides = {...}providesString =
    {...})`. Einen entsprechenden Fehlerbericht an avaje-inject sollte ein Folge-Change einreichen.
 
-2. **Wie liest eine spätere Welle (D5) den Modulnamen, ohne dass er mit der Klasse `ProtectionModule`
-   kollidiert?** Über `@InjectModule(name = "protectionColumn", ...)` - ein expliziter, von der
-   Bean-Klasse verschiedener Name. Der Annotationsprozessor generiert daraus die Modulklasse
+2. **Wie liest die Startprüfung (s. "Erwartete Columns einer Variante" oben) den Modulnamen, ohne
+   dass er mit der Klasse `ProtectionModule` kollidiert?** Über
+   `@InjectModule(name = "protectionColumn", ...)` - ein expliziter, von der Bean-Klasse
+   verschiedener Name. Der Annotationsprozessor generiert daraus die Modulklasse
    `ProtectionColumnModule` (Name plus `Module`-Suffix), registriert unter
-   `META-INF/services/io.avaje.inject.spi.InjectExtension`. D5 liest also nicht "gibt es eine Bean
-   `ProtectionModule`", sondern vergleicht die erwartete Liste von Column-Namen (`"protectionColumn"`,
-   ...) gegen das, was beim Aufbau des `BeanScope` tatsächlich geladen wurde.
+   `META-INF/services/io.avaje.inject.spi.InjectExtension`. Die Startprüfung liest also nicht "gibt
+   es eine Bean `ProtectionModule`", sondern vergleicht die erwartete Liste von Column-Namen
+   (`"protectionColumn"`, ...) gegen das, was beim Aufbau des `BeanScope` tatsächlich geladen
+   wurde.
 
 3. **Behält `mergeServiceFiles()` alle Avaje-Module im Shadow-Jar?** Nicht ohne Weiteres. Jede
    Column liefert ihre eigene `META-INF/services/io.avaje.inject.spi.InjectExtension`-Datei; die
    `ShadowJar`-Aufgabe hat als eigene, von `mergeServiceFiles()` unabhängige Voreinstellung
    `duplicatesStrategy = DuplicatesStrategy.EXCLUDE` - und die wirft jede doppelte Ressource schon
-   *vor* dem Merge-Transformer weg, sodass am Ende nur `:app`s eigenes Modul übrigblieb (per
-   `unzip -p app-titan.jar META-INF/services/io.avaje.inject.spi.InjectExtension` nachgewiesen: nur
-   `AppModule`, kein `ProtectionColumnModule`). Die Behebung setzt `duplicatesStrategy =
-   DuplicatesStrategy.INCLUDE` nicht für den ganzen Task, sondern gezielt über
+   *vor* dem Merge-Transformer weg, sodass am Ende nur ein Modul übrigbleibt. Die Behebung setzt
+   `duplicatesStrategy = DuplicatesStrategy.INCLUDE` nicht für den ganzen Task, sondern gezielt über
    `filesMatching("META-INF/services/**") { duplicatesStrategy = DuplicatesStrategy.INCLUDE }`
-   zusätzlich zu `mergeServiceFiles()`, in `app/build.gradle.kts`: erst dann landen beide
-   Modulnamen (`net.onelitefeather.titan.app.AppModule` und
-   `net.onelitefeather.titan.feature.protection.ProtectionColumnModule`) in derselben Datei, ohne
-   dass andere `META-INF`-Dateien (LICENSE, NOTICE, ...) plötzlich doppelt im Jar landen.
-   `titan.app-variant` (Welle 3) muss dieselbe Einstellung übernehmen.
+   zusätzlich zu `mergeServiceFiles()`, in `titan.app-variant` (`buildSrc/src/main/kotlin/titan
+   .app-variant.gradle.kts`): erst dann landen alle Modulnamen in derselben Datei, ohne dass andere
+   `META-INF`-Dateien (LICENSE, NOTICE, ...) plötzlich doppelt im Jar landen.
 
-### Das Muster für neue Columns (Welle 2)
+### Das Muster für neue Columns
 
 Jede Column bekommt in ihrem eigenen `package-info.java` (Wurzelpaket der Column, also
 `net.onelitefeather.titan.feature.<name>`):
@@ -397,13 +517,13 @@ package net.onelitefeather.titan.feature.<name>;
   braucht (aktuell nur `EventNode<Event>:titan`; `hotbar`s `LobbyItems`-Interface hat keinen
   Qualifier und keinen generischen Parameter, dafür reicht `requires = {LobbyItems.class}` allein).
 - `name` immer explizit und nie identisch mit einem Bean-Klassennamen der Column.
-- `:app` (später `runtime`) braucht die spiegelbildliche `provides`-Deklaration nur als einfache
-  `Class<?>`-Form, niemals zusammen mit der `providesString`-Form auf demselben (Standard-Scope-)
-  Modul (siehe Frage 1 oben).
-- `app/build.gradle.kts`s (später `titan.app-variant`s) `shadowJar` braucht die auf
-  `META-INF/services/**` beschränkte `duplicatesStrategy = DuplicatesStrategy.INCLUDE` neben
-  `mergeServiceFiles()` - sonst verschwindet die neue Column beim Shaden stillschweigend
-  (siehe Frage 3 oben).
+- `runtime` braucht die spiegelbildliche `provides`-Deklaration nur als einfache `Class<?>`-Form,
+  niemals zusammen mit der `providesString`-Form auf demselben (Standard-Scope-)Modul (siehe Frage
+  1 oben).
+- `titan.app-variant`s `shadowJar` braucht die auf `META-INF/services/**` beschränkte
+  `duplicatesStrategy = DuplicatesStrategy.INCLUDE` neben `mergeServiceFiles()` - sonst
+  verschwindet die neue Column beim Shaden stillschweigend (siehe Frage 3 oben). Das ist bereits im
+  Convention-Plugin gesetzt; eine neue Column muss daran nichts ändern.
 - **Eine Column, die selbst `LobbyItem`-Beans beisteuert (`provides = {LobbyItem.class}`) und
   daneben `LobbyItems` benutzt, nimmt `Provider<LobbyItems>` statt `LobbyItems` direkt und lässt
   `LobbyItems` aus `requires`/`requiresString` weg.** `hotbarColumn` sammelt jede `LobbyItem`-Bean
@@ -419,7 +539,7 @@ package net.onelitefeather.titan.feature.<name>;
   `LobbyItem`, also entsteht dort kein Zyklus und `requires = {LobbyItems.class}` bleibt direkt.
 
 Die tatsächlichen `requires`/`requiresString`/`provides` jeder Column, aus ihrer
-`package-info.java` abgelesen (`:app`s eigene `package-info.java` deklariert die Plattform-Typen
+`package-info.java` abgelesen (`runtime`s eigene `package-info.java` deklariert die Plattform-Typen
 als `provides`):
 
 | Column | `requires` | `requiresString` | `provides` |
@@ -441,33 +561,45 @@ noch `@Named`, für sie reicht die `requires`-Form allein. `LobbyItems` steht be
 `Provider<LobbyItems>` (siehe oben) und lässt es deshalb aus `requires` weg, obwohl es
 `LobbyItem` liefert.
 
-## Checkliste: neues Feature = neues Paket
+## Checkliste: neues Feature = neues Modul unter `features/`
 
-1. Neues Paket `app/src/main/java/net/onelitefeather/titan/app/feature/<name>/` anlegen -
-   `app/src/test/.../feature/example/` als Kopiervorlage nehmen.
-2. `<Name>Module` (public, `@Singleton`, ein noch nicht vergebenes `EVENT_PRIORITY` - s. "Gefunden
-   werden" oben und die Tabelle dort) anlegen: `@PostConstruct start()` hängt den `FeatureNode` an
-   und registriert die Listener, `@PreDestroy stop()` ruft `node.close()` (und danach ggf.
+Ein neues Feature ist ein neues Gradle-Modul unter `features/<name>/` - weder eine andere Column
+noch `runtime` noch eine zentrale Liste ändert sich dafür.
+
+1. Verzeichnis `features/<name>/` mit Standard-Gradle-Layout
+   (`src/main/java/net/onelitefeather/titan/feature/<name>/`, `src/test/java/...`) anlegen.
+2. `features/<name>/build.gradle.kts` anlegen, das nur `titan.column` anwendet - das bringt die
+   Abhängigkeit auf `core`, Minestom, Aves, den Avaje-Generator und den Test-Stack mit
+   (`settings.gradle.kts` bindet das Modul automatisch per Verzeichnis-Scan ein).
+3. `package-info.java` im Wurzelpaket der Column mit `@InjectModule(name = "<name>Column",
+   requires = {...}, requiresString = {...})` nach dem Muster oben ("Das Muster für neue
+   Columns").
+4. `<Name>Module` (`@Singleton`, ein noch nicht vergebenes `EVENT_PRIORITY` - s. "Gefunden werden"
+   oben und die Tabelle dort) anlegen: `@PostConstruct start()` hängt den `FeatureNode` an und
+   registriert die Listener, `@PreDestroy stop()` ruft `node.close()` (und danach ggf.
    `task.cancel()`).
-3. Braucht das Feature Konfiguration: Schlüssel-Konstanten und das strenge Lesen über `Config`
+5. `ColumnArchitectureTest` anlegen, das `ColumnArchitectureRules` per `@ArchTest` auf das eigene
+   Paket anwendet (s. "Architekturregeln" oben - als Vorlage dient jede bestehende Column).
+6. Braucht das Feature Konfiguration: Schlüssel-Konstanten und das strenge Lesen über `Config`
    (inklusive `Config.getAs` für Zahlen) in `start()`, die Validierung in einer reinen,
-   paketprivaten Funktion (s. "Konfiguration lesen" oben).
-4. Braucht das Feature ein Hotbar- oder Ausrüstungsitem: eine eigene, paketprivate `@Factory`-Klasse
-   mit einer `@Bean LobbyItem`-Methode (s. "Items als Beans" oben).
-5. Abhängigkeiten (eine `Instance`, ein `Deliver`, ein `Clock`, der `Scheduler`, ...) über den
+   paketprivaten Funktion (s. "Konfiguration lesen" oben), sowie optional
+   `features/<name>/src/main/resources/titan/defaults/<name>.yaml` mit den Standardwerten,
+   kommentiert (s. "Standardwerte je Column" oben).
+7. Braucht das Feature ein Hotbar- oder Ausrüstungsitem: eine eigene, paketprivate `@Factory`-Klasse
+   mit einer `@Bean LobbyItem`-Methode (s. "Items als Beans" oben) und `provides = {LobbyItem
+   .class}` in der `package-info.java`.
+8. Abhängigkeiten (eine `Instance`, ein `Deliver`, ein `Clock`, der `Scheduler`, ...) über den
    Konstruktor anfordern. Braucht das Feature einen Plattform-Dienst, den es noch nicht gibt, kommt
-   der entweder als weiteres `@Bean` in `PlatformBeans` oder, falls er selbst
+   der entweder als weiteres `@Bean` in `runtime`s Plattform-Factory oder, falls er selbst
    feature-übergreifende Logik trägt, als eigene `@Singleton`-Klasse dazu.
-6. Tests schreiben, bevor (oder während) der Code entsteht: Unit-Tests für die reine Logik und die
+9. Tests schreiben, bevor (oder während) der Code entsteht: Unit-Tests für die reine Logik und die
    Config-Validierung, ein Env-Integrationstest über direkte Konstruktion mit `TestTitanNode` für
    alles, was einen `Player` braucht - inklusive eines Tests, dass `stop()` keinen weiteren
    Event-Effekt mehr hat.
-7. Falls das Feature Konfiguration hat: die neuen Schlüssel samt Standardwert in
-   `app/src/main/resources/application.yaml` eintragen und im README unter "Configuration Options
-   Explained" bzw. "Environment variable reference" dokumentieren.
 
-Das war's - **keine** zentrale Feature-Liste zu pflegen: `@Singleton` genügt, damit `Titan` das
-neue Feature beim Aufbau des `BeanScope` findet und startet. Die einzige Ausnahme von "kein
-geänderter Code außerhalb des eigenen Pakets" ist ein brandneuer, geteilter Plattform-Dienst
-(Schritt 5): Der berührt zwangsläufig `PlatformBeans`, weil dort - und nur dort - Plattform-Typen
-zu Avaje-Beans werden.
+Das war's - **keine** zentrale Feature-Liste zu pflegen: `@Singleton` in einer Column unter
+`features/` genügt, damit `runtime` das neue Feature beim Aufbau des `BeanScope` findet und
+startet, und jede Variante, die alle Columns einbindet, nimmt es ohne eigene Änderung auf. Die
+einzige Ausnahme von "kein geänderter Code außerhalb des eigenen Moduls" ist ein brandneuer,
+geteilter Plattform-Dienst (Schritt 8): Der berührt zwangsläufig `runtime`, weil dort - und nur
+dort - Plattform-Typen zu Avaje-Beans werden.
