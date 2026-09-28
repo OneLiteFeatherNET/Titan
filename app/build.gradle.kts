@@ -140,9 +140,12 @@ tasks {
         // entry; DuplicatesStrategy.EXCLUDE (this task's own default) drops every duplicate path
         // before mergeServiceFiles()'s transformer ever sees them, so only one column's Avaje
         // module would survive the shade (see docs/lobby-modules.md, "Wie eine Column
-        // Plattform-Beans bekommt"). INCLUDE lets every duplicate reach the transformer instead,
-        // which is what actually merges them.
-        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+        // Plattform-Beans bekommt"). Scoping INCLUDE to service files only lets those duplicates
+        // reach the transformer while everything else (LICENSE, NOTICE, ...) keeps the default
+        // EXCLUDE, so the jar doesn't end up with duplicate non-service entries.
+        filesMatching("META-INF/services/**") {
+            duplicatesStrategy = DuplicatesStrategy.INCLUDE
+        }
     }
 }
 

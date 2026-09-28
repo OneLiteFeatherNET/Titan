@@ -362,10 +362,13 @@ sieht sie beim Kompilieren also nicht - ein Fall, den der Spike an `features/pro
    `duplicatesStrategy = DuplicatesStrategy.EXCLUDE` - und die wirft jede doppelte Ressource schon
    *vor* dem Merge-Transformer weg, sodass am Ende nur `:app`s eigenes Modul übrigblieb (per
    `unzip -p app-titan.jar META-INF/services/io.avaje.inject.spi.InjectExtension` nachgewiesen: nur
-   `AppModule`, kein `ProtectionColumnModule`). Die Behebung ist `duplicatesStrategy =
-   DuplicatesStrategy.INCLUDE` zusätzlich zu `mergeServiceFiles()`, in `app/build.gradle.kts`:
-   erst dann landen beide Modulnamen (`net.onelitefeather.titan.app.AppModule` und
-   `net.onelitefeather.titan.feature.protection.ProtectionColumnModule`) in derselben Datei.
+   `AppModule`, kein `ProtectionColumnModule`). Die Behebung setzt `duplicatesStrategy =
+   DuplicatesStrategy.INCLUDE` nicht für den ganzen Task, sondern gezielt über
+   `filesMatching("META-INF/services/**") { duplicatesStrategy = DuplicatesStrategy.INCLUDE }`
+   zusätzlich zu `mergeServiceFiles()`, in `app/build.gradle.kts`: erst dann landen beide
+   Modulnamen (`net.onelitefeather.titan.app.AppModule` und
+   `net.onelitefeather.titan.feature.protection.ProtectionColumnModule`) in derselben Datei, ohne
+   dass andere `META-INF`-Dateien (LICENSE, NOTICE, ...) plötzlich doppelt im Jar landen.
    `titan.app-variant` (Welle 3) muss dieselbe Einstellung übernehmen.
 
 ### Das Muster für neue Columns (Welle 2)
@@ -389,9 +392,10 @@ package net.onelitefeather.titan.feature.<name>;
 - `:app` (später `runtime`) braucht die spiegelbildliche `provides`-Deklaration nur als einfache
   `Class<?>`-Form, niemals zusammen mit der `providesString`-Form auf demselben (Standard-Scope-)
   Modul (siehe Frage 1 oben).
-- `app/build.gradle.kts`s (später `titan.app-variant`s) `shadowJar` braucht
-  `duplicatesStrategy = DuplicatesStrategy.INCLUDE` neben `mergeServiceFiles()` - sonst verschwindet
-  die neue Column beim Shaden stillschweigend (siehe Frage 3 oben).
+- `app/build.gradle.kts`s (später `titan.app-variant`s) `shadowJar` braucht die auf
+  `META-INF/services/**` beschränkte `duplicatesStrategy = DuplicatesStrategy.INCLUDE` neben
+  `mergeServiceFiles()` - sonst verschwindet die neue Column beim Shaden stillschweigend
+  (siehe Frage 3 oben).
 
 ## Checkliste: neues Feature = neues Paket
 
