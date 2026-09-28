@@ -23,6 +23,7 @@ import net.minestom.server.event.EventNode;
 import net.onelitefeather.butterfly.minestom.Butterfly;
 import net.onelitefeather.titan.runtime.bootstrap.ConfigurationStartupLog;
 import net.onelitefeather.titan.runtime.bootstrap.FeatureStartupLog;
+import net.onelitefeather.titan.runtime.bootstrap.PermissionStartupLog;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.permission.PermissionService;
 import net.onelitefeather.titan.runtime.player.TitanPlayer;
@@ -63,6 +64,7 @@ public final class Titan {
         // provider can safely use the PermissionService resolved from the scope.
         PermissionService permissionService = this.beanScope.get(PermissionService.class);
         MinecraftServer.getConnectionManager().setPlayerProvider((connection, gameProfile) -> new TitanPlayer(connection, gameProfile, permissionService));
+        PermissionStartupLog.activeService(permissionService);
 
         EventNode<Event> titan = this.beanScope.get(new GenericType<EventNode<Event>>() {
         }.type(), FeatureNode.TITAN_NODE);
