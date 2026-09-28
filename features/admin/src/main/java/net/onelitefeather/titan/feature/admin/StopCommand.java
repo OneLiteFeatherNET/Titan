@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.app.commands;
+package net.onelitefeather.titan.feature.admin;
 
 import net.kyori.adventure.permission.PermissionChecker;
 import net.kyori.adventure.util.TriState;
@@ -29,11 +29,11 @@ import org.jetbrains.annotations.Nullable;
  * writing {@code stop} to console. The console may always stop it; a player needs
  * {@code titan.command.stop}.
  */
-public final class StopCommand extends Command {
+final class StopCommand extends Command {
 
     private static final String PERMISSION = "titan.command.stop";
 
-    public StopCommand() {
+    StopCommand() {
         super("stop");
         setCondition(this::canStop);
         // Runs on a separate thread: stopCleanly() shuts down the console thread that
