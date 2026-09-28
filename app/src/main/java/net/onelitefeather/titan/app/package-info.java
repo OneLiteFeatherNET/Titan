@@ -14,30 +14,24 @@
  * limitations under the License.
  */
 /**
- * Names every {@code PlatformBeans} bean a not-yet-moved column will need once it lives under
- * {@code features/*}, so each column's own {@code requires}/{@code requiresString} (see the
- * protection spike's {@code package-info.java}) finds a declared provider here instead of failing
- * the "missing dependency" compile-time check. Deliberately only the plain {@code Class<?>} form,
- * not also {@code providesString}: {@code :app} needs no compile-time "missing dependency"
- * suppression for a bean it defines itself, and combining {@code provides} with
- * {@code providesString} on this (unnamed, default-scope) module tripped a code generation bug in
- * avaje-inject-generator 12.7 (malformed, uncompilable {@code @InjectModule} on the generated
- * {@code AppModule} - a missing comma between the two attributes). Plain {@code provides} alone is
- * exactly what {@code requires} on the other end needs for module build ordering. In this wave
- * {@code :app} is still both the assembly and the platform; this declaration moves to
- * {@code runtime} in a later wave together with {@code PlatformBeans}.
+ * Names every {@code PlatformBeans} bean a column under {@code features/*} needs, so each column's
+ * own {@code requires}/{@code requiresString} (see the protection spike's
+ * {@code package-info.java}) finds a declared provider here instead of failing the "missing
+ * dependency" compile-time check. Deliberately only the plain {@code Class<?>} form, not also
+ * {@code providesString}: {@code :app} needs no compile-time "missing dependency" suppression for
+ * a bean it defines itself, and combining {@code provides} with {@code providesString} on this
+ * (unnamed, default-scope) module tripped a code generation bug in avaje-inject-generator 12.7
+ * (malformed, uncompilable {@code @InjectModule} on the generated {@code AppModule} - a missing
+ * comma between the two attributes). Plain {@code provides} alone is exactly what {@code requires}
+ * on the other end needs for module build ordering. In this wave {@code :app} is still both the
+ * assembly and the platform; this declaration moves to {@code runtime} in a later wave together
+ * with {@code PlatformBeans}.
  *
- * <p>{@code requires = {LobbyItems.class}}: the mirror image of the above. {@code :app}'s own
- * not-yet-moved {@code SpawnModule}/{@code RespawnModule}/{@code ElytraModule} inject
- * {@link LobbyItems}, whose only implementation now lives in {@code features/hotbar} - the same
- * {@code requires} a column uses to consume a type {@code :app} provides, just in the other
- * direction. Until {@code spawn}/{@code respawn}/{@code elytra} move out too, this is a genuine
- * two-way module dependency ({@code hotbarColumn} requires {@code :app}'s {@code EventNode},
- * {@code :app} requires {@code hotbarColumn}'s {@code LobbyItems}) that avaje-inject's module
- * ordering cannot fully resolve within one {@code BeanScope} - see {@code HotbarLobbyItems}'
- * package-info for the runtime-visible half of this.
+ * <p>No {@code requires}: every column that used to inject {@link LobbyItems}
+ * ({@code spawn}/{@code respawn}/{@code elytra}) has moved out to {@code features/*}, and
+ * {@code :app}'s own main code no longer injects it anywhere.
  */
-@InjectModule(provides = {EventNode.class, Instance.class, LobbySpawn.class, Deliver.class, FeatureFlags.class, Clock.class, Scheduler.class, CommandManager.class}, requires = {LobbyItems.class})
+@InjectModule(provides = {EventNode.class, Instance.class, LobbySpawn.class, Deliver.class, FeatureFlags.class, Clock.class, Scheduler.class, CommandManager.class})
 package net.onelitefeather.titan.app;
 
 import io.avaje.inject.InjectModule;
