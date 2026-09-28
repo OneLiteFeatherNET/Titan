@@ -58,11 +58,10 @@ public final class Titan {
         InstanceContainer instance = MinecraftServer.getInstanceManager().createInstanceContainer();
         MinecraftServer.getInstanceManager().registerInstance(instance);
         this.mapProvider = MapProvider.create(this.path, instance, Titan::defaultFilter);
-        // SetupSpawnConfig#read() is the first touch of the static io.avaje.config.Config facade
-        // in this process - deliberately, at a known, early place (built-in first: no factory of
-        // our own wraps this touch; see design.md, decision 1). A broken application.yaml surfaces
-        // here as ExceptionInInitializerError, whose cause chain already names the file and the
-        // line/column.
+        // SetupSpawnConfig#read() is the first touch of the static io.avaje.config.Config facade in
+        // this process - deliberately, at a known, early place, with no factory of our own wrapping
+        // it. A broken application.yaml surfaces here as ExceptionInInitializerError, whose cause
+        // chain already names the file and the line/column.
         this.simulationDistance = SetupSpawnConfig.read().simulationDistance();
         BlockHandlerHelper.registerAll();
 

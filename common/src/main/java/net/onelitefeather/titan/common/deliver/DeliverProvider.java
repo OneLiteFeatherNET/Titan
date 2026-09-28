@@ -20,9 +20,9 @@ import net.onelitefeather.titan.common.utils.CloudNetEnvironment;
 
 /**
  * Picks the {@link Deliver} implementation based on whether the server runs as a
- * CloudNet service. CloudNet is no longer bundled into the fat jar (it is provided
- * by the CloudNet wrapper at runtime), so standalone runs fall back to {@link DebugDeliver},
- * which reports the delivery it would have made instead of forwarding it.
+ * CloudNet service. CloudNet itself is provided by the CloudNet wrapper at runtime rather than
+ * bundled into the fat jar, so standalone runs fall back to {@link DebugDeliver}, which reports
+ * the delivery it would have made instead of forwarding it.
  */
 public final class DeliverProvider {
 

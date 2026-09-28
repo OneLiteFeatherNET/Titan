@@ -49,38 +49,12 @@ public final class LobbyMap extends BaseMap {
 
     public sealed interface Builder permits LobbyMapBuilder {
 
-        /**
-         * Sets the spawn position of the map.
-         *
-         * @param spawn
-         *              the spawn position
-         * @return the builder
-         */
         Builder spawn(Pos spawn);
 
-        /**
-         * Sets the name of the map.
-         *
-         * @param name
-         *             the name of the map
-         * @return the builder
-         */
         Builder name(String name);
 
-        /**
-         * Sets the author of the map.
-         *
-         * @param author
-         *               the author of the map
-         * @return the builder
-         */
         Builder author(String... author);
 
-        /**
-         * Builds the map.
-         * 
-         * @return the map
-         */
         LobbyMap build();
     }
 }

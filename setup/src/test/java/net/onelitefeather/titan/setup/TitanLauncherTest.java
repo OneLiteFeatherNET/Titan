@@ -28,21 +28,15 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Unit coverage for {@link TitanLauncher#startCleanly(Runnable)} - the seam
- * {@link TitanLauncher#main} runs {@link Titan#instance()} through, so a broken {@code
- * application.yaml} (surfacing as {@link ExceptionInInitializerError} from the static
+ * {@link TitanLauncher#main} runs {@link Titan#instance()} through, so a broken
+ * {@code application.yaml} (surfacing as {@link ExceptionInInitializerError} from the static
  * {@code io.avaje.config.Config} facade's own first touch, inside {@link Titan}'s constructor)
- * aborts startup cleanly instead of leaving the process half-started, the same way
- * {@code net.onelitefeather.titan.app.TitanApplication#main} already does for the lobby.
+ * aborts startup cleanly instead of leaving the process half-started.
  *
  * <p>Hermetic: no real {@code application.yaml}, working directory or {@code MinecraftServer} is
  * touched. A fabricated {@link ExceptionInInitializerError} - with a {@code null} message, exactly
- * like the real facade throws it - stands in for a genuinely broken file. What is asserted here,
- * hermetically, is that {@link TitanLauncher#startCleanly(Runnable)} catches it, logs exactly once
- * at ERROR with a header that is not the literal text {@code "null"}, keeps the throwable (and
- * with it the full cause chain - file and line/column) attached to the log event, and reports
- * failure instead of letting it propagate (F.I.R.S.T. - Independent/Repeatable: a fresh
- * {@link ListAppender} per test, detached in a {@code finally}, mirroring
- * {@code ConfigurationStartupLogTest}).
+ * like the real facade throws it - stands in for a genuinely broken file. Each test attaches its
+ * own {@link ListAppender}, detached in a {@code finally}, so the tests stay independent.
  */
 class TitanLauncherTest {
 

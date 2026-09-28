@@ -23,17 +23,12 @@ import java.util.function.Predicate;
 
 /**
  * The production {@link FeatureFlags}: a flag is a plain configuration value, read like any other
- * (see {@code openspec/changes/config-reload-feature-flags/design.md}, decision 4). This replaces
- * the previous, third-party feature-flag library and its own {@code flags.properties} file and
- * classloader workaround; a flag now has the same sources and the same override order as every
- * other configuration key.
+ * key, with the same sources and override order.
  *
  * <p>The constructor takes no dependency on {@code io.avaje.config.Config} at all: {@code known} is
  * the set of flag names this source recognizes, and {@code active} decides whether a given name is
- * currently on. That keeps this class trivially unit-testable with plain fakes - a test never has
- * to
- * touch the static facade or a real {@code application.yaml}. {@link #fromClasspathDefaults()} is
- * the one place production code wires both to the real thing.
+ * currently on. That keeps this class trivially unit-testable with plain fakes.
+ * {@link #fromClasspathDefaults()} is the one place production code wires both to the real thing.
  */
 public final class ConfigFeatureFlags implements FeatureFlags {
 

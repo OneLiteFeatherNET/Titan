@@ -20,13 +20,12 @@ import io.avaje.config.Config;
 /**
  * The setup server's only configuration value: the simulation distance sent to a spawning player
  * via {@link net.onelitefeather.titan.setup.listener.PlayerSpawnListener}.
- * <p>
- * {@link #read()} reads and validates {@code spawn.simulationDistance} at the edge, directly from
- * the static {@code io.avaje.config.Config} facade via
- * {@code Config.getAs(key, SetupSpawnSettings::simulationDistance)} (design.md, decisions 3 and 4).
- * There is no default in code; {@code setup/src/main/resources/application.yaml} ships
- * {@code spawn.simulationDistance: 2} as the shipped default, the same way the lobby's own
- * {@code spawn} section ships its defaults.
+ *
+ * <p>{@link #read()} reads and validates {@code spawn.simulationDistance} at the edge, directly
+ * from the static {@code io.avaje.config.Config} facade via
+ * {@code Config.getAs(key, SetupSpawnSettings::simulationDistance)}. There is no default in code;
+ * {@code setup/src/main/resources/application.yaml} ships {@code spawn.simulationDistance: 2} as
+ * the shipped default.
  *
  * @param simulationDistance the already-validated simulation distance sent to a spawning player
  */

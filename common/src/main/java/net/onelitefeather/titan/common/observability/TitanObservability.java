@@ -27,48 +27,14 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 /**
- * Error reporting for the Titan server processes.
+ * Routes Minestom's uncaught exceptions through SLF4J, and, when a Sentry DSN is configured, on to
+ * Sentry via the resulting {@code ERROR} log record - the appender is Sentry's only way in, so
+ * nothing double-reports.
  *
- * <p>Two problems are solved here, and they are related. Minestom's default
- * {@link net.minestom.server.exception.ExceptionManager ExceptionManager} handler is
- * {@code Throwable::printStackTrace} - every exception thrown inside an event listener or a tick
- * went to {@code System.err} unformatted, past SLF4J entirely. And because no SLF4J binding was
- * ever
- * declared, the shipped fat jars answered every log call with "No SLF4J providers were found" and
- * dropped it. Together that meant a crashing listener left nothing behind but a bare stack trace on
- * the service's stdout.
- *
- * <p>{@link #installExceptionHandler()} routes those exceptions through SLF4J instead, and
- * {@code logback.xml} attaches Sentry's appender to the root logger. Sentry therefore has exactly
- * one way in - an {@code ERROR} log record - rather than a second, parallel reporting path that
- * would have to be kept in sync and would double-report every event.
- *
- * <h2>Player attribution</h2>
- *
- * <p>{@link net.minestom.server.event.EventNodeImpl EventNodeImpl} catches whatever a listener
- * throws and hands it to the exception manager one frame up, on the same thread. {@link #guard}
- * sits
- * inside that frame: it records who the failing event belonged to and rethrows, so the handler can
- * tag the log record - and with it the Sentry event - with the player's UUID and name.
- *
- * <p>The recording happens in a {@code catch} block, never on the healthy path. A listener that
- * returns normally pays for an entered {@code try} and nothing else, which matters because the
- * guarded listeners include {@code PlayerMoveEvent} and {@code PlayerPacketEvent}.
- *
- * <h2>Module attribution</h2>
- *
- * <p>{@link #guard(String, Consumer)} is the module-lifecycle platform's variant of {@link #guard}:
- * it additionally puts the module id into the SLF4J MDC ({@value #MODULE_KEY}) for the duration of
- * the listener call, and - like the player identity above - records it on the failure path so the
- * final log record, once it reaches {@link #handleException}, names both the module and, if there
- * was one, the player. A module's own logging during a healthy call also sees the MDC value, which
- * is why it is set for the whole call and not just on failure.
- *
- * <h2>Sentry is optional</h2>
- *
- * <p>Without {@value #DSN_ENVIRONMENT_VARIABLE} in the environment {@link Sentry#init} is never
- * called, so nothing is installed and the process behaves exactly as it does today - the state an
- * operator without a Sentry instance is already in. The same jar serves both.
+ * <p>{@link #guard} records which player and, via {@link #guard(String, Consumer)}, which module a
+ * failing listener belonged to. The module id is also placed in the SLF4J MDC for the whole call,
+ * healthy or not, so both the module's own logging and the final {@link #handleException} record
+ * carry it.
  */
 public final class TitanObservability {
 

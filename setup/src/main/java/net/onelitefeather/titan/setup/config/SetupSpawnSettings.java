@@ -16,16 +16,15 @@
 package net.onelitefeather.titan.setup.config;
 
 /**
- * Pure parsing and validation for {@code spawn.simulationDistance}, kept apart from however the
- * value was read (today {@link SetupSpawnConfig#read()}).
+ * Pure parsing and validation for {@code spawn.simulationDistance}, kept apart from
+ * {@link SetupSpawnConfig#read()}, which reads the raw value.
  *
  * <p>Mirrors the lobby's own rule for the same key (see
  * {@code net.onelitefeather.titan.app.feature.spawn.SpawnSettings#simulationDistance(String)}).
- * Used directly as the mapping function of
- * {@code Config.getAs(KEY, SetupSpawnSettings::simulationDistance)} - {@code getAs} wraps any
- * exception it throws into an {@code IllegalStateException} naming the key once, keeping this
- * method's own exception as the cause. It touches neither {@code io.avaje.config.Config} nor a
- * server, so it is unit-testable on its own (design.md, decisions 3, 4 and 5).
+ * Used as the mapping function of {@code Config.getAs(KEY, SetupSpawnSettings::simulationDistance)}
+ * - {@code getAs} wraps any exception it throws into an {@code IllegalStateException} naming the
+ * key once, keeping this method's own exception as the cause. It touches neither
+ * {@code io.avaje.config.Config} nor a server, so it is unit-testable on its own.
  */
 final class SetupSpawnSettings {
 

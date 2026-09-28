@@ -34,19 +34,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Unit coverage for {@link DebugDeliver}: the {@link net.onelitefeather.titan.api.deliver.Deliver}
- * standalone (non-CloudNet) runs get from {@link DeliverProvider} instead of the removed
- * no-op. Checks the player-facing chat message it sends and the single {@code INFO} log line it
- * writes for the operator, for both a {@link DeliverComponent.TaskComponent} and a {@link
- * DeliverComponent.ServerDeliverComponent}, and that {@link DebugDeliver#sendPlayer} stays
- * null-safe like {@link MessageChannelDeliver#sendPlayer}.
+ * Unit coverage for {@link DebugDeliver}, the {@link net.onelitefeather.titan.api.deliver.Deliver}
+ * standalone (non-CloudNet) runs get from {@link DeliverProvider}.
  *
- * <p>Log lines are asserted through {@link CapturingLoggerFactory}, the SLF4J test binding already
- * registered for the {@code common} module's test sources (see {@code
- * META-INF/services/org.slf4j.spi.SLF4JServiceProvider} in {@code common/src/test/resources}) -
- * adding logback-classic here instead would register a second, competing {@code
- * SLF4JServiceProvider} on the same test classpath and make this test's logging assertions depend
- * on undefined {@code ServiceLoader} ordering.
+ * <p>Log lines are asserted through {@link CapturingLoggerFactory}, the SLF4J test binding
+ * registered for the {@code common} module's test sources - adding logback-classic here instead
+ * would register a second, competing {@code SLF4JServiceProvider} on the same test classpath and
+ * make the logging assertions depend on undefined {@code ServiceLoader} ordering.
  */
 @ExtendWith(MicrotusExtension.class)
 class DebugDeliverTest {

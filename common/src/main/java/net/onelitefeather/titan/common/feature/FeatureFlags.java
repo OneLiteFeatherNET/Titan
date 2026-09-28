@@ -19,21 +19,13 @@ package net.onelitefeather.titan.common.feature;
  * A small seam between a feature module and whatever technology decides if a named feature flag is
  * currently on - the {@code features} section of the configuration in production, a fake in a test.
  *
- * <p>See {@code openspec/changes/lobby-feature-modules/design.md}, decision 13, and
- * {@code openspec/changes/config-reload-feature-flags/design.md}, decision 4: a feature module
- * that wants to gate part of its behaviour behind a flag asks for it by name through this
- * interface, injected via its constructor, instead of reaching into a static, global source of
- * truth directly. That keeps the module's tests fast, independent and repeatable - a test hands in
- * a trivial fake instead of a real configuration file and whatever static singleton reading it
- * implies.
+ * <p>A feature module that wants to gate part of its behaviour behind a flag asks for it by name
+ * through this interface, injected via its constructor, instead of reaching into a static, global
+ * source of truth directly. That keeps the module's tests fast, independent and repeatable.
  *
- * <p>This lives in {@code titan.common} rather than inside a feature package: it has no feature
- * of its own, both the composition root ({@code net.onelitefeather.titan.app.Titan}) and any
- * feature module need to reach it, and {@code app.module}/{@code titan.common} classes must never
- * depend on {@code app.feature} (see {@code design.md}, decision 10.2, and
- * {@code ArchitectureTest#platformAndCommonDoNotDependOnFeatures}) - the reverse direction, a
- * feature depending on {@code titan.common}, is exactly what every feature already does for
- * other shared {@code titan.common} types.
+ * <p>This lives in {@code titan.common} rather than inside a feature package: both the composition
+ * root and any feature module need to reach it, and {@code titan.common} must never depend on a
+ * feature package - only the reverse.
  */
 public interface FeatureFlags {
 
