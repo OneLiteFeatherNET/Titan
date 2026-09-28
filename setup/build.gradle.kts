@@ -7,7 +7,7 @@ plugins {
 
 dependencies {
     implementation(project(":common"))
-    implementation(project(":api"))
+    implementation(project(":core"))
     implementation(platform(libs.aonyx.bom))
     implementation(libs.minestom)
     implementation(libs.aves)

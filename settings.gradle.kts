@@ -118,7 +118,7 @@ dependencyResolutionManagement {
 }
 
 include("app")
-include("api")
+include("core")
 include("common")
 include("setup")
 include("bridge")

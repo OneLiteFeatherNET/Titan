@@ -4,7 +4,7 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":api"))
+    implementation(project(":core"))
     implementation(platform(libs.aonyx.bom))
     implementation(libs.minestom)
     // LobbyMap (net.onelitefeather.titan.common.map) extends aves' BaseMap and MapProvider hands

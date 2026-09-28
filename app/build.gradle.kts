@@ -11,7 +11,7 @@ dependencies {
     compileOnly(libs.luckperms.api) {
         exclude(group = "net.kyori.adventure")
     }
-    implementation(project(":api"))
+    implementation(project(":core"))
     implementation(project(":common"))
     implementation(platform(libs.aonyx.bom))
     implementation(libs.adventure.minimessage)

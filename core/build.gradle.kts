@@ -1,0 +1,29 @@
+plugins {
+    id("titan.java-conventions")
+    `java-library`
+    `java-test-fixtures`
+}
+
+dependencies {
+    implementation(platform(libs.aonyx.bom))
+    api(libs.minestom)
+
+    // FeatureNode wraps every listener in ListenerGuard, which reports a failure via SLF4J/MDC.
+    implementation(libs.slf4j.api)
+
+    testImplementation(platform(libs.aonyx.bom))
+    testImplementation(libs.minestom)
+    testImplementation(libs.cyano)
+    testImplementation(libs.junit.api)
+    testImplementation(libs.junit.platform.launcher)
+    testImplementation(libs.archunit)
+    // ListAppender, for capturing a log line in a test; logback-classic itself has no runtime use here.
+    testImplementation(libs.logback.classic)
+    testRuntimeOnly(libs.junit.engine)
+
+    testFixturesImplementation(platform(libs.aonyx.bom))
+    testFixturesImplementation(libs.minestom)
+    testFixturesImplementation(libs.cyano)
+    testFixturesImplementation(libs.archunit)
+    testFixturesImplementation(libs.junit.api)
+}
