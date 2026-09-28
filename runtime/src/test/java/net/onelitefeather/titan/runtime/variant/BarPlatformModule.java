@@ -20,11 +20,11 @@ import io.avaje.inject.spi.Builder;
 
 /**
  * A minimal, registered (see {@code META-INF/services/io.avaje.inject.spi.InjectExtension} in
- * {@code src/test/resources}) {@link AvajeModule} fixture named like a real column's generated
- * module, so {@link LoadedModulesTest} exercises real {@link java.util.ServiceLoader} discovery
- * instead of a whole feature column.
+ * {@code src/test/resources}) {@link AvajeModule} fixture named like a future platform module's
+ * generated module (e.g. {@code luckpermsPlatform}), so {@link LoadedModulesTest} proves discovery
+ * is generic and not tied to the {@code Column} naming convention.
  */
-public final class FooColumnModule implements AvajeModule {
+public final class BarPlatformModule implements AvajeModule {
 
     @Override
     public Class<?>[] classes() {

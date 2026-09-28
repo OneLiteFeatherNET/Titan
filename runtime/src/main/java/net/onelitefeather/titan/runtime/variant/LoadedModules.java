@@ -22,18 +22,19 @@ import java.util.List;
 import java.util.ServiceLoader;
 
 /**
- * The columns actually on {@code loader}, discovered the same built-in way Avaje itself finds its
- * modules: {@link ServiceLoader#load(Class, ClassLoader)} over {@link InjectExtension}. A column's
- * generated Avaje module is named {@code <Name>ColumnModule} from its {@code @InjectModule(name =
- * "<name>Column", ...)} (see docs/lobby-modules.md, "Wie eine Column Plattform-Beans bekommt");
- * this
- * strips the {@value #SUFFIX} suffix and lowercases the first letter to recover {@code <name>}.
+ * The Avaje modules actually on {@code loader}, discovered the same built-in way Avaje itself
+ * finds its modules: {@link ServiceLoader#load(Class, ClassLoader)} over {@link InjectExtension}. A
+ * module's generated Avaje class is named {@code <Name>Module} from its {@code @InjectModule(name =
+ * "<name>", ...)} (see docs/lobby-modules.md, "Wie eine Column Plattform-Beans bekommt"); this
+ * strips the trailing {@value #SUFFIX} and lowercases the first letter to recover {@code <name>} -
+ * a feature column's {@code adminColumn} just as much as a future platform module's {@code
+ * luckpermsPlatform}.
  */
-public final class LoadedColumns {
+public final class LoadedModules {
 
-    private static final String SUFFIX = "ColumnModule";
+    private static final String SUFFIX = "Module";
 
-    private LoadedColumns() {
+    private LoadedModules() {
     }
 
     public static List<String> discover(ClassLoader loader) {
@@ -42,8 +43,8 @@ public final class LoadedColumns {
             if (extension instanceof AvajeModule) {
                 String simpleName = extension.getClass().getSimpleName();
                 if (simpleName.endsWith(SUFFIX)) {
-                    String columnName = simpleName.substring(0, simpleName.length() - SUFFIX.length());
-                    names.add(Character.toLowerCase(columnName.charAt(0)) + columnName.substring(1));
+                    String moduleName = simpleName.substring(0, simpleName.length() - SUFFIX.length());
+                    names.add(Character.toLowerCase(moduleName.charAt(0)) + moduleName.substring(1));
                 }
             }
         }

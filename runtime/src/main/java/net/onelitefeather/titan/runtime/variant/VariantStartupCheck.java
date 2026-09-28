@@ -20,7 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Aborts the boot when a column the running variant expects did not load (spec {@code
+ * Aborts the boot when a module the running variant expects did not load (spec {@code
  * app-variants}, "Eine Variante startet nur mit allen erwarteten Columns").
  * {@link net.onelitefeather.titan.runtime.Titan}'s constructor calls this right after the
  * {@link io.avaje.inject.BeanScope} is built, so a feature that failed to register is caught
@@ -36,18 +36,18 @@ public final class VariantStartupCheck {
 
     /** Skips the check when {@code loader} carries no {@code variant.properties} at all. */
     public static void verify(ClassLoader loader) {
-        VariantDescriptor.fromClasspath(loader).ifPresent(descriptor -> verify(descriptor, LoadedColumns.discover(loader)));
+        VariantDescriptor.fromClasspath(loader).ifPresent(descriptor -> verify(descriptor, LoadedModules.discover(loader)));
     }
 
     /**
-     * @throws IllegalStateException naming every column {@code descriptor} expects but
-     *                               {@code loadedColumns} does not contain
+     * @throws IllegalStateException naming every module {@code descriptor} expects but
+     *                               {@code loadedModules} does not contain
      */
-    public static void verify(VariantDescriptor descriptor, List<String> loadedColumns) {
-        List<String> missing = VariantColumns.missingColumns(descriptor.columns(), loadedColumns);
+    public static void verify(VariantDescriptor descriptor, List<String> loadedModules) {
+        List<String> missing = ExpectedModules.missingModules(descriptor.modules(), loadedModules);
         if (!missing.isEmpty()) {
-            throw new IllegalStateException("Variant " + descriptor.name() + " is missing columns: " + missing);
+            throw new IllegalStateException("Variant " + descriptor.name() + " is missing modules: " + missing);
         }
-        LOGGER.info("Variant {} started with columns {}", descriptor.name(), descriptor.columns());
+        LOGGER.info("Variant {} started with modules {}", descriptor.name(), descriptor.modules());
     }
 }

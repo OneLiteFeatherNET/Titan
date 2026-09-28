@@ -1,5 +1,5 @@
 // Convention for a Titan lobby app variant under apps/*: it bundles runtime with every
-// features/* column (D5 in design.md), unless the variant's own build.gradle.kts excludes one via
+// features/* column, unless the variant's own build.gradle.kts excludes one via
 // titanVariant { exclude(...) }. A new column needs no change to a variant's build file - it is
 // picked up by the same features/* scan titan.column and this convention both read from
 // settings.gradle.kts.
@@ -23,6 +23,13 @@ abstract class TitanVariantExtension {
     abstract val aotCache: Property<Boolean>
 
     internal val excludedColumns: MutableSet<String> = mutableSetOf()
+
+    // The full expected-module ids this variant's startup check
+    // (net.onelitefeather.titan.runtime.variant.VariantStartupCheck) verifies against what
+    // actually loaded. This convention seeds it below with every included feature column's
+    // "<name>Column"; a future titanVariant { platform("x") } can append "xPlatform" to the same
+    // list without this convention changing.
+    internal val expectedModules: MutableList<String> = mutableListOf()
 
     fun exclude(vararg columnNames: String) {
         excludedColumns += columnNames
@@ -48,15 +55,15 @@ afterEvaluate {
     val allFeaturePaths = gradle.extensions.extraProperties["titanFeatureProjectPaths"] as List<String>
     val excluded = titanVariant.excludedColumns
     val includedFeaturePaths = allFeaturePaths.filterNot { path -> excluded.contains(path.substringAfterLast(':')) }
-    val includedColumnNames = includedFeaturePaths.map { path -> path.substringAfterLast(':') }.sorted()
+    titanVariant.expectedModules += includedFeaturePaths.map { path -> path.substringAfterLast(':') + "Column" }
 
     includedFeaturePaths.forEach { featurePath ->
         dependencies.add("implementation", dependencies.project(featurePath))
     }
 
-    // This variant's own titan/defaults/runtime.yaml plus every included column's - see D4 in
-    // design.md. A column left out via titanVariant.exclude(...) also loses its defaults, so the
-    // shipped application.yaml never advertises a setting the variant cannot act on.
+    // This variant's own titan/defaults/runtime.yaml plus every included column's. A column left
+    // out via titanVariant.exclude(...) also loses its defaults, so the shipped application.yaml
+    // never advertises a setting the variant cannot act on.
     val titanDefaultsFiles = files(
         fileTree(project(":runtime").file("src/main/resources/titan/defaults")) { include("*.yaml") },
         *includedFeaturePaths.map { path -> fileTree(project(path).file("src/main/resources/titan/defaults")) { include("*.yaml") } }.toTypedArray()
@@ -93,15 +100,15 @@ afterEvaluate {
         }
     }
 
-    // This variant's own META-INF/titan/variant.properties (D5 in design.md): the startup check in
-    // net.onelitefeather.titan.runtime.variant reads it to abort when a column the variant expects
+    // This variant's own META-INF/titan/variant.properties: the startup check in
+    // net.onelitefeather.titan.runtime.variant reads it to abort when a module the variant expects
     // didn't load.
     val generateVariantProperties = tasks.register<WriteProperties>("generateVariantProperties") {
         group = "build"
-        description = "Writes META-INF/titan/variant.properties naming this variant and its columns."
+        description = "Writes META-INF/titan/variant.properties naming this variant and its expected modules."
         destinationFile.set(layout.buildDirectory.file("generated/titanVariant/META-INF/titan/variant.properties"))
         property("name", project.name)
-        property("columns", includedColumnNames.joinToString(","))
+        property("modules", titanVariant.expectedModules.sorted().joinToString(","))
     }
 
     sourceSets.main {

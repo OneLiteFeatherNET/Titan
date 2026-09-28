@@ -20,38 +20,38 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-/** Unit coverage for {@link VariantColumns#missingColumns(List, java.util.Collection)} (D5). */
-class VariantColumnsTest {
+/** Unit coverage for {@link ExpectedModules#missingModules(List, java.util.Collection)}. */
+class ExpectedModulesTest {
 
-    @DisplayName("Every expected column loaded yields an empty list")
+    @DisplayName("Every expected module loaded yields an empty list")
     @Test
     void allPresentYieldsEmptyList() {
-        List<String> missing = VariantColumns.missingColumns(List.of("admin", "sit", "spawn"), List.of("admin", "sit", "spawn"));
+        List<String> missing = ExpectedModules.missingModules(List.of("adminColumn", "sitColumn", "spawnColumn"), List.of("adminColumn", "sitColumn", "spawnColumn"));
 
         Assertions.assertEquals(List.of(), missing);
     }
 
-    @DisplayName("A missing column is reported, in the order it appears in the expected list")
+    @DisplayName("A missing module is reported, in the order it appears in the expected list")
     @Test
-    void missingColumnsAreReportedInExpectedOrder() {
-        List<String> missing = VariantColumns.missingColumns(List.of("admin", "sit", "spawn"), List.of("spawn"));
+    void missingModulesAreReportedInExpectedOrder() {
+        List<String> missing = ExpectedModules.missingModules(List.of("adminColumn", "sitColumn", "spawnColumn"), List.of("spawnColumn"));
 
-        Assertions.assertEquals(List.of("admin", "sit"), missing, "order must follow the expected list, not the (differently ordered) loaded one");
+        Assertions.assertEquals(List.of("adminColumn", "sitColumn"), missing, "order must follow the expected list, not the (differently ordered) loaded one");
     }
 
     @DisplayName("An empty expected list yields an empty list regardless of what loaded")
     @Test
     void emptyExpectedYieldsEmptyList() {
-        List<String> missing = VariantColumns.missingColumns(List.of(), List.of("admin"));
+        List<String> missing = ExpectedModules.missingModules(List.of(), List.of("adminColumn"));
 
         Assertions.assertEquals(List.of(), missing);
     }
 
-    @DisplayName("Every column missing is reported in full, in expected order")
+    @DisplayName("Every module missing is reported in full, in expected order")
     @Test
     void allMissingAreReportedInFull() {
-        List<String> missing = VariantColumns.missingColumns(List.of("admin", "sit"), List.of());
+        List<String> missing = ExpectedModules.missingModules(List.of("adminColumn", "sitColumn"), List.of());
 
-        Assertions.assertEquals(List.of("admin", "sit"), missing);
+        Assertions.assertEquals(List.of("adminColumn", "sitColumn"), missing);
     }
 }

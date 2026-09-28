@@ -40,27 +40,27 @@ class VariantDescriptorTest {
         Assertions.assertTrue(descriptor.isEmpty());
     }
 
-    @DisplayName("A variant.properties resource resolves its name and comma-separated columns")
+    @DisplayName("A variant.properties resource resolves its name and comma-separated modules")
     @Test
-    void presentResourceResolvesNameAndColumns(@TempDir Path root) throws IOException {
+    void presentResourceResolvesNameAndModules(@TempDir Path root) throws IOException {
         Path resourceFile = root.resolve("META-INF").resolve("titan").resolve("variant.properties");
         Files.createDirectories(resourceFile.getParent());
-        Files.writeString(resourceFile, "name=cloudnet\ncolumns=admin,sit,spawn\n");
+        Files.writeString(resourceFile, "name=cloudnet\nmodules=adminColumn,sitColumn,spawnColumn\n");
 
         Optional<VariantDescriptor> descriptor = VariantDescriptor.fromClasspath(isolatedClassLoaderFor(root));
 
         Assertions.assertTrue(descriptor.isPresent());
         Assertions.assertEquals("cloudnet", descriptor.get().name());
-        Assertions.assertEquals(List.of("admin", "sit", "spawn"), descriptor.get().columns());
+        Assertions.assertEquals(List.of("adminColumn", "sitColumn", "spawnColumn"), descriptor.get().modules());
     }
 
-    @DisplayName("of(...) builds a descriptor directly, for a synthetic (e.g. missing) column in a test")
+    @DisplayName("of(...) builds a descriptor directly, for a synthetic (e.g. missing) module in a test")
     @Test
     void ofBuildsADescriptorDirectly() {
-        VariantDescriptor descriptor = VariantDescriptor.of("cloudnet", List.of("admin", "ghostColumn"));
+        VariantDescriptor descriptor = VariantDescriptor.of("cloudnet", List.of("adminColumn", "ghostColumn"));
 
         Assertions.assertEquals("cloudnet", descriptor.name());
-        Assertions.assertEquals(List.of("admin", "ghostColumn"), descriptor.columns());
+        Assertions.assertEquals(List.of("adminColumn", "ghostColumn"), descriptor.modules());
     }
 
     private static URLClassLoader isolatedClassLoaderFor(Path root) {

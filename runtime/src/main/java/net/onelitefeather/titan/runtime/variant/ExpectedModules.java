@@ -21,17 +21,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/** A pure comparison of a variant's expected columns against the ones that actually loaded. */
-public final class VariantColumns {
+/** A pure comparison of a variant's expected modules against the ones that actually loaded. */
+public final class ExpectedModules {
 
-    private VariantColumns() {
+    private ExpectedModules() {
     }
 
     /**
      * @return every name in {@code expected} that is missing from {@code loaded}, in
-     *         {@code expected}'s own order; empty when every expected column loaded
+     *         {@code expected}'s own order; empty when every expected module loaded
      */
-    public static List<String> missingColumns(List<String> expected, Collection<String> loaded) {
+    public static List<String> missingModules(List<String> expected, Collection<String> loaded) {
         Set<String> loadedNames = new HashSet<>(loaded);
         List<String> missing = new ArrayList<>();
         for (String name : expected) {

@@ -25,39 +25,39 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 
-/** Unit coverage for {@link VariantStartupCheck#verify(VariantDescriptor, List)} (D5). */
+/** Unit coverage for {@link VariantStartupCheck#verify(VariantDescriptor, List)}. */
 class VariantStartupCheckTest {
 
-    @DisplayName("Every expected column loaded logs exactly one parameterised INFO line naming the variant and its columns")
+    @DisplayName("Every expected module loaded logs exactly one parameterised INFO line naming the variant and its modules")
     @Test
-    void allColumnsLoadedLogsOneInfoLine() {
-        VariantDescriptor descriptor = VariantDescriptor.of("cloudnet", List.of("admin", "sit"));
+    void allModulesLoadedLogsOneInfoLine() {
+        VariantDescriptor descriptor = VariantDescriptor.of("cloudnet", List.of("adminColumn", "sitColumn"));
         Logger logger = (Logger) LoggerFactory.getLogger(VariantStartupCheck.class);
         ListAppender<ILoggingEvent> appender = new ListAppender<>();
         appender.start();
         logger.addAppender(appender);
 
         try {
-            VariantStartupCheck.verify(descriptor, List.of("admin", "sit"));
+            VariantStartupCheck.verify(descriptor, List.of("adminColumn", "sitColumn"));
         } finally {
             logger.detachAppender(appender);
         }
 
         Assertions.assertEquals(1, appender.list.size(), "must log exactly one line");
         ILoggingEvent event = appender.list.get(0);
-        Assertions.assertEquals("Variant {} started with columns {}", event.getMessage(), "must be the parameterised template, not a pre-built string");
-        Assertions.assertArrayEquals(new Object[]{"cloudnet", List.of("admin", "sit")}, event.getArgumentArray());
+        Assertions.assertEquals("Variant {} started with modules {}", event.getMessage(), "must be the parameterised template, not a pre-built string");
+        Assertions.assertArrayEquals(new Object[]{"cloudnet", List.of("adminColumn", "sitColumn")}, event.getArgumentArray());
         Assertions.assertEquals(Level.INFO, event.getLevel());
     }
 
-    @DisplayName("A missing column aborts with an IllegalStateException naming it")
+    @DisplayName("A missing module aborts with an IllegalStateException naming it")
     @Test
-    void aMissingColumnAbortsNamingIt() {
-        VariantDescriptor descriptor = VariantDescriptor.of("cloudnet", List.of("admin", "sit"));
+    void aMissingModuleAbortsNamingIt() {
+        VariantDescriptor descriptor = VariantDescriptor.of("cloudnet", List.of("adminColumn", "sitColumn"));
 
-        IllegalStateException thrown = Assertions.assertThrows(IllegalStateException.class, () -> VariantStartupCheck.verify(descriptor, List.of("admin")));
+        IllegalStateException thrown = Assertions.assertThrows(IllegalStateException.class, () -> VariantStartupCheck.verify(descriptor, List.of("adminColumn")));
 
-        Assertions.assertTrue(thrown.getMessage().contains("sit"), "the message must name the missing column, was: " + thrown.getMessage());
+        Assertions.assertTrue(thrown.getMessage().contains("sitColumn"), "the message must name the missing module, was: " + thrown.getMessage());
         Assertions.assertTrue(thrown.getMessage().contains("cloudnet"), "the message must name the variant, was: " + thrown.getMessage());
     }
 

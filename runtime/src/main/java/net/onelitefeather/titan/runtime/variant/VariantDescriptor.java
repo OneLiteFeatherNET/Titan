@@ -25,7 +25,7 @@ import java.util.Optional;
 import java.util.Properties;
 
 /**
- * This build's variant name and the columns {@code titan.app-variant} shipped it with, read from
+ * This build's variant name and the modules {@code titan.app-variant} shipped it with, read from
  * the generated classpath resource {@value #RESOURCE}.
  */
 public final class VariantDescriptor {
@@ -33,18 +33,18 @@ public final class VariantDescriptor {
     private static final String RESOURCE = "META-INF/titan/variant.properties";
 
     private final String name;
-    private final List<String> columns;
+    private final List<String> modules;
 
-    private VariantDescriptor(String name, List<String> columns) {
+    private VariantDescriptor(String name, List<String> modules) {
         this.name = name;
-        this.columns = List.copyOf(columns);
+        this.modules = List.copyOf(modules);
     }
 
     /**
-     * Builds a descriptor directly - the seam a test uses for a synthetic (e.g. missing) column.
+     * Builds a descriptor directly - the seam a test uses for a synthetic (e.g. missing) module.
      */
-    public static VariantDescriptor of(String name, List<String> columns) {
-        return new VariantDescriptor(Objects.requireNonNull(name, "name must not be null"), columns);
+    public static VariantDescriptor of(String name, List<String> modules) {
+        return new VariantDescriptor(Objects.requireNonNull(name, "name must not be null"), modules);
     }
 
     /**
@@ -59,9 +59,9 @@ public final class VariantDescriptor {
             Properties properties = new Properties();
             properties.load(in);
             String name = properties.getProperty("name", "");
-            String columnsRaw = properties.getProperty("columns", "");
-            List<String> columns = columnsRaw.isBlank() ? List.of() : Arrays.stream(columnsRaw.split(",")).map(String::trim).filter(value -> !value.isEmpty()).toList();
-            return Optional.of(new VariantDescriptor(name, columns));
+            String modulesRaw = properties.getProperty("modules", "");
+            List<String> modules = modulesRaw.isBlank() ? List.of() : Arrays.stream(modulesRaw.split(",")).map(String::trim).filter(value -> !value.isEmpty()).toList();
+            return Optional.of(new VariantDescriptor(name, modules));
         } catch (IOException exception) {
             throw new UncheckedIOException("Unable to read " + RESOURCE, exception);
         }
@@ -71,7 +71,7 @@ public final class VariantDescriptor {
         return this.name;
     }
 
-    public List<String> columns() {
-        return this.columns;
+    public List<String> modules() {
+        return this.modules;
     }
 }

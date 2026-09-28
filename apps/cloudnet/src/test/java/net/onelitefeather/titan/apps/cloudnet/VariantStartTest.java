@@ -22,7 +22,7 @@ import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.common.map.MapProvider;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
-import net.onelitefeather.titan.runtime.variant.LoadedColumns;
+import net.onelitefeather.titan.runtime.variant.LoadedModules;
 import net.onelitefeather.titan.runtime.variant.VariantDescriptor;
 import net.onelitefeather.titan.runtime.variant.VariantStartupCheck;
 import org.junit.jupiter.api.Assertions;
@@ -62,11 +62,11 @@ class VariantStartTest {
     void anAdditionallyExpectedButMissingColumnAbortsNamingIt() {
         ClassLoader loader = getClass().getClassLoader();
         VariantDescriptor real = VariantDescriptor.fromClasspath(loader).orElseThrow(() -> new AssertionError("this variant must ship META-INF/titan/variant.properties"));
-        List<String> columnsWithAGhost = new ArrayList<>(real.columns());
-        columnsWithAGhost.add("ghostColumn");
-        VariantDescriptor withAMissingColumn = VariantDescriptor.of(real.name(), columnsWithAGhost);
+        List<String> modulesWithAGhost = new ArrayList<>(real.modules());
+        modulesWithAGhost.add("ghostColumn");
+        VariantDescriptor withAMissingModule = VariantDescriptor.of(real.name(), modulesWithAGhost);
 
-        IllegalStateException thrown = Assertions.assertThrows(IllegalStateException.class, () -> VariantStartupCheck.verify(withAMissingColumn, LoadedColumns.discover(loader)));
+        IllegalStateException thrown = Assertions.assertThrows(IllegalStateException.class, () -> VariantStartupCheck.verify(withAMissingModule, LoadedModules.discover(loader)));
 
         Assertions.assertTrue(thrown.getMessage().contains("ghostColumn"), "the message must name the missing column, was: " + thrown.getMessage());
     }
