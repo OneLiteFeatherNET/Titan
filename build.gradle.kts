@@ -42,6 +42,6 @@ val titanFeatureProjectPaths = gradle.extensions.extraProperties["titanFeaturePr
 gradle.projectsEvaluated {
     val app = project(":app")
     titanFeatureProjectPaths.forEach { featurePath ->
-        app.dependencies.add("implementation", app.project(featurePath))
+        app.dependencies.add("implementation", app.dependencies.project(featurePath))
     }
 }
