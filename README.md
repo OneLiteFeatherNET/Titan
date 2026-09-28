@@ -23,13 +23,39 @@ Titan is built as two app variants, one Gradle module each under `apps/`:
   CloudNet, no AOT cache.
 
 Both variants bundle the same lobby feature columns (`features/*`) and behave the same for
-players and operators; only the deployment target differs. Building from source
+players and operators, except for permissions - see "Permissions" below. Building from source
 (`./gradlew build`) produces both jars under `apps/<variant>/build/libs/`.
 
 **Migration note:** older releases built a single jar from the previous `:app` module. A
 deployment must switch to `apps/cloudnet`'s `titan-cloudnet.jar` and retrain its AOT cache against
 it (see "Running the Server" below) - the old single-jar build is no longer produced or
 published.
+
+## Permissions
+
+Player and console permission checks go through a `PermissionService` a permission platform
+module provides via dependency injection - LuckPerms in production, nothing by default in
+development:
+
+- **`apps/cloudnet`** always bundles the LuckPerms platform module and refuses to start without it
+  (the startup check aborts, naming the missing module) - a deployment always has real
+  permissions.
+- **`apps/local`** ships without LuckPerms by default: every player permission check is denied,
+  while the console can still run every command it's allowed to run regardless of permissions
+  (e.g. `stop`). Build with LuckPerms included for local permission testing:
+  `./gradlew :apps:local:build -Ptitan.luckperms`.
+- Every start logs the active service: `Permissions resolved by luckperms` or
+  `Permissions resolved by deny-all`.
+- With the LuckPerms platform, the lobby starts and stops LuckPerms itself, in-process - it is no
+  longer loaded as a Minestom extension. **Do not deploy `extensions/luckperms.jar` or
+  `extensions/butterfly.jar`** - Butterfly is removed entirely (unused), and a leftover
+  `extensions/luckperms.jar` makes the lobby refuse to start (it would otherwise load LuckPerms
+  twice). LuckPerms' own data and configuration stay in `data/` next to the jar, unchanged from
+  before - keep that directory across an upgrade.
+- A CloudNet permission query for a player returns the same result as a permission check inside
+  the lobby, including LuckPerms contexts (e.g. a permission granted only for `server=lobby`).
+- `titan-cloudnet.jar`'s classpath changed with this permission platform - retrain its AOT cache
+  against the new jar before deploying it (see "Running the Server" above).
 
 ## Installation
 
