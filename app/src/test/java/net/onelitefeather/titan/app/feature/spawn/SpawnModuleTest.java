@@ -41,11 +41,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * {@code Env} (Cyano/Microtus) coverage for {@link SpawnModule}, built directly with fakes - see
- * {@code openspec/changes/dissolve-module-platform/tasks.md}, task 3.1. Covers the
- * {@code lobby-modules}/{@code lobby-hotbar} scenarios task 6.2 carries: spawning instance and
- * respawn point on configuration, teleport plus simulation distance plus equipment on spawn, and
- * the height-bounds teleport - plus that {@link SpawnModule#stop()} leaves no listener behind.
+ * {@code Env} (Cyano/Microtus) coverage for {@link SpawnModule}, built directly with fakes:
+ * spawning instance and respawn point on configuration, teleport plus simulation distance plus
+ * equipment on spawn, and the height-bounds teleport - plus that {@link SpawnModule#stop()} leaves
+ * no listener behind.
  */
 @ExtendWith(MicrotusExtension.class)
 class SpawnModuleTest {

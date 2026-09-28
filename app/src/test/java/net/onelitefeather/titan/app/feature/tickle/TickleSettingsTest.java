@@ -22,12 +22,10 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Unit tests for {@link TickleSettings#cooldownMillis(String)}: the {@code cooldownMillis}
- * parsing and validation described in the {@code lobby-module-config} spec ("Negative Dauer" and
- * "Ungültiger Override" scenarios), used both by {@link TickleModule#enable}'s one strict,
- * startup-only check and, indirectly, by {@link TickleAttackHandler}'s live, unvalidated read
- * (see {@code refactor/drop-runtime-fallback}: a runtime read is never re-validated and never
- * falls back to a shipped default, so this class no longer has a runtime counterpart to test).
- * No {@code io.avaje.config.Config} static facade and no server involved -
+ * parsing and validation, used both by {@link TickleModule#start}'s one strict, startup-only check
+ * and, indirectly, by {@link TickleAttackHandler}'s live, unvalidated read - a runtime read is
+ * never re-validated and never falls back to a shipped default. No
+ * {@code io.avaje.config.Config} static facade and no server involved -
  * {@link #configGetAsWrapsAFailureNamingTheKey} and
  * {@link #configGetAsKeepsTheNegativeDurationReasonAsTheCause} build their own, local
  * {@link Configuration} instance instead, exactly as {@code Config.getAs} would wrap this class's

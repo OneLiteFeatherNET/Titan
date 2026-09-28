@@ -42,10 +42,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Env integration coverage for {@link TickleModule}, built directly with a fresh {@code titan}
- * node and a fixed clock - see {@code openspec/changes/dissolve-module-platform/tasks.md}, task
- * 2.6: the scenarios a pure {@link TickleCooldownRuleTest} cannot reach because they need a real
- * {@link Player} and {@link Instance} - a feather-holding attack broadcasting the tickle message,
- * an attack without a feather doing nothing, and a second hit within the cooldown doing nothing.
+ * node and a fixed clock: the scenarios a pure {@link TickleCooldownRuleTest} cannot reach because
+ * they need a real {@link Player} and {@link Instance} - a feather-holding attack broadcasting the
+ * tickle message, an attack without a feather doing nothing, and a second hit within the cooldown
+ * doing nothing.
  *
  * <p>Every test uses a fixed {@link Clock} (F.I.R.S.T. - repeatable), so "now" never depends on
  * when the test happens to run.

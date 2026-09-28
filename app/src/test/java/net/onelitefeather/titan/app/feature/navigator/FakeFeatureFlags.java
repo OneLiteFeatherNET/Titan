@@ -27,9 +27,8 @@ import net.onelitefeather.titan.common.feature.FeatureFlags;
  * {@code net.onelitefeather.titan.common.feature.ConfigFeatureFlags}.
  *
  * <p>Exists so {@code NavigatorModule} and {@code Destination} tests never need a real classpath
- * {@code application.yaml} file or the static {@code io.avaje.config.Config} facade - see
- * {@code openspec/changes/lobby-feature-modules/design.md}, decision 13, and this codebase's
- * F.I.R.S.T. rule against a real file or a static singleton in a test.
+ * {@code application.yaml} file or the static {@code io.avaje.config.Config} facade - this
+ * codebase's F.I.R.S.T. rule against a real file or a static singleton in a test.
  */
 final class FakeFeatureFlags implements FeatureFlags {
 

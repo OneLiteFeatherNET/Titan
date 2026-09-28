@@ -43,9 +43,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * Exercises {@link ProtectionModule} through direct construction, the way it will run in the
  * lobby: every event it cancels needs a real {@link Player}, so this attaches a fresh {@code titan}
  * node under the given Microtus {@code Env}'s global event handler and starts the module against
- * it, mirroring what {@code PlatformBeans}/Avaje Inject do in production. Ports the behaviour
- * {@code ProtectionListenersTest} pinned down for the old, module-less wiring in
- * {@code Titan#initListeners()}.
+ * it, mirroring what {@code PlatformBeans}/Avaje Inject do in production.
  */
 @ExtendWith(MicrotusExtension.class)
 class ProtectionModuleTest {

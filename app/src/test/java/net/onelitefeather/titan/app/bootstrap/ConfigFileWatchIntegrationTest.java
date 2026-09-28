@@ -40,18 +40,15 @@ import org.junit.jupiter.api.io.TempDir;
  * Integration coverage (child JVM, no Minestom server) for avaje-config's built-in file watcher
  * ({@code config.watch.enabled}) making a changed value visible through the static {@code Config}
  * facade on the next read - with no module restart and no handler reacting to the change - and for
- * {@code ConfigFeatureFlags} reading a flag from an environment variable rather than the removed
- * {@code flags.properties}. See {@code openspec/changes/config-reload-feature-flags/design.md},
- * decision 1, and {@code tasks.md}, task 3.7.
+ * {@code ConfigFeatureFlags} reading a flag from an environment variable rather than a
+ * {@code flags.properties} file.
  *
  * <p>Each scenario runs in its own child JVM, started via {@link ProcessBuilder} with a
  * {@code @TempDir} as its working directory - {@code avaje-config} resolves files against the real
- * working directory and reads {@code System.getenv} directly, with no injectable provider (see
- * {@code openspec/changes/avaje-config-facade/design.md}, decision 6's spike result), so neither
- * can be faked in-process without breaking Independent/Repeatable. No {@code Config} mutator
- * ({@code setProperty}/{@code putAll}/{@code clearProperty}/{@code eventBuilder}) is ever called
- * from this test or the child mains it drives - see
- * {@code openspec/changes/avaje-config-facade/design.md}, decision 5.
+ * working directory and reads {@code System.getenv} directly, with no injectable provider, so
+ * neither can be faked in-process without breaking Independent/Repeatable. No {@code Config}
+ * mutator ({@code setProperty}/{@code putAll}/{@code clearProperty}/{@code eventBuilder}) is ever
+ * called from this test or the child mains it drives.
  */
 class ConfigFileWatchIntegrationTest {
 

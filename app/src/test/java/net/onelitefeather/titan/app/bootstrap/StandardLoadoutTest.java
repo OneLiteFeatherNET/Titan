@@ -45,17 +45,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 
 /**
- * Cross-feature coverage for the {@code lobby-hotbar} spec's "Standardausstattung", moved here (see
- * {@code openspec/changes/dissolve-module-platform/tasks.md}, task 3 review fixes) once
- * {@link NavigatorModule}'s lifecycle methods went back to package-private: a joining player must
- * end up with exactly the feather in hotbar slot 4 and the elytra on the chestplate - nothing else
- * - and using the feather must still open the (single, shared) navigator inventory, once
+ * Cross-feature coverage for a joining player's standard loadout: a joining player must end up
+ * with exactly the feather in hotbar slot 4 and the elytra on the chestplate - nothing else - and
+ * using the feather must still open the (single, shared) navigator inventory, once
  * {@link NavigatorModule} and {@link ElytraModule} are both bean-based features contributing their
  * items through {@link LobbyItems}.
  *
  * <p>Driven through the real {@link BeanScope} - exactly the wiring {@code Titan} builds in
  * production - rather than direct construction, since neither module's {@code start()}/
- * {@code stop()} is reachable from this package any more.
+ * {@code stop()} is reachable from this package.
  *
  * <p><strong>Why the scope is bound to {@code env}'s own instance:</strong> see
  * {@code NavigatorProtectionOrderingTest}'s class Javadoc - the same real {@code SpawnModule}

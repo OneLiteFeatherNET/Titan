@@ -39,12 +39,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Env integration coverage for {@link RespawnModule}, built directly with fakes - see
- * {@code openspec/changes/dissolve-module-platform/tasks.md}, task 3.1: a real death must produce
- * no message and a respawn by the next tick (see the class Javadoc on {@link RespawnModule} for
- * why it cannot be synchronous), and a real respawn must hand the player back exactly the
- * platform's currently registered loadout. Calling {@link RespawnModule#stop()} must leave the
- * player untouched by further events.
+ * Env integration coverage for {@link RespawnModule}, built directly with fakes: a real death must
+ * produce no message and a respawn by the next tick (see the class Javadoc on
+ * {@link RespawnModule} for why it cannot be synchronous), and a real respawn must hand the player
+ * back exactly the platform's currently registered loadout. Calling {@link RespawnModule#stop()}
+ * must leave the player untouched by further events.
  */
 @ExtendWith(MicrotusExtension.class)
 class RespawnModuleTest {

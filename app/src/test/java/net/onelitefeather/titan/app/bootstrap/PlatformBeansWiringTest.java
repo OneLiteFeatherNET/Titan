@@ -32,8 +32,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * Builds the real Avaje Inject {@link BeanScope}, exactly like {@code WiringTest}, and proves the
  * two platform beans {@link PlatformBeans} adds actually wire: {@link Scheduler} resolves to the
  * real scheduler manager, and {@link LobbyItems} builds successfully from the item beans the
- * features contribute. See {@code openspec/changes/dissolve-module-platform/tasks.md}, task 1.4;
- * {@code WiringTest} additionally covers the exact item count and every feature bean.
+ * features contribute. {@code WiringTest} additionally covers the exact item count and every
+ * feature bean.
  */
 @ExtendWith(MicrotusExtension.class)
 @Timeout(30)

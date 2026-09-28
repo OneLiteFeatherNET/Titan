@@ -26,9 +26,7 @@ import net.onelitefeather.titan.api.deliver.Deliver;
  * assert which player was sent to which destination.
  *
  * <p>Mirrors the idea of {@code net.onelitefeather.titan.app.testutils.DummyDeliver} - a no-op
- * {@link Deliver} for tests - but kept local to this package and extended to record calls, per
- * task 6.4's rule that wave C only adds files under {@code app/feature/navigator} and its test
- * package, never touching existing {@code testutils} classes.
+ * {@link Deliver} for tests - but kept local to this package and extended to record calls.
  */
 final class RecordingDeliver implements Deliver {
 

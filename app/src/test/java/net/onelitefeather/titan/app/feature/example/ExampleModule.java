@@ -29,35 +29,25 @@ import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.onelitefeather.titan.app.module.FeatureNode;
 
 /**
- * Template for a new lobby feature, referenced end to end from {@code docs/lobby-modules.md}. It is
- * deliberately small but touches every extension point a typical feature needs: reading and
- * validating a configuration value at the edge of {@link #start()}, a hotbar item
+ * Template for a new lobby feature, referenced end to end from {@code docs/lobby-modules.md}. It
+ * touches every extension point a typical feature needs: reading and validating a configuration
+ * value at the edge of {@link #start()}, a hotbar item
  * ({@link ExampleGreetingItems#greetingToken(ExampleModule)}), and a listener that cleans up
- * per-player state on disconnect. There is no command any more - the command extension point the
- * old module platform offered went away with it (see
- * {@code openspec/changes/dissolve-module-platform/proposal.md}), and no feature ever needs one:
- * {@code StopCommand}/{@code EndCommand} register with the {@code CommandManager} directly. The
- * pure
- * decision logic lives in {@link ExampleGreetingRule}, unit-tested on its own; the pure validation
- * lives in {@link ExampleGreetingSettings}, also unit-tested on its own; the stateful cooldown
- * tracking lives in {@link ExampleGreetingTracker}.
+ * per-player state on disconnect. The pure decision logic lives in {@link ExampleGreetingRule},
+ * the pure validation in {@link ExampleGreetingSettings}, and the stateful cooldown tracking in
+ * {@link ExampleGreetingTracker} - each unit-tested on its own.
  *
- * <p>This template has no section of its own in the shipped {@code application.yaml}: adding one
- * just for a copy-and-delete template would be a key nothing in production ever reads. So
+ * <p>This template has no section of its own in the shipped {@code application.yaml}, so
  * {@link #start()} validates {@link #DEFAULT_GREETING}/{@link #DEFAULT_COOLDOWN_MILLIS} directly
  * instead of reading them from {@code Config} - see {@link #start()}'s Javadoc for the snippet a
  * real feature would write in its place.
  *
- * <p>Test-only on purpose (see {@code app/src/test/.../app/feature/example}, not
- * {@code app/src/main}): it is a copyable starting point for a real feature, not a feature itself.
- * It carries {@code @Singleton} anyway, so it stays a <em>correct</em> copy template - but it is
- * still never discovered as a lobby feature, because Avaje Inject's annotation processor does not
- * run for test sources (no {@code testAnnotationProcessor}, see {@code app/build.gradle.kts});
- * {@code WiringTest} keeps finding exactly the seven features under {@code app/src/main}, not this
- * one. Its {@link #EVENT_PRIORITY} is deliberately past the highest real feature (elytra, 700), so
- * nobody mistakes it for a real slot in the priority table in {@code docs/lobby-modules.md} - a
- * real
- * feature picks its own, still-unused value from that table instead of copying this one.
+ * <p>Test-only on purpose: it is a copyable starting point for a real feature, not a feature
+ * itself. It carries {@code @Singleton} anyway, so it stays a <em>correct</em> copy template, but
+ * Avaje Inject's annotation processor does not run for test sources, so it is never discovered as
+ * a lobby feature. Its {@link #EVENT_PRIORITY} is deliberately past the highest real feature
+ * (elytra, 700), so a real feature picks its own, still-unused value from the priority table in
+ * {@code docs/lobby-modules.md} instead of copying this one.
  *
  * <p>Behaviour: using {@link ExampleGreetingItems#greetingToken(ExampleModule)} sends the player
  * {@link #DEFAULT_GREETING} with their name substituted in, unless they are still within
@@ -122,7 +112,7 @@ final class ExampleModule {
      * Reads and validates this feature's configuration at the edge, then attaches its own event
      * node with its one listener.
      *
-     * <p>Lesen am Rand (design.md, decision 3): a real feature reads its own section here, e.g.
+     * <p>A real feature reads its own section here, e.g.
      *
      * <pre>{@code
      * String greeting = ExampleGreetingSettings.greeting(Config.get(ExampleGreetingSettings.GREETING_KEY));

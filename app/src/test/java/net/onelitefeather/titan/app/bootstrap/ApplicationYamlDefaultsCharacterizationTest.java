@@ -23,26 +23,22 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Locks in that the classpath {@code app/src/main/resources/application.yaml} - the single source
- * of every module's shipped defaults, read directly through {@code io.avaje.config.Config} (see
- * {@code openspec/changes/avaje-config-facade/design.md}, decision 2) - carries exactly the
- * expected defaults of the {@code sit}, {@code spawn}, {@code tickle} and {@code elytra} sections,
- * key by key. Each module's own per-field configuration type is gone (see design.md, decision 7),
- * so the expected values are spelled out literally here instead of compared against one.
+ * of every module's shipped defaults, read directly through {@code io.avaje.config.Config} -
+ * carries exactly the expected defaults of the {@code sit}, {@code spawn}, {@code tickle} and
+ * {@code elytra} sections, key by key. Each module's own per-field configuration type is gone, so
+ * the expected values are spelled out literally here instead of compared against one.
  *
- * <p>The navigator's destinations are no longer part of this file at all - see
- * {@code openspec/changes/navigator-entries-in-code/design.md}, decision 2 - so they are guarded by
+ * <p>The navigator's destinations are not part of this file at all - they are guarded by
  * {@code net.onelitefeather.titan.app.feature.navigator.NavigatorDestinationTest} instead, as a
  * plain unit test of the {@code Destination} enum.
  *
  * <p>Loads the file as its own {@link Configuration} instance via
  * {@link Configuration.Builder#load(String)} - which reads a classpath resource, never the static
- * {@code io.avaje.config.Config} facade (see design.md, decision 5: unit tests never touch that
- * facade) - so this test has no dependency on JVM-wide state and stays Independent and Repeatable
- * (F.I.R.S.T.).
+ * {@code io.avaje.config.Config} facade - so this test has no dependency on JVM-wide state and
+ * stays Independent and Repeatable (F.I.R.S.T.).
  *
  * <p>This is the safety net that a shipped default cannot silently drift out from under whichever
- * module reads it - the only other place any of these values could be found is the
- * {@code lobby-module-config} spec's own examples, which this test does not read.
+ * module reads it.
  */
 class ApplicationYamlDefaultsCharacterizationTest {
 

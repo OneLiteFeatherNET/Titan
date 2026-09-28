@@ -33,28 +33,28 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Integration coverage for the {@code lobby-module-config} spec requirement "Overrides have a
- * fixed rank order": the static {@code io.avaje.config.Config} facade {@link
+ * Integration coverage for configuration override precedence: the static
+ * {@code io.avaje.config.Config} facade {@link
  * ConfigurationPrintMain} touches exactly the way {@link net.onelitefeather.titan.app.Titan} does
  * in production - built-in first, no factory of its own in between - resolves the shipped classpath
  * {@code application.yaml} (see {@code app/src/main/resources/application.yaml}), the working
  * directory's own {@code application.yaml}, its active profiles, an external file, environment
- * variables and system properties in the order the spec fixes. The classpath file's own
+ * variables and system properties in a fixed rank order. The classpath file's own
  * {@code spawn.simulationDistance} default is {@code 2} and its {@code tickle.cooldownMillis}
  * default is {@code 4000} throughout this test (see that file), so a case that does not override
- * either key resolves to those values, never {@code <absent>} - the lowest rank in "Overrides have
- * a fixed rank order" is the shipped default, not nothing.
+ * either key resolves to those values, never {@code <absent>} - the lowest rank is the shipped
+ * default, not nothing.
  *
  * <p>{@code avaje-config} resolves files against the JVM's real working directory and reads
- * {@code System.getenv} directly, with no injectable provider (see {@code design.md}, decision 6's
- * spike result). Neither can be faked in-process without breaking Independent/Repeatable (F.I.R.S.T
- * - no {@code System.setProperty}/{@code getenv} tampering, no changing {@code user.dir}), so every
- * case here runs {@link ConfigurationPrintMain} in its own child JVM, started via {@link
+ * {@code System.getenv} directly, with no injectable provider. Neither can be faked in-process
+ * without breaking Independent/Repeatable (F.I.R.S.T - no {@code System.setProperty}/
+ * {@code getenv} tampering, no changing {@code user.dir}), so every case here runs {@link
+ * ConfigurationPrintMain} in its own child JVM, started via {@link
  * ProcessBuilder} with a {@code @TempDir} as its working directory and a controlled environment:
  * {@code environment().clear()}, then only the variables the case needs (plus {@code PATH}/
  * {@code JAVA_HOME}, which a JVM needs to start cleanly on every platform). The child prints one
  * {@code key=value} line per requested configuration key to stdout; this test asserts on those
- * lines and, where the spec cares, on the temp directory's contents.
+ * lines and, where relevant, on the temp directory's contents.
  */
 class ConfigurationPrecedenceTest {
 
@@ -152,7 +152,7 @@ class ConfigurationPrecedenceTest {
     void brokenApplicationYamlAbortsCleanlyNamingFileAndPosition(@TempDir Path workingDir) throws IOException, InterruptedException {
         // Line 3 is missing the ":" after "maxHeight" - a mapping value where a key was expected,
         // exactly the class of syntax error the E2E smoke test found hangs the real process instead
-        // of exiting (see lobby-module-config spec, scenario "Syntaktisch kaputte Datei").
+        // of exiting.
         Files.writeString(workingDir.resolve("application.yaml"), "spawn:\n  minHeight: -64\n   maxHeight: 310\n");
 
         List<String> output = runExpectingFailure(workingDir, Map.of(), List.of());

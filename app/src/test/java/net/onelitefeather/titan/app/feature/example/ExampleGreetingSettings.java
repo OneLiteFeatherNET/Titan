@@ -16,10 +16,9 @@
 package net.onelitefeather.titan.app.feature.example;
 
 /**
- * Pure validation for the {@code example} module's two values - the "prüfen in reinen Funktionen"
- * half of the pattern described in {@code docs/lobby-modules.md}, "Konfiguration lesen" (design.md,
- * decision 3). A real module pairs a function like this with a read at the edge of its own
- * {@code enable()}, e.g.
+ * Pure validation for the {@code example} module's two values - the half of the config pattern
+ * described in {@code docs/lobby-modules.md} that stays outside {@code Config}. A real module
+ * pairs a function like this with a read at the edge of its own {@code start()}, e.g.
  *
  * <pre>{@code
  * String greeting = ExampleGreetingSettings.greeting(Config.get(GREETING_KEY));
@@ -27,14 +26,13 @@ package net.onelitefeather.titan.app.feature.example;
  * }</pre>
  *
  * <p>This template has no section of its own in the shipped {@code application.yaml} (see
- * {@link ExampleModule}'s class Javadoc for why), so {@link ExampleModule#enable} validates its own
+ * {@link ExampleModule}'s class Javadoc for why), so {@link ExampleModule#start} validates its own
  * hardcoded defaults instead of performing that read - the snippet above is what a real module with
  * a real section would write in its place.
  *
  * <p>Package-private, with its own unit test ({@code ExampleGreetingSettingsTest}) that never
- * touches {@code Config} (design.md, decision 5): a pure function like this takes a value and
- * either returns it or throws {@link IllegalArgumentException}, so it is testable with plain inputs
- * and outputs.
+ * touches {@code Config}: a pure function like this takes a value and either returns it or throws
+ * {@link IllegalArgumentException}, so it is testable with plain inputs and outputs.
  */
 final class ExampleGreetingSettings {
 

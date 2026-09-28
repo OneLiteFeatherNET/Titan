@@ -21,23 +21,20 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Ported from Voyager's {@code FireworkBoostTrackerTest}
- * ({@code net.elytrarace.voyager.platform.flight.FireworkBoostTrackerTest}): the burn is pure
- * arithmetic and is tested as such - no {@code Env}, no {@code Player}, no rocket. F.I.R.S.T., test
- * pyramid: this is the pure unit layer for {@link FireworkBoostTracker}; {@link ElytraModuleTest}
- * covers the entity/event half through a real {@link ElytraFixture}.
- *
- * <h2>What the fixtures are built to tell apart</h2>
+ * Ported from Voyager's {@code FireworkBoostTrackerTest}: the burn is pure arithmetic and is
+ * tested as such - no {@code Env}, no {@code Player}, no rocket. This is the pure unit layer for
+ * {@link FireworkBoostTracker}; {@link ElytraModuleTest} covers the entity/event half through a
+ * real {@link ElytraFixture}.
  *
  * <p>{@code SHORT_BURN}/{@code SHORT_COOLDOWN} burn 4 and cool down 9; {@code LONG_BURN}/
- * {@code LONG_COOLDOWN} burn 7 and cool down 11. Neither
- * burn divides the other, neither cooldown is twice its burn, and no number appears in both - so a
- * tracker that read the burn where it meant the cooldown, or that kept the first configuration it
- * ever saw, produces a count that is in neither column.
+ * {@code LONG_COOLDOWN} burn 7 and cool down 11, chosen so neither burn divides the other, neither
+ * cooldown is twice its burn, and no number appears in both - a tracker that read the burn where it
+ * meant the cooldown, or that kept the first configuration it ever saw, would produce a count that
+ * is in neither column.
  *
- * <p>Two players, never one. Every per-player assertion is made against a second player whose
- * state is deliberately different at that moment, because a tracker keyed on nothing at all would
- * pass every single-player test in this file.
+ * <p>Every per-player assertion uses two players, never one, with deliberately different state at
+ * that moment, because a tracker keyed on nothing at all would pass every single-player test in
+ * this file.
  */
 class FireworkBoostTrackerTest {
 

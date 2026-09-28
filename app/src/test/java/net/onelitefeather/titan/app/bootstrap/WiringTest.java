@@ -42,32 +42,25 @@ import org.mockito.Mockito;
 
 /**
  * Builds the real Avaje Inject {@link BeanScope} - the same discovery {@code Titan} runs at
- * startup - and proves the wiring {@code openspec/changes/dissolve-module-platform/design.md}
- * decisions 1 and 4 describe: every one of the seven lobby features is a bean the scope builds
- * (each starting itself through its own {@code @PostConstruct}), {@link LobbyItems} collects
- * exactly the three item beans the features contribute, closing the scope detaches every feature's
- * event node again, and a feature whose start fails aborts the whole build with an exception whose
- * stack trace names it.
- *
- * <p>Replaces the previous wiring test, which asserted the module-list-based discovery this change
- * removes (see task 3.2).
+ * startup - and proves the wiring: every one of the seven lobby features is a bean the scope
+ * builds (each starting itself through its own {@code @PostConstruct}), {@link LobbyItems}
+ * collects exactly the three item beans the features contribute, closing the scope detaches every
+ * feature's event node again, and a feature whose start fails aborts the whole build with an
+ * exception whose stack trace names it.
  *
  * <p><strong>Hermetic seam:</strong> two of {@code app.bootstrap.PlatformBeans}' beans touch the
  * filesystem or a process-wide static in production - {@link MapProvider} reads {@code worlds/},
  * and {@link FeatureFlags} (the real {@code ConfigFeatureFlags}) reads {@code features.*} through
- * the static, process-wide {@code io.avaje.config.Config} facade (a global neither this test
- * nor {@code PlatformBeans} controls, and {@code common} - which owns it - is out of scope for
- * this change). Building the scope with those two built for real would make this test read and
- * depend on repository-relative files - not Repeatable, and exactly the untracked {@code worlds/}
- * the task warns against. Avaje Inject ships a test-only escape hatch for precisely this:
+ * the static, process-wide {@code io.avaje.config.Config} facade. Building the scope with those
+ * two built for real would make this test read and depend on repository-relative files - not
+ * Repeatable. Avaje Inject ships a test-only escape hatch for precisely this:
  * {@code BeanScope.builder().forTesting().mock(Type)} registers a Mockito mock for that type
  * <em>before</em> the scope is built, and every generated factory method checks whether its bean
  * type is already supplied before constructing one - so {@code PlatformBeans#mapProvider} and
  * {@code #featureFlags} never run at all, and every other bean (all seven features, the shared
  * event node, {@code LobbyItems} and its three item beans, {@code Deliver}, {@code Clock}, and -
  * since nothing overrides it - the real {@code InstanceContainer}) is built exactly as
- * {@code Titan}
- * builds it in production.
+ * {@code Titan} builds it in production.
  */
 @ExtendWith(MicrotusExtension.class)
 @Timeout(30)

@@ -25,12 +25,10 @@ import org.junit.jupiter.api.Test;
  * Guards the shipped classpath {@code application.yaml} against a {@link Destination} that gates
  * itself behind a feature flag the {@code features} section does not list.
  *
- * <p>Unlike before {@code openspec/changes/navigator-entries-in-code},
- * {@link Destination#feature()}
- * is fixed in code rather than read from configuration, so this can no longer fail at start-up via
- * a registry validation - it is a plain unit test instead, guarding the shipped defaults directly.
- * This test would have failed the moment {@code features.NAVIGATOR_SLENDER} was missing while
- * {@link Destination#SLENDER} still names it.
+ * <p>{@link Destination#feature()} is fixed in code rather than read from configuration, so this
+ * is a plain unit test guarding the shipped defaults directly, rather than a start-up registry
+ * validation. This test would have failed the moment {@code features.NAVIGATOR_SLENDER} was
+ * missing while {@link Destination#SLENDER} still names it.
  *
  * <p>Loads {@code application.yaml} as its own, independent {@link Configuration} instance -
  * exactly like {@link net.onelitefeather.titan.common.feature.ConfigFeatureFlags} does in

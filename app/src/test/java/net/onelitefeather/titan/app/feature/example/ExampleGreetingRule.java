@@ -23,8 +23,8 @@ import net.kyori.adventure.text.Component;
  * {@link net.minestom.server.entity.Player} or an {@code Env} - the base of the test pyramid, see
  * {@code docs/lobby-modules.md}.
  *
- * <p>Package-private: no other feature touches this directly, see {@code design.md}, decision 9
- * ("Tags/Items gehören dem Feature") - the same reasoning applies to a feature's own pure logic.
+ * <p>Package-private: no other feature touches this directly - a feature's tags, items and pure
+ * logic belong to that feature alone.
  */
 final class ExampleGreetingRule {
 

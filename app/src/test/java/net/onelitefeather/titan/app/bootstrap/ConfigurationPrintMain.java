@@ -21,8 +21,8 @@ import io.avaje.config.Configuration;
 /**
  * The child process entry point {@link ConfigurationPrecedenceTest} launches: touches the same
  * static {@link Config} facade {@code PlatformBeans}/{@code Titan} use - built-in first, no factory
- * of its own wraps that touch (see {@code openspec/changes/avaje-config-facade/design.md}, decision
- * 1) - then either prints one {@code key=value} line per requested key to stdout - {@code <absent>}
+ * of its own wraps that touch - then either prints one {@code key=value} line per requested key to
+ * stdout - {@code <absent>}
  * if the key resolves to nothing at all - or, for {@value #LOG_ACTIVE_PROFILES}, runs
  * {@link ConfigurationStartupLog#activeProfiles()}. Either way, the parent test process - which
  * cannot reach into this JVM's memory - asserts on what this process printed.
@@ -40,8 +40,7 @@ import io.avaje.config.Configuration;
  * {@code Configuration.get(key, "<absent>")} - the original, plain read mode. This mode alone
  * covers reading a nested, freshly-added key such as {@code parkour.checkpoint.slot} - printing it
  * demonstrates that a working-directory entry merges alongside the shipped defaults, without a
- * validation bridge of its own (see {@code openspec/changes/avaje-config-facade/design.md},
- * decision 6).</li>
+ * validation bridge of its own.</li>
  * </ul>
  * A module's own read-and-validate path (e.g. {@code tickle.cooldownMillis} through
  * {@code Config.getAs(key, TickleSettings::cooldownMillis)}) is covered by that module's own unit

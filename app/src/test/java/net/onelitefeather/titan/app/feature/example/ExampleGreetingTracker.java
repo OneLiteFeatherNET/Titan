@@ -42,9 +42,9 @@ final class ExampleGreetingTracker {
     /**
      * @param clock          the clock "now" is read from
      * @param greeting       this module's validated greeting template, read and validated once in
-     *                       {@link ExampleModule#enable}
+     *                       {@link ExampleModule#start}
      * @param cooldownMillis this module's validated cooldown in milliseconds, read and validated
-     *                       once in {@link ExampleModule#enable}
+     *                       once in {@link ExampleModule#start}
      */
     ExampleGreetingTracker(Clock clock, String greeting, long cooldownMillis) {
         this.clock = clock;

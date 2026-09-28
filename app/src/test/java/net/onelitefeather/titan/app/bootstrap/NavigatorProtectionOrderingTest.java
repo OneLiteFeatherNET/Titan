@@ -46,24 +46,19 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 
 /**
- * Cross-feature coverage for {@link NavigatorModule} and {@link ProtectionModule}, moved here (see
- * {@code openspec/changes/dissolve-module-platform/tasks.md}, task 3 review fixes) once both
- * features' lifecycle methods went back to package-private: a test in their own feature package can
- * no longer call {@code start()}/{@code stop()} directly, so this drives them through the real
- * {@link BeanScope} instead - exactly the wiring {@code Titan} builds in production.
+ * Cross-feature coverage for {@link NavigatorModule} and {@link ProtectionModule}: both features'
+ * lifecycle methods are package-private, so this drives them through the real {@link BeanScope}
+ * instead - exactly the wiring {@code Titan} builds in production.
  *
- * <p>{@code lobby-modules} spec, "Schutz und Navigator beim selben Klick": a navigator click must
- * forward via {@link Deliver} and still be cancelled by {@link ProtectionModule}, "egal in welcher
- * Reihenfolge protection und navigator gestartet wurden". Unlike the old, module-list-ordered
- * platform this used to run on, there is no longer a controllable "start order" to flip: the
+ * <p>A navigator click must forward via {@link Deliver} and still be cancelled by
+ * {@link ProtectionModule}, regardless of which order the two features are built in: the
  * {@link BeanScope} decides bean construction order itself, and the outcome this test checks does
  * not depend on it either way - {@link ProtectionModule} cancels every
  * {@link InventoryPreClickEvent} on its own event node, but {@link NavigatorModule} never competes
  * for that event in the first place, because its inventory click is handled by Aves' own
  * inventory-mapped dispatch, which Minestom always runs before any regular event node's listener
  * chain (see {@link NavigatorModule}'s class Javadoc). This test therefore exercises the real,
- * DI-built wiring once, which is the only order that can ever occur in production, rather than two
- * artificial constructions of a distinction the architecture no longer has.
+ * DI-built wiring once, which is the only order that can ever occur in production.
  *
  * <p><strong>Why the scope is bound to {@code env}'s own instance:</strong> the real scope also
  * builds {@code SpawnModule}, which reacts to every joining player - including one created for

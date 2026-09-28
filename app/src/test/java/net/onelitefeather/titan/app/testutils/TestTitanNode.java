@@ -25,12 +25,9 @@ import net.minestom.testing.Env;
  * handler - exactly the shape {@code app.bootstrap.PlatformBeans} attaches in production, minus the
  * {@code BeanScope}.
  *
- * <p>Extracted from the near-identical "attach a fresh titan test node, remove it on close"
- * boilerplate several feature tests used to repeat (see
- * {@code openspec/changes/dissolve-module-platform/tasks.md}, task 3 review fixes): a test builds
- * one feature (or several, sharing the same node, for a cross-feature test) directly against
- * {@link #node()}, then closes this fixture - ideally via try-with-resources - once done, so the
- * node never leaks into a later test (F.I.R.S.T. - Independent).
+ * <p>A test builds one feature (or several, sharing the same node, for a cross-feature test)
+ * directly against {@link #node()}, then closes this fixture - ideally via try-with-resources -
+ * once done, so the node never leaks into a later test (F.I.R.S.T. - Independent).
  */
 public final class TestTitanNode implements AutoCloseable {
 

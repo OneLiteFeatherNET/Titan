@@ -29,9 +29,8 @@ import org.junit.jupiter.api.Test;
  * enum's fixed slots and the pure {@link Destination#visible(net.onelitefeather.titan.common.
  * feature.FeatureFlags)} function.
  *
- * <p>Pairwise-distinct slots replaces the old start-up conflict check the platform-wide entry
- * registry used to run: a duplicate slot is now a programming error caught here, not at start-up
- * (see {@code openspec/changes/navigator-entries-in-code/design.md}, decision 2).
+ * <p>Pairwise-distinct slots are checked here rather than at start-up: a duplicate slot is a
+ * programming error caught by this test.
  */
 class NavigatorDestinationTest {
 

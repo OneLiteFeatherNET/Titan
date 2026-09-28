@@ -34,11 +34,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Re-points the idea of the old, {@code @Disabled}
- * {@code net.onelitefeather.titan.app.navigator.NavigatorListenerLeakTest} at {@link
- * NavigatorModule}: repeatedly opening and closing the shared navigator, and many players joining,
- * opening it once and leaving, must never change the number of listeners registered - neither on
- * the module's own event node, nor on the event node Aves registered its click listener on.
+ * Leak coverage for {@link NavigatorModule}: repeatedly opening and closing the shared navigator,
+ * and many players joining, opening it once and leaving, must never change the number of
+ * listeners registered - neither on the module's own event node, nor on the event node Aves
+ * registered its click listener on.
  *
  * <p>{@link NavigatorModule} registers no listener of its own at all:
  * {@link NavigatorModule#start()}
@@ -58,9 +57,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(MicrotusExtension.class)
 class NavigatorModuleLeakTest {
 
-    // design.md suggests 100 players for the "player leaves" scenario; a smaller number would
-    // already prove the same structural point, but 100 is fast enough here since nothing beyond
-    // Env#createPlayer itself is expensive - no per-player registration happens anymore.
+    // 100 players proves the same structural point a smaller number would, but is fast enough
+    // here since nothing beyond Env#createPlayer itself is expensive.
     private static final int PLAYER_COUNT = 100;
     private static final int OPEN_CLOSE_COUNT = 50;
 

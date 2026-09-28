@@ -26,14 +26,13 @@ import java.util.Map;
  * registered directly on a given {@link EventNode}.
  *
  * <p>Minestom does not offer a public API to read this back (only {@link EventNode#hasListener}
- * for a single event type). As noted in
- * {@code openspec/changes/lobby-feature-modules/design.md} (Open Questions), the fallback is to
- * reflect into {@code EventNodeImpl#listenerMap}. This is an implementation detail of the
- * Minestom version this project builds against and may need adjusting on an upgrade.
+ * for a single event type), so the fallback is to reflect into
+ * {@code EventNodeImpl#listenerMap}. This is an implementation detail of the Minestom version this
+ * project builds against and may need adjusting on an upgrade.
  *
  * <p>Kept here (rather than inline in a single test) because several characterization and
- * platform tests for the {@code lobby-feature-modules} change need to assert that listener
- * counts do not grow across a lifecycle event (leak tests, module shutdown tests, ...).
+ * platform tests need to assert that listener counts do not grow across a lifecycle event (leak
+ * tests, module shutdown tests, ...).
  */
 public final class EventListenerCounter {
 

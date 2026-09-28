@@ -197,9 +197,8 @@ class ExampleModuleTest {
                 env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, token, 0L));
                 module.stop();
 
-                // Once stopped, this feature's own event node is detached, so a disconnect no
-                // longer clears the cooldown started above - a second use must still report
-                // "on cooldown" rather than a fresh greeting.
+                // stop() detaches this feature's own event node, so the disconnect below has no
+                // listener left to clear the cooldown.
                 env.process().eventHandler().call(new PlayerDisconnectEvent(player));
                 env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, token, 1L));
 

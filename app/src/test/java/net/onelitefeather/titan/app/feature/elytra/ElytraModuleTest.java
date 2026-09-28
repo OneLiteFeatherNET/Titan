@@ -42,11 +42,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * End-to-end coverage for {@link ElytraModule} through direct construction (see
- * {@link ElytraFixture}): the {@code lobby-hotbar} spec scenarios "Standardausstattung" (the elytra
- * half), "Feuerwerk beim Fliegen", "Feuerwerk nach dem Landen" and "Boost beim Fliegen" - ported
- * from Voyager (see {@link FireworkBoostTracker} and {@link FireworkRockets}): using the firework
- * while flying spawns a real rocket entity the client boosts itself with, instead of the lobby
- * pushing a velocity. Drives ticks with {@link Env#tick()}; no sleeps.
+ * {@link ElytraFixture}): the elytra's standard loadout, the firework hand-out while flying and
+ * after landing, and the boost while flying - ported from Voyager (see
+ * {@link FireworkBoostTracker} and {@link FireworkRockets}): using the firework while flying
+ * spawns a real rocket entity the client boosts itself with, instead of the lobby pushing a
+ * velocity. Drives ticks with {@link Env#tick()}; no sleeps.
  */
 @ExtendWith(MicrotusExtension.class)
 class ElytraModuleTest {

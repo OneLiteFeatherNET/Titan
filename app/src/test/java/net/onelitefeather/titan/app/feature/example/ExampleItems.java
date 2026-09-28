@@ -23,8 +23,8 @@ import net.minestom.server.item.Material;
 /**
  * The {@code example} module's own item stacks and fixed messages, kept apart from
  * {@link ExampleModule} for readability - the same split {@code ElytraItems} uses. Package-private:
- * no other feature touches these directly, see {@code design.md}, decision 9 ("Tags/Items gehören
- * dem Feature").
+ * no other feature touches these directly - a feature's tags and items belong to that feature
+ * alone.
  */
 final class ExampleItems {
 
