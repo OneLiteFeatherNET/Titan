@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.app.feature.protection;
+package net.onelitefeather.titan.feature.protection;
 
 import net.minestom.server.coordinate.BlockVec;
 import net.minestom.server.entity.ItemEntity;

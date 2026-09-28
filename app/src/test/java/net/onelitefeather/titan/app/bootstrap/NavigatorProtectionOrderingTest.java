@@ -33,7 +33,7 @@ import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.deliver.DeliverComponent;
 import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.app.feature.navigator.NavigatorModule;
-import net.onelitefeather.titan.app.feature.protection.ProtectionModule;
+import net.onelitefeather.titan.feature.protection.ProtectionModule;
 import net.onelitefeather.titan.core.module.item.LobbyItems;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.common.map.LobbyMap;

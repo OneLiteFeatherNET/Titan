@@ -113,7 +113,13 @@ tasks {
         // relocation-free application fat jar; drop signatures and module-info.
         exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
         exclude("module-info.class", "META-INF/versions/**/module-info.class")
-        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+        // Every features/* column ships its own META-INF/services/io.avaje.inject.spi.InjectExtension
+        // entry; DuplicatesStrategy.EXCLUDE (this task's own default) drops every duplicate path
+        // before mergeServiceFiles()'s transformer ever sees them, so only one column's Avaje
+        // module would survive the shade (see docs/lobby-modules.md, "Wie eine Column
+        // Plattform-Beans bekommt"). INCLUDE lets every duplicate reach the transformer instead,
+        // which is what actually merges them.
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
     }
 }
 
