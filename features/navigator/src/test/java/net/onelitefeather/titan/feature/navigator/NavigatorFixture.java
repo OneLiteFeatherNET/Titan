@@ -15,18 +15,24 @@
  */
 package net.onelitefeather.titan.feature.navigator;
 
-import java.util.List;
 import net.minestom.server.entity.Player;
+import net.minestom.server.entity.PlayerHand;
+import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.testing.Env;
 import net.onelitefeather.titan.api.deliver.Deliver;
+import net.onelitefeather.titan.core.feature.FeatureFlags;
+import net.onelitefeather.titan.core.module.item.ItemSlot;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
-import net.onelitefeather.titan.core.feature.FeatureFlags;
 
 /**
  * Test-only fixture that builds {@link NavigatorModule} and its {@code titan:navigator} feather
  * exactly as production does, against a fresh {@code titan} node, without a running
  * {@code BeanScope}.
+ *
+ * <p>{@link #useFeather(Player)} calls the feather {@link LobbyItem}'s {@code onUse} handler
+ * directly, standing in for {@code HotbarLobbyItems}' tag-based dispatch from a used stack to that
+ * handler - that routing is {@code hotbar}'s own responsibility and already covered by its tests.
  *
  * <p>Closing (ideally via try-with-resources) tears down every attached node in production order;
  * {@link #stopModule()} stops just the module, leaving the rest for {@link #close()}.
@@ -35,14 +41,14 @@ final class NavigatorFixture implements AutoCloseable {
 
     private final TestTitanNode titan;
     private final NavigatorModule module;
-    private final TestLobbyItems lobbyItems;
+    private final LobbyItem feather;
     private boolean moduleStopped;
     private boolean closed;
 
-    private NavigatorFixture(TestTitanNode titan, NavigatorModule module, TestLobbyItems lobbyItems) {
+    private NavigatorFixture(TestTitanNode titan, NavigatorModule module, LobbyItem feather) {
         this.titan = titan;
         this.module = module;
-        this.lobbyItems = lobbyItems;
+        this.feather = feather;
     }
 
     static NavigatorFixture start(Env env, Deliver deliver, FeatureFlags featureFlags) {
@@ -50,16 +56,23 @@ final class NavigatorFixture implements AutoCloseable {
         NavigatorModule module = new NavigatorModule(titan.node(), deliver, featureFlags);
         module.start();
         LobbyItem feather = new NavigatorItems().navigatorFeather(module);
-        TestLobbyItems lobbyItems = new TestLobbyItems(List.of(feather), titan.node());
-        return new NavigatorFixture(titan, module, lobbyItems);
+        return new NavigatorFixture(titan, module, feather);
     }
 
     NavigatorModule module() {
         return this.module;
     }
 
+    /** Places the feather in its production hotbar slot, standing in for hotbar's equip(). */
     void equip(Player player) {
-        this.lobbyItems.equip(player);
+        if (this.feather.placement() instanceof ItemSlot.Hotbar hotbar) {
+            player.getInventory().setItemStack(hotbar.slot(), this.feather.itemStack());
+        }
+    }
+
+    /** Uses the feather directly against its own {@code onUse} handler; see the class Javadoc. */
+    void useFeather(Player player) {
+        this.feather.onUse().handle(player, new PlayerUseItemEvent(player, PlayerHand.MAIN, this.feather.itemStack(), 0L));
     }
 
     /**
@@ -80,7 +93,6 @@ final class NavigatorFixture implements AutoCloseable {
         }
         this.closed = true;
         stopModule();
-        this.lobbyItems.stop();
         this.titan.close();
     }
 }

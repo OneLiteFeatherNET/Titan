@@ -17,14 +17,11 @@ package net.onelitefeather.titan.feature.navigator;
 
 import java.util.List;
 import net.minestom.server.entity.Player;
-import net.minestom.server.entity.PlayerHand;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
-import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.server.event.trait.InventoryEvent;
 import net.minestom.server.instance.Instance;
-import net.minestom.server.item.ItemStack;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.testfixtures.EventListenerCounter;
@@ -65,14 +62,13 @@ class NavigatorModuleLeakTest {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);
-            ItemStack feather = player.getInventory().getItemStack(4);
             EventNode<Event> navigatorNode = navigatorNode(env);
             EventNode<InventoryEvent> avesInventoryNode = fixture.module().sharedInventory().eventNode();
             int moduleListenersBefore = EventListenerCounter.countListeners(navigatorNode);
             int avesListenersBefore = EventListenerCounter.countListeners(avesInventoryNode);
 
             for (int i = 0; i < OPEN_CLOSE_COUNT; i++) {
-                env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, feather, 0L));
+                fixture.useFeather(player);
                 player.closeInventory();
             }
 
@@ -94,9 +90,8 @@ class NavigatorModuleLeakTest {
             for (int i = 0; i < PLAYER_COUNT; i++) {
                 Player player = env.createPlayer(instance);
                 fixture.equip(player);
-                ItemStack feather = player.getInventory().getItemStack(4);
 
-                env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, feather, 0L));
+                fixture.useFeather(player);
                 player.closeInventory();
                 env.process().eventHandler().call(new PlayerDisconnectEvent(player));
             }

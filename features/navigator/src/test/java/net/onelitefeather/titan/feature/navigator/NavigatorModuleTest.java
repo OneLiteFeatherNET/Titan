@@ -17,15 +17,12 @@ package net.onelitefeather.titan.feature.navigator;
 
 import java.util.List;
 import net.minestom.server.entity.Player;
-import net.minestom.server.entity.PlayerHand;
 import net.minestom.server.event.inventory.InventoryPreClickEvent;
-import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.inventory.AbstractInventory;
 import net.minestom.server.inventory.Inventory;
 import net.minestom.server.inventory.InventoryType;
 import net.minestom.server.inventory.click.Click;
-import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
@@ -51,9 +48,8 @@ class NavigatorModuleTest {
         return new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", true);
     }
 
-    private static AbstractInventory openNavigator(Env env, Player player) {
-        ItemStack feather = player.getInventory().getItemStack(4);
-        env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, feather, 0L));
+    private static AbstractInventory openNavigator(NavigatorFixture fixture, Player player) {
+        fixture.useFeather(player);
         return player.getOpenInventory();
     }
 
@@ -65,7 +61,7 @@ class NavigatorModuleTest {
             Player player = env.createPlayer(instance);
             fixture.equip(player);
 
-            AbstractInventory openInventory = openNavigator(env, player);
+            AbstractInventory openInventory = openNavigator(fixture, player);
 
             Assertions.assertNotNull(openInventory, "the navigator must open synchronously, without a tick");
             Assertions.assertInstanceOf(Inventory.class, openInventory);
@@ -88,7 +84,7 @@ class NavigatorModuleTest {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);
-            AbstractInventory openInventory = openNavigator(env, player);
+            AbstractInventory openInventory = openNavigator(fixture, player);
 
             InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(0));
             env.process().eventHandler().call(clickEvent);
@@ -108,7 +104,7 @@ class NavigatorModuleTest {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);
-            AbstractInventory openInventory = openNavigator(env, player);
+            AbstractInventory openInventory = openNavigator(fixture, player);
 
             InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(4));
             env.process().eventHandler().call(clickEvent);
@@ -128,7 +124,7 @@ class NavigatorModuleTest {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);
-            AbstractInventory openInventory = openNavigator(env, player);
+            AbstractInventory openInventory = openNavigator(fixture, player);
 
             InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(5));
             env.process().eventHandler().call(clickEvent);
@@ -148,7 +144,7 @@ class NavigatorModuleTest {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);
-            AbstractInventory openInventory = openNavigator(env, player);
+            AbstractInventory openInventory = openNavigator(fixture, player);
 
             InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(8));
             env.process().eventHandler().call(clickEvent);
@@ -168,7 +164,7 @@ class NavigatorModuleTest {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);
-            AbstractInventory openInventory = openNavigator(env, player);
+            AbstractInventory openInventory = openNavigator(fixture, player);
 
             InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(2));
             env.process().eventHandler().call(clickEvent);
@@ -186,7 +182,7 @@ class NavigatorModuleTest {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);
-            AbstractInventory openInventory = openNavigator(env, player);
+            AbstractInventory openInventory = openNavigator(fixture, player);
 
             fixture.stopModule();
 

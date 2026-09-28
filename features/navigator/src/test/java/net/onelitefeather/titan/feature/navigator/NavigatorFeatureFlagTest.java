@@ -16,13 +16,10 @@
 package net.onelitefeather.titan.feature.navigator;
 
 import net.minestom.server.entity.Player;
-import net.minestom.server.entity.PlayerHand;
 import net.minestom.server.event.inventory.InventoryPreClickEvent;
-import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.inventory.AbstractInventory;
 import net.minestom.server.inventory.click.Click;
-import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
@@ -47,9 +44,8 @@ class NavigatorFeatureFlagTest {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);
-            ItemStack feather = player.getInventory().getItemStack(4);
 
-            env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, feather, 0L));
+            fixture.useFeather(player);
 
             AbstractInventory openInventory = player.getOpenInventory();
             Assertions.assertNotNull(openInventory);
@@ -69,8 +65,7 @@ class NavigatorFeatureFlagTest {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);
-            ItemStack feather = player.getInventory().getItemStack(4);
-            env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, feather, 0L));
+            fixture.useFeather(player);
             AbstractInventory openInventory = player.getOpenInventory();
             Assertions.assertNotNull(openInventory);
             Assertions.assertEquals(Material.ENDERMAN_SPAWN_EGG, openInventory.getItemStack(5).material(), "slot 5 must show Slender while NAVIGATOR_SLENDER is on");
@@ -92,14 +87,13 @@ class NavigatorFeatureFlagTest {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);
-            ItemStack feather = player.getInventory().getItemStack(4);
 
-            env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, feather, 0L));
+            fixture.useFeather(player);
             Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, player.getOpenInventory().getItemStack(5).material(), "slot 5 must be blank on the first open, flag off");
             player.closeInventory();
 
             flags.set("NAVIGATOR_SLENDER", true);
-            env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, feather, 0L));
+            fixture.useFeather(player);
 
             Assertions.assertEquals(Material.ENDERMAN_SPAWN_EGG, player.getOpenInventory().getItemStack(5).material(), "slot 5 must show Slender on the second open, after the flag flipped, with no restart");
         }
