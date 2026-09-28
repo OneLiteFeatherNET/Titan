@@ -6,6 +6,7 @@
 
 import java.nio.file.Files
 import net.onelitefeather.titan.buildsrc.config.MergeApplicationDefaultsTask
+import net.onelitefeather.titan.buildsrc.variant.PlatformModules
 import org.gradle.api.provider.Property
 
 plugins {
@@ -31,8 +32,22 @@ abstract class TitanVariantExtension {
     // list without this convention changing.
     internal val expectedModules: MutableList<String> = mutableListOf()
 
+    // Names passed to platform(...) below; this convention's own afterEvaluate turns each into an
+    // "implementation(project(\":platform:<name>\"))" dependency.
+    internal val platformNames: MutableList<String> = mutableListOf()
+
     fun exclude(vararg columnNames: String) {
         excludedColumns += columnNames
+    }
+
+    /**
+     * Adds a permission platform module: depends on `:platform:<name>` and expects
+     * "<name>Platform" among the modules `VariantStartupCheck` verifies at boot, exactly like a
+     * feature column's own "<name>Column".
+     */
+    fun platform(vararg names: String) {
+        platformNames += names
+        expectedModules += PlatformModules.expectedModuleIdsOf(*names)
     }
 }
 
@@ -59,6 +74,19 @@ afterEvaluate {
 
     includedFeaturePaths.forEach { featurePath ->
         dependencies.add("implementation", dependencies.project(featurePath))
+    }
+
+    titanVariant.platformNames.forEach { name ->
+        dependencies.add("implementation", dependencies.project(":platform:$name"))
+    }
+
+    // The LuckPerms minestom-loader is a JarInJar bootstrap that bundles an old, unrelocated
+    // Gson breaking Minestom's registry init when it leaks onto a test runtime classpath (see
+    // platform/luckperms/build.gradle.kts) - keep it off any variant that ships LuckPerms too.
+    if ("luckperms" in titanVariant.platformNames) {
+        configurations.testRuntimeClasspath {
+            exclude(group = "net.luckperms", module = "minestom-loader")
+        }
     }
 
     // This variant's own titan/defaults/runtime.yaml plus every included column's. A column left
