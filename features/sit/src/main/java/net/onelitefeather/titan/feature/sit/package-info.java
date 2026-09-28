@@ -14,11 +14,8 @@
  * limitations under the License.
  */
 /**
- * The {@code sit} column: {@code name} is explicit and distinct from the bean class
- * {@link net.onelitefeather.titan.feature.sit.SitModule}. Both {@code requires} forms are needed:
- * {@code requiresString} satisfies the per-module compile-time check for the qualified, generic
- * {@code EventNode<Event>} platform bean; plain {@code requires} feeds the generated module's
- * {@code requiresBeans()}, which orders this module after the one providing that bean.
+ * The {@code sit} column. See {@code docs/lobby-modules.md}, "Wie eine Column
+ * Plattform-Beans bekommt", for how a column declares its platform dependencies.
  */
 @InjectModule(name = "sitColumn", requires = {EventNode.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"})
 package net.onelitefeather.titan.feature.sit;

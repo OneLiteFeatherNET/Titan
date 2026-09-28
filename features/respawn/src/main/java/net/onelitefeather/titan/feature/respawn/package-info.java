@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 /**
- * The {@code respawn} column: {@code name} is explicit and distinct from the bean class
- * {@link net.onelitefeather.titan.feature.respawn.RespawnModule}. Needs both {@code requires}
- * forms for the qualified, generic {@code EventNode<Event>}: {@code requiresString} for the
- * compile-time dependency check, {@code requires} for Avaje's module build ordering.
+ * The {@code respawn} column. See {@code docs/lobby-modules.md}, "Wie eine Column
+ * Plattform-Beans bekommt" - like {@code spawn}, it injects {@code LobbyItems} directly, since it
+ * contributes no {@code LobbyItem} of its own.
  */
 @InjectModule(name = "respawnColumn", requires = {EventNode.class, LobbyItems.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"})
 package net.onelitefeather.titan.feature.respawn;

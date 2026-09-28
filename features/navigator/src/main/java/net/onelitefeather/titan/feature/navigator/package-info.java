@@ -14,18 +14,9 @@
  * limitations under the License.
  */
 /**
- * The {@code navigator} column: {@code name} is explicit and distinct from the bean class
- * {@link net.onelitefeather.titan.feature.navigator.NavigatorModule}. {@code requires} carries
- * every platform type the constructor injects ({@code EventNode<Event>}, {@code Deliver},
- * {@code FeatureFlags}); only {@code EventNode} is generic and {@code @Named}, so only it also
- * needs the matching {@code requiresString} entry. See {@code docs/lobby-modules.md}, "Wie eine
- * Column Plattform-Beans bekommt", for why both forms of {@code EventNode} are needed together.
- *
- * <p>{@code provides = {LobbyItem.class}}: {@link net.onelitefeather.titan.feature.navigator.
- * NavigatorItems} contributes the navigator feather as a {@code @Bean LobbyItem}, collected by
- * whichever bean requires {@code List<LobbyItem>} (today {@code HotbarLobbyItems} in {@code :app};
- * once {@code hotbar} becomes its own column, that column's {@code requires} finds this provider
- * declared here instead of failing the "missing dependency" compile-time check).
+ * The {@code navigator} column. See {@code docs/lobby-modules.md}, "Wie eine Column
+ * Plattform-Beans bekommt" - {@code provides = {LobbyItem.class}}: the navigator feather is
+ * collected by {@code HotbarLobbyItems} in {@code features/hotbar}.
  */
 @InjectModule(name = "navigatorColumn", requires = {EventNode.class, Deliver.class, FeatureFlags.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"}, provides = {LobbyItem.class})
 package net.onelitefeather.titan.feature.navigator;

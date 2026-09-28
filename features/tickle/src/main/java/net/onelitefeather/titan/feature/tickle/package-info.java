@@ -14,13 +14,8 @@
  * limitations under the License.
  */
 /**
- * The {@code tickle} column: {@code name} is explicit and distinct from the bean class
- * {@link net.onelitefeather.titan.feature.tickle.TickleModule}. Both {@code requires} forms are
- * needed for {@code EventNode<Event>}: {@code requiresString} satisfies the per-module
- * compile-time check for the qualified, generic platform bean; plain {@code requires} feeds the
- * generated module's {@code requiresBeans()}, which orders this module after the one providing
- * that bean. {@code Clock} has neither qualifier nor generic parameter, so {@code requires} alone
- * covers it.
+ * The {@code tickle} column. See {@code docs/lobby-modules.md}, "Wie eine Column
+ * Plattform-Beans bekommt", for how a column declares its platform dependencies.
  */
 @InjectModule(name = "tickleColumn", requires = {EventNode.class, Clock.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"})
 package net.onelitefeather.titan.feature.tickle;

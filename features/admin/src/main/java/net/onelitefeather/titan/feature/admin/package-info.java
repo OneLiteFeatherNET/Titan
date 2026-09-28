@@ -14,14 +14,8 @@
  * limitations under the License.
  */
 /**
- * The {@code admin} column: {@code name} is explicit and distinct from the bean class
- * {@link net.onelitefeather.titan.feature.admin.AdminCommands}.
- * {@link net.minestom.server.command.CommandManager}
- * has neither a qualifier nor a generic parameter, so the plain {@code requires} form alone
- * satisfies the compile-time "missing dependency" check and feeds
- * {@code AvajeModule.requiresBeans()} for build ordering - no {@code requiresString} entry is
- * needed. See {@code docs/lobby-modules.md}, "Wie eine Column Plattform-Beans bekommt", for the
- * full spike result.
+ * The {@code admin} column. See {@code docs/lobby-modules.md}, "Wie eine Column
+ * Plattform-Beans bekommt", for how a column declares its platform dependencies.
  */
 @InjectModule(name = "adminColumn", requires = {CommandManager.class})
 package net.onelitefeather.titan.feature.admin;

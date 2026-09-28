@@ -14,18 +14,8 @@
  * limitations under the License.
  */
 /**
- * The {@code protection} column: {@code name} is explicit and distinct from the bean
- * class {@link net.onelitefeather.titan.feature.protection.ProtectionModule}, so a later wave's
- * "expected column loaded" check can read it without ambiguity. Both {@code requires} forms
- * are needed, for two different checks: {@code requiresString}, keyed exactly like the processor's
- * own "No dependency provided for ...EventNode&lt;...Event&gt;:titan" error message, satisfies the
- * per-module compile-time check (plain {@code requires = {EventNode.class}} alone does not - it
- * drops the {@code @Named("titan")} qualifier and the generic parameter); {@code requires} itself
- * additionally feeds {@code AvajeModule.requiresBeans()}, which is what orders this module after
- * {@code :app}'s (later {@code runtime}'s) at {@code BeanScope} build time - dropping it lets
- * Avaje build this column before its platform bean exists, failing at runtime instead of compile
- * time. See {@code docs/lobby-modules.md}, "Wie eine Column Plattform-Beans bekommt", for the full
- * spike result.
+ * The {@code protection} column. See {@code docs/lobby-modules.md}, "Wie eine Column
+ * Plattform-Beans bekommt", for how a column declares its platform dependencies.
  */
 @InjectModule(name = "protectionColumn", requires = {EventNode.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"})
 package net.onelitefeather.titan.feature.protection;

@@ -14,30 +14,11 @@
  * limitations under the License.
  */
 /**
- * The {@code elytra} column: {@code name} is explicit and distinct from the bean
- * class {@link net.onelitefeather.titan.feature.elytra.ElytraModule}, so a later wave's
- * "expected column loaded" check can read it without ambiguity. Both {@code requires} forms
- * are needed, for two different checks: {@code requiresString}, keyed exactly like the processor's
- * own "No dependency provided for ...EventNode&lt;...Event&gt;:titan" error message, satisfies the
- * per-module compile-time check (plain {@code requires = {EventNode.class}} alone does not - it
- * drops the {@code @Named("titan")} qualifier and the generic parameter); {@code requires} itself
- * additionally feeds {@code AvajeModule.requiresBeans()}, which is what orders this module after
- * {@code :app}'s (later {@code runtime}'s) at {@code BeanScope} build time - dropping it lets
- * Avaje build this column before its platform beans exist, failing at runtime instead of compile
- * time. {@code Scheduler} needs only the plain {@code Class<?>} form, since it is neither generic
- * nor {@code @Named}. {@code provides = {LobbyItem.class}} declares that
- * {@link net.onelitefeather.titan.feature.elytra.ElytraLobbyItems} contributes {@code LobbyItem}
- * beans to the platform-wide list {@code HotbarLobbyItems} collects.
- *
- * <p>{@code LobbyItems} itself is deliberately absent from both {@code requires} forms:
- * {@link net.onelitefeather.titan.feature.elytra.ElytraModule} injects it as a
- * {@code jakarta.inject.Provider}, which Avaje resolves lazily rather than at this module's build
- * time. Declaring it here would recreate the build-order cycle a {@code requires} on
- * {@code LobbyItems} and a {@code provides} of {@code LobbyItem} on the same column would
- * otherwise cause - {@code hotbarColumn} needs every {@code LobbyItem} first (to build the list
- * this column contributes to), while an eager {@code LobbyItems} dependency here would need
- * {@code hotbarColumn} first. See {@code docs/lobby-modules.md}, "Wie eine Column
- * Plattform-Beans bekommt", for the full spike result and this rule.
+ * The {@code elytra} column. See {@code docs/lobby-modules.md}, "Wie eine Column
+ * Plattform-Beans bekommt" - {@code provides = {LobbyItem.class}} but takes a
+ * {@code Provider<LobbyItems>} instead of {@code LobbyItems} directly, to avoid a build-order
+ * cycle with {@code hotbarColumn} (see
+ * {@link net.onelitefeather.titan.feature.elytra.ElytraModule}).
  */
 @InjectModule(
         name = "elytraColumn", requires = {EventNode.class, Scheduler.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"}, provides = {LobbyItem.class}

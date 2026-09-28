@@ -14,18 +14,9 @@
  * limitations under the License.
  */
 /**
- * The {@code hotbar} column: {@code name} is explicit and distinct from the bean class
- * {@link net.onelitefeather.titan.feature.hotbar.HotbarLobbyItems}. Both {@code requires} forms
- * are needed for the shared {@code titan} {@link net.minestom.server.event.EventNode}, for two
- * different checks: {@code requiresString}, keyed exactly like the processor's own "No dependency
- * provided for ...EventNode&lt;...Event&gt;:titan" error message, satisfies the per-module
- * compile-time check; {@code requires} itself additionally feeds
- * {@code AvajeModule.requiresBeans()}, which orders this module after {@code :app}'s (later
- * {@code runtime}'s) at {@code BeanScope} build time. {@code LobbyItem} has neither a qualifier
- * nor a generic parameter, so the {@code List<LobbyItem>} this column's constructor injects needs
- * no {@code requiresString} entry of its own; it is empty until another column contributes an
- * item. See {@code docs/lobby-modules.md}, "Wie eine Column Plattform-Beans bekommt", for the full
- * spike result.
+ * The {@code hotbar} column. See {@code docs/lobby-modules.md}, "Wie eine Column
+ * Plattform-Beans bekommt" - {@code provides = {LobbyItems.class}}, collecting every
+ * {@code LobbyItem} bean via {@code List<LobbyItem>} injection.
  */
 @InjectModule(name = "hotbarColumn", provides = {LobbyItems.class}, requires = {EventNode.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"})
 package net.onelitefeather.titan.feature.hotbar;
