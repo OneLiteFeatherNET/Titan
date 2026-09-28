@@ -24,16 +24,23 @@
  * additionally feeds {@code AvajeModule.requiresBeans()}, which is what orders this module after
  * {@code :app}'s (later {@code runtime}'s) at {@code BeanScope} build time - dropping it lets
  * Avaje build this column before its platform beans exist, failing at runtime instead of compile
- * time. {@code LobbyItems} and {@code Scheduler} need only the plain {@code Class<?>} form, since
- * neither is generic nor {@code @Named}. {@code provides = {LobbyItem.class}} declares that
+ * time. {@code Scheduler} needs only the plain {@code Class<?>} form, since it is neither generic
+ * nor {@code @Named}. {@code provides = {LobbyItem.class}} declares that
  * {@link net.onelitefeather.titan.feature.elytra.ElytraLobbyItems} contributes {@code LobbyItem}
- * beans to the platform-wide list {@code HotbarLobbyItems} collects - without it, Avaje may order
- * this column after {@code HotbarLobbyItems} already snapshot that list, silently dropping this
- * column's items. See {@code docs/lobby-modules.md}, "Wie eine Column Plattform-Beans bekommt",
- * for the full spike result.
+ * beans to the platform-wide list {@code HotbarLobbyItems} collects.
+ *
+ * <p>{@code LobbyItems} itself is deliberately absent from both {@code requires} forms:
+ * {@link net.onelitefeather.titan.feature.elytra.ElytraModule} injects it as a
+ * {@code jakarta.inject.Provider}, which Avaje resolves lazily rather than at this module's build
+ * time. Declaring it here would recreate the build-order cycle a {@code requires} on
+ * {@code LobbyItems} and a {@code provides} of {@code LobbyItem} on the same column would
+ * otherwise cause - {@code hotbarColumn} needs every {@code LobbyItem} first (to build the list
+ * this column contributes to), while an eager {@code LobbyItems} dependency here would need
+ * {@code hotbarColumn} first. See {@code docs/lobby-modules.md}, "Wie eine Column
+ * Plattform-Beans bekommt", for the full spike result and this rule.
  */
 @InjectModule(
-        name = "elytraColumn", requires = {EventNode.class, LobbyItems.class, Scheduler.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"}, provides = {LobbyItem.class}
+        name = "elytraColumn", requires = {EventNode.class, Scheduler.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"}, provides = {LobbyItem.class}
 )
 package net.onelitefeather.titan.feature.elytra;
 
@@ -41,4 +48,3 @@ import io.avaje.inject.InjectModule;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.timer.Scheduler;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
-import net.onelitefeather.titan.core.module.item.LobbyItems;

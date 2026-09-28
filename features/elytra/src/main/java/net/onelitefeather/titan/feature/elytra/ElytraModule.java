@@ -19,6 +19,7 @@ import io.avaje.config.Config;
 import io.avaje.inject.PostConstruct;
 import io.avaje.inject.PreDestroy;
 import jakarta.inject.Named;
+import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
@@ -38,6 +39,13 @@ import net.onelitefeather.titan.core.module.item.LobbyItems;
  * firework stack into a player's offhand on {@link PlayerStartFlyingWithElytraEvent} and takes it
  * back on {@link PlayerStopFlyingWithElytraEvent}. Per-player boost state lives in the shared
  * {@link FireworkBoostTracker}, advanced once per tick and cleared on stop-flying or disconnect.
+ *
+ * <p>{@link LobbyItems} is injected as a {@link Provider} rather than directly: this feature also
+ * contributes {@link net.onelitefeather.titan.core.module.item.LobbyItem} beans (via {@link
+ * ElytraLobbyItems}), which {@code HotbarLobbyItems} collects - so no build order could satisfy
+ * both an eager {@code LobbyItems} dependency here and hotbar's collection of this feature's items.
+ * The {@link Provider} defers the lookup to event time, when the scope is fully built either way
+ * (see {@code docs/lobby-modules.md}, "Wie eine Column Plattform-Beans bekommt").
  */
 @Singleton
 public final class ElytraModule {
@@ -48,13 +56,13 @@ public final class ElytraModule {
     private static final String ID = "elytra";
 
     private final EventNode<Event> titan;
-    private final LobbyItems lobbyItems;
+    private final Provider<LobbyItems> lobbyItems;
     private final FireworkBoostTracker boosts;
     private final Scheduler scheduler;
     private FeatureNode node;
     private Task task;
 
-    public ElytraModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbyItems lobbyItems, FireworkBoostTracker boosts, Scheduler scheduler) {
+    public ElytraModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Provider<LobbyItems> lobbyItems, FireworkBoostTracker boosts, Scheduler scheduler) {
         this.titan = titan;
         this.lobbyItems = lobbyItems;
         this.boosts = boosts;
@@ -66,7 +74,7 @@ public final class ElytraModule {
         int burnDurationTicksAtStartup = Config.getAs(ElytraSettings.BURN_DURATION_TICKS_KEY, ElytraSettings::burnDurationTicks);
         ElytraSettings.cooldownTicks(Config.getAs(ElytraSettings.COOLDOWN_TICKS_KEY, Integer::parseInt), burnDurationTicksAtStartup);
 
-        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY).on(PlayerStartFlyingWithElytraEvent.class, event -> event.getPlayer().setItemInOffHand(this.lobbyItems.stack(ElytraLobbyItems.FIREWORK_KEY.asString()))).on(PlayerStopFlyingWithElytraEvent.class, event -> {
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY).on(PlayerStartFlyingWithElytraEvent.class, event -> event.getPlayer().setItemInOffHand(this.lobbyItems.get().stack(ElytraLobbyItems.FIREWORK_KEY.asString()))).on(PlayerStopFlyingWithElytraEvent.class, event -> {
             event.getPlayer().setItemInOffHand(ItemStack.AIR);
             this.boosts.forget(event.getPlayer().getUuid());
         }).on(PlayerDisconnectEvent.class, event -> this.boosts.forget(event.getPlayer().getUuid()));

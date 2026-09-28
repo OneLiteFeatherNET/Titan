@@ -66,7 +66,7 @@ final class ElytraFixture implements AutoCloseable {
         LobbyItem fireworkItem = new ElytraLobbyItems().firework(boosts);
         LobbyItems lobbyItems = stubLobbyItems(fireworkItem);
         Scheduler scheduler = env.process().scheduler();
-        ElytraModule module = new ElytraModule(titan.node(), lobbyItems, boosts, scheduler);
+        ElytraModule module = new ElytraModule(titan.node(), () -> lobbyItems, boosts, scheduler);
         module.start();
         return new ElytraFixture(titan, module, fireworkItem, boosts);
     }

@@ -404,27 +404,42 @@ package net.onelitefeather.titan.feature.<name>;
   `META-INF/services/**` beschränkte `duplicatesStrategy = DuplicatesStrategy.INCLUDE` neben
   `mergeServiceFiles()` - sonst verschwindet die neue Column beim Shaden stillschweigend
   (siehe Frage 3 oben).
+- **Eine Column, die selbst `LobbyItem`-Beans beisteuert (`provides = {LobbyItem.class}`) und
+  daneben `LobbyItems` benutzt, nimmt `Provider<LobbyItems>` statt `LobbyItems` direkt und lässt
+  `LobbyItems` aus `requires`/`requiresString` weg.** `hotbarColumn` sammelt jede `LobbyItem`-Bean
+  über Listen-Injektion, bevor es selbst `LobbyItems` bereitstellt - ein direktes `requires =
+  {LobbyItems.class}` auf einer Column, die zugleich `LobbyItem` liefert, erzwingt also zwei
+  widersprüchliche Bau-Reihenfolgen (diese Column vor `hotbarColumn`, wegen ihrer Items; und nach
+  `hotbarColumn`, wegen `LobbyItems`) und lässt `BeanScope.builder().build()` mit "Injecting null
+  for ...LobbyItems" abbrechen. Der `Provider` verschiebt den Lookup auf Verwendungszeit (frühestens
+  im eigenen `@PostConstruct`, meist erst im Event-Handler), wenn der Scope bereits vollständig
+  gebaut ist - siehe `features/elytra`s `ElytraModule` (nimmt `Provider<LobbyItems>`, ruft
+  `.get().stack(key)` beim `PlayerStartFlyingWithElytraEvent`) und dessen `package-info.java`.
+  `spawn` und `respawn` brauchen das nicht: Sie benutzen `LobbyItems`, liefern aber selbst kein
+  `LobbyItem`, also entsteht dort kein Zyklus und `requires = {LobbyItems.class}` bleibt direkt.
 
-Für die Features, die noch nicht umgezogen sind, aus dem Konstruktor ihres heutigen `*Module` in
-`app/src/main/java/.../app/feature/<name>/` abgelesen (`:app`s `package-info.java` deklariert
-all diese Typen bereits als `provides`):
+Die tatsächlichen `requires`/`requiresString`/`provides` jeder Column, aus ihrer
+`package-info.java` abgelesen (`:app`s eigene `package-info.java` deklariert die Plattform-Typen
+als `provides`):
 
-| Column | `requires` | `requiresString` |
-|---|---|---|
-| `spawn` | `Instance.class`, `LobbySpawn.class`, `EventNode.class`, `LobbyItems.class` | `"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"` |
-| `respawn` | `EventNode.class`, `LobbyItems.class` | `"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"` |
-| `sit` | `EventNode.class` | `"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"` |
-| `tickle` | `EventNode.class`, `Clock.class` | `"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"` |
-| `elytra` | `EventNode.class`, `LobbyItems.class`, `Scheduler.class` | `"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"` |
-| `navigator` | `EventNode.class`, `Deliver.class`, `FeatureFlags.class` | `"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"` |
+| Column | `requires` | `requiresString` | `provides` |
+|---|---|---|---|
+| `protection` | `EventNode.class` | `EventNode<Event>:titan` | - |
+| `admin` | `CommandManager.class` | - | - |
+| `spawn` | `Instance.class`, `LobbySpawn.class`, `EventNode.class`, `LobbyItems.class` | `EventNode<Event>:titan` | - |
+| `respawn` | `EventNode.class`, `LobbyItems.class` | `EventNode<Event>:titan` | - |
+| `navigator` | `EventNode.class`, `Deliver.class`, `FeatureFlags.class` | `EventNode<Event>:titan` | `LobbyItem.class` |
+| `sit` | `EventNode.class` | `EventNode<Event>:titan` | - |
+| `tickle` | `EventNode.class`, `Clock.class` | `EventNode<Event>:titan` | - |
+| `elytra` | `EventNode.class`, `Scheduler.class` | `EventNode<Event>:titan` | `LobbyItem.class` |
+| `hotbar` | `EventNode.class` | `EventNode<Event>:titan` | `LobbyItems.class` |
 
 `EventNode` ist in jeder Zeile der einzige `requiresString`-Eintrag, weil es der einzige
 qualifizierte, generische Plattform-Typ ist (Frage 1 oben); die anderen Typen sind weder generisch
-noch `@Named`, für sie reicht die `requires`-Form allein. `LobbyItems` steht bei `spawn`,
-`respawn` und `elytra`, weil ihre Module heute `LobbyItems` injizieren - die Implementierung
-(`HotbarLobbyItems`) liegt aber noch in `:app`; zieht `hotbar` in eine eigene Column um, muss
-dessen `package-info.java` `provides = {LobbyItems.class}` übernehmen und `:app`s Deklaration
-entfernt werden.
+noch `@Named`, für sie reicht die `requires`-Form allein. `LobbyItems` steht bei `spawn` und
+`respawn`, weil ihre Module `LobbyItems` direkt injizieren; `elytra` injiziert es stattdessen als
+`Provider<LobbyItems>` (siehe oben) und lässt es deshalb aus `requires` weg, obwohl es
+`LobbyItem` liefert.
 
 ## Checkliste: neues Feature = neues Paket
 
