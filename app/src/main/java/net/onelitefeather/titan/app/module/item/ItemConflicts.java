@@ -18,6 +18,8 @@ package net.onelitefeather.titan.app.module.item;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import net.onelitefeather.titan.core.module.item.ItemSlot;
+import net.onelitefeather.titan.core.module.item.LobbyItem;
 
 /**
  * Pure conflict detection for {@link LobbyItem} beans, used by {@link LobbyItems} on

@@ -17,7 +17,7 @@ package net.onelitefeather.titan.app.feature.navigator;
 
 import java.util.HashMap;
 import java.util.Map;
-import net.onelitefeather.titan.common.feature.FeatureFlags;
+import net.onelitefeather.titan.core.feature.FeatureFlags;
 
 /**
  * A test-only {@link FeatureFlags}: a name exists once {@link #declare(String, boolean)} is

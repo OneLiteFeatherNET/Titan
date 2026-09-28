@@ -31,9 +31,9 @@ import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.TestConnection;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.app.module.item.ItemSlot;
-import net.onelitefeather.titan.app.module.item.LobbyItem;
-import net.onelitefeather.titan.app.module.item.LobbyItems;
+import net.onelitefeather.titan.core.module.item.ItemSlot;
+import net.onelitefeather.titan.core.module.item.LobbyItem;
+import net.onelitefeather.titan.app.module.item.HotbarLobbyItems;
 import net.onelitefeather.titan.app.testutils.TestTitanNode;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -42,7 +42,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * {@code Env} integration coverage for {@link ExampleModule}: item use dispatch through
- * {@link LobbyItems} and the disconnect cleanup listener.
+ * {@link HotbarLobbyItems} and the disconnect cleanup listener.
  *
  * <p>Every test uses a fixed {@link Clock} (F.I.R.S.T. - repeatable), so "now" never depends on
  * when the test runs.
@@ -56,9 +56,9 @@ class ExampleModuleTest {
         return new ExampleModule(titan.node(), Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
-    private static LobbyItems itemsFor(TestTitanNode titan, ExampleModule module) {
+    private static HotbarLobbyItems itemsFor(TestTitanNode titan, ExampleModule module) {
         LobbyItem token = new ExampleGreetingItems().greetingToken(module);
-        return new LobbyItems(List.of(token), titan.node());
+        return new HotbarLobbyItems(List.of(token), titan.node());
     }
 
     @DisplayName("Using the greeting token sends the configured greeting")
@@ -72,12 +72,12 @@ class ExampleModuleTest {
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
             ExampleModule module = fixedClockModule(titan);
             module.start();
-            LobbyItems lobbyItems = itemsFor(titan, module);
+            HotbarLobbyItems lobbyItems = itemsFor(titan, module);
             try {
                 lobbyItems.equip(player);
                 ItemStack token = player.getInventory().getItemStack(ItemSlot.MAX_HOTBAR_SLOT);
                 Assertions.assertEquals(Material.FEATHER, token.material(), "equip() must place the greeting token on its configured hotbar slot");
-                Assertions.assertEquals("titan:example", token.getTag(LobbyItems.IDENTITY_TAG), "the handed-out stack must carry LobbyItems' identity tag so its use reaches this feature");
+                Assertions.assertEquals("titan:example", token.getTag(HotbarLobbyItems.IDENTITY_TAG), "the handed-out stack must carry HotbarLobbyItems' identity tag so its use reaches this feature");
 
                 env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, token, 0L));
 
@@ -100,7 +100,7 @@ class ExampleModuleTest {
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
             ExampleModule module = fixedClockModule(titan);
             module.start();
-            LobbyItems lobbyItems = itemsFor(titan, module);
+            HotbarLobbyItems lobbyItems = itemsFor(titan, module);
             try {
                 lobbyItems.equip(player);
                 ItemStack token = player.getInventory().getItemStack(ItemSlot.MAX_HOTBAR_SLOT);
@@ -131,7 +131,7 @@ class ExampleModuleTest {
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
             ExampleModule module = fixedClockModule(titan);
             module.start();
-            LobbyItems lobbyItems = itemsFor(titan, module);
+            HotbarLobbyItems lobbyItems = itemsFor(titan, module);
             try {
                 env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, ItemStack.of(Material.FEATHER), 0L));
 
@@ -154,7 +154,7 @@ class ExampleModuleTest {
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
             ExampleModule module = fixedClockModule(titan);
             module.start();
-            LobbyItems lobbyItems = itemsFor(titan, module);
+            HotbarLobbyItems lobbyItems = itemsFor(titan, module);
             try {
                 lobbyItems.equip(player);
                 ItemStack token = player.getInventory().getItemStack(ItemSlot.MAX_HOTBAR_SLOT);
@@ -185,7 +185,7 @@ class ExampleModuleTest {
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
             ExampleModule module = fixedClockModule(titan);
             module.start();
-            LobbyItems lobbyItems = itemsFor(titan, module);
+            HotbarLobbyItems lobbyItems = itemsFor(titan, module);
             try {
                 lobbyItems.equip(player);
                 ItemStack token = player.getInventory().getItemStack(ItemSlot.MAX_HOTBAR_SLOT);

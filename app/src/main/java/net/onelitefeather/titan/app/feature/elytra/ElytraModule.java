@@ -30,11 +30,11 @@ import net.minestom.server.timer.Scheduler;
 import net.minestom.server.timer.Task;
 import net.minestom.server.timer.TaskSchedule;
 import net.onelitefeather.titan.core.module.FeatureNode;
-import net.onelitefeather.titan.app.module.item.LobbyItems;
+import net.onelitefeather.titan.core.module.item.LobbyItems;
 
 /**
  * The {@code elytra} feature: flight and firework boost. {@link ElytraLobbyItems} contributes its
- * two {@link net.onelitefeather.titan.app.module.item.LobbyItem}s; this module hands the stamped
+ * two {@link net.onelitefeather.titan.core.module.item.LobbyItem}s; this module hands the stamped
  * firework stack into a player's offhand on {@link PlayerStartFlyingWithElytraEvent} and takes it
  * back on {@link PlayerStopFlyingWithElytraEvent}. Per-player boost state lives in the shared
  * {@link FireworkBoostTracker}, advanced once per tick and cleared on stop-flying or disconnect.
@@ -66,7 +66,7 @@ public final class ElytraModule {
         int burnDurationTicksAtStartup = Config.getAs(ElytraSettings.BURN_DURATION_TICKS_KEY, ElytraSettings::burnDurationTicks);
         ElytraSettings.cooldownTicks(Config.getAs(ElytraSettings.COOLDOWN_TICKS_KEY, Integer::parseInt), burnDurationTicksAtStartup);
 
-        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY).on(PlayerStartFlyingWithElytraEvent.class, event -> event.getPlayer().setItemInOffHand(this.lobbyItems.stack(ElytraLobbyItems.FIREWORK_KEY))).on(PlayerStopFlyingWithElytraEvent.class, event -> {
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY).on(PlayerStartFlyingWithElytraEvent.class, event -> event.getPlayer().setItemInOffHand(this.lobbyItems.stack(ElytraLobbyItems.FIREWORK_KEY.asString()))).on(PlayerStopFlyingWithElytraEvent.class, event -> {
             event.getPlayer().setItemInOffHand(ItemStack.AIR);
             this.boosts.forget(event.getPlayer().getUuid());
         }).on(PlayerDisconnectEvent.class, event -> this.boosts.forget(event.getPlayer().getUuid()));

@@ -13,22 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.app.module;
+package net.onelitefeather.titan.core.module.item;
 
-import net.minestom.server.coordinate.Pos;
-import org.jetbrains.annotations.Nullable;
+import net.minestom.server.entity.Player;
+import net.minestom.server.event.player.PlayerUseItemEvent;
 
 /**
- * The lobby's current spawn position, read lazily on every use rather than captured once, since
- * the lobby map's spawn point can change after a module was built (e.g. a map reload).
- *
- * <p>A dedicated type rather than a bare {@code Supplier<Pos>}, which would be an ambiguous bean
- * for the DI container to wire.
+ * Handles a player using a {@link LobbyItem}, once {@link LobbyItems} has already resolved the
+ * used stack's identity tag back to this handler's owning feature.
  */
 @FunctionalInterface
-public interface LobbySpawn {
+public interface ItemUseHandler {
 
-    /** {@code null} if the active lobby map has no spawn point. */
-    @Nullable
-    Pos position();
+    void handle(Player player, PlayerUseItemEvent event);
 }

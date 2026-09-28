@@ -29,9 +29,9 @@ import net.minestom.server.item.Material;
 import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.app.module.item.ItemSlot;
-import net.onelitefeather.titan.app.module.item.LobbyItem;
-import net.onelitefeather.titan.app.module.item.LobbyItems;
+import net.onelitefeather.titan.core.module.item.ItemSlot;
+import net.onelitefeather.titan.core.module.item.LobbyItem;
+import net.onelitefeather.titan.app.module.item.HotbarLobbyItems;
 import net.onelitefeather.titan.app.testutils.TestTitanNode;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -48,17 +48,17 @@ class RespawnModuleTest {
 
     private static final Key TEST_ITEM_KEY = Key.key("titan:respawn-module-test-item");
 
-    private static LobbyItems noItems(TestTitanNode titan) {
-        return new LobbyItems(List.of(), titan.node());
+    private static HotbarLobbyItems noItems(TestTitanNode titan) {
+        return new HotbarLobbyItems(List.of(), titan.node());
     }
 
-    private static LobbyItems featherItem(TestTitanNode titan) {
+    private static HotbarLobbyItems featherItem(TestTitanNode titan) {
         LobbyItem feather = new LobbyItem("respawn-test-item", TEST_ITEM_KEY, ItemStack.of(Material.FEATHER), ItemSlot.hotbar(0), (usedBy, event) -> {
         });
-        return new LobbyItems(List.of(feather), titan.node());
+        return new HotbarLobbyItems(List.of(feather), titan.node());
     }
 
-    private static RespawnModule startedModule(TestTitanNode titan, LobbyItems lobbyItems) {
+    private static RespawnModule startedModule(TestTitanNode titan, HotbarLobbyItems lobbyItems) {
         RespawnModule module = new RespawnModule(titan.node(), lobbyItems);
         module.start();
         return module;
@@ -71,7 +71,7 @@ class RespawnModuleTest {
         Player player = env.createPlayer(instance);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            LobbyItems lobbyItems = noItems(titan);
+            HotbarLobbyItems lobbyItems = noItems(titan);
             RespawnModule module = startedModule(titan, lobbyItems);
             try {
                 Collector<PlayerDeathEvent> collector = env.trackEvent(PlayerDeathEvent.class, EventFilter.PLAYER, player);
@@ -95,7 +95,7 @@ class RespawnModuleTest {
         Player player = env.createPlayer(instance);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            LobbyItems lobbyItems = featherItem(titan);
+            HotbarLobbyItems lobbyItems = featherItem(titan);
             RespawnModule module = startedModule(titan, lobbyItems);
             try {
                 Collector<PlayerDeathEvent> deathCollector = env.trackEvent(PlayerDeathEvent.class, EventFilter.PLAYER, player);
@@ -129,7 +129,7 @@ class RespawnModuleTest {
         Player player = env.createPlayer(instance);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            LobbyItems lobbyItems = featherItem(titan);
+            HotbarLobbyItems lobbyItems = featherItem(titan);
             RespawnModule module = startedModule(titan, lobbyItems);
             try {
                 env.process().eventHandler().call(new PlayerRespawnEvent(player));
@@ -152,7 +152,7 @@ class RespawnModuleTest {
         Player player = env.createPlayer(instance);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            LobbyItems lobbyItems = featherItem(titan);
+            HotbarLobbyItems lobbyItems = featherItem(titan);
             RespawnModule module = startedModule(titan, lobbyItems);
             module.stop();
 

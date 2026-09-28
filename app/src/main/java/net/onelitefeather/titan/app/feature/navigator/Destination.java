@@ -20,7 +20,7 @@ import java.util.List;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
-import net.onelitefeather.titan.common.feature.FeatureFlags;
+import net.onelitefeather.titan.core.feature.FeatureFlags;
 import org.jetbrains.annotations.Nullable;
 
 /**

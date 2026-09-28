@@ -28,10 +28,10 @@ import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.timer.Scheduler;
 import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.core.module.FeatureNode;
-import net.onelitefeather.titan.app.module.LobbySpawn;
+import net.onelitefeather.titan.core.module.LobbySpawn;
 import net.onelitefeather.titan.common.deliver.DeliverProvider;
 import net.onelitefeather.titan.common.feature.ConfigFeatureFlags;
-import net.onelitefeather.titan.common.feature.FeatureFlags;
+import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.common.map.MapProvider;
 
 /**

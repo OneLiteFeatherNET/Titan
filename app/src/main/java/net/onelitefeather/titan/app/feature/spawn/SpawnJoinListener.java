@@ -23,7 +23,7 @@ import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.player.PlayerSpawnEvent;
 import net.minestom.server.network.packet.server.play.UpdateSimulationDistancePacket;
-import net.onelitefeather.titan.app.module.item.LobbyItems;
+import net.onelitefeather.titan.core.module.item.LobbyItems;
 
 /**
  * Reacts to a player spawning in the lobby: sends the configured simulation distance, teleports

@@ -27,7 +27,7 @@ import net.minestom.server.event.EventNode;
 import net.minestom.server.event.player.PlayerDeathEvent;
 import net.minestom.server.event.player.PlayerRespawnEvent;
 import net.onelitefeather.titan.core.module.FeatureNode;
-import net.onelitefeather.titan.app.module.item.LobbyItems;
+import net.onelitefeather.titan.core.module.item.LobbyItems;
 
 /**
  * Handles a lobby player's death and respawn: blanks the death text and respawns immediately on

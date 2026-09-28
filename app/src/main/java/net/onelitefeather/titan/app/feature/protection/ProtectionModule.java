@@ -29,7 +29,7 @@ import net.minestom.server.event.player.PlayerBlockBreakEvent;
 import net.minestom.server.event.player.PlayerBlockPlaceEvent;
 import net.minestom.server.event.player.PlayerSwapItemEvent;
 import net.onelitefeather.titan.core.module.FeatureNode;
-import net.onelitefeather.titan.common.utils.Cancelable;
+import net.onelitefeather.titan.core.utils.Cancelable;
 
 /**
  * Protects the lobby from being modified: cancels every pickup, drop, swap, inventory-click,

@@ -13,17 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.common.utils;
+package net.onelitefeather.titan.core.event;
 
-import net.minestom.server.event.trait.CancellableEvent;
+import net.minestom.server.entity.Entity;
+import net.minestom.server.event.trait.EntityEvent;
+import org.jetbrains.annotations.NotNull;
 
-public final class Cancelable {
-
-    private Cancelable() {
-        throw new UnsupportedOperationException("This class cannot be instantiated");
-    }
-
-    public static void cancel(CancellableEvent event) {
-        event.setCancelled(true);
+public record EntityDismountEvent(Entity rider, Entity vehicle) implements EntityEvent {
+    @Override
+    public @NotNull Entity getEntity() {
+        return vehicle;
     }
 }

@@ -20,6 +20,7 @@ import io.avaje.config.Configuration;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
+import net.onelitefeather.titan.core.feature.FeatureFlags;
 
 /**
  * The production {@link FeatureFlags}: a flag is a plain configuration value, read like any other

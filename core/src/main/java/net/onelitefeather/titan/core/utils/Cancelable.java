@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.app.module.item;
+package net.onelitefeather.titan.core.utils;
 
-import net.minestom.server.entity.Player;
-import net.minestom.server.event.player.PlayerUseItemEvent;
+import net.minestom.server.event.trait.CancellableEvent;
 
-/**
- * Handles a player using a {@link LobbyItem}, once {@link LobbyItems} has already resolved the
- * used stack's identity tag back to this handler's owning feature.
- */
-@FunctionalInterface
-public interface ItemUseHandler {
+public final class Cancelable {
 
-    void handle(Player player, PlayerUseItemEvent event);
+    private Cancelable() {
+        throw new UnsupportedOperationException("This class cannot be instantiated");
+    }
+
+    public static void cancel(CancellableEvent event) {
+        event.setCancelled(true);
+    }
 }

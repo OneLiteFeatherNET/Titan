@@ -28,9 +28,9 @@ import net.onelitefeather.titan.app.feature.respawn.RespawnModule;
 import net.onelitefeather.titan.app.feature.sit.SitModule;
 import net.onelitefeather.titan.app.feature.spawn.SpawnModule;
 import net.onelitefeather.titan.app.feature.tickle.TickleModule;
+import net.onelitefeather.titan.app.module.item.HotbarLobbyItems;
 import net.onelitefeather.titan.core.module.FeatureNode;
-import net.onelitefeather.titan.app.module.item.LobbyItems;
-import net.onelitefeather.titan.common.feature.FeatureFlags;
+import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.common.map.MapProvider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -41,7 +41,8 @@ import org.mockito.Mockito;
 
 /**
  * Builds the real Avaje Inject {@link BeanScope} - the same discovery {@code Titan} runs at
- * startup - and proves every feature bean, {@link LobbyItems}, node cleanup on close, and failure
+ * startup - and proves every feature bean, {@link HotbarLobbyItems}, node cleanup on close, and
+ * failure
  * propagation work as they will in production.
  *
  * <p>{@link MapProvider} and {@link FeatureFlags} touch the filesystem or a process-wide static in
@@ -72,7 +73,7 @@ class WiringTest {
             Assertions.assertNotNull(scope.get(TickleModule.class), "the tickle feature must be a bean");
             Assertions.assertNotNull(scope.get(ElytraModule.class), "the elytra feature must be a bean");
 
-            LobbyItems lobbyItems = scope.get(LobbyItems.class);
+            HotbarLobbyItems lobbyItems = scope.get(HotbarLobbyItems.class);
             Assertions.assertEquals(3, lobbyItems.itemCount(), "exactly the navigator feather, the elytra chestplate and the elytra firework must be contributed");
         } finally {
             Assertions.assertDoesNotThrow(scope::close, "closing a fully built scope must not throw");

@@ -21,12 +21,12 @@ import io.avaje.inject.Factory;
 import jakarta.inject.Named;
 import net.kyori.adventure.key.Key;
 import net.minestom.server.entity.EquipmentSlot;
-import net.onelitefeather.titan.app.module.item.ItemSlot;
-import net.onelitefeather.titan.app.module.item.LobbyItem;
+import net.onelitefeather.titan.core.module.item.ItemSlot;
+import net.onelitefeather.titan.core.module.item.LobbyItem;
 
 /**
  * Contributes the {@code elytra} feature's two {@link LobbyItem}s to the platform-wide {@link
- * net.onelitefeather.titan.app.module.item.LobbyItems} as {@code @Bean}s. {@link
+ * net.onelitefeather.titan.core.module.item.LobbyItems} as {@code @Bean}s. {@link
  * #firework(FireworkBoostTracker)} shares the same {@link FireworkBoostTracker} instance as
  * {@link ElytraModule}, so both advance and read the same per-player boost count.
  */

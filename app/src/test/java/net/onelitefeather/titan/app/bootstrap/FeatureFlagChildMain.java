@@ -16,7 +16,7 @@
 package net.onelitefeather.titan.app.bootstrap;
 
 import net.onelitefeather.titan.common.feature.ConfigFeatureFlags;
-import net.onelitefeather.titan.common.feature.FeatureFlags;
+import net.onelitefeather.titan.core.feature.FeatureFlags;
 
 /**
  * The child process entry point {@link ConfigFileWatchIntegrationTest} launches for its

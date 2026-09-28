@@ -32,6 +32,9 @@ import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.core.module.item.ItemSlot;
+import net.onelitefeather.titan.core.module.item.ItemUseHandler;
+import net.onelitefeather.titan.core.module.item.LobbyItem;
 import net.onelitefeather.titan.common.observability.TitanObservability;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -40,12 +43,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.LoggerFactory;
 
 /**
- * Cyano/Microtus {@code Env} coverage for {@link LobbyItems}: equipping a real {@link Player},
+ * Cyano/Microtus {@code Env} coverage for {@link HotbarLobbyItems}: equipping a real
+ * {@link Player},
  * dispatching a used item to its handler, a look-alike item never registered doing nothing, a
  * conflicting item list aborting construction, error attribution, and an unknown key.
  */
 @ExtendWith(MicrotusExtension.class)
-class LobbyItemsIntegrationTest {
+class HotbarLobbyItemsIntegrationTest {
 
     private static LobbyItem item(String featureId, String key, Material material, ItemSlot placement, ItemUseHandler onUse) {
         return new LobbyItem(featureId, Key.key(key), ItemStack.of(material), placement, onUse);
@@ -61,14 +65,14 @@ class LobbyItemsIntegrationTest {
         });
         LobbyItem firework = item("elytra", "titan:firework", Material.FIREWORK_ROCKET, ItemSlot.unplaced(), (player, event) -> {
         });
-        LobbyItems lobbyItems = new LobbyItems(List.of(navigator, elytra, firework), titan);
+        HotbarLobbyItems lobbyItems = new HotbarLobbyItems(List.of(navigator, elytra, firework), titan);
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
 
         lobbyItems.equip(player);
 
-        Assertions.assertEquals(lobbyItems.stack(Key.key("titan:navigator")), player.getInventory().getItemStack(4));
-        Assertions.assertEquals(lobbyItems.stack(Key.key("titan:elytra")), player.getEquipment(EquipmentSlot.CHESTPLATE));
+        Assertions.assertEquals(lobbyItems.stack("titan:navigator"), player.getInventory().getItemStack(4));
+        Assertions.assertEquals(lobbyItems.stack("titan:elytra"), player.getEquipment(EquipmentSlot.CHESTPLATE));
         for (int slot = 0; slot < 9; slot++) {
             if (slot == 4) {
                 continue;
@@ -85,10 +89,10 @@ class LobbyItemsIntegrationTest {
         EventNode<Event> titan = EventNode.all("test-lobby-items-dispatch");
         List<Player> handledFor = new ArrayList<>();
         LobbyItem navigator = item("navigator", "titan:navigator", Material.FEATHER, ItemSlot.hotbar(4), (player, event) -> handledFor.add(player));
-        LobbyItems lobbyItems = new LobbyItems(List.of(navigator), titan);
+        HotbarLobbyItems lobbyItems = new HotbarLobbyItems(List.of(navigator), titan);
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
-        ItemStack stamped = lobbyItems.stack(Key.key("titan:navigator"));
+        ItemStack stamped = lobbyItems.stack("titan:navigator");
 
         titan.call(new PlayerUseItemEvent(player, PlayerHand.MAIN, stamped, 0L));
 
@@ -101,7 +105,7 @@ class LobbyItemsIntegrationTest {
         EventNode<Event> titan = EventNode.all("test-lobby-items-dispatch-no-tag");
         List<Player> handledFor = new ArrayList<>();
         LobbyItem navigator = item("navigator", "titan:navigator", Material.FEATHER, ItemSlot.hotbar(4), (player, event) -> handledFor.add(player));
-        new LobbyItems(List.of(navigator), titan);
+        new HotbarLobbyItems(List.of(navigator), titan);
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
 
@@ -119,18 +123,18 @@ class LobbyItemsIntegrationTest {
         LobbyItem friends = item("friends", "titan:friends", Material.COMPASS, ItemSlot.hotbar(4), (player, event) -> {
         });
 
-        Assertions.assertThrows(IllegalStateException.class, () -> new LobbyItems(List.of(navigator, friends), titan), "two items claiming the same hotbar slot must abort construction");
+        Assertions.assertThrows(IllegalStateException.class, () -> new HotbarLobbyItems(List.of(navigator, friends), titan), "two items claiming the same hotbar slot must abort construction");
     }
 
-    @DisplayName("stack(Key) throws for a key no item was registered under")
+    @DisplayName("stack(String) throws for a key no item was registered under")
     @Test
     void stackThrowsForAnUnknownKey() {
         EventNode<Event> titan = EventNode.all("test-lobby-items-unknown-key");
         LobbyItem navigator = item("navigator", "titan:navigator", Material.FEATHER, ItemSlot.hotbar(4), (player, event) -> {
         });
-        LobbyItems lobbyItems = new LobbyItems(List.of(navigator), titan);
+        HotbarLobbyItems lobbyItems = new HotbarLobbyItems(List.of(navigator), titan);
 
-        IllegalArgumentException thrown = Assertions.assertThrows(IllegalArgumentException.class, () -> lobbyItems.stack(Key.key("titan:unknown")));
+        IllegalArgumentException thrown = Assertions.assertThrows(IllegalArgumentException.class, () -> lobbyItems.stack("titan:unknown"));
 
         Assertions.assertTrue(thrown.getMessage().contains("titan:unknown"), "the message must name the unknown key: " + thrown.getMessage());
     }
@@ -143,10 +147,10 @@ class LobbyItemsIntegrationTest {
         LobbyItem navigator = item("navigator", "titan:navigator-feather", Material.FEATHER, ItemSlot.hotbar(4), (player, event) -> {
             throw new IllegalStateException("boom for " + player.getUsername());
         });
-        LobbyItems lobbyItems = new LobbyItems(List.of(navigator), titan);
+        HotbarLobbyItems lobbyItems = new HotbarLobbyItems(List.of(navigator), titan);
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
-        ItemStack stamped = lobbyItems.stack(Key.key("titan:navigator-feather"));
+        ItemStack stamped = lobbyItems.stack("titan:navigator-feather");
         // ListenerGuard (core, package-private) is where FeatureNode.guard()'s failure is now
         // logged; referenced by name since the class itself is not visible from this package.
         Logger logger = (Logger) LoggerFactory.getLogger("net.onelitefeather.titan.core.module.ListenerGuard");

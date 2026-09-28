@@ -34,7 +34,7 @@ import net.minestom.server.item.Material;
 import net.minestom.server.utils.Unit;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.app.module.item.LobbyItems;
+import net.onelitefeather.titan.app.module.item.HotbarLobbyItems;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -81,7 +81,7 @@ class ElytraModuleTest {
 
             ItemStack offHand = player.getItemInOffHand();
             Assertions.assertEquals(Material.FIREWORK_ROCKET, offHand.material());
-            Assertions.assertEquals("titan:firework", offHand.getTag(LobbyItems.IDENTITY_TAG), "the handed-out stack must carry the platform's identity tag so its use reaches this feature");
+            Assertions.assertEquals("titan:firework", offHand.getTag(HotbarLobbyItems.IDENTITY_TAG), "the handed-out stack must carry the platform's identity tag so its use reaches this feature");
         }
     }
 

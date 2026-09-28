@@ -23,7 +23,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import net.kyori.adventure.key.Key;
 import net.minestom.server.entity.EquipmentSlot;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
@@ -33,16 +32,22 @@ import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.tag.Tag;
 import net.onelitefeather.titan.core.module.FeatureNode;
+import net.onelitefeather.titan.core.module.item.ItemSlot;
+import net.onelitefeather.titan.core.module.item.LobbyItem;
+import net.onelitefeather.titan.core.module.item.LobbyItems;
 
 /**
  * Platform-wide home for {@link LobbyItem} beans: every feature that has one contributes it
  * through Avaje Inject's list injection. {@link #equip(Player)} clears the player's inventory and
- * places every item with a fixed placement, while {@link #stack(Key)} hands back the stamped stack
- * for an item with no fixed placement. The item maps are built once by the constructor and never
- * mutated, so no synchronization is needed for the tick-thread reads in {@link #dispatch}.
+ * places every item with a fixed placement, while {@link #stack(String)} hands back the stamped
+ * stack for an item with no fixed placement. The item maps are built once by the constructor and
+ * never mutated, so no synchronization is needed for the tick-thread reads in {@link #dispatch}.
+ *
+ * <p>Temporarily in {@code :app}; moves to {@code features/hotbar} in a later wave (D3) - a column
+ * depends only on the {@link LobbyItems} interface in {@code core}, never on this class.
  */
 @Singleton
-public final class LobbyItems {
+public final class HotbarLobbyItems implements LobbyItems {
 
     /** A stack without this tag is not a registered item and {@link #dispatch} leaves it alone. */
     public static final Tag<String> IDENTITY_TAG = Tag.String("titan:item");
@@ -54,7 +59,7 @@ public final class LobbyItems {
     private final EventListener<PlayerUseItemEvent> dispatcher;
 
     /** @throws IllegalStateException if two items conflict */
-    public LobbyItems(List<LobbyItem> items, @Named(FeatureNode.TITAN_NODE) EventNode<Event> titan) {
+    public HotbarLobbyItems(List<LobbyItem> items, @Named(FeatureNode.TITAN_NODE) EventNode<Event> titan) {
         ItemConflicts.check(items);
         this.titan = titan;
         this.itemsByKey = stampAll(items);
@@ -65,7 +70,7 @@ public final class LobbyItems {
         this.titan.addListener(this.dispatcher);
     }
 
-    /** Clears {@code player}'s inventory and sets every item that has a fixed placement. */
+    @Override
     public void equip(Player player) {
         player.getInventory().clear();
         this.hotbar.forEach((slot, stack) -> player.getInventory().setItemStack(slot, stack));
@@ -76,11 +81,11 @@ public final class LobbyItems {
         return this.itemsByKey.size();
     }
 
-    /** @throws IllegalArgumentException if no item with that key exists */
-    public ItemStack stack(Key key) {
-        LobbyItem item = this.itemsByKey.get(key.asString());
+    @Override
+    public ItemStack stack(String key) {
+        LobbyItem item = this.itemsByKey.get(key);
         if (item == null) {
-            throw new IllegalArgumentException("No lobby item registered for key '" + key.asString() + "'");
+            throw new IllegalArgumentException("No lobby item registered for key '" + key + "'");
         }
         return item.itemStack();
     }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.common.feature;
+package net.onelitefeather.titan.core.feature;
 
 /**
  * A small seam between a feature module and whatever technology decides if a named feature flag is

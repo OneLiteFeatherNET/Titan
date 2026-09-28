@@ -34,7 +34,7 @@ import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.event.player.PlayerPacketEvent;
 import net.minestom.server.network.packet.client.play.ClientInputPacket;
 import net.onelitefeather.titan.core.module.FeatureNode;
-import net.onelitefeather.titan.common.event.EntityDismountEvent;
+import net.onelitefeather.titan.core.event.EntityDismountEvent;
 
 /**
  * Lets a player sit down on an allowed block and stand back up again, by sneaking, by dismounting

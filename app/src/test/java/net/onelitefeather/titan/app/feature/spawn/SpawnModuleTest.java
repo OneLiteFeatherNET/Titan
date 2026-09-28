@@ -31,9 +31,9 @@ import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.TestConnection;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.app.module.item.ItemSlot;
-import net.onelitefeather.titan.app.module.item.LobbyItem;
-import net.onelitefeather.titan.app.module.item.LobbyItems;
+import net.onelitefeather.titan.core.module.item.ItemSlot;
+import net.onelitefeather.titan.core.module.item.LobbyItem;
+import net.onelitefeather.titan.app.module.item.HotbarLobbyItems;
 import net.onelitefeather.titan.app.testutils.TestTitanNode;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -57,14 +57,14 @@ class SpawnModuleTest {
     private static final int MAX_HEIGHT = Config.getAs(SpawnSettings.MAX_HEIGHT_KEY, Integer::parseInt);
     private static final int SIMULATION_DISTANCE = Config.getAs(SpawnSettings.SIMULATION_DISTANCE_KEY, Integer::parseInt);
 
-    private static LobbyItems noItems(TestTitanNode titan) {
-        return new LobbyItems(List.of(), titan.node());
+    private static HotbarLobbyItems noItems(TestTitanNode titan) {
+        return new HotbarLobbyItems(List.of(), titan.node());
     }
 
-    private static LobbyItems oneStickItem(TestTitanNode titan) {
+    private static HotbarLobbyItems oneStickItem(TestTitanNode titan) {
         LobbyItem stick = new LobbyItem("dummy-item", Key.key("titan:test-dummy"), ItemStack.of(Material.STICK), ItemSlot.hotbar(0), (player, event) -> {
         });
-        return new LobbyItems(List.of(stick), titan.node());
+        return new HotbarLobbyItems(List.of(stick), titan.node());
     }
 
     @DisplayName("The configuration event sets the spawning instance and the player's respawn point")
@@ -74,7 +74,7 @@ class SpawnModuleTest {
         Pos spawnPos = new Pos(1, 2, 3);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            LobbyItems lobbyItems = noItems(titan);
+            HotbarLobbyItems lobbyItems = noItems(titan);
             SpawnModule module = new SpawnModule(targetInstance, () -> spawnPos, titan.node(), lobbyItems);
             module.start();
             try {
@@ -102,7 +102,7 @@ class SpawnModuleTest {
         Pos spawnPos = new Pos(5, 64, 5);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            LobbyItems lobbyItems = oneStickItem(titan);
+            HotbarLobbyItems lobbyItems = oneStickItem(titan);
             SpawnModule module = new SpawnModule(instance, () -> spawnPos, titan.node(), lobbyItems);
             module.start();
             try {
@@ -130,7 +130,7 @@ class SpawnModuleTest {
         Pos spawnPos = new Pos(10, 100, 10);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            LobbyItems lobbyItems = noItems(titan);
+            HotbarLobbyItems lobbyItems = noItems(titan);
             SpawnModule module = new SpawnModule(instance, () -> spawnPos, titan.node(), lobbyItems);
             module.start();
             try {
@@ -155,7 +155,7 @@ class SpawnModuleTest {
         Pos spawnPos = new Pos(10, 100, 10);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            LobbyItems lobbyItems = noItems(titan);
+            HotbarLobbyItems lobbyItems = noItems(titan);
             SpawnModule module = new SpawnModule(instance, () -> spawnPos, titan.node(), lobbyItems);
             module.start();
             try {
@@ -180,7 +180,7 @@ class SpawnModuleTest {
         Pos spawnPos = new Pos(10, 100, 10);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            LobbyItems lobbyItems = noItems(titan);
+            HotbarLobbyItems lobbyItems = noItems(titan);
             SpawnModule module = new SpawnModule(instance, () -> spawnPos, titan.node(), lobbyItems);
             module.start();
             try {
@@ -205,7 +205,7 @@ class SpawnModuleTest {
         Pos spawnPos = new Pos(5, 64, 5);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            LobbyItems lobbyItems = noItems(titan);
+            HotbarLobbyItems lobbyItems = noItems(titan);
             SpawnModule module = new SpawnModule(instance, () -> spawnPos, titan.node(), lobbyItems);
             module.start();
             module.stop();

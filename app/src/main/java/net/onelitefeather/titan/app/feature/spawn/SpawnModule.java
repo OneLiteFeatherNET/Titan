@@ -28,8 +28,8 @@ import net.minestom.server.event.player.PlayerMoveEvent;
 import net.minestom.server.event.player.PlayerSpawnEvent;
 import net.minestom.server.instance.Instance;
 import net.onelitefeather.titan.core.module.FeatureNode;
-import net.onelitefeather.titan.app.module.LobbySpawn;
-import net.onelitefeather.titan.app.module.item.LobbyItems;
+import net.onelitefeather.titan.core.module.LobbySpawn;
+import net.onelitefeather.titan.core.module.item.LobbyItems;
 
 /**
  * Puts a joining player into the lobby and keeps them inside its height bounds: sets the spawning

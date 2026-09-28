@@ -16,7 +16,7 @@
 package net.onelitefeather.titan.app.bootstrap;
 
 import net.minestom.server.coordinate.Pos;
-import net.onelitefeather.titan.app.module.LobbySpawn;
+import net.onelitefeather.titan.core.module.LobbySpawn;
 import net.onelitefeather.titan.common.map.LobbyMap;
 import net.onelitefeather.titan.common.map.MapProvider;
 import org.junit.jupiter.api.Assertions;

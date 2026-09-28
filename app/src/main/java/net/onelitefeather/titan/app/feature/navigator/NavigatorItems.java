@@ -21,12 +21,12 @@ import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
-import net.onelitefeather.titan.app.module.item.ItemSlot;
-import net.onelitefeather.titan.app.module.item.LobbyItem;
+import net.onelitefeather.titan.core.module.item.ItemSlot;
+import net.onelitefeather.titan.core.module.item.LobbyItem;
 
 /**
  * Contributes the {@code titan:navigator} feather to the platform-wide {@link
- * net.onelitefeather.titan.app.module.item.LobbyItems} as a {@code @Bean}.
+ * net.onelitefeather.titan.core.module.item.LobbyItems} as a {@code @Bean}.
  *
  * <p>Package-private, like the rest of this feature's internals: Avaje Inject's generated wiring
  * lives in the same package as the class it annotates, so it reaches

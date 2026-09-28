@@ -25,7 +25,7 @@ import net.minestom.server.instance.InstanceContainer;
 import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
 import net.onelitefeather.titan.common.map.MapEntry;
 import net.onelitefeather.titan.common.map.MapProvider;
-import net.onelitefeather.titan.common.utils.Cancelable;
+import net.onelitefeather.titan.core.utils.Cancelable;
 import net.onelitefeather.titan.setup.commands.SetupCommand;
 import net.onelitefeather.titan.setup.config.SetupSpawnConfig;
 import net.onelitefeather.titan.setup.listener.PlayerConfigurationListener;

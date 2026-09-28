@@ -18,8 +18,8 @@ package net.onelitefeather.titan.app.feature.example;
 import io.avaje.inject.Bean;
 import io.avaje.inject.Factory;
 import net.kyori.adventure.key.Key;
-import net.onelitefeather.titan.app.module.item.ItemSlot;
-import net.onelitefeather.titan.app.module.item.LobbyItem;
+import net.onelitefeather.titan.core.module.item.ItemSlot;
+import net.onelitefeather.titan.core.module.item.LobbyItem;
 
 /**
  * Template for a feature's own item factory: contributes the {@code example} template's one

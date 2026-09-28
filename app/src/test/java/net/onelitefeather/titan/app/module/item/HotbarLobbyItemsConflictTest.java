@@ -21,17 +21,19 @@ import net.minestom.server.entity.EquipmentSlot;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.core.module.item.ItemSlot;
+import net.onelitefeather.titan.core.module.item.LobbyItem;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Plain-Java coverage for {@link ItemConflicts#check(List)}: no {@link LobbyItems}, no server -
- * only {@link LobbyItem}s in, an exception (or nothing) out.
+ * Plain-Java coverage for {@link ItemConflicts#check(List)}: no {@link HotbarLobbyItems}, no server
+ * - only {@link LobbyItem}s in, an exception (or nothing) out.
  */
 @ExtendWith(MicrotusExtension.class)
-class LobbyItemsConflictTest {
+class HotbarLobbyItemsConflictTest {
 
     private static LobbyItem item(String key, Material material, ItemSlot placement) {
         return new LobbyItem("test-feature", Key.key(key), ItemStack.of(material), placement, (player, event) -> {

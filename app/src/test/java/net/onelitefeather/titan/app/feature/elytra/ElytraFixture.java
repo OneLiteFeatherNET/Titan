@@ -19,8 +19,8 @@ import java.util.List;
 import net.minestom.server.entity.Player;
 import net.minestom.server.timer.Scheduler;
 import net.minestom.testing.Env;
-import net.onelitefeather.titan.app.module.item.LobbyItem;
-import net.onelitefeather.titan.app.module.item.LobbyItems;
+import net.onelitefeather.titan.core.module.item.LobbyItem;
+import net.onelitefeather.titan.app.module.item.HotbarLobbyItems;
 import net.onelitefeather.titan.app.testutils.TestTitanNode;
 
 /**
@@ -34,12 +34,12 @@ final class ElytraFixture implements AutoCloseable {
 
     private final TestTitanNode titan;
     private final ElytraModule module;
-    private final LobbyItems lobbyItems;
+    private final HotbarLobbyItems lobbyItems;
     private final FireworkBoostTracker boosts;
     private boolean moduleStopped;
     private boolean closed;
 
-    private ElytraFixture(TestTitanNode titan, ElytraModule module, LobbyItems lobbyItems, FireworkBoostTracker boosts) {
+    private ElytraFixture(TestTitanNode titan, ElytraModule module, HotbarLobbyItems lobbyItems, FireworkBoostTracker boosts) {
         this.titan = titan;
         this.module = module;
         this.lobbyItems = lobbyItems;
@@ -52,7 +52,7 @@ final class ElytraFixture implements AutoCloseable {
         ElytraLobbyItems factory = new ElytraLobbyItems();
         LobbyItem elytraItem = factory.elytraChestplate();
         LobbyItem fireworkItem = factory.firework(boosts);
-        LobbyItems lobbyItems = new LobbyItems(List.of(elytraItem, fireworkItem), titan.node());
+        HotbarLobbyItems lobbyItems = new HotbarLobbyItems(List.of(elytraItem, fireworkItem), titan.node());
         Scheduler scheduler = env.process().scheduler();
         ElytraModule module = new ElytraModule(titan.node(), lobbyItems, boosts, scheduler);
         module.start();
