@@ -1,6 +1,7 @@
 // Convention for every Titan lobby feature under features/*: a column depends only on
-// core - never on another column, :app or runtime - and gets the same test stack every other
-// column uses, so a new feature needs no build-file boilerplate beyond applying this plugin.
+// core - never on another column, an apps/* variant or runtime - and gets the same test stack
+// every other column uses, so a new feature needs no build-file boilerplate beyond applying this
+// plugin.
 //
 // Looked up through VersionCatalogsExtension rather than the generated "libs" accessor: that
 // accessor is not generated for a buildSrc precompiled script plugin, only for a project's own
@@ -42,8 +43,7 @@ dependencies {
 }
 
 // A column's tests that read io.avaje.config.Config need this column's own shipped defaults, not
-// a whole variant's merged application.yaml (only assembled for :app/apps/*, see design.md D4:
-// "Column-Tests, die Standardwerte brauchen, laden ihre eigene Default-Datei"). Concatenating this
+// a whole variant's merged application.yaml (only assembled for apps/*). Concatenating this
 // column's own titan/defaults/*.yaml into application-test.yaml lets avaje-config's own built-in
 // test-resource discovery (io.avaje.config.Configuration, "Test configuration") load it - no
 // column needs a hand-copied application-test.yaml, a systemProperty on tasks.test, or its own

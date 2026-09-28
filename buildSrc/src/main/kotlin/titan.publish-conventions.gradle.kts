@@ -1,5 +1,5 @@
-// Shared publishing setup for the three published Titan modules (:app, :setup,
-// :bridge). Coordinates, licence, developer, SCM and the target repository are
+// Shared publishing setup for the three published Titan modules (apps/cloudnet as titan-cloudnet,
+// :setup, :bridge). Coordinates, licence, developer, SCM and the target repository are
 // identical everywhere; only artifactId, POM name, POM description and the
 // published artifacts differ, so those stay in the module build files:
 //

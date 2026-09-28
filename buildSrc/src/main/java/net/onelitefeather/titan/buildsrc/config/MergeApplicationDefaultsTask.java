@@ -36,10 +36,11 @@ import org.gradle.api.tasks.TaskAction;
  * Concatenates every {@code titan/defaults/*.yaml} file (one per column) into a single file named
  * {@link #getOutputFileName()} in {@link #getOutputDir()}, using {@link DefaultsMerger}. Registered
  * as a {@code resources} source directory, so the result becomes a classpath resource like any
- * other - {@code :app} names it {@code application.yaml} (the shipped defaults, also copied as
- * {@code application.example.yaml} into the distribution); {@code titan.column} names a column's
- * own, test-only merge {@code application-test.yaml}, so avaje-config's built-in test-resource
- * discovery picks it up (see {@code io.avaje.config.Configuration}'s Javadoc, "Test configuration").
+ * other - {@code titan.app-variant} names it {@code application.yaml} (the shipped defaults, also
+ * copied as {@code application.example.yaml} into the distribution); {@code titan.column} names a
+ * column's own, test-only merge {@code application-test.yaml}, so avaje-config's built-in
+ * test-resource discovery picks it up (see {@code io.avaje.config.Configuration}'s Javadoc, "Test
+ * configuration").
  */
 public abstract class MergeApplicationDefaultsTask extends DefaultTask {
 

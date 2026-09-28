@@ -13,7 +13,7 @@ dependencies {
     implementation(libs.aves)
     implementation(libs.adventure.minimessage)
 
-    // Logging. See :app - the setup server had the same silent-logger problem.
+    // Logging. See runtime/build.gradle.kts - the setup server had the same silent-logger problem.
     implementation(libs.slf4j.api)
     runtimeOnly(libs.logback.classic)
     runtimeOnly(platform(libs.sentry.bom))

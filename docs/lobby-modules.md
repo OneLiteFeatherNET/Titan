@@ -8,7 +8,7 @@ nicht anders vermerkt, aus dem lauffähigen Vorlagefeature
 `ExampleGreetingItems`, `ExampleGreetingRule`, `ExampleGreetingSettings`, `ExampleGreetingTracker`)
 - kopierbar als Ausgangspunkt für ein echtes Feature. Es ist bewusst test-only, damit es nie als
 echtes Feature mitläuft: Avaje Inject prozessiert Annotationen nur für `src/main` (kein
-`testAnnotationProcessor`, s. `buildSrc/src/main/kotlin/titan.column.gradle.kts`).
+`testAnnotationProcessor`, s. `buildSrc/src/main/kotlin/titan.app-variant.gradle.kts`).
 
 ## Aufbau eines Features
 
