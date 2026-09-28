@@ -46,6 +46,8 @@ final class FireworkBoostTracker {
         return true;
     }
 
+    // Must run once per tick, after any per-tick sample of the boost's effect has been taken.
+    // Requesting a boost and advancing it in the same dispatch would shorten the burn by one tick.
     void advance() {
         this.burnByPlayer.values().removeIf(Burn::expireOneTick);
     }

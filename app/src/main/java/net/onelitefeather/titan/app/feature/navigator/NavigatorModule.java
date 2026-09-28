@@ -72,6 +72,8 @@ public final class NavigatorModule {
 
     @PostConstruct
     void start() {
+        // Listener-less: only attached so this feature shows up in the fixed EVENT_PRIORITY order
+        // and the leak test; Aves handles every inventory click itself.
         this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY);
         applyLayoutIfChanged();
         this.builder.register();

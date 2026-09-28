@@ -47,7 +47,9 @@ import org.mockito.Mockito;
 
 /**
  * Cross-feature coverage for {@link NavigatorModule} and {@link ProtectionModule}, driven through
- * the real {@link BeanScope} since both features' lifecycle methods are package-private.
+ * the real {@link BeanScope} since both features' lifecycle methods are package-private. Only one
+ * start order is exercised: Aves dispatches inventory clicks before the event-node chain runs, so
+ * which feature started first can never matter.
  *
  * <p>The scope is bound to {@code env}'s own instance because the real {@code SpawnModule} would
  * otherwise redirect the joining test player to {@code PlatformBeans}' own, ungenerated
@@ -65,6 +67,8 @@ class NavigatorProtectionOrderingTest {
     void navigatorClickForwardsAndIsStillCancelled(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
         Instance instance = env.createFlatInstance();
+        // Registered as both types: a manual .bean(Type, value) registers only that exact type,
+        // unlike a generated @Factory, which also registers every supertype it implements.
         BeanScope scope = BeanScope.builder().forTesting().mock(FeatureFlags.class).mock(MapProvider.class, mapProvider -> Mockito.when(mapProvider.getActiveLobby()).thenReturn(new LobbyMap("test", new Pos(0, 65, 0), List.of()))).bean(InstanceContainer.class, (InstanceContainer) instance).bean(Instance.class, instance).bean(Deliver.class, deliver).build();
 
         try {

@@ -25,7 +25,8 @@ import net.onelitefeather.titan.common.observability.TitanObservability;
  * A feature's own event node, attached under the shared {@code titan} node: a feature calls
  * {@link #attach(EventNode, String, int)} in its own {@code @PostConstruct}, registers through
  * {@link #on(Class, Consumer)} or {@link #onIncludingCancelled(Class, Consumer)}, and disconnects
- * with {@link #close()} in its {@code @PreDestroy}.
+ * with {@link #close()} in its {@code @PreDestroy}. Each instance wraps its own node and holds no
+ * shared or static state, so no synchronization is needed.
  *
  * <p>Every listener registered here is wrapped in
  * {@link TitanObservability#guard(String, Consumer)} with {@code featureId}, so a failure keeps
@@ -49,6 +50,9 @@ public final class FeatureNode implements AutoCloseable {
     /**
      * Creates {@code featureId}'s own event node, named {@code titan/<featureId>}, and attaches
      * it to {@code parent} immediately at the given priority.
+     *
+     * <p>{@code priority} becomes the node's {@link EventNode#setPriority(int)}, which decides the
+     * execution order among sibling feature nodes reacting to the same event.
      */
     public static FeatureNode attach(EventNode<Event> parent, String featureId, int priority) {
         EventNode<Event> node = EventNode.all("titan/" + featureId);
@@ -79,6 +83,7 @@ public final class FeatureNode implements AutoCloseable {
         return this;
     }
 
+    /** Idempotent: a second call is a no-op. */
     @Override
     public void close() {
         this.parent.removeChild(this.node);

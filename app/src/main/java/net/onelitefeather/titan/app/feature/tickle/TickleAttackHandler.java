@@ -80,6 +80,7 @@ final class TickleAttackHandler implements Consumer<EntityAttackEvent> {
         long cooldownExpiryMillis = TickleCooldownRule.expiryAfter(now, Config.getLong(TickleSettings.COOLDOWN_KEY));
         player.setTag(COOLDOWN_EXPIRY, cooldownExpiryMillis);
 
+        // Known bug: SetCooldownPacket expects ticks, but this is epoch millis / 20; deliberately not fixed yet.
         SetCooldownPacket cooldownPacket = new SetCooldownPacket(player.getItemInOffHand().material().name(), (int) (cooldownExpiryMillis / 20));
         player.getPlayerConnection().sendPacket(cooldownPacket);
 

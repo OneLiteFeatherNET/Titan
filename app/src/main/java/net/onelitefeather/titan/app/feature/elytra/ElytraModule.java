@@ -76,6 +76,8 @@ public final class ElytraModule {
 
     @PreDestroy
     void stop() {
+        // Detach the node before cancelling the task, so no flight event can touch tracker state
+        // after the task is gone.
         this.node.close();
         this.task.cancel();
     }

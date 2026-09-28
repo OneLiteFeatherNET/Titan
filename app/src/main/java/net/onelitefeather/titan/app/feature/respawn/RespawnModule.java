@@ -65,6 +65,8 @@ public final class RespawnModule {
     private static void onDeath(PlayerDeathEvent event) {
         event.setDeathText(Component.empty());
         Player player = event.getPlayer();
+        // The player's own scheduler drops the task automatically on disconnect, and respawn()
+        // already checks isDead(), so no extra double-respawn guard is needed here.
         player.scheduler().scheduleNextTick(player::respawn);
     }
 }
