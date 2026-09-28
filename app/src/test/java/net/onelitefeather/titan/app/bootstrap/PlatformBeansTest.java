@@ -16,12 +16,15 @@
 package net.onelitefeather.titan.app.bootstrap;
 
 import net.minestom.server.coordinate.Pos;
+import net.minestom.testing.Env;
+import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.module.LobbySpawn;
 import net.onelitefeather.titan.common.map.LobbyMap;
 import net.onelitefeather.titan.common.map.MapProvider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 
 import java.util.List;
@@ -33,8 +36,10 @@ import java.util.List;
  * <p>Mocks {@link MapProvider} rather than a real one, so this runs without a Minestom server or
  * the filesystem {@code worlds/} it reads; {@code PlatformBeans#mapProvider}/{@code #featureFlags}
  * are deliberately not covered here, since both touch real process state a unit test must not
- * depend on.
+ * depend on. {@link PlatformBeans#commandManager()} is the exception: it is covered through
+ * Cyano's {@link Env}, a fresh fake {@code ServerProcess} per test, so no real server is needed.
  */
+@ExtendWith(MicrotusExtension.class)
 class PlatformBeansTest {
 
     private final PlatformBeans platformBeans = new PlatformBeans();
@@ -65,5 +70,11 @@ class PlatformBeansTest {
 
         Assertions.assertEquals(firstSpawn, positionBeforeSwitch, "the first call must return the active lobby's spawn at that time");
         Assertions.assertEquals(secondSpawn, positionAfterSwitch, "the next call must return the switched-to active lobby's spawn, proving position() re-reads MapProvider every time instead of caching");
+    }
+
+    @DisplayName("The commandManager bean is the server process's own CommandManager")
+    @Test
+    void commandManagerBeanIsTheServerProcesssCommandManager(Env env) {
+        Assertions.assertSame(env.process().command(), this.platformBeans.commandManager(), "the bean must not wrap or replace the server's CommandManager");
     }
 }

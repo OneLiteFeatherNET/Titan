@@ -21,6 +21,7 @@ import jakarta.inject.Named;
 import java.nio.file.Path;
 import java.time.Clock;
 import net.minestom.server.MinecraftServer;
+import net.minestom.server.command.CommandManager;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.instance.Instance;
@@ -99,5 +100,10 @@ public final class PlatformBeans {
     @Bean
     public Scheduler scheduler() {
         return MinecraftServer.getSchedulerManager();
+    }
+
+    @Bean
+    public CommandManager commandManager() {
+        return MinecraftServer.getCommandManager();
     }
 }
