@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.app.module.item;
+package net.onelitefeather.titan.feature.hotbar;
 
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -21,6 +21,7 @@ import ch.qos.logback.core.read.ListAppender;
 import java.util.ArrayList;
 import java.util.List;
 import net.kyori.adventure.key.Key;
+import net.minestom.server.MinecraftServer;
 import net.minestom.server.entity.EquipmentSlot;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.PlayerHand;
@@ -32,10 +33,10 @@ import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.module.item.ItemSlot;
 import net.onelitefeather.titan.core.module.item.ItemUseHandler;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
-import net.onelitefeather.titan.common.observability.TitanObservability;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -142,7 +143,7 @@ class HotbarLobbyItemsIntegrationTest {
     @DisplayName("A throwing onUse is attributed to the owning feature, not the item's key")
     @Test
     void aThrowingOnUseIsAttributedToTheOwningFeature(Env env) {
-        TitanObservability.installExceptionHandler();
+        MinecraftServer.getExceptionManager().setExceptionHandler(FeatureNode::reportUnhandledException);
         EventNode<Event> titan = EventNode.all("test-lobby-items-attribution");
         LobbyItem navigator = item("navigator", "titan:navigator-feather", Material.FEATHER, ItemSlot.hotbar(4), (player, event) -> {
             throw new IllegalStateException("boom for " + player.getUsername());

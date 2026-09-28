@@ -23,8 +23,6 @@ import net.minestom.server.event.EventNode;
 import net.onelitefeather.butterfly.minestom.Butterfly;
 import net.onelitefeather.titan.app.bootstrap.ConfigurationStartupLog;
 import net.onelitefeather.titan.app.bootstrap.FeatureStartupLog;
-import net.onelitefeather.titan.app.commands.EndCommand;
-import net.onelitefeather.titan.app.commands.StopCommand;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.app.player.TitanPlayer;
 import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
@@ -32,8 +30,8 @@ import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
 /**
  * The lobby's composition root: builds an Avaje Inject {@link BeanScope}, which discovers every
  * lobby feature and platform service as a plain {@code @Singleton} bean. A feature's own
- * {@code @PostConstruct}/{@code @PreDestroy} methods are its whole lifecycle; only the
- * {@code stop}/{@code end} commands and the Butterfly extension bridge live outside it.
+ * {@code @PostConstruct}/{@code @PreDestroy} methods are its whole lifecycle; only the Butterfly
+ * extension bridge lives outside it.
  */
 public final class Titan {
 
@@ -62,22 +60,15 @@ public final class Titan {
     }
 
     /**
-     * Registers commands and loads Butterfly, then schedules shutdown in FIFO order: the
-     * {@link BeanScope} closes first (running every feature's {@code @PreDestroy}), then Butterfly.
+     * Loads Butterfly, then schedules shutdown in FIFO order: the {@link BeanScope} closes first
+     * (running every feature's {@code @PreDestroy}), then Butterfly.
      */
     public void initialize() {
-        initCommands();
-
         Butterfly butterfly = Butterfly.create();
         butterfly.load();
 
         MinecraftServer.getSchedulerManager().buildShutdownTask(this.beanScope::close);
         MinecraftServer.getSchedulerManager().buildShutdownTask(butterfly::terminate);
-    }
-
-    private void initCommands() {
-        MinecraftServer.getCommandManager().register(new EndCommand());
-        MinecraftServer.getCommandManager().register(new StopCommand());
     }
 
     public static Titan instance() {

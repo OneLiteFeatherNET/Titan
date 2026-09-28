@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.app.module.item;
+package net.onelitefeather.titan.feature.hotbar;
 
 import java.util.LinkedHashMap;
 import java.util.List;

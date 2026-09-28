@@ -27,15 +27,17 @@
  * {@code :app} is still both the assembly and the platform; this declaration moves to
  * {@code runtime} in a later wave together with {@code PlatformBeans}.
  *
- * <p>{@link LobbyItems} is listed because {@code HotbarLobbyItems} (the only bean implementing it)
- * still lives in {@code :app}; once {@code hotbar} moves to its own column, whoever moves it must
- * also move this entry to {@code features/hotbar}'s own {@code provides} - two modules both
- * claiming to provide it is not itself a compile error (avaje-inject-generator only orders
- * modules by {@code provides}/{@code requires}, it does not check the claim against an actual
- * bean), but a stale claim here would silently skip the "missing dependency" compile check and
- * turn a real wiring bug into a runtime {@code BeanScope.build()} failure instead.
+ * <p>{@code requires = {LobbyItems.class}}: the mirror image of the above. {@code :app}'s own
+ * not-yet-moved {@code SpawnModule}/{@code RespawnModule}/{@code ElytraModule} inject
+ * {@link LobbyItems}, whose only implementation now lives in {@code features/hotbar} - the same
+ * {@code requires} a column uses to consume a type {@code :app} provides, just in the other
+ * direction. Until {@code spawn}/{@code respawn}/{@code elytra} move out too, this is a genuine
+ * two-way module dependency ({@code hotbarColumn} requires {@code :app}'s {@code EventNode},
+ * {@code :app} requires {@code hotbarColumn}'s {@code LobbyItems}) that avaje-inject's module
+ * ordering cannot fully resolve within one {@code BeanScope} - see {@code HotbarLobbyItems}'
+ * package-info for the runtime-visible half of this.
  */
-@InjectModule(provides = {EventNode.class, Instance.class, LobbySpawn.class, Deliver.class, FeatureFlags.class, Clock.class, Scheduler.class, CommandManager.class, LobbyItems.class})
+@InjectModule(provides = {EventNode.class, Instance.class, LobbySpawn.class, Deliver.class, FeatureFlags.class, Clock.class, Scheduler.class, CommandManager.class}, requires = {LobbyItems.class})
 package net.onelitefeather.titan.app;
 
 import io.avaje.inject.InjectModule;

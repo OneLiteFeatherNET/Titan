@@ -66,10 +66,12 @@ class ArchitectureTest {
 
     /**
      * Rule 9: the platform ({@code app.module}) must not depend on the composition root
-     * ({@code app.bootstrap}).
+     * ({@code app.bootstrap}). {@code allowEmptyShould(true)}: {@code app.module} is currently
+     * empty - its last class ({@code HotbarLobbyItems}) moved to {@code features/hotbar} - so
+     * there is nothing yet to check; the rule still applies to whatever lands there next.
      */
     @ArchTest
-    static final ArchRule platformDoesNotDependOnCompositionRoot = noClasses().that().resideInAPackage(MODULE_PACKAGE).should().dependOnClassesThat().resideInAPackage(BOOTSTRAP_PACKAGE).because("app.bootstrap depends on app.module types, never the reverse");
+    static final ArchRule platformDoesNotDependOnCompositionRoot = noClasses().that().resideInAPackage(MODULE_PACKAGE).should().dependOnClassesThat().resideInAPackage(BOOTSTRAP_PACKAGE).because("app.bootstrap depends on app.module types, never the reverse").allowEmptyShould(true);
 
     ArchitectureTest() {
     }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.app.commands;
+package net.onelitefeather.titan.feature.admin;
 
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.command.CommandSender;
@@ -22,8 +22,8 @@ import net.minestom.server.command.builder.CommandContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public final class EndCommand extends Command {
-    public EndCommand() {
+final class EndCommand extends Command {
+    EndCommand() {
         super("end");
         setCondition(this::hasPermission);
         addSyntax(this::execute);
