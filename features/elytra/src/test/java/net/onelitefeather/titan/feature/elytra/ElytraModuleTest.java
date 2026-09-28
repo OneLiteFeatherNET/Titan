@@ -16,6 +16,7 @@
 package net.onelitefeather.titan.feature.elytra;
 
 import io.avaje.config.Config;
+import jakarta.inject.Provider;
 import java.util.List;
 import net.minestom.server.component.DataComponents;
 import net.minestom.server.entity.Entity;
@@ -34,6 +35,8 @@ import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.module.item.ItemSlot;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
+import net.onelitefeather.titan.core.module.item.LobbyItems;
+import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -68,6 +71,19 @@ class ElytraModuleTest {
         Assertions.assertEquals(Material.ELYTRA, item.itemStack().material());
         Assertions.assertEquals(Unit.INSTANCE, item.itemStack().get(DataComponents.UNBREAKABLE), "the lobby elytra must be unbreakable, as it is today");
         Assertions.assertEquals(ItemSlot.equipment(EquipmentSlot.CHESTPLATE), item.placement(), "the elytra must be placed on the chestplate slot");
+    }
+
+    @DisplayName("A missing LobbyItems bean fails start(), not only the first elytra flight")
+    @Test
+    void aMissingLobbyItemsBeanFailsStart(Env env) {
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            Provider<LobbyItems> missingLobbyItems = () -> {
+                throw new IllegalStateException("no LobbyItems bean in this scope (ElytraModuleTest)");
+            };
+            ElytraModule module = new ElytraModule(titan.node(), missingLobbyItems, new FireworkBoostTracker(), env.process().scheduler());
+
+            Assertions.assertThrows(IllegalStateException.class, module::start, "a missing LobbyItems bean must abort start(), just like any other missing feature dependency");
+        }
     }
 
     @DisplayName("Starting to fly gives the player the platform-provided firework in the offhand")

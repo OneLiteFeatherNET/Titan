@@ -44,8 +44,11 @@ import net.onelitefeather.titan.core.module.item.LobbyItems;
  * contributes {@link net.onelitefeather.titan.core.module.item.LobbyItem} beans (via {@link
  * ElytraLobbyItems}), which {@code HotbarLobbyItems} collects - so no build order could satisfy
  * both an eager {@code LobbyItems} dependency here and hotbar's collection of this feature's items.
- * The {@link Provider} defers the lookup to event time, when the scope is fully built either way
- * (see {@code docs/lobby-modules.md}, "Wie eine Column Plattform-Beans bekommt").
+ * The {@link Provider} defers the lookup past this module's own build step, to when the whole
+ * scope is guaranteed complete either way (see {@code docs/lobby-modules.md}, "Wie eine Column
+ * Plattform-Beans bekommt"). {@link #start()} still resolves it once, so a missing bean fails
+ * startup like any other feature dependency instead of only the first elytra flight; the event
+ * handlers keep going through the {@link Provider} itself, so the cycle stays broken.
  */
 @Singleton
 public final class ElytraModule {
@@ -80,6 +83,11 @@ public final class ElytraModule {
         }).on(PlayerDisconnectEvent.class, event -> this.boosts.forget(event.getPlayer().getUuid()));
 
         this.task = this.scheduler.scheduleTask(this.boosts::advance, TaskSchedule.tick(1), TaskSchedule.tick(1));
+
+        // Resolve the provider once here, so a missing LobbyItems bean fails the whole build at
+        // startup like every other feature's dependency - not only on the first elytra flight.
+        // The event handlers above still go through the Provider, keeping the module cycle broken.
+        this.lobbyItems.get();
     }
 
     @PreDestroy
