@@ -27,14 +27,9 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 /**
- * Routes Minestom's uncaught exceptions through SLF4J, and, when a Sentry DSN is configured, on to
- * Sentry via the resulting {@code ERROR} log record - the appender is Sentry's only way in, so
- * nothing double-reports.
- *
- * <p>{@link #guard} records which player and, via {@link #guard(String, Consumer)}, which module a
- * failing listener belonged to. The module id is also placed in the SLF4J MDC for the whole call,
- * healthy or not, so both the module's own logging and the final {@link #handleException} record
- * carry it.
+ * Routes Minestom's uncaught exceptions through SLF4J so they reach both the console and, via the
+ * resulting {@code ERROR} log record, Sentry's appender - Sentry's only way in, so nothing
+ * double-reports. {@link #guard} attaches the failing player and module to that record.
  */
 public final class TitanObservability {
 
@@ -53,17 +48,8 @@ public final class TitanObservability {
     static final String PLAYER_NAME_KEY = "player.name";
     static final String MODULE_KEY = "module";
 
-    /**
-     * Set by {@link #guard} on the failure path and consumed by {@link #handleException}. Both run
-     * on the same thread within one dispatch, so a plain thread local carries the value across the
-     * rethrow without touching the healthy path.
-     */
+    // guard sets these on failure, handleException reads and clears them - same thread, same dispatch.
     private static final ThreadLocal<PlayerIdentity> FAILING_PLAYER = new ThreadLocal<>();
-
-    /**
-     * Set by {@link #guard(String, Consumer)} on the failure path and consumed by
-     * {@link #handleException}, mirroring {@link #FAILING_PLAYER}.
-     */
     private static final ThreadLocal<String> FAILING_MODULE = new ThreadLocal<>();
 
     private TitanObservability() {
@@ -71,11 +57,8 @@ public final class TitanObservability {
     }
 
     /**
-     * Initialises Sentry when {@value #DSN_ENVIRONMENT_VARIABLE} is set, and does nothing
-     * otherwise.
-     *
-     * <p>Call this as early in {@code main} as possible: log records emitted before it - LuckPerms'
-     * bootstrap, for instance - are written to the console but not reported.
+     * Initialises Sentry when {@value #DSN_ENVIRONMENT_VARIABLE} is set, otherwise a no-op. Call
+     * this as early in {@code main} as possible - anything logged before it is never reported.
      */
     public static void bootstrap() {
         bootstrap(release());
@@ -92,29 +75,21 @@ public final class TitanObservability {
             options.setDsn(dsn);
             options.setRelease(release);
             options.setEnvironment(environment);
-            // The SDK's PII defaults collect request headers and IP addresses, which say nothing
-            // useful about a Minestom crash. The player identity that does is attached
-            // deliberately in handleException instead.
+            // Player identity is attached deliberately in handleException instead of via PII defaults.
             options.setSendDefaultPii(false);
         });
         LOGGER.info("Sentry reporting enabled - release {}, environment {}", release, environment);
     }
 
     /**
-     * Replaces Minestom's {@code Throwable::printStackTrace} default with one that logs through
-     * SLF4J, so exceptions reach both the console and Sentry's appender.
+     * Replaces Minestom's default {@code Throwable::printStackTrace} handler with
+     * {@link #handleException}.
      */
     public static void installExceptionHandler() {
         MinecraftServer.getExceptionManager().setExceptionHandler(TitanObservability::handleException);
     }
 
-    /**
-     * Wraps a listener so a failure records which player the event belonged to.
-     *
-     * @param listener the listener to wrap
-     * @param <T>      the event type
-     * @return a listener that behaves identically but leaves player context behind when it throws
-     */
+    /** Wraps a listener so a failure records which player the event belonged to. */
     public static <T extends Event> Consumer<T> guard(Consumer<T> listener) {
         return event -> {
             try {
@@ -127,16 +102,8 @@ public final class TitanObservability {
     }
 
     /**
-     * Wraps a listener so a failure records which module the listener belongs to, in addition to
-     * everything {@link #guard(Consumer)} already records for the player. The module id is also
-     * placed in the SLF4J MDC ({@value #MODULE_KEY}) for the whole duration of the call, healthy or
-     * not, so a module's own log statements carry it too.
-     *
-     * @param moduleId the id of the module {@code listener} belongs to
-     * @param listener the listener to wrap
-     * @param <T>      the event type
-     * @return a listener that behaves identically but leaves module (and player) context behind
-     *         when it throws
+     * Like {@link #guard(Consumer)}, but also records the module id and puts it in the SLF4J MDC
+     * for the whole call, so the module's own logging carries it too.
      */
     public static <T extends Event> Consumer<T> guard(String moduleId, Consumer<T> listener) {
         Objects.requireNonNull(moduleId, "moduleId");
@@ -151,25 +118,12 @@ public final class TitanObservability {
         };
     }
 
-    /**
-     * Returns the identity {@link #guard} recorded for this thread's most recent failure, and
-     * clears it. Clearing is unconditional: a stale identity left behind would mis-attribute the
-     * next exception this thread reports.
-     *
-     * @return the player the failing event belonged to, or {@code null} if there was none
-     */
     static PlayerIdentity consumeFailingPlayer() {
         PlayerIdentity identity = FAILING_PLAYER.get();
         FAILING_PLAYER.remove();
         return identity;
     }
 
-    /**
-     * Returns the module id {@link #guard(String, Consumer)} recorded for this thread's most recent
-     * failure, and clears it, mirroring {@link #consumeFailingPlayer()}.
-     *
-     * @return the module the failing listener belonged to, or {@code null} if there was none
-     */
     static String consumeFailingModule() {
         String moduleId = FAILING_MODULE.get();
         FAILING_MODULE.remove();
@@ -202,11 +156,7 @@ public final class TitanObservability {
         return new PlayerIdentity(player.getUuid().toString(), player.getUsername());
     }
 
-    /**
-     * The release reported to Sentry, read from the fat jar's {@code Implementation-Version}
-     * manifest attribute. Returns {@value #DEVELOPMENT_RELEASE} when the classes are not loaded
-     * from a jar, which is the case in tests and when running from an IDE.
-     */
+    // Falls back to dev when not loaded from a jar (tests, IDE runs).
     static String release() {
         String version = TitanObservability.class.getPackage().getImplementationVersion();
         return version == null || version.isBlank() ? DEVELOPMENT_RELEASE : version;

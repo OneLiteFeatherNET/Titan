@@ -19,13 +19,9 @@ import io.avaje.config.Config;
 
 /**
  * The setup server's only configuration value: the simulation distance sent to a spawning player
- * via {@link net.onelitefeather.titan.setup.listener.PlayerSpawnListener}.
- *
- * <p>{@link #read()} reads and validates {@code spawn.simulationDistance} at the edge, directly
- * from the static {@code io.avaje.config.Config} facade via
- * {@code Config.getAs(key, SetupSpawnSettings::simulationDistance)}. There is no default in code;
- * {@code setup/src/main/resources/application.yaml} ships {@code spawn.simulationDistance: 2} as
- * the shipped default.
+ * via {@link net.onelitefeather.titan.setup.listener.PlayerSpawnListener}. {@link #read()} reads
+ * and validates {@code spawn.simulationDistance} from the {@code io.avaje.config.Config} facade;
+ * {@code application.yaml} ships {@code 2} as the default.
  *
  * @param simulationDistance the already-validated simulation distance sent to a spawning player
  */
@@ -35,9 +31,7 @@ public record SetupSpawnConfig(int simulationDistance) {
 
     /**
      * @return {@value #KEY}, read and validated from the {@code io.avaje.config.Config} facade
-     * @throws IllegalStateException if the key is missing, not a whole number, or not positive -
-     *                               {@code Config.getAs} names the key once and keeps the reason
-     *                               as the cause
+     * @throws IllegalStateException if the key is missing, not a whole number, or not positive
      */
     public static SetupSpawnConfig read() {
         return new SetupSpawnConfig(Config.getAs(KEY, SetupSpawnSettings::simulationDistance));

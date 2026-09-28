@@ -24,19 +24,7 @@ import java.util.UUID;
  */
 public interface ServerConnector {
 
-    /**
-     * Connects the player to the best service of the given task.
-     *
-     * @param playerId the player's unique id
-     * @param taskName the CloudNet task to connect to
-     */
     void connectToTask(UUID playerId, String taskName);
 
-    /**
-     * Connects the player to a specific service.
-     *
-     * @param playerId    the player's unique id
-     * @param serviceName the CloudNet service to connect to
-     */
     void connectToServer(UUID playerId, String serviceName);
 }

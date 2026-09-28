@@ -27,16 +27,8 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 
 /**
- * Unit coverage for {@link TitanLauncher#startCleanly(Runnable)} - the seam
- * {@link TitanLauncher#main} runs {@link Titan#instance()} through, so a broken
- * {@code application.yaml} (surfacing as {@link ExceptionInInitializerError} from the static
- * {@code io.avaje.config.Config} facade's own first touch, inside {@link Titan}'s constructor)
- * aborts startup cleanly instead of leaving the process half-started.
- *
- * <p>Hermetic: no real {@code application.yaml}, working directory or {@code MinecraftServer} is
- * touched. A fabricated {@link ExceptionInInitializerError} - with a {@code null} message, exactly
- * like the real facade throws it - stands in for a genuinely broken file. Each test attaches its
- * own {@link ListAppender}, detached in a {@code finally}, so the tests stay independent.
+ * Unit coverage for {@link TitanLauncher#startCleanly(Runnable)}, the seam that lets
+ * {@link TitanLauncher#main} abort cleanly instead of leaving the process half-started.
  */
 class TitanLauncherTest {
 
@@ -63,9 +55,8 @@ class TitanLauncherTest {
     @DisplayName("A broken application.yaml's ExceptionInInitializerError is caught, logged once at ERROR with a readable header, and reported as a failure")
     @Test
     void exceptionInInitializerErrorFromStartupAbortsCleanly() {
-        // Mirrors the real io.avaje.config.Config facade: a broken application.yaml fails its
-        // static initializer with a null-message ExceptionInInitializerError, whose cause chain
-        // (not its own message) names the file and the line/column.
+        // Mirrors the real facade: a broken application.yaml fails its static initializer with a
+        // null-message ExceptionInInitializerError, cause chain intact.
         RuntimeException parserFailure = new IllegalStateException("Error loading properties - application.yaml", new RuntimeException("mapping values are not allowed here in 'reader', line 3, column 13"));
         ExceptionInInitializerError brokenConfig = new ExceptionInInitializerError(parserFailure);
         Logger logger = (Logger) LoggerFactory.getLogger(TitanLauncher.class);

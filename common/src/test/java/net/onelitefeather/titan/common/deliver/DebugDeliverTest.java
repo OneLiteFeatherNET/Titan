@@ -34,13 +34,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Unit coverage for {@link DebugDeliver}, the {@link net.onelitefeather.titan.api.deliver.Deliver}
- * standalone (non-CloudNet) runs get from {@link DeliverProvider}.
- *
- * <p>Log lines are asserted through {@link CapturingLoggerFactory}, the SLF4J test binding
- * registered for the {@code common} module's test sources - adding logback-classic here instead
- * would register a second, competing {@code SLF4JServiceProvider} on the same test classpath and
- * make the logging assertions depend on undefined {@code ServiceLoader} ordering.
+ * Unit coverage for {@link DebugDeliver}; log lines are asserted through
+ * {@link CapturingLoggerFactory} rather than logback-classic, to avoid a second, competing
+ * {@code SLF4JServiceProvider} on the test classpath.
  */
 @ExtendWith(MicrotusExtension.class)
 class DebugDeliverTest {

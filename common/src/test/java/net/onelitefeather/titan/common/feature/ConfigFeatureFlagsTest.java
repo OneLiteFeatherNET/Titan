@@ -22,9 +22,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Unit coverage for {@link ConfigFeatureFlags}, built directly from its constructor rather than
- * through the static factory that wires it to {@code io.avaje.config.Config}. That keeps this
- * class Fast, Independent and Repeatable: no test here touches a real {@code application.yaml} on
- * the classpath or another test's system properties.
+ * through the static factory that touches {@code io.avaje.config.Config}.
  */
 class ConfigFeatureFlagsTest {
 

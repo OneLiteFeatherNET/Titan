@@ -31,11 +31,8 @@ public class TitanLauncher {
         // Needs an initialised MinecraftServer, which the line above provides.
         TitanObservability.installExceptionHandler();
 
-        // A syntactically broken application.yaml surfaces as ExceptionInInitializerError from
-        // Titan's constructor - the static io.avaje.config.Config facade's own first-touch failure,
-        // via SetupSpawnConfig#read() - the same way it does for the lobby (:app,
-        // TitanApplication#main). Startup must abort with a clear log line instead of leaving the
-        // process half-started on Minestom's already-running threads.
+        // A broken application.yaml surfaces as ExceptionInInitializerError from Titan's constructor.
+        // Startup must abort with a clear log line instead of leaving the process half-started.
         if (!startCleanly(Titan::instance)) {
             System.exit(1);
             return;
@@ -48,17 +45,8 @@ public class TitanLauncher {
         minecraftServer.start(bindHost, bindPort);
     }
 
-    /**
-     * Runs {@code startup}, catching {@link RuntimeException} or {@link Error} and logging exactly
-     * once at ERROR instead of letting either escape {@link #main}, mirroring
-     * {@code net.onelitefeather.titan.app.TitanApplication#main}'s abort-cleanly behaviour for the
-     * lobby. Returns a boolean rather than calling {@link System#exit(int)} itself, so {@link
-     * #main} decides the exit code and this method stays unit-testable.
-     *
-     * @param startup the startup step to run, e.g. {@link Titan#instance()}
-     * @return {@code true} if {@code startup} completed without throwing, {@code false} if it was
-     *         caught and logged
-     */
+    // Returns a boolean instead of calling System.exit itself, so main decides the exit code and
+    // this stays unit-testable.
     static boolean startCleanly(Runnable startup) {
         try {
             startup.run();

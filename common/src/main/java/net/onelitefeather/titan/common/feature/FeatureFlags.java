@@ -17,30 +17,18 @@ package net.onelitefeather.titan.common.feature;
 
 /**
  * A small seam between a feature module and whatever technology decides if a named feature flag is
- * currently on - the {@code features} section of the configuration in production, a fake in a test.
- *
- * <p>A feature module that wants to gate part of its behaviour behind a flag asks for it by name
- * through this interface, injected via its constructor, instead of reaching into a static, global
- * source of truth directly. That keeps the module's tests fast, independent and repeatable.
- *
- * <p>This lives in {@code titan.common} rather than inside a feature package: both the composition
- * root and any feature module need to reach it, and {@code titan.common} must never depend on a
- * feature package - only the reverse.
+ * currently on - the {@code features} section of the configuration in production, a fake in a
+ * test. A module asks for a flag by name through this interface instead of a global static,
+ * keeping its tests fast, independent and repeatable.
  */
 public interface FeatureFlags {
 
-    /**
-     * @param featureName the feature's name, e.g. {@code "NAVIGATOR_SLENDER"}
-     * @return {@code true} if {@code featureName} names a feature this source knows about at all,
-     *         regardless of whether it is currently on or off
-     */
+    /** @return {@code true} if {@code featureName} is a flag this source knows about, on or off. */
     boolean exists(String featureName);
 
     /**
-     * @param featureName the feature's name, e.g. {@code "NAVIGATOR_SLENDER"}
-     * @return {@code true} if the named feature is currently active; {@code false} both when it is
-     *         switched off and when {@code featureName} is not a feature this source knows about at
-     *         all - a caller that must tell the two apart uses {@link #exists(String)} first
+     * @return {@code true} if the flag is known and on; {@code false} both when it is off and when
+     *         it is unknown - use {@link #exists(String)} to tell those apart.
      */
     boolean isActive(String featureName);
 }
