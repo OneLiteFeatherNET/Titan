@@ -50,7 +50,6 @@ public class TitanApplication {
 
         // minestom-extensions loads platform extensions (the CloudNet bridge among
         // them) from the extensions/ folder; running standalone simply loads none.
-        // This replaces the manual MinestomBridgeExtension wiring + .wrapper guard.
         ExtensionBootstrap bootstrap = bootstrap();
 
         // Needs an initialised MinecraftServer, which the line above provides. Replaces
@@ -59,9 +58,8 @@ public class TitanApplication {
 
         me.lucko.luckperms.minestom.loader.MinestomLoader.get().load().registerShutdownHook().start();
 
-        // Let the CloudNet bridge (running in a separate extension classloader, see the
-        // :bridge module) resolve permissions through LuckPerms. Only JDK types cross the
-        // classloader boundary via TitanPermissionBridge.
+        // The CloudNet bridge (a separate classloader) resolves permissions through LuckPerms via
+        // TitanPermissionBridge; only JDK types cross that boundary.
         TitanPermissionBridge.setResolver((playerId, permission) -> {
             User user = LuckPermsProvider.get().getUserManager().getUser(playerId);
             if (user == null) {
@@ -70,23 +68,8 @@ public class TitanApplication {
             return user.getCachedData().getPermissionData().checkPermission(permission).asBoolean();
         });
 
-        // A feature's configuration value rejecting itself (IllegalArgumentException) or two
-        // features conflicting over an item slot / navigator slot surfaces here as an unchecked
-        // exception from building the BeanScope in Titan's own constructor. Startup must abort
-        // with a clear log line instead of leaving the process half-started or
-        // hanging on LuckPerms'/the extension bootstrap's already-running threads (see
-        // lobby-module-config spec, "Ungültige Werte verhindern den Start" and "Syntaktisch kaputte
-        // Datei"). Also catches Error: Titan's constructor touches the static
-        // io.avaje.config.Config facade first (ConfigurationStartupLog#activeProfiles()), the
-        // first touch of that facade in this JVM, so a broken application.yaml surfaces right there
-        // as ExceptionInInitializerError, whose cause chain names the file and the line/column.
-        // Avaje Inject's own default config property plugin then touches the facade again while
-        // building the BeanScope a few lines later - by then just a second read of the same,
-        // already-initialised instance. This catch is the safety net that keeps that
-        // ExceptionInInitializerError - not a RuntimeException - from going uncaught here and
-        // hanging the process on non-daemon threads already started above instead of exiting.
-        // Logged once and exited, never rethrown - rethrowing an Error caught this deep would only
-        // recreate the same hang this catch exists to prevent.
+        // Also catch Error: a broken application.yaml throws ExceptionInInitializerError;
+        // rethrowing would hang on LuckPerms' non-daemon threads.
         try {
             Titan titan = new Titan();
             titan.initialize();
@@ -102,14 +85,12 @@ public class TitanApplication {
         int bindPort = Integer.getInteger("service.bind.port", 25565);
         bootstrap.start(bindHost, bindPort);
 
-        // Read console input so commands typed locally - and the "stop" command CloudNet writes
-        // to the service's stdin on shutdown - reach the server. Without this the node can only
-        // kill the process after a timeout instead of stopping it cleanly. See StopCommand.
+        // Reads console input so locally typed commands and CloudNet's "stop" (written to stdin)
+        // reach the server; without this CloudNet can only kill the process after a timeout.
         startConsole();
 
-        // AOT training aid: when -Dtitan.aot.trainSeconds=<n> is set, shut down
-        // cleanly after the server has started so the JVM exit writes the AOT
-        // configuration/cache. No effect in normal operation.
+        // AOT training aid: with -Dtitan.aot.trainSeconds=<n> set, shuts down after start so JVM
+        // exit writes the AOT cache; no effect otherwise.
         Long aotTrainSeconds = Long.getLong("titan.aot.trainSeconds");
         if (aotTrainSeconds != null) {
             Thread.ofVirtual().name("titan-aot-trainer").start(() -> {
@@ -123,10 +104,6 @@ public class TitanApplication {
         }
     }
 
-    /**
-     * Starts a daemon thread that forwards console input to the command manager's console sender,
-     * so locally typed commands and CloudNet's {@code stop} (written to stdin) are executed.
-     */
     private static void startConsole() {
         Supplier<String> lineReader = switch (System.console()) {
             case Console console -> console::readLine;
@@ -162,17 +139,11 @@ public class TitanApplication {
             // No proxy secret: ExtensionBootstrap initialises Minestom with default auth.
             return ExtensionBootstrap.init();
         }
-        // Velocity modern forwarding. init(Auth) is the only point at which forwarding can
-        // still be turned on - Minestom binds the Auth to the process in MinecraftServer.init
-        // and offers no way to switch it afterwards.
+        // Velocity modern forwarding: init(Auth) is the only point it can be turned on - Minestom
+        // binds the Auth in MinecraftServer.init with no way to change it afterwards.
         return ExtensionBootstrap.init(new Auth.Velocity(secret));
     }
 
-    /**
-     * Resolves the Velocity modern-forwarding secret, preferring a {@code forwarding.secret}
-     * file (as Velocity does) and falling back to the {@code -Dminestom.velocity.secret}
-     * system property that CloudNet passes.
-     */
     private static String velocitySecret() {
         if (Files.isRegularFile(VELOCITY_SECRET_FILE)) {
             try {
@@ -181,7 +152,6 @@ public class TitanApplication {
                     return fromFile;
                 }
             } catch (IOException ignored) {
-                // fall through to the system property
             }
         }
         return System.getProperty("minestom.velocity.secret");

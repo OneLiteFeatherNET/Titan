@@ -30,34 +30,11 @@ import net.onelitefeather.titan.app.module.FeatureNode;
 import net.onelitefeather.titan.app.module.item.LobbyItems;
 
 /**
- * Handles a lobby player's death and respawn.
+ * Handles a lobby player's death and respawn: blanks the death text and respawns immediately on
+ * {@link PlayerDeathEvent}, then hands back the standard loadout on {@link PlayerRespawnEvent}.
  *
- * <p>On {@link PlayerDeathEvent}, this module blanks the death text and respawns the player right
- * away - there is no death screen in the lobby. On {@link PlayerRespawnEvent}, it hands the player
- * back the platform's standard loadout through {@link LobbyItems#equip(Player)}, the same call
- * the spawn module makes on join.
- *
- * <p>Minestom's {@code Player#kill()} dispatches {@link PlayerDeathEvent} <em>before</em> it marks
- * the player dead ({@code Player#isDead()} only flips to {@code true} once the event has been
- * handled), and {@code Player#respawn()} is a no-op while {@code isDead()} is still {@code false}.
- * Calling {@code respawn()} straight from the {@link PlayerDeathEvent} listener would therefore
- * silently do nothing. This module instead defers the respawn to the next tick, via the player's
- * own {@link net.minestom.server.timer.Scheduler} - by then {@code kill()} has finished and
- * {@code isDead()} is {@code true}, so {@code respawn()} actually runs. Scheduling on the player's
- * own scheduler (instead of a task this feature would have to cancel itself) also means the task is
- * dropped for free if the player disconnects before the next tick, without this module having to
- * track it. No extra double-respawn guard is needed: {@code respawn()} already checks
- * {@code isDead()} itself, so a player who is revived by some other means before the scheduled
- * respawn runs is simply left alone.
- *
- * <p>See {@code openspec/changes/lobby-feature-modules/specs/lobby-modules/spec.md}, scenario
- * "Tod ohne Nachricht", and {@code specs/lobby-hotbar/spec.md}, scenario "Ausstattung nach
- * Respawn". This module has no configuration of its own.
- *
- * <p>An {@code @Singleton} bean (see
- * {@code openspec/changes/dissolve-module-platform/design.md}, decision 1): {@link #start()}
- * attaches this feature's own {@link FeatureNode} once the container builds this bean, and
- * {@link #stop()} detaches it again when the container is closed.
+ * <p>{@code Player#respawn()} is a no-op until {@code kill()} finishes marking the player dead, so
+ * the respawn is deferred one tick via the player's own scheduler instead of called directly.
  */
 @Singleton
 public final class RespawnModule {
@@ -70,10 +47,6 @@ public final class RespawnModule {
     private final LobbyItems lobbyItems;
     private FeatureNode node;
 
-    /**
-     * @param titan      the shared event node this feature's own node attaches under
-     * @param lobbyItems equips the respawning player with the platform's standard loadout
-     */
     public RespawnModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbyItems lobbyItems) {
         this.titan = Objects.requireNonNull(titan, "titan");
         this.lobbyItems = Objects.requireNonNull(lobbyItems, "lobbyItems");

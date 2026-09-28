@@ -32,38 +32,17 @@ import net.onelitefeather.titan.app.module.FeatureNode;
 import net.onelitefeather.titan.common.utils.Cancelable;
 
 /**
- * Protects the lobby from being modified by a player: nobody may pick up, drop, or swap items,
- * click inside an inventory, or break or place a block.
+ * Protects the lobby from being modified: cancels every pickup, drop, swap, inventory-click,
+ * block-break, and block-place event unconditionally.
  *
- * <p>This module has no state and no configuration - it simply cancels every
- * {@link PickupItemEvent}, {@link InventoryPreClickEvent}, {@link PlayerBlockBreakEvent},
- * {@link PlayerBlockPlaceEvent}, {@link PlayerSwapItemEvent} and {@link ItemDropEvent}
- * unconditionally, mirroring what {@code Titan#initListeners()} wired directly onto the shared
- * event node before this module existed.
- *
- * <p>Cancelling an event does not stop it from reaching listeners registered elsewhere: Minestom
- * keeps walking the rest of the listener chain regardless of {@link
- * net.minestom.server.event.trait.CancellableEvent#isCancelled()}. What a cancellation does affect
- * is any single {@code Consumer}-based listener registered through {@link FeatureNode#on} for a
- * cancellable event type - such a listener checks {@code isCancelled()} right before running and
- * skips its own body if the event is already cancelled by the time it is invoked. A feature that
- * must react to a cancellable event regardless of this module's cancellation uses
- * {@link FeatureNode#onIncludingCancelled} instead of {@link FeatureNode#on} for that listener,
- * which keeps the two features independent of each other's start order (see {@code lobby-modules}
- * spec, "Module sind voneinander unabhängig") - no feature needs that today. The navigator's own
- * menu, for one, never competes with this module's cancellation of {@link InventoryPreClickEvent}
- * in the first place: its click handling runs through Aves, mapped directly onto the inventory it
- * opens rather than through a listener on this module's or its own event node, and Minestom
- * dispatches that mapped handler before any regular event node - including this module's - ever
- * sees the click (see {@code feature.navigator.NavigatorModule}'s Javadoc).
+ * <p>Cancelling doesn't stop Minestom from walking the rest of the listener chain, so a feature
+ * that must react anyway registers through {@link FeatureNode#onIncludingCancelled} instead of
+ * {@link FeatureNode#on}.
  */
 @Singleton
 public final class ProtectionModule {
 
-    /**
-     * This feature's position among its sibling {@link FeatureNode}s; unchanged from the old
-     * {@code @Priority(100)}.
-     */
+    /** This feature's position among its sibling {@link FeatureNode}s. */
     static final int EVENT_PRIORITY = 100;
 
     private static final String ID = "protection";
@@ -71,20 +50,15 @@ public final class ProtectionModule {
     private final EventNode<Event> titan;
     private FeatureNode node;
 
-    /**
-     * @param titan the shared event node this feature's own node attaches under
-     */
     public ProtectionModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan) {
         this.titan = Objects.requireNonNull(titan, "titan must not be null");
     }
 
-    /** Attaches this feature's own event node and registers every cancelling listener on it. */
     @PostConstruct
     void start() {
         this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY).on(PickupItemEvent.class, Cancelable::cancel).on(InventoryPreClickEvent.class, Cancelable::cancel).on(PlayerBlockBreakEvent.class, Cancelable::cancel).on(PlayerBlockPlaceEvent.class, Cancelable::cancel).on(PlayerSwapItemEvent.class, Cancelable::cancel).on(ItemDropEvent.class, Cancelable::cancel);
     }
 
-    /** Detaches this feature's own event node, so none of the listeners above run again. */
     @PreDestroy
     void stop() {
         this.node.close();

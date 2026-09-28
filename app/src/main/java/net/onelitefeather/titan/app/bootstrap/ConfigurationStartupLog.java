@@ -23,19 +23,13 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Logs the single lifecycle line {@link Titan#Titan()} emits once the
- * {@code io.avaje.config.Config}
- * facade has been initialised.
- *
- * <p>Pulled out on its own, mirroring {@link FeatureStartupLog}, so the log line can be
+ * {@code io.avaje.config.Config} facade is initialised, pulled out on its own so it can be
  * unit-tested with a captured appender.
  */
 public final class ConfigurationStartupLog {
 
     /**
-     * The {@code avaje-config} key holding the currently active configuration profiles - the same
-     * key {@code avaje-config} itself populates from {@code AVAJE_PROFILES}/
-     * {@code -Davaje.profiles} (see
-     * {@code openspec/changes/standardized-config-profiles/design.md}, decision 6).
+     * The {@code avaje-config} key populated from {@code AVAJE_PROFILES}/{@code -Davaje.profiles}.
      */
     public static final String ACTIVE_PROFILES_KEY = "avaje.profiles";
 
@@ -44,14 +38,7 @@ public final class ConfigurationStartupLog {
     private ConfigurationStartupLog() {
     }
 
-    /**
-     * Logs the currently active configuration profiles - {@link #ACTIVE_PROFILES_KEY} - as a
-     * single parameterised INFO line, even when no profile is active (an empty list). Reads
-     * {@link Config#asConfiguration()} itself (see
-     * {@code openspec/changes/avaje-config-facade/design.md}, decision 1) rather than taking the
-     * already-built instance as a parameter, since {@link Titan#Titan()} has nothing else to build
-     * it for any more.
-     */
+    /** Logs {@link #ACTIVE_PROFILES_KEY} as a single INFO line, even when the list is empty. */
     public static void activeProfiles() {
         List<String> profiles = Config.asConfiguration().list().of(ACTIVE_PROFILES_KEY);
         LOGGER.info("Active configuration profiles: {}", profiles);

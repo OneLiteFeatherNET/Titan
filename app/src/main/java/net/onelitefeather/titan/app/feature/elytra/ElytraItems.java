@@ -26,15 +26,13 @@ import net.minestom.server.utils.Unit;
 
 /**
  * The {@code elytra} module's own item stacks, kept apart from {@link ElytraModule} for
- * readability. Package-private: no other feature touches these directly, see {@code design.md},
- * decision 9 ("Tags/Items gehören dem Feature").
+ * readability. Package-private: no other feature touches these directly.
  */
 final class ElytraItems {
 
     /**
-     * The flight duration written into the firework's own tooltip: three, the maximum a player can
-     * craft, matching Voyager's {@code Rockets.FLIGHT_DURATION} and the deterministic burn the
-     * shipped default for {@code elytra.burnDurationTicks} runs ({@code 10 * 3 = 30} ticks).
+     * The maximum a player can craft; matches the burn duration for
+     * {@code elytra.burnDurationTicks}.
      */
     private static final int FLIGHT_DURATION = 3;
 
@@ -42,15 +40,8 @@ final class ElytraItems {
         throw new UnsupportedOperationException("This class cannot be instantiated");
     }
 
-    /**
-     * An unbreakable elytra, worn on the chestplate - today's lobby look (dark purple "Elytra").
-     */
     static final ItemStack ELYTRA = ItemStack.builder(Material.ELYTRA).customName(Component.text("Elytra", NamedTextColor.DARK_PURPLE)).set(DataComponents.UNBREAKABLE, Unit.INSTANCE).build();
 
-    /**
-     * The firework rocket a flying player is handed into their offhand and that
-     * {@link FireworkRockets#fire} spawns as an entity. No explosions - ported from Voyager, the
-     * rocket exists to boost, not to burst into colour.
-     */
+    /** No explosions: exists to boost flight, not to burst into colour. */
     static final ItemStack FIREWORK = ItemStack.builder(Material.FIREWORK_ROCKET).customName(Component.text("Firework Rocket")).set(DataComponents.FIREWORKS, new FireworkList(FLIGHT_DURATION, List.of())).build();
 }

@@ -30,31 +30,16 @@ import net.minestom.server.tag.Tag;
 /**
  * Sits players down on an invisible, silent arrow entity and stands them back up.
  *
- * <p>The offset a seat is placed at is read fresh on every {@link #sit(Player, Point, Vec)} call
- * rather than fixed once at construction (see {@code openspec/changes/config-reload-feature-flags/
- * design.md}, decision 1): a player already sitting is unaffected by a later offset change, since
- * their seat entity keeps the position it was placed at; only the next {@link #sit(Player, Point,
- * Vec)} call uses the new offset. Every tag this class uses is namespaced to this feature. See
- * {@code design.md}, decision 9.
- *
- * <p>Package-private: only {@link SitModule} constructs and uses this.
+ * <p>The offset is read fresh on every {@link #sit(Player, Point, Vec)} call, not fixed at
+ * construction, so a seated player keeps their seat until the next call changes it.
  */
 final class Seats {
 
-    /** The seat entity a sitting player is riding, keyed by its {@link UUID}. */
     private static final Tag<UUID> ARROW = Tag.UUID("titan:sit/arrow");
-
-    /** The position a sitting player is teleported back to when they stand up. */
     private static final Tag<Pos> ORIGIN = Tag.Structure("titan:sit/origin", Pos.class);
 
-    /**
-     * Sits {@code player} down at {@code sitLocation}, offset by {@code offset}. A player who is
-     * already sitting is stood up first, then sat down again at the new location.
-     *
-     * @param player      the player to sit down
-     * @param sitLocation the location - typically a clicked block's position - to sit at
-     * @param offset      the current seat offset, read live by the caller
-     */
+    // Stands the player up first if already sitting, so re-clicking a seat moves them instead of
+    // stacking arrows.
     void sit(Player player, Point sitLocation, Vec offset) {
         Objects.requireNonNull(offset, "offset");
         Instance instance = player.getInstance();
@@ -75,12 +60,6 @@ final class Seats {
         player.setTag(ARROW, arrow.getUuid());
     }
 
-    /**
-     * Stands {@code player} up again, teleporting them back to the position they sat down from.
-     * A player who is not sitting is left untouched.
-     *
-     * @param player the player to stand up
-     */
     void standUp(Player player) {
         Optional.ofNullable(player.getTag(ARROW)).map(player.getInstance()::getEntityByUuid).ifPresent(arrow -> {
             player.removeTag(ARROW);
@@ -92,10 +71,6 @@ final class Seats {
         });
     }
 
-    /**
-     * @param player the player to check
-     * @return {@code true} if {@code player} is currently sitting
-     */
     boolean isSitting(Player player) {
         return player.hasTag(ARROW);
     }

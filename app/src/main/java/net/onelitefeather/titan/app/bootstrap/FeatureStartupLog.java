@@ -26,16 +26,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Logs the single lifecycle line {@code Titan} emits once every lobby feature has started.
  *
- * <p>Pulled out on its own, mirroring the old {@code ModuleStartupLog} this replaces (see {@code
- * openspec/changes/dissolve-module-platform/tasks.md}, review finding 2), so the log line can be
- * unit-tested with a captured appender without booting a Minestom server.
- *
- * <p>There is no maintained list of feature ids to read any more (see {@code
- * openspec/changes/dissolve-module-platform/design.md}, decision 1): every feature's own {@link
- * FeatureNode#attach} names its child node {@code titan/<featureId>} and gives it {@code
- * EVENT_PRIORITY}, so {@link #startedInEventOrder(EventNode)} derives the ids straight from the
- * shared {@code titan} node's own children instead - a platform class stays in sync with whichever
- * features actually attached, without knowing any of them by name.
+ * <p>Derives the ids from {@code titan}'s own child nodes (named {@code titan/<featureId>} by
+ * {@link FeatureNode#attach}), so it stays in sync without knowing any feature by name.
  */
 public final class FeatureStartupLog {
 
@@ -47,21 +39,13 @@ public final class FeatureStartupLog {
     }
 
     /**
-     * Logs every feature currently attached to {@code titan}, in the order they process a shared
-     * event (ascending {@link EventNode#getPriority()}), as a single parameterised INFO line.
-     *
-     * @param titan the shared event node every feature's own node attaches under
+     * Logs every attached feature, in ascending {@link EventNode#getPriority()} order, as one INFO
+     * line.
      */
     public static void startedInEventOrder(EventNode<Event> titan) {
         LOGGER.info("Lobby features started in event order: {}", idsInEventOrder(titan));
     }
 
-    /**
-     * @param titan the shared event node every feature's own node attaches under
-     * @return every attached feature's id - the {@code titan/<featureId>} child node's name with
-     *         the {@code titan/} prefix stripped - ordered by {@link EventNode#getPriority()}
-     *         ascending
-     */
     static List<String> idsInEventOrder(EventNode<Event> titan) {
         return titan.getChildren().stream().sorted(Comparator.comparingInt(EventNode::getPriority)).map(child -> child.getName().substring(CHILD_NAME_PREFIX.length())).toList();
     }

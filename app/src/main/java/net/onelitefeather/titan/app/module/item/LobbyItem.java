@@ -21,14 +21,9 @@ import net.minestom.server.item.ItemStack;
 
 /**
  * A lobby item, contributed as a {@code @Bean} by a feature's own {@code @Factory} class and
- * collected by {@link LobbyItems} through Avaje Inject's list injection.
- *
- * <p>{@code key} is this item's identity - {@link LobbyItems} stamps it onto the item's stack as
- * the identity tag so a used stack can be traced back to {@code onUse} without relying on material
- * or display name (see {@code openspec/changes/dissolve-module-platform/design.md}, decision 2).
- * {@code placement} says where the item lives, if anywhere; see {@link ItemSlot}. {@code featureId}
- * is the id of the feature that owns this item - used to attribute a failing {@code onUse} to its
- * feature rather than to the item's own key, which is an implementation detail a player never sees.
+ * collected by {@link LobbyItems} through Avaje Inject's list injection. {@code key} identifies
+ * the item so a used stack can be traced back to {@code onUse}, and {@code featureId} attributes a
+ * failing {@code onUse} to its feature.
  */
 public record LobbyItem(String featureId, Key key, ItemStack itemStack, ItemSlot placement,
                         ItemUseHandler onUse) {

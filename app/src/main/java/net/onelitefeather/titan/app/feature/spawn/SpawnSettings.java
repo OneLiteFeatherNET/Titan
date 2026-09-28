@@ -17,23 +17,10 @@ package net.onelitefeather.titan.app.feature.spawn;
 
 /**
  * Pure parsing and validation for the {@code spawn} section's values, kept apart from however
- * those values are read ({@link SpawnModule#start()}, via {@code io.avaje.config.Config}).
+ * those values are read ({@link SpawnModule#start()}).
  *
- * <p>{@link #simulationDistance(String)} is a single-value check, used directly as the mapping
- * function of {@code Config.getAs(SIMULATION_DISTANCE_KEY, SpawnSettings::simulationDistance)} -
- * {@code getAs} wraps any exception it throws into an {@code IllegalStateException} naming the key
- * once, keeping this method's own exception as the cause. {@link #minHeight(int, int)} is a
- * cross-field check - it needs both already-parsed heights - so {@link SpawnModule#start()} calls
- * it itself, after reading both values; its own message therefore names both full keys. Both
- * checks run exactly once, at startup: {@link SpawnBoundsListener} and {@link SpawnJoinListener}
- * read their keys again on every move/join, live and unvalidated, via
- * {@code io.avaje.config.Config.getInt} - see {@code openspec/changes/config-reload-feature-flags/
- * design.md}, decision 2, as amended by {@code refactor/drop-runtime-fallback}: a runtime read is
- * never re-validated and never falls back to a shipped default.
- *
- * <p>The keys themselves are declared here as constants, the one place this module's config
- * section is named (see {@code design.md}, decision 3), and reused by {@link SpawnModule#start()}
- * to read the raw values.
+ * <p>{@link #minHeight(int, int)} is a cross-field check, called directly after both heights are
+ * parsed rather than through {@code Config.getAs}'s mapping function.
  */
 final class SpawnSettings {
 
@@ -44,20 +31,6 @@ final class SpawnSettings {
     private SpawnSettings() {
     }
 
-    /**
-     * Not read through {@code Config.getAs}'s mapping function (unlike
-     * {@link #simulationDistance(String)}): it needs both already-parsed heights, so it self-names
-     * both full keys in its message.
-     *
-     * @param minHeight the lowest {@code y} coordinate a player may fall to before being
-     *                  teleported back to spawn
-     * @param maxHeight the highest {@code y} coordinate a player may rise to before being
-     *                  teleported back to spawn
-     * @return {@code minHeight}, unchanged
-     * @throws IllegalArgumentException if {@code minHeight} is not less than {@code maxHeight}; the
-     *                                  message names both {@link #MIN_HEIGHT_KEY} and
-     *                                  {@link #MAX_HEIGHT_KEY}
-     */
     static int minHeight(int minHeight, int maxHeight) {
         if (minHeight >= maxHeight) {
             throw new IllegalArgumentException(MIN_HEIGHT_KEY + " (" + minHeight + ") must be less than " + MAX_HEIGHT_KEY + " (" + maxHeight + ")");
@@ -65,14 +38,6 @@ final class SpawnSettings {
         return minHeight;
     }
 
-    /**
-     * Parses and validates the simulation distance sent to a player on spawn.
-     *
-     * @param raw the configured simulation distance, as text; must parse as a strictly positive int
-     * @return {@code raw}, parsed
-     * @throws NumberFormatException    if {@code raw} does not parse as an {@code int}
-     * @throws IllegalArgumentException if the parsed value is not positive
-     */
     static int simulationDistance(String raw) {
         int simulationDistance = Integer.parseInt(raw);
         if (simulationDistance <= 0) {

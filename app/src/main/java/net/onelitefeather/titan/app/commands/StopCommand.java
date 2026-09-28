@@ -25,13 +25,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Stops the service cleanly. CloudNet shuts a service down by writing {@code stop} to its console
- * (see the console reader in {@code TitanApplication}); this command turns that into a clean,
- * fast {@link MinecraftServer#stopCleanly()} so the node does not have to kill the process after a
- * timeout.
- *
- * <p>The server console (any non-player sender, i.e. CloudNet) may always stop the service.
- * Players need the {@code titan.command.stop} permission.
+ * Stops the service cleanly via {@link MinecraftServer#stopCleanly()}, which CloudNet triggers by
+ * writing {@code stop} to console. The console may always stop it; a player needs
+ * {@code titan.command.stop}.
  */
 public final class StopCommand extends Command {
 
@@ -40,8 +36,8 @@ public final class StopCommand extends Command {
     public StopCommand() {
         super("stop");
         setCondition(this::canStop);
-        // Stop on a separate platform thread so stopCleanly() (which shuts down the server, and
-        // with it the console thread that triggered this) does not run on the caller's thread.
+        // Runs on a separate thread: stopCleanly() shuts down the console thread that
+        // triggered this, so it must not run there.
         setDefaultExecutor((sender, context) -> Thread.ofPlatform().name("titan-stop").start(() -> {
             MinecraftServer.stopCleanly();
             System.exit(0);

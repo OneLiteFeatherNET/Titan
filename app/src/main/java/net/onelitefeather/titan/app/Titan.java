@@ -30,75 +30,40 @@ import net.onelitefeather.titan.app.player.TitanPlayer;
 import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
 
 /**
- * The lobby's composition root.
- *
- * <p>Builds an Avaje Inject {@link BeanScope} - which discovers every lobby feature as a plain
- * {@code @Singleton} bean and every platform service {@code app/.../bootstrap/PlatformBeans}
- * provides. There is no separate module registry any more: a feature's own
- * {@code @PostConstruct}/{@code @PreDestroy} methods, run by the {@code BeanScope} itself, are its
- * whole lifecycle (see {@code openspec/changes/dissolve-module-platform/design.md}, decisions 1 and
- * 4). What is left outside the feature beans is exactly what was never a per-player listener to
- * begin with: the {@code stop}/{@code end} commands and the Butterfly extension bridge.
- *
- * <p>See also {@code openspec/changes/lobby-feature-modules/design.md} and task 6.8: before that
- * change, {@code Titan#initListeners()} hand-wired nineteen listeners directly onto a shared event
- * node; every one of those now lives inside its own feature bean, discovered by
- * {@link BeanScope#builder()} rather than named here.
+ * The lobby's composition root: builds an Avaje Inject {@link BeanScope}, which discovers every
+ * lobby feature and platform service as a plain {@code @Singleton} bean. A feature's own
+ * {@code @PostConstruct}/{@code @PreDestroy} methods are its whole lifecycle; only the
+ * {@code stop}/{@code end} commands and the Butterfly extension bridge live outside it.
  */
 public final class Titan {
 
     private final BeanScope beanScope;
 
     /**
-     * @throws ExceptionInInitializerError if {@code application.yaml} (or a profile/external file
-     *                                     it pulls in) cannot be parsed; the {@code
-     *                                     io.avaje.config.Config} facade's own static initializer
-     *                                     throws this on its first touch, wrapping the underlying
-     *                                     parser failure (file and line/column) as its cause; see
-     *                                     the {@code lobby-module-config} spec scenario
-     *                                     "Syntaktisch kaputte Datei".
+     * @throws ExceptionInInitializerError if {@code application.yaml} cannot be parsed
      * @throws RuntimeException            if a feature's {@code @PostConstruct} throws while the
-     *                                     {@link BeanScope} is being built; the lobby does not
-     *                                     start, and the message names the failing feature's bean
-     *                                     class (see the {@code lobby-modules} spec scenario
-     *                                     "Fehler beim Start eines Features").
+     *                                     {@link BeanScope} is being built
      */
     public Titan() {
         MinecraftServer.getConnectionManager().setPlayerProvider(TitanPlayer::new);
         BlockHandlerHelper.registerAll();
 
-        // ConfigurationStartupLog#activeProfiles() is the first thing this constructor touches
-        // the static io.avaje.config.Config facade for - and the first touch of Config at all in
-        // this JVM - deliberately, at a known place in the start sequence (built-in first: no
-        // factory of our own wraps this touch; see design.md, decision 1). A broken
-        // application.yaml surfaces here as ExceptionInInitializerError, whose cause chain already
-        // names the file and the line/column. Once this returns, the facade is the single,
-        // already-built Configuration instance for the rest of the process - Avaje Inject's own
-        // default config property plugin reading the same facade while the scope below is built is
-        // then just a second read of that instance, not a second first touch.
+        // First touch of the static io.avaje.config.Config facade, so a broken application.yaml
+        // surfaces here as ExceptionInInitializerError.
         ConfigurationStartupLog.activeProfiles();
 
-        // Building the scope runs every bean's @PostConstruct, including every feature's own
-        // start() - so every feature is already attached to the titan event node once this
-        // constructor returns, before any player can connect (lobby-modules spec, "Features
-        // starten vor dem ersten Spieler").
+        // Runs every feature's @PostConstruct, attaching it to the titan event node before any
+        // player can connect.
         this.beanScope = BeanScope.builder().build();
 
-        // Reads back the same shared node every feature just attached itself to, purely to report
-        // the actual start order - no list of feature ids is maintained anywhere for this (see
-        // FeatureStartupLog).
         EventNode<Event> titan = this.beanScope.get(new GenericType<EventNode<Event>>() {
         }.type(), FeatureNode.TITAN_NODE);
         FeatureStartupLog.startedInEventOrder(titan);
     }
 
     /**
-     * Registers the platform commands and loads Butterfly, then schedules shutdown tasks in this
-     * order (Minestom runs {@link net.minestom.server.timer.SchedulerManager} shutdown tasks FIFO,
-     * in the order they were registered): closing the {@link BeanScope} - which runs every
-     * feature's {@code @PreDestroy}, detaching its event node first (lobby-modules spec, "Features
-     * trennen sich beim Herunterfahren zuerst von Events") - then Butterfly. Feature shutdown ran
-     * before Butterfly before this change too; only the mechanism changed.
+     * Registers commands and loads Butterfly, then schedules shutdown in FIFO order: the
+     * {@link BeanScope} closes first (running every feature's {@code @PreDestroy}), then Butterfly.
      */
     public void initialize() {
         initCommands();

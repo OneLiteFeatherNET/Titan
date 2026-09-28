@@ -24,16 +24,10 @@ import net.minestom.server.entity.Player;
 import net.minestom.server.event.player.PlayerMoveEvent;
 
 /**
- * Teleports a player back to the lobby spawn once they leave the configured height bounds. The
- * actual bounds check is delegated to {@link HeightBounds}, a pure rule this listener merely
- * reacts to - built fresh on every move from {@link SpawnSettings#MIN_HEIGHT_KEY}/
- * {@link SpawnSettings#MAX_HEIGHT_KEY}, read live and unvalidated via
- * {@code Config.getInt(...)}, rather than once at construction, so a changed
- * {@code spawn.minHeight}/{@code maxHeight} applies to the very next height check, without a
- * module restart (see {@code openspec/changes/config-reload-feature-flags/design.md}, decision
- * 1). The cross-field check in {@link SpawnModule#start()} only ever runs once, at startup
- * (see {@code refactor/drop-runtime-fallback}): this per-move read is never re-validated and
- * never falls back to a shipped default.
+ * Teleports a player back to the lobby spawn once they leave the configured height bounds via
+ * {@link HeightBounds}. Reads {@link SpawnSettings#MIN_HEIGHT_KEY}/{@code MAX_HEIGHT_KEY} live on
+ * every move instead of once at construction, so a changed bound applies immediately without a
+ * module restart; the startup check in {@link SpawnModule#start()} never re-validates it.
  */
 final class SpawnBoundsListener implements Consumer<PlayerMoveEvent> {
 

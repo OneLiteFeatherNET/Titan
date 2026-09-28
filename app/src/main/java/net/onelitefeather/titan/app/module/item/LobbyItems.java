@@ -36,40 +36,16 @@ import net.onelitefeather.titan.app.module.FeatureNode;
 import net.onelitefeather.titan.common.observability.TitanObservability;
 
 /**
- * Platform-wide home for {@link LobbyItem} beans (see
- * {@code openspec/changes/dissolve-module-platform/design.md}, decision 2): every feature that has
- * one contributes it through Avaje Inject's list injection instead of registering it with a
- * module context.
- *
- * <p>The constructor does three things, in order: {@link ItemConflicts#check(List)} aborts the
- * whole {@code BeanScope} build if two items claim the same {@link LobbyItem#key()} or the same
- * fixed {@link ItemSlot}; every item's stack is stamped with {@link #IDENTITY_TAG} so a used stack
- * can be traced back to its {@link ItemUseHandler} regardless of material or display name; and a
- * single guarded {@link PlayerUseItemEvent} dispatcher attaches to the shared {@code titan} node.
- *
- * <p>{@link #equip(Player)} clears the player's inventory and places every item with a fixed
- * placement - the standard lobby loadout is platform-wide, not limited to one feature's own items.
- * {@link #stack(Key)} hands back the stamped stack for an item with no fixed placement (the elytra
- * feature's firework, for instance), which a feature gives out and takes back itself.
- *
- * <h2>Threading</h2>
- *
- * <p>No synchronization guards {@link #itemsByKey}, {@link #hotbar} or {@link #equipment}: all
- * three
- * are immutable ({@link Map#copyOf}) and fully built by the constructor before
- * {@link #dispatcher} - the only thing that reads them afterwards, on the tick thread, for every
- * {@link PlayerUseItemEvent} - is ever registered. A reader can therefore never observe a partially
- * built state, and nothing here is ever written again after construction.
+ * Platform-wide home for {@link LobbyItem} beans: every feature that has one contributes it
+ * through Avaje Inject's list injection. {@link #equip(Player)} clears the player's inventory and
+ * places every item with a fixed placement, while {@link #stack(Key)} hands back the stamped stack
+ * for an item with no fixed placement. The item maps are built once by the constructor and never
+ * mutated, so no synchronization is needed for the tick-thread reads in {@link #dispatch}.
  */
 @Singleton
 public final class LobbyItems {
 
-    /**
-     * Stamped onto every item's stack on construction. Its value is that item's own
-     * {@link LobbyItem#key()}, as a string - the identity {@link #dispatch} resolves a used stack
-     * back to its handler with. A stack without this tag - a plain feather, say - is not a
-     * registered item and is left alone.
-     */
+    /** A stack without this tag is not a registered item and {@link #dispatch} leaves it alone. */
     public static final Tag<String> IDENTITY_TAG = Tag.String("titan:item");
 
     private final Map<String, LobbyItem> itemsByKey;
@@ -78,13 +54,7 @@ public final class LobbyItems {
     private final EventNode<Event> titan;
     private final EventListener<PlayerUseItemEvent> dispatcher;
 
-    /**
-     * @param items every {@link LobbyItem} a feature bean contributed, in the order Avaje Inject's
-     *              list injection handed them
-     * @param titan the shared event node every feature's own node also attaches under; this
-     *              instance's dispatcher attaches to it directly
-     * @throws IllegalStateException if two items conflict; see {@link ItemConflicts#check(List)}
-     */
+    /** @throws IllegalStateException if two items conflict */
     public LobbyItems(List<LobbyItem> items, @Named(FeatureNode.TITAN_NODE) EventNode<Event> titan) {
         ItemConflicts.check(items);
         this.titan = titan;
@@ -96,32 +66,18 @@ public final class LobbyItems {
         this.titan.addListener(this.dispatcher);
     }
 
-    /**
-     * Clears {@code player}'s inventory and sets every item that has a fixed placement. The
-     * player's inventory contains exactly the currently known items afterwards, and nothing else.
-     *
-     * @param player the player to equip
-     */
+    /** Clears {@code player}'s inventory and sets every item that has a fixed placement. */
     public void equip(Player player) {
         player.getInventory().clear();
         this.hotbar.forEach((slot, stack) -> player.getInventory().setItemStack(slot, stack));
         this.equipment.forEach(player::setEquipment);
     }
 
-    /**
-     * @return how many {@link LobbyItem} beans this instance was built from - for a wiring/smoke
-     *         test to assert against, without exposing the items themselves
-     */
     public int itemCount() {
         return this.itemsByKey.size();
     }
 
-    /**
-     * @param key an item's key
-     * @return the stamped stack for that item - for handing out an item with no fixed placement,
-     *         such as the elytra feature's firework
-     * @throws IllegalArgumentException if no item with that key exists
-     */
+    /** @throws IllegalArgumentException if no item with that key exists */
     public ItemStack stack(Key key) {
         LobbyItem item = this.itemsByKey.get(key.asString());
         if (item == null) {
@@ -130,7 +86,6 @@ public final class LobbyItems {
         return item.itemStack();
     }
 
-    /** Detaches this instance's dispatcher from the {@code titan} node. */
     @PreDestroy
     public void stop() {
         this.titan.removeListener(this.dispatcher);
@@ -145,10 +100,6 @@ public final class LobbyItems {
         return Map.copyOf(stamped);
     }
 
-    /**
-     * The hotbar and equipment slots {@link #equip(Player)} fills, computed once in a single pass
-     * over every item.
-     */
     private record Placements(Map<Integer, ItemStack> hotbar,
                               Map<EquipmentSlot, ItemStack> equipment) {
     }

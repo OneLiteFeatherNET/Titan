@@ -33,23 +33,9 @@ import net.minestom.server.tag.Tag;
  * Reacts to a player attacking another player while holding a feather in either hand: applies the
  * tickle cooldown and broadcasts the tickle message to every player in the instance.
  *
- * <p>Reads "now" from an injected {@link Clock} instead of {@link System#currentTimeMillis()} and
- * parses the tickle message once per attack - sent to the {@linkplain Instance instance's} own
- * audience - instead of once per recipient. Reads the configured cooldown itself, live, via
- * {@code Config.getLong(TickleSettings.COOLDOWN_KEY)}, on every attack rather than once at
- * construction - see {@code openspec/changes/config-reload-feature-flags/design.md}, decision 1: a
- * changed value applies to the very next attack, without a module restart. That read is never
- * re-validated (the strict check in {@link TickleModule#start()} only ever runs once, at startup);
- * an invalid live value simply takes effect.
- *
- * <p>Keeps today's observable behaviour unchanged, including its two known bugs, tracked by the
- * follow-up change {@code tickle-cooldown} rather than fixed here: the {@link SetCooldownPacket}
- * duration is a millisecond timestamp divided by 20 rather than a tick count, and the first hit
- * after the cooldown expires only clears the cooldown tag (see
- * {@link TickleCooldownRule.Decision#CLEAR_EXPIRED_TAG}) instead of tickling again.
- *
- * <p>Package-private: {@link TickleModule} is the only class outside this package that sees this
- * handler, wiring it up via its own {@code FeatureNode}.
+ * <p>Reads "now" from an injected {@link Clock} instead of {@link System#currentTimeMillis()} so
+ * tests can control it, and reads the configured cooldown live on every attack instead of once at
+ * construction.
  */
 final class TickleAttackHandler implements Consumer<EntityAttackEvent> {
 
@@ -101,12 +87,6 @@ final class TickleAttackHandler implements Consumer<EntityAttackEvent> {
         instance.sendMessage(message);
     }
 
-    /**
-     * Checks if {@code player} has a feather item in either hand.
-     *
-     * @param player the player to check
-     * @return true if the player has a feather item, false otherwise
-     */
     private static boolean hasFeatherItem(Player player) {
         return player.getItemInOffHand().material() == Material.FEATHER || player.getItemInMainHand().material() == Material.FEATHER;
     }
