@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.app.feature.spawn;
+package net.onelitefeather.titan.feature.spawn;
 
 /**
  * The pure height rule behind the lobby's out-of-bounds teleport: a player is out of bounds once

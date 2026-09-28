@@ -26,7 +26,7 @@ import net.onelitefeather.titan.app.feature.navigator.NavigatorModule;
 import net.onelitefeather.titan.feature.protection.ProtectionModule;
 import net.onelitefeather.titan.app.feature.respawn.RespawnModule;
 import net.onelitefeather.titan.app.feature.sit.SitModule;
-import net.onelitefeather.titan.app.feature.spawn.SpawnModule;
+import net.onelitefeather.titan.feature.spawn.SpawnModule;
 import net.onelitefeather.titan.app.feature.tickle.TickleModule;
 import net.onelitefeather.titan.app.module.item.HotbarLobbyItems;
 import net.onelitefeather.titan.core.module.FeatureNode;

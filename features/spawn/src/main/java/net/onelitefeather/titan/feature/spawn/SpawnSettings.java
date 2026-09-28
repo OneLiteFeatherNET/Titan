@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.app.feature.spawn;
+package net.onelitefeather.titan.feature.spawn;
 
 /**
  * Pure parsing and validation for the {@code spawn} section's values, kept apart from however
