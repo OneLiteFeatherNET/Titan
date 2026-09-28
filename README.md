@@ -55,7 +55,9 @@ development:
 - A CloudNet permission query for a player returns the same result as a permission check inside
   the lobby, including LuckPerms contexts (e.g. a permission granted only for `server=lobby`).
 - `titan-cloudnet.jar`'s classpath changed with this permission platform - retrain its AOT cache
-  against the new jar before deploying it (see "Running the Server" above).
+  against the new jar before deploying it (see "Running the Server" above). The `generateAotCache`
+  training run itself starts real LuckPerms too, against a disposable `data/` created fresh in its
+  own training directory, never the deployment's `data/`.
 
 ## Installation
 
