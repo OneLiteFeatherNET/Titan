@@ -13,52 +13,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.app.feature.respawn;
+package net.onelitefeather.titan.feature.respawn;
 
-import java.util.List;
-import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.EventFilter;
 import net.minestom.server.event.player.PlayerDeathEvent;
 import net.minestom.server.event.player.PlayerRespawnEvent;
 import net.minestom.server.instance.Instance;
-import net.minestom.server.inventory.PlayerInventory;
-import net.minestom.server.item.ItemStack;
-import net.minestom.server.item.Material;
 import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.core.module.item.ItemSlot;
-import net.onelitefeather.titan.core.module.item.LobbyItem;
-import net.onelitefeather.titan.app.module.item.HotbarLobbyItems;
+import net.onelitefeather.titan.core.module.item.LobbyItems;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
 
 /**
- * Env integration coverage for {@link RespawnModule}, built directly with fakes: a death produces
- * no message and a respawn by the next tick with the platform's current loadout, and
- * {@link RespawnModule#stop()} leaves the player untouched by further events.
+ * Env integration coverage for {@link RespawnModule}, built directly with a
+ * {@link Mockito#mock(Class) mocked} {@link LobbyItems}: a death produces no message and a respawn
+ * by the next tick that hands the loadout back via {@code equip}, and {@link RespawnModule#stop()}
+ * leaves the player untouched by further events.
+ *
+ * <p>{@link LobbyItems} is mocked rather than its real implementation ({@code HotbarLobbyItems}):
+ * that implementation lives in {@code features/hotbar}, a sibling column this column must not
+ * depend on, even in tests. What actually placing an item in a player's inventory looks like is
+ * {@code HotbarLobbyItems}'s own concern and its own test's job.
  */
 @ExtendWith(MicrotusExtension.class)
 class RespawnModuleTest {
 
-    private static final Key TEST_ITEM_KEY = Key.key("titan:respawn-module-test-item");
-
-    private static HotbarLobbyItems noItems(TestTitanNode titan) {
-        return new HotbarLobbyItems(List.of(), titan.node());
-    }
-
-    private static HotbarLobbyItems featherItem(TestTitanNode titan) {
-        LobbyItem feather = new LobbyItem("respawn-test-item", TEST_ITEM_KEY, ItemStack.of(Material.FEATHER), ItemSlot.hotbar(0), (usedBy, event) -> {
-        });
-        return new HotbarLobbyItems(List.of(feather), titan.node());
-    }
-
-    private static RespawnModule startedModule(TestTitanNode titan, HotbarLobbyItems lobbyItems) {
+    private static RespawnModule startedModule(TestTitanNode titan, LobbyItems lobbyItems) {
         RespawnModule module = new RespawnModule(titan.node(), lobbyItems);
         module.start();
         return module;
@@ -69,9 +57,9 @@ class RespawnModuleTest {
     void deathProducesNoMessage(Env env) {
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
+        LobbyItems lobbyItems = Mockito.mock(LobbyItems.class);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            HotbarLobbyItems lobbyItems = noItems(titan);
             RespawnModule module = startedModule(titan, lobbyItems);
             try {
                 Collector<PlayerDeathEvent> collector = env.trackEvent(PlayerDeathEvent.class, EventFilter.PLAYER, player);
@@ -83,19 +71,18 @@ class RespawnModuleTest {
                 Assertions.assertEquals(Component.empty(), first.getDeathText());
             } finally {
                 module.stop();
-                lobbyItems.stop();
             }
         }
     }
 
-    @DisplayName("A real death triggers a respawn - with the platform's loadout back on - by the next tick")
+    @DisplayName("A real death triggers a respawn - with the platform's loadout handed back - by the next tick")
     @Test
     void deathTriggersARespawnWithLoadoutByTheNextTick(Env env) {
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
+        LobbyItems lobbyItems = Mockito.mock(LobbyItems.class);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            HotbarLobbyItems lobbyItems = featherItem(titan);
             RespawnModule module = startedModule(titan, lobbyItems);
             try {
                 Collector<PlayerDeathEvent> deathCollector = env.trackEvent(PlayerDeathEvent.class, EventFilter.PLAYER, player);
@@ -114,33 +101,28 @@ class RespawnModuleTest {
                 Assertions.assertEquals(Component.empty(), deathCollector.collect().getFirst().getDeathText(), "the death text must be blanked");
                 respawnCollector.assertSingle();
                 Assertions.assertFalse(player.isDead(), "the player must be alive again after the next tick, without waiting for a respawn screen");
-                Assertions.assertEquals(Material.FEATHER, player.getInventory().getItemStack(0).material(), "the registered item must be placed again once the player respawns");
+                Mockito.verify(lobbyItems).equip(player);
             } finally {
                 module.stop();
-                lobbyItems.stop();
             }
         }
     }
 
-    @DisplayName("After a respawn, the player has exactly the items registered with the platform")
+    @DisplayName("A respawn hands the player exactly the platform's loadout")
     @Test
-    void respawnEquipsExactlyTheRegisteredItems(Env env) {
+    void respawnEquipsThePlatformLoadout(Env env) {
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
+        LobbyItems lobbyItems = Mockito.mock(LobbyItems.class);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            HotbarLobbyItems lobbyItems = featherItem(titan);
             RespawnModule module = startedModule(titan, lobbyItems);
             try {
                 env.process().eventHandler().call(new PlayerRespawnEvent(player));
 
-                Assertions.assertEquals(Material.FEATHER, player.getInventory().getItemStack(0).material(), "the registered item must be placed on respawn");
-                for (int slot = 1; slot < PlayerInventory.INVENTORY_SIZE; slot++) {
-                    Assertions.assertTrue(player.getInventory().getItemStack(slot).isAir(), "slot " + slot + " must be empty after respawn");
-                }
+                Mockito.verify(lobbyItems).equip(player);
             } finally {
                 module.stop();
-                lobbyItems.stop();
             }
         }
     }
@@ -150,9 +132,9 @@ class RespawnModuleTest {
     void moduleStopsReactingAfterStop(Env env) {
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
+        LobbyItems lobbyItems = Mockito.mock(LobbyItems.class);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            HotbarLobbyItems lobbyItems = featherItem(titan);
             RespawnModule module = startedModule(titan, lobbyItems);
             module.stop();
 
@@ -166,9 +148,7 @@ class RespawnModuleTest {
             Assertions.assertTrue(player.isDead(), "the player must stay dead once the module is stopped");
 
             env.process().eventHandler().call(new PlayerRespawnEvent(player));
-            Assertions.assertTrue(player.getInventory().getItemStack(0).isAir(), "equip must not run once the module is stopped");
-
-            lobbyItems.stop();
+            Mockito.verifyNoInteractions(lobbyItems);
         }
     }
 }
