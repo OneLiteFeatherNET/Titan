@@ -24,6 +24,7 @@ import net.onelitefeather.butterfly.minestom.Butterfly;
 import net.onelitefeather.titan.runtime.bootstrap.ConfigurationStartupLog;
 import net.onelitefeather.titan.runtime.bootstrap.FeatureStartupLog;
 import net.onelitefeather.titan.core.module.FeatureNode;
+import net.onelitefeather.titan.core.permission.PermissionService;
 import net.onelitefeather.titan.runtime.player.TitanPlayer;
 import net.onelitefeather.titan.runtime.variant.VariantStartupCheck;
 import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
@@ -46,7 +47,6 @@ public final class Titan {
      *                                     load (see {@link VariantStartupCheck})
      */
     public Titan() {
-        MinecraftServer.getConnectionManager().setPlayerProvider(TitanPlayer::new);
         BlockHandlerHelper.registerAll();
 
         // First touch of the static io.avaje.config.Config facade, so a broken application.yaml
@@ -58,6 +58,11 @@ public final class Titan {
         this.beanScope = BeanScope.builder().build();
 
         VariantStartupCheck.verify(Titan.class.getClassLoader());
+
+        // Players can only connect once bootstrap.start() runs, well after this point, so the
+        // provider can safely use the PermissionService resolved from the scope.
+        PermissionService permissionService = this.beanScope.get(PermissionService.class);
+        MinecraftServer.getConnectionManager().setPlayerProvider((connection, gameProfile) -> new TitanPlayer(connection, gameProfile, permissionService));
 
         EventNode<Event> titan = this.beanScope.get(new GenericType<EventNode<Event>>() {
         }.type(), FeatureNode.TITAN_NODE);
