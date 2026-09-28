@@ -27,7 +27,7 @@ import net.minestom.server.instance.Instance;
 import net.minestom.server.item.ItemStack;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.app.testutils.EventListenerCounter;
+import net.onelitefeather.titan.core.testfixtures.EventListenerCounter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

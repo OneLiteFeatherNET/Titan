@@ -58,6 +58,8 @@ dependencies {
     testImplementation(libs.junit.api)
     testImplementation(libs.junit.platform.launcher)
     testImplementation(libs.archunit)
+    // TestTitanNode, DummyDeliver, EventListenerCounter, ColumnArchitectureRules (D7).
+    testImplementation(testFixtures(project(":core")))
     testRuntimeOnly(libs.junit.engine)
 }
 

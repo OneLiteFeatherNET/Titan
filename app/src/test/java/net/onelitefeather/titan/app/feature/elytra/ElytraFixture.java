@@ -21,7 +21,7 @@ import net.minestom.server.timer.Scheduler;
 import net.minestom.testing.Env;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
 import net.onelitefeather.titan.app.module.item.HotbarLobbyItems;
-import net.onelitefeather.titan.app.testutils.TestTitanNode;
+import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 
 /**
  * Test-only fixture that builds {@link ElytraModule} and its two {@link LobbyItem}s exactly as

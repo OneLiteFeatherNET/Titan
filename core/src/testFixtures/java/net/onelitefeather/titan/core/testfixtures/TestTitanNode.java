@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.app.testutils;
+package net.onelitefeather.titan.core.testfixtures;
 
 import java.util.UUID;
 import net.minestom.server.event.Event;

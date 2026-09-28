@@ -25,5 +25,7 @@ dependencies {
     testFixturesImplementation(libs.minestom)
     testFixturesImplementation(libs.cyano)
     testFixturesImplementation(libs.archunit)
+    // ColumnArchitectureRules references BeanScope/PostConstruct/Singleton, not to depend on them.
+    testFixturesImplementation(libs.avaje.inject)
     testFixturesImplementation(libs.junit.api)
 }

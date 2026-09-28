@@ -29,7 +29,7 @@ import net.minestom.server.instance.block.BlockFace;
 import net.minestom.server.network.packet.client.play.ClientInputPacket;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.app.testutils.TestTitanNode;
+import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

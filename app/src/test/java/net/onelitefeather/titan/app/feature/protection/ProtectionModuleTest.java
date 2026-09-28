@@ -33,7 +33,7 @@ import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.app.testutils.TestTitanNode;
+import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
