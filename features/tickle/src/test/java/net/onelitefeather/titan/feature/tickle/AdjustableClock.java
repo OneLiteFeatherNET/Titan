@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.app.feature.tickle;
+package net.onelitefeather.titan.feature.tickle;
 
 import java.time.Clock;
 import java.time.Duration;
