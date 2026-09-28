@@ -34,7 +34,7 @@ import net.minestom.server.item.Material;
 import net.minestom.server.utils.Unit;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.app.module.item.HotbarLobbyItems;
+import net.onelitefeather.titan.feature.hotbar.HotbarLobbyItems;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

@@ -33,7 +33,7 @@ import net.minestom.testing.TestConnection;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.module.item.ItemSlot;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
-import net.onelitefeather.titan.app.module.item.HotbarLobbyItems;
+import net.onelitefeather.titan.feature.hotbar.HotbarLobbyItems;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;

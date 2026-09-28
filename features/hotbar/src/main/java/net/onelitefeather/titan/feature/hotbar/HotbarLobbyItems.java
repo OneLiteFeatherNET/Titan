@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.app.module.item;
+package net.onelitefeather.titan.feature.hotbar;
 
 import io.avaje.inject.PreDestroy;
 import jakarta.inject.Named;
@@ -43,8 +43,8 @@ import net.onelitefeather.titan.core.module.item.LobbyItems;
  * stack for an item with no fixed placement. The item maps are built once by the constructor and
  * never mutated, so no synchronization is needed for the tick-thread reads in {@link #dispatch}.
  *
- * <p>Temporarily in {@code :app}; moves to {@code features/hotbar} in a later wave - a column
- * depends only on the {@link LobbyItems} interface in {@code core}, never on this class.
+ * <p>Every other column depends only on the {@link LobbyItems} interface in {@code core}, never on
+ * this class.
  */
 @Singleton
 public final class HotbarLobbyItems implements LobbyItems {
