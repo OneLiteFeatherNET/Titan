@@ -34,7 +34,6 @@ dependencyResolutionManagement {
         create("libs") {
             version("aonyx-bom", "0.8.7")
             version("cloudnet", "4.0.0-RC18-SNAPSHOT")
-            version("butterfly", "1.0.23")
 
             version("luckperms", "5.6-SNAPSHOT")
 
@@ -67,7 +66,6 @@ dependencyResolutionManagement {
             library("minestom-extensions-processor", "net.onelitefeather", "minestom-extensions-processor").withoutVersion()
             library("aves", "net.theevilreaper", "aves").withoutVersion()
             library("adventure.minimessage", "net.kyori", "adventure-text-minimessage").withoutVersion()
-            library("butterfly-minestom", "net.onelitefeather", "butterfly-minestom").versionRef("butterfly")
 
             library("tomcat-annotations-api", "org.apache.tomcat", "annotations-api").versionRef("tomcat-annotations-api")
 

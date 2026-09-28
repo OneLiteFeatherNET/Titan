@@ -18,10 +18,6 @@ dependencies {
     testRuntimeOnly(libs.junit.engine)
 }
 
-configurations.testRuntimeClasspath {
-    exclude(group = "net.luckperms", module = "minestom-loader")
-}
-
 // Not published (see design.md D8): titan.app-variant's titan.publish-conventions still creates
 // the "maven" publication, so this variant's publish tasks are disabled instead.
 tasks.withType<PublishToMavenRepository>().configureEach {
