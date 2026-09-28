@@ -7,8 +7,10 @@ dependencies {
     compileOnly(libs.luckperms.api) {
         exclude(group = "net.kyori.adventure")
     }
-    implementation(project(":core"))
-    implementation(project(":common"))
+    // Public beans (Titan, VariantDescriptor, ...) expose core and common types, so consumers of
+    // runtime need them on their own compile classpath too.
+    api(project(":core"))
+    api(project(":common"))
     implementation(platform(libs.aonyx.bom))
     implementation(libs.adventure.minimessage)
     implementation(libs.minestom)

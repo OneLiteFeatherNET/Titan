@@ -6,9 +6,8 @@ plugins {
 
 dependencies {
     // See apps/cloudnet/build.gradle.kts: its own VariantStartTest-equivalent coverage reaches
-    // into core and common directly (FeatureFlags, MapProvider, LobbyMap, ...).
-    testImplementation(project(":core"))
-    testImplementation(project(":common"))
+    // into core and common directly (FeatureFlags, MapProvider, LobbyMap, ...) - available here too
+    // since runtime exposes both as "api".
     testImplementation(platform(libs.aonyx.bom))
     testImplementation(libs.minestom)
     testImplementation(libs.cyano)

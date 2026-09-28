@@ -10,10 +10,8 @@ titanVariant {
 dependencies {
     // The cross-column tests moved here from runtime (see docs/lobby-modules.md, "Wie eine
     // Column Plattform-Beans bekommt") reach into core and common directly (FeatureFlags,
-    // MapProvider, LobbyMap, ...), which titan.app-variant's own "implementation(project(\":runtime\"))"
-    // does not expose transitively - runtime depends on both as "implementation", not "api".
-    testImplementation(project(":core"))
-    testImplementation(project(":common"))
+    // MapProvider, LobbyMap, ...); runtime exposes both as "api", so titan.app-variant's own
+    // "implementation(project(\":runtime\"))" already puts them on this classpath.
     testImplementation(platform(libs.aonyx.bom))
     testImplementation(libs.minestom)
     testImplementation(libs.cyano)
