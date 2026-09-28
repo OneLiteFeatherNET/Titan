@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.app.module;
+package net.onelitefeather.titan.core.module;
 
 import java.util.function.Consumer;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventListener;
 import net.minestom.server.event.EventNode;
-import net.onelitefeather.titan.common.observability.TitanObservability;
 
 /**
  * A feature's own event node, attached under the shared {@code titan} node: a feature calls
@@ -28,9 +27,9 @@ import net.onelitefeather.titan.common.observability.TitanObservability;
  * with {@link #close()} in its {@code @PreDestroy}. Each instance wraps its own node and holds no
  * shared or static state, so no synchronization is needed.
  *
- * <p>Every listener registered here is wrapped in
- * {@link TitanObservability#guard(String, Consumer)} with {@code featureId}, so a failure keeps
- * the lobby running and the report names the feature and, if the event carries one, the player.
+ * <p>Every listener registered here is wrapped in {@link ListenerGuard#guard(String, Consumer)}
+ * with {@code featureId}, so a failure keeps the lobby running and the report names the feature
+ * and, if the event carries one, the player.
  */
 public final class FeatureNode implements AutoCloseable {
 
@@ -53,8 +52,16 @@ public final class FeatureNode implements AutoCloseable {
      *
      * <p>{@code priority} becomes the node's {@link EventNode#setPriority(int)}, which decides the
      * execution order among sibling feature nodes reacting to the same event.
+     *
+     * @throws IllegalStateException if {@code parent} already has a child at {@code priority} -
+     *                               naming both feature ids and the position, since the lobby must
+     *                               not start with an
+     *                               undocumented tie-break between them
      */
     public static FeatureNode attach(EventNode<Event> parent, String featureId, int priority) {
+        parent.getChildren().stream().filter(child -> child.getPriority() == priority).findFirst().ifPresent(colliding -> {
+            throw new IllegalStateException("Features '" + featureId + "' and '" + colliding.getName().replace("titan/", "") + "' both use event priority " + priority);
+        });
         EventNode<Event> node = EventNode.all("titan/" + featureId);
         node.setPriority(priority);
         parent.addChild(node);
@@ -70,7 +77,7 @@ public final class FeatureNode implements AutoCloseable {
      * anyway.
      */
     public <E extends Event> FeatureNode on(Class<E> type, Consumer<E> listener) {
-        this.node.addListener(type, TitanObservability.guard(this.featureId, listener));
+        this.node.addListener(type, ListenerGuard.guard(this.featureId, listener));
         return this;
     }
 
@@ -79,7 +86,7 @@ public final class FeatureNode implements AutoCloseable {
      * already cancelled.
      */
     public <E extends Event> FeatureNode onIncludingCancelled(Class<E> type, Consumer<E> listener) {
-        this.node.addListener(EventListener.builder(type).ignoreCancelled(false).handler(TitanObservability.guard(this.featureId, listener)).build());
+        this.node.addListener(EventListener.builder(type).ignoreCancelled(false).handler(ListenerGuard.guard(this.featureId, listener)).build());
         return this;
     }
 
@@ -87,5 +94,24 @@ public final class FeatureNode implements AutoCloseable {
     @Override
     public void close() {
         this.parent.removeChild(this.node);
+    }
+
+    /**
+     * Minestom's exception handler entry point: routes an uncaught exception through
+     * {@link ListenerGuard}, so it is attributed to the feature and player {@link #on}/
+     * {@link #onIncludingCancelled} recorded. Public so {@code common}'s
+     * {@code TitanObservability.installExceptionHandler()} can reference it without a cycle.
+     */
+    public static void reportUnhandledException(Throwable throwable) {
+        ListenerGuard.handleException(throwable);
+    }
+
+    /**
+     * Wraps {@code listener} with the same failure attribution {@link #on} uses, for a caller that
+     * dispatches outside a node this class manages (e.g. an item-use handler keyed by identity
+     * tag, not by an event type registered on a feature's own node).
+     */
+    public static <E extends Event> Consumer<E> guard(String featureId, Consumer<E> listener) {
+        return ListenerGuard.guard(featureId, listener);
     }
 }

@@ -25,7 +25,7 @@ import net.onelitefeather.titan.app.bootstrap.ConfigurationStartupLog;
 import net.onelitefeather.titan.app.bootstrap.FeatureStartupLog;
 import net.onelitefeather.titan.app.commands.EndCommand;
 import net.onelitefeather.titan.app.commands.StopCommand;
-import net.onelitefeather.titan.app.module.FeatureNode;
+import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.app.player.TitanPlayer;
 import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
 

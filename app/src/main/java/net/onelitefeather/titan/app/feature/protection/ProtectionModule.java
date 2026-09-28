@@ -28,7 +28,7 @@ import net.minestom.server.event.item.PickupItemEvent;
 import net.minestom.server.event.player.PlayerBlockBreakEvent;
 import net.minestom.server.event.player.PlayerBlockPlaceEvent;
 import net.minestom.server.event.player.PlayerSwapItemEvent;
-import net.onelitefeather.titan.app.module.FeatureNode;
+import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.common.utils.Cancelable;
 
 /**

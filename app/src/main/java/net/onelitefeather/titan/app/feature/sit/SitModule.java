@@ -33,7 +33,7 @@ import net.minestom.server.event.player.PlayerBlockInteractEvent;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.event.player.PlayerPacketEvent;
 import net.minestom.server.network.packet.client.play.ClientInputPacket;
-import net.onelitefeather.titan.app.module.FeatureNode;
+import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.common.event.EntityDismountEvent;
 
 /**

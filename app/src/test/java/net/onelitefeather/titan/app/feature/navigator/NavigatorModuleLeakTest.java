@@ -39,7 +39,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * the module's own node or the shared inventory's node.
  *
  * <p>{@link NavigatorModule} registers no listener of its own; {@link NavigatorModule#start()}
- * only attaches an empty {@link net.onelitefeather.titan.app.module.FeatureNode} and registers
+ * only attaches an empty {@link net.onelitefeather.titan.core.module.FeatureNode} and registers
  * exactly one click listener via Aves, once. Counts are read via {@link EventListenerCounter}, and
  * teardown always runs through try-with-resources so a failed assertion can never leak into a
  * later test.

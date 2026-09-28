@@ -32,7 +32,7 @@ import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
 import net.onelitefeather.deliver.DeliverComponent;
 import net.onelitefeather.titan.api.deliver.Deliver;
-import net.onelitefeather.titan.app.module.FeatureNode;
+import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
 import net.theevilreaper.aves.inventory.GlobalInventoryBuilder;
 import net.theevilreaper.aves.inventory.click.ClickHolder;

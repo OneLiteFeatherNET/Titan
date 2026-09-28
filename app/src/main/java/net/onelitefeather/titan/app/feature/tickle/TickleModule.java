@@ -26,7 +26,7 @@ import java.util.Objects;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.event.entity.EntityAttackEvent;
-import net.onelitefeather.titan.app.module.FeatureNode;
+import net.onelitefeather.titan.core.module.FeatureNode;
 
 /**
  * Lets a player tickle another player by attacking them while holding a feather in either hand:

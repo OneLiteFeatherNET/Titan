@@ -16,20 +16,18 @@
 package net.onelitefeather.titan.common.observability;
 
 import io.sentry.Sentry;
-import java.util.Objects;
-import java.util.function.Consumer;
 import net.minestom.server.MinecraftServer;
-import net.minestom.server.entity.Player;
-import net.minestom.server.event.Event;
-import net.minestom.server.event.trait.PlayerEvent;
+import net.onelitefeather.titan.core.module.FeatureNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
 /**
- * Routes Minestom's uncaught exceptions through SLF4J so they reach both the console and, via the
- * resulting {@code ERROR} log record, Sentry's appender - Sentry's only way in, so nothing
- * double-reports. {@link #guard} attaches the failing player and module to that record.
+ * Starts Sentry reporting and routes Minestom's uncaught exceptions through SLF4J so they reach
+ * both the console and, via the resulting {@code ERROR} log record, Sentry's appender - Sentry's
+ * only way in, so nothing double-reports. The player/feature attribution itself lives in
+ * {@code core}'s {@code FeatureNode}/{@code ListenerGuard}, which every feature's listener already
+ * runs through; this class only wires Minestom's exception handler to
+ * {@link FeatureNode#reportUnhandledException(Throwable)}.
  */
 public final class TitanObservability {
 
@@ -43,14 +41,6 @@ public final class TitanObservability {
 
     private static final String DEFAULT_ENVIRONMENT = "unknown";
     private static final String DEVELOPMENT_RELEASE = "dev";
-
-    static final String PLAYER_UUID_KEY = "player.uuid";
-    static final String PLAYER_NAME_KEY = "player.name";
-    static final String MODULE_KEY = "module";
-
-    // guard sets these on failure, handleException reads and clears them - same thread, same dispatch.
-    private static final ThreadLocal<PlayerIdentity> FAILING_PLAYER = new ThreadLocal<>();
-    private static final ThreadLocal<String> FAILING_MODULE = new ThreadLocal<>();
 
     private TitanObservability() {
         throw new UnsupportedOperationException("This class cannot be instantiated");
@@ -75,7 +65,7 @@ public final class TitanObservability {
             options.setDsn(dsn);
             options.setRelease(release);
             options.setEnvironment(environment);
-            // Player identity is attached deliberately in handleException instead of via PII defaults.
+            // Player identity is attached deliberately in ListenerGuard instead of via PII defaults.
             options.setSendDefaultPii(false);
         });
         LOGGER.info("Sentry reporting enabled - release {}, environment {}", release, environment);
@@ -83,77 +73,10 @@ public final class TitanObservability {
 
     /**
      * Replaces Minestom's default {@code Throwable::printStackTrace} handler with
-     * {@link #handleException}.
+     * {@link FeatureNode#reportUnhandledException(Throwable)}.
      */
     public static void installExceptionHandler() {
-        MinecraftServer.getExceptionManager().setExceptionHandler(TitanObservability::handleException);
-    }
-
-    /** Wraps a listener so a failure records which player the event belonged to. */
-    public static <T extends Event> Consumer<T> guard(Consumer<T> listener) {
-        return event -> {
-            try {
-                listener.accept(event);
-            } catch (Throwable throwable) {
-                FAILING_PLAYER.set(identityOf(event));
-                throw throwable;
-            }
-        };
-    }
-
-    /**
-     * Like {@link #guard(Consumer)}, but also records the module id and puts it in the SLF4J MDC
-     * for the whole call, so the module's own logging carries it too.
-     */
-    public static <T extends Event> Consumer<T> guard(String moduleId, Consumer<T> listener) {
-        Objects.requireNonNull(moduleId, "moduleId");
-        Consumer<T> guarded = guard(listener);
-        return event -> {
-            try (MDC.MDCCloseable ignoredModule = MDC.putCloseable(MODULE_KEY, moduleId)) {
-                guarded.accept(event);
-            } catch (Throwable throwable) {
-                FAILING_MODULE.set(moduleId);
-                throw throwable;
-            }
-        };
-    }
-
-    static PlayerIdentity consumeFailingPlayer() {
-        PlayerIdentity identity = FAILING_PLAYER.get();
-        FAILING_PLAYER.remove();
-        return identity;
-    }
-
-    static String consumeFailingModule() {
-        String moduleId = FAILING_MODULE.get();
-        FAILING_MODULE.remove();
-        return moduleId;
-    }
-
-    static void handleException(Throwable throwable) {
-        PlayerIdentity identity = consumeFailingPlayer();
-        String moduleId = consumeFailingModule();
-        if (identity == null && moduleId == null) {
-            LOGGER.error("Unhandled exception", throwable);
-            return;
-        }
-        try (MDC.MDCCloseable ignoredModule = moduleId == null ? null : MDC.putCloseable(MODULE_KEY, moduleId); MDC.MDCCloseable ignoredUuid = identity == null ? null : MDC.putCloseable(PLAYER_UUID_KEY, identity.uuid()); MDC.MDCCloseable ignoredName = identity == null ? null : MDC.putCloseable(PLAYER_NAME_KEY, identity.name())) {
-            if (moduleId != null && identity != null) {
-                LOGGER.error("Unhandled exception in module {} while handling an event for {}", moduleId, identity.name(), throwable);
-            } else if (moduleId != null) {
-                LOGGER.error("Unhandled exception in module {}", moduleId, throwable);
-            } else {
-                LOGGER.error("Unhandled exception while handling an event for {}", identity.name(), throwable);
-            }
-        }
-    }
-
-    static PlayerIdentity identityOf(Event event) {
-        if (!(event instanceof PlayerEvent playerEvent)) {
-            return null;
-        }
-        Player player = playerEvent.getPlayer();
-        return new PlayerIdentity(player.getUuid().toString(), player.getUsername());
+        MinecraftServer.getExceptionManager().setExceptionHandler(FeatureNode::reportUnhandledException);
     }
 
     // Falls back to dev when not loaded from a jar (tests, IDE runs).
@@ -165,11 +88,5 @@ public final class TitanObservability {
     private static String environment() {
         String environment = System.getenv(ENVIRONMENT_ENVIRONMENT_VARIABLE);
         return environment == null || environment.isBlank() ? DEFAULT_ENVIRONMENT : environment;
-    }
-
-    /**
-     * The player an exception is attributed to. Strings, so nothing keeps a {@link Player} alive.
-     */
-    record PlayerIdentity(String uuid, String name) {
     }
 }

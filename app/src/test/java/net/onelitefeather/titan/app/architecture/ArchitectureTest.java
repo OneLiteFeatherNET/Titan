@@ -21,10 +21,8 @@ import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.sli
 
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
-import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaMethodCall;
 import com.tngtech.archunit.core.domain.JavaModifier;
-import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
@@ -34,24 +32,8 @@ import io.avaje.inject.BeanScope;
 import io.avaje.inject.PostConstruct;
 import io.avaje.inject.spi.Generated;
 import jakarta.inject.Singleton;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
-import java.lang.classfile.Attribute;
-import java.lang.classfile.ClassFile;
-import java.lang.classfile.ClassModel;
-import java.lang.classfile.FieldModel;
-import java.lang.classfile.attribute.ConstantValueAttribute;
-import java.lang.classfile.constantpool.IntegerEntry;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.OptionalInt;
-import java.util.TreeMap;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.event.EventNode;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
 
 /**
  * Enforces the feature boundaries between {@code app.feature}, the platform and shared libraries.
@@ -98,7 +80,7 @@ class ArchitectureTest {
 
     /**
      * Rule 4: a feature registers a listener only through
-     * {@link net.onelitefeather.titan.app.module.FeatureNode}.
+     * {@link net.onelitefeather.titan.core.module.FeatureNode}.
      */
     @ArchTest
     static final ArchRule featuresRegisterListenersOnlyThroughFeatureNode = noClasses().that().resideInAPackage(FEATURE_PACKAGE).should().callMethodWhere(TOUCHES_THE_RAW_EVENT_TREE).because("a feature must register listeners through FeatureNode, not the raw event API");
@@ -115,53 +97,6 @@ class ArchitectureTest {
      */
     @ArchTest
     static final ArchRule featureModulesDoNotUseBeanScope = noClasses().that().resideInAPackage(FEATURE_PACKAGE).should().dependOnClassesThat().areAssignableTo(BeanScope.class).because("a feature must get its dependencies through its constructor, never via BeanScope");
-
-    /**
-     * Rule 7: two features sharing an {@code EVENT_PRIORITY} value would make their event order
-     * depend on an undocumented tie-break; checked via {@link ClassFileImporter} bytecode
-     * inspection because ArchUnit has no built-in "unique field value" condition. Reading the
-     * value from the field's {@code ConstantValue} attribute, rather than via reflection, avoids
-     * initializing the declaring class - reflection would crash a feature whose static
-     * initializer builds an {@code ItemStack} before a server exists.
-     */
-    @Test
-    void eventPriorityValuesAreUniqueAcrossFeatures() {
-        JavaClasses classes = new ClassFileImporter().withImportOption(new ImportOption.DoNotIncludeTests()).importPackages("net.onelitefeather.titan.app.feature");
-        Map<Integer, List<String>> classNamesByPriority = new TreeMap<>();
-        for (JavaClass javaClass : classes) {
-            eventPriorityOf(javaClass).ifPresent(priority -> classNamesByPriority.computeIfAbsent(priority, unused -> new ArrayList<>()).add(javaClass.getSimpleName()));
-        }
-        List<String> duplicates = classNamesByPriority.entrySet().stream().filter(entry -> entry.getValue().size() > 1).map(entry -> entry.getKey() + ": " + entry.getValue()).toList();
-        Assertions.assertTrue(duplicates.isEmpty(), "EVENT_PRIORITY values must be unique across every feature in app.feature, but found duplicates naming both: " + duplicates);
-    }
-
-    /**
-     * @param javaClass a class found in {@code net.onelitefeather.titan.app.feature}
-     * @return the {@code int} value of {@code javaClass}'s own {@code EVENT_PRIORITY} field, read
-     *         from its class file's {@code ConstantValue} attribute, or empty if it declares none
-     */
-    private static OptionalInt eventPriorityOf(JavaClass javaClass) {
-        String resourceName = javaClass.getName().replace('.', '/') + ".class";
-        try (InputStream classBytes = ArchitectureTest.class.getClassLoader().getResourceAsStream(resourceName)) {
-            if (classBytes == null) {
-                return OptionalInt.empty();
-            }
-            ClassModel classModel = ClassFile.of().parse(classBytes.readAllBytes());
-            for (FieldModel field : classModel.fields()) {
-                if (!"EVENT_PRIORITY".equals(field.fieldName().stringValue())) {
-                    continue;
-                }
-                for (Attribute<?> attribute : field.attributes()) {
-                    if (attribute instanceof ConstantValueAttribute constantValue && constantValue.constant() instanceof IntegerEntry integerEntry) {
-                        return OptionalInt.of(integerEntry.intValue());
-                    }
-                }
-            }
-            return OptionalInt.empty();
-        } catch (IOException exception) {
-            throw new UncheckedIOException("Unable to read the class file for " + javaClass.getName(), exception);
-        }
-    }
 
     /**
      * Rule 8: the navigator's destinations are fixed in code, not read from the

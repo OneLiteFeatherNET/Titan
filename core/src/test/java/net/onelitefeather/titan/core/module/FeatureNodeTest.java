@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.app.module;
+package net.onelitefeather.titan.core.module;
 
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import java.util.ArrayList;
 import java.util.List;
+import net.minestom.server.MinecraftServer;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
@@ -28,7 +29,6 @@ import net.minestom.server.event.trait.PlayerEvent;
 import net.minestom.server.instance.Instance;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.common.observability.TitanObservability;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -78,6 +78,30 @@ class FeatureNodeTest {
         try (FeatureNode node = FeatureNode.attach(parent, "tickle", 600)) {
             boolean attached = parent.getChildren().stream().anyMatch(child -> "titan/tickle".equals(child.getName()) && child.getPriority() == 600);
             Assertions.assertTrue(attached, "the parent must have a child named titan/tickle with priority 600");
+        }
+    }
+
+    @DisplayName("attach() with a priority already used by a sibling throws, naming both feature ids and the position")
+    @Test
+    void attachWithADuplicatePriorityThrows() {
+        EventNode<Event> parent = EventNode.all("test-attach-duplicate");
+
+        try (FeatureNode protection = FeatureNode.attach(parent, "protection", 100)) {
+            IllegalStateException thrown = Assertions.assertThrows(IllegalStateException.class, () -> FeatureNode.attach(parent, "navigator", 100), "attaching a second feature at an already-used priority must throw");
+
+            Assertions.assertTrue(thrown.getMessage().contains("protection"), "the message must name the already-attached feature: " + thrown.getMessage());
+            Assertions.assertTrue(thrown.getMessage().contains("navigator"), "the message must name the feature that failed to attach: " + thrown.getMessage());
+            Assertions.assertTrue(thrown.getMessage().contains("100"), "the message must name the colliding position: " + thrown.getMessage());
+        }
+    }
+
+    @DisplayName("attach() with distinct priorities does not throw")
+    @Test
+    void attachWithDistinctPrioritiesDoesNotThrow() {
+        EventNode<Event> parent = EventNode.all("test-attach-distinct");
+
+        try (FeatureNode protection = FeatureNode.attach(parent, "protection", 100); FeatureNode navigator = FeatureNode.attach(parent, "navigator", 400)) {
+            Assertions.assertEquals(2, parent.getChildren().size(), "both features must have attached");
         }
     }
 
@@ -159,10 +183,10 @@ class FeatureNodeTest {
     @DisplayName("A listener registered via on() that throws is caught, and the report names the feature and the player")
     @Test
     void aThrowingListenerIsCaughtAndAttributedToFeatureAndPlayer(Env env) {
-        TitanObservability.installExceptionHandler();
+        MinecraftServer.getExceptionManager().setExceptionHandler(FeatureNode::reportUnhandledException);
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
-        Logger logger = (Logger) LoggerFactory.getLogger(TitanObservability.class);
+        Logger logger = (Logger) LoggerFactory.getLogger(ListenerGuard.class);
         ListAppender<ILoggingEvent> appender = new ListAppender<>();
         appender.start();
         logger.addAppender(appender);

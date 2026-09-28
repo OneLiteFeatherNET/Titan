@@ -23,7 +23,7 @@ import java.util.List;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.app.module.FeatureNode;
+import net.onelitefeather.titan.core.module.FeatureNode;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

@@ -147,7 +147,9 @@ class LobbyItemsIntegrationTest {
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
         ItemStack stamped = lobbyItems.stack(Key.key("titan:navigator-feather"));
-        Logger logger = (Logger) LoggerFactory.getLogger(TitanObservability.class);
+        // ListenerGuard (core, package-private) is where FeatureNode.guard()'s failure is now
+        // logged; referenced by name since the class itself is not visible from this package.
+        Logger logger = (Logger) LoggerFactory.getLogger("net.onelitefeather.titan.core.module.ListenerGuard");
         ListAppender<ILoggingEvent> appender = new ListAppender<>();
         appender.start();
         logger.addAppender(appender);

@@ -32,8 +32,7 @@ import net.minestom.server.event.EventNode;
 import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.tag.Tag;
-import net.onelitefeather.titan.app.module.FeatureNode;
-import net.onelitefeather.titan.common.observability.TitanObservability;
+import net.onelitefeather.titan.core.module.FeatureNode;
 
 /**
  * Platform-wide home for {@link LobbyItem} beans: every feature that has one contributes it
@@ -129,7 +128,7 @@ public final class LobbyItems {
         if (item == null) {
             return;
         }
-        Consumer<PlayerUseItemEvent> handler = TitanObservability.guard(item.featureId(), (PlayerUseItemEvent guardedEvent) -> item.onUse().handle(guardedEvent.getPlayer(), guardedEvent));
+        Consumer<PlayerUseItemEvent> handler = FeatureNode.guard(item.featureId(), (PlayerUseItemEvent guardedEvent) -> item.onUse().handle(guardedEvent.getPlayer(), guardedEvent));
         handler.accept(event);
     }
 }

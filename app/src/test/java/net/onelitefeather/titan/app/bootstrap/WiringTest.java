@@ -28,7 +28,7 @@ import net.onelitefeather.titan.app.feature.respawn.RespawnModule;
 import net.onelitefeather.titan.app.feature.sit.SitModule;
 import net.onelitefeather.titan.app.feature.spawn.SpawnModule;
 import net.onelitefeather.titan.app.feature.tickle.TickleModule;
-import net.onelitefeather.titan.app.module.FeatureNode;
+import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.app.module.item.LobbyItems;
 import net.onelitefeather.titan.common.feature.FeatureFlags;
 import net.onelitefeather.titan.common.map.MapProvider;

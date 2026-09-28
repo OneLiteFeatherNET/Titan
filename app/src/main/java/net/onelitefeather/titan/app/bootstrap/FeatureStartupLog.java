@@ -19,7 +19,7 @@ import java.util.Comparator;
 import java.util.List;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
-import net.onelitefeather.titan.app.module.FeatureNode;
+import net.onelitefeather.titan.core.module.FeatureNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
