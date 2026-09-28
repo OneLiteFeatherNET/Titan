@@ -23,6 +23,7 @@ import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.common.map.MapProvider;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.core.permission.PermissionService;
+import net.onelitefeather.titan.platform.luckperms.LuckPermsPermissionService;
 import net.onelitefeather.titan.runtime.variant.LoadedModules;
 import net.onelitefeather.titan.runtime.variant.VariantDescriptor;
 import net.onelitefeather.titan.runtime.variant.VariantStartupCheck;
@@ -47,11 +48,9 @@ class VariantStartTest {
     @Test
     @Timeout(30)
     void theFullScopeBuildsWithNoException(Env env) {
-        // PermissionService is mocked under Avaje's auto-derived qualifier "LuckPerms" (the
-        // implementation class name with the interface name stripped) - without that name, Avaje
-        // still builds the real LuckPermsPermissionService (its own @Singleton bean, independent
-        // of what a consumer gets wired to) and starts real LuckPerms.
-        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class).mock(PermissionService.class, "LuckPerms").build();
+        // Named mock, not the plain mock(Type) overload - see docs/lobby-modules.md,
+        // "Permission-Plattform".
+        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).build();
 
         Assertions.assertDoesNotThrow(scope::close, "closing a fully built scope must not throw");
     }

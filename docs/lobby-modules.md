@@ -95,15 +95,18 @@ ein JarInJar-Bootstrap mit einem eigenen, unrelocateten, veralteten Gson, das so
 Registry-Initialisierung in Tests bricht (derselbe Ausschluss wie in
 `platform/luckperms/build.gradle.kts` für `platform/luckperms` selbst). Jeder Scope-bauende Test
 in `apps/cloudnet` ersetzt `PermissionService` deshalb über Avajes Test-API
-(`BeanScope.builder().forTesting().mock(PermissionService.class, "LuckPerms")...`), statt echtes
-LuckPerms zu starten - **wichtig ist der Name `"LuckPerms"**: Avaje leitet für eine
-`@Singleton`-Klasse ohne `@Named` einen Qualifier aus ihrem Klassennamen ab
-(`LuckPermsPermissionService` minus dem Interface-Namen `PermissionService` → `"LuckPerms"`), und
-die generierte `isBeanAbsent(...)`-Prüfung, die ein gemocktes Bean von seiner eigenen Konstruktion
-abhält, vergleicht genau diesen Namen. Der unbenannte `mock(PermissionService.class)` ohne Namen
-verhindert die echte LuckPerms-Bean **nicht** - er ersetzt nur, was ein Konsument injiziert
-bekommt, während `LuckPermsPermissionService`s eigenes `@PostConstruct` trotzdem läuft und echtes
-LuckPerms startet.
+(`BeanScope.builder().forTesting().mock(PermissionService.class,
+LuckPermsPermissionService.QUALIFIER)...`), statt echtes LuckPerms zu starten -
+`LuckPermsPermissionService` trägt dafür ein explizites `@Named(LuckPermsPermissionService.QUALIFIER)`
+(`QUALIFIER = "luckperms"`) statt sich auf Avajes aus dem Klassennamen abgeleiteten Qualifier zu
+verlassen, und die generierte `isBeanAbsent(...)`-Prüfung, die ein gemocktes Bean von seiner
+eigenen Konstruktion abhält, vergleicht genau diesen Namen. Der unbenannte
+`mock(PermissionService.class)` ohne Namen verhindert die echte LuckPerms-Bean **nicht** - er
+ersetzt nur, was ein Konsument injiziert bekommt, während `LuckPermsPermissionService`s eigenes
+`@PostConstruct` trotzdem läuft und echtes LuckPerms startet. `apps/local`s eigener
+`VariantStartTest` referenziert die Konstante nicht direkt: `platform/luckperms` liegt dort nur
+mit `-Ptitan.luckperms` auf dem Klassenpfad, also bleibt der Name dort ein Literal, das mit
+`QUALIFIER` übereinstimmen muss.
 
 ## Aufbau eines Features
 

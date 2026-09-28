@@ -22,6 +22,7 @@ import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.module.item.LobbyItems;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.core.permission.PermissionService;
+import net.onelitefeather.titan.platform.luckperms.LuckPermsPermissionService;
 import net.onelitefeather.titan.common.map.MapProvider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -43,9 +44,9 @@ class PlatformBeansWiringTest {
     @DisplayName("The scope resolves Scheduler and builds LobbyItems")
     @Test
     void scopeResolvesSchedulerAndBuildsLobbyItems(Env env) {
-        // PermissionService is mocked under Avaje's auto-derived qualifier "LuckPerms" - see
-        // VariantStartTest for why the plain, unnamed mock(Type) overload is not enough here.
-        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class).mock(PermissionService.class, "LuckPerms").build();
+        // Named mock, not the plain mock(Type) overload - see docs/lobby-modules.md,
+        // "Permission-Plattform".
+        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).build();
 
         try {
             Scheduler scheduler = scope.get(Scheduler.class);

@@ -32,6 +32,7 @@ import net.onelitefeather.titan.feature.hotbar.HotbarLobbyItems;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.core.permission.PermissionService;
+import net.onelitefeather.titan.platform.luckperms.LuckPermsPermissionService;
 import net.onelitefeather.titan.common.map.MapProvider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -64,10 +65,9 @@ class WiringTest {
     @DisplayName("The scope builds all seven feature beans and a LobbyItems with exactly three items")
     @Test
     void scopeBuildsAllSevenFeaturesAndLobbyItemsWithThreeItems(Env env) {
-        // PermissionService is mocked under Avaje's auto-derived qualifier "LuckPerms" - the
-        // plain, unnamed mock(Type) overload does not stop LuckPermsPermissionService's own
-        // @Singleton construction, only what a consumer is wired to.
-        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class).mock(PermissionService.class, "LuckPerms").build();
+        // Named mock, not the plain mock(Type) overload - see docs/lobby-modules.md,
+        // "Permission-Plattform".
+        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).build();
 
         try {
             Assertions.assertNotNull(scope.get(ProtectionModule.class), "the protection feature must be a bean");
@@ -88,10 +88,9 @@ class WiringTest {
     @DisplayName("Closing the scope detaches every feature's own node from the titan node")
     @Test
     void closingTheScopeDetachesEveryFeatureNode(Env env) {
-        // PermissionService is mocked under Avaje's auto-derived qualifier "LuckPerms" - the
-        // plain, unnamed mock(Type) overload does not stop LuckPermsPermissionService's own
-        // @Singleton construction, only what a consumer is wired to.
-        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class).mock(PermissionService.class, "LuckPerms").build();
+        // Named mock, not the plain mock(Type) overload - see docs/lobby-modules.md,
+        // "Permission-Plattform".
+        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).build();
         EventNode<Event> titan = titanNode(scope);
         Assertions.assertFalse(titan.getChildren().isEmpty(), "every feature must have attached its own node while the scope is open");
 
@@ -107,7 +106,7 @@ class WiringTest {
         // appears in the original stack trace, never a wrapper naming it.
         RuntimeException thrown = Assertions.assertThrows(RuntimeException.class, () -> BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class, flags -> Mockito.when(flags.isActive(Mockito.anyString())).thenAnswer(invocation -> {
             throw new IllegalStateException("feature flag lookup failed (WiringTest)");
-        })).mock(PermissionService.class, "LuckPerms").build(), "a feature failing its start must abort building the scope instead of silently continuing");
+        })).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).build(), "a feature failing its start must abort building the scope instead of silently continuing");
 
         Assertions.assertTrue(namesFailingFeature(thrown, NavigatorModule.class), "the exception's stack trace (or one of its causes') must contain a frame in the failing feature's class; was: " + describeChain(thrown));
     }
