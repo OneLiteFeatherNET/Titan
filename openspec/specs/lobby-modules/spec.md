@@ -20,7 +20,7 @@ Wirft ein Listener eines Features eine Ausnahme, MUSS die Lobby weiterlaufen. Di
 - **THEN** läuft die Lobby weiter und der gemeldete Fehler nennt das Feature „sit“ und den Spieler „Alex“
 
 ### Requirement: Module sind voneinander unabhängig
-Ein Feature DARF NICHT direkt von einem anderen Feature abhängen. Gemeinsam genutzte Funktionen MÜSSEN über Beans der Plattform oder über gemeinsame Bibliotheken außerhalb der Features laufen. Plattform und gemeinsame Bibliotheken DÜRFEN NICHT von Features abhängen. Ein automatisierter Test MUSS Verstöße im Build melden.
+Ein Feature DARF NICHT direkt von einem anderen Feature abhängen. Gemeinsam genutzte Funktionen MÜSSEN über Beans der Plattform oder über gemeinsame Bibliotheken außerhalb der Features laufen. Plattform und gemeinsame Bibliotheken DÜRFEN NICHT von Features abhängen. Der Build MUSS Verstöße melden; die Grenzen MÜSSEN durch die Modulstruktur erzwungen werden, sodass verbotener Code gar nicht erst kompiliert.
 
 #### Scenario: Verbotene Abhängigkeit zwischen Features
 - **WHEN** Code im Feature „tickle“ Code aus dem Feature „sit“ verwendet
@@ -61,7 +61,7 @@ Jedes Feature MUSS beim Start der Lobby genau einmal gestartet werden, bevor ein
 - **THEN** startet die Lobby nicht, und die Fehlermeldung nennt das Feature
 
 ### Requirement: Reihenfolge der Event-Verarbeitung ist festgelegt
-Reagieren mehrere Features auf dasselbe Event, MUSS die Reihenfolge, in der sie es erhalten, für jedes Feature fest vorgegeben und eindeutig sein. Sie DARF NICHT von der Startreihenfolge abhängen. Ein automatisierter Test MUSS melden, wenn zwei Features dieselbe Position haben.
+Reagieren mehrere Features auf dasselbe Event, MUSS die Reihenfolge, in der sie es erhalten, für jedes Feature fest vorgegeben und eindeutig sein. Sie DARF NICHT von der Startreihenfolge abhängen. Geben zwei Features dieselbe Position an, DARF die Lobby NICHT starten, und die Fehlermeldung MUSS beide Features und die Position nennen.
 
 #### Scenario: Schutz und Navigator beim selben Klick
 - **WHEN** ein Spieler im geöffneten Navigator ein Ziel anklickt, egal in welcher Reihenfolge „protection“ und „navigator“ gestartet wurden
@@ -69,7 +69,7 @@ Reagieren mehrere Features auf dasselbe Event, MUSS die Reihenfolge, in der sie 
 
 #### Scenario: Doppelte Position
 - **WHEN** zwei Features dieselbe Position in der Event-Reihenfolge angeben
-- **THEN** schlägt der Build fehl und nennt beide Features
+- **THEN** startet die Lobby nicht, und die Fehlermeldung nennt beide Features und die Position
 
 ### Requirement: Features trennen sich beim Herunterfahren zuerst von Events
 Beim Herunterfahren MUSS jedes Feature von allen Events getrennt und seine geplanten Aufgaben MÜSSEN abgebrochen sein, bevor seine übrige Abschaltlogik läuft.
@@ -89,9 +89,9 @@ Alle Event-Listener und geplanten Aufgaben eines Features MÜSSEN nach seinem He
 - **WHEN** ein Feature eine jeden Tick wiederkehrende Aufgabe geplant hat und heruntergefahren wird
 - **THEN** läuft die Aufgabe danach nicht mehr
 
-### Requirement: Ein neues Feature ist nur ein neues Paket
-Ein neues Feature MUSS sich allein durch ein neues Paket hinzufügen lassen. Dafür DÜRFEN weder andere Features noch die Plattform noch eine zentrale Liste geändert werden.
+### Requirement: Ein neues Feature ist nur ein neues Modul
+Ein neues Feature MUSS sich allein durch ein neues Modul unter `features/` hinzufügen lassen. Dafür DÜRFEN weder andere Features noch die Plattform noch eine zentrale Liste geändert werden. Jede Variante, die alle Features enthält, MUSS das neue Feature ohne Änderung aufnehmen.
 
 #### Scenario: Feature mit Listener und Hotbar-Item
-- **WHEN** ein Entwickler ein Feature mit eigenem Config-Abschnitt, einem Event-Listener und einem Hotbar-Item in einem neuen Paket anlegt
-- **THEN** startet die Lobby mit dem Feature, und außerhalb des neuen Pakets ist keine Zeile geändert
+- **WHEN** ein Entwickler ein Feature mit eigenem Config-Abschnitt, einem Event-Listener und einem Hotbar-Item in einem neuen Modul unter `features/` anlegt
+- **THEN** startet die Lobby mit dem Feature, und außerhalb des neuen Moduls ist keine Zeile geändert

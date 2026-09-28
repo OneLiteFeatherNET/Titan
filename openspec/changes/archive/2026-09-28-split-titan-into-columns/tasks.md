@@ -66,4 +66,4 @@ Jeder Task: Paket samt Tests aus `app/` nach `features/<x>/` verschieben (`git m
 
 ## 5. Pull Request
 
-- [ ] 5.1 Den Pull Request vom Integrationszweig auf `main` unter dem Titel `refactor(build)!: split titan into feature columns and app variants` öffnen, mit dem BREAKING-CHANGE-Footer aus dem Proposal und dem Deploy-Hinweis (neuer Jar-Name, AOT-Cache neu trainieren) in der englischen Beschreibung. Nachweis: PR-URL, CI grün.
+- [x] 5.1 Den Pull Request vom Integrationszweig auf `main` unter dem Titel `refactor(build)!: split titan into feature columns and app variants` öffnen, mit dem BREAKING-CHANGE-Footer aus dem Proposal und dem Deploy-Hinweis (neuer Jar-Name, AOT-Cache neu trainieren) in der englischen Beschreibung. Nachweis: PR-URL, CI grün.
