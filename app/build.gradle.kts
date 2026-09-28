@@ -1,4 +1,5 @@
 import java.nio.file.Files
+import net.onelitefeather.titan.buildsrc.config.MergeApplicationDefaultsTask
 
 plugins {
     id("titan.java-conventions")
@@ -76,8 +77,30 @@ application {
     mainClass.set("net.onelitefeather.titan.app.TitanApplication")
 }
 
-// The classpath application.yaml (src/main/resources/application.yaml) is the single source of
-// the shipped defaults (see openspec/changes/avaje-config-facade/design.md, decision 2) - it is no
+// D4: every column ships its own titan/defaults/<column>.yaml (comments kept), concatenated here
+// into one classpath application.yaml - :app's own titan/defaults/*.yaml plus every features/*
+// column's, so a new column's defaults are picked up without editing this file (D10 wave 1).
+@Suppress("UNCHECKED_CAST")
+val titanFeatureProjectPaths = gradle.extensions.extraProperties["titanFeatureProjectPaths"] as List<String>
+
+val titanDefaultsFiles = files(
+    fileTree("src/main/resources/titan/defaults") { include("*.yaml") },
+    *titanFeatureProjectPaths.map { path -> fileTree(project(path).file("src/main/resources/titan/defaults")) { include("*.yaml") } }.toTypedArray()
+)
+
+val mergeApplicationDefaults = tasks.register<MergeApplicationDefaultsTask>("mergeApplicationDefaults") {
+    group = "build"
+    description = "Concatenates every column's titan/defaults/*.yaml into the classpath application.yaml (D4)."
+    defaultFiles.from(titanDefaultsFiles)
+    outputDir.set(layout.buildDirectory.dir("generated/titanDefaults"))
+}
+
+sourceSets.main {
+    resources.srcDir(mergeApplicationDefaults.map { it.outputDir })
+}
+
+// The classpath application.yaml (see mergeApplicationDefaults above) is the single source of the
+// shipped defaults (see openspec/changes/avaje-config-facade/design.md, decision 2) - it is no
 // longer hand-duplicated as src/dist/application.example.yaml. This copies it, renamed, into the
 // distribution instead, so an operator still finds a commented example next to the jar.
 val applicationExampleYamlDir = layout.buildDirectory.dir("generated/applicationExampleYaml")
@@ -85,7 +108,7 @@ val applicationExampleYamlDir = layout.buildDirectory.dir("generated/application
 val applicationExampleYaml = tasks.register<Copy>("applicationExampleYaml") {
     group = "distribution"
     description = "Copies the classpath application.yaml into the distribution as application.example.yaml."
-    from("src/main/resources/application.yaml")
+    from(mergeApplicationDefaults.map { it.outputDir.file("application.yaml") })
     into(applicationExampleYamlDir)
     rename { "application.example.yaml" }
 }

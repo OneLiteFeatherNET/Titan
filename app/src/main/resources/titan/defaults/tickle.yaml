@@ -1,0 +1,4 @@
+# The "tickle" module: attacking another player while holding a feather tickles them instead.
+tickle:
+  # How long, in milliseconds, an attacking player must wait before they can tickle again.
+  cooldownMillis: 4000

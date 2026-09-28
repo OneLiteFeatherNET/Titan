@@ -1,0 +1,10 @@
+# The "sit" module: sitting down on an allowed block.
+sit:
+  # The offset from the clicked block's position to the invisible seat entity.
+  offset:
+    x: 0.5
+    y: 0.25
+    z: 0.5
+  # The block keys a player may sit down on; must contain at least one entry.
+  allowedBlocks:
+    - minecraft:spruce_stairs
