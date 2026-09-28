@@ -1,0 +1,6 @@
+{
+  "entrypoint": "net.onelitefeather.titan.runtime.Titan",
+  "name": "Titan",
+  "version": "1.2.0",
+  "dependencies": ["Aves", "CloudNet_Bridge"]
+}

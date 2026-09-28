@@ -117,10 +117,29 @@ dependencyResolutionManagement {
     }
 }
 
-include("app")
-include("api")
+include("runtime")
+include("core")
 include("common")
 include("setup")
 include("bridge")
 
-findProject(":app")?.projectDir = file("app")
+// Every lobby feature column is a directory under features/ with its own build.gradle.kts - a new
+// column needs no change here or to any app variant's build file (see titanFeatureProjectPaths
+// below and titan.column/titan.app-variant). Sorted so the project list (and a variant's
+// dependency order) is deterministic.
+val featureProjectPaths = mutableListOf<String>()
+file("features").listFiles()
+    ?.filter { it.isDirectory && File(it, "build.gradle.kts").exists() }
+    ?.sortedBy { it.name }
+    ?.forEach { featureDir ->
+        val path = "features:${featureDir.name}"
+        include(path)
+        featureProjectPaths += ":$path"
+    }
+gradle.extensions.extraProperties["titanFeatureProjectPaths"] = featureProjectPaths.toList()
+
+// Every app variant is a directory under apps/ with its own build.gradle.kts - see titan.app-variant.
+file("apps").listFiles()
+    ?.filter { it.isDirectory && File(it, "build.gradle.kts").exists() }
+    ?.sortedBy { it.name }
+    ?.forEach { appDir -> include("apps:${appDir.name}") }

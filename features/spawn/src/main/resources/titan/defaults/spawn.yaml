@@ -1,0 +1,8 @@
+# The "spawn" module: where and how a player is kept above/below the map.
+spawn:
+  # The lowest y coordinate a player may fall to before being teleported back to spawn.
+  minHeight: -64
+  # The highest y coordinate a player may rise to before being teleported back to spawn.
+  maxHeight: 310
+  # The simulation distance sent to a player on spawn.
+  simulationDistance: 2

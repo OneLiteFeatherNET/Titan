@@ -1,0 +1,101 @@
+/**
+ * Copyright 2025 OneLiteFeather Network
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package net.onelitefeather.titan.feature.navigator;
+
+import net.minestom.server.entity.Player;
+import net.minestom.server.event.inventory.InventoryPreClickEvent;
+import net.minestom.server.instance.Instance;
+import net.minestom.server.inventory.AbstractInventory;
+import net.minestom.server.inventory.click.Click;
+import net.minestom.server.item.Material;
+import net.minestom.testing.Env;
+import net.minestom.testing.extension.MicrotusExtension;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+/**
+ * End-to-end coverage for gating a destination behind a feature flag: Slender hidden while
+ * {@code NAVIGATOR_SLENDER} is off, shown and forwarding while it is on, and becoming visible on
+ * the very next open once the flag flips at runtime, with no restart.
+ */
+@ExtendWith(MicrotusExtension.class)
+class NavigatorFeatureFlagTest {
+
+    @DisplayName("Slender's flag off: slot 5 is a blank glass pane, the other destinations are unchanged")
+    @Test
+    void slenderHiddenWhenFlagIsOff(Env env) {
+        FakeFeatureFlags flags = new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", false);
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), flags)) {
+            Instance instance = env.createFlatInstance();
+            Player player = env.createPlayer(instance);
+            fixture.equip(player);
+
+            fixture.useFeather(player);
+
+            AbstractInventory openInventory = player.getOpenInventory();
+            Assertions.assertNotNull(openInventory);
+            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, openInventory.getItemStack(5).material(), "slot 5 must be blank while NAVIGATOR_SLENDER is off");
+            Assertions.assertEquals(Material.ELYTRA, openInventory.getItemStack(0).material(), "unrelated destinations must be unaffected");
+            Assertions.assertEquals(Material.GRASS_BLOCK, openInventory.getItemStack(4).material(), "unrelated destinations must be unaffected");
+            Assertions.assertEquals(Material.WOODEN_AXE, openInventory.getItemStack(8).material(), "unrelated destinations must be unaffected");
+        }
+    }
+
+    @DisplayName("Slender's flag on: slot 5 shows Slender, and a click on it forwards to cygnus")
+    @Test
+    void slenderShownAndForwardsWhenFlagIsOn(Env env) {
+        FakeFeatureFlags flags = new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", true);
+        RecordingDeliver deliver = new RecordingDeliver();
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, flags)) {
+            Instance instance = env.createFlatInstance();
+            Player player = env.createPlayer(instance);
+            fixture.equip(player);
+            fixture.useFeather(player);
+            AbstractInventory openInventory = player.getOpenInventory();
+            Assertions.assertNotNull(openInventory);
+            Assertions.assertEquals(Material.ENDERMAN_SPAWN_EGG, openInventory.getItemStack(5).material(), "slot 5 must show Slender while NAVIGATOR_SLENDER is on");
+
+            InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(5));
+            env.process().eventHandler().call(clickEvent);
+
+            Assertions.assertTrue(clickEvent.isCancelled());
+            Assertions.assertEquals(1, deliver.deliveries().size());
+            Assertions.assertEquals("cygnus", deliver.deliveries().get(0).taskName(), "clicking Slender must forward to cygnus");
+        }
+    }
+
+    @DisplayName("Toggling the flag on between two opens shows Slender on the second open, without a restart")
+    @Test
+    void togglingTheFlagBetweenTwoOpensShowsSlenderOnTheSecondOpen(Env env) {
+        FakeFeatureFlags flags = new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", false);
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), flags)) {
+            Instance instance = env.createFlatInstance();
+            Player player = env.createPlayer(instance);
+            fixture.equip(player);
+
+            fixture.useFeather(player);
+            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, player.getOpenInventory().getItemStack(5).material(), "slot 5 must be blank on the first open, flag off");
+            player.closeInventory();
+
+            flags.set("NAVIGATOR_SLENDER", true);
+            fixture.useFeather(player);
+
+            Assertions.assertEquals(Material.ENDERMAN_SPAWN_EGG, player.getOpenInventory().getItemStack(5).material(), "slot 5 must show Slender on the second open, after the flag flipped, with no restart");
+        }
+    }
+}

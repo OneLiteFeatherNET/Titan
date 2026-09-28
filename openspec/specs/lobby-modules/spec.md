@@ -1,7 +1,7 @@
 # lobby-modules Specification
 
 ## Purpose
-Legt fest, wie Lobby-Features als eigenständige Avaje-Beans starten, Events in fester Reihenfolge verarbeiten und beim Herunterfahren keine Reste hinterlassen. Ein neues Feature ist nur ein neues Paket, ohne Änderung an Plattform oder anderen Features.
+Legt fest, wie Lobby-Features als eigenständige Avaje-Beans starten, Events in fester Reihenfolge verarbeiten und beim Herunterfahren keine Reste hinterlassen. Ein neues Feature ist ein neues Modul unter `features/`, ohne Änderung an Plattform oder anderen Features.
 
 ## Requirements
 

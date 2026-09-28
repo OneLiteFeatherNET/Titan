@@ -1,0 +1,6 @@
+# The "elytra" module: a firework-boosted rocket burn while flying.
+elytra:
+  # How many ticks one rocket boosts for.
+  burnDurationTicks: 30
+  # How many ticks after a boost starts before another may be used.
+  cooldownTicks: 40

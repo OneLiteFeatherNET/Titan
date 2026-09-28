@@ -1,0 +1,139 @@
+/**
+ * Copyright 2025 OneLiteFeather Network
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package net.onelitefeather.titan.feature.hotbar;
+
+import io.avaje.inject.PreDestroy;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+import net.minestom.server.entity.EquipmentSlot;
+import net.minestom.server.entity.Player;
+import net.minestom.server.event.Event;
+import net.minestom.server.event.EventListener;
+import net.minestom.server.event.EventNode;
+import net.minestom.server.event.player.PlayerUseItemEvent;
+import net.minestom.server.item.ItemStack;
+import net.minestom.server.tag.Tag;
+import net.onelitefeather.titan.core.module.FeatureNode;
+import net.onelitefeather.titan.core.module.item.ItemSlot;
+import net.onelitefeather.titan.core.module.item.LobbyItem;
+import net.onelitefeather.titan.core.module.item.LobbyItems;
+
+/**
+ * Platform-wide home for {@link LobbyItem} beans: every feature that has one contributes it
+ * through Avaje Inject's list injection. {@link #equip(Player)} clears the player's inventory and
+ * places every item with a fixed placement, while {@link #stack(String)} hands back the stamped
+ * stack for an item with no fixed placement. The item maps are built once by the constructor and
+ * never mutated, so no synchronization is needed for the tick-thread reads in {@link #dispatch}.
+ *
+ * <p>Every other column depends only on the {@link LobbyItems} interface in {@code core}, never on
+ * this class.
+ */
+@Singleton
+public final class HotbarLobbyItems implements LobbyItems {
+
+    /** A stack without this tag is not a registered item and {@link #dispatch} leaves it alone. */
+    public static final Tag<String> IDENTITY_TAG = Tag.String("titan:item");
+
+    private final Map<String, LobbyItem> itemsByKey;
+    private final Map<Integer, ItemStack> hotbar;
+    private final Map<EquipmentSlot, ItemStack> equipment;
+    private final EventNode<Event> titan;
+    private final EventListener<PlayerUseItemEvent> dispatcher;
+
+    /** @throws IllegalStateException if two items conflict */
+    public HotbarLobbyItems(List<LobbyItem> items, @Named(FeatureNode.TITAN_NODE) EventNode<Event> titan) {
+        ItemConflicts.check(items);
+        this.titan = titan;
+        this.itemsByKey = stampAll(items);
+        Placements placements = placementsOf(this.itemsByKey.values());
+        this.hotbar = placements.hotbar();
+        this.equipment = placements.equipment();
+        this.dispatcher = EventListener.of(PlayerUseItemEvent.class, this::dispatch);
+        this.titan.addListener(this.dispatcher);
+    }
+
+    @Override
+    public void equip(Player player) {
+        player.getInventory().clear();
+        this.hotbar.forEach((slot, stack) -> player.getInventory().setItemStack(slot, stack));
+        this.equipment.forEach(player::setEquipment);
+    }
+
+    public int itemCount() {
+        return this.itemsByKey.size();
+    }
+
+    @Override
+    public ItemStack stack(String key) {
+        LobbyItem item = this.itemsByKey.get(key);
+        if (item == null) {
+            throw new IllegalArgumentException("No lobby item registered for key '" + key + "'");
+        }
+        return item.itemStack();
+    }
+
+    @PreDestroy
+    public void stop() {
+        this.titan.removeListener(this.dispatcher);
+    }
+
+    private static Map<String, LobbyItem> stampAll(List<LobbyItem> items) {
+        Map<String, LobbyItem> stamped = new LinkedHashMap<>();
+        for (LobbyItem item : items) {
+            ItemStack stampedStack = item.itemStack().withTag(IDENTITY_TAG, item.key().asString());
+            stamped.put(item.key().asString(), new LobbyItem(item.featureId(), item.key(), stampedStack, item.placement(), item.onUse()));
+        }
+        return Map.copyOf(stamped);
+    }
+
+    private record Placements(Map<Integer, ItemStack> hotbar,
+                              Map<EquipmentSlot, ItemStack> equipment) {
+    }
+
+    private static Placements placementsOf(Collection<LobbyItem> items) {
+        Map<Integer, ItemStack> hotbarSlots = new LinkedHashMap<>();
+        Map<EquipmentSlot, ItemStack> equipmentSlots = new LinkedHashMap<>();
+        for (LobbyItem item : items) {
+            switch (item.placement()) {
+                case ItemSlot.Hotbar slot -> hotbarSlots.put(slot.slot(), item.itemStack());
+                case ItemSlot.Equipment slot -> equipmentSlots.put(slot.slot(), item.itemStack());
+                case ItemSlot.Unplaced ignored -> {
+                    // Given out and taken back by the owning feature itself; equip() never places
+                    // it.
+                }
+            }
+        }
+        return new Placements(Map.copyOf(hotbarSlots), Map.copyOf(equipmentSlots));
+    }
+
+    private void dispatch(PlayerUseItemEvent event) {
+        String keyValue = event.getItemStack().getTag(IDENTITY_TAG);
+        if (keyValue == null) {
+            return;
+        }
+        LobbyItem item = this.itemsByKey.get(keyValue);
+        if (item == null) {
+            return;
+        }
+        Consumer<PlayerUseItemEvent> handler = FeatureNode.guard(item.featureId(), (PlayerUseItemEvent guardedEvent) -> item.onUse().handle(guardedEvent.getPlayer(), guardedEvent));
+        handler.accept(event);
+    }
+}

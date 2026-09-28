@@ -97,7 +97,9 @@ PY
 ```
 
 Finally launch Titan and confirm the world loads without `Unknown block` errors
-(`java -jar app/build/libs/app-titan.jar`, then a status ping or client join).
+(`java -jar apps/local/build/libs/titan-local.jar`, then a status ping or client join - use
+`apps/local`'s `titan-local.jar` for this kind of local check; `apps/cloudnet`'s
+`titan-cloudnet.jar` is the one actually deployed behind CloudNet, see the root `README.md`).
 
 ## Notes
 
@@ -108,3 +110,7 @@ Finally launch Titan and confirm the world loads without `Unknown block` errors
   above copy back only `region/`, `entities/`, `poi/` and `level.dat`.
 - After bumping the targeted Minecraft/Minestom version, re-run this whole
   process with the new `MC_VERSION`.
+- The worlds ship inside `apps/cloudnet`'s AOT cache training run
+  (`titan-cloudnet.aot`, see the root `README.md`, "Running the Server"). After converting worlds,
+  rebuild `apps/cloudnet` so the cache is retrained against the converted worlds and the current
+  jar - an AOT cache trained against the old worlds or an older jar is not reused.

@@ -1,0 +1,76 @@
+/**
+ * Copyright 2025 OneLiteFeather Network
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package net.onelitefeather.titan.buildsrc.config;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.util.Comparator;
+import java.util.List;
+import org.gradle.api.DefaultTask;
+import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.OutputDirectory;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
+import org.gradle.api.tasks.TaskAction;
+
+/**
+ * Concatenates every {@code titan/defaults/*.yaml} file (one per column) into a single file named
+ * {@link #getOutputFileName()} in {@link #getOutputDir()}, using {@link DefaultsMerger}. Registered
+ * as a {@code resources} source directory, so the result becomes a classpath resource like any
+ * other - {@code titan.app-variant} names it {@code application.yaml} (the shipped defaults, also
+ * copied as {@code application.example.yaml} into the distribution); {@code titan.column} names a
+ * column's own, test-only merge {@code application-test.yaml}, so avaje-config's built-in
+ * test-resource discovery picks it up (see {@code io.avaje.config.Configuration}'s Javadoc, "Test
+ * configuration").
+ */
+public abstract class MergeApplicationDefaultsTask extends DefaultTask {
+
+    /** Every {@code titan/defaults/*.yaml} file to concatenate. */
+    @InputFiles
+    @PathSensitive(PathSensitivity.RELATIVE)
+    public abstract ConfigurableFileCollection getDefaultFiles();
+
+    /** Contains exactly one file on completion, named {@link #getOutputFileName()}. */
+    @OutputDirectory
+    public abstract DirectoryProperty getOutputDir();
+
+    /** The merged file's name. Defaults to {@code application.yaml}. */
+    @Input
+    public abstract Property<String> getOutputFileName();
+
+    public MergeApplicationDefaultsTask() {
+        getOutputFileName().convention("application.yaml");
+    }
+
+    @TaskAction
+    public void merge() {
+        List<File> files = getDefaultFiles().getFiles().stream().sorted(Comparator.comparing(File::getName)).toList();
+        String merged = DefaultsMerger.merge(files);
+        File output = getOutputDir().file(getOutputFileName().get()).get().getAsFile();
+        output.getParentFile().mkdirs();
+        try {
+            Files.writeString(output.toPath(), merged);
+        } catch (IOException exception) {
+            throw new UncheckedIOException("Unable to write " + output, exception);
+        }
+    }
+}
