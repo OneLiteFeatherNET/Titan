@@ -24,9 +24,7 @@ import net.onelitefeather.titan.common.feature.FeatureFlags;
  * {@code PlatformBeans#featureFlags()} does - {@link ConfigFeatureFlags#fromClasspathDefaults()} -
  * and prints whether {@code NAVIGATOR_SLENDER} is active, then exits. Proves an environment
  * variable ({@code FEATURES_NAVIGATOR_SLENDER}) turns the flag on, and that a leftover
- * {@code flags.properties} in the working directory (the pre-{@code config-reload-feature-flags}
- * file, no longer read at all) has no effect - see
- * {@code openspec/changes/config-reload-feature-flags/tasks.md}, task 3.7.
+ * {@code flags.properties} in the working directory has no effect.
  */
 public final class FeatureFlagChildMain {
 

@@ -28,13 +28,9 @@ import net.onelitefeather.titan.app.module.item.LobbyItems;
 /**
  * Reacts to a player spawning in the lobby: sends the configured simulation distance, teleports
  * the player to the lobby spawn, and equips them with the platform-wide standard loadout via
- * {@link LobbyItems#equip(Player)}. Reads {@link SpawnSettings#SIMULATION_DISTANCE_KEY} itself,
- * live and unvalidated via {@code Config.getInt(...)}, on every join rather than once at
- * construction - see {@code openspec/changes/config-reload-feature-flags/design.md}, decision 1:
- * a changed value applies to the next player who joins, without a module restart. The strict
- * check in {@link SpawnModule#start()} only ever runs once, at startup (see
- * {@code refactor/drop-runtime-fallback}). Joining is far less frequent than a tick, so building a
- * fresh packet per join (instead of a {@code CachedPacket} built once) is unremarkable.
+ * {@link LobbyItems#equip(Player)}. Reads {@link SpawnSettings#SIMULATION_DISTANCE_KEY} live on
+ * every join rather than once at construction, so a changed value applies immediately without a
+ * module restart.
  */
 final class SpawnJoinListener implements Consumer<PlayerSpawnEvent> {
 

@@ -41,15 +41,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Env integration coverage for {@link ExampleModule}, built directly with a fresh {@code titan}
- * node - the top of the test pyramid described in {@code docs/lobby-modules.md}: item use dispatch
- * through {@link LobbyItems} and the disconnect cleanup listener. The pure cooldown and formatting
- * rule already has its own coverage in {@link ExampleGreetingRuleTest}, and the pure validation of
- * the feature's configuration values in {@code ExampleGreetingSettingsTest}; this class only checks
- * that the feature wires everything to the platform correctly.
+ * {@code Env} integration coverage for {@link ExampleModule}: item use dispatch through
+ * {@link LobbyItems} and the disconnect cleanup listener.
  *
  * <p>Every test uses a fixed {@link Clock} (F.I.R.S.T. - repeatable), so "now" never depends on
- * when the test happens to run.
+ * when the test runs.
  */
 @ExtendWith(MicrotusExtension.class)
 class ExampleModuleTest {
@@ -111,9 +107,8 @@ class ExampleModuleTest {
                 env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, token, 0L));
                 env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, token, 1L));
 
-                // Collector#collect() consumes the tracker (see Cyano's IncomingCollector), so both
-                // uses must happen before the one and only collect() call below - not one collect()
-                // per use.
+                // collect() consumes the tracker, so both uses must happen before this one call,
+                // not one collect() per use.
                 List<SystemChatPacket> collected = messages.collect();
                 Assertions.assertEquals(2, collected.size(), "the second use must still send a message, just not a fresh greeting");
                 Assertions.assertEquals(ExampleGreetingRule.greeting(ExampleModule.DEFAULT_GREETING, player.getUsername()), collected.get(0).message());
@@ -197,9 +192,8 @@ class ExampleModuleTest {
                 env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, token, 0L));
                 module.stop();
 
-                // Once stopped, this feature's own event node is detached, so a disconnect no
-                // longer clears the cooldown started above - a second use must still report
-                // "on cooldown" rather than a fresh greeting.
+                // stop() detaches this feature's own event node, so the disconnect below has no
+                // listener left to clear the cooldown.
                 env.process().eventHandler().call(new PlayerDisconnectEvent(player));
                 env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.MAIN, token, 1L));
 

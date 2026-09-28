@@ -28,19 +28,11 @@ final class HeightBounds {
     private final int minHeight;
     private final int maxHeight;
 
-    /**
-     * @param minHeight the lowest {@code y} coordinate still considered in bounds
-     * @param maxHeight the highest {@code y} coordinate still considered in bounds
-     */
     HeightBounds(int minHeight, int maxHeight) {
         this.minHeight = minHeight;
         this.maxHeight = maxHeight;
     }
 
-    /**
-     * @param y the coordinate to check
-     * @return {@code true} if {@code y} is below {@code minHeight} or above {@code maxHeight}
-     */
     boolean isOutOfBounds(double y) {
         return y < this.minHeight || y > this.maxHeight;
     }

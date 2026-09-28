@@ -53,9 +53,8 @@ public final class MapProvider {
     private MapProvider(@NotNull Path path, @NotNull InstanceContainer instance, Function<Stream<Path>, List<MapEntry>> filterMaps) {
         this.mapPool = new MapPool(path.resolve(MAP_PATH), filterMaps);
         this.instance = instance;
-        // "Exploration" lighting: relight each chunk as it is loaded so regions
-        // light up while players explore into new map sections (anvil chunks
-        // otherwise stay dark until a block update triggers a relight).
+        // Relight each chunk as it loads so unexplored regions light up (anvil chunks otherwise
+        // stay dark until a block update triggers a relight).
         this.instance.eventNode().addListener(InstanceChunkLoadEvent.class, event -> LightingChunk.relight(event.getInstance(), List.of(event.getChunk())));
         var typeAdapter = new PositionGsonAdapter();
         this.gson = new Gson().newBuilder().registerTypeAdapter(Pos.class, typeAdapter).registerTypeAdapter(Vec.class, typeAdapter).create();
@@ -78,9 +77,8 @@ public final class MapProvider {
 
     private void loadMapData() {
         var lobbyData = this.fileHandler.load(this.mapPool.getMapEntry().path().resolve(MapEntry.MAP_FILE_NAME), LobbyMap.class);
-        // Use LightingChunk so the world is actually lit: it computes and sends
-        // sky/block light. Plain DynamicChunks send no light, leaving the lobby
-        // pitch black. Must be set before any chunk is loaded by the AnvilLoader.
+        // LightingChunk computes and sends sky/block light; plain DynamicChunks send none, leaving
+        // the lobby pitch black. Must be set before the AnvilLoader loads any chunk.
         this.instance.setChunkSupplier(LightingChunk::new);
         // Freeze the lobby at midday so it stays bright; otherwise the default
         // day/night cycle keeps advancing and the world renders dark.

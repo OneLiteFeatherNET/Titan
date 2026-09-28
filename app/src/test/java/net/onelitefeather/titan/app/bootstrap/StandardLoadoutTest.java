@@ -45,23 +45,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 
 /**
- * Cross-feature coverage for the {@code lobby-hotbar} spec's "Standardausstattung", moved here (see
- * {@code openspec/changes/dissolve-module-platform/tasks.md}, task 3 review fixes) once
- * {@link NavigatorModule}'s lifecycle methods went back to package-private: a joining player must
- * end up with exactly the feather in hotbar slot 4 and the elytra on the chestplate - nothing else
- * - and using the feather must still open the (single, shared) navigator inventory, once
- * {@link NavigatorModule} and {@link ElytraModule} are both bean-based features contributing their
- * items through {@link LobbyItems}.
+ * Cross-feature coverage for a joining player's standard loadout: exactly the feather in hotbar
+ * slot 4 and the elytra on the chestplate, and using the feather opens the shared navigator
+ * inventory, driven through the real {@link BeanScope} since neither module's lifecycle is
+ * reachable from this package.
  *
- * <p>Driven through the real {@link BeanScope} - exactly the wiring {@code Titan} builds in
- * production - rather than direct construction, since neither module's {@code start()}/
- * {@code stop()} is reachable from this package any more.
- *
- * <p><strong>Why the scope is bound to {@code env}'s own instance:</strong> see
- * {@code NavigatorProtectionOrderingTest}'s class Javadoc - the same real {@code SpawnModule}
- * would otherwise redirect this test's joining player to {@code PlatformBeans}' own, ungenerated
- * {@link InstanceContainer} and hang {@link Env#createPlayer} forever waiting for chunks that never
- * load.
+ * <p>The scope is bound to {@code env}'s own instance because the real {@code SpawnModule} would
+ * otherwise redirect the joining player to {@code PlatformBeans}' own, ungenerated
+ * {@link InstanceContainer}, hanging {@link Env#createPlayer} forever waiting for chunks that
+ * never load.
  */
 @ExtendWith(MicrotusExtension.class)
 class StandardLoadoutTest {

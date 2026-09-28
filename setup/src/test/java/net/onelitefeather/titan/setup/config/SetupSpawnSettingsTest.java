@@ -22,11 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
- * Covers {@link SetupSpawnSettings#simulationDistance(String)}, the pure parsing and validation
- * behind {@link SetupSpawnConfig#read()} (design.md, decisions 3, 4 and 5).
- *
- * <p>None of these tests touch the {@code io.avaje.config.Config} facade - the raw value comes in
- * as a plain {@code String}, so this class is free of the facade's global state.
+ * Covers {@link SetupSpawnSettings#simulationDistance(String)} without touching the
+ * {@code io.avaje.config.Config} facade.
  */
 class SetupSpawnSettingsTest {
 

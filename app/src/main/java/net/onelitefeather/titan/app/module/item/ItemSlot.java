@@ -19,13 +19,11 @@ import java.util.Objects;
 import net.minestom.server.entity.EquipmentSlot;
 
 /**
- * Where a {@link LobbyItem} lives, if anywhere.
+ * Where a {@link LobbyItem} lives, if anywhere: sealed to a fixed hotbar slot, a fixed equipment
+ * slot, or no fixed place at all.
  *
- * <p>Sealed to exactly the three shapes the {@code lobby-hotbar} spec allows: a fixed hotbar slot,
- * a fixed equipment slot, or no fixed place at all. {@link ItemConflicts#check(java.util.List)}
- * only checks the first two for conflicts - two features may both hand out an unplaced item (the
- * elytra feature's firework, for instance) without ever colliding, because neither one reserves a
- * place the other could also claim.
+ * <p>{@link ItemConflicts#check(java.util.List)} only checks the first two; two features may both
+ * hand out an unplaced item without ever colliding.
  */
 public sealed interface ItemSlot {
 
@@ -37,25 +35,17 @@ public sealed interface ItemSlot {
 
     /**
      * @param slot the hotbar slot, {@value #MIN_HOTBAR_SLOT}-{@value #MAX_HOTBAR_SLOT}
-     * @return a placement pinned to that hotbar slot
      * @throws IllegalArgumentException if {@code slot} is outside the hotbar
      */
     static ItemSlot hotbar(int slot) {
         return new Hotbar(slot);
     }
 
-    /**
-     * @param slot the equipment slot, e.g. {@link EquipmentSlot#CHESTPLATE}
-     * @return a placement pinned to that equipment slot
-     */
     static ItemSlot equipment(EquipmentSlot slot) {
         return new Equipment(slot);
     }
 
-    /**
-     * @return a placement for an item with no fixed place - the owning module hands it out and
-     *         takes it back itself, and it is exempt from conflict checking
-     */
+    /** Exempt from {@link ItemConflicts#check} conflict checking. */
     static ItemSlot unplaced() {
         return new Unplaced();
     }

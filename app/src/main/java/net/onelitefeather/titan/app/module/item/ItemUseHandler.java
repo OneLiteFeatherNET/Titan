@@ -25,10 +25,5 @@ import net.minestom.server.event.player.PlayerUseItemEvent;
 @FunctionalInterface
 public interface ItemUseHandler {
 
-    /**
-     * @param player the player who used the item
-     * @param event  the use event, in case the handler needs more than the player - hand
-     *               orientation or the exact stack, for instance
-     */
     void handle(Player player, PlayerUseItemEvent event);
 }

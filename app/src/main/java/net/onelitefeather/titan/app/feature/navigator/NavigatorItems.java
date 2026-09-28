@@ -26,9 +26,7 @@ import net.onelitefeather.titan.app.module.item.LobbyItem;
 
 /**
  * Contributes the {@code titan:navigator} feather to the platform-wide {@link
- * net.onelitefeather.titan.app.module.item.LobbyItems} as a {@code @Bean}, replacing what {@link
- * NavigatorModule} used to register directly through {@code context.items()} (see {@code
- * openspec/changes/dissolve-module-platform/design.md}, decision 2).
+ * net.onelitefeather.titan.app.module.item.LobbyItems} as a {@code @Bean}.
  *
  * <p>Package-private, like the rest of this feature's internals: Avaje Inject's generated wiring
  * lives in the same package as the class it annotates, so it reaches
@@ -41,11 +39,6 @@ final class NavigatorItems {
     private static final Key ITEM_KEY = Key.key("titan:navigator");
     private static final int HOTBAR_SLOT = 4;
 
-    /**
-     * @param navigator the module a use of the returned item opens, via {@link
-     *                  NavigatorModule#open(net.minestom.server.entity.Player)}
-     * @return the {@code titan:navigator} feather, fixed to hotbar slot {@value #HOTBAR_SLOT}
-     */
     @Bean
     LobbyItem navigatorFeather(NavigatorModule navigator) {
         ItemStack feather = ItemStack.builder(Material.FEATHER).customName(MiniMessage.miniMessage().deserialize("<!i><aqua>Navigator")).build();

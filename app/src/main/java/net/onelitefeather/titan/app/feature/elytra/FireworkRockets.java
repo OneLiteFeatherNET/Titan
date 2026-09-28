@@ -24,54 +24,21 @@ import net.minestom.server.network.packet.server.play.SetCooldownPacket;
 import net.minestom.server.utils.time.TimeUnit;
 
 /**
- * Ported from Voyager ({@code net.elytrarace.voyager.server.game.Rockets}): the entity half of the
- * boost - the rocket a flying player sees when they use the firework.
+ * The entity half of the boost: the rocket a flying player sees when they use the firework.
  *
- * <h2>Why a real entity, and not a server-applied velocity</h2>
- *
- * <p>The lobby's previous elytra boost computed the impulse itself and pushed it with
- * {@code Player#setVelocity}. This does what Vanilla does instead: it spawns a real firework
- * rocket entity with the player as its shooter ({@link FireworkRocketMeta#setShooter}, which
- * writes the shooter entity id into the metadata), and the client - which ticks that entity
- * locally and, seeing itself as the attachment, applies the impulse to its own player - boosts
- * itself. The server applies no velocity at all.
- *
- * <h2>Why the server removes the rocket</h2>
- *
- * <p>Vanilla's rocket picks its own lifetime with two dice rolls. Two identical boosts should be
- * worth the same in the lobby, so the entity is removed after exactly {@code burnDurationTicks}
- * ticks and nothing random is left in it. The removal is scheduled in
- * {@link TimeUnit#SERVER_TICK}, a tick count rather than a wall-clock delay a slow tick would
- * stretch.
- *
- * <p>Called only after {@link FireworkBoostTracker#requestBoost} has agreed to the boost - this
- * does not itself check the cooldown or the gliding flag, so there is only one place that decides
- * whether a boost happens.
+ * <p>Spawns a real firework entity with the player as shooter; the client ticks it locally and
+ * applies the impulse to itself, so the server sends no velocity, and removes it after exactly
+ * {@code burnDurationTicks} ticks instead of Vanilla's own randomized lifetime.
  */
 final class FireworkRockets {
 
-    /**
-     * The cooldown group the client greys the firework stack out under, matching Vanilla's own
-     * {@code minecraft:firework_rocket} item id - the rocket handed out here carries no
-     * {@code use_cooldown} data component of its own.
-     */
+    // Matches Vanilla's own item id; this rocket carries no cooldown data component of its own.
     private static final String COOLDOWN_GROUP = "minecraft:firework_rocket";
 
     private FireworkRockets() {
         throw new UnsupportedOperationException("This class cannot be instantiated");
     }
 
-    /**
-     * Spawns one rocket attached to {@code shooter} and tells their client how long the next one
-     * is, via {@link SetCooldownPacket}.
-     *
-     * @param shooter           the flying player boosting; must be in an instance
-     * @param burnDurationTicks how many ticks this burn lasts, already validated by
-     *                          {@link ElytraSettings#burnDurationTicks(int)}
-     * @param cooldownTicks     how many ticks the client is told the next rocket is on cooldown
-     *                          for, already validated by
-     *                          {@link ElytraSettings#cooldownTicks(int, int)}
-     */
     static void fire(Player shooter, int burnDurationTicks, int cooldownTicks) {
         Instance instance = shooter.getInstance();
         if (instance == null) {

@@ -32,11 +32,10 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Unit coverage for {@link FeatureStartupLog}, built against a fresh {@code titan} {@link
- * EventNode} with no running server - the same style {@link
- * net.onelitefeather.titan.app.module.FeatureNodeTest} uses. Every test builds its own node and
- * closes every attached {@link FeatureNode} in a try-with-resources block, and detaches its own
- * {@link ListAppender} in a {@code finally}, so no state leaks between tests (F.I.R.S.T. -
- * Independent).
+ * EventNode} with no running server.
+ *
+ * <p>Every test builds its own node and closes every attached {@link FeatureNode}, so no state
+ * leaks between tests (F.I.R.S.T. - Independent).
  */
 @ExtendWith(MicrotusExtension.class)
 class FeatureStartupLogTest {

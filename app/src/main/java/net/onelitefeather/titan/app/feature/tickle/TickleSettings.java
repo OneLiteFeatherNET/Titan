@@ -16,44 +16,15 @@
 package net.onelitefeather.titan.app.feature.tickle;
 
 /**
- * Pure parsing and validation for the {@code tickle} module's configuration value (see
- * {@code openspec/changes/avaje-config-facade/design.md}, decisions 3 and 4).
- *
- * <p>{@link #cooldownMillis(String)} is used directly as the mapping function of
- * {@code Config.getAs(COOLDOWN_KEY, TickleSettings::cooldownMillis)} in
- * {@link TickleModule#start()}, once, to abort startup on an invalid value (unchanged behaviour
- * from {@code avaje-config-facade}): it never touches {@code io.avaje.config.Config} itself, so
- * it is unit-testable on its own, and {@code getAs} wraps any exception it throws into an
- * {@code IllegalStateException} that names {@link #COOLDOWN_KEY} once and keeps this method's own
- * exception as the cause (key in the message, reason in the cause chain - verified against
- * avaje-config 5.2's {@code CoreConfiguration#getAs}).
- *
- * <p>{@link TickleAttackHandler} reads {@link #COOLDOWN_KEY} itself, live, via
- * {@code io.avaje.config.Config.getLong(COOLDOWN_KEY)} on every attack (see
- * {@code openspec/changes/config-reload-feature-flags/design.md}, decision 2, as amended by
- * {@code refactor/drop-runtime-fallback}): configuration is validated only once, at startup, in
- * {@link TickleModule#start()}; a runtime read is never re-validated and never falls back to a
- * shipped default - an invalid live value simply takes effect (here, a negative or unparsable
- * value would throw out of {@link TickleAttackHandler}, failing that one attack) until an
- * operator corrects it.
+ * Pure parsing and validation for the {@code tickle} module's configuration value.
  */
 final class TickleSettings {
 
-    /** The full key {@link #cooldownMillis(String)} reads and validates. */
     static final String COOLDOWN_KEY = "tickle.cooldownMillis";
 
     private TickleSettings() {
     }
 
-    /**
-     * Parses and validates the tickle cooldown.
-     *
-     * @param raw the configured cooldown in milliseconds, as text; must parse as a whole number
-     *            that is not negative
-     * @return {@code raw}, parsed
-     * @throws NumberFormatException    if {@code raw} does not parse as a {@code long}
-     * @throws IllegalArgumentException if the parsed value is negative
-     */
     static long cooldownMillis(String raw) {
         long millis = Long.parseLong(raw);
         if (millis < 0) {

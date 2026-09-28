@@ -46,42 +46,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 
 /**
- * Cross-feature coverage for {@link NavigatorModule} and {@link ProtectionModule}, moved here (see
- * {@code openspec/changes/dissolve-module-platform/tasks.md}, task 3 review fixes) once both
- * features' lifecycle methods went back to package-private: a test in their own feature package can
- * no longer call {@code start()}/{@code stop()} directly, so this drives them through the real
- * {@link BeanScope} instead - exactly the wiring {@code Titan} builds in production.
+ * Cross-feature coverage for {@link NavigatorModule} and {@link ProtectionModule}, driven through
+ * the real {@link BeanScope} since both features' lifecycle methods are package-private. Only one
+ * start order is exercised: Aves dispatches inventory clicks before the event-node chain runs, so
+ * which feature started first can never matter.
  *
- * <p>{@code lobby-modules} spec, "Schutz und Navigator beim selben Klick": a navigator click must
- * forward via {@link Deliver} and still be cancelled by {@link ProtectionModule}, "egal in welcher
- * Reihenfolge protection und navigator gestartet wurden". Unlike the old, module-list-ordered
- * platform this used to run on, there is no longer a controllable "start order" to flip: the
- * {@link BeanScope} decides bean construction order itself, and the outcome this test checks does
- * not depend on it either way - {@link ProtectionModule} cancels every
- * {@link InventoryPreClickEvent} on its own event node, but {@link NavigatorModule} never competes
- * for that event in the first place, because its inventory click is handled by Aves' own
- * inventory-mapped dispatch, which Minestom always runs before any regular event node's listener
- * chain (see {@link NavigatorModule}'s class Javadoc). This test therefore exercises the real,
- * DI-built wiring once, which is the only order that can ever occur in production, rather than two
- * artificial constructions of a distinction the architecture no longer has.
- *
- * <p><strong>Why the scope is bound to {@code env}'s own instance:</strong> the real scope also
- * builds {@code SpawnModule}, which reacts to every joining player - including one created for
- * this test - by setting its spawning instance to whatever {@link InstanceContainer} bean the
- * scope holds. Leaving that as {@code PlatformBeans}' own, separately created container (never
- * generated, no chunk loader) would silently redirect the test's player away from the flat
- * instance {@link Env#createPlayer} joins it to, and {@code Env#createPlayer} - which waits for a
- * real client login handshake to finish - would then hang forever waiting for chunks that never
- * load. Overriding the {@link InstanceContainer} bean with {@code env}'s own flat instance before
- * building the scope keeps {@code SpawnModule} pointed at the same instance the test uses - as
- * both {@link InstanceContainer} and the narrower {@link Instance}, since a manually supplied
- * {@code .bean(Type, value)} is only registered under the exact type given, unlike a generated
- * {@code @Factory} method, which the annotation processor also registers under every supertype the
- * return type implements. {@link MapProvider#getActiveLobby()} is stubbed to a real
- * {@link LobbyMap} for the same reason:
- * an unstubbed {@link org.mockito.Mockito} mock would otherwise make {@code SpawnModule}'s
- * listeners fail with a {@code NullPointerException} (silently caught by
- * {@code TitanObservability.guard}) instead of teleporting the player as production does.
+ * <p>The scope is bound to {@code env}'s own instance because the real {@code SpawnModule} would
+ * otherwise redirect the joining test player to {@code PlatformBeans}' own, ungenerated
+ * {@link InstanceContainer}, hanging {@link Env#createPlayer} forever waiting for chunks that
+ * never load. {@link MapProvider#getActiveLobby()} is stubbed to a real {@link LobbyMap} for the
+ * same reason - an unstubbed mock would fail {@code SpawnModule}'s listeners instead of
+ * teleporting the player.
  */
 @ExtendWith(MicrotusExtension.class)
 class NavigatorProtectionOrderingTest {
@@ -92,6 +67,8 @@ class NavigatorProtectionOrderingTest {
     void navigatorClickForwardsAndIsStillCancelled(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
         Instance instance = env.createFlatInstance();
+        // Registered as both types: a manual .bean(Type, value) registers only that exact type,
+        // unlike a generated @Factory, which also registers every supertype it implements.
         BeanScope scope = BeanScope.builder().forTesting().mock(FeatureFlags.class).mock(MapProvider.class, mapProvider -> Mockito.when(mapProvider.getActiveLobby()).thenReturn(new LobbyMap("test", new Pos(0, 65, 0), List.of()))).bean(InstanceContainer.class, (InstanceContainer) instance).bean(Instance.class, instance).bean(Deliver.class, deliver).build();
 
         try {

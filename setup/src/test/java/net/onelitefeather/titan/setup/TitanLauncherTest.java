@@ -27,22 +27,8 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 
 /**
- * Unit coverage for {@link TitanLauncher#startCleanly(Runnable)} - the seam
- * {@link TitanLauncher#main} runs {@link Titan#instance()} through, so a broken {@code
- * application.yaml} (surfacing as {@link ExceptionInInitializerError} from the static
- * {@code io.avaje.config.Config} facade's own first touch, inside {@link Titan}'s constructor)
- * aborts startup cleanly instead of leaving the process half-started, the same way
- * {@code net.onelitefeather.titan.app.TitanApplication#main} already does for the lobby.
- *
- * <p>Hermetic: no real {@code application.yaml}, working directory or {@code MinecraftServer} is
- * touched. A fabricated {@link ExceptionInInitializerError} - with a {@code null} message, exactly
- * like the real facade throws it - stands in for a genuinely broken file. What is asserted here,
- * hermetically, is that {@link TitanLauncher#startCleanly(Runnable)} catches it, logs exactly once
- * at ERROR with a header that is not the literal text {@code "null"}, keeps the throwable (and
- * with it the full cause chain - file and line/column) attached to the log event, and reports
- * failure instead of letting it propagate (F.I.R.S.T. - Independent/Repeatable: a fresh
- * {@link ListAppender} per test, detached in a {@code finally}, mirroring
- * {@code ConfigurationStartupLogTest}).
+ * Unit coverage for {@link TitanLauncher#startCleanly(Runnable)}, the seam that lets
+ * {@link TitanLauncher#main} abort cleanly instead of leaving the process half-started.
  */
 class TitanLauncherTest {
 
@@ -69,9 +55,8 @@ class TitanLauncherTest {
     @DisplayName("A broken application.yaml's ExceptionInInitializerError is caught, logged once at ERROR with a readable header, and reported as a failure")
     @Test
     void exceptionInInitializerErrorFromStartupAbortsCleanly() {
-        // Mirrors the real io.avaje.config.Config facade: a broken application.yaml fails its
-        // static initializer with a null-message ExceptionInInitializerError, whose cause chain
-        // (not its own message) names the file and the line/column.
+        // Mirrors the real facade: a broken application.yaml fails its static initializer with a
+        // null-message ExceptionInInitializerError, cause chain intact.
         RuntimeException parserFailure = new IllegalStateException("Error loading properties - application.yaml", new RuntimeException("mapping values are not allowed here in 'reader', line 3, column 13"));
         ExceptionInInitializerError brokenConfig = new ExceptionInInitializerError(parserFailure);
         Logger logger = (Logger) LoggerFactory.getLogger(TitanLauncher.class);

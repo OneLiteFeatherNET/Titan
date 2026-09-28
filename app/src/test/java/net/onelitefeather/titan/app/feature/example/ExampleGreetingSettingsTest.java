@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Plain unit coverage for {@link ExampleGreetingSettings}'s pure validation - no {@code Config}, no
- * server, see {@code docs/lobby-modules.md}, "Unten: reine Unit-Tests".
+ * server.
  */
 class ExampleGreetingSettingsTest {
 

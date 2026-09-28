@@ -22,45 +22,19 @@ import net.minestom.server.event.EventNode;
 import net.onelitefeather.titan.common.observability.TitanObservability;
 
 /**
- * A feature's own event node, attached under the shared {@code titan} node.
- *
- * <p>The one door a feature bean uses to reach the Minestom event tree (see
- * {@code openspec/changes/dissolve-module-platform/design.md}, decision 1): a feature calls
- * {@link #attach(EventNode, String, int)} in its own {@code @PostConstruct}, registers
- * through {@link #on(Class, Consumer)} or {@link #onIncludingCancelled(Class, Consumer)}, and
- * disconnects with {@link #close()} in its {@code @PreDestroy} - before any other shutdown logic
- * runs, so no event reaches the feature while it tears itself down.
- *
- * <p>Deliberately holds no static state: every instance is a plain wrapper around the one child
- * node {@link #attach} created, and two features never share one.
- *
- * <h2>Event order</h2>
- *
- * <p>{@code priority} becomes the child node's {@link EventNode#setPriority(int)} - Minestom's
- * own mechanism for ordering sibling nodes - which is what now decides in which order two
- * features reacting to the same event run, replacing the old start-order guarantee.
- *
- * <h2>Error attribution</h2>
+ * A feature's own event node, attached under the shared {@code titan} node: a feature calls
+ * {@link #attach(EventNode, String, int)} in its own {@code @PostConstruct}, registers through
+ * {@link #on(Class, Consumer)} or {@link #onIncludingCancelled(Class, Consumer)}, and disconnects
+ * with {@link #close()} in its {@code @PreDestroy}. Each instance wraps its own node and holds no
+ * shared or static state, so no synchronization is needed.
  *
  * <p>Every listener registered here is wrapped in
- * {@link TitanObservability#guard(String, Consumer)}
- * with {@code featureId}: a failure keeps the lobby running and the report names the feature and,
- * if the event carries one, the player.
+ * {@link TitanObservability#guard(String, Consumer)} with {@code featureId}, so a failure keeps
+ * the lobby running and the report names the feature and, if the event carries one, the player.
  */
 public final class FeatureNode implements AutoCloseable {
 
-    /**
-     * The {@code @Named} qualifier of the shared {@code titan} {@link EventNode} bean every
-     * feature's own node attaches under - {@code app.bootstrap.PlatformBeans} registers the bean
-     * under this name, and any platform class that looks it up by name (such as
-     * {@link net.onelitefeather.titan.app.module.item.LobbyItems LobbyItems} or {@code Titan})
-     * references this constant instead of duplicating the literal.
-     *
-     * <p>Lives here rather than on {@code PlatformBeans} so the platform ({@code app.module}) never
-     * has to import the composition root ({@code app.bootstrap}) just to name this qualifier - see
-     * {@code openspec/changes/dissolve-module-platform/design.md}, decision 1, and
-     * {@code ArchitectureTest#platformDoesNotDependOnCompositionRoot}.
-     */
+    /** The {@code @Named} qualifier of the shared {@code titan} {@link EventNode} bean. */
     public static final String TITAN_NODE = "titan";
 
     private final EventNode<Event> parent;
@@ -74,16 +48,11 @@ public final class FeatureNode implements AutoCloseable {
     }
 
     /**
-     * Creates {@code featureId}'s own event node, named {@code titan/<featureId>}, sets its
-     * priority and attaches it to {@code parent} immediately.
+     * Creates {@code featureId}'s own event node, named {@code titan/<featureId>}, and attaches
+     * it to {@code parent} immediately at the given priority.
      *
-     * @param parent    the shared node the returned node attaches under - the {@code titan}
-     *                  bean in production
-     * @param featureId the owning feature's id, used for the node's name and for
-     *                  {@link TitanObservability#guard(String, Consumer)} attribution
-     * @param priority  this feature's position among its siblings; see
-     *                  {@link EventNode#setPriority(int)}
-     * @return the new node, ready for {@link #on} / {@link #onIncludingCancelled}
+     * <p>{@code priority} becomes the node's {@link EventNode#setPriority(int)}, which decides the
+     * execution order among sibling feature nodes reacting to the same event.
      */
     public static FeatureNode attach(EventNode<Event> parent, String featureId, int priority) {
         EventNode<Event> node = EventNode.all("titan/" + featureId);
@@ -94,17 +63,11 @@ public final class FeatureNode implements AutoCloseable {
 
     /**
      * Registers {@code listener} for {@code type}, guarded so a failure is attributed to this
-     * feature (and, if the event carries one, its player) without stopping the lobby.
+     * feature without stopping the lobby.
      *
-     * <p>For a {@link net.minestom.server.event.trait.CancellableEvent}, {@code listener} is
-     * skipped once the event is already cancelled by the time it reaches this node - Minestom's
-     * usual behaviour for a {@code Consumer}-based listener. A feature that must react regardless
-     * of an earlier feature's cancellation needs {@link #onIncludingCancelled} instead.
-     *
-     * @param type     the event type to listen for
-     * @param listener the listener
-     * @param <E>      the event type
-     * @return this node, so registrations can be chained
+     * <p>Skipped once a {@link net.minestom.server.event.trait.CancellableEvent} is already
+     * cancelled by the time it reaches this node; use {@link #onIncludingCancelled} to react
+     * anyway.
      */
     public <E extends Event> FeatureNode on(Class<E> type, Consumer<E> listener) {
         this.node.addListener(type, TitanObservability.guard(this.featureId, listener));
@@ -112,24 +75,15 @@ public final class FeatureNode implements AutoCloseable {
     }
 
     /**
-     * Registers {@code listener} for {@code type}, exactly like {@link #on}, except the listener
-     * still runs even if the event is already cancelled by the time it reaches this node.
-     *
-     * @param type     the event type to listen for
-     * @param listener the listener
-     * @param <E>      the event type
-     * @return this node, so registrations can be chained
+     * Registers {@code listener} for {@code type}, like {@link #on}, but runs even if the event is
+     * already cancelled.
      */
     public <E extends Event> FeatureNode onIncludingCancelled(Class<E> type, Consumer<E> listener) {
         this.node.addListener(EventListener.builder(type).ignoreCancelled(false).handler(TitanObservability.guard(this.featureId, listener)).build());
         return this;
     }
 
-    /**
-     * Detaches this feature's node from its parent, so none of its listeners run again. Calling
-     * this more than once is harmless - {@link EventNode#removeChild(EventNode)} is a no-op once
-     * the child is already gone.
-     */
+    /** Idempotent: a second call is a no-op. */
     @Override
     public void close() {
         this.parent.removeChild(this.node);

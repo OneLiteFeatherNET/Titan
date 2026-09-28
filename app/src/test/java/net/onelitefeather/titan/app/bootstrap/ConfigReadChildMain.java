@@ -22,21 +22,13 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
 /**
- * The child process entry point {@link ConfigFileWatchIntegrationTest} launches for its file-watch
- * scenario: touches the static {@link Config} facade exactly like {@code Titan} does - built-in
- * first, no factory of its own in between - prints {@code READY}, then for every line it reads from
- * stdin prints {@code "VALUE " + Config.getLong(KEY, DEFAULT)} and blocks for the next request.
+ * The child process entry point {@link ConfigFileWatchIntegrationTest} launches: touches the
+ * {@link Config} facade like {@code Titan} does, prints {@code READY}, then for every stdin line
+ * prints {@code "VALUE " + Config.getLong(KEY, DEFAULT)}.
  *
- * <p>Every request re-reads the facade from scratch rather than caching the value once, exactly the
- * way a module's own live read point does after this change (see
- * {@code openspec/changes/config-reload-feature-flags/design.md}, decision 1) - so a later
- * avaje-config file-watch reload becomes visible on the next request, without this process
- * restarting or any module-specific code involved. Exits once stdin reaches EOF, i.e. once the
- * parent test closes this process's stdin.
- *
- * <p>No {@code Config} mutator ({@code setProperty}/{@code putAll}/{@code clearProperty}/
- * {@code eventBuilder}) is ever called from this class or the test that drives it - see
- * {@code openspec/changes/avaje-config-facade/design.md}, decision 5.
+ * <p>Every request re-reads the facade from scratch, so a later avaje-config file-watch reload
+ * becomes visible on the next request without restarting. No {@code Config} mutator is ever called
+ * from this class or the test that drives it.
  */
 public final class ConfigReadChildMain {
 

@@ -25,15 +25,9 @@ import java.util.Map;
  * Test-only helper that counts how many {@link net.minestom.server.event.EventListener}s are
  * registered directly on a given {@link EventNode}.
  *
- * <p>Minestom does not offer a public API to read this back (only {@link EventNode#hasListener}
- * for a single event type). As noted in
- * {@code openspec/changes/lobby-feature-modules/design.md} (Open Questions), the fallback is to
- * reflect into {@code EventNodeImpl#listenerMap}. This is an implementation detail of the
- * Minestom version this project builds against and may need adjusting on an upgrade.
- *
- * <p>Kept here (rather than inline in a single test) because several characterization and
- * platform tests for the {@code lobby-feature-modules} change need to assert that listener
- * counts do not grow across a lifecycle event (leak tests, module shutdown tests, ...).
+ * <p>Minestom offers no public API to read this back, so this reflects into
+ * {@code EventNodeImpl#listenerMap} - an implementation detail that may need adjusting on a
+ * Minestom upgrade.
  */
 public final class EventListenerCounter {
 
@@ -53,14 +47,7 @@ public final class EventListenerCounter {
     private EventListenerCounter() {
     }
 
-    /**
-     * Counts every listener registered directly on the given node, summed across all event
-     * classes it currently has an entry for. Listeners on parent or child nodes are not
-     * included.
-     *
-     * @param node the node to inspect
-     * @return the total number of listeners registered directly on {@code node}
-     */
+    /** Counts listeners registered directly on {@code node} only, not on parent or child nodes. */
     public static int countListeners(EventNode<?> node) {
         try {
             Map<?, ?> listenerMap = (Map<?, ?>) LISTENER_MAP_FIELD.get(node);

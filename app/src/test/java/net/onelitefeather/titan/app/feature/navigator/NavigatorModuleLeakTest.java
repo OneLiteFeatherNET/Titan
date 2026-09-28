@@ -34,33 +34,21 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Re-points the idea of the old, {@code @Disabled}
- * {@code net.onelitefeather.titan.app.navigator.NavigatorListenerLeakTest} at {@link
- * NavigatorModule}: repeatedly opening and closing the shared navigator, and many players joining,
- * opening it once and leaving, must never change the number of listeners registered - neither on
- * the module's own event node, nor on the event node Aves registered its click listener on.
+ * Leak coverage for {@link NavigatorModule}: repeatedly opening and closing the shared navigator,
+ * and many players joining, opening it once and leaving, must never change the listener count on
+ * the module's own node or the shared inventory's node.
  *
- * <p>{@link NavigatorModule} registers no listener of its own at all:
- * {@link NavigatorModule#start()}
- * attaches an otherwise empty {@link net.onelitefeather.titan.app.module.FeatureNode} and calls
- * Aves' {@code GlobalInventoryBuilder#register()} exactly once, which registers exactly one click
- * listener on the built inventory's own event node - see {@link NavigatorModule#sharedInventory()}.
- * Nothing here registers a listener again after {@code start()} returns, for any player, on any
- * open. This test proves that structurally: the listener counts on both the module's own
- * {@code titan/navigator} node and the shared inventory's own node, read via
- * {@link EventListenerCounter} (see its own Javadoc on why reflection is needed - Minestom has no
- * public API for this), stay exactly the same no matter how many times the navigator is opened or
- * how many players pass through it.
- *
- * <p>Teardown always runs through try-with-resources, so a failed assertion can never leak the
- * fixture's listeners into a later test.
+ * <p>{@link NavigatorModule} registers no listener of its own; {@link NavigatorModule#start()}
+ * only attaches an empty {@link net.onelitefeather.titan.app.module.FeatureNode} and registers
+ * exactly one click listener via Aves, once. Counts are read via {@link EventListenerCounter}, and
+ * teardown always runs through try-with-resources so a failed assertion can never leak into a
+ * later test.
  */
 @ExtendWith(MicrotusExtension.class)
 class NavigatorModuleLeakTest {
 
-    // design.md suggests 100 players for the "player leaves" scenario; a smaller number would
-    // already prove the same structural point, but 100 is fast enough here since nothing beyond
-    // Env#createPlayer itself is expensive - no per-player registration happens anymore.
+    // 100 players proves the same structural point a smaller number would, but is fast enough
+    // here since nothing beyond Env#createPlayer itself is expensive.
     private static final int PLAYER_COUNT = 100;
     private static final int OPEN_CLOSE_COUNT = 50;
 

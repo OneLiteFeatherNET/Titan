@@ -16,25 +16,16 @@
 package net.onelitefeather.titan.app.feature.example;
 
 /**
- * Pure validation for the {@code example} module's two values - the "prüfen in reinen Funktionen"
- * half of the pattern described in {@code docs/lobby-modules.md}, "Konfiguration lesen" (design.md,
- * decision 3). A real module pairs a function like this with a read at the edge of its own
- * {@code enable()}, e.g.
+ * Pure validation for the {@code example} module's two config values. A real module pairs a
+ * function like this with a read at the edge of its own {@code start()}, e.g.
  *
  * <pre>{@code
  * String greeting = ExampleGreetingSettings.greeting(Config.get(GREETING_KEY));
  * long cooldownMillis = Config.getAs(COOLDOWN_KEY, ExampleGreetingSettings::cooldownMillis);
  * }</pre>
  *
- * <p>This template has no section of its own in the shipped {@code application.yaml} (see
- * {@link ExampleModule}'s class Javadoc for why), so {@link ExampleModule#enable} validates its own
- * hardcoded defaults instead of performing that read - the snippet above is what a real module with
- * a real section would write in its place.
- *
- * <p>Package-private, with its own unit test ({@code ExampleGreetingSettingsTest}) that never
- * touches {@code Config} (design.md, decision 5): a pure function like this takes a value and
- * either returns it or throws {@link IllegalArgumentException}, so it is testable with plain inputs
- * and outputs.
+ * <p>This template has no section to read, so {@link ExampleModule#start} validates its hardcoded
+ * defaults instead - the snippet above is what a real module would write.
  */
 final class ExampleGreetingSettings {
 
@@ -48,12 +39,6 @@ final class ExampleGreetingSettings {
         throw new UnsupportedOperationException("This class cannot be instantiated");
     }
 
-    /**
-     * @param raw the greeting template, as read from {@link #GREETING_KEY}
-     * @return {@code raw}, unchanged
-     * @throws IllegalArgumentException if {@code raw} is blank, or does not contain a {@code %s}
-     *                                  placeholder for the player's name
-     */
     static String greeting(String raw) {
         if (raw == null || raw.isBlank()) {
             throw new IllegalArgumentException("must not be blank");
@@ -65,15 +50,8 @@ final class ExampleGreetingSettings {
     }
 
     /**
-     * Parses and validates the cooldown, in milliseconds. Used directly as the mapping function of
-     * {@code Config.getAs(COOLDOWN_KEY, ExampleGreetingSettings::cooldownMillis)} - {@code getAs}
-     * wraps any exception it throws into an {@code IllegalStateException} naming
-     * {@link #COOLDOWN_KEY} once, keeping this method's own exception as the cause.
-     *
-     * @param raw the cooldown in milliseconds, as text
-     * @return {@code raw}, parsed
-     * @throws NumberFormatException    if {@code raw} does not parse as a {@code long}
-     * @throws IllegalArgumentException if the parsed value is negative
+     * Used as {@code Config.getAs}'s mapping function; {@code getAs} wraps any thrown exception,
+     * naming {@link #COOLDOWN_KEY} itself.
      */
     static long cooldownMillis(String raw) {
         long millis = Long.parseLong(raw);

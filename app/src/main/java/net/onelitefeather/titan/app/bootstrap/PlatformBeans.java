@@ -35,27 +35,17 @@ import net.onelitefeather.titan.common.feature.FeatureFlags;
 import net.onelitefeather.titan.common.map.MapProvider;
 
 /**
- * Wires the platform services every lobby feature module is built from as Avaje Inject beans, so a
- * module asks for one through its constructor instead of {@link net.onelitefeather.titan.app.Titan}
- * handing it out by hand.
+ * Wires the platform services every lobby feature module is built from as Avaje Inject beans, so
+ * a module asks for one through its constructor instead of
+ * {@link net.onelitefeather.titan.app.Titan} handing it out by hand.
  *
- * <p>Every bean here mirrors exactly what {@code Titan}'s composition root built directly before
- * this change - see {@code openspec/changes/avaje-dependency-injection/design.md}, decision 3.
- * {@code common} itself stays free of any Avaje annotation or dependency; this factory is what
- * turns its library types into beans for {@code app}.
- *
- * <p>Every lobby feature is discovered as a plain {@code @Singleton} bean, started and stopped by
- * the {@code BeanScope} itself through {@code @PostConstruct}/{@code @PreDestroy} - see
- * {@code openspec/changes/dissolve-module-platform/design.md}, decisions 1 and 4. There is no
- * separate registry of modules for this factory to feed.
+ * <p>{@code common} stays free of Avaje annotations; this factory turns its library types into
+ * beans for {@code app}.
  */
 @Factory
 public final class PlatformBeans {
 
-    /**
-     * @return the lobby's single {@link InstanceContainer}, registered with the instance manager -
-     *         also satisfies a module constructor asking for the narrower {@link Instance} type
-     */
+    /** Also satisfies a bean lookup for the narrower {@link Instance} type. */
     @Bean
     public InstanceContainer instanceContainer() {
         InstanceContainer instance = MinecraftServer.getInstanceManager().createInstanceContainer();
@@ -63,40 +53,23 @@ public final class PlatformBeans {
         return instance;
     }
 
-    /**
-     * @param instance the lobby instance {@link #instanceContainer()} created
-     * @return the provider for the lobby's map data, loaded from {@code worlds/} relative to the
-     *         working directory
-     */
+    /** Loads map data from {@code worlds/} relative to the working directory. */
     @Bean
     public MapProvider mapProvider(InstanceContainer instance) {
         return MapProvider.create(Path.of(""), instance);
     }
 
-    /**
-     * @param mapProvider the map provider the current spawn position is read from
-     * @return the lobby's current spawn position, read lazily on every
-     *         {@link LobbySpawn#position()}
-     *         call so a map reload is picked up without rebuilding any module
-     */
     @Bean
     public LobbySpawn lobbySpawn(MapProvider mapProvider) {
         return () -> mapProvider.getActiveLobby().spawn();
     }
 
-    /**
-     * @return the service a module uses to send a player to another server - a no-op outside a
-     *         CloudNet service
-     */
+    /** A no-op outside a CloudNet service. */
     @Bean
     public Deliver deliver() {
         return DeliverProvider.create();
     }
 
-    /**
-     * @return the shared event node every module's own {@code titan/<id>} node attaches under,
-     *         itself attached to the global event handler
-     */
     @Bean
     @Named(FeatureNode.TITAN_NODE)
     public EventNode<Event> titanEventNode() {
@@ -106,10 +79,8 @@ public final class PlatformBeans {
     }
 
     /**
-     * @return the source of truth a feature module's optional feature gate is checked against - a
-     *         flag is a plain configuration value under {@code features.*}, with the known flags
-     *         read from the lobby's own classpath {@code application.yaml} (see
-     *         {@code openspec/changes/config-reload-feature-flags/design.md}, decision 4)
+     * Flags are configuration values under {@code features.*}, defaulted from the classpath
+     * {@code application.yaml}.
      */
     @Bean
     public FeatureFlags featureFlags() {
@@ -117,20 +88,14 @@ public final class PlatformBeans {
     }
 
     /**
-     * @return the system clock, so a module that needs "now" (e.g. a cooldown) asks for a
-     *         {@link Clock} instead of reading {@link System#currentTimeMillis()} directly and a
-     *         test can hand in a fixed one
+     * Lets a module ask for {@link Clock} instead of {@link System#currentTimeMillis()}, so a test
+     * can inject a fixed one.
      */
     @Bean
     public Clock clock() {
         return Clock.systemUTC();
     }
 
-    /**
-     * @return the server's scheduler manager, so a feature that plans a task (e.g. the elytra
-     *         boost) asks for a {@link Scheduler} through its constructor instead of reaching for
-     *         {@link MinecraftServer#getSchedulerManager()} itself
-     */
     @Bean
     public Scheduler scheduler() {
         return MinecraftServer.getSchedulerManager();

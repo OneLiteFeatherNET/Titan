@@ -32,15 +32,9 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
- * The map pool is responsible for managing the available maps. It will load all
- * maps data from the given path and store them. It would not load the map
- * itself over a {@link net.minestom.server.instance.anvil.AnvilLoader}
- * instance. This behavior is handled by another class.
- *
- * @author theEvilReaper
- * @version 1.0.0
- * @since 1.0.0
- **/
+ * Manages the available lobby maps, loading their metadata from a given path without loading the
+ * map itself (an {@link net.minestom.server.instance.anvil.AnvilLoader} handles that separately).
+ */
 public final class MapPool {
     private static final Logger LOGGER = LoggerFactory.getLogger(MapPool.class);
     private static final String LOBBY_MAP_NAME = System.getProperty("TITAN_LOBBY_MAP", "world");
@@ -49,13 +43,6 @@ public final class MapPool {
     private MapEntry selectedMap;
     private final Function<Stream<Path>, List<MapEntry>> filterMaps;
 
-    /**
-     * Creates a new instance of the map pool. It will load all maps from the given
-     * path.
-     *
-     * @param path
-     *             the path where the maps are stored
-     */
     public MapPool(@NotNull Path path, @NotNull Function<Stream<Path>, List<MapEntry>> filterMaps) {
         this.filterMaps = filterMaps;
         this.referenceList = loadMapsEntries(path);
@@ -71,14 +58,6 @@ public final class MapPool {
         this.selectedMap = this.referenceList.stream().filter(mapEntry -> mapEntry.path().getFileName().toString().equalsIgnoreCase(LOBBY_MAP_NAME)).findFirst().orElseThrow();
     }
 
-    /**
-     * Loads all maps from the given path. It will filter all directories and create
-     * a new {@link MapEntry} instance.
-     *
-     * @param path
-     *             the path where the maps are stored
-     * @return a list with all available maps
-     */
     private @NotNull List<MapEntry> loadMapsEntries(@NotNull Path path) {
         List<MapEntry> mapEntries = new ArrayList<>();
         try (Stream<Path> stream = Files.list(path)) {
@@ -90,29 +69,15 @@ public final class MapPool {
         return mapEntries;
     }
 
-    /**
-     * Gets the selected map entry.
-     *
-     * @return the selected map entry
-     */
     public @NotNull MapEntry getMapEntry() {
         return this.selectedMap;
     }
 
-    /**
-     * Removes the selected map from the list. If the list is empty it will throw an
-     * exception.
-     */
     public void clear() {
         this.referenceList.clear();
         this.referenceList = null;
     }
 
-    /**
-     * Gets all available maps from the pool.
-     *
-     * @return an unmodifiable list with all available maps
-     */
     public @NotNull
     @UnmodifiableView List<MapEntry> getAvailableMaps() {
         return Collections.unmodifiableList(this.referenceList);

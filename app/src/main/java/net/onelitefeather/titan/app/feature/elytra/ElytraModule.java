@@ -33,37 +33,16 @@ import net.onelitefeather.titan.app.module.FeatureNode;
 import net.onelitefeather.titan.app.module.item.LobbyItems;
 
 /**
- * Moves today's elytra flight and firework boost - {@code ElytraStartFlyingListener}, {@code
- * ElytraStopFlyingListener} and {@code ElytraBoostListener} on {@code main} - into a bean feature
- * (see {@code openspec/changes/lobby-feature-modules}, task 6.7 and 13.2, and {@code
- * openspec/changes/dissolve-module-platform/design.md}, decisions 1-3).
- *
- * <p>The two {@link net.onelitefeather.titan.app.module.item.LobbyItem}s this feature owns -
- * {@code titan:elytra} (fixed to {@link net.minestom.server.entity.EquipmentSlot#CHESTPLATE}) and
- * {@code titan:firework} (no fixed place, since it only ever lives in the offhand while a player is
- * gliding) - are contributed as {@code @Bean}s by {@link ElytraLobbyItems} instead of being
- * registered here directly. This module hands the {@link LobbyItems}-stamped firework stack into
- * the offhand itself on {@link PlayerStartFlyingWithElytraEvent} and takes it back on
- * {@link PlayerStopFlyingWithElytraEvent}, exactly as the {@code lobby-hotbar} spec requires for
- * "Items mit wechselndem Platz" - {@link LobbyItems#stack(net.kyori.adventure.key.Key)} is the only
- * way to get a stack that still carries the identity tag {@link ElytraLobbyItems}'s own use handler
- * needs to be dispatched to at all.
- *
- * <p>Per-player boost state lives in the shared {@link FireworkBoostTracker} bean - shared with
- * {@link ElytraLobbyItems#firework(FireworkBoostTracker)}'s use handler, which is the only thing
- * that ever calls {@link FireworkBoostTracker#requestBoost} - cleared on stop-flying and on
- * {@link PlayerDisconnectEvent} so it never leaks a player who can no longer be boosted, and
- * advanced once per tick through the injected {@link Scheduler}, scheduled in {@link #start()} and
- * cancelled in {@link #stop()}, after this feature's own {@link FeatureNode} has already been
- * detached.
+ * The {@code elytra} feature: flight and firework boost. {@link ElytraLobbyItems} contributes its
+ * two {@link net.onelitefeather.titan.app.module.item.LobbyItem}s; this module hands the stamped
+ * firework stack into a player's offhand on {@link PlayerStartFlyingWithElytraEvent} and takes it
+ * back on {@link PlayerStopFlyingWithElytraEvent}. Per-player boost state lives in the shared
+ * {@link FireworkBoostTracker}, advanced once per tick and cleared on stop-flying or disconnect.
  */
 @Singleton
 public final class ElytraModule {
 
-    /**
-     * This feature's position among its sibling {@link FeatureNode}s; unchanged from the old
-     * {@code @Priority(700)}.
-     */
+    /** This feature's position among its sibling {@link FeatureNode}s. */
     static final int EVENT_PRIORITY = 700;
 
     private static final String ID = "elytra";
@@ -75,14 +54,6 @@ public final class ElytraModule {
     private FeatureNode node;
     private Task task;
 
-    /**
-     * @param titan      the shared event node this feature's own node attaches under
-     * @param lobbyItems the platform-wide item registry the stamped {@code titan:firework} stack
-     *                   is read from
-     * @param boosts     the shared boost tracker also used by {@link ElytraLobbyItems}'s firework
-     *                   use handler
-     * @param scheduler  the scheduler {@link FireworkBoostTracker#advance()} is scheduled on
-     */
     public ElytraModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbyItems lobbyItems, FireworkBoostTracker boosts, Scheduler scheduler) {
         this.titan = titan;
         this.lobbyItems = lobbyItems;
@@ -90,12 +61,6 @@ public final class ElytraModule {
         this.scheduler = scheduler;
     }
 
-    /**
-     * Validates the startup configuration (unchanged behaviour; neither result is kept - the
-     * firework's use handler reads the live values again on every boost, see {@link
-     * ElytraLobbyItems}), attaches this feature's own event node and schedules
-     * {@link FireworkBoostTracker#advance()} once per tick.
-     */
     @PostConstruct
     void start() {
         int burnDurationTicksAtStartup = Config.getAs(ElytraSettings.BURN_DURATION_TICKS_KEY, ElytraSettings::burnDurationTicks);
@@ -109,12 +74,10 @@ public final class ElytraModule {
         this.task = this.scheduler.scheduleTask(this.boosts::advance, TaskSchedule.tick(1), TaskSchedule.tick(1));
     }
 
-    /**
-     * Detaches this feature's own event node first, so no more flight event can schedule or read
-     * boost state, then cancels the per-tick task.
-     */
     @PreDestroy
     void stop() {
+        // Detach the node before cancelling the task, so no flight event can touch tracker state
+        // after the task is gone.
         this.node.close();
         this.task.cancel();
     }

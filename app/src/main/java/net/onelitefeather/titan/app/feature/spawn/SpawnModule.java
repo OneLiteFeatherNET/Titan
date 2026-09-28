@@ -32,33 +32,15 @@ import net.onelitefeather.titan.app.module.LobbySpawn;
 import net.onelitefeather.titan.app.module.item.LobbyItems;
 
 /**
- * Puts a joining player into the lobby and keeps them inside its height bounds.
+ * Puts a joining player into the lobby and keeps them inside its height bounds: sets the spawning
+ * instance and respawn point while a player configures, teleports and equips them with the
+ * standard loadout on spawn, and teleports them back to spawn if they fall below or rise above
+ * the configured height.
  *
- * <p>Three things:
- * <ul>
- * <li>sets the spawning instance and respawn point while a player configures,
- * <li>on spawn, sends the configured simulation distance, teleports the player to the lobby
- * spawn and equips the platform-wide standard loadout,
- * <li>teleports a player back to spawn once they fall below or rise above the configured height.
- * </ul>
- *
- * <p>Depends on the lobby {@link Instance} and the current spawn position only - not the whole
- * {@code MapProvider}. A {@link LobbySpawn} is
- * enough because the spawn position can change after this module is built (e.g. a map reload)
- * while the instance itself does not, and because {@code MapProvider} also carries unrelated
- * concerns (loading, saving and listing maps) this module has no business depending on. Keeping the
- * constructor to exactly what this module reads follows the Dependency Inversion / Interface
- * Segregation principles this change's platform layer is built around (see
- * {@code openspec/changes/avaje-dependency-injection/design.md}, decision 4), and it lets a test
- * hand in a plain {@code () -> pos} instead of building a real map provider. {@link LobbySpawn}
- * rather than a bare {@code Supplier<Pos>} is what makes this bean unambiguous for the dependency
- * injection container to wire - see that decision for why.
- *
- * <p>An {@code @Singleton} bean (see
- * {@code openspec/changes/dissolve-module-platform/design.md}, decision 1): {@link #start()}
- * attaches this feature's own {@link FeatureNode} once the container builds this bean, and
- * {@link #stop()} detaches it again when the container is closed - there is no separate
- * enable/disable step outside the bean lifecycle any more.
+ * <p>Depends on the lobby {@link Instance} and a {@link LobbySpawn} rather than the whole
+ * {@code MapProvider}: the spawn position can change after this module is built (e.g. a map
+ * reload) while the instance does not, and {@code MapProvider} also carries unrelated concerns
+ * this module has no business depending on.
  */
 @Singleton
 public final class SpawnModule {
@@ -73,14 +55,6 @@ public final class SpawnModule {
     private final LobbyItems lobbyItems;
     private FeatureNode node;
 
-    /**
-     * @param instance      the instance a configuring player spawns into
-     * @param spawnPosition supplies the current lobby spawn position; may return {@code null} if
-     *                      the lobby map has none, in which case no respawn point or teleport is
-     *                      applied
-     * @param titan         the shared event node this feature's own node attaches under
-     * @param lobbyItems    equips the joining player with the platform's standard loadout
-     */
     public SpawnModule(Instance instance, LobbySpawn spawnPosition, @Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbyItems lobbyItems) {
         this.instance = Objects.requireNonNull(instance, "instance");
         this.spawnPosition = Objects.requireNonNull(spawnPosition, "spawnPosition");
@@ -90,9 +64,8 @@ public final class SpawnModule {
 
     @PostConstruct
     void start() {
-        // Abort startup on an invalid value (unchanged behaviour); neither result is kept - the
-        // listeners below read the live values again on every join/move (see design.md,
-        // decision 1).
+        // Abort startup on an invalid value; neither result is kept - the listeners below read
+        // the live values again on every join/move.
         int maxHeightAtStartup = Config.getAs(SpawnSettings.MAX_HEIGHT_KEY, Integer::parseInt);
         SpawnSettings.minHeight(Config.getAs(SpawnSettings.MIN_HEIGHT_KEY, Integer::parseInt), maxHeightAtStartup);
         Config.getAs(SpawnSettings.SIMULATION_DISTANCE_KEY, SpawnSettings::simulationDistance);

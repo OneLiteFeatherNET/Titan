@@ -20,15 +20,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Pure conflict detection for {@link LobbyItem} beans, used by {@link LobbyItems} on construction
- * (see {@code openspec/changes/dissolve-module-platform/design.md}, decision 2).
+ * Pure conflict detection for {@link LobbyItem} beans, used by {@link LobbyItems} on
+ * construction: kept free of {@link LobbyItems} and anything needing a running server.
  *
- * <p>Kept free of {@link LobbyItems} and everything else that needs a running server, so the rule
- * itself - "first item wins, a later item claiming the same key or the
- * same fixed placement is a conflict, {@link ItemSlot.Unplaced} never conflicts" - is testable as
- * plain data in, exception out. Two conflict kinds share one pass over {@code items} because both
- * are checked in registration order and a `LobbyItems` build only needs to abort on the first one
- * found (YAGNI - a second detector class would just duplicate this loop).
+ * <p>The first item to claim a key or a fixed placement wins; a later one claiming the same is a
+ * conflict, and {@link ItemSlot.Unplaced} never conflicts.
  */
 final class ItemConflicts {
 
@@ -36,13 +32,6 @@ final class ItemConflicts {
         throw new UnsupportedOperationException("This class cannot be instantiated");
     }
 
-    /**
-     * @param items every item a {@link LobbyItems} bean is about to be built from, in the order
-     *              Avaje Inject's list injection handed them
-     * @throws IllegalStateException if two items claim the same {@link LobbyItem#key()} or the
-     *                               same fixed {@link ItemSlot}; the message names the contested
-     *                               key or slot and both items
-     */
     static void check(List<LobbyItem> items) {
         Map<String, LobbyItem> claimedKeys = new LinkedHashMap<>();
         Map<ItemSlot, LobbyItem> claimedSlots = new LinkedHashMap<>();

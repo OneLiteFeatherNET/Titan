@@ -21,10 +21,11 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Unit coverage for {@link ElytraSettings}'s validation of {@code burnDurationTicks} and
- * {@code cooldownTicks} - no {@code Config} and no server involved. Both checks run only once, at
- * startup, in {@link ElytraModule#enable}: the {@code titan:firework} item's use handler reads
- * both keys again on every boost, live and unvalidated, via {@code Config.getInt(...)} (see
- * {@code refactor/drop-runtime-fallback}), so there is no runtime counterpart to test here.
+ * {@code cooldownTicks} - no {@code Config} and no server involved.
+ *
+ * <p>Both checks run only once, at startup, in {@link ElytraModule#start}; the firework's use
+ * handler reads both keys again live and unvalidated on every boost, so there is no runtime
+ * counterpart to test here.
  */
 class ElytraSettingsTest {
 

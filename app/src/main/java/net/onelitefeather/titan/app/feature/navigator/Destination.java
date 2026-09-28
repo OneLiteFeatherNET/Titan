@@ -24,15 +24,9 @@ import net.onelitefeather.titan.common.feature.FeatureFlags;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * One destination shown in the shared navigator inventory - fixed in code, per
- * {@code openspec/changes/navigator-entries-in-code/design.md}, decision 2: the navigator's
- * targets change rarely and only alongside a release, so a Java {@code enum} replaces the former
- * navigator configuration section and the platform-wide entry registry.
- *
- * <p>Slot, icon and display name match the values the lobby shipped in
- * {@code application.yaml} before this change - see the {@code lobby-navigator} spec's
- * "Standardziele" scenario. Only {@link #SLENDER} is gated behind a feature flag; the other three
- * are always visible.
+ * One destination shown in the shared navigator inventory, fixed in code as a Java {@code enum}
+ * since destinations change rarely. Only {@link #SLENDER} is gated behind a feature flag; the
+ * other three are always visible.
  */
 enum Destination {
 
@@ -52,44 +46,24 @@ enum Destination {
         this.feature = feature;
     }
 
-    /**
-     * @return the slot this destination occupies in the shared {@code CHEST_1_ROW} inventory,
-     *         {@code 0}-{@code 8}
-     */
     int slot() {
         return this.slot;
     }
 
-    /**
-     * @return the CloudNet task name a click on this destination delivers the player to
-     */
     String task() {
         return this.task;
     }
 
-    /**
-     * @return the name of the feature flag this destination is gated behind, or {@code null} if it
-     *         is always visible
-     */
     @Nullable
     String feature() {
         return this.feature;
     }
 
-    /**
-     * @return the built icon, deserialized from {@link #displayName} on every call so a caller
-     *         never has to share one {@link ItemStack} instance across players
-     */
+    // Rebuilds the icon on every call so callers never share one ItemStack instance.
     ItemStack item() {
         return ItemStack.builder(this.icon).customName(MiniMessage.miniMessage().deserialize(this.displayName)).build();
     }
 
-    /**
-     * @param featureFlags the source of truth {@link #feature} is checked against
-     * @return every destination with no feature gate, plus every one whose feature is currently
-     *         active according to {@code featureFlags}, in declaration order ({@link #slot()}
-     *         order)
-     */
     static List<Destination> visible(FeatureFlags featureFlags) {
         return Arrays.stream(values()).filter(destination -> destination.feature == null || featureFlags.isActive(destination.feature)).toList();
     }

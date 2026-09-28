@@ -24,11 +24,6 @@ import net.onelitefeather.titan.api.deliver.Deliver;
 /**
  * A test-only {@link Deliver} that records every delivery instead of sending one, so a test can
  * assert which player was sent to which destination.
- *
- * <p>Mirrors the idea of {@code net.onelitefeather.titan.app.testutils.DummyDeliver} - a no-op
- * {@link Deliver} for tests - but kept local to this package and extended to record calls, per
- * task 6.4's rule that wave C only adds files under {@code app/feature/navigator} and its test
- * package, never touching existing {@code testutils} classes.
  */
 final class RecordingDeliver implements Deliver {
 
@@ -44,9 +39,6 @@ final class RecordingDeliver implements Deliver {
         this.deliveries.add(new Delivery(player, taskName));
     }
 
-    /**
-     * @return every delivery recorded so far, oldest first
-     */
     List<Delivery> deliveries() {
         return List.copyOf(this.deliveries);
     }
