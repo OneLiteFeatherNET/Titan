@@ -25,12 +25,6 @@ dependencies {
     testRuntimeOnly(libs.junit.engine)
 }
 
-// Same reason as runtime/build.gradle.kts: LuckPerms' minestom-loader is a JarInJar bootstrap
-// bundling an outdated, unrelocated Gson that shadows the real one on the test runtime classpath.
-configurations.testRuntimeClasspath {
-    exclude(group = "net.luckperms", module = "minestom-loader")
-}
-
 publishing.publications.named<MavenPublication>("maven") {
     artifactId = "titan-cloudnet"
     artifact(tasks.shadowJar)
