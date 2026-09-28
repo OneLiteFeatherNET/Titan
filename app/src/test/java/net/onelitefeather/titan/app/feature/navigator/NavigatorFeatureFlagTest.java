@@ -32,10 +32,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * End-to-end coverage for the {@code lobby-navigator} spec requirement "Slender liegt hinter der
- * Feature-Flag NAVIGATOR_SLENDER": Slender hidden while {@code NAVIGATOR_SLENDER} is off, shown and
- * forwarding while it is on, and becoming visible on the very next open once the flag flips at
- * runtime, with no restart.
+ * End-to-end coverage for gating a destination behind a feature flag: Slender hidden while
+ * {@code NAVIGATOR_SLENDER} is off, shown and forwarding while it is on, and becoming visible on
+ * the very next open once the flag flips at runtime, with no restart.
  */
 @ExtendWith(MicrotusExtension.class)
 class NavigatorFeatureFlagTest {

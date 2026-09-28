@@ -41,20 +41,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * End-to-end coverage for {@link ElytraModule} through direct construction (see
- * {@link ElytraFixture}): the {@code lobby-hotbar} spec scenarios "Standardausstattung" (the elytra
- * half), "Feuerwerk beim Fliegen", "Feuerwerk nach dem Landen" and "Boost beim Fliegen" - ported
- * from Voyager (see {@link FireworkBoostTracker} and {@link FireworkRockets}): using the firework
- * while flying spawns a real rocket entity the client boosts itself with, instead of the lobby
- * pushing a velocity. Drives ticks with {@link Env#tick()}; no sleeps.
+ * End-to-end coverage for {@link ElytraModule}: the standard loadout, the firework hand-out while
+ * flying and after landing, and the boost while flying.
+ *
+ * <p>Using the firework while flying spawns a real rocket entity the client boosts itself with,
+ * instead of the lobby pushing a velocity - ported from Voyager.
  */
 @ExtendWith(MicrotusExtension.class)
 class ElytraModuleTest {
 
     /**
-     * The shipped defaults for {@code elytra.burnDurationTicks} / {@code elytra.cooldownTicks},
-     * read from the facade rather than hardcoded, so a changed shipped default cannot silently
-     * desync this test from production - read-only, never mutated (F.I.R.S.T. - Independent).
+     * Read from the facade rather than hardcoded, so a changed shipped default cannot silently
+     * desync this test.
      */
     private static final int DEFAULT_BURN_DURATION_TICKS = Config.getAs(ElytraSettings.BURN_DURATION_TICKS_KEY, Integer::parseInt);
     private static final int DEFAULT_COOLDOWN_TICKS = Config.getAs(ElytraSettings.COOLDOWN_TICKS_KEY, Integer::parseInt);
@@ -172,9 +170,8 @@ class ElytraModuleTest {
             player.setFlyingWithElytra(false);
             env.process().eventHandler().call(new PlayerStopFlyingWithElytraEvent(player));
 
-            // If the feature had not forgotten the boost on stop-flying, this second use would
-            // still be refused by the still-running cooldown - a no-op that never spawns a second
-            // rocket.
+            // If the boost were not forgotten on stop-flying, this second use would still be
+            // refused by the running cooldown - a no-op that never spawns a second rocket.
             player.setFlyingWithElytra(true);
             env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.OFF, stampedFirework, 1));
 
@@ -194,23 +191,18 @@ class ElytraModuleTest {
             env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.OFF, stampedFirework, 1));
 
             // Neither landing nor disconnecting clears the boost here - only ticking past the
-            // burn and its cooldown does. This only happens if ElytraModule actually schedules
-            // FireworkBoostTracker#advance once per tick; a module that registered the tracker but
-            // never drove it would refuse this second use forever.
+            // burn and cooldown does, proving ElytraModule drives the tracker every tick.
             int ticksToClearTheCooldown = DEFAULT_BURN_DURATION_TICKS + DEFAULT_COOLDOWN_TICKS;
             for (int i = 0; i < ticksToClearTheCooldown; i++) {
-                // Minestom's own physics tick lands the player once gravity brings them to the
-                // ground and clears the gliding flag right there (Player#tick) - reasserted every
-                // tick so this test drives the cooldown, not a landing.
+                // Reasserted every tick: Minestom's physics tick lands the player and clears
+                // gliding once gravity brings them down, which would end the test early.
                 player.setFlyingWithElytra(true);
                 env.tick();
             }
             player.setFlyingWithElytra(true);
 
-            // The first rocket's own scheduled removal (burnDurationTicks, well inside the ticks
-            // driven above) has already taken it out of the instance, so a refused second use
-            // would leave the instance with no rocket at all - only a freshly lit one proves the
-            // cooldown actually cleared.
+            // The first rocket's burn has already ended by now, so a refused second use would
+            // leave no rocket at all - only a freshly lit one proves the cooldown cleared.
             Assertions.assertTrue(rocketsIn(instance).isEmpty(), "the first rocket's own burn must have ended long before its cooldown does");
 
             env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.OFF, stampedFirework, 1));
@@ -232,9 +224,8 @@ class ElytraModuleTest {
 
             env.process().eventHandler().call(new PlayerDisconnectEvent(player));
 
-            // If the feature had not forgotten the boost on disconnect, this second use - standing
-            // in for the same player reconnecting and flying again - would still be refused by the
-            // still-running cooldown, a no-op that never spawns a second rocket.
+            // If the boost were not forgotten on disconnect, this second use (standing in for a
+            // reconnect) would still be refused by the running cooldown, a no-op.
             env.process().eventHandler().call(new PlayerUseItemEvent(player, PlayerHand.OFF, stampedFirework, 1));
 
             Assertions.assertEquals(2, rocketsIn(instance).size(), "a PlayerDisconnectEvent must clear the previous boost so a new use lights a brand-new rocket");

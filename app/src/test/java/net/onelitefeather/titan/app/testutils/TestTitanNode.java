@@ -25,12 +25,9 @@ import net.minestom.testing.Env;
  * handler - exactly the shape {@code app.bootstrap.PlatformBeans} attaches in production, minus the
  * {@code BeanScope}.
  *
- * <p>Extracted from the near-identical "attach a fresh titan test node, remove it on close"
- * boilerplate several feature tests used to repeat (see
- * {@code openspec/changes/dissolve-module-platform/tasks.md}, task 3 review fixes): a test builds
- * one feature (or several, sharing the same node, for a cross-feature test) directly against
- * {@link #node()}, then closes this fixture - ideally via try-with-resources - once done, so the
- * node never leaks into a later test (F.I.R.S.T. - Independent).
+ * <p>A test builds one feature (or several, sharing the same node, for a cross-feature test)
+ * directly against {@link #node()}, then closes this fixture - ideally via try-with-resources -
+ * once done, so the node never leaks into a later test (F.I.R.S.T. - Independent).
  */
 public final class TestTitanNode implements AutoCloseable {
 
@@ -42,11 +39,6 @@ public final class TestTitanNode implements AutoCloseable {
         this.node = node;
     }
 
-    /**
-     * @param env the Microtus/Cyano test environment whose global event handler the new node
-     *            attaches under
-     * @return a fresh node, already attached
-     */
     public static TestTitanNode attach(Env env) {
         EventNode<Event> global = env.process().eventHandler();
         EventNode<Event> node = EventNode.all("test-titan-" + UUID.randomUUID());
@@ -54,12 +46,10 @@ public final class TestTitanNode implements AutoCloseable {
         return new TestTitanNode(global, node);
     }
 
-    /** @return this fixture's own event node, ready for a feature to attach its own child onto */
     public EventNode<Event> node() {
         return this.node;
     }
 
-    /** Detaches {@link #node()} from the global event handler it was attached under. */
     @Override
     public void close() {
         this.global.removeChild(this.node);

@@ -25,17 +25,10 @@ import net.onelitefeather.titan.app.testutils.TestTitanNode;
 
 /**
  * Test-only fixture that builds {@link ElytraModule} and its two {@link LobbyItem}s exactly as
- * {@code PlatformBeans}/{@link ElytraLobbyItems} do in production, against a fresh {@code titan}
- * node attached to {@code env}'s global event handler and {@code env}'s own scheduler - so a test
- * can equip a player, fly, and drive the boost task with {@link Env#tick()} without a running
- * {@code BeanScope}.
+ * production does, against a fresh {@code titan} node, without a running {@code BeanScope}.
  *
- * <p>Close it (or use try-with-resources) once the test is done; this detaches every node the
- * fixture attached, in the same order production tears down: the module's own node and its
- * per-tick task first (via {@link ElytraModule#stop()}), then the platform-wide {@link LobbyItems}
- * dispatcher, then the fixture's own {@code titan} node. {@link #stopModule()} lets a test stop
- * just the module - to prove nothing of the feature runs anymore once it has - while leaving the
- * rest for {@link #close()} to tear down safely.
+ * <p>Closing (ideally via try-with-resources) tears down every attached node in production order;
+ * {@link #stopModule()} stops just the module, leaving the rest for {@link #close()}.
  */
 final class ElytraFixture implements AutoCloseable {
 
@@ -70,15 +63,13 @@ final class ElytraFixture implements AutoCloseable {
         this.lobbyItems.equip(player);
     }
 
-    /** @return the tracker shared by the module and the firework's use handler, for assertions */
     FireworkBoostTracker boosts() {
         return this.boosts;
     }
 
     /**
-     * Stops only {@link ElytraModule}, leaving {@link LobbyItems} and the fixture's own
-     * {@code titan} node attached - for a test that checks behaviour once just the module has torn
-     * down. Safe to call more than once, and safe to combine with {@link #close()} afterwards.
+     * Stops only the module, to prove nothing runs once it has, leaving the rest for
+     * {@link #close()}.
      */
     void stopModule() {
         if (!this.moduleStopped) {

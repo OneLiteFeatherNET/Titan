@@ -16,28 +16,17 @@
 package net.onelitefeather.titan.setup.config;
 
 /**
- * Pure parsing and validation for {@code spawn.simulationDistance}, kept apart from however the
- * value was read (today {@link SetupSpawnConfig#read()}).
- *
- * <p>Mirrors the lobby's own rule for the same key (see
- * {@code net.onelitefeather.titan.app.feature.spawn.SpawnSettings#simulationDistance(String)}).
- * Used directly as the mapping function of
- * {@code Config.getAs(KEY, SetupSpawnSettings::simulationDistance)} - {@code getAs} wraps any
- * exception it throws into an {@code IllegalStateException} naming the key once, keeping this
- * method's own exception as the cause. It touches neither {@code io.avaje.config.Config} nor a
- * server, so it is unit-testable on its own (design.md, decisions 3, 4 and 5).
+ * Pure parsing and validation for {@code spawn.simulationDistance}, kept apart from
+ * {@link SetupSpawnConfig#read()}, which reads the raw value. Used as the mapping function of
+ * {@code Config.getAs(KEY, SetupSpawnSettings::simulationDistance)}, which wraps any exception this
+ * throws into an {@code IllegalStateException} naming the key. Touches neither
+ * {@code io.avaje.config.Config} nor a server, so it is unit-testable on its own.
  */
 final class SetupSpawnSettings {
 
     private SetupSpawnSettings() {
     }
 
-    /**
-     * @param raw the configured simulation distance, as text; must parse as a strictly positive int
-     * @return {@code raw}, parsed
-     * @throws NumberFormatException    if {@code raw} does not parse as an {@code int}
-     * @throws IllegalArgumentException if the parsed value is not positive
-     */
     static int simulationDistance(String raw) {
         int simulationDistance = Integer.parseInt(raw);
         if (simulationDistance <= 0) {

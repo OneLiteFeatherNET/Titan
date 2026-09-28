@@ -19,15 +19,10 @@ import java.util.UUID;
 import java.util.function.BiPredicate;
 
 /**
- * Cross-classloader bridge for CloudNet permission checks.
- *
- * <p>The CloudNet bridge runs inside a Minestom extension classloader and cannot reach
- * LuckPerms, which lives in the application realm (loaded by its own JarInJar classloader).
- * The two realms only share the application/system classloader that loaded the fat jar, so
- * this holder lives there and exchanges nothing but JDK types: the extension asks the
- * application to resolve a permission for a player UUID without ever referencing a LuckPerms
- * class, and the application installs a resolver backed by LuckPerms without referencing any
- * CloudNet bridge class.
+ * Cross-classloader bridge for CloudNet permission checks. The CloudNet bridge extension cannot
+ * reach LuckPerms, which lives in the application's own classloader, so this holder lives on the
+ * shared application/system classloader and exchanges only JDK types; until the application
+ * installs a resolver, {@link #hasPermission} returns {@code false}.
  */
 public final class TitanPermissionBridge {
 
@@ -36,23 +31,10 @@ public final class TitanPermissionBridge {
     private TitanPermissionBridge() {
     }
 
-    /**
-     * Installs the permission resolver. Called by the application once LuckPerms is up.
-     *
-     * @param permissionResolver resolves {@code (playerId, permission) -> hasPermission}
-     */
     public static void setResolver(BiPredicate<UUID, String> permissionResolver) {
         resolver = permissionResolver;
     }
 
-    /**
-     * Resolves whether the given player holds the permission. Returns {@code false} when no
-     * resolver has been installed yet (for example during early startup).
-     *
-     * @param playerId   the player's unique id
-     * @param permission the permission node to check
-     * @return whether the player holds the permission
-     */
     public static boolean hasPermission(UUID playerId, String permission) {
         BiPredicate<UUID, String> current = resolver;
         return current != null && current.test(playerId, permission);

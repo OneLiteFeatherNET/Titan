@@ -26,14 +26,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * {@link Deliver} used when CloudNet is not available (standalone runs: local, tests, AOT
- * training). There is no CloudNet runtime to hand the request to - see
- * {@link TitanServerConnector} - so a click can never actually move the player to another
- * service. To keep a local-only run testable by hand, this reports the delivery it would have
- * made instead of silently doing nothing: it tells the clicking player, in chat, which task or
- * server they would have been sent to, and logs the same information for the operator.
- *
- * <p>Logs exactly one {@code INFO} line per call. That is acceptable here because this only runs
- * once per explicit player click in a local-only run, never once per tick.
+ * training): instead of silently doing nothing, it tells the clicking player in chat which task or
+ * server they would have been sent to, and logs the same {@code INFO} line for the operator. Runs
+ * once per explicit player click, never once per tick, so the one log line per call is cheap.
  */
 public final class DebugDeliver implements Deliver {
 

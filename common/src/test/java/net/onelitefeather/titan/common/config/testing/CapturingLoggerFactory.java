@@ -49,8 +49,8 @@ public final class CapturingLoggerFactory implements ILoggerFactory {
     }
 
     /**
-     * Clears recorded log lines. Tests should call this before triggering the code under test so
-     * earlier tests' log lines do not leak into their assertions.
+     * Call before the code under test runs, so earlier tests' log lines do not leak into
+     * assertions.
      */
     public static void clear() {
         MESSAGES.clear();

@@ -36,10 +36,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.LoggerFactory;
 
 /**
- * Unit-level coverage for {@link FeatureNode}, built against a fresh {@link EventNode} with no
- * running server - see {@code openspec/changes/dissolve-module-platform/tasks.md}, task 1.1.
- *
- * <p>Every test builds its own parent node and closes the {@link FeatureNode} in a
+ * Every test builds its own parent {@link EventNode} and closes the {@link FeatureNode} in a
  * {@code finally}/try-with-resources block, so no state leaks between tests (F.I.R.S.T. -
  * Independent).
  */

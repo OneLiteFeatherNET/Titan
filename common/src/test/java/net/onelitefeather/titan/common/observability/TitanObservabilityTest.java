@@ -122,9 +122,8 @@ class TitanObservabilityTest {
     @DisplayName("guard(moduleId, listener) still delegates to the wrapped listener on the healthy path")
     @Test
     void guardWithModuleIdDelegatesOnTheHealthyPath() {
-        // This module does not depend on an SLF4J binding, so the MDC calls guard(String, Consumer)
-        // makes are no-ops here; ModuleRegistryTest in :app exercises them against a real binding
-        // (logback-classic) and asserts the module id is actually visible in the MDC.
+        // common has no SLF4J binding, so the MDC calls guard(String, Consumer) makes are no-ops
+        // here; app-level tests exercise them against a real binding (logback-classic).
         AtomicInteger calls = new AtomicInteger();
         Consumer<PlainEvent> guarded = TitanObservability.guard("sit", event -> calls.incrementAndGet());
 

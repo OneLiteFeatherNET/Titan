@@ -28,8 +28,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Plain-Java coverage for {@link ItemConflicts#check(List)}: no {@link LobbyItems}, no server -
- * only {@link LobbyItem}s in, an exception (or nothing) out. See
- * {@code openspec/changes/dissolve-module-platform/tasks.md}, task 1.2.
+ * only {@link LobbyItem}s in, an exception (or nothing) out.
  */
 @ExtendWith(MicrotusExtension.class)
 class LobbyItemsConflictTest {

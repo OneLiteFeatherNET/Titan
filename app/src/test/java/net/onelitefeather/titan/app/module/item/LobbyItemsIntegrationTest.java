@@ -42,8 +42,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Cyano/Microtus {@code Env} coverage for {@link LobbyItems}: equipping a real {@link Player},
  * dispatching a used item to its handler, a look-alike item never registered doing nothing, a
- * conflicting item list aborting construction, error attribution, and an unknown key. See
- * {@code openspec/changes/dissolve-module-platform/tasks.md}, task 1.3.
+ * conflicting item list aborting construction, error attribution, and an unknown key.
  */
 @ExtendWith(MicrotusExtension.class)
 class LobbyItemsIntegrationTest {

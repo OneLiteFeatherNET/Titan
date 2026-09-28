@@ -41,19 +41,17 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * {@code Env} (Cyano/Microtus) coverage for {@link SpawnModule}, built directly with fakes - see
- * {@code openspec/changes/dissolve-module-platform/tasks.md}, task 3.1. Covers the
- * {@code lobby-modules}/{@code lobby-hotbar} scenarios task 6.2 carries: spawning instance and
- * respawn point on configuration, teleport plus simulation distance plus equipment on spawn, and
- * the height-bounds teleport - plus that {@link SpawnModule#stop()} leaves no listener behind.
+ * {@code Env} (Cyano/Microtus) coverage for {@link SpawnModule}, built directly with fakes:
+ * spawning instance and respawn point on configuration, teleport plus simulation distance plus
+ * equipment on spawn, and the height-bounds teleport - plus that {@link SpawnModule#stop()} leaves
+ * no listener behind.
  */
 @ExtendWith(MicrotusExtension.class)
 class SpawnModuleTest {
 
     /**
-     * The shipped {@code spawn} defaults, read from the facade rather than hardcoded, so a changed
-     * shipped default (see {@code application.yaml}) cannot silently desync this test from
-     * production - read-only, never mutated (F.I.R.S.T. - Independent).
+     * Read from the facade rather than hardcoded, so a changed shipped default cannot silently
+     * desync this test.
      */
     private static final int MIN_HEIGHT = Config.getAs(SpawnSettings.MIN_HEIGHT_KEY, Integer::parseInt);
     private static final int MAX_HEIGHT = Config.getAs(SpawnSettings.MAX_HEIGHT_KEY, Integer::parseInt);

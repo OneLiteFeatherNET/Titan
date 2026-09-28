@@ -22,27 +22,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Locks in that the classpath {@code app/src/main/resources/application.yaml} - the single source
- * of every module's shipped defaults, read directly through {@code io.avaje.config.Config} (see
- * {@code openspec/changes/avaje-config-facade/design.md}, decision 2) - carries exactly the
- * expected defaults of the {@code sit}, {@code spawn}, {@code tickle} and {@code elytra} sections,
- * key by key. Each module's own per-field configuration type is gone (see design.md, decision 7),
- * so the expected values are spelled out literally here instead of compared against one.
- *
- * <p>The navigator's destinations are no longer part of this file at all - see
- * {@code openspec/changes/navigator-entries-in-code/design.md}, decision 2 - so they are guarded by
- * {@code net.onelitefeather.titan.app.feature.navigator.NavigatorDestinationTest} instead, as a
- * plain unit test of the {@code Destination} enum.
+ * Locks in that the classpath {@code application.yaml} carries exactly the expected defaults of
+ * the {@code sit}, {@code spawn}, {@code tickle} and {@code elytra} sections, key by key.
  *
  * <p>Loads the file as its own {@link Configuration} instance via
- * {@link Configuration.Builder#load(String)} - which reads a classpath resource, never the static
- * {@code io.avaje.config.Config} facade (see design.md, decision 5: unit tests never touch that
- * facade) - so this test has no dependency on JVM-wide state and stays Independent and Repeatable
- * (F.I.R.S.T.).
- *
- * <p>This is the safety net that a shipped default cannot silently drift out from under whichever
- * module reads it - the only other place any of these values could be found is the
- * {@code lobby-module-config} spec's own examples, which this test does not read.
+ * {@link Configuration.Builder#load(String)}, never the static {@code io.avaje.config.Config}
+ * facade, so this test stays Independent and Repeatable regardless of JVM-wide state. The
+ * navigator's destinations are guarded separately, by {@code NavigatorDestinationTest}.
  */
 class ApplicationYamlDefaultsCharacterizationTest {
 
@@ -86,7 +72,7 @@ class ApplicationYamlDefaultsCharacterizationTest {
         Configuration configuration = load();
 
         Assertions.assertFalse(
-                configuration.getBool("config.watch.enabled"), "config.watch.enabled must ship off - the operator turns it on in their own file (see openspec/changes/config-reload-feature-flags/design.md, decision 1, and the lobby-module-config spec's \"Überwachung standardmäßig aus\" scenario)");
+                configuration.getBool("config.watch.enabled"), "config.watch.enabled must ship off - the operator turns it on in their own file");
         Assertions.assertEquals(10, configuration.getInt("config.watch.delay"), "config.watch.delay");
         Assertions.assertEquals(10, configuration.getInt("config.watch.period"), "config.watch.period");
     }

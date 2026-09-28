@@ -36,11 +36,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * End-to-end coverage of {@link SitModule}, built directly with a fresh {@code titan} node - see
- * {@code openspec/changes/dissolve-module-platform/tasks.md}, task 2.5 - exercising the full
- * wiring (config, four listeners, {@link Seats}) the way the lobby actually runs it. Covers the
- * {@code lobby-modules} spec scenario "Sitzen und Aufstehen": click an allowed block, then stand
- * up by sneaking.
+ * End-to-end coverage of {@link SitModule}, built directly with a fresh {@code titan} node,
+ * exercising the full wiring (config, four listeners, {@link Seats}) the way the lobby actually
+ * runs it: click an allowed block, then stand up by sneaking.
  */
 @ExtendWith(MicrotusExtension.class)
 class SitModuleIntegrationTest {
