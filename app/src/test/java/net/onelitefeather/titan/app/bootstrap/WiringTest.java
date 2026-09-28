@@ -24,7 +24,7 @@ import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.app.feature.elytra.ElytraModule;
 import net.onelitefeather.titan.app.feature.navigator.NavigatorModule;
 import net.onelitefeather.titan.feature.protection.ProtectionModule;
-import net.onelitefeather.titan.app.feature.respawn.RespawnModule;
+import net.onelitefeather.titan.feature.respawn.RespawnModule;
 import net.onelitefeather.titan.app.feature.sit.SitModule;
 import net.onelitefeather.titan.feature.spawn.SpawnModule;
 import net.onelitefeather.titan.app.feature.tickle.TickleModule;
