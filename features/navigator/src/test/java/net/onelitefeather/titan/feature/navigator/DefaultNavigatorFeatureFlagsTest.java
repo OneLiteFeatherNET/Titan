@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.app.feature.navigator;
+package net.onelitefeather.titan.feature.navigator;
 
 import io.avaje.config.Configuration;
 import java.util.Set;
@@ -22,28 +22,29 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Guards the shipped classpath {@code application.yaml} against a {@link Destination} that gates
- * itself behind a feature flag the {@code features} section does not list.
+ * Guards this column's shipped {@code titan/defaults/navigator.yaml} against a {@link Destination}
+ * that gates itself behind a feature flag the {@code features} section does not list.
  *
  * <p>{@link Destination#feature()} is fixed in code, so this is a plain unit test rather than a
- * start-up registry validation. Loads {@code application.yaml} as its own, independent
- * {@link Configuration} instance, rather than through the static facade, so this test stays
- * Independent and Repeatable regardless of load order.
+ * start-up registry validation. Loads {@code titan/defaults/navigator.yaml} as its own,
+ * independent {@link Configuration} instance, rather than through the static facade, so this test
+ * stays Independent and Repeatable regardless of load order.
  */
 class DefaultNavigatorFeatureFlagsTest {
 
     private static final String FEATURES_SECTION = "features";
+    private static final String DEFAULTS_RESOURCE = "titan/defaults/navigator.yaml";
 
     @DisplayName("Every destination's feature flag is listed in the shipped features section")
     @Test
     void everyDestinationFeatureIsKnown() {
-        Configuration classpathOnly = Configuration.builder().resourceLoader(getClass().getClassLoader()::getResourceAsStream).load("application.yaml").build();
+        Configuration classpathOnly = Configuration.builder().resourceLoader(getClass().getClassLoader()::getResourceAsStream).load(DEFAULTS_RESOURCE).build();
         Set<String> knownFlags = classpathOnly.forPath(FEATURES_SECTION).keys();
 
         for (Destination destination : Destination.values()) {
             String feature = destination.feature();
             if (feature != null) {
-                Assertions.assertTrue(knownFlags.contains(feature), () -> "destination '" + destination + "' uses feature '" + feature + "', which is missing from the 'features' section of application.yaml");
+                Assertions.assertTrue(knownFlags.contains(feature), () -> "destination '" + destination + "' uses feature '" + feature + "', which is missing from the 'features' section of " + DEFAULTS_RESOURCE);
             }
         }
     }

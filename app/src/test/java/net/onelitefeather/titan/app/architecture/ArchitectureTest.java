@@ -45,8 +45,6 @@ class ArchitectureTest {
     private static final String FEATURE_PACKAGE = "net.onelitefeather.titan.app.feature..";
     private static final String MODULE_PACKAGE = "net.onelitefeather.titan.app.module..";
     private static final String COMMON_PACKAGE = "net.onelitefeather.titan.common..";
-    private static final String NAVIGATOR_PACKAGE = "net.onelitefeather.titan.app.feature.navigator..";
-    private static final String AVAJE_CONFIG_PACKAGE = "io.avaje.config..";
     private static final String BOOTSTRAP_PACKAGE = "net.onelitefeather.titan.app.bootstrap..";
 
     /**
@@ -65,13 +63,6 @@ class ArchitectureTest {
     /** Rule 3: a feature's only declared surface is its {@code *Module} entry point. */
     @ArchTest
     static final ArchRule onlyModuleTypesArePublicInFeatures = classes().that().resideInAPackage(FEATURE_PACKAGE).and().haveModifier(JavaModifier.PUBLIC).should(ArchConditions.be(PUBLIC_FEATURE_API)).because("only a feature's *Module entry point may be public");
-
-    /**
-     * Rule 8: the navigator's destinations are fixed in code, not read from the
-     * {@code io.avaje.config} facade.
-     */
-    @ArchTest
-    static final ArchRule navigatorDoesNotDependOnAvajeConfig = noClasses().that().resideInAPackage(NAVIGATOR_PACKAGE).should().dependOnClassesThat().resideInAPackage(AVAJE_CONFIG_PACKAGE).because("the navigator's destinations are fixed in code, not read from configuration");
 
     /**
      * Rule 9: the platform ({@code app.module}) must not depend on the composition root

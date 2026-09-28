@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.app.feature.navigator;
+package net.onelitefeather.titan.feature.navigator;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Plain unit coverage for {@link Destination}: no {@code Env}, no Aves, no configuration - just the
- * enum's fixed slots and the pure {@link Destination#visible(net.onelitefeather.titan.common.
+ * enum's fixed slots and the pure {@link Destination#visible(net.onelitefeather.titan.core.
  * feature.FeatureFlags)} function.
  *
  * <p>Pairwise-distinct slots are checked here rather than at start-up: a duplicate slot is a
