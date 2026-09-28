@@ -2,8 +2,12 @@ import com.diffplug.gradle.spotless.SpotlessExtension
 
 plugins {
     id("com.diffplug.spotless") version "8.10.3" apply false
-    // Declared once here so :app and :setup can apply it without repeating the version.
-    id("com.gradleup.shadow") version "9.6.1" apply false
+    // No "id(\"com.gradleup.shadow\") ... apply false" here: buildSrc's own
+    // "implementation(\"com.gradleup.shadow:shadow-gradle-plugin:...\")" (needed so the
+    // titan.app-variant convention plugin can apply Shadow) already puts the plugin on every
+    // subproject's classpath; a second, versioned request for the same plugin here conflicts with
+    // that ("already on the classpath with an unknown version"). :setup applies it the same,
+    // version-less way titan.app-variant does.
 }
 
 // gradle.properties carries the release-please annotation inline
@@ -29,19 +33,5 @@ subprojects {
                 eclipse().configFile("${rootDir}/Default.xml")
             }
         }
-    }
-}
-
-// :app depends on every features/* column found by the settings.gradle.kts scan, so a new column
-// (or a column moving out of :app in a later wave) needs no change to app/build.gradle.kts.
-// Wired here, after every project is configured, so :app's "implementation" configuration already
-// exists.
-@Suppress("UNCHECKED_CAST")
-val titanFeatureProjectPaths = gradle.extensions.extraProperties["titanFeatureProjectPaths"] as List<String>
-
-gradle.projectsEvaluated {
-    val app = project(":app")
-    titanFeatureProjectPaths.forEach { featurePath ->
-        app.dependencies.add("implementation", app.dependencies.project(featurePath))
     }
 }
