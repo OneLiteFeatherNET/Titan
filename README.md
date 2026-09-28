@@ -13,10 +13,29 @@ Titan is a complete Minestom-based Minecraft lobby server that provides various 
 
 - Java 24 or higher
 
+## App variants
+
+Titan is built as two app variants, one Gradle module each under `apps/`:
+
+- **`apps/cloudnet`** builds `titan-cloudnet.jar` - the production variant, deployed behind
+  CloudNet, shipped with a JDK 25 AOT cache (`titan-cloudnet.aot`) for faster startup.
+- **`apps/local`** builds `titan-local.jar` - the development variant, started standalone without
+  CloudNet, no AOT cache.
+
+Both variants bundle the same lobby feature columns (`features/*`) and behave the same for
+players and operators; only the deployment target differs. Building from source
+(`./gradlew build`) produces both jars under `apps/<variant>/build/libs/`.
+
+**Migration note:** older releases built a single jar from the previous `:app` module. A
+deployment must switch to `apps/cloudnet`'s `titan-cloudnet.jar` and retrain its AOT cache against
+it (see "Running the Server" below) - the old single-jar build is no longer produced or
+published.
+
 ## Installation
 
-1. Download the latest release from the releases page
-2. Run the server using: `java -jar titan-x.x.x.jar`
+1. Download the latest release from the releases page (`titan-cloudnet.jar` for a CloudNet
+   deployment, `titan-local.jar` for standalone/development use)
+2. Run the server using: `java -jar titan-cloudnet.jar` (or `titan-local.jar`)
 3. The server runs with every module's shipped defaults if no configuration file is present; copy
    `application.example.yaml` from the distribution (next to the jar) to `application.yaml` and
    edit it to customize (see Configuration below)
@@ -25,7 +44,13 @@ Titan is a complete Minestom-based Minecraft lobby server that provides various 
 
 Once installed, you can:
 
-- Start the server with additional memory: `java -Xmx2G -jar titan-x.x.x.jar`
+- Start the server with additional memory: `java -Xmx2G -jar titan-cloudnet.jar`
+- Start the production variant with its AOT cache for faster startup:
+  `java -XX:AOTCache=titan-cloudnet.aot -jar titan-cloudnet.jar` (both files ship together in the
+  same release; `apps/local` ships no AOT cache). After upgrading to a new build, retrain the
+  cache against the new jar rather than reusing an older `.aot` file - the build's own
+  `generateAotCache` Gradle task does this by running the jar against `worlds/` for a short
+  training window (see `buildSrc/src/main/kotlin/titan.app-variant.gradle.kts`).
 - Use the console to manage the server while it's running
 - Stop the server safely by typing `stop` in the console
 
@@ -300,42 +325,54 @@ Code coverage reports are generated using JaCoCo and can be found in `build/repo
 
 ### Adding a Lobby Feature
 
-A lobby feature is a self-contained package under
-`app/src/main/java/net/onelitefeather/titan/app/feature/<name>/`, discovered automatically by
-Avaje Inject - there is no central feature list to edit:
+A lobby feature is a **column**: its own Gradle module under `features/<name>/`, depending only on
+`core`, discovered automatically by Avaje Inject once the app variant includes it - there is no
+central feature list to edit:
 
-- New package, copied from the template feature at
-  `app/src/test/java/net/onelitefeather/titan/app/feature/example/` (`ExampleModule` and friends).
+- New module `features/<name>/`, with a `build.gradle.kts` that applies the `titan.column`
+  convention plugin and a `package-info.java` declaring `@InjectModule(name = "<name>Column",
+  requires = {...})` for the platform types the column needs (e.g. the shared event node) - see
+  [`docs/lobby-modules.md`](docs/lobby-modules.md) for the exact pattern. Copy an existing column
+  (e.g. `features/tickle/`) or the template feature at
+  `apps/cloudnet/src/test/java/net/onelitefeather/titan/runtime/feature/example/` (`ExampleModule`
+  and friends) as a starting point.
 - The `<Name>Module` class is a plain `@jakarta.inject.Singleton` bean with a unique
   `static final int EVENT_PRIORITY` - it decides the order in which two features process the same
-  event, not a start order; the seven existing features use gaps of 100 (protection 100, spawn 200,
-  respawn 300, navigator 400, sit 500, tickle 600, elytra 700). A class with an `@PostConstruct`
-  method that is missing `@Singleton`, or two features sharing an `EVENT_PRIORITY`, fails the build
-  (ArchUnit), not just the running lobby. `@PostConstruct start()` attaches the feature's own
-  `FeatureNode`; `@PreDestroy stop()` detaches it again.
+  event, not a start order; the seven event-driven features use gaps of 100 (protection 100, spawn
+  200, respawn 300, navigator 400, sit 500, tickle 600, elytra 700). A class with an
+  `@PostConstruct` method that is missing `@Singleton` fails the build (a shared ArchUnit rule
+  every column applies to itself via its own `ColumnArchitectureTest`); two features sharing an
+  `EVENT_PRIORITY` fail the lobby's *start* instead (`FeatureNode.attach` throws, naming both
+  features and the position). `@PostConstruct start()` attaches the feature's own `FeatureNode`;
+  `@PreDestroy stop()` detaches it again.
 - Dependencies (a platform service such as `Deliver`, an `Instance`, a `Clock`, the `Scheduler`,
   ...) are requested through the constructor; `@jakarta.inject.Inject` is only needed on a
   constructor when the class has more than one. A brand-new shared platform service is added as
-  another `@Bean` in `app/src/main/java/net/onelitefeather/titan/app/bootstrap/PlatformBeans.java`,
-  or, if it carries feature-spanning logic of its own rather than wrapping a platform type, as its
-  own `@Singleton` class.
+  another `@Bean` in `runtime`'s platform bean factory, or, if it carries feature-spanning logic of
+  its own rather than wrapping a platform type, as its own `@Singleton` class.
 - A hotbar or equipment item is a `@Bean LobbyItem` from the feature's own, package-private
-  `@Factory` class, collected by the platform-wide `LobbyItems` bean.
-- Zero changed lines outside the new package - except a brand-new shared platform service, which
-  necessarily touches `PlatformBeans`.
+  `@Factory` class, collected by the `hotbar` column's `LobbyItems` bean.
+- Zero changed lines outside the new module - except a brand-new shared platform service, which
+  necessarily touches `runtime`.
 - A dependency nothing provides fails building the `BeanScope` (and with it, the lobby's start),
-  naming the missing type, instead of the lobby quietly running without that feature.
+  naming the missing type, instead of the lobby quietly running without that feature. Likewise, if
+  an app variant expects the new column but it failed to load, the start aborts naming the missing
+  column (see [`docs/lobby-modules.md`](docs/lobby-modules.md), "Erwartete Columns einer
+  Variante").
 - The actual start order is visible at runtime in one INFO log line:
   `Lobby features started in event order: {}`.
 - A feature that reads configuration reads it live, at the point it is used, not just once in
   `start()` - see [`docs/lobby-modules.md`](docs/lobby-modules.md) for the pattern (a direct
   `Config.<method>(key)` call at the use site, unvalidated - configuration is validated only once,
   at startup). That is what makes the runtime reload described under "Runtime reloading" above
-  apply to a feature without it ever restarting.
+  apply to a feature without it ever restarting. A column with configuration ships its own defaults
+  in `features/<name>/src/main/resources/titan/defaults/<name>.yaml`, merged into the shipped
+  `application.yaml` when an app variant is built.
 
-See [`docs/lobby-modules.md`](docs/lobby-modules.md) (German) for the full walkthrough - feature
-anatomy, `FeatureNode`, items and tasks as beans, tick-thread rules, test setup without a harness,
-the ArchUnit rules, and a copyable template feature with its tests.
+See [`docs/lobby-modules.md`](docs/lobby-modules.md) (German) for the full walkthrough - the
+module graph, feature anatomy, `FeatureNode`, items and tasks as beans, tick-thread rules, test
+setup without a harness, the shared ArchUnit rules, and a copyable template feature with its
+tests.
 
 ## License
 
