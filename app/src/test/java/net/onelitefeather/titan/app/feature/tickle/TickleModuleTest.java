@@ -56,9 +56,8 @@ class TickleModuleTest {
     private static final Instant NOW = Instant.parse("2026-01-01T00:00:00Z");
 
     /**
-     * The shipped default for {@code tickle.cooldownMillis}, read from the facade rather than
-     * hardcoded, so a changed shipped default (see {@code application.yaml}) cannot silently
-     * desync this test from production - read-only, never mutated (F.I.R.S.T. - Independent).
+     * Read from the facade rather than hardcoded, so a changed shipped default cannot silently
+     * desync this test.
      */
     private static final long DEFAULT_COOLDOWN_MILLIS = Config.getAs(TickleSettings.COOLDOWN_KEY, Long::parseLong);
 

@@ -27,13 +27,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Covers {@link Seats} directly, one level below the full {@link SitModule} wiring covered by
- * {@link SitModuleIntegrationTest}: sitting places an invisible, silent seat entity at the offset
- * position and mounts the player on it; standing up removes the tag, teleports the player back and
- * removes the now-passenger-less seat entity. {@link Seats} itself holds no offset, so every test
- * here passes {@link #OFFSET} into {@link Seats#sit(net.minestom.server.entity.Player,
- * net.minestom.server.coordinate.Point, Vec)} directly, the way {@link SitModule} passes in the
- * value it just read live from the configuration.
+ * Covers {@link Seats} directly, one level below the full {@link SitModule} wiring: sitting places
+ * an invisible, silent seat entity at the offset and mounts the player, and standing up removes it
+ * and teleports the player back.
+ *
+ * <p>{@link Seats} itself holds no offset, so every test here passes {@link #OFFSET} directly, the
+ * way {@link SitModule} passes in the value it reads live from configuration.
  */
 @ExtendWith(MicrotusExtension.class)
 class SeatsTest {

@@ -16,7 +16,6 @@
 package net.onelitefeather.titan.app.bootstrap;
 
 import io.avaje.inject.BeanScope;
-import io.avaje.inject.BeanScopeBuilder;
 import io.avaje.inject.spi.GenericType;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
@@ -42,24 +41,12 @@ import org.mockito.Mockito;
 
 /**
  * Builds the real Avaje Inject {@link BeanScope} - the same discovery {@code Titan} runs at
- * startup - and proves the wiring: every one of the seven lobby features is a bean the scope
- * builds (each starting itself through its own {@code @PostConstruct}), {@link LobbyItems}
- * collects exactly the three item beans the features contribute, closing the scope detaches every
- * feature's event node again, and a feature whose start fails aborts the whole build with an
- * exception whose stack trace names it.
+ * startup - and proves every feature bean, {@link LobbyItems}, node cleanup on close, and failure
+ * propagation work as they will in production.
  *
- * <p><strong>Hermetic seam:</strong> two of {@code app.bootstrap.PlatformBeans}' beans touch the
- * filesystem or a process-wide static in production - {@link MapProvider} reads {@code worlds/},
- * and {@link FeatureFlags} (the real {@code ConfigFeatureFlags}) reads {@code features.*} through
- * the static, process-wide {@code io.avaje.config.Config} facade. Building the scope with those
- * two built for real would make this test read and depend on repository-relative files - not
- * Repeatable. Avaje Inject ships a test-only escape hatch for precisely this:
- * {@code BeanScope.builder().forTesting().mock(Type)} registers a Mockito mock for that type
- * <em>before</em> the scope is built, and every generated factory method checks whether its bean
- * type is already supplied before constructing one - so {@code PlatformBeans#mapProvider} and
- * {@code #featureFlags} never run at all, and every other bean (all seven features, the shared
- * event node, {@code LobbyItems} and its three item beans, {@code Deliver}, {@code Clock}, and -
- * since nothing overrides it - the real {@code InstanceContainer}) is built exactly as
+ * <p>{@link MapProvider} and {@link FeatureFlags} touch the filesystem or a process-wide static in
+ * production, so both are mocked via Avaje's {@code forTesting().mock(Type)} escape hatch before
+ * the scope is built, keeping this test Repeatable. Every other bean is built exactly as
  * {@code Titan} builds it in production.
  */
 @ExtendWith(MicrotusExtension.class)
@@ -104,26 +91,11 @@ class WiringTest {
         Assertions.assertTrue(titan.getChildren().isEmpty(), "no feature node may remain on the titan node once the scope is closed");
     }
 
-    /**
-     * Avaje does not wrap a {@code @PostConstruct} failure in any exception of its own: {@code
-     * DBeanScope#start()} calls a bean's {@code start()} inline, so a real feature's exception
-     * propagates to {@link BeanScopeBuilder#build()}'s caller completely unchanged - same type,
-     * same message, same {@link Throwable#getStackTrace()} - with no cause added and no wrapper
-     * naming the bean anywhere in its message (confirmed against Avaje Inject 12.7 by instrumenting
-     * this exact failure path). The only place the failing feature's class is guaranteed to show up
-     * is that original stack trace, because Avaje invoked its {@code start()} method directly.
-     *
-     * <p>So this test makes a real feature fail for real: {@link NavigatorModule#start()} calls
-     * {@code Destination#visible(FeatureFlags)}, which calls {@link FeatureFlags#isActive(String)}
-     * on the constructor-injected {@link FeatureFlags} - the exact seam the class's own Javadoc
-     * says exists so a test can hand in a fake. Mocking that one collaborator to throw (Avaje's
-     * {@code forTesting().mock(Type, Consumer)}, the same test-only escape hatch the other tests in
-     * this class use for {@link MapProvider}) fails {@link NavigatorModule#start()} itself, without
-     * a self-chosen production test hook.
-     */
     @DisplayName("A feature whose start fails aborts the whole build, and the exception's stack trace names the failing feature")
     @Test
     void aFailingFeatureAbortsTheBuildNamingIt(Env env) {
+        // Avaje propagates a @PostConstruct failure unwrapped, so the failing feature's class only
+        // appears in the original stack trace, never a wrapper naming it.
         RuntimeException thrown = Assertions.assertThrows(RuntimeException.class, () -> BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class, flags -> Mockito.when(flags.isActive(Mockito.anyString())).thenAnswer(invocation -> {
             throw new IllegalStateException("feature flag lookup failed (WiringTest)");
         })).build(), "a feature failing its start must abort building the scope instead of silently continuing");

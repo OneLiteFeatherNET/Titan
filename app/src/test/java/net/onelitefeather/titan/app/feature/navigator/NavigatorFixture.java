@@ -26,16 +26,11 @@ import net.onelitefeather.titan.common.feature.FeatureFlags;
 
 /**
  * Test-only fixture that builds {@link NavigatorModule} and its {@code titan:navigator} feather
- * exactly as {@code PlatformBeans}/{@link NavigatorItems} do in production, against a fresh
- * {@code titan} node attached to {@code env}'s global event handler - so a test can equip and use
- * the feather without a running {@code BeanScope}.
+ * exactly as production does, against a fresh {@code titan} node, without a running
+ * {@code BeanScope}.
  *
- * <p>Close it (or use try-with-resources) once the test is done; this detaches every node the
- * fixture attached, in the same order production tears down: the module's own node first (via
- * {@link NavigatorModule#stop()}), then the platform-wide {@link LobbyItems} dispatcher, then the
- * fixture's own {@code titan} node. {@link #stopModule()} lets a test stop just the module - to
- * prove nothing of the feature runs anymore once it has - while leaving the rest for {@link
- * #close()} to tear down safely.
+ * <p>Closing (ideally via try-with-resources) tears down every attached node in production order;
+ * {@link #stopModule()} stops just the module, leaving the rest for {@link #close()}.
  */
 final class NavigatorFixture implements AutoCloseable {
 
@@ -69,9 +64,8 @@ final class NavigatorFixture implements AutoCloseable {
     }
 
     /**
-     * Stops only {@link NavigatorModule}, leaving {@link LobbyItems} and the fixture's own
-     * {@code titan} node attached - for a test that checks behaviour once just the module has torn
-     * down. Safe to call more than once, and safe to combine with {@link #close()} afterwards.
+     * Stops only the module, to prove nothing runs once it has, leaving the rest for
+     * {@link #close()}.
      */
     void stopModule() {
         if (!this.moduleStopped) {

@@ -39,11 +39,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Env integration coverage for {@link RespawnModule}, built directly with fakes: a real death must
- * produce no message and a respawn by the next tick (see the class Javadoc on
- * {@link RespawnModule} for why it cannot be synchronous), and a real respawn must hand the player
- * back exactly the platform's currently registered loadout. Calling {@link RespawnModule#stop()}
- * must leave the player untouched by further events.
+ * Env integration coverage for {@link RespawnModule}, built directly with fakes: a death produces
+ * no message and a respawn by the next tick with the platform's current loadout, and
+ * {@link RespawnModule#stop()} leaves the player untouched by further events.
  */
 @ExtendWith(MicrotusExtension.class)
 class RespawnModuleTest {
@@ -103,19 +101,13 @@ class RespawnModuleTest {
                 Collector<PlayerDeathEvent> deathCollector = env.trackEvent(PlayerDeathEvent.class, EventFilter.PLAYER, player);
                 Collector<PlayerRespawnEvent> respawnCollector = env.trackEvent(PlayerRespawnEvent.class, EventFilter.PLAYER, player);
 
-                // Player#kill() dispatches PlayerDeathEvent *before* Player#isDead() flips to
-                // true, and Player#respawn() is a no-op while isDead() is still false - so
-                // calling respawn() straight from the PlayerDeathEvent listener (the bug this
-                // test guards against) would silently do nothing. RespawnModule must defer the
-                // respawn to a later tick instead, so right after kill() returns the player must
-                // still be dead.
+                // kill() dispatches PlayerDeathEvent before isDead() flips true, and respawn() is
+                // a no-op while isDead() is false - a listener calling it directly would no-op.
                 player.kill();
                 Assertions.assertTrue(player.isDead(), "the respawn must not happen synchronously inside the death event - only once a later tick runs");
 
-                // Drives the deferred respawn - scheduled on the player's own per-tick scheduler
-                // - to completion. Collector#collect() (used by every assert below) unmaps its
-                // underlying listener as a side effect, so it must not be called before the tick
-                // that produces the event under test.
+                // collect() (used below) unmaps its listener as a side effect, so it must run
+                // after this tick, which produces the event under test.
                 env.tick();
 
                 deathCollector.assertSingle();

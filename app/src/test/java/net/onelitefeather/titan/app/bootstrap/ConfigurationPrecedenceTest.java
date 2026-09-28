@@ -33,28 +33,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Integration coverage for configuration override precedence: the static
- * {@code io.avaje.config.Config} facade {@link
- * ConfigurationPrintMain} touches exactly the way {@link net.onelitefeather.titan.app.Titan} does
- * in production - built-in first, no factory of its own in between - resolves the shipped classpath
- * {@code application.yaml} (see {@code app/src/main/resources/application.yaml}), the working
- * directory's own {@code application.yaml}, its active profiles, an external file, environment
- * variables and system properties in a fixed rank order. The classpath file's own
- * {@code spawn.simulationDistance} default is {@code 2} and its {@code tickle.cooldownMillis}
- * default is {@code 4000} throughout this test (see that file), so a case that does not override
- * either key resolves to those values, never {@code <absent>} - the lowest rank is the shipped
- * default, not nothing.
+ * Integration coverage for configuration override precedence, driven through
+ * {@link ConfigurationPrintMain} exactly as {@link net.onelitefeather.titan.app.Titan} resolves
+ * configuration in production.
  *
  * <p>{@code avaje-config} resolves files against the JVM's real working directory and reads
- * {@code System.getenv} directly, with no injectable provider. Neither can be faked in-process
- * without breaking Independent/Repeatable (F.I.R.S.T - no {@code System.setProperty}/
- * {@code getenv} tampering, no changing {@code user.dir}), so every case here runs {@link
- * ConfigurationPrintMain} in its own child JVM, started via {@link
- * ProcessBuilder} with a {@code @TempDir} as its working directory and a controlled environment:
- * {@code environment().clear()}, then only the variables the case needs (plus {@code PATH}/
- * {@code JAVA_HOME}, which a JVM needs to start cleanly on every platform). The child prints one
- * {@code key=value} line per requested configuration key to stdout; this test asserts on those
- * lines and, where relevant, on the temp directory's contents.
+ * {@code System.getenv} directly, with no injectable provider. Each case therefore runs in its own
+ * child JVM with a controlled working directory and environment, to stay Independent and
+ * Repeatable.
  */
 class ConfigurationPrecedenceTest {
 
@@ -150,9 +136,8 @@ class ConfigurationPrecedenceTest {
     @DisplayName("A syntactically broken application.yaml aborts the child cleanly, naming the file and the error position")
     @Test
     void brokenApplicationYamlAbortsCleanlyNamingFileAndPosition(@TempDir Path workingDir) throws IOException, InterruptedException {
-        // Line 3 is missing the ":" after "maxHeight" - a mapping value where a key was expected,
-        // exactly the class of syntax error the E2E smoke test found hangs the real process instead
-        // of exiting.
+        // Line 3 is missing the ":" after "maxHeight" - the syntax error the E2E smoke test found
+        // hangs the real process instead of exiting.
         Files.writeString(workingDir.resolve("application.yaml"), "spawn:\n  minHeight: -64\n   maxHeight: 310\n");
 
         List<String> output = runExpectingFailure(workingDir, Map.of(), List.of());
@@ -214,14 +199,6 @@ class ConfigurationPrecedenceTest {
         Assertions.assertTrue(joined.contains("dev"), "the logged line must name the active profile 'dev', output was:\n" + joined);
     }
 
-    /**
-     * Starts {@link ConfigurationPrintMain} in a child JVM with {@code workingDir} as its working
-     * directory, an environment containing only {@code env} (plus {@code PATH}/{@code JAVA_HOME}),
-     * and {@code systemProperties} as additional {@code -D} flags, asking it to print {@code keys}.
-     * Waits for the process with a timeout (never a sleep), asserts a clean exit, and parses every
-     * {@code key=value} line the child printed - ignoring any other output (e.g. a stray log line)
-     * by only ever looking for a line starting with one of the requested keys.
-     */
     private static Map<String, String> run(Path workingDir, Map<String, String> env, List<String> systemProperties, List<String> keys) throws IOException, InterruptedException {
         ChildResult result = startAndWait(workingDir, env, systemProperties, keys);
         Assertions.assertTrue(result.finished(), "the child process must finish within " + TIMEOUT);
@@ -235,12 +212,6 @@ class ConfigurationPrecedenceTest {
         return resolved;
     }
 
-    /**
-     * Like {@link #run}, but for a child expected to abort: waits for the process within {@link
-     * #TIMEOUT} (never {@code 124}, the shell's own "killed by timeout" code, which would mean the
-     * process hung instead of aborting), asserts the exit code is non-zero, and returns every line
-     * the child printed - the caller inspects it for the broken file's name and error position.
-     */
     private static List<String> runExpectingFailure(Path workingDir, Map<String, String> env, List<String> systemProperties) throws IOException, InterruptedException {
         ChildResult result = startAndWait(workingDir, env, systemProperties, List.of());
         Assertions.assertTrue(result.finished(), "the child process must finish within " + TIMEOUT + " instead of hanging");
@@ -248,11 +219,6 @@ class ConfigurationPrecedenceTest {
         return result.lines();
     }
 
-    /**
-     * The child process's outcome: whether it finished within {@link #TIMEOUT}, its exit code (only
-     * meaningful if it finished), and every line it printed to stdout/stderr (merged, see {@link
-     * ProcessBuilder#redirectErrorStream(boolean)}).
-     */
     private record ChildResult(boolean finished, int exitCode, List<String> lines) {
     }
 
@@ -274,10 +240,8 @@ class ConfigurationPrecedenceTest {
         processBuilder.redirectErrorStream(true);
 
         Process process = processBuilder.start();
-        // Drained on a background thread, concurrently with waitFor: the child's output is small
-        // (a handful of "key=value" lines) so an OS pipe-buffer deadlock is not a practical risk
-        // here, but reading concurrently rather than only after waitFor returns means a genuinely
-        // hung child is still caught by the timeout below, never by an unbounded blocking read.
+        // Drained concurrently with waitFor, so a hung child is still caught by the timeout below,
+        // never by an unbounded blocking read.
         List<String> lines = Collections.synchronizedList(new ArrayList<>());
         Thread outputReader = new Thread(() -> {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {

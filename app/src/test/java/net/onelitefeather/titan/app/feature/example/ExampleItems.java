@@ -22,9 +22,7 @@ import net.minestom.server.item.Material;
 
 /**
  * The {@code example} module's own item stacks and fixed messages, kept apart from
- * {@link ExampleModule} for readability - the same split {@code ElytraItems} uses. Package-private:
- * no other feature touches these directly - a feature's tags and items belong to that feature
- * alone.
+ * {@link ExampleModule} for readability. Package-private: a feature's items belong to it alone.
  */
 final class ExampleItems {
 
@@ -36,10 +34,8 @@ final class ExampleItems {
     static final ItemStack GREETING_TOKEN = ItemStack.builder(Material.FEATHER).customName(Component.text("Greeting Token", NamedTextColor.YELLOW)).build();
 
     /**
-     * Sent instead of a fresh greeting while a player is still on cooldown. Built once, here, and
-     * reused on every dispatch, rather than a new {@link Component} being built for every use on
-     * the tick thread - see {@code docs/lobby-modules.md}'s tick-thread rule "cache packets and
-     * components".
+     * Built once and reused on every dispatch, rather than a fresh {@link Component} per use on the
+     * tick thread.
      */
     static final Component ON_COOLDOWN = Component.text("You were just greeted - try again in a moment.", NamedTextColor.GRAY);
 }

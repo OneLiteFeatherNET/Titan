@@ -49,8 +49,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 class ProtectionModuleTest {
 
     /**
-     * Attaches a fresh {@code titan} test node, builds and starts a {@link ProtectionModule}
-     * against it, and hands both back so a test can tear them down again with
+     * A started {@link ProtectionModule} plus its {@code titan} node, torn down via
      * {@link #stop(Fixture)}.
      */
     private record Fixture(TestTitanNode titan, ProtectionModule module) {

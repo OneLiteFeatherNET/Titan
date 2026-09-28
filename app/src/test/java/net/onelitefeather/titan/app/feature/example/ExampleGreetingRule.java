@@ -19,12 +19,9 @@ import net.kyori.adventure.text.Component;
 
 /**
  * The {@code example} module's pure decision and formatting logic, kept apart from
- * {@link ExampleModule} and {@link ExampleGreetingTracker} so it can be unit-tested without a
- * {@link net.minestom.server.entity.Player} or an {@code Env} - the base of the test pyramid, see
- * {@code docs/lobby-modules.md}.
+ * {@link ExampleModule} so it is unit-testable without a {@link net.minestom.server.entity.Player}.
  *
- * <p>Package-private: no other feature touches this directly - a feature's tags, items and pure
- * logic belong to that feature alone.
+ * <p>Package-private: a feature's pure logic belongs to that feature alone.
  */
 final class ExampleGreetingRule {
 
@@ -32,24 +29,10 @@ final class ExampleGreetingRule {
         throw new UnsupportedOperationException("This class cannot be instantiated");
     }
 
-    /**
-     * @param lastGreetedAtMillis when the player was last greeted, as returned by
-     *                            {@link java.time.Clock#millis()}
-     * @param nowMillis           the current time, as returned by {@link java.time.Clock#millis()}
-     * @param cooldownMillis      how long a player must wait between greetings
-     * @return {@code true} if fewer than {@code cooldownMillis} have passed since
-     *         {@code lastGreetedAtMillis}
-     */
     static boolean isOnCooldown(long lastGreetedAtMillis, long nowMillis, long cooldownMillis) {
         return nowMillis - lastGreetedAtMillis < cooldownMillis;
     }
 
-    /**
-     * @param template   a greeting template (see {@link ExampleGreetingSettings#greeting(String)}),
-     *                   containing exactly one {@code %s} placeholder
-     * @param playerName the greeted player's name, substituted for {@code %s}
-     * @return the formatted greeting
-     */
     static Component greeting(String template, String playerName) {
         return Component.text(String.format(template, playerName));
     }

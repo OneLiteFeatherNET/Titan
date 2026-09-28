@@ -39,11 +39,6 @@ public final class TestTitanNode implements AutoCloseable {
         this.node = node;
     }
 
-    /**
-     * @param env the Microtus/Cyano test environment whose global event handler the new node
-     *            attaches under
-     * @return a fresh node, already attached
-     */
     public static TestTitanNode attach(Env env) {
         EventNode<Event> global = env.process().eventHandler();
         EventNode<Event> node = EventNode.all("test-titan-" + UUID.randomUUID());
@@ -51,12 +46,10 @@ public final class TestTitanNode implements AutoCloseable {
         return new TestTitanNode(global, node);
     }
 
-    /** @return this fixture's own event node, ready for a feature to attach its own child onto */
     public EventNode<Event> node() {
         return this.node;
     }
 
-    /** Detaches {@link #node()} from the global event handler it was attached under. */
     @Override
     public void close() {
         this.global.removeChild(this.node);

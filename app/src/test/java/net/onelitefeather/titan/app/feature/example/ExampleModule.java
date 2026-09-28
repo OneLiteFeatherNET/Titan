@@ -29,54 +29,33 @@ import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.onelitefeather.titan.app.module.FeatureNode;
 
 /**
- * Template for a new lobby feature, referenced end to end from {@code docs/lobby-modules.md}. It
- * touches every extension point a typical feature needs: reading and validating a configuration
- * value at the edge of {@link #start()}, a hotbar item
- * ({@link ExampleGreetingItems#greetingToken(ExampleModule)}), and a listener that cleans up
- * per-player state on disconnect. The pure decision logic lives in {@link ExampleGreetingRule},
- * the pure validation in {@link ExampleGreetingSettings}, and the stateful cooldown tracking in
- * {@link ExampleGreetingTracker} - each unit-tested on its own.
+ * Template for a new lobby feature (see {@code docs/lobby-modules.md}): config validation at the
+ * edge of {@link #start()}, a hotbar item, and disconnect cleanup.
  *
- * <p>This template has no section of its own in the shipped {@code application.yaml}, so
- * {@link #start()} validates {@link #DEFAULT_GREETING}/{@link #DEFAULT_COOLDOWN_MILLIS} directly
- * instead of reading them from {@code Config} - see {@link #start()}'s Javadoc for the snippet a
- * real feature would write in its place.
+ * <p>Decision logic, validation and stateful tracking live in separate, unit-tested classes:
+ * {@link ExampleGreetingRule}, {@link ExampleGreetingSettings}, {@link ExampleGreetingTracker}.
  *
- * <p>Test-only on purpose: it is a copyable starting point for a real feature, not a feature
- * itself. It carries {@code @Singleton} anyway, so it stays a <em>correct</em> copy template, but
- * Avaje Inject's annotation processor does not run for test sources, so it is never discovered as
- * a lobby feature. Its {@link #EVENT_PRIORITY} is deliberately past the highest real feature
- * (elytra, 700), so a real feature picks its own, still-unused value from the priority table in
- * {@code docs/lobby-modules.md} instead of copying this one.
+ * <p>Test-only: a copyable starting point, never discovered as a real feature since Avaje's
+ * annotation processor does not run for test sources.
  *
- * <p>Behaviour: using {@link ExampleGreetingItems#greetingToken(ExampleModule)} sends the player
- * {@link #DEFAULT_GREETING} with their name substituted in, unless they are still within
- * {@link #DEFAULT_COOLDOWN_MILLIS} of their last greeting, in which case they get
- * {@link ExampleItems#ON_COOLDOWN} instead. A disconnecting player's cooldown is forgotten, so
- * rejoining does not inherit it.
+ * <p>{@link #EVENT_PRIORITY} sits past the highest real feature so a real feature picks its own,
+ * still-unused value from {@code docs/lobby-modules.md}'s priority table.
  */
 @Singleton
 final class ExampleModule {
 
-    /**
-     * This feature's position among its sibling {@link FeatureNode}s - deliberately past the
-     * highest real feature (elytra, 700); see the class Javadoc.
-     */
+    /** Sits past the highest real feature (elytra, 700); see the class Javadoc. */
     static final int EVENT_PRIORITY = 800;
 
     private static final String ID = "example";
 
     /**
-     * This template's default greeting - validated by {@link #start()} the same way a real feature
-     * validates a value it actually read from {@code Config}. See the class Javadoc for why this
-     * template has no section of its own to read from.
+     * Validated by {@link #start()} the same way a real feature validates a {@code Config} value.
      */
     static final String DEFAULT_GREETING = "Welcome to the lobby, %s!";
 
     /**
-     * This template's default cooldown in milliseconds - validated by {@link #start()} the same way
-     * a real feature validates a value it actually read from {@code Config}. See the class Javadoc
-     * for why this template has no section of its own to read from.
+     * Validated by {@link #start()} the same way a real feature validates a {@code Config} value.
      */
     static final long DEFAULT_COOLDOWN_MILLIS = 5_000;
 
@@ -85,22 +64,13 @@ final class ExampleModule {
     private FeatureNode node;
     private ExampleGreetingTracker tracker;
 
-    /**
-     * @param titan the shared event node this feature's own node attaches under
-     */
     ExampleModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan) {
         this(titan, Clock.systemUTC());
     }
 
     /**
-     * Creates a feature backed by {@code clock}, so a test can control what "now" is instead of the
-     * feature depending on {@link System#currentTimeMillis()} - the same pattern {@code
-     * TickleModule} uses. Carries {@code @Inject} because this class has more than one constructor
-     * - Avaje Inject would otherwise not know which one to use, were this feature ever discovered
-     * (see the class Javadoc for why it is not).
-     *
-     * @param titan the shared event node this feature's own node attaches under
-     * @param clock the clock to read the current time from
+     * Takes {@link Clock} so a test can fix "now"; {@code @Inject} disambiguates the two
+     * constructors.
      */
     @Inject
     ExampleModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Clock clock) {
@@ -109,8 +79,7 @@ final class ExampleModule {
     }
 
     /**
-     * Reads and validates this feature's configuration at the edge, then attaches its own event
-     * node with its one listener.
+     * Reads and validates this feature's configuration at the edge, then attaches its event node.
      *
      * <p>A real feature reads its own section here, e.g.
      *
@@ -120,10 +89,7 @@ final class ExampleModule {
      *         Config.getAs(ExampleGreetingSettings.COOLDOWN_KEY, ExampleGreetingSettings::cooldownMillis);
      * }</pre>
      *
-     * <p>This template has no section of its own in the shipped {@code application.yaml} (see the
-     * class Javadoc), so it validates {@link #DEFAULT_GREETING}/{@link #DEFAULT_COOLDOWN_MILLIS}
-     * directly instead - a {@code Config.get(...)} call for a key that does not exist would fail
-     * the start with "Missing required configuration parameter".
+     * <p>This template has no section to read, so it validates its hardcoded defaults instead.
      */
     @PostConstruct
     void start() {
@@ -141,11 +107,8 @@ final class ExampleModule {
     }
 
     /**
-     * Greets {@code player} - or tells them they are on cooldown - through the shared
-     * {@link ExampleGreetingTracker}. Called by {@link ExampleGreetingItems}' use handler once a
-     * player uses the greeting token.
-     *
-     * @param player the player to greet
+     * Greets {@code player} through the shared {@link ExampleGreetingTracker}, or reports the
+     * cooldown.
      */
     void greet(Player player) {
         this.tracker.greet(player).ifPresentOrElse(player::sendMessage, () -> player.sendMessage(ExampleItems.ON_COOLDOWN));

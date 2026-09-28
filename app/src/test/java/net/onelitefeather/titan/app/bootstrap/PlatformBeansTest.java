@@ -27,17 +27,13 @@ import org.mockito.Mockito;
 import java.util.List;
 
 /**
- * Unit coverage for {@link PlatformBeans#lobbySpawn(MapProvider)}: the bean method's own Javadoc
- * promises the {@link LobbySpawn} it returns is "read lazily, on every
- * {@code LobbySpawn#position()} call, so a map reload is picked up without rebuilding any
- * module" - this proves both halves of that promise. Builds {@code PlatformBeans} directly and
- * mocks {@link MapProvider} rather than a real one, so this runs without a Minestom server or the
- * filesystem {@code worlds/} a real {@code MapProvider} reads.
+ * Unit coverage for {@link PlatformBeans#lobbySpawn(MapProvider)}: its {@link LobbySpawn} is read
+ * lazily on every {@code position()} call, so a map reload is picked up without rebuilding it.
  *
- * <p>{@link PlatformBeans#mapProvider(net.minestom.server.instance.InstanceContainer)} and {@link
- * PlatformBeans#featureFlags()} are deliberately not covered here: both ultimately touch the real
- * process working directory or a process-wide static, neither of which a unit test may depend on
- * without breaking Independent/Repeatable (F.I.R.S.T.).
+ * <p>Mocks {@link MapProvider} rather than a real one, so this runs without a Minestom server or
+ * the filesystem {@code worlds/} it reads; {@code PlatformBeans#mapProvider}/{@code #featureFlags}
+ * are deliberately not covered here, since both touch real process state a unit test must not
+ * depend on.
  */
 class PlatformBeansTest {
 

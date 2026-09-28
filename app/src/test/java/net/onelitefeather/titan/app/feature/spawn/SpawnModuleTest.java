@@ -50,9 +50,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 class SpawnModuleTest {
 
     /**
-     * The shipped {@code spawn} defaults, read from the facade rather than hardcoded, so a changed
-     * shipped default (see {@code application.yaml}) cannot silently desync this test from
-     * production - read-only, never mutated (F.I.R.S.T. - Independent).
+     * Read from the facade rather than hardcoded, so a changed shipped default cannot silently
+     * desync this test.
      */
     private static final int MIN_HEIGHT = Config.getAs(SpawnSettings.MIN_HEIGHT_KEY, Integer::parseInt);
     private static final int MAX_HEIGHT = Config.getAs(SpawnSettings.MAX_HEIGHT_KEY, Integer::parseInt);

@@ -25,15 +25,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Plain unit tests for {@link SitSettings}: no {@code Config}, no server needed - just the pure
- * parsing and validation functions. {@code sit.offset} has no validation function of its own to
- * test here - see {@link SitSettings}'s Javadoc for why - only {@code sit.allowedBlocks}, read and
- * validated by {@link SitModule#start}. {@link #parseBlock} is also reused live, on every block
- * interaction; that runtime read is never re-validated and never falls back to a shipped default,
- * so there is no runtime counterpart to test here beyond this parsing.
+ * parsing and validation functions.
  *
- * <p>{@link MicrotusExtension} is only needed because {@link SitSettings#parseBlock} resolves a
- * key against Minestom's block registry data, which is only bound once
- * {@link net.minestom.testing.extension.MicrotusExtension} actually creates an {@code Env}.
+ * <p>Only {@code sit.allowedBlocks} has a validation function here; {@code sit.offset} does not
+ * (see {@link SitSettings}'s Javadoc for why). {@link MicrotusExtension} is needed only because
+ * {@link SitSettings#parseBlock} resolves a key against Minestom's block registry, bound once
+ * {@code Env} is created.
  */
 @ExtendWith(MicrotusExtension.class)
 class SitSettingsTest {

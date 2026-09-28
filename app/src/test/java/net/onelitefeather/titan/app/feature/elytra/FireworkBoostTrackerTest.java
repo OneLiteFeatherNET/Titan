@@ -21,20 +21,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Ported from Voyager's {@code FireworkBoostTrackerTest}: the burn is pure arithmetic and is
- * tested as such - no {@code Env}, no {@code Player}, no rocket. This is the pure unit layer for
- * {@link FireworkBoostTracker}; {@link ElytraModuleTest} covers the entity/event half through a
- * real {@link ElytraFixture}.
+ * Ported from Voyager's {@code FireworkBoostTrackerTest}: pure unit coverage for
+ * {@link FireworkBoostTracker}'s burn arithmetic - no {@code Env}, no {@code Player}, no rocket.
  *
- * <p>{@code SHORT_BURN}/{@code SHORT_COOLDOWN} burn 4 and cool down 9; {@code LONG_BURN}/
- * {@code LONG_COOLDOWN} burn 7 and cool down 11, chosen so neither burn divides the other, neither
- * cooldown is twice its burn, and no number appears in both - a tracker that read the burn where it
- * meant the cooldown, or that kept the first configuration it ever saw, would produce a count that
- * is in neither column.
- *
- * <p>Every per-player assertion uses two players, never one, with deliberately different state at
- * that moment, because a tracker keyed on nothing at all would pass every single-player test in
- * this file.
+ * <p>The tuning constants are chosen so no burn divides the other, no cooldown is twice its burn,
+ * and no number repeats, so a tracker that confuses burn and cooldown produces a count in neither
+ * column. Every per-player assertion uses two players with different state, because a tracker
+ * keyed on nothing would pass every single-player test.
  */
 class FireworkBoostTrackerTest {
 
@@ -51,9 +44,7 @@ class FireworkBoostTrackerTest {
 
     private final FireworkBoostTracker tracker = new FireworkBoostTracker();
 
-    // ------------------------------------------------------------------------------------------
     // The burn
-    // ------------------------------------------------------------------------------------------
 
     @DisplayName("A burn starts on the tick it is asked for and is reported at its full length")
     @Test
@@ -115,9 +106,7 @@ class FireworkBoostTrackerTest {
         Assertions.assertEquals(3, this.tracker.ticksRemaining(ADA), "the 7-tick burn has 3 left, on its own tuning");
     }
 
-    // ------------------------------------------------------------------------------------------
     // The cooldown
-    // ------------------------------------------------------------------------------------------
 
     @DisplayName("A second boost during the cooldown is refused and changes nothing")
     @Test
@@ -162,9 +151,7 @@ class FireworkBoostTrackerTest {
         Assertions.assertTrue(this.tracker.requestBoost(ADA, SHORT_BURN, SHORT_COOLDOWN, GLIDING));
     }
 
-    // ------------------------------------------------------------------------------------------
     // Who may boost
-    // ------------------------------------------------------------------------------------------
 
     @DisplayName("A boost asked for while not gliding is refused and costs no cooldown")
     @Test
@@ -189,9 +176,7 @@ class FireworkBoostTrackerTest {
         Assertions.assertEquals(4, this.tracker.ticksRemaining(BEN));
     }
 
-    // ------------------------------------------------------------------------------------------
     // Forgetting
-    // ------------------------------------------------------------------------------------------
 
     @DisplayName("A player who disconnects (or lands) mid-burn is forgotten and takes nobody else with them")
     @Test

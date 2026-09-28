@@ -37,18 +37,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Integration coverage (child JVM, no Minestom server) for avaje-config's built-in file watcher
- * ({@code config.watch.enabled}) making a changed value visible through the static {@code Config}
- * facade on the next read - with no module restart and no handler reacting to the change - and for
- * {@code ConfigFeatureFlags} reading a flag from an environment variable rather than a
- * {@code flags.properties} file.
+ * Integration coverage (child JVM, no Minestom server) for avaje-config's file watcher and its
+ * feature-flag environment-variable read.
  *
- * <p>Each scenario runs in its own child JVM, started via {@link ProcessBuilder} with a
- * {@code @TempDir} as its working directory - {@code avaje-config} resolves files against the real
- * working directory and reads {@code System.getenv} directly, with no injectable provider, so
- * neither can be faked in-process without breaking Independent/Repeatable. No {@code Config}
- * mutator ({@code setProperty}/{@code putAll}/{@code clearProperty}/{@code eventBuilder}) is ever
- * called from this test or the child mains it drives.
+ * <p>Each scenario runs in its own child JVM because {@code avaje-config} resolves files against
+ * the real working directory and reads {@code System.getenv} directly, with no injectable
+ * provider - neither can be faked in-process without breaking Independent/Repeatable.
  */
 class ConfigFileWatchIntegrationTest {
 
@@ -70,10 +64,8 @@ class ConfigFileWatchIntegrationTest {
 
             Assertions.assertEquals("VALUE 4000", child.request(TIMEOUT), "the first read must resolve the file's own value");
 
-            // Changing only the digit count (4000 -> 9999) also changes the file's length, not only
-            // its last-modified time - avaje-config's FileWatch compares lastModified OR length, so
-            // this guarantees the change is detected regardless of the filesystem's mtime
-            // granularity.
+            // Changing the digit count also changes the file's length, not just its mtime, so the
+            // change is detected regardless of the filesystem's mtime granularity.
             Files.writeString(workingDir.resolve("application.yaml"), """
                     config.watch.enabled: true
                     config.watch.delay: 1
@@ -82,10 +74,8 @@ class ConfigFileWatchIntegrationTest {
                       cooldownMillis: 9999
                     """);
 
-            // A condition wait bounded by an overall deadline, never a fixed sleep: repeatedly asks
-            // the still-running child for its current read of the facade until avaje-config's own
-            // "ConfigTimer" daemon thread has noticed the change and applied it, or the deadline
-            // passes.
+            // Polls with an overall deadline, never a fixed sleep, until avaje-config's watcher
+            // thread has applied the change or the deadline passes.
             long deadlineNanos = System.nanoTime() + TIMEOUT.toNanos();
             String lastValue = null;
             while (!"VALUE 9999".equals(lastValue)) {
@@ -117,11 +107,6 @@ class ConfigFileWatchIntegrationTest {
                 output.contains("NAVIGATOR_SLENDER=false"), "flags.properties must no longer be read at all, output was:\n" + String.join("\n", output));
     }
 
-    /**
-     * Starts {@code mainClass} in a child JVM with {@code workingDir} as its working directory and
-     * an environment containing only {@code env} (plus {@code PATH}/{@code JAVA_HOME}), waits for
-     * it to exit within {@link #TIMEOUT}, asserts a clean exit, and returns every line it printed.
-     */
     private static List<String> runOneShot(Path workingDir, Map<String, String> env, Class<?> mainClass) throws IOException, InterruptedException {
         try (ChildProcess child = ChildProcess.start(workingDir, env, mainClass)) {
             boolean finished = child.waitForExit(TIMEOUT);
@@ -133,10 +118,8 @@ class ConfigFileWatchIntegrationTest {
     }
 
     /**
-     * A child {@link Process} whose stdout/stderr (merged) is drained on a background thread into
-     * both a {@link BlockingQueue} ({@link #awaitLine}/{@link #request}, condition wait with an
-     * overall timeout, no fixed sleep) and a plain, ever-growing list ({@link #linesSoFar()}, for
-     * failure messages).
+     * A child {@link Process} whose merged stdout/stderr is drained into a {@link BlockingQueue}
+     * for condition waits and a plain list for failure messages.
      */
     private static final class ChildProcess implements AutoCloseable {
 
@@ -182,8 +165,7 @@ class ConfigFileWatchIntegrationTest {
         }
 
         /**
-         * Sends one line to the child's stdin - {@link ConfigReadChildMain} prints a fresh read of
-         * the facade in response - and returns that response line, waiting no longer than
+         * Sends "poll" to the child's stdin and returns its one-line response, waiting at most
          * {@code timeout}.
          */
         String request(Duration timeout) throws IOException, InterruptedException {
@@ -193,9 +175,8 @@ class ConfigFileWatchIntegrationTest {
         }
 
         /**
-         * Blocks until a line matching {@code predicate} arrives, or fails the test once
-         * {@code timeout} has elapsed without one - a condition wait bounded by an overall
-         * deadline, never a fixed wall-clock sleep.
+         * Blocks for a line matching {@code predicate}, bounded by {@code timeout} - never a fixed
+         * sleep.
          */
         String awaitLine(Predicate<String> predicate, Duration timeout) throws InterruptedException {
             long deadlineNanos = System.nanoTime() + timeout.toNanos();

@@ -22,14 +22,11 @@ import net.onelitefeather.titan.app.module.item.ItemSlot;
 import net.onelitefeather.titan.app.module.item.LobbyItem;
 
 /**
- * Template for a feature's own item factory (see {@code NavigatorItems}/{@code ElytraLobbyItems}
- * for the real ones): contributes the {@code example} template's one hotbar item to the
- * platform-wide {@code LobbyItems} as a {@code @Bean}.
+ * Template for a feature's own item factory: contributes the {@code example} template's one
+ * hotbar item to the platform-wide {@code LobbyItems} as a {@code @Bean}.
  *
- * <p>This is the shape a real feature's own {@code @Factory} class takes; it stays a plain,
- * package-private class here, like the rest of this template, because Avaje Inject's annotation
- * processor never runs for test sources (see {@link ExampleModule}'s class Javadoc) - this class is
- * never actually built as a bean, only read as a template.
+ * <p>Stays package-private, like a real feature's {@code @Factory} class; never built as a bean
+ * since Avaje's processor skips test sources.
  */
 @Factory
 final class ExampleGreetingItems {
@@ -39,11 +36,8 @@ final class ExampleGreetingItems {
     private static final int HOTBAR_SLOT = ItemSlot.MAX_HOTBAR_SLOT;
 
     /**
-     * @param module the feature a use of the returned item greets through, via
-     *               {@link ExampleModule#greet(net.minestom.server.entity.Player)}
-     * @return the greeting token, fixed to hotbar slot {@value #HOTBAR_SLOT} - deliberately the
-     *         last slot, one no real feature claims, so this template never collides with one in a
-     *         test that happens to start both
+     * Fixed to the last hotbar slot, one no real feature claims, so this never collides with a test
+     * starting both.
      */
     @Bean
     LobbyItem greetingToken(ExampleModule module) {
