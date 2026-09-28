@@ -138,6 +138,14 @@ file("features").listFiles()
     }
 gradle.extensions.extraProperties["titanFeatureProjectPaths"] = featureProjectPaths.toList()
 
+// Every permission platform module is a directory under platform/ with its own
+// build.gradle.kts - mirrors the features/ scan above. A variant opts into one by depending on
+// its project (see titan.app-variant).
+file("platform").listFiles()
+    ?.filter { it.isDirectory && File(it, "build.gradle.kts").exists() }
+    ?.sortedBy { it.name }
+    ?.forEach { platformDir -> include("platform:${platformDir.name}") }
+
 // Every app variant is a directory under apps/ with its own build.gradle.kts - see titan.app-variant.
 file("apps").listFiles()
     ?.filter { it.isDirectory && File(it, "build.gradle.kts").exists() }
