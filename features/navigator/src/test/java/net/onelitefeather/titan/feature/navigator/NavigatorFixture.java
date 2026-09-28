@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.app.feature.navigator;
+package net.onelitefeather.titan.feature.navigator;
 
 import java.util.List;
 import net.minestom.server.entity.Player;
 import net.minestom.testing.Env;
 import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
-import net.onelitefeather.titan.app.module.item.HotbarLobbyItems;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
 
@@ -36,11 +35,11 @@ final class NavigatorFixture implements AutoCloseable {
 
     private final TestTitanNode titan;
     private final NavigatorModule module;
-    private final HotbarLobbyItems lobbyItems;
+    private final TestLobbyItems lobbyItems;
     private boolean moduleStopped;
     private boolean closed;
 
-    private NavigatorFixture(TestTitanNode titan, NavigatorModule module, HotbarLobbyItems lobbyItems) {
+    private NavigatorFixture(TestTitanNode titan, NavigatorModule module, TestLobbyItems lobbyItems) {
         this.titan = titan;
         this.module = module;
         this.lobbyItems = lobbyItems;
@@ -51,7 +50,7 @@ final class NavigatorFixture implements AutoCloseable {
         NavigatorModule module = new NavigatorModule(titan.node(), deliver, featureFlags);
         module.start();
         LobbyItem feather = new NavigatorItems().navigatorFeather(module);
-        HotbarLobbyItems lobbyItems = new HotbarLobbyItems(List.of(feather), titan.node());
+        TestLobbyItems lobbyItems = new TestLobbyItems(List.of(feather), titan.node());
         return new NavigatorFixture(titan, module, lobbyItems);
     }
 

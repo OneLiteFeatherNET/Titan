@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.app.feature.navigator;
+package net.onelitefeather.titan.feature.navigator;
 
 import io.avaje.inject.Bean;
 import io.avaje.inject.Factory;
