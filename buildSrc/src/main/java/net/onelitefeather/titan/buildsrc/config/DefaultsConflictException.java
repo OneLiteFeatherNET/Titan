@@ -15,7 +15,7 @@
  */
 package net.onelitefeather.titan.buildsrc.config;
 
-/** Two {@code titan/defaults/*.yaml} files claim the same configuration key (D4). */
+/** Two {@code titan/defaults/*.yaml} files claim the same configuration key. */
 public final class DefaultsConflictException extends RuntimeException {
 
     public DefaultsConflictException(String message) {

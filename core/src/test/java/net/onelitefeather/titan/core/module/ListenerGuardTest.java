@@ -30,8 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Moved from {@code common}'s {@code TitanObservabilityTest} together with {@link ListenerGuard}
- * (D9).
+ * Moved from {@code common}'s {@code TitanObservabilityTest} together with {@link ListenerGuard}.
  */
 @ExtendWith(MicrotusExtension.class)
 class ListenerGuardTest {

@@ -1,6 +1,6 @@
 # Titan lobby - shipped configuration defaults.
 #
-# This file is one of several titan/defaults/<column>.yaml files, one per lobby column (D4); at
+# This file is one of several titan/defaults/<column>.yaml files, one per lobby column; at
 # build time they are concatenated into one classpath application.yaml, which IS the single source
 # of the defaults below - the lobby runs with these exact values even without any file at all next
 # to the jar (see the lobby-module-config spec, "Ohne Konfigurationsdatei gelten die

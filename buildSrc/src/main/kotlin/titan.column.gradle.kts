@@ -1,4 +1,4 @@
-// Convention for every Titan lobby feature under features/* (D8): a column depends only on
+// Convention for every Titan lobby feature under features/*: a column depends only on
 // core - never on another column, :app or runtime - and gets the same test stack every other
 // column uses, so a new feature needs no build-file boilerplate beyond applying this plugin.
 //
@@ -35,7 +35,7 @@ dependencies {
     add("testImplementation", lib("junit.platform.launcher"))
     add("testImplementation", lib("archunit"))
     // ColumnArchitectureRules and the shared test fixtures (TestTitanNode, DummyDeliver,
-    // EventListenerCounter) - see core's testFixtures (D7).
+    // EventListenerCounter) - see core's testFixtures.
     add("testImplementation", testFixtures(project(":core")))
     add("testRuntimeOnly", lib("junit.engine"))
 }

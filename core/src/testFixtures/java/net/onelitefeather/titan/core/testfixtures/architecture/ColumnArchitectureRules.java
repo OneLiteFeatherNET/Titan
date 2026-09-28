@@ -29,7 +29,7 @@ import net.minestom.server.MinecraftServer;
 import net.minestom.server.event.EventNode;
 
 /**
- * The architecture rules every column shares (D7): a small {@code ColumnArchitectureTest} in each
+ * The architecture rules every column shares: a small {@code ColumnArchitectureTest} in each
  * column applies these via {@code @ArchTest} to its own package, which a column's own
  * {@code @AnalyzeClasses} already scopes the import universe to - so these rules deliberately carry
  * no package restriction of their own.

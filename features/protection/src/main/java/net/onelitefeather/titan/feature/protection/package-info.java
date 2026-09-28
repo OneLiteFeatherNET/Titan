@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 /**
- * The {@code protection} column (D2 spike): {@code name} is explicit and distinct from the bean
+ * The {@code protection} column: {@code name} is explicit and distinct from the bean
  * class {@link net.onelitefeather.titan.feature.protection.ProtectionModule}, so a later wave's
- * "expected column loaded" check (D5) can read it without ambiguity. Both {@code requires} forms
+ * "expected column loaded" check can read it without ambiguity. Both {@code requires} forms
  * are needed, for two different checks: {@code requiresString}, keyed exactly like the processor's
  * own "No dependency provided for ...EventNode&lt;...Event&gt;:titan" error message, satisfies the
  * per-module compile-time check (plain {@code requires = {EventNode.class}} alone does not - it

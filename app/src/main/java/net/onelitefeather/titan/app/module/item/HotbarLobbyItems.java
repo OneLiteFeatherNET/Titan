@@ -43,7 +43,7 @@ import net.onelitefeather.titan.core.module.item.LobbyItems;
  * stack for an item with no fixed placement. The item maps are built once by the constructor and
  * never mutated, so no synchronization is needed for the tick-thread reads in {@link #dispatch}.
  *
- * <p>Temporarily in {@code :app}; moves to {@code features/hotbar} in a later wave (D3) - a column
+ * <p>Temporarily in {@code :app}; moves to {@code features/hotbar} in a later wave - a column
  * depends only on the {@link LobbyItems} interface in {@code core}, never on this class.
  */
 @Singleton

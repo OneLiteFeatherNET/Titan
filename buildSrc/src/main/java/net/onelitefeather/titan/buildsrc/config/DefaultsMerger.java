@@ -30,7 +30,7 @@ import org.yaml.snakeyaml.Yaml;
 
 /**
  * Concatenates every column's own {@code titan/defaults/<column>.yaml} into one classpath
- * {@code application.yaml} (D4), keeping every file's comments verbatim - the files are
+ * {@code application.yaml}, keeping every file's comments verbatim - the files are
  * concatenated, never deep-merged. A pure function over strings/files, so it is testable without a
  * Gradle project.
  *
@@ -89,8 +89,7 @@ public final class DefaultsMerger {
     }
 
     // Every level of the path is registered, not just the leaves: a second file touching the same
-    // top-level section (e.g. "features") must conflict even if its own nested keys differ (see
-    // design.md D4, "ein zweiter features-Abschnitt").
+    // top-level section (e.g. "features") must conflict even if its own nested keys differ.
     private static void flatten(Object node, String prefix, Set<String> keys) {
         if (!(node instanceof Map<?, ?> map)) {
             return;

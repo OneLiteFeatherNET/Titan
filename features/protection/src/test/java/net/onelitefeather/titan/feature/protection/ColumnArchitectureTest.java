@@ -21,7 +21,7 @@ import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
 import net.onelitefeather.titan.core.testfixtures.architecture.ColumnArchitectureRules;
 
-/** Applies the architecture rules every column shares (D7) to this column's own package. */
+/** Applies the architecture rules every column shares to this column's own package. */
 @AnalyzeClasses(packages = "net.onelitefeather.titan.feature.protection", importOptions = ImportOption.DoNotIncludeTests.class)
 class ColumnArchitectureTest {
 

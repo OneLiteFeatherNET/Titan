@@ -31,7 +31,7 @@ import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
 
 /**
- * Concatenates every {@code titan/defaults/*.yaml} file (one per column, D4) into a single
+ * Concatenates every {@code titan/defaults/*.yaml} file (one per column) into a single
  * {@code application.yaml} in {@link #getOutputDir()}, using {@link DefaultsMerger}. Registered as
  * a {@code resources} source directory, so the result becomes the classpath
  * {@code application.yaml} like any other resource - and, separately, copied as

@@ -59,7 +59,7 @@ dependencies {
     testImplementation(libs.junit.api)
     testImplementation(libs.junit.platform.launcher)
     testImplementation(libs.archunit)
-    // TestTitanNode, DummyDeliver, EventListenerCounter, ColumnArchitectureRules (D7).
+    // TestTitanNode, DummyDeliver, EventListenerCounter, ColumnArchitectureRules.
     testImplementation(testFixtures(project(":core")))
     testRuntimeOnly(libs.junit.engine)
 }
@@ -77,9 +77,9 @@ application {
     mainClass.set("net.onelitefeather.titan.app.TitanApplication")
 }
 
-// D4: every column ships its own titan/defaults/<column>.yaml (comments kept), concatenated here
+// Every column ships its own titan/defaults/<column>.yaml (comments kept), concatenated here
 // into one classpath application.yaml - :app's own titan/defaults/*.yaml plus every features/*
-// column's, so a new column's defaults are picked up without editing this file (D10 wave 1).
+// column's, so a new column's defaults are picked up without editing this file.
 @Suppress("UNCHECKED_CAST")
 val titanFeatureProjectPaths = gradle.extensions.extraProperties["titanFeatureProjectPaths"] as List<String>
 
@@ -90,7 +90,7 @@ val titanDefaultsFiles = files(
 
 val mergeApplicationDefaults = tasks.register<MergeApplicationDefaultsTask>("mergeApplicationDefaults") {
     group = "build"
-    description = "Concatenates every column's titan/defaults/*.yaml into the classpath application.yaml (D4)."
+    description = "Concatenates every column's titan/defaults/*.yaml into the classpath application.yaml."
     defaultFiles.from(titanDefaultsFiles)
     outputDir.set(layout.buildDirectory.dir("generated/titanDefaults"))
 }

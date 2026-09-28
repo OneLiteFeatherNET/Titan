@@ -16,7 +16,7 @@
 /**
  * Names the bean {@code :app}'s own module ({@code PlatformBeans}) hands to every column: the
  * shared {@code @Named("titan") EventNode<Event>} the protection spike's
- * {@code features/protection} module declares as {@code requires} (D2). Deliberately only the
+ * {@code features/protection} module declares as {@code requires}. Deliberately only the
  * plain {@code Class<?>} form, not also {@code providesString}: {@code :app} needs no compile-time
  * "missing dependency" suppression for a bean it defines itself, and combining {@code provides}
  * with {@code providesString} on this (unnamed, default-scope) module tripped a code generation bug

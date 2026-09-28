@@ -31,7 +31,7 @@ import io.avaje.inject.spi.Generated;
 
 /**
  * Enforces the feature boundaries between {@code app.feature}, the platform and shared libraries.
- * The rules shared with every {@code features/*} column (D7) live in
+ * The rules shared with every {@code features/*} column live in
  * {@code core}'s {@code ColumnArchitectureRules} testFixtures and are applied to
  * {@code app.feature} by {@link AppFeatureColumnArchitectureTest}.
  *

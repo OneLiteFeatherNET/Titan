@@ -33,9 +33,9 @@ subprojects {
 }
 
 // :app depends on every features/* column found by the settings.gradle.kts scan, so a new column
-// (or a column moving out of :app in a later wave) needs no change to app/build.gradle.kts (D8,
-// design.md D10 wave 1). Wired here, after every project is configured, so :app's "implementation"
-// configuration already exists.
+// (or a column moving out of :app in a later wave) needs no change to app/build.gradle.kts.
+// Wired here, after every project is configured, so :app's "implementation" configuration already
+// exists.
 @Suppress("UNCHECKED_CAST")
 val titanFeatureProjectPaths = gradle.extensions.extraProperties["titanFeatureProjectPaths"] as List<String>
 

@@ -22,7 +22,7 @@ import com.tngtech.archunit.lang.ArchRule;
 import net.onelitefeather.titan.core.testfixtures.architecture.ColumnArchitectureRules;
 
 /**
- * Applies the rules every {@code features/*} column shares (D7) to the features that have not yet
+ * Applies the rules every {@code features/*} column shares to the features that have not yet
  * moved out of {@code :app}, exactly the way each column's own {@code ColumnArchitectureTest} will.
  */
 @AnalyzeClasses(packages = "net.onelitefeather.titan.app.feature", importOptions = ImportOption.DoNotIncludeTests.class)
