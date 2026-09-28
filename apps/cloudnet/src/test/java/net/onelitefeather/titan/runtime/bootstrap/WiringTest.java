@@ -31,6 +31,7 @@ import net.onelitefeather.titan.feature.tickle.TickleModule;
 import net.onelitefeather.titan.feature.hotbar.HotbarLobbyItems;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
+import net.onelitefeather.titan.core.permission.PermissionService;
 import net.onelitefeather.titan.common.map.MapProvider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -46,9 +47,10 @@ import org.mockito.Mockito;
  * propagation work as they will in production.
  *
  * <p>{@link MapProvider} and {@link FeatureFlags} touch the filesystem or a process-wide static in
- * production, so both are mocked via Avaje's {@code forTesting().mock(Type)} escape hatch before
- * the scope is built, keeping this test Repeatable. Every other bean is built exactly as
- * {@code Titan} builds it in production.
+ * production, and {@code PermissionService} would start real LuckPerms, so all three are mocked
+ * via Avaje's {@code forTesting().mock(Type)} escape hatch before the scope is built, keeping this
+ * test Fast and Repeatable. Every other bean is built exactly as {@code Titan} builds it in
+ * production.
  */
 @ExtendWith(MicrotusExtension.class)
 @Timeout(30)
@@ -62,7 +64,10 @@ class WiringTest {
     @DisplayName("The scope builds all seven feature beans and a LobbyItems with exactly three items")
     @Test
     void scopeBuildsAllSevenFeaturesAndLobbyItemsWithThreeItems(Env env) {
-        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class).build();
+        // PermissionService is mocked under Avaje's auto-derived qualifier "LuckPerms" - the
+        // plain, unnamed mock(Type) overload does not stop LuckPermsPermissionService's own
+        // @Singleton construction, only what a consumer is wired to.
+        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class).mock(PermissionService.class, "LuckPerms").build();
 
         try {
             Assertions.assertNotNull(scope.get(ProtectionModule.class), "the protection feature must be a bean");
@@ -83,7 +88,10 @@ class WiringTest {
     @DisplayName("Closing the scope detaches every feature's own node from the titan node")
     @Test
     void closingTheScopeDetachesEveryFeatureNode(Env env) {
-        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class).build();
+        // PermissionService is mocked under Avaje's auto-derived qualifier "LuckPerms" - the
+        // plain, unnamed mock(Type) overload does not stop LuckPermsPermissionService's own
+        // @Singleton construction, only what a consumer is wired to.
+        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class).mock(PermissionService.class, "LuckPerms").build();
         EventNode<Event> titan = titanNode(scope);
         Assertions.assertFalse(titan.getChildren().isEmpty(), "every feature must have attached its own node while the scope is open");
 
@@ -99,7 +107,7 @@ class WiringTest {
         // appears in the original stack trace, never a wrapper naming it.
         RuntimeException thrown = Assertions.assertThrows(RuntimeException.class, () -> BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class, flags -> Mockito.when(flags.isActive(Mockito.anyString())).thenAnswer(invocation -> {
             throw new IllegalStateException("feature flag lookup failed (WiringTest)");
-        })).build(), "a feature failing its start must abort building the scope instead of silently continuing");
+        })).mock(PermissionService.class, "LuckPerms").build(), "a feature failing its start must abort building the scope instead of silently continuing");
 
         Assertions.assertTrue(namesFailingFeature(thrown, NavigatorModule.class), "the exception's stack trace (or one of its causes') must contain a frame in the failing feature's class; was: " + describeChain(thrown));
     }

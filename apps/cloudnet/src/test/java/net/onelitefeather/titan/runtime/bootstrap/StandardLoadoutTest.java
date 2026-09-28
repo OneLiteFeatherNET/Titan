@@ -35,6 +35,7 @@ import net.onelitefeather.titan.feature.elytra.ElytraModule;
 import net.onelitefeather.titan.feature.navigator.NavigatorModule;
 import net.onelitefeather.titan.core.module.item.LobbyItems;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
+import net.onelitefeather.titan.core.permission.PermissionService;
 import net.onelitefeather.titan.common.map.LobbyMap;
 import net.onelitefeather.titan.common.map.MapProvider;
 import org.junit.jupiter.api.Assertions;
@@ -69,7 +70,9 @@ class StandardLoadoutTest {
     @Timeout(30)
     void standardLoadoutHoldsAndTheFeatherOpensTheNavigator(Env env) {
         Instance instance = env.createFlatInstance();
-        BeanScope scope = BeanScope.builder().forTesting().mock(FeatureFlags.class).mock(MapProvider.class, mapProvider -> Mockito.when(mapProvider.getActiveLobby()).thenReturn(new LobbyMap("test", new Pos(0, 65, 0), List.of()))).bean(InstanceContainer.class, (InstanceContainer) instance).bean(Instance.class, instance).build();
+        // PermissionService is mocked under Avaje's auto-derived qualifier "LuckPerms" - see
+        // VariantStartTest for why the plain, unnamed mock(Type) overload is not enough here.
+        BeanScope scope = BeanScope.builder().forTesting().mock(FeatureFlags.class).mock(MapProvider.class, mapProvider -> Mockito.when(mapProvider.getActiveLobby()).thenReturn(new LobbyMap("test", new Pos(0, 65, 0), List.of()))).mock(PermissionService.class, "LuckPerms").bean(InstanceContainer.class, (InstanceContainer) instance).bean(Instance.class, instance).build();
 
         try {
             Assertions.assertNotNull(scope.get(NavigatorModule.class));

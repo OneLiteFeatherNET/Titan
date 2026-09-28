@@ -22,6 +22,7 @@ import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.common.map.MapProvider;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
+import net.onelitefeather.titan.core.permission.PermissionService;
 import net.onelitefeather.titan.runtime.variant.LoadedModules;
 import net.onelitefeather.titan.runtime.variant.VariantDescriptor;
 import net.onelitefeather.titan.runtime.variant.VariantStartupCheck;
@@ -46,7 +47,11 @@ class VariantStartTest {
     @Test
     @Timeout(30)
     void theFullScopeBuildsWithNoException(Env env) {
-        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class).build();
+        // PermissionService is mocked under Avaje's auto-derived qualifier "LuckPerms" (the
+        // implementation class name with the interface name stripped) - without that name, Avaje
+        // still builds the real LuckPermsPermissionService (its own @Singleton bean, independent
+        // of what a consumer gets wired to) and starts real LuckPerms.
+        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class).mock(PermissionService.class, "LuckPerms").build();
 
         Assertions.assertDoesNotThrow(scope::close, "closing a fully built scope must not throw");
     }
@@ -55,6 +60,15 @@ class VariantStartTest {
     @Test
     void everyExpectedColumnIsLoaded() {
         Assertions.assertDoesNotThrow(() -> VariantStartupCheck.verify(getClass().getClassLoader()));
+    }
+
+    @DisplayName("variant.properties lists luckpermsPlatform among this variant's expected modules")
+    @Test
+    void variantPropertiesListsLuckpermsPlatform() {
+        ClassLoader loader = getClass().getClassLoader();
+        VariantDescriptor descriptor = VariantDescriptor.fromClasspath(loader).orElseThrow(() -> new AssertionError("this variant must ship META-INF/titan/variant.properties"));
+
+        Assertions.assertTrue(descriptor.modules().contains("luckpermsPlatform"), "expected modules must include luckpermsPlatform, were: " + descriptor.modules());
     }
 
     @DisplayName("An additionally expected but missing column aborts startup, naming it")

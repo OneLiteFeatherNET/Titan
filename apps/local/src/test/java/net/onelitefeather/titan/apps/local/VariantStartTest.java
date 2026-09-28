@@ -22,10 +22,12 @@ import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.common.map.MapProvider;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
+import net.onelitefeather.titan.core.permission.PermissionService;
 import net.onelitefeather.titan.runtime.variant.LoadedModules;
 import net.onelitefeather.titan.runtime.variant.VariantDescriptor;
 import net.onelitefeather.titan.runtime.variant.VariantStartupCheck;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -45,7 +47,13 @@ class VariantStartTest {
     @Test
     @Timeout(30)
     void theFullScopeBuildsWithNoException(Env env) {
-        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class).build();
+        // PermissionService is mocked under Avaje's auto-derived qualifier "LuckPerms" (the
+        // implementation class name with the interface name stripped) - the plain, unnamed
+        // mock(Type) overload would not stop LuckPermsPermissionService's own @Singleton
+        // construction if this build ran with -Ptitan.luckperms (see
+        // theActiveServiceIsDenyAllWithoutTheSwitch below for the unmocked, switch-dependent
+        // assertion).
+        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class).mock(PermissionService.class, "LuckPerms").build();
 
         Assertions.assertDoesNotThrow(scope::close, "closing a fully built scope must not throw");
     }
@@ -54,6 +62,24 @@ class VariantStartTest {
     @Test
     void everyExpectedColumnIsLoaded() {
         Assertions.assertDoesNotThrow(() -> VariantStartupCheck.verify(getClass().getClassLoader()));
+    }
+
+    @DisplayName("Without -Ptitan.luckperms, the active permission service is deny-all")
+    @Test
+    @Timeout(30)
+    void theActiveServiceIsDenyAllWithoutTheSwitch(Env env) {
+        // Only meaningful for the default build: with -Ptitan.luckperms, luckpermsPlatform is on
+        // the classpath and would be the active service instead - and building an unmocked scope
+        // would try to start real LuckPerms, which titan.app-variant keeps off this module's own
+        // test runtime classpath (see platform/luckperms's Gson exclude).
+        Assumptions.assumeFalse(LoadedModules.discover(getClass().getClassLoader()).contains("luckpermsPlatform"), "only meaningful without -Ptitan.luckperms");
+
+        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class).build();
+        try {
+            Assertions.assertEquals("deny-all", scope.get(PermissionService.class).name(), "without a permission platform, the fallback deny-all service must be active");
+        } finally {
+            scope.close();
+        }
     }
 
     @DisplayName("An additionally expected but missing column aborts startup, naming it")

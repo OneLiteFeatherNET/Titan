@@ -5,6 +5,8 @@ plugins {
 
 titanVariant {
     aotCache.set(true)
+    // The only production variant: LuckPerms is mandatory here, never optional.
+    platform("luckperms")
 }
 
 dependencies {
