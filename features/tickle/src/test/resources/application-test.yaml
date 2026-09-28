@@ -1,4 +1,0 @@
-# Mirrors this column's own titan/defaults/tickle.yaml, so TickleModule's Config reads resolve
-# when this module's tests run standalone (avaje-config's documented test-resources convention).
-tickle:
-  cooldownMillis: 4000

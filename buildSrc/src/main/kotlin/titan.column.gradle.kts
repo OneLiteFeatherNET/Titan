@@ -6,6 +6,7 @@
 // accessor is not generated for a buildSrc precompiled script plugin, only for a project's own
 // build.gradle.kts.
 
+import net.onelitefeather.titan.buildsrc.config.MergeApplicationDefaultsTask
 import org.gradle.api.artifacts.VersionCatalogsExtension
 
 plugins {
@@ -38,4 +39,23 @@ dependencies {
     // EventListenerCounter) - see core's testFixtures.
     add("testImplementation", testFixtures(project(":core")))
     add("testRuntimeOnly", lib("junit.engine"))
+}
+
+// A column's tests that read io.avaje.config.Config need this column's own shipped defaults, not
+// a whole variant's merged application.yaml (only assembled for :app/apps/*, see design.md D4:
+// "Column-Tests, die Standardwerte brauchen, laden ihre eigene Default-Datei"). Concatenating this
+// column's own titan/defaults/*.yaml into application-test.yaml lets avaje-config's own built-in
+// test-resource discovery (io.avaje.config.Configuration, "Test configuration") load it - no
+// column needs a hand-copied application-test.yaml, a systemProperty on tasks.test, or its own
+// merge task for this. A column without a titan/defaults directory gets an empty, inert file.
+val mergeTestDefaults = tasks.register<MergeApplicationDefaultsTask>("mergeTestDefaults") {
+    group = "verification"
+    description = "Concatenates this column's own titan/defaults/*.yaml into a test-only application-test.yaml."
+    defaultFiles.from(fileTree("src/main/resources/titan/defaults") { include("*.yaml") })
+    outputFileName.set("application-test.yaml")
+    outputDir.set(layout.buildDirectory.dir("generated/titanTestDefaults"))
+}
+
+sourceSets.test {
+    resources.srcDir(mergeTestDefaults.map { it.outputDir })
 }
