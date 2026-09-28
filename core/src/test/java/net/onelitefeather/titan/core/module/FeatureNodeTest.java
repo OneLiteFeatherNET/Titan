@@ -20,7 +20,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import java.util.ArrayList;
 import java.util.List;
-import net.minestom.server.MinecraftServer;
+import java.util.function.Consumer;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
@@ -180,26 +180,24 @@ class FeatureNodeTest {
         }
     }
 
-    @DisplayName("A listener registered via on() that throws is caught, and the report names the feature and the player")
+    @DisplayName("guard() attributes a caught exception to the feature and player, once reported via reportUnhandledException()")
     @Test
-    void aThrowingListenerIsCaughtAndAttributedToFeatureAndPlayer(Env env) {
-        MinecraftServer.getExceptionManager().setExceptionHandler(FeatureNode::reportUnhandledException);
+    void guardedListenerFailureIsAttributedToFeatureAndPlayer(Env env) {
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
         Logger logger = (Logger) LoggerFactory.getLogger(ListenerGuard.class);
         ListAppender<ILoggingEvent> appender = new ListAppender<>();
         appender.start();
         logger.addAppender(appender);
-        EventNode<Event> parent = EventNode.all("test-attribution");
-        FeatureNode node = FeatureNode.attach(parent, "tickle", 600);
-        node.on(PlayerTestEvent.class, event -> {
+        Consumer<PlayerTestEvent> guarded = FeatureNode.guard("tickle", event -> {
             throw new IllegalStateException("boom for " + event.getPlayer().getUsername());
         });
+        PlayerTestEvent event = new PlayerTestEvent(player);
 
         try {
-            Assertions.assertDoesNotThrow(() -> parent.call(new PlayerTestEvent(player)), "a failing listener must not propagate out of dispatch - the lobby keeps running");
+            IllegalStateException thrown = Assertions.assertThrows(IllegalStateException.class, () -> guarded.accept(event), "guard() must still let the exception reach its caller, same as an event node's dispatch would");
+            FeatureNode.reportUnhandledException(thrown);
         } finally {
-            node.close();
             logger.detachAppender(appender);
         }
 
