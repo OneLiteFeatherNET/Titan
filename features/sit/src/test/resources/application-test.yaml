@@ -1,0 +1,9 @@
+# Mirrors this column's own titan/defaults/sit.yaml, so SitModule's Config reads resolve when
+# this module's tests run standalone (avaje-config's documented test-resources convention).
+sit:
+  offset:
+    x: 0.5
+    y: 0.25
+    z: 0.5
+  allowedBlocks:
+    - minecraft:spruce_stairs

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.app.feature.sit;
+package net.onelitefeather.titan.feature.sit;
 
 import java.util.List;
 import net.kyori.adventure.key.Key;
