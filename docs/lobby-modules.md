@@ -316,6 +316,83 @@ nicht nur per Konvention:
 9. `..app.module..` (die Plattform) hängt nicht von `..app.bootstrap..` (der Kompositionswurzel)
    ab.
 
+## Wie eine Column Plattform-Beans bekommt
+
+Ab der Column-Architektur (`openspec/changes/split-titan-into-columns`) hängt eine Column nur an
+`core`, nie an `:app` (später `runtime`). Beans wie den geteilten `@Named("titan") EventNode<Event>`
+sieht sie beim Kompilieren also nicht - ein Fall, den der Spike an `features/protection` klärt
+(design.md, Entscheidung D2). Die drei Spike-Fragen und ihre Antworten:
+
+1. **Passt `requires` mit dem qualifizierten, generischen `EventNode<Event>` zur Übersetzung?**
+   Nein, nicht mit der einfachen `Class<?>`-Form. `@InjectModule(requires = {EventNode.class})`
+   verliert den `@Named("titan")`-Qualifier und den generischen Parameter; der
+   Annotationsprozessor bricht mit einer eigenen, sehr genauen Fehlermeldung ab: `No dependency
+   provided for net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan`. Die
+   Lösung ist `requiresString`, mit genau demselben `Typ:Qualifier`-Schlüssel, den die
+   Fehlermeldung selbst benutzt:
+   ```java
+   @InjectModule(requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"})
+   ```
+   Das reicht aber nur für die Übersetzung. Für die Bau-**Reihenfolge** der Module zur Laufzeit
+   (welches Modul baut `BeanScope` zuerst) braucht es zusätzlich die einfache `Class<?>`-Form, weil
+   nur diese die generierte `AvajeModule.requiresBeans()` füllt, auf der die Reihenfolge beruht -
+   `requiresString`-Einträge tauchen dort nicht auf. Beide Formen zusammen, nicht eine allein:
+   ```java
+   @InjectModule(requires = {EventNode.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"})
+   ```
+   Spiegelbildlich braucht `:app` (später `runtime`) nur die einfache Form -
+   `@InjectModule(provides = {EventNode.class})` -, weil es die Bean selbst definiert und keine
+   eigene Übersetzungsprüfung dafür braucht. `provides` **und** `providesString` zusammen auf
+   diesem (unbenannten) Standard-Scope-Modul auszuprobieren, hat in avaje-inject-generator 12.7
+   einen Codegen-Fehler ausgelöst: Im generierten `AppModule` fehlte das Komma zwischen den beiden
+   Attributen, ein nicht mehr übersetzbares `@InjectModule(provides = {...}providesString =
+   {...})`. Einen entsprechenden Fehlerbericht an avaje-inject sollte ein Folge-Change einreichen.
+
+2. **Wie liest eine spätere Welle (D5) den Modulnamen, ohne dass er mit der Klasse `ProtectionModule`
+   kollidiert?** Über `@InjectModule(name = "protectionColumn", ...)` - ein expliziter, von der
+   Bean-Klasse verschiedener Name. Der Annotationsprozessor generiert daraus die Modulklasse
+   `ProtectionColumnModule` (Name plus `Module`-Suffix), registriert unter
+   `META-INF/services/io.avaje.inject.spi.InjectExtension`. D5 liest also nicht "gibt es eine Bean
+   `ProtectionModule`", sondern vergleicht die erwartete Liste von Column-Namen (`"protectionColumn"`,
+   ...) gegen das, was beim Aufbau des `BeanScope` tatsächlich geladen wurde.
+
+3. **Behält `mergeServiceFiles()` alle Avaje-Module im Shadow-Jar?** Nicht ohne Weiteres. Jede
+   Column liefert ihre eigene `META-INF/services/io.avaje.inject.spi.InjectExtension`-Datei; die
+   `ShadowJar`-Aufgabe hat als eigene, von `mergeServiceFiles()` unabhängige Voreinstellung
+   `duplicatesStrategy = DuplicatesStrategy.EXCLUDE` - und die wirft jede doppelte Ressource schon
+   *vor* dem Merge-Transformer weg, sodass am Ende nur `:app`s eigenes Modul übrigblieb (per
+   `unzip -p app-titan.jar META-INF/services/io.avaje.inject.spi.InjectExtension` nachgewiesen: nur
+   `AppModule`, kein `ProtectionColumnModule`). Die Behebung ist `duplicatesStrategy =
+   DuplicatesStrategy.INCLUDE` zusätzlich zu `mergeServiceFiles()`, in `app/build.gradle.kts`:
+   erst dann landen beide Modulnamen (`net.onelitefeather.titan.app.AppModule` und
+   `net.onelitefeather.titan.feature.protection.ProtectionColumnModule`) in derselben Datei.
+   `titan.app-variant` (Welle 3) muss dieselbe Einstellung übernehmen.
+
+### Das Muster für neue Columns (Welle 2)
+
+Jede Column bekommt in ihrem eigenen `package-info.java` (Wurzelpaket der Column, also
+`net.onelitefeather.titan.feature.<name>`):
+
+```java
+@InjectModule(
+    name = "<name>Column",
+    requires = {<PlattformTyp>.class},
+    requiresString = {"<voll.qualifizierter.PlattformTyp><generisch, falls vorhanden>:<qualifier, falls @Named>"}
+)
+package net.onelitefeather.titan.feature.<name>;
+```
+
+- `requires` und `requiresString` je nur für einen Plattform-Typ, den die Column tatsächlich
+  braucht (aktuell nur `EventNode<Event>:titan`; `hotbar`s `LobbyItems`-Interface hat keinen
+  Qualifier und keinen generischen Parameter, dafür reicht `requires = {LobbyItems.class}` allein).
+- `name` immer explizit und nie identisch mit einem Bean-Klassennamen der Column.
+- `:app` (später `runtime`) braucht die spiegelbildliche `provides`-Deklaration nur als einfache
+  `Class<?>`-Form, niemals zusammen mit der `providesString`-Form auf demselben (Standard-Scope-)
+  Modul (siehe Frage 1 oben).
+- `app/build.gradle.kts`s (später `titan.app-variant`s) `shadowJar` braucht
+  `duplicatesStrategy = DuplicatesStrategy.INCLUDE` neben `mergeServiceFiles()` - sonst verschwindet
+  die neue Column beim Shaden stillschweigend (siehe Frage 3 oben).
+
 ## Checkliste: neues Feature = neues Paket
 
 1. Neues Paket `app/src/main/java/net/onelitefeather/titan/app/feature/<name>/` anlegen -
