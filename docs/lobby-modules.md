@@ -405,6 +405,27 @@ package net.onelitefeather.titan.feature.<name>;
   `mergeServiceFiles()` - sonst verschwindet die neue Column beim Shaden stillschweigend
   (siehe Frage 3 oben).
 
+Für die Features, die noch nicht umgezogen sind, aus dem Konstruktor ihres heutigen `*Module` in
+`app/src/main/java/.../app/feature/<name>/` abgelesen (`:app`s `package-info.java` deklariert
+all diese Typen bereits als `provides`):
+
+| Column | `requires` | `requiresString` |
+|---|---|---|
+| `spawn` | `Instance.class`, `LobbySpawn.class`, `EventNode.class`, `LobbyItems.class` | `"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"` |
+| `respawn` | `EventNode.class`, `LobbyItems.class` | `"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"` |
+| `sit` | `EventNode.class` | `"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"` |
+| `tickle` | `EventNode.class`, `Clock.class` | `"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"` |
+| `elytra` | `EventNode.class`, `LobbyItems.class`, `Scheduler.class` | `"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"` |
+| `navigator` | `EventNode.class`, `Deliver.class`, `FeatureFlags.class` | `"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"` |
+
+`EventNode` ist in jeder Zeile der einzige `requiresString`-Eintrag, weil es der einzige
+qualifizierte, generische Plattform-Typ ist (Frage 1 oben); die anderen Typen sind weder generisch
+noch `@Named`, für sie reicht die `requires`-Form allein. `LobbyItems` steht bei `spawn`,
+`respawn` und `elytra`, weil ihre Module heute `LobbyItems` injizieren - die Implementierung
+(`HotbarLobbyItems`) liegt aber noch in `:app`; zieht `hotbar` in eine eigene Column um, muss
+dessen `package-info.java` `provides = {LobbyItems.class}` übernehmen und `:app`s Deklaration
+entfernt werden.
+
 ## Checkliste: neues Feature = neues Paket
 
 1. Neues Paket `app/src/main/java/net/onelitefeather/titan/app/feature/<name>/` anlegen -
