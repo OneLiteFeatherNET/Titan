@@ -73,8 +73,9 @@ public final class TickleModule {
 Es gibt keine zentrale Feature-Liste. `Titan` baut im Konstruktor `BeanScope.builder().build()` -
 das allein reicht, damit jedes `@Singleton`-Feature gebaut und über sein `@PostConstruct`
 gestartet wird. Fehlt `@Singleton` an einer Klasse mit `@PostConstruct`, wird sie nie gebaut und
-ihr `start()` läuft nie - `ArchitectureTest#classesWithPostConstructInFeaturesAreSingleton` lässt
-den Build in diesem Fall fehlschlagen.
+ihr `start()` läuft nie - `AppFeatureColumnArchitectureTest#classesWithPostConstructAreSingleton`
+(bzw. je Column deren eigener `ColumnArchitectureTest`) lässt den Build in diesem Fall
+fehlschlagen.
 
 **Die Reihenfolge, in der zwei Features dasselbe Event verarbeiten, legt `EVENT_PRIORITY` fest**,
 nicht mehr eine Startreihenfolge - Minestoms `EventNode#setPriority(int)` ordnet Geschwisterknoten.
@@ -90,8 +91,10 @@ Die heutigen sieben Features, in Hunderterschritten mit Platz dazwischen:
 | tickle | 600 |
 | elytra | 700 |
 
-Ein neues Feature wählt eine freie Zahl aus der Lücke. Zwei Features mit demselben Wert lässt
-`ArchitectureTest#eventPriorityValuesAreUniqueAcrossFeatures` fehlschlagen und nennt beide.
+Ein neues Feature wählt eine freie Zahl aus der Lücke. Eindeutigkeit ist kein ArchUnit-Test,
+sondern eine Startlaufzeit-Prüfung: `FeatureNode.attach(parent, featureId, priority)` wirft eine
+`IllegalStateException`, sobald `parent` bereits ein Kind mit derselben `priority` hat, und nennt
+darin beide Feature-Ids sowie die kollidierende Position.
 
 **Fehlt eine Konstruktor-Abhängigkeit ganz** (kein passender `@Bean`/`@Singleton` im Scope), bricht
 `BeanScope.builder().build()` mit einer Exception ab, die den fehlenden Typ nennt - noch bevor ein
@@ -298,23 +301,28 @@ einen Test mit mehreren Aktionen deshalb erst alle Events feuern und danach gena
 
 ## Architekturregeln (ArchUnit)
 
-`app/src/test/java/net/onelitefeather/titan/app/architecture/ArchitectureTest` prüft im Build,
-nicht nur per Konvention:
+`app/src/test/java/net/onelitefeather/titan/app/architecture/ArchitectureTest` und
+`AppFeatureColumnArchitectureTest` (wendet `core`s `ColumnArchitectureRules`-Testfixtures auf
+`..app.feature..` an) prüfen im Build, nicht nur per Konvention:
 
 1. Feature-Pakete unter `..app.feature.(*)..` hängen nicht voneinander ab.
 2. Klassen in `..app.module..` und `..titan.common..` hängen nicht von `..app.feature..` ab.
 3. In `..app.feature..` ist nur `*Module` `public`, dazu die von Avaje Inject generierten
    `$DI`-Klassen.
 4. Klassen in `..app.feature..` rufen `EventNode#addListener`/`#addChild` oder
-   `MinecraftServer#getGlobalEventHandler()` nie direkt auf - nur über `FeatureNode`.
-5. Jede Klasse in `..app.feature..` mit einer `@PostConstruct`-Methode trägt `@Singleton`.
+   `MinecraftServer#getGlobalEventHandler()` nie direkt auf - nur über `FeatureNode`
+   (`ColumnArchitectureRules.FEATURES_REGISTER_LISTENERS_ONLY_THROUGH_FEATURE_NODE`).
+5. Jede Klasse in `..app.feature..` mit einer `@PostConstruct`-Methode trägt `@Singleton`
+   (`ColumnArchitectureRules.CLASSES_WITH_POST_CONSTRUCT_ARE_SINGLETON`).
 6. Kein Feature-Code hängt von `io.avaje.inject.BeanScope` ab - Abhängigkeiten kommen
-   ausschließlich über den Konstruktor.
-7. Die Werte von `EVENT_PRIORITY` sind über alle Features eindeutig
-   (`ArchitectureTest#eventPriorityValuesAreUniqueAcrossFeatures`, Reflection statt `ArchRule`).
-8. `..app.feature.navigator..` hängt nicht von `io.avaje.config..` ab.
-9. `..app.module..` (die Plattform) hängt nicht von `..app.bootstrap..` (der Kompositionswurzel)
+   ausschließlich über den Konstruktor
+   (`ColumnArchitectureRules.FEATURE_MODULES_DO_NOT_USE_BEAN_SCOPE`).
+7. `..app.feature.navigator..` hängt nicht von `io.avaje.config..` ab.
+8. `..app.module..` (die Plattform) hängt nicht von `..app.bootstrap..` (der Kompositionswurzel)
    ab.
+
+Die Eindeutigkeit von `EVENT_PRIORITY` ist keine ArchUnit-Regel, sondern eine
+Startlaufzeit-Prüfung in `FeatureNode.attach` (s. oben, "Gefunden werden: `@Singleton` genügt").
 
 ## Wie eine Column Plattform-Beans bekommt
 
