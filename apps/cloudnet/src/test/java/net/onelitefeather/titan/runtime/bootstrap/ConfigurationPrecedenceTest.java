@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.app.bootstrap;
+package net.onelitefeather.titan.runtime.bootstrap;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -34,7 +34,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Integration coverage for configuration override precedence, driven through
- * {@link ConfigurationPrintMain} exactly as {@link net.onelitefeather.titan.app.Titan} resolves
+ * {@link ConfigurationPrintMain} exactly as {@link net.onelitefeather.titan.runtime.Titan} resolves
  * configuration in production.
  *
  * <p>{@code avaje-config} resolves files against the JVM's real working directory and reads

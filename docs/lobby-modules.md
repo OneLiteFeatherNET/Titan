@@ -4,11 +4,11 @@ Ein Lobby-Feature ist eine ganz normale [Avaje Inject](https://avaje.io/inject/)
 eigener Plattformtyp mehr. Dieses Dokument erklärt den Aufbau, die Regeln für den Tick-Thread, den
 Testaufbau ohne Harness und die Checkliste für ein neues Feature. Alle Codebeispiele stammen, wo
 nicht anders vermerkt, aus dem lauffähigen Vorlagefeature
-`app/src/test/java/net/onelitefeather/titan/app/feature/example/` (`ExampleModule`,
+`apps/cloudnet/src/test/java/net/onelitefeather/titan/runtime/feature/example/` (`ExampleModule`,
 `ExampleGreetingItems`, `ExampleGreetingRule`, `ExampleGreetingSettings`, `ExampleGreetingTracker`)
-- kopierbar als Ausgangspunkt für ein echtes Feature. Es ist bewusst test-only (`app/src/test`,
-nicht `app/src/main`), damit es nie als echtes Feature mitläuft: Avaje Inject prozessiert
-Annotationen nur für `app/src/main` (kein `testAnnotationProcessor`, s. `app/build.gradle.kts`).
+- kopierbar als Ausgangspunkt für ein echtes Feature. Es ist bewusst test-only, damit es nie als
+echtes Feature mitläuft: Avaje Inject prozessiert Annotationen nur für `src/main` (kein
+`testAnnotationProcessor`, s. `buildSrc/src/main/kotlin/titan.column.gradle.kts`).
 
 ## Aufbau eines Features
 
