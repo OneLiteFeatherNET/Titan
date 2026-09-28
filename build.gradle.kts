@@ -17,11 +17,31 @@ allprojects {
 subprojects {
     apply(plugin = "com.diffplug.spotless")
 
-    configure<SpotlessExtension> {
-        java {
-            licenseHeaderFile("${rootDir}/header.java")
-            removeUnusedImports()
-            eclipse().configFile("${rootDir}/Default.xml")
+    // Deferred until the java plugin is actually applied: the features/ and (later) apps/
+    // directory scans in settings.gradle.kts create a synthetic aggregator project (":features")
+    // for the parent of a nested path like ":features:protection" that carries no build file and
+    // no java plugin of its own.
+    plugins.withType<JavaBasePlugin> {
+        configure<SpotlessExtension> {
+            java {
+                licenseHeaderFile("${rootDir}/header.java")
+                removeUnusedImports()
+                eclipse().configFile("${rootDir}/Default.xml")
+            }
         }
+    }
+}
+
+// :app depends on every features/* column found by the settings.gradle.kts scan, so a new column
+// (or a column moving out of :app in a later wave) needs no change to app/build.gradle.kts (D8,
+// design.md D10 wave 1). Wired here, after every project is configured, so :app's "implementation"
+// configuration already exists.
+@Suppress("UNCHECKED_CAST")
+val titanFeatureProjectPaths = gradle.extensions.extraProperties["titanFeatureProjectPaths"] as List<String>
+
+gradle.projectsEvaluated {
+    val app = project(":app")
+    titanFeatureProjectPaths.forEach { featurePath ->
+        app.dependencies.add("implementation", app.project(featurePath))
     }
 }
