@@ -13,20 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.runtime.player;
+package net.onelitefeather.titan.platform.luckperms;
 
-import net.kyori.adventure.util.TriState;
 import net.luckperms.api.util.Tristate;
+import net.onelitefeather.titan.core.permission.PermissionResult;
 
-final class CompatibilityUtil {
-    private CompatibilityUtil() {
+/** Maps a LuckPerms {@link Tristate} to this module's platform-neutral {@link PermissionResult}. */
+final class LuckPermsResults {
+
+    private LuckPermsResults() {
     }
 
-    static TriState convertTriState(Tristate tristate) {
+    static PermissionResult from(Tristate tristate) {
         return switch (tristate) {
-            case TRUE -> TriState.TRUE;
-            case FALSE -> TriState.FALSE;
-            case UNDEFINED -> TriState.NOT_SET;
+            case TRUE -> PermissionResult.ALLOWED;
+            case FALSE -> PermissionResult.DENIED;
+            case UNDEFINED -> PermissionResult.NOT_SET;
         };
     }
 }

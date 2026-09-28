@@ -16,13 +16,10 @@
 package net.onelitefeather.titan.runtime;
 
 import net.hollowcube.minestom.extensions.ExtensionBootstrap;
-import net.luckperms.api.LuckPermsProvider;
-import net.luckperms.api.model.user.User;
 import net.minestom.server.Auth;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.command.CommandManager;
 import net.onelitefeather.titan.common.observability.TitanObservability;
-import net.onelitefeather.titan.common.permission.TitanPermissionBridge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,20 +53,8 @@ public class TitanApplication {
         // Minestom's Throwable::printStackTrace default with SLF4J logging.
         TitanObservability.installExceptionHandler();
 
-        me.lucko.luckperms.minestom.loader.MinestomLoader.get().load().registerShutdownHook().start();
-
-        // The CloudNet bridge (a separate classloader) resolves permissions through LuckPerms via
-        // TitanPermissionBridge; only JDK types cross that boundary.
-        TitanPermissionBridge.setResolver((playerId, permission) -> {
-            User user = LuckPermsProvider.get().getUserManager().getUser(playerId);
-            if (user == null) {
-                return false;
-            }
-            return user.getCachedData().getPermissionData().checkPermission(permission).asBoolean();
-        });
-
         // Also catch Error: a broken application.yaml throws ExceptionInInitializerError;
-        // rethrowing would hang on LuckPerms' non-daemon threads.
+        // rethrowing would hang on a permission platform's non-daemon threads.
         try {
             Titan titan = new Titan();
             titan.initialize();

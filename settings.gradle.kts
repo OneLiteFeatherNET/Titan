@@ -34,7 +34,6 @@ dependencyResolutionManagement {
         create("libs") {
             version("aonyx-bom", "0.8.7")
             version("cloudnet", "4.0.0-RC18-SNAPSHOT")
-            version("butterfly", "1.0.23")
 
             version("luckperms", "5.6-SNAPSHOT")
 
@@ -67,7 +66,6 @@ dependencyResolutionManagement {
             library("minestom-extensions-processor", "net.onelitefeather", "minestom-extensions-processor").withoutVersion()
             library("aves", "net.theevilreaper", "aves").withoutVersion()
             library("adventure.minimessage", "net.kyori", "adventure-text-minimessage").withoutVersion()
-            library("butterfly-minestom", "net.onelitefeather", "butterfly-minestom").versionRef("butterfly")
 
             library("tomcat-annotations-api", "org.apache.tomcat", "annotations-api").versionRef("tomcat-annotations-api")
 
@@ -137,6 +135,14 @@ file("features").listFiles()
         featureProjectPaths += ":$path"
     }
 gradle.extensions.extraProperties["titanFeatureProjectPaths"] = featureProjectPaths.toList()
+
+// Every permission platform module is a directory under platform/ with its own
+// build.gradle.kts - mirrors the features/ scan above. A variant opts into one by depending on
+// its project (see titan.app-variant).
+file("platform").listFiles()
+    ?.filter { it.isDirectory && File(it, "build.gradle.kts").exists() }
+    ?.sortedBy { it.name }
+    ?.forEach { platformDir -> include("platform:${platformDir.name}") }
 
 // Every app variant is a directory under apps/ with its own build.gradle.kts - see titan.app-variant.
 file("apps").listFiles()

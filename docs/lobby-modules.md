@@ -15,9 +15,13 @@ echtes Feature mitläuft: Avaje Inject prozessiert Annotationen nur für `src/ma
 
 ```
 apps/cloudnet ─┐
-apps/local ────┼─▶ runtime ─▶ common ─▶ core
-               └─▶ features/* ──────────▶ core
+apps/local ────┼─▶ runtime ─────────────▶ common ─▶ core
+               ├─▶ features/* ──────────────────────▶ core
+               └─▶ platform/* (z. B. luckperms) ─────▶ core
 ```
+
+`apps/cloudnet` bindet `platform/luckperms` immer ein; `apps/local` nur mit der Gradle-Property
+`-Ptitan.luckperms` (s. "Permission-Plattform" unten).
 
 - **`core`** enthält nur APIs, keine Implementierung: die Andockpunkte einer Column
   (`net.onelitefeather.titan.core.module.FeatureNode`, `LobbySpawn`, `LobbyItem`, `ItemSlot`,
@@ -32,15 +36,22 @@ apps/local ────┼─▶ runtime ─▶ common ─▶ core
   (Hotbar-/Ausrüstungsitems, `LobbyItems`-Implementierung) und `admin` (`/stop`, `/end`).
 - **`runtime`** ist der gemeinsame Starter: `TitanApplication` (`main`), `Titan` (baut den
   `BeanScope`), `PlatformBeans`-Äquivalent (`runtime`s eigene `package-info.java` deklariert die
-  Plattform-Typen als `provides`), die Start-Logs, LuckPerms (`TitanPlayer`) und Butterfly.
+  Plattform-Typen als `provides`), die Start-Logs sowie der Rechte-Vertrag `PermissionService`
+  (`core`) und dessen Fallback `DenyAllPermissionService` (`@Secondary`, liefert immer „nicht
+  erteilt“). LuckPerms und Butterfly gehören nicht mehr zu `runtime` - LuckPerms steckt in
+  `platform/luckperms` (s. "Permission-Plattform" unten), Butterfly ist ersatzlos entfernt.
+- **`platform/<name>`** (Paket `net.onelitefeather.titan.platform.<name>`) ist eine
+  Permission-Plattform: ein eigenes Gradle-Modul, das nur an `core` hängt und einen
+  `PermissionService` liefert. Der heutige Eintrag: `luckperms`.
 - **`apps/cloudnet`** (Produktion, mit AOT-Cache, veröffentlicht als `titan-cloudnet`) und
   **`apps/local`** (Entwicklung, ohne AOT-Cache, nicht veröffentlicht) sind dünne
   Assembly-Module: eigener Code nur als Querschnitts-Tests (`WiringTest`,
   `NavigatorProtectionOrderingTest`, `StandardLoadoutTest`, ...), sonst nur eine
   `build.gradle.kts`, die `titan.app-variant` anwendet.
-- **`settings.gradle.kts`** bindet `features/*` und `apps/*` per Verzeichnis-Scan ein - jedes
-  Unterverzeichnis mit eigener `build.gradle.kts` wird automatisch ein Projekt. Eine neue Column
-  oder eine neue Variante braucht dafür keine Änderung an `settings.gradle.kts`.
+- **`settings.gradle.kts`** bindet `features/*`, `platform/*` und `apps/*` per Verzeichnis-Scan
+  ein - jedes Unterverzeichnis mit eigener `build.gradle.kts` wird automatisch ein Projekt. Eine
+  neue Column, eine neue Permission-Plattform oder eine neue Variante braucht dafür keine
+  Änderung an `settings.gradle.kts`.
 
 ### App-Varianten
 
@@ -65,6 +76,37 @@ einer Stelle (dem Verzeichnis-Scan in `settings.gradle.kts`), nicht pro Variante
   (s. "Standardwerte je Column" unten);
 - bei `titanVariant { aotCache.set(true) }` (nur `apps/cloudnet`) den AOT-Cache
   `titan-<variantname>.aot`.
+
+### Permission-Plattform
+
+`titanVariant { platform("<name>") }` hängt `:platform:<name>` an die Variante und ergänzt
+`"<name>Platform"` in `expectedModules` - genau wie eine Column ihr eigenes `"<name>Column"`.
+`apps/cloudnet/build.gradle.kts` setzt `platform("luckperms")` fest: die Produktionsvariante
+startet nie ohne LuckPerms (fehlt `luckpermsPlatform` beim Start, bricht `VariantStartupCheck`
+ab, s. "Erwartete Columns einer Variante" unten - die Prüfung gilt gleichermaßen für Columns und
+Plattform-Module). `apps/local/build.gradle.kts` ruft `platform("luckperms")` nur auf, wenn die
+Gradle-Property `titan.luckperms` gesetzt ist (`./gradlew :apps:local:build -Ptitan.luckperms`);
+ohne die Property bleibt `apps/local` bei `runtime`s Fallback `DenyAllPermissionService` (aktiver
+Dienst `deny-all`, Spieler ohne Rechte).
+
+Bindet eine Variante `platform("luckperms")` ein, schließt `titan.app-variant` zusätzlich
+`net.luckperms:minestom-loader` von der `testRuntimeClasspath` dieser Variante aus: Der Loader ist
+ein JarInJar-Bootstrap mit einem eigenen, unrelocateten, veralteten Gson, das sonst Minestoms
+Registry-Initialisierung in Tests bricht (derselbe Ausschluss wie in
+`platform/luckperms/build.gradle.kts` für `platform/luckperms` selbst). Jeder Scope-bauende Test
+in `apps/cloudnet` ersetzt `PermissionService` deshalb über Avajes Test-API
+(`BeanScope.builder().forTesting().mock(PermissionService.class,
+LuckPermsPermissionService.QUALIFIER)...`), statt echtes LuckPerms zu starten -
+`LuckPermsPermissionService` trägt dafür ein explizites `@Named(LuckPermsPermissionService.QUALIFIER)`
+(`QUALIFIER = "luckperms"`) statt sich auf Avajes aus dem Klassennamen abgeleiteten Qualifier zu
+verlassen, und die generierte `isBeanAbsent(...)`-Prüfung, die ein gemocktes Bean von seiner
+eigenen Konstruktion abhält, vergleicht genau diesen Namen. Der unbenannte
+`mock(PermissionService.class)` ohne Namen verhindert die echte LuckPerms-Bean **nicht** - er
+ersetzt nur, was ein Konsument injiziert bekommt, während `LuckPermsPermissionService`s eigenes
+`@PostConstruct` trotzdem läuft und echtes LuckPerms startet. `apps/local`s eigener
+`VariantStartTest` referenziert die Konstante nicht direkt: `platform/luckperms` liegt dort nur
+mit `-Ptitan.luckperms` auf dem Klassenpfad, also bleibt der Name dort ein Literal, das mit
+`QUALIFIER` übereinstimmen muss.
 
 ## Aufbau eines Features
 
@@ -298,14 +340,16 @@ Rangfolge aus `lobby-module-config` (Shipped-Default < `application.yaml` < Prof
 ## Erwartete Columns einer Variante
 
 `titan.app-variant` schreibt beim Bauen die Avaje-Modulnamen aller in eine Variante eingebundenen
-Columns (`<name>Column`) in die Ressource `META-INF/titan/variant.properties`
-(`name=<variantname>`, `modules=<kommagetrennte Liste>`). `Titan`s Konstruktor ruft direkt nach dem
-Aufbau des `BeanScope` `net.onelitefeather.titan.runtime.variant.VariantStartupCheck.verify(...)`
-auf: Sie liest `variant.properties` über den Classloader, vergleicht die erwartete Liste mit den
+Columns (`<name>Column`) und Permission-Plattformen (`<name>Platform`, s. "Permission-Plattform"
+oben) in die Ressource `META-INF/titan/variant.properties` (`name=<variantname>`,
+`modules=<kommagetrennte Liste>`). `Titan`s Konstruktor ruft direkt nach dem Aufbau des
+`BeanScope` `net.onelitefeather.titan.runtime.variant.VariantStartupCheck.verify(...)` auf: Sie
+liest `variant.properties` über den Classloader, vergleicht die erwartete Liste mit den
 tatsächlich geladenen Avaje-Modulen (`LoadedModules.discover`) und wirft eine
-`IllegalStateException` mit den fehlenden Modulnamen, falls eine erwartete Column nicht geladen
-wurde. `TitanApplication.main` fängt diese Exception wie jeden anderen Startfehler ab und beendet
-den Prozess. Sind alle Columns geladen, loggt die Prüfung einmal auf INFO:
+`IllegalStateException` mit den fehlenden Modulnamen, falls eine erwartete Column oder
+Plattform nicht geladen wurde - so startet `apps/cloudnet` ohne `platform/luckperms` nicht.
+`TitanApplication.main` fängt diese Exception wie jeden anderen Startfehler ab und beendet
+den Prozess. Sind alle Module geladen, loggt die Prüfung einmal auf INFO:
 
 ```
 Variant {} started with modules {}

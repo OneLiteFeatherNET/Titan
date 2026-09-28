@@ -5,6 +5,8 @@ plugins {
 
 titanVariant {
     aotCache.set(true)
+    // The only production variant: LuckPerms is mandatory here, never optional.
+    platform("luckperms")
 }
 
 dependencies {
@@ -23,12 +25,6 @@ dependencies {
     testImplementation(libs.junit.api)
     testImplementation(libs.junit.platform.launcher)
     testRuntimeOnly(libs.junit.engine)
-}
-
-// Same reason as runtime/build.gradle.kts: LuckPerms' minestom-loader is a JarInJar bootstrap
-// bundling an outdated, unrelocated Gson that shadows the real one on the test runtime classpath.
-configurations.testRuntimeClasspath {
-    exclude(group = "net.luckperms", module = "minestom-loader")
 }
 
 publishing.publications.named<MavenPublication>("maven") {

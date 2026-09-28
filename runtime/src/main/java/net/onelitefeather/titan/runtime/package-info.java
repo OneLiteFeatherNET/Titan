@@ -29,7 +29,7 @@
  * ({@code spawn}/{@code respawn}/{@code elytra}) has moved out to {@code features/*}, and
  * {@code runtime}'s own main code no longer injects it anywhere.
  */
-@InjectModule(provides = {EventNode.class, Instance.class, LobbySpawn.class, Deliver.class, FeatureFlags.class, Clock.class, Scheduler.class, CommandManager.class})
+@InjectModule(provides = {EventNode.class, Instance.class, LobbySpawn.class, Deliver.class, FeatureFlags.class, Clock.class, Scheduler.class, CommandManager.class, PermissionService.class})
 package net.onelitefeather.titan.runtime;
 
 import io.avaje.inject.InjectModule;
@@ -42,3 +42,4 @@ import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.core.module.LobbySpawn;
 import net.onelitefeather.titan.core.module.item.LobbyItems;
+import net.onelitefeather.titan.core.permission.PermissionService;

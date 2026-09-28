@@ -20,10 +20,11 @@ import io.avaje.inject.spi.GenericType;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
-import net.onelitefeather.butterfly.minestom.Butterfly;
 import net.onelitefeather.titan.runtime.bootstrap.ConfigurationStartupLog;
 import net.onelitefeather.titan.runtime.bootstrap.FeatureStartupLog;
+import net.onelitefeather.titan.runtime.bootstrap.PermissionStartupLog;
 import net.onelitefeather.titan.core.module.FeatureNode;
+import net.onelitefeather.titan.core.permission.PermissionService;
 import net.onelitefeather.titan.runtime.player.TitanPlayer;
 import net.onelitefeather.titan.runtime.variant.VariantStartupCheck;
 import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
@@ -31,8 +32,7 @@ import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
 /**
  * The lobby's composition root: builds an Avaje Inject {@link BeanScope}, which discovers every
  * lobby feature and platform service as a plain {@code @Singleton} bean. A feature's own
- * {@code @PostConstruct}/{@code @PreDestroy} methods are its whole lifecycle; only the Butterfly
- * extension bridge lives outside it.
+ * {@code @PostConstruct}/{@code @PreDestroy} methods are its whole lifecycle.
  */
 public final class Titan {
 
@@ -46,7 +46,6 @@ public final class Titan {
      *                                     load (see {@link VariantStartupCheck})
      */
     public Titan() {
-        MinecraftServer.getConnectionManager().setPlayerProvider(TitanPlayer::new);
         BlockHandlerHelper.registerAll();
 
         // First touch of the static io.avaje.config.Config facade, so a broken application.yaml
@@ -59,21 +58,23 @@ public final class Titan {
 
         VariantStartupCheck.verify(Titan.class.getClassLoader());
 
+        // Players can only connect once bootstrap.start() runs, well after this point, so the
+        // provider can safely use the PermissionService resolved from the scope.
+        PermissionService permissionService = this.beanScope.get(PermissionService.class);
+        MinecraftServer.getConnectionManager().setPlayerProvider((connection, gameProfile) -> new TitanPlayer(connection, gameProfile, permissionService));
+        PermissionStartupLog.activeService(permissionService);
+
         EventNode<Event> titan = this.beanScope.get(new GenericType<EventNode<Event>>() {
         }.type(), FeatureNode.TITAN_NODE);
         FeatureStartupLog.startedInEventOrder(titan);
     }
 
     /**
-     * Loads Butterfly, then schedules shutdown in FIFO order: the {@link BeanScope} closes first
-     * (running every feature's {@code @PreDestroy}), then Butterfly.
+     * Schedules the {@link BeanScope} to close (running every feature's {@code @PreDestroy}) on
+     * shutdown.
      */
     public void initialize() {
-        Butterfly butterfly = Butterfly.create();
-        butterfly.load();
-
         MinecraftServer.getSchedulerManager().buildShutdownTask(this.beanScope::close);
-        MinecraftServer.getSchedulerManager().buildShutdownTask(butterfly::terminate);
     }
 
     public static Titan instance() {

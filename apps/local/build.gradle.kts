@@ -4,6 +4,14 @@ plugins {
     id("titan.app-variant")
 }
 
+// Off by default - a developer builds with LuckPerms only when testing permissions locally, via
+// ./gradlew :apps:local:build -Ptitan.luckperms.
+if (providers.gradleProperty("titan.luckperms").isPresent) {
+    titanVariant {
+        platform("luckperms")
+    }
+}
+
 dependencies {
     // See apps/cloudnet/build.gradle.kts: its own VariantStartTest-equivalent coverage reaches
     // into core and common directly (FeatureFlags, MapProvider, LobbyMap, ...) - available here too
@@ -16,10 +24,6 @@ dependencies {
     testImplementation(libs.junit.api)
     testImplementation(libs.junit.platform.launcher)
     testRuntimeOnly(libs.junit.engine)
-}
-
-configurations.testRuntimeClasspath {
-    exclude(group = "net.luckperms", module = "minestom-loader")
 }
 
 // Not published (see design.md D8): titan.app-variant's titan.publish-conventions still creates

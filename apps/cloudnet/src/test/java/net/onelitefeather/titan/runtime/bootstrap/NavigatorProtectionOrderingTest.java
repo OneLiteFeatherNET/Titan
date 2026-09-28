@@ -36,6 +36,8 @@ import net.onelitefeather.titan.feature.navigator.NavigatorModule;
 import net.onelitefeather.titan.feature.protection.ProtectionModule;
 import net.onelitefeather.titan.core.module.item.LobbyItems;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
+import net.onelitefeather.titan.core.permission.PermissionService;
+import net.onelitefeather.titan.platform.luckperms.LuckPermsPermissionService;
 import net.onelitefeather.titan.common.map.LobbyMap;
 import net.onelitefeather.titan.common.map.MapProvider;
 import org.junit.jupiter.api.Assertions;
@@ -69,7 +71,9 @@ class NavigatorProtectionOrderingTest {
         Instance instance = env.createFlatInstance();
         // Registered as both types: a manual .bean(Type, value) registers only that exact type,
         // unlike a generated @Factory, which also registers every supertype it implements.
-        BeanScope scope = BeanScope.builder().forTesting().mock(FeatureFlags.class).mock(MapProvider.class, mapProvider -> Mockito.when(mapProvider.getActiveLobby()).thenReturn(new LobbyMap("test", new Pos(0, 65, 0), List.of()))).bean(InstanceContainer.class, (InstanceContainer) instance).bean(Instance.class, instance).bean(Deliver.class, deliver).build();
+        // Named mock, not the plain mock(Type) overload - see docs/lobby-modules.md,
+        // "Permission-Plattform".
+        BeanScope scope = BeanScope.builder().forTesting().mock(FeatureFlags.class).mock(MapProvider.class, mapProvider -> Mockito.when(mapProvider.getActiveLobby()).thenReturn(new LobbyMap("test", new Pos(0, 65, 0), List.of()))).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).bean(InstanceContainer.class, (InstanceContainer) instance).bean(Instance.class, instance).bean(Deliver.class, deliver).build();
 
         try {
             // Neither feature is looked up directly beyond this: both already started themselves,
