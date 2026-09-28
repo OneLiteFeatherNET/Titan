@@ -16,6 +16,7 @@
 package net.onelitefeather.titan.platform.luckperms;
 
 import io.avaje.inject.PostConstruct;
+import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import java.util.List;
 import java.util.UUID;
@@ -37,7 +38,11 @@ import net.onelitefeather.titan.core.permission.PermissionService;
  * ready before the first player connects.
  */
 @Singleton
+@Named(LuckPermsPermissionService.QUALIFIER)
 public final class LuckPermsPermissionService implements PermissionService {
+
+    /** The Avaje qualifier tests use to mock this bean without starting real LuckPerms. */
+    public static final String QUALIFIER = "luckperms";
 
     @PostConstruct
     void start() {
@@ -72,6 +77,6 @@ public final class LuckPermsPermissionService implements PermissionService {
 
     @Override
     public String name() {
-        return "luckperms";
+        return QUALIFIER;
     }
 }

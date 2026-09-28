@@ -47,13 +47,10 @@ class VariantStartTest {
     @Test
     @Timeout(30)
     void theFullScopeBuildsWithNoException(Env env) {
-        // PermissionService is mocked under Avaje's auto-derived qualifier "LuckPerms" (the
-        // implementation class name with the interface name stripped) - the plain, unnamed
-        // mock(Type) overload would not stop LuckPermsPermissionService's own @Singleton
-        // construction if this build ran with -Ptitan.luckperms (see
-        // theActiveServiceIsDenyAllWithoutTheSwitch below for the unmocked, switch-dependent
-        // assertion).
-        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class).mock(PermissionService.class, "LuckPerms").build();
+        // Named mock matching LuckPermsPermissionService.QUALIFIER - see docs/lobby-modules.md,
+        // "Permission-Plattform" (platform/luckperms is not always on this module's classpath, so
+        // the name is a literal here rather than the constant).
+        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class).mock(PermissionService.class, "luckperms").build();
 
         Assertions.assertDoesNotThrow(scope::close, "closing a fully built scope must not throw");
     }
