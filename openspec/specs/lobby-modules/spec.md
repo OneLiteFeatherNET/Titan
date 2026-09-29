@@ -60,6 +60,17 @@ Jedes Feature MUSS beim Start der Lobby genau einmal gestartet werden, bevor ein
 - **WHEN** ein Feature beim Start eine Ausnahme wirft
 - **THEN** startet die Lobby nicht, und die Fehlermeldung nennt das Feature
 
+### Requirement: Fehlende Abhängigkeiten fallen vor dem Betrieb auf
+Fordert ein Feature eine Abhängigkeit an, die niemand bereitstellt, oder entsteht ein Zyklus, MUSS das spätestens beim Build oder beim Start der Lobby auffallen, bevor ein Spieler verbunden ist. Die Fehlermeldung MUSS das betroffene Feature und die fehlende Abhängigkeit nennen. Die Lobby DARF NICHT ohne dieses Feature weiterlaufen.
+
+#### Scenario: Dienst fehlt
+- **WHEN** ein Feature einen Konstruktor-Parameter vom Typ `FriendsClient` deklariert, den kein Bean bereitstellt
+- **THEN** schlägt der Build oder der Start fehl, und die Meldung nennt das Feature und `FriendsClient`
+
+#### Scenario: Vollständige Verdrahtung wird geprüft
+- **WHEN** der Test für die vollständige Verdrahtung läuft
+- **THEN** findet er alle Features, jedes genau einmal, und ohne fehlende Abhängigkeit
+
 ### Requirement: Reihenfolge der Event-Verarbeitung ist festgelegt
 Reagieren mehrere Features auf dasselbe Event, MUSS die Reihenfolge, in der sie es erhalten, für jedes Feature fest vorgegeben und eindeutig sein. Sie DARF NICHT von der Startreihenfolge abhängen. Geben zwei Features dieselbe Position an, DARF die Lobby NICHT starten, und die Fehlermeldung MUSS beide Features und die Position nennen.
 
