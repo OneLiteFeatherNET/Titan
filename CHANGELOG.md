@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/OneLiteFeatherNET/Titan/compare/v2.0.0...v2.0.1) (2026-09-29)
+
+
+### Bug Fixes
+
+* **build:** publish the lobby jar without an aot cache when no worlds are present ([#332](https://github.com/OneLiteFeatherNET/Titan/issues/332)) ([b869966](https://github.com/OneLiteFeatherNET/Titan/commit/b86996654dded1441fcd403d99da609daec9239c))
+
 ## [2.0.0](https://github.com/OneLiteFeatherNET/Titan/compare/v1.14.1...v2.0.0) (2026-09-29)
 
 
