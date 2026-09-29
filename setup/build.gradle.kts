@@ -20,7 +20,9 @@ dependencies {
     runtimeOnly(libs.sentry.logback)
 
     testImplementation(platform(libs.aonyx.bom))
+    testImplementation(libs.cyano)
     testImplementation(libs.junit.api)
+    testImplementation(libs.junit.params)
     testImplementation(libs.junit.platform.launcher)
     // ListAppender, for capturing a log line in a test; logback-classic itself is runtimeOnly above.
     testImplementation(libs.logback.classic)
