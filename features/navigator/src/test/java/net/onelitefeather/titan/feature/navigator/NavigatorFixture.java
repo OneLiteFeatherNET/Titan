@@ -22,6 +22,7 @@ import net.minestom.testing.Env;
 import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.core.module.item.ItemSlot;
+import net.onelitefeather.titan.core.permission.PermissionService;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 
@@ -51,9 +52,9 @@ final class NavigatorFixture implements AutoCloseable {
         this.feather = feather;
     }
 
-    static NavigatorFixture start(Env env, Deliver deliver, FeatureFlags featureFlags) {
+    static NavigatorFixture start(Env env, Deliver deliver, FeatureFlags featureFlags, PermissionService permissions) {
         TestTitanNode titan = TestTitanNode.attach(env);
-        NavigatorModule module = new NavigatorModule(titan.node(), deliver, featureFlags);
+        NavigatorModule module = new NavigatorModule(titan.node(), deliver, featureFlags, permissions);
         module.start();
         LobbyItem feather = new NavigatorItems().navigatorFeather(module);
         return new NavigatorFixture(titan, module, feather);

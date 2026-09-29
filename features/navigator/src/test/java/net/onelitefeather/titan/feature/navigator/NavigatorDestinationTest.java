@@ -26,8 +26,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Plain unit coverage for {@link Destination}: no {@code Env}, no Aves, no configuration - just the
- * enum's fixed slots and the pure {@link Destination#visible(net.onelitefeather.titan.core.
- * feature.FeatureFlags)} function.
+ * enum's fixed slots and the pure {@code Destination.visible} function.
  *
  * <p>Pairwise-distinct slots are checked here rather than at start-up: a duplicate slot is a
  * programming error caught by this test.
@@ -40,7 +39,24 @@ class NavigatorDestinationTest {
         Assertions.assertEquals(0, Destination.ELYTRA_RACE.slot());
         Assertions.assertEquals(4, Destination.SURVIVAL.slot());
         Assertions.assertEquals(5, Destination.SLENDER.slot());
+        Assertions.assertEquals(7, Destination.BUILD.slot());
         Assertions.assertEquals(8, Destination.CREATIVE.slot());
+    }
+
+    @DisplayName("Build forwards to the Build task, has no feature flag and needs titan.navigator.buildserver")
+    @Test
+    void buildForwardsToTheBuildTaskBehindItsPermission() {
+        Assertions.assertEquals("Build", Destination.BUILD.task());
+        Assertions.assertNull(Destination.BUILD.feature(), "Build must not sit behind a feature flag");
+        Assertions.assertEquals("titan.navigator.buildserver", Destination.BUILD.permission());
+    }
+
+    @DisplayName("Only Build needs a permission")
+    @Test
+    void onlyBuildNeedsAPermission() {
+        List<Destination> permissioned = Arrays.stream(Destination.values()).filter(destination -> destination.permission() != null).toList();
+
+        Assertions.assertEquals(List.of(Destination.BUILD), permissioned);
     }
 
     @DisplayName("No two destinations share a slot")
@@ -58,10 +74,26 @@ class NavigatorDestinationTest {
     void visibleExcludesSlenderWhileItsFlagIsOff() {
         FakeFeatureFlags flags = new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", false);
 
-        List<Destination> visible = Destination.visible(flags);
+        List<Destination> visible = Destination.visible(flags, false);
 
         Assertions.assertFalse(visible.contains(Destination.SLENDER), "Slender must not be visible while NAVIGATOR_SLENDER is off");
         Assertions.assertTrue(visible.containsAll(List.of(Destination.ELYTRA_RACE, Destination.SURVIVAL, Destination.CREATIVE)), "the ungated destinations must stay visible regardless of the flag");
+    }
+
+    @DisplayName("visible() without permissioned destinations never lists Build")
+    @Test
+    void visibleWithoutPermissionedNeverListsBuild() {
+        FakeFeatureFlags flags = new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", true);
+
+        Assertions.assertFalse(Destination.visible(flags, false).contains(Destination.BUILD), "the public menu must never contain Build");
+    }
+
+    @DisplayName("visible() with permissioned destinations lists Build")
+    @Test
+    void visibleWithPermissionedListsBuild() {
+        FakeFeatureFlags flags = new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", false);
+
+        Assertions.assertTrue(Destination.visible(flags, true).contains(Destination.BUILD), "the team menu must contain Build");
     }
 
     @DisplayName("visible() lists every destination, including Slender, while NAVIGATOR_SLENDER is on")
@@ -69,7 +101,7 @@ class NavigatorDestinationTest {
     void visibleIncludesSlenderWhileItsFlagIsOn() {
         FakeFeatureFlags flags = new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", true);
 
-        List<Destination> visible = Destination.visible(flags);
+        List<Destination> visible = Destination.visible(flags, true);
 
         Assertions.assertEquals(Set.copyOf(Arrays.asList(Destination.values())), Set.copyOf(visible), "every destination must be visible while NAVIGATOR_SLENDER is on, was: " + visible.stream().map(Enum::name).collect(Collectors.joining(", ")));
     }

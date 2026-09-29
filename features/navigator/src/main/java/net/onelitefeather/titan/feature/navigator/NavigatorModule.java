@@ -22,7 +22,6 @@ import jakarta.inject.Singleton;
 import java.util.List;
 import java.util.Objects;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
@@ -34,15 +33,17 @@ import net.onelitefeather.deliver.DeliverComponent;
 import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
-import net.theevilreaper.aves.inventory.GlobalInventoryBuilder;
+import net.onelitefeather.titan.core.permission.PermissionResult;
+import net.onelitefeather.titan.core.permission.PermissionService;
 import net.theevilreaper.aves.inventory.click.ClickHolder;
 import net.theevilreaper.aves.inventory.layout.InventoryLayout;
 
 /**
- * The lobby's navigator: a feather in hotbar slot 4 that opens one Aves-built inventory, shared by
- * every player, listing the four destinations fixed in {@link Destination}.
+ * The lobby's navigator: a feather in hotbar slot 4 that opens one of two Aves-built inventories,
+ * each shared by every player who gets it: the public one, or the team one that adds the
+ * permissioned {@code BUILD} destination fixed in {@link Destination}. Opening picks by permission.
  *
- * <p>Aves maps its click listener directly onto the built {@link GlobalInventoryBuilder} inventory
+ * <p>Aves maps its click listener directly onto each built {@code GlobalInventoryBuilder} inventory
  * and dispatches it before any regular event node's listeners, so this click handling always
  * completes before another feature could cancel the event first.
  */
@@ -59,15 +60,16 @@ public final class NavigatorModule {
     private final EventNode<Event> titan;
     private final Deliver deliver;
     private final FeatureFlags featureFlags;
-    private final GlobalInventoryBuilder builder;
+    private final PermissionService permissions;
+    private final SharedNavigator publicNavigator = new SharedNavigator(false);
+    private final SharedNavigator teamNavigator = new SharedNavigator(true);
     private FeatureNode node;
-    private List<Destination> appliedVisible;
 
-    public NavigatorModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Deliver deliver, FeatureFlags featureFlags) {
+    public NavigatorModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Deliver deliver, FeatureFlags featureFlags, PermissionService permissions) {
         this.titan = Objects.requireNonNull(titan, "titan must not be null");
         this.deliver = Objects.requireNonNull(deliver, "deliver must not be null");
         this.featureFlags = Objects.requireNonNull(featureFlags, "featureFlags must not be null");
-        this.builder = new GlobalInventoryBuilder(MiniMessage.miniMessage().deserialize("<yellow>Navigator"), InventoryType.CHEST_1_ROW);
+        this.permissions = Objects.requireNonNull(permissions, "permissions must not be null");
     }
 
     @PostConstruct
@@ -75,37 +77,39 @@ public final class NavigatorModule {
         // Listener-less: only attached so this feature shows up in the fixed EVENT_PRIORITY order
         // and the leak test; Aves handles every inventory click itself.
         this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY);
-        applyLayoutIfChanged();
-        this.builder.register();
+        this.publicNavigator.applyLayoutIfChanged(this.featureFlags, this::toAvesLayout);
+        this.teamNavigator.applyLayoutIfChanged(this.featureFlags, this::toAvesLayout);
+        this.publicNavigator.register();
+        this.teamNavigator.register();
     }
 
     @PreDestroy
     void stop() {
         this.node.close();
-        this.builder.unregister();
+        this.publicNavigator.unregister();
+        this.teamNavigator.unregister();
     }
 
     void open(Player player) {
-        applyLayoutIfChanged();
-        player.openInventory(this.builder.getInventory());
+        SharedNavigator navigator = isAllowed(player, Destination.BUILD) ? this.teamNavigator : this.publicNavigator;
+        navigator.applyLayoutIfChanged(this.featureFlags, this::toAvesLayout);
+        player.openInventory(navigator.inventory());
     }
 
-    // Test-only: lets a leak test assert the listener count on Aves' event node stays constant
+    // Test-only: lets a leak test assert the listener count on each Aves event node stays constant
     // across opens.
-    Inventory sharedInventory() {
-        return this.builder.getInventory();
+    Inventory publicInventory() {
+        return this.publicNavigator.inventory();
     }
 
-    // Synchronized so two threads opening the navigator at once can't observe, or trigger, half of
-    // a rebuild.
-    private synchronized void applyLayoutIfChanged() {
-        List<Destination> visible = Destination.visible(this.featureFlags);
-        if (visible.equals(this.appliedVisible)) {
-            return;
-        }
-        this.builder.setLayout(toAvesLayout(visible));
-        this.builder.invalidateLayout();
-        this.appliedVisible = visible;
+    Inventory teamInventory() {
+        return this.teamNavigator.inventory();
+    }
+
+    // NOT_SET counts as not granted, like DENIED (lobby-permissions).
+    private boolean isAllowed(Player player, Destination destination) {
+        String permission = destination.permission();
+        return permission == null || this.permissions.check(player.getUuid(), permission) == PermissionResult.ALLOWED;
     }
 
     private InventoryLayout toAvesLayout(List<Destination> visible) {
@@ -116,6 +120,10 @@ public final class NavigatorModule {
         for (Destination destination : visible) {
             layout.setItem(destination.slot(), destination.item(), (player, clickedSlot, click, stack, result) -> {
                 result.accept(ClickHolder.cancelClick());
+                if (!isAllowed(player, destination)) {
+                    player.closeInventory();
+                    return;
+                }
                 this.deliver.sendPlayer(player, DeliverComponent.taskBuilder().taskName(destination.task()).player(player).build());
                 player.closeInventory();
             });

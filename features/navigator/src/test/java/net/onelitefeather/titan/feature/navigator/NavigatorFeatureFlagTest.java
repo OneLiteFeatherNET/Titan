@@ -40,7 +40,7 @@ class NavigatorFeatureFlagTest {
     @Test
     void slenderHiddenWhenFlagIsOff(Env env) {
         FakeFeatureFlags flags = new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", false);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), flags)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), flags, new FakePermissionService())) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);
@@ -61,7 +61,7 @@ class NavigatorFeatureFlagTest {
     void slenderShownAndForwardsWhenFlagIsOn(Env env) {
         FakeFeatureFlags flags = new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", true);
         RecordingDeliver deliver = new RecordingDeliver();
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, flags)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, flags, new FakePermissionService())) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);
@@ -83,7 +83,7 @@ class NavigatorFeatureFlagTest {
     @Test
     void togglingTheFlagBetweenTwoOpensShowsSlenderOnTheSecondOpen(Env env) {
         FakeFeatureFlags flags = new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", false);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), flags)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), flags, new FakePermissionService())) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);

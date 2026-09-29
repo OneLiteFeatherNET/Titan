@@ -252,10 +252,21 @@ mit festem Platz - das rufen Spawn- und Respawn-Feature auf, nicht jedes Feature
 `LobbyItems#stack(key)` gibt den gestempelten Stack für ein unplatziertes Item heraus, das ein
 Feature selbst aushändigt (`ElytraModule`s Feuerwerk).
 
-Der Navigator ist der einzige Sonderfall ohne Andockpunkt: Seine vier Ziele stehen fest im
+Der Navigator ist der einzige Sonderfall ohne Andockpunkt: Seine Ziele stehen fest im
 package-privaten `enum Destination` (s. `openspec/changes/navigator-entries-in-code/design.md`).
 Nur `Destination.SLENDER` bleibt hinter der Feature-Flag `NAVIGATOR_SLENDER` versteckt, ausgewertet
 über `FeatureFlags`, dem `NavigatorModule` per Konstruktor übergeben.
+
+Der Navigator besitzt zwei geteilte Aves-Inventare: das öffentliche (unverändert) und das
+Team-Inventar (öffentlich plus `Destination.BUILD`). Das Recht `titan.navigator.buildserver`
+entscheidet beim Öffnen, welches sich öffnet: `PermissionService#check` liefert `ALLOWED` ->
+Team-Inventar, `NOT_SET` und `DENIED` -> öffentliches. `BUILD` liegt auf Platz 7 und leitet an den
+CloudNet-Task `Build` weiter (getrennt von `MemberBuild` des Creative-Ziels). Beim Klick wird das
+Recht erneut geprüft; ist es inzwischen weg, gibt es keine Weiterleitung, das Inventar schließt.
+
+Betrieb: Der CloudNet-Task `Build` muss existieren, und das LuckPerms-Recht
+`titan.navigator.buildserver` wird der Team-Gruppe erteilt. In der lokalen Variante gilt
+`deny-all` (`DenyAllPermissionService`), dort sieht niemand das Ziel.
 
 ## Tasks über den injizierten `Scheduler`
 
@@ -623,7 +634,7 @@ als `provides`):
 | `admin` | `CommandManager.class` | - | - |
 | `spawn` | `Instance.class`, `LobbySpawn.class`, `EventNode.class`, `LobbyItems.class` | `EventNode<Event>:titan` | - |
 | `respawn` | `EventNode.class`, `LobbyItems.class` | `EventNode<Event>:titan` | - |
-| `navigator` | `EventNode.class`, `Deliver.class`, `FeatureFlags.class` | `EventNode<Event>:titan` | `LobbyItem.class` |
+| `navigator` | `EventNode.class`, `Deliver.class`, `FeatureFlags.class`, `PermissionService.class` | `EventNode<Event>:titan` | `LobbyItem.class` |
 | `sit` | `EventNode.class` | `EventNode<Event>:titan` | - |
 | `tickle` | `EventNode.class`, `Clock.class` | `EventNode<Event>:titan` | - |
 | `elytra` | `EventNode.class`, `Scheduler.class` | `EventNode<Event>:titan` | `LobbyItem.class` |

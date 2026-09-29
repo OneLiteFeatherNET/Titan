@@ -24,26 +24,28 @@ import net.onelitefeather.titan.core.feature.FeatureFlags;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * One destination shown in the shared navigator inventory, fixed in code as a Java {@code enum}
- * since destinations change rarely. Only {@link #SLENDER} is gated behind a feature flag; the
- * other three are always visible.
+ * One destination shown in the shared navigator inventories, fixed in code as a Java {@code enum}
+ * since destinations change rarely. {@link #SLENDER} is gated behind a feature flag and {@link
+ * #BUILD} behind a permission; the others are always visible.
  */
 enum Destination {
 
-    ELYTRA_RACE(0, Material.ELYTRA, "<!i><gradient:#fcba03:#03fc8c>ElytraRace</gradient>", "ElytraRace", null), SURVIVAL(4, Material.GRASS_BLOCK, "<!i><green>Survival", "Survival", null), SLENDER(5, Material.ENDERMAN_SPAWN_EGG, "<!i><gradient:#616161:#e80000c>Slender</gradient>", "cygnus", "NAVIGATOR_SLENDER"), CREATIVE(8, Material.WOODEN_AXE, "<!i><rainbow>Creative</rainbow>", "MemberBuild", null);
+    ELYTRA_RACE(0, Material.ELYTRA, "<!i><gradient:#fcba03:#03fc8c>ElytraRace</gradient>", "ElytraRace", null, null), SURVIVAL(4, Material.GRASS_BLOCK, "<!i><green>Survival", "Survival", null, null), SLENDER(5, Material.ENDERMAN_SPAWN_EGG, "<!i><gradient:#616161:#e80000c>Slender</gradient>", "cygnus", "NAVIGATOR_SLENDER", null), BUILD(7, Material.SCAFFOLDING, "<!i><gold>Build", "Build", null, "titan.navigator.buildserver"), CREATIVE(8, Material.WOODEN_AXE, "<!i><rainbow>Creative</rainbow>", "MemberBuild", null, null);
 
     private final int slot;
     private final Material icon;
     private final String displayName;
     private final String task;
     private final @Nullable String feature;
+    private final @Nullable String permission;
 
-    Destination(int slot, Material icon, String displayName, String task, @Nullable String feature) {
+    Destination(int slot, Material icon, String displayName, String task, @Nullable String feature, @Nullable String permission) {
         this.slot = slot;
         this.icon = icon;
         this.displayName = displayName;
         this.task = task;
         this.feature = feature;
+        this.permission = permission;
     }
 
     int slot() {
@@ -59,12 +61,19 @@ enum Destination {
         return this.feature;
     }
 
+    @Nullable
+    String permission() {
+        return this.permission;
+    }
+
     // Rebuilds the icon on every call so callers never share one ItemStack instance.
     ItemStack item() {
         return ItemStack.builder(this.icon).customName(MiniMessage.miniMessage().deserialize(this.displayName)).build();
     }
 
-    static List<Destination> visible(FeatureFlags featureFlags) {
-        return Arrays.stream(values()).filter(destination -> destination.feature == null || featureFlags.isActive(destination.feature)).toList();
+    // withPermissioned is the caller's verdict for a whole menu: the team menu passes true, the
+    // public one false.
+    static List<Destination> visible(FeatureFlags featureFlags, boolean withPermissioned) {
+        return Arrays.stream(values()).filter(destination -> destination.feature == null || featureFlags.isActive(destination.feature)).filter(destination -> destination.permission == null || withPermissioned).toList();
     }
 }

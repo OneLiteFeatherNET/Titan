@@ -18,7 +18,7 @@
  * Plattform-Beans bekommt" - {@code provides = {LobbyItem.class}}: the navigator feather is
  * collected by {@code HotbarLobbyItems} in {@code features/hotbar}.
  */
-@InjectModule(name = "navigatorColumn", requires = {EventNode.class, Deliver.class, FeatureFlags.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"}, provides = {LobbyItem.class})
+@InjectModule(name = "navigatorColumn", requires = {EventNode.class, Deliver.class, FeatureFlags.class, PermissionService.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"}, provides = {LobbyItem.class})
 package net.onelitefeather.titan.feature.navigator;
 
 import io.avaje.inject.InjectModule;
@@ -26,3 +26,4 @@ import net.minestom.server.event.EventNode;
 import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
+import net.onelitefeather.titan.core.permission.PermissionService;
