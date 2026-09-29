@@ -45,8 +45,9 @@ public final class DaytimeModule {
     private final Scheduler scheduler;
     private final Clock clock;
     private final DayTimeMapping mapping = new DayTimeMapping();
-    private ZoneId zone;
-    private String rejectedZone;
+    // Written by start() and by the scheduler thread in update().
+    private volatile ZoneId zone;
+    private volatile String rejectedZone;
     private Task task;
 
     @Inject
@@ -86,20 +87,24 @@ public final class DaytimeModule {
     }
 
     private ZoneId currentZone() {
-        String raw = Config.get(DaytimeSettings.ZONE_KEY);
+        String raw = Config.get(DaytimeSettings.ZONE_KEY, this.zone.getId());
+        if (raw.isBlank()) {
+            warnOnceAbout(raw, "value is blank");
+            return this.zone;
+        }
         try {
             this.zone = DaytimeSettings.zone(raw);
             this.rejectedZone = null;
         } catch (DateTimeException e) {
-            warnOnceAbout(raw, e);
+            warnOnceAbout(raw, e.getMessage());
         }
         return this.zone;
     }
 
-    private void warnOnceAbout(String rejected, DateTimeException reason) {
+    private void warnOnceAbout(String rejected, String reason) {
         if (!rejected.equals(this.rejectedZone)) {
             this.rejectedZone = rejected;
-            LOGGER.warn("Ignoring invalid {} '{}' ({}), keeping zone {}", DaytimeSettings.ZONE_KEY, rejected, reason.getMessage(), this.zone);
+            LOGGER.warn("Ignoring invalid {} '{}' ({}), keeping zone {}", DaytimeSettings.ZONE_KEY, rejected, reason, this.zone);
         }
     }
 }

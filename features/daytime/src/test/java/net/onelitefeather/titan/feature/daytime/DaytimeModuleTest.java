@@ -216,6 +216,19 @@ class DaytimeModuleTest {
         Assertions.assertTrue(message.contains(DaytimeSettings.ZONE_KEY) && message.contains("Mars/Olympus"), "the warning must name the key and the value, was: " + message);
     }
 
+    @DisplayName("A blank zone at runtime keeps the last valid zone and warns once")
+    @Test
+    void blankZoneAtRuntimeKeepsTheLastValidZone() {
+        startModule();
+
+        Config.setProperty(DaytimeSettings.ZONE_KEY, "");
+        this.clock.advance(Duration.ofHours(1));
+        tick(3 * RUN_INTERVAL_TICKS);
+
+        Assertions.assertEquals(4000L, this.lobby.getTime(), "10:00 in Berlin, the zone that was valid before");
+        Assertions.assertEquals(1, warnings().size(), "one warning for the blank value, got: " + warnings());
+    }
+
     @DisplayName("The same invalid zone is warned about only once, a different invalid one again")
     @Test
     void invalidZoneWarningIsLoggedOnlyWhenTheValueChanges() {
