@@ -30,7 +30,7 @@ Der Agent `navigator` arbeitet in einem Modul und in dieser Reihenfolge, weil `D
 ## 3. Doku und Abnahme
 
 - [x] 3.1 `docs/lobby-modules.md`: Tabellenzeile `navigator` um `PermissionService.class` ergänzen und im Abschnitt zum Navigator (Aves-Inventar) beschreiben, dass es zwei geteilte Inventare gibt, das Recht `titan.navigator.buildserver`, den Task `Build` und den Betriebsschritt (CloudNet-Task, LuckPerms-Recht). Nachweis: Doku nennt Recht, Task, Platz 7 und beide Inventare; kein anderer Abschnitt geändert.
-- [ ] 3.2 Verifikation (Haiku, read-only): Jedes Szenario aus `specs/lobby-navigator` (ADDED und MODIFIED) Test für Test zuordnen; F.I.R.S.T.-Check (keine Sleeps, keine Systemzeit, keine geteilten statischen Zustände, frische Fakes je Test, Assertions mit Meldungen); prüfen, dass `Deliver`/`GuardedDeliver`/FeatureGate/`io.avaje.config` nicht angefasst wurden. Nachweis: Bericht ohne Lücken.
+- [x] 3.2 Verifikation (Haiku, read-only): Jedes Szenario aus `specs/lobby-navigator` (ADDED und MODIFIED) Test für Test zuordnen; F.I.R.S.T.-Check (keine Sleeps, keine Systemzeit, keine geteilten statischen Zustände, frische Fakes je Test, Assertions mit Meldungen); prüfen, dass `Deliver`/`GuardedDeliver`/FeatureGate/`io.avaje.config` nicht angefasst wurden. Nachweis: Bericht ohne Lücken.
 
 ## 4. Pull Request
 
