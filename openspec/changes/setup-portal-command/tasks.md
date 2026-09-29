@@ -43,7 +43,7 @@ Wellen 2 und 3 (`outline`) berühren getrennte Dateien und laufen parallel; Well
 
 ## 4. Doku und Abnahme (Welle 5)
 
-- [ ] 4.1 Abschnitt „Setup server“ in `README.md` um die Befehle, den geführten Ablauf (`create` mit Knöpfen), die Live-Vorschau, die Tab-Vervollständigung, den Ablauf per Befehl (Ecken oder Ring, Aufgabe, Recht, `show`, `save` als einziger Speicherweg, auch für Befehle), die Regel „Mittelpunkt = Augenposition auf 0,5 gerundet, Normale = Blickrichtung mit Einrasten bei 5 Grad“ und den Hinweis ergänzen, dass die Portale der Lobby beim Start ungültig abbrechen. Nachweis: README nennt jede Syntax aus der Spec.
+- [x] 4.1 Abschnitt „Setup server“ in `README.md` um die Befehle, den geführten Ablauf (`create` mit Knöpfen), die Live-Vorschau, die Tab-Vervollständigung, den Ablauf per Befehl (Ecken oder Ring, Aufgabe, Recht, `show`, `save` als einziger Speicherweg, auch für Befehle), die Regel „Mittelpunkt = Augenposition auf 0,5 gerundet, Normale = Blickrichtung mit Einrasten bei 5 Grad“ und den Hinweis ergänzen, dass die Portale der Lobby beim Start ungültig abbrechen. Nachweis: README nennt jede Syntax aus der Spec.
 - [ ] 4.2 Abnahme (Haiku, read-only): `./gradlew build` grün; jede Anforderung und jedes Szenario aus `specs/setup-portals` hat einen Test; F.I.R.S.T.-Prüfung der neuen Tests (keine Sleeps, keine Systemzeit, kein geteilter Zustand, `@TempDir`); keine Validierungsregel kopiert; Vorschau-Tasks leckfrei; kein Diff außerhalb von `setup/**` und `README.md`. Manuell: Setup-Server starten, Quader und Ring einmal geführt (jeden Knopf im Client klicken, Vorschau beobachten, Tab drücken) und einmal per Befehl anlegen, `show`, Neustart, `list` (einmal von Hand, Ergebnis im PR).
 
 ## 5. Pull Request (Welle 6)
