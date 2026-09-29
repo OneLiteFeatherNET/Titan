@@ -1,0 +1,10 @@
+# The "season" module: in a configured window the lobby runs in its own world, switched by a restart.
+seasons:
+  # The time zone of the windows (a java.time zone id). An invalid value aborts startup.
+  # "zone" is reserved and cannot be used as a season id.
+  zone: Europe/Berlin
+  # <id>:
+  #   world: winter                 # directory under worlds/, with a map.json
+  #   from: 2026-12-01T00:00:00     # inclusive, local time in seasons.zone
+  #   to: 2027-01-07T00:00:00       # exclusive
+  #   enabled: true                 # switch that takes effect without restarting the configuration
