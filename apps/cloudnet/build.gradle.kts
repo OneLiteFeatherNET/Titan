@@ -20,6 +20,9 @@ dependencies {
     testImplementation(libs.mockito)
     testImplementation(libs.avaje.inject)
     testImplementation(libs.avaje.config)
+    // The season wiring test asserts on captured log lines.
+    testImplementation(libs.slf4j.api)
+    testImplementation(libs.logback.classic)
     // TestTitanNode - see the example feature's own test.
     testImplementation(testFixtures(project(":core")))
     testImplementation(libs.junit.api)

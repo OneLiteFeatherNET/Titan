@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -42,14 +43,29 @@ public final class MapPool {
     private List<MapEntry> referenceList;
     private MapEntry selectedMap;
     private final Function<Stream<Path>, List<MapEntry>> filterMaps;
+    private final Optional<String> worldName;
 
     public MapPool(@NotNull Path path, @NotNull Function<Stream<Path>, List<MapEntry>> filterMaps) {
+        this(path, filterMaps, Optional.empty());
+    }
+
+    /**
+     * @param worldName the world to pick; when present it is the only acceptable choice, even if it
+     *                  is the sole world, otherwise the default lobby world rules apply
+     */
+    public MapPool(@NotNull Path path, @NotNull Function<Stream<Path>, List<MapEntry>> filterMaps, @NotNull Optional<String> worldName) {
         this.filterMaps = filterMaps;
+        this.worldName = worldName;
         this.referenceList = loadMapsEntries(path);
         this.peekMap();
     }
 
     private void peekMap() {
+        if (this.worldName.isPresent()) {
+            String name = this.worldName.get();
+            this.selectedMap = this.referenceList.stream().filter(mapEntry -> mapEntry.path().getFileName().toString().equalsIgnoreCase(name)).findFirst().orElseThrow(() -> new IllegalArgumentException("The world '" + name + "' does not exist"));
+            return;
+        }
         Check.argCondition(this.referenceList.isEmpty(), "The map list is empty");
         if (this.referenceList.size() == 1) {
             this.selectedMap = this.referenceList.getFirst();

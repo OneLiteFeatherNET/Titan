@@ -16,6 +16,8 @@
 package net.onelitefeather.titan.apps.cloudnet;
 
 import io.avaje.inject.BeanScope;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import net.minestom.testing.Env;
@@ -68,6 +70,24 @@ class VariantStartTest {
         VariantDescriptor descriptor = VariantDescriptor.fromClasspath(loader).orElseThrow(() -> new AssertionError("this variant must ship META-INF/titan/variant.properties"));
 
         Assertions.assertTrue(descriptor.modules().contains("luckpermsPlatform"), "expected modules must include luckpermsPlatform, were: " + descriptor.modules());
+    }
+
+    @DisplayName("variant.properties lists seasonColumn and the season column is loaded")
+    @Test
+    void seasonColumnIsExpectedAndLoaded() {
+        ClassLoader loader = getClass().getClassLoader();
+        VariantDescriptor descriptor = VariantDescriptor.fromClasspath(loader).orElseThrow(() -> new AssertionError("this variant must ship META-INF/titan/variant.properties"));
+
+        Assertions.assertTrue(descriptor.modules().contains("seasonColumn"), "expected modules must include seasonColumn, were: " + descriptor.modules());
+        Assertions.assertTrue(LoadedModules.discover(loader).contains("seasonColumn"), "the season column must be on the classpath and load");
+    }
+
+    @DisplayName("The shipped application.yaml carries the seasons defaults")
+    @Test
+    void applicationYamlCarriesTheSeasonsDefaults() throws IOException {
+        String yaml = new String(getClass().getClassLoader().getResourceAsStream("application.yaml").readAllBytes(), StandardCharsets.UTF_8);
+
+        Assertions.assertTrue(yaml.contains("seasons:"), "the merged application.yaml must contain the seasons defaults");
     }
 
     @DisplayName("An additionally expected but missing column aborts startup, naming it")

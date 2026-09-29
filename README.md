@@ -332,6 +332,31 @@ the new value took effect, with no restart of any kind appearing in the log. **R
 the previous jar and restore `flags.properties` - a leftover `features.*` section or
 `config.watch.*` setting in `application.yaml` does not affect the previous jar.
 
+### Seasonal lobby world
+
+The `cloudnet` variant can run the lobby in a season-specific world during a time window, for
+example a winter map in December. To add one:
+
+1. Build the world in the setup server.
+2. Put it in `worlds/<name>/` with its `map.json`, next to `worlds/world/`.
+3. Configure it in `application.yaml`:
+
+   ```yaml
+   seasons:
+     zone: Europe/Berlin           # default; time zone of the windows
+     winter:                       # any id ("zone" is reserved)
+       world: winter               # directory under worlds/
+       from: 2026-12-01T00:00:00   # inclusive, local time in seasons.zone
+       to: 2027-01-07T00:00:00     # exclusive
+       enabled: true               # kill switch, no restart of the configuration needed
+   ```
+
+An invalid enabled season aborts startup with the key and the reason. Switching worlds needs a
+restart: once a minute (and after every disconnect) the lobby compares its started world with the
+one the calendar wants, and stops only when nobody is online so the supervisor starts it again. A
+busy service therefore waits; an operator can end it sooner with `/stop`. `apps/local` does not
+include this feature.
+
 ## Development
 
 ### Building from Source
