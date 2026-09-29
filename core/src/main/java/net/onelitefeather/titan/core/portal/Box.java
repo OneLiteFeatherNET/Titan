@@ -26,7 +26,27 @@ public record Box(Vec min, Vec max) implements PortalShape {
 
     @Override
     public boolean crossedBy(Point from, Point to) {
-        throw new UnsupportedOperationException("not implemented");
+        double[] window = {0.0, 1.0};
+        return narrow(window, from.x(), to.x(), min.x(), max.x() + 1)
+                && narrow(window, from.y(), to.y(), min.y(), max.y() + 1)
+                && narrow(window, from.z(), to.z(), min.z(), max.z() + 1);
+    }
+
+    /**
+     * Slab method: shrinks the parameter window {@code [t0, t1]} of the segment to the part that lies
+     * between {@code lo} and {@code hi} on one axis. A step without movement on the axis (which
+     * includes a zero-length step) can only be inside the slab or not, hence containment.
+     */
+    private static boolean narrow(double[] window, double from, double to, double lo, double hi) {
+        double delta = to - from;
+        if (delta == 0.0) {
+            return from >= lo && from <= hi;
+        }
+        double ta = (lo - from) / delta;
+        double tb = (hi - from) / delta;
+        window[0] = Math.max(window[0], Math.min(ta, tb));
+        window[1] = Math.min(window[1], Math.max(ta, tb));
+        return window[0] <= window[1];
     }
 
     @Override
