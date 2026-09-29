@@ -65,6 +65,11 @@ public final class PortalEditor {
         this.store = store;
     }
 
+    /** Opens a draft that shows the guided flow's next step after every edit. */
+    public PortalEditResult create(UUID player, String id) {
+        return edit(player, id, draft -> draft.guided(true));
+    }
+
     public PortalEditResult corner1(UUID player, String id, Point position) {
         return edit(player, id, draft -> draft.corner1(blockOf(position)));
     }
@@ -179,6 +184,12 @@ public final class PortalEditor {
         }
         boolean hadDraft = dropDraft(player, id);
         return wasSaved || hadDraft ? new Removed(id) : new Unknown(id);
+    }
+
+    /** The player's draft with this id, if there is one. */
+    public Optional<PortalDraft> draft(UUID player, String id) {
+        Map<String, PortalDraft> own = drafts.get(player);
+        return own == null ? Optional.empty() : Optional.ofNullable(own.get(id));
     }
 
     /** The player's open drafts, oldest first. */

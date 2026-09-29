@@ -15,10 +15,14 @@
  */
 package net.onelitefeather.titan.setup.commands;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.minestom.server.command.CommandManager;
 import net.minestom.server.command.CommandSender;
 import net.minestom.server.command.builder.CommandResult;
+import net.minestom.server.command.builder.suggestion.Suggestion;
+import net.minestom.server.command.builder.suggestion.SuggestionEntry;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.Player;
@@ -48,6 +52,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -263,6 +268,97 @@ class PortalCommandTest {
         assertEquals(0, preview.running(), "preview ends with the draft");
     }
 
+    @DisplayName("create starts a guided draft that shows the shape step")
+    @Test
+    void createShowsTheShapeStep() {
+        Component step = send("setup portal create gate");
+
+        assertTrue(draft("gate").guided(), "the draft is guided");
+        assertEquals(List.of("/setup portal gate shape box", "/setup portal gate shape ring"), clickCommands(step), "box and ring buttons");
+    }
+
+    @DisplayName("Clicking the buttons walks a box through the flow and save persists it")
+    @Test
+    void buttonsWalkABoxToSave() {
+        send("setup portal create gate");
+
+        Component corner1 = send("setup portal gate shape box");
+        assertEquals(List.of("/setup portal gate pos1"), clickCommands(corner1), "corner 1 next");
+        Component corner2 = send("setup portal gate pos1");
+        assertEquals(List.of("/setup portal gate pos2"), clickCommands(corner2), "corner 2 next");
+        Component tasks = send("setup portal gate pos2");
+        assertTrue(clickCommands(tasks).contains("/setup portal gate task Old task"), "the task of the saved portal is offered: " + clickCommands(tasks));
+        Component permission = send("setup portal gate task Old task");
+        assertEquals(List.of("/setup portal gate permission none", "/setup portal gate permission "), clickCommands(permission), "permission next");
+        Component summary = send("setup portal gate permission none");
+        assertEquals(List.of("/setup portal gate save", "/setup portal gate cancel"), clickCommands(summary), "summary");
+        run("setup portal gate save");
+
+        assertEquals(List.of("old", "gate"), store.portals().stream().map(Portal::id).toList(), "save persisted the portal");
+        assertEquals(new Box(new Vec(10, 64, -4), new Vec(10, 64, -4)), store.portals().getLast().shape(), "corners from the clicks");
+        assertTrue(editor.drafts(player.getUuid()).isEmpty(), "the draft is gone after save");
+    }
+
+    @DisplayName("Clicking the buttons walks a ring through centre, radius and task")
+    @Test
+    void buttonsWalkARing() {
+        send("setup portal create ringy");
+
+        Component centre = send("setup portal ringy shape ring");
+        assertEquals(List.of("/setup portal ringy centre"), clickCommands(centre), "centre next");
+        Component radius = send("setup portal ringy centre");
+        assertTrue(clickCommands(radius).contains("/setup portal ringy radius 5"), "radius buttons: " + clickCommands(radius));
+        Component task = send("setup portal ringy radius 5");
+
+        assertEquals(5.0, draft("ringy").radius(), "the radius button set the radius");
+        assertTrue(clickCommands(task).contains("/setup portal ringy task Old task"), "task step follows");
+    }
+
+    @DisplayName("cancel from the flow discards the draft and saves nothing")
+    @Test
+    void cancelDiscards() {
+        send("setup portal create gate");
+        send("setup portal gate shape box");
+        assertTrue(draft("gate").guided(), "the draft is guided");
+
+        run("setup portal gate cancel");
+
+        assertTrue(editor.drafts(player.getUuid()).isEmpty(), "cancel discards the draft");
+        assertEquals(List.of(OLD), store.portals(), "nothing saved");
+    }
+
+    @DisplayName("A hand-typed edit of a plain draft does not send a flow step")
+    @Test
+    void plainDraftsGetNoSteps() {
+        Component reply = send("setup portal p pos1");
+
+        assertEquals(0, clickCommands(reply).size(), "only the not-complete text, no buttons");
+    }
+
+    @DisplayName("Tab completion offers ids of saved portals and own drafts after the command")
+    @Test
+    void completesIds() {
+        run("setup portal create gate");
+
+        assertTrue(suggestions("setup portal ").containsAll(List.of("old", "gate")), "ids offered: " + suggestions("setup portal "));
+    }
+
+    @DisplayName("Tab completion offers radii, tasks and none at their arguments")
+    @Test
+    void completesArguments() {
+        assertEquals(List.of("1", "2", "3", "5", "8"), suggestions("setup portal p radius "), "radii");
+        assertEquals(List.of("Old task"), suggestions("setup portal p task "), "tasks of the saved portals");
+        assertEquals(List.of("none"), suggestions("setup portal p permission "), "none");
+    }
+
+    @DisplayName("create is reserved and cannot be used as an id")
+    @Test
+    void createIsReserved() {
+        run("setup portal create create");
+
+        assertTrue(editor.drafts(player.getUuid()).isEmpty(), "reserved id refused");
+    }
+
     @DisplayName("/setup map setspawn still works and keeps the portals")
     @Test
     void mapCommandIsUnchanged() {
@@ -270,6 +366,30 @@ class PortalCommandTest {
 
         assertEquals(STANDING, provider.getActiveLobby().spawn(), "spawn saved as before");
         assertEquals(List.of(OLD), provider.getActiveLobby().portals(), "portals kept");
+    }
+
+    /** Runs the command as the player and returns the one chat message it answered with. */
+    private Component send(String command) {
+        Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);
+        run(command);
+        List<SystemChatPacket> replies = chat.collect();
+        assertEquals(1, replies.size(), "one reply to '" + command + "'");
+        return replies.getFirst().message();
+    }
+
+    private static List<String> clickCommands(Component component) {
+        List<String> commands = new ArrayList<>();
+        if (component.clickEvent() != null && component.clickEvent().payload() instanceof ClickEvent.Payload.Text text) {
+            commands.add(text.value());
+        }
+        component.children().forEach(child -> commands.addAll(clickCommands(child)));
+        return commands;
+    }
+
+    private List<String> suggestions(String input) {
+        Suggestion suggestion = commands.parseCommand(player, input + '\0').suggestion(player);
+        assertNotNull(suggestion, "a suggestion for '" + input + "'");
+        return suggestion.getEntries().stream().map(SuggestionEntry::getEntry).toList();
     }
 
     private void run(String command) {

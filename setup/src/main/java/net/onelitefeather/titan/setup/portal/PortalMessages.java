@@ -103,7 +103,7 @@ public final class PortalMessages {
     }
 
     public static Component usage() {
-        return MINI.deserialize("<prefix> <red>Usage: <usage>", Placeholder.unparsed("usage", "/setup portal list | show | <id> pos1 | pos2 | shape box|ring | centre | radius <r> | disc <r> | task <task> | permission <perm|none> | save | cancel | remove"));
+        return MINI.deserialize("<prefix> <red>Usage: <usage>", Placeholder.unparsed("usage", "/setup portal list | show | create <id> | <id> pos1 | pos2 | shape box|ring | centre | radius <r> | disc <r> | task <task> | permission <perm|none> | save | cancel | remove"));
     }
 
     /** {@code portal 'id': reason}, the validator's wording for one problem. */

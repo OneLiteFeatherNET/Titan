@@ -45,6 +45,9 @@ public final class PortalDraft {
     private @Nullable Double radius;
     private @Nullable String task;
     private @Nullable String permission;
+    /** Set once a permission (or {@code none}) was given, so the guided flow asks only once. */
+    private boolean permissionChosen;
+    private boolean guided;
 
     PortalDraft(String id) {
         this.id = id;
@@ -55,6 +58,7 @@ public final class PortalDraft {
         PortalDraft draft = new PortalDraft(portal.id());
         draft.task = portal.task();
         draft.permission = portal.permission();
+        draft.permissionChosen = portal.permission() != null;
         switch (portal.shape()) {
             case Box box -> {
                 draft.form = Form.BOX;
@@ -133,6 +137,15 @@ public final class PortalDraft {
         return missing;
     }
 
+    /** Whether the guided flow shows the next step after each edit of this draft. */
+    public boolean guided() {
+        return guided;
+    }
+
+    public boolean permissionChosen() {
+        return permissionChosen;
+    }
+
     public boolean complete() {
         return missing().isEmpty();
     }
@@ -190,5 +203,10 @@ public final class PortalDraft {
 
     void permission(@Nullable String permission) {
         this.permission = permission;
+        this.permissionChosen = true;
+    }
+
+    void guided(boolean guided) {
+        this.guided = guided;
     }
 }

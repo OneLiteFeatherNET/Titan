@@ -15,26 +15,33 @@
  */
 package net.onelitefeather.titan.setup.commands;
 
+import net.kyori.adventure.text.Component;
 import net.minestom.server.command.CommandSender;
 import net.minestom.server.command.builder.Command;
 import net.minestom.server.command.builder.CommandContext;
 import net.minestom.server.command.builder.CommandExecutor;
 import net.minestom.server.command.builder.arguments.Argument;
 import net.minestom.server.command.builder.arguments.ArgumentType;
+import net.minestom.server.command.builder.suggestion.Suggestion;
+import net.minestom.server.command.builder.suggestion.SuggestionEntry;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.onelitefeather.titan.core.portal.Portal;
 import net.onelitefeather.titan.setup.portal.DraftPreview;
+import net.onelitefeather.titan.setup.portal.PortalCompletions;
 import net.onelitefeather.titan.setup.portal.PortalDraft;
 import net.onelitefeather.titan.setup.portal.PortalEditResult;
 import net.onelitefeather.titan.setup.portal.PortalEditor;
+import net.onelitefeather.titan.setup.portal.PortalFlow;
 import net.onelitefeather.titan.setup.portal.PortalMessages;
 import net.onelitefeather.titan.setup.portal.PortalShow;
 import net.onelitefeather.titan.setup.portal.PortalStore;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * {@code /setup portal ...}: parses arguments, hands them to the {@link PortalEditor} and prints
@@ -42,11 +49,14 @@ import java.util.function.BiFunction;
  */
 public final class PortalCommand extends Command {
 
-    private static final Argument<String> ID = ArgumentType.Word("id");
-    private static final Argument<Double> RADIUS = ArgumentType.Double("value");
-    private static final Argument<String[]> TASK = ArgumentType.StringArray("text");
-    private static final Argument<String> PERMISSION = ArgumentType.Word("node");
-    private static final Argument<String> FORM = ArgumentType.Word("kind").from("box", "ring");
+    private final Argument<String> id = ArgumentType.Word("id");
+    // Same name as id, so context.get(id) reads it too; only 'create <id>' names a new portal, so
+    // it must not suggest the existing ones.
+    private final Argument<String> newId = ArgumentType.Word("id");
+    private final Argument<Double> radius = ArgumentType.Double("value");
+    private final Argument<String[]> task = ArgumentType.StringArray("text");
+    private final Argument<String> permission = ArgumentType.Word("node");
+    private final Argument<String> form = ArgumentType.Word("kind").from("box", "ring");
 
     private final PortalEditor editor;
     private final PortalStore store;
@@ -60,20 +70,26 @@ public final class PortalCommand extends Command {
         this.preview = preview;
         this.show = show;
 
+        id.setSuggestionCallback((sender, context, suggestion) -> suggest(sender, suggestion, player -> PortalCompletions.ids(store.portals(), editor.drafts(player.getUuid()))));
+        radius.setSuggestionCallback((sender, context, suggestion) -> suggest(sender, suggestion, player -> PortalCompletions.radii()));
+        task.setSuggestionCallback((sender, context, suggestion) -> suggest(sender, suggestion, player -> PortalCompletions.tasks(store.portals())));
+        permission.setSuggestionCallback((sender, context, suggestion) -> suggest(sender, suggestion, player -> PortalCompletions.permissions()));
+
         setDefaultExecutor((sender, context) -> sender.sendMessage(PortalMessages.usage()));
         addSyntax(this::list, ArgumentType.Literal("list"));
         addSyntax(this::show, ArgumentType.Literal("show"));
-        addSyntax(edit((player, context) -> editor.corner1(player.getUuid(), context.get(ID), player.getPosition())), ID, ArgumentType.Literal("pos1"));
-        addSyntax(edit((player, context) -> editor.corner2(player.getUuid(), context.get(ID), player.getPosition())), ID, ArgumentType.Literal("pos2"));
-        addSyntax(edit((player, context) -> editor.shape(player.getUuid(), context.get(ID), context.get(FORM).equals("box") ? PortalDraft.Form.BOX : PortalDraft.Form.RING)), ID, ArgumentType.Literal("shape"), FORM);
-        addSyntax(edit((player, context) -> editor.centre(player.getUuid(), context.get(ID), eye(player), player.getPosition().direction())), ID, ArgumentType.Literal("centre"));
-        addSyntax(edit((player, context) -> editor.radius(player.getUuid(), context.get(ID), context.get(RADIUS))), ID, ArgumentType.Literal("radius"), RADIUS);
-        addSyntax(edit((player, context) -> editor.disc(player.getUuid(), context.get(ID), eye(player), player.getPosition().direction(), context.get(RADIUS))), ID, ArgumentType.Literal("disc"), RADIUS);
-        addSyntax(edit((player, context) -> editor.task(player.getUuid(), context.get(ID), String.join(" ", context.get(TASK)))), ID, ArgumentType.Literal("task"), TASK);
-        addSyntax(edit((player, context) -> editor.permission(player.getUuid(), context.get(ID), context.get(PERMISSION))), ID, ArgumentType.Literal("permission"), PERMISSION);
-        addSyntax(edit((player, context) -> editor.save(player.getUuid(), context.get(ID))), ID, ArgumentType.Literal("save"));
-        addSyntax(edit((player, context) -> editor.cancel(player.getUuid(), context.get(ID))), ID, ArgumentType.Literal("cancel"));
-        addSyntax(edit((player, context) -> editor.remove(player.getUuid(), context.get(ID))), ID, ArgumentType.Literal("remove"));
+        addSyntax(edit((player, context) -> editor.create(player.getUuid(), context.get(id))), ArgumentType.Literal("create"), newId);
+        addSyntax(edit((player, context) -> editor.corner1(player.getUuid(), context.get(id), player.getPosition())), id, ArgumentType.Literal("pos1"));
+        addSyntax(edit((player, context) -> editor.corner2(player.getUuid(), context.get(id), player.getPosition())), id, ArgumentType.Literal("pos2"));
+        addSyntax(edit((player, context) -> editor.shape(player.getUuid(), context.get(id), context.get(form).equals("box") ? PortalDraft.Form.BOX : PortalDraft.Form.RING)), id, ArgumentType.Literal("shape"), form);
+        addSyntax(edit((player, context) -> editor.centre(player.getUuid(), context.get(id), eye(player), player.getPosition().direction())), id, ArgumentType.Literal("centre"));
+        addSyntax(edit((player, context) -> editor.radius(player.getUuid(), context.get(id), context.get(radius))), id, ArgumentType.Literal("radius"), radius);
+        addSyntax(edit((player, context) -> editor.disc(player.getUuid(), context.get(id), eye(player), player.getPosition().direction(), context.get(radius))), id, ArgumentType.Literal("disc"), radius);
+        addSyntax(edit((player, context) -> editor.task(player.getUuid(), context.get(id), String.join(" ", context.get(task)))), id, ArgumentType.Literal("task"), task);
+        addSyntax(edit((player, context) -> editor.permission(player.getUuid(), context.get(id), context.get(permission))), id, ArgumentType.Literal("permission"), permission);
+        addSyntax(edit((player, context) -> editor.save(player.getUuid(), context.get(id))), id, ArgumentType.Literal("save"));
+        addSyntax(edit((player, context) -> editor.cancel(player.getUuid(), context.get(id))), id, ArgumentType.Literal("cancel"));
+        addSyntax(edit((player, context) -> editor.remove(player.getUuid(), context.get(id))), id, ArgumentType.Literal("remove"));
     }
 
     private void list(@NotNull CommandSender sender, @NotNull CommandContext context) {
@@ -94,10 +110,23 @@ public final class PortalCommand extends Command {
         return (sender, context) -> {
             if (sender instanceof Player player) {
                 PortalEditResult result = action.apply(player, context);
-                player.sendMessage(PortalMessages.render(result));
-                followPreview(player, context.get(ID), result);
+                player.sendMessage(message(player, context.get(id), result));
+                followPreview(player, context.get(id), result);
             }
         };
+    }
+
+    /** A guided draft that is still going gets its next step instead of the plain progress text. */
+    private Component message(Player player, String draftId, PortalEditResult result) {
+        boolean going = result instanceof PortalEditResult.Pending || result instanceof PortalEditResult.Complete;
+        Optional<PortalDraft> guided = going ? editor.draft(player.getUuid(), draftId).filter(PortalDraft::guided) : Optional.empty();
+        return guided.map(draft -> PortalFlow.render(draft, PortalCompletions.tasks(store.portals())).message()).orElseGet(() -> PortalMessages.render(result));
+    }
+
+    private static void suggest(CommandSender sender, Suggestion suggestion, Function<Player, List<String>> source) {
+        if (sender instanceof Player player) {
+            source.apply(player).forEach(entry -> suggestion.addEntry(new SuggestionEntry(entry)));
+        }
     }
 
     private void followPreview(Player player, String id, PortalEditResult result) {
