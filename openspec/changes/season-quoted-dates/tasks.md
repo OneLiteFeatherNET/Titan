@@ -28,7 +28,7 @@
 
 ## 4. Abnahme
 
-- [ ] 4.1 Haiku-Review (read-only): Szenarien von `lobby-seasons` (quotiert, unquotiert, Laufzeit) dem jeweiligen Test zuordnen; F.I.R.S.T.-Check (`@TempDir`, keine Sleeps, keine Systemzeit, `Config` nicht verändert, Reihenfolge egal). Nachweis: Bericht ohne Lücken
+- [x] 4.1 Haiku-Review (read-only): Szenarien von `lobby-seasons` (quotiert, unquotiert, Laufzeit) dem jeweiligen Test zuordnen; F.I.R.S.T.-Check (`@TempDir`, keine Sleeps, keine Systemzeit, `Config` nicht verändert, Reihenfolge egal). Nachweis: Bericht ohne Lücken
 
 ## 5. Pull Request
 
