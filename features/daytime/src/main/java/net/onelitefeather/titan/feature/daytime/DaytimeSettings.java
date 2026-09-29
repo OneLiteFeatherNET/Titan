@@ -15,10 +15,8 @@
  */
 package net.onelitefeather.titan.feature.daytime;
 
-import java.time.ZoneId;
-
 /**
- * The {@code daytime} module's configuration keys and the pure parsing of its zone value.
+ * The {@code daytime} module's configuration keys.
  */
 final class DaytimeSettings {
 
@@ -26,12 +24,5 @@ final class DaytimeSettings {
     static final String ZONE_KEY = "daytime.zone";
 
     private DaytimeSettings() {
-    }
-
-    /**
-     * @throws java.time.DateTimeException if {@code raw} is not a known zone id
-     */
-    static ZoneId zone(String raw) {
-        return ZoneId.of(raw);
     }
 }

@@ -16,8 +16,6 @@
 package net.onelitefeather.titan.feature.daytime;
 
 import io.avaje.config.Config;
-import io.avaje.config.Configuration;
-import java.time.DateTimeException;
 import java.time.ZoneId;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -34,29 +32,6 @@ class DaytimeSettingsTest {
     @DisplayName("The shipped defaults use Europe/Berlin")
     @Test
     void shippedDefaultZoneIsBerlin() {
-        Assertions.assertEquals(ZoneId.of("Europe/Berlin"), Config.getAs(DaytimeSettings.ZONE_KEY, DaytimeSettings::zone), "daytime.zone must default to Europe/Berlin");
-    }
-
-    @DisplayName("A valid zone id is parsed")
-    @Test
-    void validZoneIsParsed() {
-        Assertions.assertEquals(ZoneId.of("Asia/Tokyo"), DaytimeSettings.zone("Asia/Tokyo"));
-    }
-
-    @DisplayName("An unknown zone id is rejected")
-    @Test
-    void unknownZoneIsRejected() {
-        Assertions.assertThrows(DateTimeException.class, () -> DaytimeSettings.zone("Mars/Olympus"));
-    }
-
-    @DisplayName("Config.getAs names the key and keeps the offending zone in the cause")
-    @Test
-    void configGetAsNamesTheKeyForAnInvalidZone() {
-        Configuration configuration = Configuration.builder().put(DaytimeSettings.ZONE_KEY, "Mars/Olympus").build();
-
-        IllegalStateException thrown = Assertions.assertThrows(IllegalStateException.class, () -> configuration.getAs(DaytimeSettings.ZONE_KEY, DaytimeSettings::zone));
-
-        Assertions.assertTrue(thrown.getMessage().contains(DaytimeSettings.ZONE_KEY), "the message must name " + DaytimeSettings.ZONE_KEY + ", was: " + thrown.getMessage());
-        Assertions.assertTrue(thrown.getCause().getMessage().contains("Mars/Olympus"), "the cause must keep the offending value, was: " + thrown.getCause().getMessage());
+        Assertions.assertEquals(ZoneId.of("Europe/Berlin"), Config.getAs(DaytimeSettings.ZONE_KEY, ZoneId::of), "daytime.zone must default to Europe/Berlin");
     }
 }

@@ -36,10 +36,6 @@ final class AdjustableClock extends Clock {
         this.zone = zone;
     }
 
-    void set(Instant instant) {
-        this.instant = instant;
-    }
-
     /**
      * Moves this clock's current time forward by {@code duration}.
      *

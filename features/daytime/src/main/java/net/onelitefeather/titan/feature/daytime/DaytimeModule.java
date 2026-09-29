@@ -60,7 +60,7 @@ public final class DaytimeModule {
     @PostConstruct
     void start() {
         // Aborts startup on an invalid zone; later changes fall back to this last valid one.
-        this.zone = Config.getAs(DaytimeSettings.ZONE_KEY, DaytimeSettings::zone);
+        this.zone = Config.getAs(DaytimeSettings.ZONE_KEY, ZoneId::of);
         freezeMinestomClock();
         // The first run sets the time now, then once per second; MapProvider's midday is only a fallback.
         update();
@@ -82,8 +82,12 @@ public final class DaytimeModule {
     }
 
     private void update() {
-        long ticks = Config.getBool(DaytimeSettings.ENABLED_KEY) ? this.mapping.ticksAt(this.clock.instant(), currentZone()) : DayTimeMapping.NOON_TICKS;
+        long ticks = enabled() ? this.mapping.ticksAt(this.clock.instant(), currentZone()) : DayTimeMapping.NOON_TICKS;
         this.lobby.setTime(ticks);
+    }
+
+    private static boolean enabled() {
+        return Config.getBool(DaytimeSettings.ENABLED_KEY);
     }
 
     private ZoneId currentZone() {
@@ -93,7 +97,7 @@ public final class DaytimeModule {
             return this.zone;
         }
         try {
-            this.zone = DaytimeSettings.zone(raw);
+            this.zone = ZoneId.of(raw);
             this.rejectedZone = null;
         } catch (DateTimeException e) {
             warnOnceAbout(raw, e.getMessage());

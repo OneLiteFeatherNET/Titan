@@ -257,6 +257,7 @@ class DaytimeModuleTest {
     @DisplayName("A lobby without a default clock logs a warning and still follows the wall clock")
     @Test
     void missingDefaultClockLogsAWarning() {
+        // Env instances always carry a default clock, so the null-clock case needs a mock.
         Instance clocklessLobby = Mockito.mock(Instance.class);
         this.module = new DaytimeModule(clocklessLobby, this.env.process().scheduler(), this.clock);
 
