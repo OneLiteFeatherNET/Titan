@@ -4,6 +4,11 @@ plugins {
     id("titan.app-variant")
 }
 
+// No supervisor restarts a standalone dev server, so the season column's restart-into-world cannot work here.
+titanVariant {
+    exclude("season")
+}
+
 // Off by default - a developer builds with LuckPerms only when testing permissions locally, via
 // ./gradlew :apps:local:build -Ptitan.luckperms.
 if (providers.gradleProperty("titan.luckperms").isPresent) {

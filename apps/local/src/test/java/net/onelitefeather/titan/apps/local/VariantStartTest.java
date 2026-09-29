@@ -16,12 +16,18 @@
 package net.onelitefeather.titan.apps.local;
 
 import io.avaje.inject.BeanScope;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.common.map.MapProvider;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
+import net.onelitefeather.titan.core.module.LobbyWorldChoice;
 import net.onelitefeather.titan.core.permission.PermissionService;
 import net.onelitefeather.titan.runtime.variant.LoadedModules;
 import net.onelitefeather.titan.runtime.variant.VariantDescriptor;
@@ -76,6 +82,36 @@ class VariantStartTest {
             Assertions.assertEquals("deny-all", scope.get(PermissionService.class).name(), "without a permission platform, the fallback deny-all service must be active");
         } finally {
             scope.close();
+        }
+    }
+
+    @DisplayName("The season column is neither expected nor on the classpath")
+    @Test
+    void seasonColumnIsNotPartOfThisVariant() {
+        ClassLoader loader = getClass().getClassLoader();
+        VariantDescriptor descriptor = VariantDescriptor.fromClasspath(loader).orElseThrow(() -> new AssertionError("this variant must ship META-INF/titan/variant.properties"));
+
+        Assertions.assertFalse(descriptor.modules().contains("seasonColumn"), "expected modules must not include seasonColumn, were: " + descriptor.modules());
+        Assertions.assertFalse(LoadedModules.discover(loader).contains("seasonColumn"), "the season column must not load in this variant");
+        Assertions.assertThrows(ClassNotFoundException.class, () -> Class.forName("net.onelitefeather.titan.feature.season.SeasonWorldChoice", false, loader), "the season classes must not be on the classpath");
+    }
+
+    @DisplayName("No LobbyWorldChoice service entry is on the classpath")
+    @Test
+    void noLobbyWorldChoiceServiceEntry() throws IOException {
+        List<URL> entries = Collections.list(getClass().getClassLoader().getResources("META-INF/services/" + LobbyWorldChoice.class.getName()));
+
+        Assertions.assertTrue(entries.isEmpty(), "this variant must not register a LobbyWorldChoice, found: " + entries);
+    }
+
+    @DisplayName("The shipped application.yaml has no seasons defaults")
+    @Test
+    void applicationYamlHasNoSeasonsDefaults() throws IOException {
+        for (URL url : Collections.list(getClass().getClassLoader().getResources("application.yaml"))) {
+            try (InputStream in = url.openStream()) {
+                String yaml = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+                Assertions.assertFalse(yaml.contains("seasons:"), "no seasons defaults expected in " + url);
+            }
         }
     }
 
