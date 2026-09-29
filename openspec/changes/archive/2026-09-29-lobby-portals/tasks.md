@@ -46,4 +46,4 @@ Die Agenten `map` und `column` laufen parallel in getrennten Worktrees, weil sie
 
 ## 5. Pull Request
 
-- [ ] 5.1 Pull Request vom Integrationszweig auf `main` unter dem Titel `feat(portal): switch servers by walking or flying through portals` öffnen (Titel und Beschreibung Englisch), mit dem Hinweis, dass er PR #222 ersetzt (Variante: Portale als Kartendaten je Welt, Strecken-Erkennung, kein FeatureGate, keine Abhängigkeit von #216); danach #222 mit einem Kommentar schließen, der auf den neuen PR verweist (superseded). Nachweis: PR-URL, CI grün, #222 geschlossen.
+- [x] 5.1 Pull Request vom Integrationszweig auf `main` unter dem Titel `feat(portal): switch servers by walking or flying through portals` öffnen (Titel und Beschreibung Englisch), mit dem Hinweis, dass er PR #222 ersetzt (Variante: Portale als Kartendaten je Welt, Strecken-Erkennung, kein FeatureGate, keine Abhängigkeit von #216); danach #222 mit einem Kommentar schließen, der auf den neuen PR verweist (superseded). Nachweis: PR-URL, CI grün, #222 geschlossen.
