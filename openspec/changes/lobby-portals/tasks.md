@@ -41,7 +41,7 @@ Die Agenten `map` und `column` laufen parallel in getrennten Worktrees, weil sie
 
 ## 4. Doku und Abnahme (Wellen 3 und 4)
 
-- [ ] 4.1 `docs/lobby-modules.md`: Prioritäten-Tabelle um `portal | 900` ergänzen, Column-Tabelle um die Zeile `portal` (`EventNode.class`, `LobbyPortals.class`, `Deliver.class`, `PermissionService.class`, `Clock.class`), und einen Abschnitt „Portale“ mit dem JSON-Vertrag aus design.md D1, den Formen, der Abklingzeit von 3 s, dem Recht und dem Betriebsschritt (CloudNet-Task, Karte bearbeiten, Neustart). Nachweis: Doku nennt Format, Priorität 900 und Tabellenzeile; kein anderer Abschnitt geändert.
+- [x] 4.1 `docs/lobby-modules.md`: Prioritäten-Tabelle um `portal | 900` ergänzen, Column-Tabelle um die Zeile `portal` (`EventNode.class`, `LobbyPortals.class`, `Deliver.class`, `PermissionService.class`, `Clock.class`), und einen Abschnitt „Portale“ mit dem JSON-Vertrag aus design.md D1, den Formen, der Abklingzeit von 3 s, dem Recht und dem Betriebsschritt (CloudNet-Task, Karte bearbeiten, Neustart). Nachweis: Doku nennt Format, Priorität 900 und Tabellenzeile; kein anderer Abschnitt geändert.
 - [ ] 4.2 Verifikation (Haiku, read-only): Jedes Szenario aus `specs/lobby-portals` Test für Test zuordnen; F.I.R.S.T.-Check (keine Sleeps, keine Systemzeit, keine geteilten statischen Zustände, frische Fixtures je Test, Assertions mit Meldungen); prüfen, dass die Herkunft aus `RingPass` im Warum-Kommentar steht, keine Abhängigkeit auf Voyager oder Coris besteht und keine Konfigurationsschlüssel hinzukamen. Nachweis: Bericht ohne Lücken.
 
 ## 5. Pull Request
