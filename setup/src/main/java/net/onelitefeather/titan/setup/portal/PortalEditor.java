@@ -30,6 +30,9 @@ import net.onelitefeather.titan.setup.portal.PortalEditResult.Saved;
 import net.onelitefeather.titan.setup.portal.PortalEditResult.Unknown;
 import net.onelitefeather.titan.setup.portal.PortalEditResult.Updated;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -49,6 +52,7 @@ import java.util.regex.Pattern;
  */
 public final class PortalEditor {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(PortalEditor.class);
     private static final Pattern ID_PATTERN = Pattern.compile("[a-z0-9_-]+");
     /** Words the command uses in the id position. */
     private static final Set<String> RESERVED_IDS = Set.of("list", "show", "create");
@@ -147,6 +151,7 @@ public final class PortalEditor {
             return new Rejected(id, problems);
         }
         store.save(next);
+        LOGGER.info("Saved portal {} in world {}", id, store.world());
         dropDraft(player, id);
         return edited < saved.size() ? new Updated(portal.get()) : new Saved(portal.get());
     }
@@ -170,6 +175,7 @@ public final class PortalEditor {
         boolean wasSaved = indexOf(saved, id) >= 0;
         if (wasSaved) {
             store.save(saved.stream().filter(portal -> !id.equals(portal.id())).toList());
+            LOGGER.info("Removed portal {} from world {}", id, store.world());
         }
         boolean hadDraft = dropDraft(player, id);
         return wasSaved || hadDraft ? new Removed(id) : new Unknown(id);
