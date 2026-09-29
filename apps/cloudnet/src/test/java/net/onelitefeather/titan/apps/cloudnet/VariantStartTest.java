@@ -20,10 +20,15 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import net.minestom.server.coordinate.Vec;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.common.map.MapProvider;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
+import net.onelitefeather.titan.core.portal.Box;
+import net.onelitefeather.titan.core.portal.LobbyPortals;
+import net.onelitefeather.titan.core.portal.Portal;
+import net.onelitefeather.titan.feature.portal.PortalModule;
 import net.onelitefeather.titan.core.permission.PermissionService;
 import net.onelitefeather.titan.platform.luckperms.LuckPermsPermissionService;
 import net.onelitefeather.titan.runtime.variant.LoadedModules;
@@ -52,7 +57,7 @@ class VariantStartTest {
     void theFullScopeBuildsWithNoException(Env env) {
         // Named mock, not the plain mock(Type) overload - see docs/lobby-modules.md,
         // "Permission-Plattform".
-        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).build();
+        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class, ActiveLobby.empty()).mock(FeatureFlags.class).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).build();
 
         Assertions.assertDoesNotThrow(scope::close, "closing a fully built scope must not throw");
     }
@@ -88,6 +93,26 @@ class VariantStartTest {
         String yaml = new String(getClass().getClassLoader().getResourceAsStream("application.yaml").readAllBytes(), StandardCharsets.UTF_8);
 
         Assertions.assertTrue(yaml.contains("seasons:"), "the merged application.yaml must contain the seasons defaults");
+    }
+
+    @DisplayName("variant.properties lists portalColumn, the portal column is loaded and its module starts against the real LobbyPortals bean")
+    @Test
+    @Timeout(30)
+    void portalColumnIsExpectedLoadedAndWiredToTheLobbyPortalsBean(Env env) {
+        ClassLoader loader = getClass().getClassLoader();
+        VariantDescriptor descriptor = VariantDescriptor.fromClasspath(loader).orElseThrow(() -> new AssertionError("this variant must ship META-INF/titan/variant.properties"));
+        Portal portal = new Portal("survival", new Box(new Vec(0, 64, 0), new Vec(1, 65, 1)), "Survival", null);
+
+        Assertions.assertTrue(descriptor.modules().contains("portalColumn"), "expected modules must include portalColumn, were: " + descriptor.modules());
+        Assertions.assertTrue(LoadedModules.discover(loader).contains("portalColumn"), "the portal column must be on the classpath and load");
+
+        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class, ActiveLobby.with(List.of(portal))).mock(FeatureFlags.class).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).build();
+        try {
+            Assertions.assertNotNull(scope.get(PortalModule.class), "the portal module must be a bean");
+            Assertions.assertEquals(List.of(portal), scope.get(LobbyPortals.class).portals(), "LobbyPortals must serve the portals of the active map");
+        } finally {
+            scope.close();
+        }
     }
 
     @DisplayName("An additionally expected but missing column aborts startup, naming it")
