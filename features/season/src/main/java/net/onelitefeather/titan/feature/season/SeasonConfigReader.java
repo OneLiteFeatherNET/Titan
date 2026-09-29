@@ -15,7 +15,7 @@
  */
 package net.onelitefeather.titan.feature.season;
 
-import io.avaje.config.Config;
+import io.avaje.config.Configuration;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.DateTimeException;
@@ -32,7 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Reads and validates {@code seasons.*} from {@link Config}.
+ * Reads and validates {@code seasons.*} from a {@link Configuration}.
  *
  * <p>At startup a problem in an enabled season aborts with the qualified key and the reason. Live
  * the same problem only yields no configuration and one WARN per value: acting on a broken value
@@ -53,12 +53,14 @@ final class SeasonConfigReader {
         }
     }
 
+    private final Configuration config;
     private final Path worldsDirectory;
     private final SeasonCalendar calendar;
     // Problems already warned about, so an unchanged broken value is not logged every minute.
     private final Set<String> warned = new HashSet<>();
 
-    SeasonConfigReader(Path worldsDirectory, SeasonCalendar calendar) {
+    SeasonConfigReader(Configuration config, Path worldsDirectory, SeasonCalendar calendar) {
+        this.config = Objects.requireNonNull(config, "config");
         this.worldsDirectory = Objects.requireNonNull(worldsDirectory, "worldsDirectory");
         this.calendar = Objects.requireNonNull(calendar, "calendar");
     }
@@ -98,25 +100,26 @@ final class SeasonConfigReader {
     private SeasonConfig read(List<Problem> problems) {
         ZoneId zone;
         try {
-            zone = Config.getAs(SeasonSettings.ZONE_KEY, ZoneId::of);
+            zone = this.config.getAs(SeasonSettings.ZONE_KEY, ZoneId::of);
         } catch (RuntimeException e) {
-            problems.add(new Problem(SeasonSettings.ZONE_KEY, "invalid zone '" + Config.get(SeasonSettings.ZONE_KEY, "") + "' (" + rootMessage(e) + ")"));
+            problems.add(new Problem(SeasonSettings.ZONE_KEY, "invalid zone '" + this.config.get(SeasonSettings.ZONE_KEY, "") + "' (" + rootMessage(e) + ")"));
             return new SeasonConfig(ZoneId.systemDefault(), List.of());
         }
         List<Season> seasons = new ArrayList<>();
         for (String id : seasonIds()) {
             if (SeasonSettings.RESERVED_ID.equals(id)) {
                 problems.add(new Problem(SeasonSettings.ZONE_KEY, "'" + id + "' is reserved and cannot be a season id"));
-            } else if (Config.getBool(SeasonSettings.key(id, SeasonSettings.ENABLED_FIELD), true)) {
-                readSeason(id, problems).ifPresent(seasons::add);
-            }
+            } else
+                if (this.config.getBool(SeasonSettings.key(id, SeasonSettings.ENABLED_FIELD), true)) {
+                    readSeason(id, problems).ifPresent(seasons::add);
+                }
         }
         return new SeasonConfig(zone, List.copyOf(seasons));
     }
 
-    private static Set<String> seasonIds() {
+    private Set<String> seasonIds() {
         Set<String> ids = new TreeSet<>();
-        for (String key : Config.asProperties().stringPropertyNames()) {
+        for (String key : this.config.asProperties().stringPropertyNames()) {
             if (key.startsWith(SeasonSettings.PREFIX)) {
                 String rest = key.substring(SeasonSettings.PREFIX.length());
                 int dot = rest.indexOf('.');
@@ -154,7 +157,7 @@ final class SeasonConfigReader {
         }
     }
 
-    private static LocalDateTime date(String id, String field, List<Problem> problems) {
+    private LocalDateTime date(String id, String field, List<Problem> problems) {
         String raw = value(id, field, problems);
         if (raw == null) {
             return null;
@@ -167,13 +170,19 @@ final class SeasonConfigReader {
         }
     }
 
-    private static String value(String id, String field, List<Problem> problems) {
+    private String value(String id, String field, List<Problem> problems) {
         String key = SeasonSettings.key(id, field);
-        Optional<String> value = Config.getOptional(key).map(String::strip).filter(raw -> !raw.isEmpty());
+        Optional<String> value = this.config.getOptional(key).map(String::strip).filter(raw -> !raw.isEmpty());
         if (value.isEmpty()) {
-            problems.add(new Problem(key, "is required"));
+            problems.add(new Problem(key, "is required" + quotingHint(field)));
         }
         return value.orElse(null);
+    }
+
+    // An unquoted YAML date-time is parsed to a non-text type that avaje-config drops, so it reads as missing.
+    private static String quotingHint(String field) {
+        boolean isDate = SeasonSettings.FROM_FIELD.equals(field) || SeasonSettings.TO_FIELD.equals(field);
+        return isDate ? " (quote date-times: " + field + ": \"2026-12-01T00:00:00\")" : "";
     }
 
     private static String rootMessage(Throwable throwable) {

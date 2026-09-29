@@ -10,4 +10,7 @@ dependencies {
 
     // ListAppender, for capturing the column's WARN and INFO lines in its tests.
     testImplementation(libs.logback.classic)
+
+    // Real YAML loading in the tests, as in production, where apps/cloudnet brings it transitively.
+    testRuntimeOnly(libs.snakeyaml)
 }

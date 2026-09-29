@@ -49,7 +49,7 @@ class SeasonConfigReaderTest {
     @BeforeEach
     void setUp() {
         this.originalZone = Config.get(SeasonSettings.ZONE_KEY);
-        this.reader = new SeasonConfigReader(this.worlds, new SeasonCalendar());
+        this.reader = new SeasonConfigReader(Config.asConfiguration(), this.worlds, new SeasonCalendar());
         this.logLines.start();
         this.readerLogger.addAppender(this.logLines);
     }
