@@ -34,4 +34,4 @@ Der Agent `navigator` arbeitet in einem Modul und in dieser Reihenfolge, weil `D
 
 ## 4. Pull Request
 
-- [ ] 4.1 Pull Request vom Integrationszweig auf `main` unter dem Titel `feat(navigator): show the build server destination to the team` öffnen (Titel und Beschreibung Englisch), mit dem Hinweis, dass er PR #219 ersetzt (Variante: festes Ziel `Build` statt Serverliste, keine Abhängigkeit von #216); danach #219 mit einem Kommentar schließen, der auf den neuen PR verweist (superseded). Nachweis: PR-URL, CI grün, #219 geschlossen.
+- [x] 4.1 Pull Request vom Integrationszweig auf `main` unter dem Titel `feat(navigator): show the build server destination to the team` öffnen (Titel und Beschreibung Englisch), mit dem Hinweis, dass er PR #219 ersetzt (Variante: festes Ziel `Build` statt Serverliste, keine Abhängigkeit von #216); danach #219 mit einem Kommentar schließen, der auf den neuen PR verweist (superseded). Nachweis: PR-URL, CI grün, #219 geschlossen.
