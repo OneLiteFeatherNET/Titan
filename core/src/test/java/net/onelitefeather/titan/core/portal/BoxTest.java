@@ -18,6 +18,7 @@ package net.onelitefeather.titan.core.portal;
 import net.minestom.server.coordinate.Vec;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -107,5 +108,10 @@ class BoxTest {
         Vec standingStill = new Vec(20, 66, 11);
 
         assertNotCrossed(standingStill, standingStill, "standing outside the box is no crossing");
+    }
+
+    @Test
+    void boundsTheBoxIncludingTheMaxBlock() {
+        assertEquals(new HorizontalBounds(10, 10, 15, 12), BOX.horizontalBounds(), "x 10..15, z 10..12 in world coordinates");
     }
 }

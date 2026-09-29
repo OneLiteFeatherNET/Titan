@@ -18,6 +18,7 @@ package net.onelitefeather.titan.core.portal;
 import net.minestom.server.coordinate.Vec;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -128,5 +129,26 @@ class DiscTest {
         Disc handWritten = new Disc(new Vec(0, 64, 100), 5.0, new Vec(0, 0, 4));
 
         assertCrossed(handWritten, new Vec(0, 64, 99), new Vec(0, 64, 101), "normal is normalised before use");
+    }
+
+    @Test
+    void exposesTheNormalAsAUnitVector() {
+        Disc handWritten = new Disc(new Vec(0, 64, 100), 5.0, new Vec(0, 3, 4));
+
+        assertEquals(new Vec(0, 0.6, 0.8), handWritten.normal(), "the normal must be normalised");
+    }
+
+    @Test
+    void keepsAZeroLengthNormalForTheValidatorToReject() {
+        Disc broken = new Disc(new Vec(0, 64, 100), 5.0, Vec.ZERO);
+
+        assertEquals(Vec.ZERO, broken.normal(), "a zero normal must not turn into NaN");
+    }
+
+    @Test
+    void boundsTheDiscByCenterPlusMinusRadius() {
+        HorizontalBounds bounds = new Disc(new Vec(10, 64, -20), 4.0, new Vec(0, 0, 1)).horizontalBounds();
+
+        assertEquals(new HorizontalBounds(6, -24, 14, -16), bounds, "conservative rectangle around the centre");
     }
 }
