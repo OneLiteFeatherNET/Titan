@@ -1,0 +1,7 @@
+# The "daytime" module: the lobby's time of day follows the real wall clock.
+daytime:
+  # When false, the lobby stays at midday instead. Takes effect without a restart.
+  enabled: true
+  # The time zone whose wall clock the lobby follows (a java.time zone id, e.g. Europe/Berlin).
+  # An invalid value aborts startup; changed to an invalid value at runtime, the last valid zone stays.
+  zone: Europe/Berlin
