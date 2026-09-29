@@ -14,7 +14,7 @@ Titan MUSS für jede Betriebsumgebung als eigene, allein startbare Variante geba
 
 #### Scenario: Entwicklungsvariante startet
 - **WHEN** ein Entwickler das Jar der Variante `local` ohne CloudNet startet
-- **THEN** startet die Lobby mit denselben Funktionen wie die Variante `cloudnet`
+- **THEN** startet die Lobby mit denselben Funktionen wie die Variante `cloudnet`, außer denen einer Column, die nur `cloudnet` enthält
 
 ### Requirement: Eine Variante startet nur mit allen erwarteten Columns
 Jede Variante MUSS festlegen, welche Columns sie enthält. Beim Start MUSS die Lobby prüfen, dass jede erwartete Column geladen ist. Fehlt eine, DARF die Lobby NICHT starten, und die Fehlermeldung MUSS die fehlende Column nennen.
@@ -28,7 +28,7 @@ Jede Variante MUSS festlegen, welche Columns sie enthält. Beim Start MUSS die L
 - **THEN** startet die Lobby und meldet jede Column als gestartet
 
 ### Requirement: Varianten verhalten sich wie die bisherige Lobby
-Solange sich die Varianten nur im Namen unterscheiden, MÜSSEN beide Varianten dieselben Columns enthalten und sich für Spieler und Betreiber genauso verhalten wie die bisherige einzelne Lobby: gleiche Features, gleiche Konfigurationsschlüssel, gleiche Befehle, gleiche Texte.
+Solange sich die Varianten nur im Namen unterscheiden, MÜSSEN beide Varianten dieselben Columns enthalten und sich für Spieler und Betreiber genauso verhalten wie die bisherige einzelne Lobby: gleiche Features, gleiche Konfigurationsschlüssel, gleiche Befehle, gleiche Texte. Eine Column, die einen Dienst-Supervisor zum Neustart braucht, wie `season`, ist nur in `cloudnet` enthalten; die Variante `local` DARF sie auslassen, und ihre Konfigurationsschlüssel gelten dort nicht.
 
 #### Scenario: Gleiches Verhalten nach dem Umbau
 - **WHEN** ein Spieler die Lobby der Variante `cloudnet` betritt, den Navigator nutzt, sitzt, kitzelt und mit der Elytra fliegt
@@ -37,6 +37,10 @@ Solange sich die Varianten nur im Namen unterscheiden, MÜSSEN beide Varianten d
 #### Scenario: Bestehende Konfiguration gilt weiter
 - **WHEN** ein Betreiber seine bisherige `application.yaml` unverändert neben das Jar der Variante legt
 - **THEN** übernimmt die Lobby alle Werte daraus wie vorher
+
+#### Scenario: Saison-Column nur in der Produktionsvariante
+- **WHEN** die Variante `local` mit einer `application.yaml` startet, die `seasons.*` enthält
+- **THEN** lädt sie keine Saison-Column, wählt die Standardwelt und stoppt nie wegen einer Saison, während `cloudnet` die Column enthält und ihr Start sie als erwartete Column prüft
 
 ### Requirement: Standardwerte kommen aus den Columns der Variante
 Jede Column MUSS ihre eigenen Standardwerte mitbringen. Die Variante MUSS die Standardwerte aller ihrer Columns ausliefern und für Betreiber einsehbar als eine kommentierte Beispieldatei neben das Jar legen. Beanspruchen zwei Columns denselben Konfigurationsschlüssel, MUSS der Build fehlschlagen und beide Columns nennen.
