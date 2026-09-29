@@ -56,7 +56,7 @@ class NavigatorModuleTest {
     @DisplayName("Opening the navigator via the feather shows the four fixed destinations, synchronously")
     @Test
     void openingTheNavigatorShowsTheFourDestinations(Env env) {
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive())) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), new FakePermissionService())) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);
@@ -80,7 +80,7 @@ class NavigatorModuleTest {
     @Test
     void clickingElytraRaceForwardsToElytraRace(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive())) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService())) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);
@@ -100,7 +100,7 @@ class NavigatorModuleTest {
     @Test
     void clickingSurvivalForwardsToSurvival(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive())) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService())) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);
@@ -120,7 +120,7 @@ class NavigatorModuleTest {
     @Test
     void clickingSlenderForwardsToCygnus(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive())) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService())) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);
@@ -140,7 +140,7 @@ class NavigatorModuleTest {
     @Test
     void clickingCreativeForwardsToMemberBuild(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive())) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService())) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);
@@ -160,7 +160,7 @@ class NavigatorModuleTest {
     @Test
     void clickingABlankSlotTriggersNoDeliveryAndKeepsTheNavigatorOpen(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive())) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService())) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);
@@ -178,7 +178,7 @@ class NavigatorModuleTest {
     @Test
     void clicksNoLongerForwardOnceTheModuleIsStopped(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive())) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService())) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);
