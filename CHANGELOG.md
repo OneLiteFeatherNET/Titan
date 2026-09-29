@@ -1,5 +1,58 @@
 # Changelog
 
+## [2.0.0](https://github.com/OneLiteFeatherNET/Titan/compare/v1.14.1...v2.0.0) (2026-09-29)
+
+
+### ⚠ BREAKING CHANGES
+
+* **permission:** runtime no longer starts LuckPerms or loads Butterfly; a platform module now owns the permission platform's lifecycle.
+* **build:** split titan into feature columns and app variants ([#312](https://github.com/OneLiteFeatherNET/Titan/issues/312))
+* **app:** `LobbyModule`, `ModuleContext`, `ModuleRegistry` and the `ModuleItems`/`ModuleTasks`/`ModuleCommands` extension points are removed. Features are `@Singleton` Avaje beans that attach their own event node in `@PostConstruct` and detach it in `@PreDestroy`; lobby items are `LobbyItem` beans collected by `LobbyItems`. Player-facing behaviour is unchanged.
+* **navigator:** the navigator no longer reads `navigator.title` and `navigator.entries.*`; its title and destinations are defined in NavigatorModule/Destination. The ModuleContext#navigator() extension point and the navigator entry registry are removed; modules can no longer contribute navigator entries. Feature flags under `features.*` are unchanged.
+* **config:** feature flags move from flags.properties to the features section of application.yaml (e.g. features.NAVIGATOR_SLENDER: true, env FEATURES_NAVIGATOR_SLENDER); flags.properties and Togglz are no longer read.
+* **config:** read configuration through the avaje config facade ([#301](https://github.com/OneLiteFeatherNET/Titan/issues/301))
+* **config:** /setup app commands are removed; configuration lives in application.yaml. Values previously set via /setup app ... belong in application.yaml, a profile file, or an env var instead.
+* **app:** elytra.boostMultiplier is replaced by elytra.burnDurationTicks and elytra.cooldownTicks (defaults 30/40, matching Voyager's own deterministic burn and its reference map's cooldown). The boost is Vanilla's own client-side impulse, so there is no multiplier left to configure. LegacyConfigMigration now drops elytraBoostMultiplier (logged, like fireworkBoostSlot and updateRateAgones) instead of migrating it; a migrated lobby starts the elytra module with its compiled-in defaults. The setup server's /setup app elytraBoostMultiplier syntax is replaced by elytraBoostMultiplier -> elytraBurnDurationTicks/elytraCooldownTicks.
+
+### Features
+
+* **app:** discover lobby modules with avaje inject ([#295](https://github.com/OneLiteFeatherNET/Titan/issues/295)) ([710632e](https://github.com/OneLiteFeatherNET/Titan/commit/710632e071a1ebf1368fb4b717517e051434ea48))
+* **app:** rebuild the lobby around feature modules ([#292](https://github.com/OneLiteFeatherNET/Titan/issues/292)) ([37b1242](https://github.com/OneLiteFeatherNET/Titan/commit/37b1242795eb3a70666b28791b5356e634f9c684))
+* **common:** report navigator deliveries in local runs ([#296](https://github.com/OneLiteFeatherNET/Titan/issues/296)) ([2cb5279](https://github.com/OneLiteFeatherNET/Titan/commit/2cb5279f0a39ed416304dee8fb89175dda2d1ec6))
+* **config:** load lobby configuration from application.yaml with profiles ([#297](https://github.com/OneLiteFeatherNET/Titan/issues/297)) ([b9e94b9](https://github.com/OneLiteFeatherNET/Titan/commit/b9e94b9efa9ac1129df156058fe44f18548fb975))
+* **config:** reload configuration at runtime and read feature flags from it ([#304](https://github.com/OneLiteFeatherNET/Titan/issues/304)) ([7a74281](https://github.com/OneLiteFeatherNET/Titan/commit/7a74281756741e0c99bc3a9ea81ec3daa52c72d0))
+* **daytime:** follow the real wall clock in the lobby ([#319](https://github.com/OneLiteFeatherNET/Titan/issues/319)) ([2d55a03](https://github.com/OneLiteFeatherNET/Titan/commit/2d55a030576eba73f7371144a07e95e4dbd40064))
+* **navigator:** show the build server destination to the team ([#322](https://github.com/OneLiteFeatherNET/Titan/issues/322)) ([15932c9](https://github.com/OneLiteFeatherNET/Titan/commit/15932c937e68a56b4f2703620ac7cb1bab911d9b))
+* **portal:** switch servers by walking or flying through portals ([#326](https://github.com/OneLiteFeatherNET/Titan/issues/326)) ([07a9ddc](https://github.com/OneLiteFeatherNET/Titan/commit/07a9ddc9573ce1d041b394f1ab007a76f7c354f8))
+* **season:** restart the lobby into a seasonal world during its window ([#321](https://github.com/OneLiteFeatherNET/Titan/issues/321)) ([7582a59](https://github.com/OneLiteFeatherNET/Titan/commit/7582a59cf5e4526ef03837b82633bad95d68ff94))
+* **setup:** create lobby portals from in-game commands ([#329](https://github.com/OneLiteFeatherNET/Titan/issues/329)) ([aad7bcb](https://github.com/OneLiteFeatherNET/Titan/commit/aad7bcbb11e7b719dcbc9a15111cd660240c4158))
+
+
+### Bug Fixes
+
+* **deps:** update dependency ch.qos.logback:logback-classic to v1.6.4 ([#302](https://github.com/OneLiteFeatherNET/Titan/issues/302)) ([4ef6b25](https://github.com/OneLiteFeatherNET/Titan/commit/4ef6b25ad28fe1ff197acd4999f1a284ed8d7980))
+* **deps:** update dependency com.github.ben-manes.caffeine:caffeine to v3.3.0 ([#288](https://github.com/OneLiteFeatherNET/Titan/issues/288)) ([6889a3b](https://github.com/OneLiteFeatherNET/Titan/commit/6889a3bacf7feb1d6860c46f97536dab27357385))
+* **deps:** update dependency com.google.guava:guava to v33.7.2-android ([#327](https://github.com/OneLiteFeatherNET/Titan/issues/327)) ([e1846ca](https://github.com/OneLiteFeatherNET/Titan/commit/e1846caaa0965b3d310d6002a1a3e3e6884dae4f))
+* **deps:** update dependency com.google.guava:guava to v33.7.2-jre ([#328](https://github.com/OneLiteFeatherNET/Titan/issues/328)) ([067dabc](https://github.com/OneLiteFeatherNET/Titan/commit/067dabc14ad7cfdcec9affba0308dd9509e5a4de))
+* **deps:** update dependency com.tngtech.archunit:archunit-junit5 to v1.5.1 ([#300](https://github.com/OneLiteFeatherNET/Titan/issues/300)) ([c874847](https://github.com/OneLiteFeatherNET/Titan/commit/c8748477f813c28fdd1eba14e4acad2a5dbcc16c))
+* **deps:** update dependency io.sentry:sentry-bom to v8.56.0 ([#283](https://github.com/OneLiteFeatherNET/Titan/issues/283)) ([0836117](https://github.com/OneLiteFeatherNET/Titan/commit/08361172f1d9fb79b9ac79ebcc272ad9417f3b0d))
+* **deps:** update dependency io.sentry:sentry-bom to v8.57.0 ([#287](https://github.com/OneLiteFeatherNET/Titan/issues/287)) ([78b9f40](https://github.com/OneLiteFeatherNET/Titan/commit/78b9f403e42708532b9133c6fa683be5e73af51e))
+* **deps:** update dependency io.sentry:sentry-bom to v8.58.0 ([#290](https://github.com/OneLiteFeatherNET/Titan/issues/290)) ([9c6e720](https://github.com/OneLiteFeatherNET/Titan/commit/9c6e720eb196518cea13ad268abfd827b2a4b7f3))
+* **deps:** update dependency net.onelitefeather:aonyx-bom to v0.8.7 ([#286](https://github.com/OneLiteFeatherNET/Titan/issues/286)) ([09646f9](https://github.com/OneLiteFeatherNET/Titan/commit/09646f9410f46dd33f15c33454855e46cfc2277e))
+* **deps:** update dependency org.mockito:mockito-core to v5.24.0 ([#291](https://github.com/OneLiteFeatherNET/Titan/issues/291)) ([0dae95d](https://github.com/OneLiteFeatherNET/Titan/commit/0dae95d75935a48a9985cdce0f18247aead896ad))
+* **deps:** update dependency org.slf4j:slf4j-api to v2.0.20 ([#289](https://github.com/OneLiteFeatherNET/Titan/issues/289)) ([dd8b0a4](https://github.com/OneLiteFeatherNET/Titan/commit/dd8b0a4504ae5881c12fd2c4cd5f25bc27877303))
+* **deps:** update dependency org.yaml:snakeyaml to v2.7 ([#298](https://github.com/OneLiteFeatherNET/Titan/issues/298)) ([4221d58](https://github.com/OneLiteFeatherNET/Titan/commit/4221d58cd7904f550c4e2eabfb2ee093d32204f3))
+* **season:** explain that season date-times must be quoted ([#325](https://github.com/OneLiteFeatherNET/Titan/issues/325)) ([fc3924d](https://github.com/OneLiteFeatherNET/Titan/commit/fc3924deb76e19184444a602adcabbd7f780afd1))
+
+
+### Code Refactoring
+
+* **app:** replace the lobby module platform with plain avaje beans ([#308](https://github.com/OneLiteFeatherNET/Titan/issues/308)) ([71e3724](https://github.com/OneLiteFeatherNET/Titan/commit/71e3724a1a9f83bfbe6cbde94769f6c2d5df92db))
+* **build:** split titan into feature columns and app variants ([#312](https://github.com/OneLiteFeatherNET/Titan/issues/312)) ([249f5d5](https://github.com/OneLiteFeatherNET/Titan/commit/249f5d53172f5708b72f9c00385c63014f358765))
+* **config:** read configuration through the avaje config facade ([#301](https://github.com/OneLiteFeatherNET/Titan/issues/301)) ([8fc2c01](https://github.com/OneLiteFeatherNET/Titan/commit/8fc2c01f46e886fa5d53d3706f1b120d832b9d62))
+* **navigator:** hard-code navigator destinations in a single aves module ([#306](https://github.com/OneLiteFeatherNET/Titan/issues/306)) ([3d9e1d0](https://github.com/OneLiteFeatherNET/Titan/commit/3d9e1d05aff0f101a7f1ed93b5761003b2b353b7))
+* **permission:** resolve permissions through an optional di module ([#313](https://github.com/OneLiteFeatherNET/Titan/issues/313)) ([a32544b](https://github.com/OneLiteFeatherNET/Titan/commit/a32544b6dc7208d2a7c548ec1d260caff101e319))
+
 ## [1.14.1](https://github.com/OneLiteFeatherNET/Titan/compare/v1.14.0...v1.14.1) (2026-09-06)
 
 
