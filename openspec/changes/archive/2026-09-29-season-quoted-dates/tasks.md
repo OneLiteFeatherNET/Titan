@@ -32,4 +32,4 @@
 
 ## 5. Pull Request
 
-- [ ] 5.1 Pull Request mit dem Titel `fix(season): explain that season date-times must be quoted` eröffnen (Titel und Beschreibung Englisch); Archiv-Commit `docs(openspec): archive season-quoted-dates`, falls das Archiv nicht mitgeliefert wird
+- [x] 5.1 Pull Request mit dem Titel `fix(season): explain that season date-times must be quoted` eröffnen (Titel und Beschreibung Englisch); Archiv-Commit `docs(openspec): archive season-quoted-dates`, falls das Archiv nicht mitgeliefert wird
