@@ -13,18 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.setup.commands;
+package net.onelitefeather.titan.setup.portal;
 
-import net.minestom.server.command.builder.Command;
-import net.minestom.server.command.builder.condition.Conditions;
-import net.onelitefeather.titan.common.map.MapProvider;
-
-public class SetupCommand extends Command {
-
-    public SetupCommand(MapProvider mapProvider, PortalCommand portalCommand) {
-        super("setup");
-        this.setCondition(Conditions::playerOnly);
-        this.addSubcommand(new MapCommand(mapProvider));
-        this.addSubcommand(portalCommand);
-    }
+/** A part of a {@link PortalDraft} that is still needed before it can be saved. */
+public enum Missing {
+    FORM, CORNER_1, CORNER_2, CENTRE, RADIUS, TASK
 }

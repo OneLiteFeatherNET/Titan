@@ -312,6 +312,34 @@ deleted.
 The setup server no longer edits configuration - the `/setup app ...` commands have been removed.
 It only reads `spawn.simulationDistance` (default `2`) from the same configuration.
 
+#### Portals
+
+Lobby portals (see [docs/lobby-modules.md](docs/lobby-modules.md)) are edited with `/setup portal`
+(players only, like all `/setup` commands) and stored in the `map.json` of the loaded world. Ids
+consist of lower-case letters, digits, `-` and `_`; `list`, `show` and `create` are reserved.
+
+- `/setup portal list`: saved portals (id, shape, task, permission) and, separately, your open drafts
+- `/setup portal show`: outlines of all saved portals as particles, only for you, for a few seconds
+- `/setup portal create <id>`: guided flow in chat with clickable buttons for each step (shape, corners
+  or centre and radius, task, permission, then save or cancel). A button runs exactly one of the
+  commands below; buttons that need free input put the command into your chat box.
+- `/setup portal <id> pos1|pos2`: box corners at your block
+- `/setup portal <id> shape box|ring`
+- `/setup portal <id> centre`: ring centre and normal from your eyes and view direction
+- `/setup portal <id> radius <r>`: ring radius only
+- `/setup portal <id> disc <r>`: ring from your eyes, view direction and radius in one step
+- `/setup portal <id> task <task>`
+- `/setup portal <id> permission <permission|none>`
+- `/setup portal <id> save|cancel|remove`
+
+Every edit only changes your draft and answers with what is still missing, or "complete" with a
+`[save]` button. Nothing is written until `/setup portal <id> save`, which validates the portal;
+`cancel` (or disconnecting) discards the draft. While a draft is open, a live particle preview is
+shown to you only. Tab completion suggests portal and draft ids, verbs, known tasks, `none`, `box`
+and `ring`.
+
+The lobby reads portals only at startup: restart it to pick up changed portals.
+
 ### Deployment
 
 A CloudNet template, a Docker image or a Kubernetes deployment delivers `application.yaml` (or an

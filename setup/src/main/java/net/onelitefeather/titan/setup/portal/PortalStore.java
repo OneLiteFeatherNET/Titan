@@ -13,18 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.setup.commands;
+package net.onelitefeather.titan.setup.portal;
 
-import net.minestom.server.command.builder.Command;
-import net.minestom.server.command.builder.condition.Conditions;
-import net.onelitefeather.titan.common.map.MapProvider;
+import net.onelitefeather.titan.core.portal.Portal;
 
-public class SetupCommand extends Command {
+import java.util.List;
 
-    public SetupCommand(MapProvider mapProvider, PortalCommand portalCommand) {
-        super("setup");
-        this.setCondition(Conditions::playerOnly);
-        this.addSubcommand(new MapCommand(mapProvider));
-        this.addSubcommand(portalCommand);
+/**
+ * Where the portals of the loaded world live; the editor neither knows files nor the map provider.
+ */
+public interface PortalStore {
+
+    /** The saved portals of the world, in file order. */
+    List<Portal> portals();
+
+    /** Replaces the world's portals with {@code portals} and keeps everything else in the map. */
+    void save(List<Portal> portals);
+
+    /** Name of the world for log lines. */
+    default String world() {
+        return "unknown";
     }
 }

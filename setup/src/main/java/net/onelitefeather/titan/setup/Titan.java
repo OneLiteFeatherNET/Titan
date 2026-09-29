@@ -20,16 +20,23 @@ import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.event.inventory.InventoryPreClickEvent;
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent;
+import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.event.player.PlayerSpawnEvent;
 import net.minestom.server.instance.InstanceContainer;
 import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
 import net.onelitefeather.titan.common.map.MapEntry;
 import net.onelitefeather.titan.common.map.MapProvider;
 import net.onelitefeather.titan.core.utils.Cancelable;
+import net.onelitefeather.titan.setup.commands.PortalCommand;
 import net.onelitefeather.titan.setup.commands.SetupCommand;
 import net.onelitefeather.titan.setup.config.SetupSpawnConfig;
 import net.onelitefeather.titan.setup.listener.PlayerConfigurationListener;
 import net.onelitefeather.titan.setup.listener.PlayerSpawnListener;
+import net.onelitefeather.titan.setup.listener.PortalDisconnectListener;
+import net.onelitefeather.titan.setup.portal.DraftPreview;
+import net.onelitefeather.titan.setup.portal.MapProviderPortalStore;
+import net.onelitefeather.titan.setup.portal.PortalEditor;
+import net.onelitefeather.titan.setup.portal.PortalShow;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -41,6 +48,10 @@ public final class Titan {
     private final EventNode<Event> eventNode = EventNode.all("titan");
     private final MapProvider mapProvider;
     private final int simulationDistance;
+    private final PortalEditor portalEditor;
+    private final DraftPreview draftPreview;
+    private final PortalShow portalShow;
+    private final PortalCommand portalCommand;
 
     private Titan() {
         this.path = Path.of("");
@@ -52,6 +63,12 @@ public final class Titan {
         this.simulationDistance = SetupSpawnConfig.read().simulationDistance();
         BlockHandlerHelper.registerAll();
 
+        MapProviderPortalStore portalStore = new MapProviderPortalStore(this.mapProvider);
+        this.portalEditor = new PortalEditor(portalStore);
+        this.draftPreview = new DraftPreview(this.portalEditor);
+        this.portalShow = new PortalShow();
+        this.portalCommand = new PortalCommand(this.portalEditor, portalStore, this.draftPreview, this.portalShow);
+
         initCommands();
         initListeners();
     }
@@ -59,12 +76,13 @@ public final class Titan {
     private void initListeners() {
         eventNode.addListener(AsyncPlayerConfigurationEvent.class, new PlayerConfigurationListener(this.mapProvider));
         eventNode.addListener(PlayerSpawnEvent.class, new PlayerSpawnListener(this.simulationDistance, this.mapProvider));
+        eventNode.addListener(PlayerDisconnectEvent.class, new PortalDisconnectListener(this.portalEditor, this.draftPreview, this.portalShow));
         eventNode.addListener(InventoryPreClickEvent.class, Cancelable::cancel);
         MinecraftServer.getGlobalEventHandler().addChild(eventNode);
     }
 
     private void initCommands() {
-        MinecraftServer.getCommandManager().register(new SetupCommand(this.mapProvider));
+        MinecraftServer.getCommandManager().register(new SetupCommand(this.mapProvider, this.portalCommand));
     }
 
     private static List<MapEntry> defaultFilter(Stream<Path> pathStream) {
