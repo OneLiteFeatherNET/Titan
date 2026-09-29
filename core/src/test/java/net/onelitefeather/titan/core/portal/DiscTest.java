@@ -120,8 +120,7 @@ class DiscTest {
     void detectsAnEightBlockElytraStepThatSkipsAOneBlockThinDisc() {
         Disc thin = new Disc(new Vec(0.5, 72, 40.5), 5.5, new Vec(0, 0, 1));
 
-        assertCrossed(thin, new Vec(0.5, 72, 36.5), new Vec(0.5, 72, 44.5),
-                "a fast step over the plane must be detected although neither end is near it");
+        assertCrossed(thin, new Vec(0.5, 72, 36.5), new Vec(0.5, 72, 44.5), "a fast step over the plane must be detected although neither end is near it");
     }
 
     @Test

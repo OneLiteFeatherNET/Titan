@@ -20,7 +20,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * One reason a {@link Portal} is unusable.
  *
- * @param portalId the portal's id as written, which may be blank or missing when that is the problem
+ * @param portalId the portal's id as written, which may be blank or missing when that is the
+ *                 problem
  * @param reason   what is wrong, in words that name the offending field
  */
 public record PortalProblem(@Nullable String portalId, String reason) {

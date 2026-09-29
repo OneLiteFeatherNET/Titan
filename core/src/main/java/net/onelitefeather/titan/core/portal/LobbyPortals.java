@@ -15,16 +15,17 @@
  */
 package net.onelitefeather.titan.core.portal;
 
-import net.minestom.server.coordinate.Point;
+import java.util.List;
 
 /**
- * The area of a {@link Portal}: what a movement between two positions has to cross to trigger it.
+ * The portals of the active lobby world.
+ *
+ * <p>A dedicated type rather than a bare {@code List<Portal>}, which would be an ambiguous bean for
+ * the DI container to wire.
  */
-public sealed interface PortalShape permits Box, Disc {
+@FunctionalInterface
+public interface LobbyPortals {
 
-    /** Whether the straight segment from {@code from} to {@code to} touches this shape. */
-    boolean crossedBy(Point from, Point to);
-
-    /** Smallest axis-parallel rectangle in X/Z that contains the shape, for the column index. */
-    HorizontalBounds horizontalBounds();
+    /** Unmodifiable; empty, never {@code null}, if the world has no portals. */
+    List<Portal> portals();
 }

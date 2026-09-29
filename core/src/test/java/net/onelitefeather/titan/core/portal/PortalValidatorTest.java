@@ -86,8 +86,7 @@ class PortalValidatorTest {
         List<PortalProblem> problems = problemsOf(withShape(new Box(new Vec(9, 0, 9), new Vec(1, 5, 1))));
 
         assertEquals(List.of(
-                new PortalProblem("p", "min.x (9.0) is greater than max.x (1.0)"),
-                new PortalProblem("p", "min.z (9.0) is greater than max.z (1.0)")), problems);
+                new PortalProblem("p", "min.x (9.0) is greater than max.x (1.0)"), new PortalProblem("p", "min.z (9.0) is greater than max.z (1.0)")), problems);
     }
 
     @Test
@@ -139,10 +138,7 @@ class PortalValidatorTest {
         List<PortalProblem> problems = problemsOf(broken);
 
         assertEquals(List.of(
-                new PortalProblem("", "id must not be blank"),
-                new PortalProblem("", "task must not be blank"),
-                new PortalProblem("", "radius must be greater than 0 but was 0.0"),
-                new PortalProblem("", "normal must not have length 0")), problems);
+                new PortalProblem("", "id must not be blank"), new PortalProblem("", "task must not be blank"), new PortalProblem("", "radius must be greater than 0 but was 0.0"), new PortalProblem("", "normal must not have length 0")), problems);
     }
 
     @Test
@@ -152,8 +148,7 @@ class PortalValidatorTest {
 
     @Test
     void requireValidNamesWorldIdAndReason() {
-        IllegalStateException failure = assertThrows(IllegalStateException.class, () ->
-                PortalValidator.requireValid("worlds/winter", List.of(withShape(new Disc(new Vec(0, 64, 0), 0, new Vec(0, 0, 1))))));
+        IllegalStateException failure = assertThrows(IllegalStateException.class, () -> PortalValidator.requireValid("worlds/winter", List.of(withShape(new Disc(new Vec(0, 64, 0), 0, new Vec(0, 0, 1))))));
 
         String message = failure.getMessage();
         assertTrue(message.contains("worlds/winter"), "message must name the world: " + message);
@@ -163,8 +158,7 @@ class PortalValidatorTest {
 
     @Test
     void requireValidListsEveryProblem() {
-        IllegalStateException failure = assertThrows(IllegalStateException.class, () ->
-                PortalValidator.requireValid("lobby", List.of(box("a"), box("a"), new Portal("b", VALID_BOX, "", null))));
+        IllegalStateException failure = assertThrows(IllegalStateException.class, () -> PortalValidator.requireValid("lobby", List.of(box("a"), box("a"), new Portal("b", VALID_BOX, "", null))));
 
         String message = failure.getMessage();
         assertTrue(message.contains("duplicate id"), "message must name the duplicate: " + message);

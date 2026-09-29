@@ -13,18 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.core.portal;
-
-import net.minestom.server.coordinate.Point;
-
 /**
- * The area of a {@link Portal}: what a movement between two positions has to cross to trigger it.
+ * Portals as map data: their shapes, the crossing tests, the validation and the
+ * {@link net.onelitefeather.titan.core.portal.LobbyPortals} bean. Lives in {@code core} because
+ * columns see only {@code core}; loading (common) and triggering (features/portal) are elsewhere.
  */
-public sealed interface PortalShape permits Box, Disc {
-
-    /** Whether the straight segment from {@code from} to {@code to} touches this shape. */
-    boolean crossedBy(Point from, Point to);
-
-    /** Smallest axis-parallel rectangle in X/Z that contains the shape, for the column index. */
-    HorizontalBounds horizontalBounds();
-}
+package net.onelitefeather.titan.core.portal;

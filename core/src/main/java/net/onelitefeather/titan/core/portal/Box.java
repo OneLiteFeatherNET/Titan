@@ -27,15 +27,13 @@ public record Box(Vec min, Vec max) implements PortalShape {
     @Override
     public boolean crossedBy(Point from, Point to) {
         double[] window = {0.0, 1.0};
-        return narrow(window, from.x(), to.x(), min.x(), max.x() + 1)
-                && narrow(window, from.y(), to.y(), min.y(), max.y() + 1)
-                && narrow(window, from.z(), to.z(), min.z(), max.z() + 1);
+        return narrow(window, from.x(), to.x(), min.x(), max.x() + 1) && narrow(window, from.y(), to.y(), min.y(), max.y() + 1) && narrow(window, from.z(), to.z(), min.z(), max.z() + 1);
     }
 
     /**
-     * Slab method: shrinks the parameter window {@code [t0, t1]} of the segment to the part that lies
-     * between {@code lo} and {@code hi} on one axis. A step without movement on the axis (which
-     * includes a zero-length step) can only be inside the slab or not, hence containment.
+     * Slab method: narrows the segment's parameter window to the part between {@code lo} and
+     * {@code hi} on one axis. A step without movement on the axis (a zero-length step included) is
+     * either inside the slab or not, hence containment.
      */
     private static boolean narrow(double[] window, double from, double to, double lo, double hi) {
         double delta = to - from;

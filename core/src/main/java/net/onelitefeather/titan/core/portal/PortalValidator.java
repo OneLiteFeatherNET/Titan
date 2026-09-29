@@ -66,9 +66,7 @@ public final class PortalValidator {
         if (problems.isEmpty()) {
             return;
         }
-        String details = problems.stream()
-                .map(problem -> "portal '" + problem.portalId() + "': " + problem.reason())
-                .collect(Collectors.joining("; "));
+        String details = problems.stream().map(problem -> "portal '" + problem.portalId() + "': " + problem.reason()).collect(Collectors.joining("; "));
         throw new IllegalStateException("Invalid portals in world '" + world + "': " + details);
     }
 
