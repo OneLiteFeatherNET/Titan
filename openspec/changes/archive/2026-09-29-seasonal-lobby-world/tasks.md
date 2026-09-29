@@ -47,4 +47,4 @@ Jeder Agent-Prompt nennt die Regeln, die für seinen Task gelten: erst Vorhanden
 
 ## 5. Pull Request
 
-- [ ] 5.1 Pull Request vom Integrationszweig auf `main` unter dem Titel `feat(season): restart the lobby into a seasonal world during its window` öffnen (Titel und Beschreibung Englisch), mit dem Hinweis, dass er PR #225 ersetzt und die Abwägung Neustart statt Live-Wechsel enthält; nach dem Merge PR #225 mit einem Kommentar schließen, der auf den neuen PR verweist (superseded). Nachweis: PR-URL, CI grün.
+- [x] 5.1 Pull Request vom Integrationszweig auf `main` unter dem Titel `feat(season): restart the lobby into a seasonal world during its window` öffnen (Titel und Beschreibung Englisch), mit dem Hinweis, dass er PR #225 ersetzt und die Abwägung Neustart statt Live-Wechsel enthält; PR #225 wurde vor dem Merge mit einem Kommentar geschlossen, der auf den neuen PR verweist (superseded). Nachweis: PR-URL, CI grün.
