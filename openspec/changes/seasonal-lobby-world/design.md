@@ -57,7 +57,7 @@ Kein Zugriff auf `daytime.zone`: Eine Column importiert keine andere, und das Le
 Die Id `zone` ist reserviert (kollidiert mit `seasons.zone`) und bricht den Start ab.
 SOLID: SRP (Kalender, Leser, Politik getrennt), DIP. Test: Unit für `SeasonCalendar`, `SeasonConfigReader`, `RestartPolicy`; Integration für `SeasonModule` (D5).
 
-### D2: Weltwahl beim Start über `LobbyWorldChoice` (Optional-Bean) — Spike nötig
+### D2: Weltwahl beim Start über `LobbyWorldChoice` (ServiceLoader)
 
 `core` bekommt
 
@@ -67,14 +67,11 @@ public interface LobbyWorldChoice {
 }
 ```
 
-`PlatformBeans.mapProvider(InstanceContainer, Optional<LobbyWorldChoice>)` reicht `choice.flatMap(LobbyWorldChoice::worldName)` an `MapProvider.create(path, instance, worldName)` und `new MapPool(path, filter, worldName)`. Ein übergebener Name gilt immer (auch bei genau einer Welt) und wirft bei Fehlen mit klarem Text; `Optional.empty()` verhält sich wie heute. Das Ergebnis wird einmal beim Start berechnet und gespeichert: `SeasonModule` liest denselben Wert als „gestartete Welt“, sodass beide nie auseinanderlaufen. Die Auswahl nutzt `Clock` (Bean) und `Config`.
+`PlatformBeans.mapProvider(InstanceContainer)` löst die Wahl über `ServiceLoader.load(LobbyWorldChoice.class).findFirst().flatMap(LobbyWorldChoice::worldName)` auf und reicht das Ergebnis an `MapProvider.create(path, instance, worldName)` und `new MapPool(path, filter, worldName)`. Ein übergebener Name gilt immer (auch bei genau einer Welt) und wirft bei Fehlen mit klarem Text; `Optional.empty()` verhält sich wie heute. `features/season` meldet `SeasonWorldChoice` (öffentlicher Konstruktor ohne Argumente, `Clock.systemUTC()` und `Config`, teilt `SeasonSchedule`/`SeasonConfigReader` mit dem Modul) über `META-INF/services` an; `shadowJar` führt Service-Dateien bereits zusammen (`mergeServiceFiles()`). Das ist dasselbe Muster wie `ServerBootstraps.select` in `optional-extensions-bootstrap` D2.
 
-**Risiko / Spike (vor Task 2.x, Ergebnis in D2 nachtragen):** `runtime` deklariert nur `provides` und wird im Modul-Graph vor jeder Column gebaut, die Plattform-Beans aus `runtime` per `requires` verlangt. `SeasonModule` verlangt `Scheduler`/`Clock`/`EventNode` aus `runtime`; `mapProvider(...)` in `runtime` verlangt `Optional<LobbyWorldChoice>` aus der Column. Ein `requires` von `runtime` auf `LobbyWorldChoice` wäre ein Zyklus auf Modulebene und würde `local` (ohne Column) brechen. Ohne `requires` sortiert Avaje `runtime` zuerst; dann ist der Optional zum Zeitpunkt von `mapProvider(...)` leer, ohne Fehler, und die Saison-Welt würde nie geladen. Zu prüfen:
-1. Ob die generierte `PlatformBeans`-Fabrik `builder.getOptional(...)` nutzt und ob der Aufruf die Beans anderer Module sieht, die später gebaut werden (erwartet: nein).
-2. Ob `@InjectModule`-Reihenfolge (`requires`/`provides`, `Provider<T>`) die Reihenfolge so ändern kann, dass die Column-Bean vor `mapProvider` existiert, ohne dass `runtime` dafür eine harte Abhängigkeit deklariert. Da die Column `Scheduler`/`Clock` aus `runtime` braucht, ist das zirkulär.
-
-Vorbenannter Ausweichweg, falls 1. oder 2. scheitert (Abweichung von der Entscheidung „Optional-Bean“, deshalb hier ausdrücklich): `LobbyWorldChoice` wird per `java.util.ServiceLoader` aufgelöst, nicht über den Bean-Scope. `features/season` meldet `SeasonWorldChoice` (öffentlicher Konstruktor ohne Argumente, nutzt `Clock.systemUTC()` und `Config`, teilt `SeasonCalendar`/`SeasonConfigReader` mit dem Modul) über `META-INF/services` an; `PlatformBeans` ruft `ServiceLoader.load(LobbyWorldChoice.class).findFirst()`. Das ist dasselbe Muster wie `ServerBootstraps.select` in `optional-extensions-bootstrap` D2, und `shadowJar` führt Service-Dateien bereits zusammen (`mergeServiceFiles()`). Es gibt keinen statischen Zustand zwischen beiden: `SeasonModule` berechnet die Wahl beim Start selbst neu; liegen beide Berechnungen um eine Fenstergrenze, ist die nächste Minuten-Prüfung ein Neustart, der sich selbst heilt.
-Test: Ein Integrationstest in `apps/cloudnet` baut den echten `BeanScope` (mit `Instance`-Bean aus Cyano-Env) und assertet, dass `MapProvider` bei aktiver Saison die Saison-Welt in einem `@TempDir`-`worlds/` lädt und ohne Saison die Standardwelt. Das ist der einzige Test, der den Spike absichert; ein Unit-Test mit Fakes würde das Verdrahtungsproblem nicht finden.
+**Spike-Ergebnis:** Eine `LobbyWorldChoice`-Bean aus der Saison-Column, die `Scheduler`/`Clock`/`EventNode` aus `runtime` verlangt, ist beim Bau von `mapProvider(...)` in `runtime` immer leer, weil Avaje den Modul-Deadlock zugunsten von `runtime` auflöst. Sie funktioniert nur aus einem eigenen Gradle-Modul ohne `requires`, und das erzwänge Column-zu-Column-Importe, die `lobby-modules` verbietet. Deshalb ist der `ServiceLoader` der gewählte Weg und kein Ausweichweg; eine Optional-Bean gibt es nicht.
+Es gibt keinen statischen Zustand zwischen Wahl und Modul: `SeasonModule` berechnet die gestartete Welt beim Start selbst neu (`CalendarStartedWorld`); liegen beide Berechnungen um eine Fenstergrenze, ist die nächste Prüfung ein Neustart, der sich selbst heilt.
+Test: Unit für die Auflösung in `PlatformBeans` (mit und ohne Wahl) und für `SeasonWorldChoice`; ein Integrationstest mit echtem `BeanScope` in `apps/cloudnet` (Task 4.3) sichert die Verdrahtung.
 SOLID: DIP (`runtime` kennt nur die Schnittstelle), OCP (weitere Wahlquellen docken an).
 
 ### D3: Zeitzone, Überlappung, Gültigkeit (Annahmen, vom Nutzer noch nicht bestätigt)
@@ -95,7 +92,7 @@ Test: Unit (`SeasonCalendarTest`, `SeasonConfigReaderTest` mit `@TempDir`-`world
 - Abweichung und `onlinePlayers == 0` → `STOP`.
 
 `SeasonModule` merkt sich nur `restartPendingSince` (`Instant`, `volatile`). Beim Übergang `NONE → PENDING/STOP` loggt es einmal INFO `Restart for season {} pending since {}` (bzw. für die Standardwelt `Restart to the default world pending since {}`), beim Übergang zurück INFO `Restart no longer needed`. Jede Prüfung liest die gewünschte Welt neu (D3, live).
-Auslöser: (a) wiederkehrender Scheduler-Task, `TaskSchedule.minutes(1)` (Minestom-Scheduler statt eigenem Timer, damit er mit dem Server endet, wie bei `daytime`); (b) `PlayerDisconnectEvent` am `titan`-Node. Beim Disconnect zählt der Spieler noch als online; deshalb plant der Listener die Prüfung mit `scheduler.scheduleNextTick(...)`, statt sofort zu zählen. Ob Minestom den Spieler bis dahin aus dem `ConnectionManager` entfernt hat, prüft der erste Integrationstest ab (rot, wenn nicht; Ausweg: den ausscheidenden Spieler aus der Zählung ausnehmen).
+Auslöser: (a) wiederkehrender Scheduler-Task alle 1200 Ticks (`TaskSchedule.tick(1200)`, nicht `minutes(1)`: Dauer-Schedules laufen nach der Wanduhr und lassen sich nicht mit `env.tick()` treiben; Minestom-Scheduler statt eigenem Timer, damit er mit dem Server endet, wie bei `daytime`); (b) `PlayerDisconnectEvent` am `titan`-Node. Befund: Beim `PlayerDisconnectEvent` ist der ausscheidende Spieler bereits aus dem `ConnectionManager` entfernt. Der Listener plant die Prüfung trotzdem mit `scheduler.scheduleNextTick(...)`; das ist harmlos und bleibt.
 Stopp: Eine kleine Nahtstelle `ServerStop` (spaltenintern, Standardimplementierung als `@Singleton`) startet wie `StopCommand` einen `titan-stop`-Thread mit `MinecraftServer.stopCleanly()` und `System.exit(0)` — auf dem Tick-Thread würde `stopCleanly()` auf sich selbst warten. Der Aufruf geschieht höchstens einmal (`AtomicBoolean`), damit Minutentakt und Disconnect nicht doppelt stoppen. Spielerzahl kommt aus einer ebenso spaltenintern deklarierten Schnittstelle `OnlinePlayers` (Standard: `ConnectionManager#getOnlinePlayerCount()`); Tests injizieren Fakes über den Konstruktor, statt den Server zu stoppen.
 `StopCommand` bleibt unverändert (Non-Goal): Die Dopplung sind zehn Zeilen in zwei Columns, die sich nicht importieren dürfen. Eine gemeinsame Nahtstelle in `core` wäre ein eigener Change (`refactor`).
 Akzeptierte Kompromisse (siehe auch Risiken): kein oberes Zeitlimit für das Warten; kleines Rennen zwischen Leer-Prüfung und Stopp, der Spieler landet dann wie bei jedem Stopp über den Proxy woanders.
@@ -114,11 +111,11 @@ Verworfen: eine Gradle-Property `titan.season` zum Einschalten in `local` (`loca
 
 ## Risks / Trade-offs
 
-- [Optional-Bean wird zwischen `runtime` und Column nicht aufgelöst (D2)] → Spike vor der Umsetzung, Integrationstest mit echtem `BeanScope`, vorbenannter `ServiceLoader`-Weg.
+- [Bean-Auflösung zwischen `runtime` und Column scheitert (D2)] → Spike-Ergebnis: `ServiceLoader` statt Bean; Integrationstest mit echtem `BeanScope`.
 - [Eine dauerhaft belegte Lobby verzögert den Saisonwechsel beliebig lang] → akzeptiert; `/stop` bleibt als Betreibermittel.
 - [Rennen zwischen Leer-Prüfung und Stopp] → akzeptiert; der Spieler wird wie bei jedem Stopp über den Proxy umgeleitet.
 - [Neustart-Schleife bei kaputter Welt nach Konfigurationsänderung] → live nur validierte Saisons lösen einen Neustart aus (D3); Startvalidierung bricht ab, statt eine kaputte Welt zu laden.
-- [Fenstergrenze zwischen Weltwahl und `SeasonModule`-Start bei der `ServiceLoader`-Variante] → höchstens ein zusätzlicher Neustart bei leerer Lobby.
+- [Fenstergrenze zwischen Weltwahl und `SeasonModule`-Start ] → höchstens ein zusätzlicher Neustart bei leerer Lobby.
 - [Zwei offene Changes ändern `apps/local/build.gradle.kts`] → andere Zeilen; der Hauptkontext prüft beim Mergen (siehe Kontext).
 
 ## Migration Plan

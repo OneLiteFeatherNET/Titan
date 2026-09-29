@@ -2,7 +2,7 @@
 
 ## Execution Plan
 
-Integrationszweig: `feat/season` von `origin/main`. Welle 1 ist ein Spike und entscheidet, ob D2 mit dem Optional-Bean oder mit dem `ServiceLoader`-Weg umgesetzt wird; Task 2.4 und 3.x richten sich nach dem Ergebnis. Jede Welle endet mit grünem `./gradlew build` und geprüften Diffs. Vor dem Abhaken einer Aufgabe läuft `./gradlew build`.
+Integrationszweig: `feat/season` von `origin/main`. Welle 1 (Spike) ist abgeschlossen: D2 wird mit dem `ServiceLoader` umgesetzt. Jede Welle endet mit grünem `./gradlew build` und geprüften Diffs. Vor dem Abhaken einer Aufgabe läuft `./gradlew build`.
 
 | Wave | Agent | Task IDs | Model | May Touch | Must Not Touch |
 | ---- | ----- | -------- | ----- | --------- | -------------- |
@@ -13,18 +13,18 @@ Integrationszweig: `feat/season` von `origin/main`. Welle 1 ist ein Spike und en
 | 3 | verify | 4.5 | haiku | read-only | alles |
 | 4 | pr | 5.1 | sonnet | Git/GitHub | Code |
 
-Jeder Agent-Prompt nennt die Regeln, die für seinen Task gelten: erst Vorhandenes nutzen (`Config`-Fassade, Minestom-`Scheduler`, `java.time`, `ServiceLoader` nur im Ausweichweg), Java 25 ohne Preview (Records für `Season`/`Decision`, `switch` über die Entscheidung), keine Nutzertexte, SLF4J mit Parametern (Messages aus D6), keine neuen Metriken/Spans, Test zuerst, schlanke Kommentare nur fürs Warum, Conventional Commits `feat(season): …`. F.I.R.S.T.: `Clock` und `Scheduler` injiziert, `env.tick()` statt Warten, kein `Thread.sleep`, keine Systemzeit, `@TempDir` für `worlds/`, `Config`-Werte im Test setzen und im `@AfterEach` zurücksetzen, frische `Env`/Fixtures je Test, `ServerStop` und `OnlinePlayers` gefälscht (der Test stoppt nie den Server), Erfolg nur über Assertions, WARN/INFO über einen aufgefangenen Appender.
+Jeder Agent-Prompt nennt die Regeln, die für seinen Task gelten: erst Vorhandenes nutzen (`Config`-Fassade, Minestom-`Scheduler`, `java.time`, `ServiceLoader` für die Weltwahl), Java 25 ohne Preview (Records für `Season`/`Decision`, `switch` über die Entscheidung), keine Nutzertexte, SLF4J mit Parametern (Messages aus D6), keine neuen Metriken/Spans, Test zuerst, schlanke Kommentare nur fürs Warum, Conventional Commits `feat(season): …`. F.I.R.S.T.: `Clock` und `Scheduler` injiziert, `env.tick()` statt Warten, kein `Thread.sleep`, keine Systemzeit, `@TempDir` für `worlds/`, `Config`-Werte im Test setzen und im `@AfterEach` zurücksetzen, frische `Env`/Fixtures je Test, `ServerStop` und `OnlinePlayers` gefälscht (der Test stoppt nie den Server), Erfolg nur über Assertions, WARN/INFO über einen aufgefangenen Appender.
 
 ## 1. Spike: Optional-Bean über Modulgrenzen (Welle 1)
 
-- [ ] 1.1 Auf einem Wegwerf-Branch eine Bean `LobbyWorldChoice` in eine Test-Column legen und `PlatformBeans.mapProvider(...)` einen `Optional<LobbyWorldChoice>` nehmen lassen; mit echtem `BeanScope.builder().build()` prüfen (a), ob der Optional gefüllt ist, und (b), ob `local` ohne die Column startet. Ergebnis (Optional geht / geht nicht, samt generiertem Code und Modulreihenfolge) in D2 eintragen und die Aufgaben 2.3/2.4 auf den gewählten Weg festlegen. Nachweis: D2 nennt das Ergebnis; der Wegwerf-Branch wird verworfen.
+- [x] 1.1 Auf einem Wegwerf-Branch eine Bean `LobbyWorldChoice` in eine Test-Column legen und `PlatformBeans.mapProvider(...)` einen `Optional<LobbyWorldChoice>` nehmen lassen; mit echtem `BeanScope.builder().build()` prüfen (a), ob der Optional gefüllt ist, und (b), ob `local` ohne die Column startet. Ergebnis (Optional geht / geht nicht, samt generiertem Code und Modulreihenfolge) in D2 eintragen und die Aufgaben 2.3/2.4 auf den gewählten Weg festlegen. Nachweis: D2 nennt das Ergebnis; der Wegwerf-Branch wird verworfen.
 
 ## 2. Weltwahl in `core`, `common` und `runtime` (Welle 2)
 
 - [ ] 2.1 Charakterisierung zuerst (Unit): `MapPool` wählt heute `world` bei mehreren Welten, die einzige Welt bei genau einer und wirft ohne Treffer; Test pinnt das mit `@TempDir`-Verzeichnissen. Nachweis: Test grün vor der Änderung.
 - [ ] 2.2 Test zuerst (Unit): `MapPool` mit übergebenem Weltnamen wählt genau diese Welt, auch bei genau einer Welt, und wirft mit dem Namen in der Meldung, wenn er fehlt; ohne Namen unverändert. Dann `MapPool`/`MapProvider.create(..., Optional<String>)` umsetzen. Nachweis: Tests aus 2.1 und 2.2 grün.
-- [ ] 2.3 `LobbyWorldChoice` in `core` anlegen (`Optional<String> worldName()`). Nachweis: `./gradlew :core:build` grün.
-- [ ] 2.4 Test zuerst (Integration, echter `BeanScope`, `@TempDir`-`worlds/`, Cyano-`Env`): Mit einer `LobbyWorldChoice`-Bean lädt `PlatformBeans.mapProvider(...)` deren Welt, ohne Bean die Standardwelt. Dann `PlatformBeans` nach dem Ergebnis von 1.1 umsetzen (Optional-Parameter oder `ServiceLoader`). Nachweis: Test grün; `apps/local` startet unverändert.
+- [ ] 2.3 `LobbyWorldChoice` in `core` anlegen (`Optional<String> worldName()`; Implementierungen über `ServiceLoader`, öffentlicher Konstruktor ohne Argumente). Nachweis: `./gradlew :core:build` grün.
+- [ ] 2.4 Test zuerst (Unit): Die Auflösung in `PlatformBeans.mapProvider(...)` wählt mit einer `LobbyWorldChoice` deren Welt, ohne Wahl die Standardwelt (Auflösung als Hilfsmethode über eine `Iterable`, damit kein echter Service-Eintrag nötig ist); mehrere Implementierungen brechen den Start mit klarer Meldung ab. Dann `PlatformBeans` auf `ServiceLoader.load(LobbyWorldChoice.class)` umstellen. Nachweis: Test grün; `apps/local` startet unverändert.
 
 ## 3. Column `features/season` (Welle 2)
 
@@ -34,7 +34,7 @@ Jeder Agent-Prompt nennt die Regeln, die für seinen Task gelten: erst Vorhanden
 - [ ] 3.4 Test zuerst (Unit, `RestartPolicyTest`): gleiche Welt → `NONE`; Abweichung mit Spielern → `PENDING`; Abweichung ohne Spieler → `STOP`; rot. Dann `RestartPolicy` umsetzen; grün.
 - [ ] 3.5 Test zuerst (Integration, Cyano-`Env`, einstellbare `Clock`, gefälschte `ServerStop`/`OnlinePlayers`, `env.tick()`): Minutentakt merkt bei Abweichung vor und loggt einmal; kein erneutes Loggen bei weiteren Takten; Abschalter zurückgesetzt hebt auf; Stopp nur bei 0 Spielern im Minutentakt; `PlayerDisconnectEvent` des letzten Spielers stoppt im nächsten Tick ohne Minutentakt; ein Spieler geht, ein anderer bleibt → kein Stopp; nichts vorgemerkt und leer → kein Stopp; höchstens ein Stopp; live aktivierte Saison ohne Welt und live ungültiger Wert → WARN, keine Vormerkung; nach Neustart-Zustand (gestartete = gewünschte Welt) → keine Vormerkung; rot. Der Test klärt, ob der ausscheidende Spieler im nächsten Tick nicht mehr zählt (D4).
 - [ ] 3.6 `SeasonModule` (`@Singleton`, `@PostConstruct` liest die Startwelt und plant den Minutentask samt `titan`-Listener, `@PreDestroy` bricht den Task ab und trennt den Listener), die Nahtstellen `ServerStop` (Standard: `titan-stop`-Thread mit `MinecraftServer.stopCleanly()` und `System.exit(0)`, höchstens einmal) und `OnlinePlayers` mit ihren Standardimplementierungen umsetzen; Test aus 3.5 grün.
-- [ ] 3.7 Bei `ServiceLoader`-Weg (Ergebnis von 1.1): `SeasonWorldChoice` mit Eintrag unter `META-INF/services` ergänzen, Test zuerst (Unit): liefert die Welt der aktiven Saison, sonst leer. Bei Optional-Weg: `SeasonWorldChoice` als `@Singleton`, das `LobbyWorldChoice` implementiert und `provides` in der `package-info.java` ergänzt; derselbe Test. Nachweis: Test grün.
+- [ ] 3.7 `SeasonWorldChoice` (öffentlich, Konstruktor ohne Argumente mit `Clock.systemUTC()`; paketinterner Konstruktor mit `Clock` für Tests) mit Eintrag unter `META-INF/services/net.onelitefeather.titan.core.module.LobbyWorldChoice` ergänzen. Test zuerst (Unit): liefert die Welt der aktiven Saison, sonst leer; ungültige aktivierte Saison bricht ab wie die Column. Nachweis: Test grün; Service-Datei im `shadowJar` von `apps/cloudnet` vorhanden.
 - [ ] 3.8 `ColumnArchitectureTest` nach dem Muster von `features/daytime` ergänzen. Nachweis: `./gradlew :features:season:build` grün, keine Datei außerhalb von `features/season/**` geändert.
 
 ## 4. Varianten, Doku und Abnahme (Welle 3)
