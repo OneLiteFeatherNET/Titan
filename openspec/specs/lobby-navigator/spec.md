@@ -14,7 +14,7 @@ Klickt ein Spieler ein Ziel an, MUSS die Lobby ihn an das Weiterleitungsziel die
 
 #### Scenario: Weiterleitung ohne Cloud
 - **WHEN** die Lobby ohne CloudNet läuft und ein Spieler ein Ziel anklickt
-- **THEN** passiert keine Weiterleitung, und es entsteht kein Fehler
+- **THEN** passiert keine Weiterleitung, es entsteht kein Fehler, der Spieler erhält im Chat eine Nachricht, die Art (Task oder Server) und Ziel unverändert nennt, und die Lobby loggt dieselbe Information für den Betreiber
 
 #### Scenario: Klick auf leeren Platz
 - **WHEN** ein Spieler im Navigator auf Platz 2 klickt
