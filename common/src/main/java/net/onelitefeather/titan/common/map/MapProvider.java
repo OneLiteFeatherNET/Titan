@@ -16,17 +16,16 @@
 package net.onelitefeather.titan.common.map;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonParseException;
 import net.minestom.server.coordinate.Point;
-import net.minestom.server.coordinate.Pos;
-import net.minestom.server.coordinate.Vec;
 import net.minestom.server.event.instance.InstanceChunkLoadEvent;
 import net.minestom.server.instance.Clock;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.instance.LightingChunk;
 import net.minestom.server.instance.anvil.AnvilLoader;
 import net.minestom.server.utils.chunk.ChunkUtils;
+import net.onelitefeather.titan.core.portal.PortalValidator;
 import net.theevilreaper.aves.file.GsonFileHandler;
-import net.theevilreaper.aves.file.gson.PositionGsonAdapter;
 import net.theevilreaper.aves.map.BaseMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.UnmodifiableView;
@@ -57,8 +56,7 @@ public final class MapProvider {
         // Relight each chunk as it loads so unexplored regions light up (anvil chunks otherwise
         // stay dark until a block update triggers a relight).
         this.instance.eventNode().addListener(InstanceChunkLoadEvent.class, event -> LightingChunk.relight(event.getInstance(), List.of(event.getChunk())));
-        var typeAdapter = new PositionGsonAdapter();
-        this.gson = new Gson().newBuilder().registerTypeAdapter(Pos.class, typeAdapter).registerTypeAdapter(Vec.class, typeAdapter).create();
+        this.gson = MapGson.create();
         this.fileHandler = new GsonFileHandler(this.gson);
         this.loadMapData();
     }
@@ -74,7 +72,7 @@ public final class MapProvider {
     }
 
     private void loadMapData() {
-        var lobbyData = this.fileHandler.load(this.mapPool.getMapEntry().path().resolve(MapEntry.MAP_FILE_NAME), LobbyMap.class);
+        var lobbyData = this.readLobbyData();
         // LightingChunk computes and sends sky/block light; plain DynamicChunks send none, leaving
         // the lobby pitch black. Must be set before the AnvilLoader loads any chunk.
         this.instance.setChunkSupplier(LightingChunk::new);
@@ -96,6 +94,24 @@ public final class MapProvider {
             LOGGER.error("Failed to load the lobby data");
         }
 
+    }
+
+    /**
+     * Aves' handler lets a parse error of the portal adapter escape (pinned by
+     * GsonFileHandlerLoadTest), so an unreadable or invalid portal aborts the start here instead of
+     * silently loading a map without portals.
+     */
+    private Optional<LobbyMap> readLobbyData() {
+        Path worldDirectory = this.mapPool.getMapEntry().path();
+        String world = worldDirectory.getFileName().toString();
+        Optional<LobbyMap> lobbyData;
+        try {
+            lobbyData = this.fileHandler.load(worldDirectory.resolve(MapEntry.MAP_FILE_NAME), LobbyMap.class);
+        } catch (JsonParseException exception) {
+            throw new IllegalStateException("Invalid portals in world '" + world + "': " + exception.getMessage(), exception);
+        }
+        lobbyData.ifPresent(map -> PortalValidator.requireValid(world, map.portals()));
+        return lobbyData;
     }
 
     private <T extends Point> void loadChunk(@NotNull InstanceContainer instance, @NotNull T pos) {

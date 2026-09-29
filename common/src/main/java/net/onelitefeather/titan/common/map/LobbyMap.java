@@ -16,14 +16,33 @@
 package net.onelitefeather.titan.common.map;
 
 import net.minestom.server.coordinate.Pos;
+import net.onelitefeather.titan.core.portal.Portal;
 import net.theevilreaper.aves.map.BaseMap;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
 public final class LobbyMap extends BaseMap {
 
+    /**
+     * Gson builds this class without a constructor, so a map file without portals leaves it
+     * {@code null}.
+     */
+    private @Nullable List<Portal> portals;
+
     public LobbyMap(String name, Pos spawn, List<String> builders) {
+        this(name, spawn, builders, List.of());
+    }
+
+    public LobbyMap(String name, Pos spawn, List<String> builders, List<Portal> portals) {
         super(name, spawn, builders);
+        // Kept null when empty so a map without portals is written back without a "portals" key.
+        this.portals = portals == null || portals.isEmpty() ? null : List.copyOf(portals);
+    }
+
+    /** Unmodifiable; empty, never {@code null}, if the map has no portals. */
+    public List<Portal> portals() {
+        return this.portals == null ? List.of() : this.portals;
     }
 
     public static Builder lobbyMapBuilder(LobbyMap map) {
@@ -40,6 +59,8 @@ public final class LobbyMap extends BaseMap {
         if (map.builders() != null) {
             builder.author(map.builders().toArray(new String[0]));
         }
+        // Every copy path must carry the portals, or /setup map setspawn|setname|setauthor would delete them.
+        builder.portals(map.portals());
         return builder;
     }
 
@@ -54,6 +75,8 @@ public final class LobbyMap extends BaseMap {
         Builder name(String name);
 
         Builder author(String... author);
+
+        Builder portals(List<Portal> portals);
 
         LobbyMap build();
     }
