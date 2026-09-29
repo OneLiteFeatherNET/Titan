@@ -37,6 +37,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -50,8 +51,8 @@ public final class MapProvider {
     private InstanceContainer instance;
     private LobbyMap activeLobby;
 
-    private MapProvider(@NotNull Path path, @NotNull InstanceContainer instance, Function<Stream<Path>, List<MapEntry>> filterMaps) {
-        this.mapPool = new MapPool(path.resolve(MAP_PATH), filterMaps);
+    private MapProvider(@NotNull Path path, @NotNull InstanceContainer instance, Function<Stream<Path>, List<MapEntry>> filterMaps, @NotNull Optional<String> worldName) {
+        this.mapPool = new MapPool(path.resolve(MAP_PATH), filterMaps, worldName);
         this.instance = instance;
         // Relight each chunk as it loads so unexplored regions light up (anvil chunks otherwise
         // stay dark until a block update triggers a relight).
@@ -62,9 +63,6 @@ public final class MapProvider {
         this.loadMapData();
     }
 
-    private MapProvider(@NotNull Path path, @NotNull InstanceContainer instance) {
-        this(path, instance, MapProvider::defaultFilter);
-    }
 
     private static List<MapEntry> defaultFilter(Stream<Path> pathStream) {
         return pathStream.map(MapEntry::new).filter(MapEntry::hasMapFile).collect(Collectors.toList());
@@ -120,10 +118,14 @@ public final class MapProvider {
     }
 
     public static MapProvider create(@NotNull Path path, @NotNull InstanceContainer instance) {
-        return new MapProvider(path, instance);
+        return new MapProvider(path, instance, MapProvider::defaultFilter, Optional.empty());
+    }
+
+    public static MapProvider create(@NotNull Path path, @NotNull InstanceContainer instance, @NotNull Optional<String> worldName) {
+        return new MapProvider(path, instance, MapProvider::defaultFilter, worldName);
     }
 
     public static MapProvider create(@NotNull Path path, @NotNull InstanceContainer instance, Function<Stream<Path>, List<MapEntry>> filterMaps) {
-        return new MapProvider(path, instance, filterMaps);
+        return new MapProvider(path, instance, filterMaps, Optional.empty());
     }
 }
