@@ -58,8 +58,9 @@ apps/local ────┼─▶ runtime ─────────────
 `titan.app-variant` (Convention-Plugin in `buildSrc`) hängt eine Variante standardmäßig an
 `runtime` und an **jede** Column unter `features/*`. Eine Variante lässt einzelne Columns über
 `titanVariant { exclude("<name>") }` weg - z. B. in `apps/local/build.gradle.kts`, falls eine
-Entwicklungsvariante künftig eine Column nicht mitbringen soll. Heute enthalten `apps/cloudnet`
-und `apps/local` dieselben Columns. Die Liste der Columns einer Variante steht damit an genau
+Entwicklungsvariante künftig eine Column nicht mitbringen soll. `apps/local` lässt heute nur
+`season` weg (kein Supervisor startet einen lokalen Server neu, s. "Saison-Welt" unten); sonst
+enthalten beide Varianten dieselben Columns. Die Liste der Columns einer Variante steht damit an genau
 einer Stelle (dem Verzeichnis-Scan in `settings.gradle.kts`), nicht pro Variante gepflegt.
 
 `titan.app-variant` erzeugt außerdem:
@@ -337,6 +338,36 @@ sie nicht - die shipped Defaults kommen aus der klassenpfad-`application.yaml` i
 Rangfolge aus `lobby-module-config` (Shipped-Default < `application.yaml` < Profil < externe Datei
 < Umgebungsvariable < System-Property) bleibt dadurch unverändert gültig.
 
+## Saison-Welt (`season`, nur `cloudnet`)
+
+Die Column `season` lässt die Lobby in einem Zeitfenster in einer eigenen Welt laufen. Sie steckt
+nur in `apps/cloudnet`, weil der Wechsel ein Neustart ist und nur ein Supervisor (CloudNet) den
+Dienst danach wieder startet. Die Weltwahl beim Start läuft über `LobbyWorldChoice` (`core`), die
+`PlatformBeans` per `ServiceLoader` findet; `season` trägt sich dafür unter
+`META-INF/services/net.onelitefeather.titan.core.module.LobbyWorldChoice` ein.
+
+Eine Saisonwelt anlegen:
+
+1. Die Welt im Setup-Server bauen und speichern.
+2. `worlds/<name>/` mit der `map.json` neben `worlds/world/` ablegen.
+3. In `application.yaml` eintragen:
+
+   ```yaml
+   seasons:
+     zone: Europe/Berlin           # Standard; Zeitzone der Fenster
+     winter:                       # beliebige Id ("zone" ist reserviert)
+       world: winter               # Verzeichnis unter worlds/
+       from: 2026-12-01T00:00:00   # inklusiv, lokale Zeit in seasons.zone
+       to: 2027-01-07T00:00:00     # exklusiv
+       enabled: true               # Abschalter, wirkt ohne Neustart der Konfiguration
+   ```
+
+Ein ungültiger, aktivierter Eintrag (fehlender Schlüssel, Datum, Welt oder `map.json`) bricht den
+Start mit dem Schlüssel und dem Grund ab. Der Wechsel selbst braucht einen Neustart: Die Column
+prüft jede Minute und nach jedem Verlassen, ob die gestartete von der gewünschten Welt abweicht,
+und stoppt die Lobby erst, wenn kein Spieler mehr online ist. Ein belegter Dienst kann daher
+länger warten; ein Betreiber kann ihn mit `/stop` sofort beenden.
+
 ## Erwartete Columns einer Variante
 
 `titan.app-variant` schreibt beim Bauen die Avaje-Modulnamen aller in eine Variante eingebundenen
@@ -597,6 +628,7 @@ als `provides`):
 | `tickle` | `EventNode.class`, `Clock.class` | `EventNode<Event>:titan` | - |
 | `elytra` | `EventNode.class`, `Scheduler.class` | `EventNode<Event>:titan` | `LobbyItem.class` |
 | `hotbar` | `EventNode.class` | `EventNode<Event>:titan` | `LobbyItems.class` |
+| `season` (nur `cloudnet`) | `Scheduler.class`, `Clock.class`, `EventNode.class` | `EventNode<Event>:titan` | - |
 
 `EventNode` ist in jeder Zeile der einzige `requiresString`-Eintrag, weil es der einzige
 qualifizierte, generische Plattform-Typ ist (Frage 1 oben); die anderen Typen sind weder generisch
