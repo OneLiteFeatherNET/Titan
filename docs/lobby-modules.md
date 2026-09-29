@@ -183,6 +183,7 @@ heutigen neun Features, in Hunderterschritten mit Platz dazwischen:
 | sit | 500 |
 | tickle | 600 |
 | elytra | 700 |
+| portal | 900 |
 
 (`hotbar` und `admin` reagieren nicht über einen eigenen Feature-Node auf ein Event, das mit einem
 anderen Feature kollidieren könnte, und tragen deshalb kein `EVENT_PRIORITY`.)
@@ -381,6 +382,38 @@ Start mit dem Schlüssel und dem Grund ab. Der Wechsel selbst braucht einen Neus
 prüft jede Minute und nach jedem Verlassen, ob die gestartete von der gewünschten Welt abweicht,
 und stoppt die Lobby erst, wenn kein Spieler mehr online ist. Ein belegter Dienst kann daher
 länger warten; ein Betreiber kann ihn mit `/stop` sofort beenden.
+
+## Portale (`portal`)
+
+Portale sind Kartendaten: Die Liste `portals` steht in der `map.json` der Welt (auch der einer
+Saisonwelt), auf oberster Ebene neben `spawn`. Die Column `portal` schickt Spieler, die eine Form
+betreten, an einen CloudNet-Task.
+
+```json
+"portals": [
+  {"id": "survival", "task": "Survival", "shape": {"type": "box", "min": {"x": 10, "y": 64, "z": 10}, "max": {"x": 14, "y": 68, "z": 11}}},
+  {"id": "elytra-ring", "task": "ElytraRace", "permission": null, "shape": {"type": "disc", "center": {"x": 0.5, "y": 72, "z": 40.5}, "radius": 5.5, "normal": {"x": 0, "y": 0, "z": 1}}}
+]
+```
+
+- `id` (eindeutig je Welt), `task` (Name des CloudNet-Tasks) und `shape` sind Pflicht;
+  `permission` ist optional, fehlend oder `null` heißt "für alle".
+- `box`: `min` und `max` sind Blockkoordinaten, beide einschließlich; die Box deckt `[min, max + 1]`
+  je Achse ab.
+- `disc`: `center`, `radius` (Rand einschließlich) und `normal` (Richtung der Ebene, beliebig
+  ausgerichtet, muss kein Einheitsvektor sein).
+- Ausgelöst wird beim Gehen und beim Fliegen: Die Bewegung zählt als Strecke, ein schneller
+  Elytra-Schritt durch eine dünne Scheibe löst also aus. Es entscheidet der Fußpunkt.
+- Ein Portal löst einmal je Betreten aus; wer drinnen bleibt, löst nicht erneut aus. Nach einer
+  Weiterleitung gilt 3 s Abklingzeit.
+- Mit `permission` schickt das Portal nur Spieler mit diesem Recht weiter; ohne Recht passiert
+  nichts und keine Abklingzeit läuft.
+- Ein ungültiges Portal (leere `id` oder `task`, doppelte `id`, `radius <= 0`, `min > max`) bricht
+  den Start mit Welt, Id und Grund ab.
+
+Portale ändern: Task in CloudNet anlegen, `map.json` bearbeiten, die Lobby neu starten. Die Liste
+wird nur beim Start gelesen. Befehle zum Bearbeiten im Setup-Server folgen mit einer späteren
+Änderung.
 
 ## Erwartete Columns einer Variante
 
@@ -642,6 +675,7 @@ als `provides`):
 | `tickle` | `EventNode.class`, `Clock.class` | `EventNode<Event>:titan` | - |
 | `elytra` | `EventNode.class`, `Scheduler.class` | `EventNode<Event>:titan` | `LobbyItem.class` |
 | `hotbar` | `EventNode.class` | `EventNode<Event>:titan` | `LobbyItems.class` |
+| `portal` | `EventNode.class`, `LobbyPortals.class`, `Deliver.class`, `PermissionService.class`, `Clock.class` | `EventNode<Event>:titan` | - |
 | `season` (nur `cloudnet`) | `Scheduler.class`, `Clock.class`, `EventNode.class` | `EventNode<Event>:titan` | - |
 
 `EventNode` ist in jeder Zeile der einzige `requiresString`-Eintrag, weil es der einzige

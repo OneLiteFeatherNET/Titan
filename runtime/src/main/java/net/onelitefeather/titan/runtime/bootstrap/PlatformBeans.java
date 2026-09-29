@@ -36,6 +36,7 @@ import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.module.LobbySpawn;
 import net.onelitefeather.titan.core.module.LobbyWorldChoice;
+import net.onelitefeather.titan.core.portal.LobbyPortals;
 import net.onelitefeather.titan.common.deliver.DeliverProvider;
 import net.onelitefeather.titan.runtime.feature.ConfigFeatureFlags;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
@@ -85,6 +86,15 @@ public final class PlatformBeans {
     @Bean
     public LobbySpawn lobbySpawn(MapProvider mapProvider) {
         return () -> mapProvider.getActiveLobby().spawn();
+    }
+
+    /**
+     * Read per call like {@link #lobbySpawn}; a seasonal world brings the portals of its own
+     * map.json.
+     */
+    @Bean
+    public LobbyPortals lobbyPortals(MapProvider mapProvider) {
+        return () -> mapProvider.getActiveLobby().portals();
     }
 
     /** A no-op outside a CloudNet service. */

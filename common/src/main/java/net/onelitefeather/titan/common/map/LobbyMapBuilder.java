@@ -16,6 +16,7 @@
 package net.onelitefeather.titan.common.map;
 
 import net.minestom.server.coordinate.Pos;
+import net.onelitefeather.titan.core.portal.Portal;
 
 import java.util.List;
 
@@ -24,6 +25,7 @@ final class LobbyMapBuilder implements LobbyMap.Builder {
     private Pos spawn;
     private String name;
     private String[] author;
+    private List<Portal> portals = List.of();
 
     @Override
     public LobbyMap.Builder spawn(Pos spawn) {
@@ -44,8 +46,14 @@ final class LobbyMapBuilder implements LobbyMap.Builder {
     }
 
     @Override
+    public LobbyMap.Builder portals(List<Portal> portals) {
+        this.portals = portals;
+        return this;
+    }
+
+    @Override
     public LobbyMap build() {
         List<String> builders = author == null ? null : List.of(author);
-        return new LobbyMap(name, spawn, builders);
+        return new LobbyMap(name, spawn, builders, portals);
     }
 }

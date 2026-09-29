@@ -33,6 +33,7 @@ import net.minestom.server.event.EventNode;
 import net.minestom.server.timer.Scheduler;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.apps.cloudnet.ActiveLobby;
 import net.onelitefeather.titan.common.map.MapProvider;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.core.module.FeatureNode;
@@ -133,7 +134,7 @@ class SeasonRestartWiringTest {
         ServerStop stop = this.stops::incrementAndGet;
         OnlinePlayers players = () -> this.online;
         // Named mock, not the plain mock(Type) overload - see docs/lobby-modules.md, "Permission-Plattform".
-        this.scope = BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).bean(Clock.class, this.clock).bean(Scheduler.class, this.env.process().scheduler()).bean(FeatureNode.TITAN_NODE, EventNode.class, (EventNode<Event>) this.titan.node()).bean(SeasonSchedule.class, new SeasonSchedule(this.clock, this.worlds)).bean(ServerStop.class, stop).bean(OnlinePlayers.class, players).build();
+        this.scope = BeanScope.builder().forTesting().mock(MapProvider.class, ActiveLobby.empty()).mock(FeatureFlags.class).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).bean(Clock.class, this.clock).bean(Scheduler.class, this.env.process().scheduler()).bean(FeatureNode.TITAN_NODE, EventNode.class, (EventNode<Event>) this.titan.node()).bean(SeasonSchedule.class, new SeasonSchedule(this.clock, this.worlds)).bean(ServerStop.class, stop).bean(OnlinePlayers.class, players).build();
     }
 
     private void tickOneMinute() {

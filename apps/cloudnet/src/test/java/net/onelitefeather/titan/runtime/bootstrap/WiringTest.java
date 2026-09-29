@@ -33,6 +33,7 @@ import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.core.permission.PermissionService;
 import net.onelitefeather.titan.platform.luckperms.LuckPermsPermissionService;
+import net.onelitefeather.titan.apps.cloudnet.ActiveLobby;
 import net.onelitefeather.titan.common.map.MapProvider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -67,7 +68,7 @@ class WiringTest {
     void scopeBuildsAllSevenFeaturesAndLobbyItemsWithThreeItems(Env env) {
         // Named mock, not the plain mock(Type) overload - see docs/lobby-modules.md,
         // "Permission-Plattform".
-        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).build();
+        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class, ActiveLobby.empty()).mock(FeatureFlags.class).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).build();
 
         try {
             Assertions.assertNotNull(scope.get(ProtectionModule.class), "the protection feature must be a bean");
@@ -90,7 +91,7 @@ class WiringTest {
     void closingTheScopeDetachesEveryFeatureNode(Env env) {
         // Named mock, not the plain mock(Type) overload - see docs/lobby-modules.md,
         // "Permission-Plattform".
-        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).build();
+        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class, ActiveLobby.empty()).mock(FeatureFlags.class).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).build();
         EventNode<Event> titan = titanNode(scope);
         Assertions.assertFalse(titan.getChildren().isEmpty(), "every feature must have attached its own node while the scope is open");
 
@@ -104,7 +105,7 @@ class WiringTest {
     void aFailingFeatureAbortsTheBuildNamingIt(Env env) {
         // Avaje propagates a @PostConstruct failure unwrapped, so the failing feature's class only
         // appears in the original stack trace, never a wrapper naming it.
-        RuntimeException thrown = Assertions.assertThrows(RuntimeException.class, () -> BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class, flags -> Mockito.when(flags.isActive(Mockito.anyString())).thenAnswer(invocation -> {
+        RuntimeException thrown = Assertions.assertThrows(RuntimeException.class, () -> BeanScope.builder().forTesting().mock(MapProvider.class, ActiveLobby.empty()).mock(FeatureFlags.class, flags -> Mockito.when(flags.isActive(Mockito.anyString())).thenAnswer(invocation -> {
             throw new IllegalStateException("feature flag lookup failed (WiringTest)");
         })).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).build(), "a feature failing its start must abort building the scope instead of silently continuing");
 

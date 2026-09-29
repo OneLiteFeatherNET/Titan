@@ -23,10 +23,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import net.minestom.server.coordinate.Vec;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.common.map.MapProvider;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
+import net.onelitefeather.titan.core.portal.Box;
+import net.onelitefeather.titan.core.portal.LobbyPortals;
+import net.onelitefeather.titan.core.portal.Portal;
+import net.onelitefeather.titan.feature.portal.PortalModule;
 import net.onelitefeather.titan.core.module.LobbyWorldChoice;
 import net.onelitefeather.titan.core.permission.PermissionService;
 import net.onelitefeather.titan.runtime.variant.LoadedModules;
@@ -56,7 +61,7 @@ class VariantStartTest {
         // Named mock matching LuckPermsPermissionService.QUALIFIER - see docs/lobby-modules.md,
         // "Permission-Plattform" (platform/luckperms is not always on this module's classpath, so
         // the name is a literal here rather than the constant).
-        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class).mock(PermissionService.class, "luckperms").build();
+        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class, ActiveLobby.empty()).mock(FeatureFlags.class).mock(PermissionService.class, "luckperms").build();
 
         Assertions.assertDoesNotThrow(scope::close, "closing a fully built scope must not throw");
     }
@@ -77,7 +82,7 @@ class VariantStartTest {
         // test runtime classpath (see platform/luckperms's Gson exclude).
         Assumptions.assumeFalse(LoadedModules.discover(getClass().getClassLoader()).contains("luckpermsPlatform"), "only meaningful without -Ptitan.luckperms");
 
-        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class).mock(FeatureFlags.class).build();
+        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class, ActiveLobby.empty()).mock(FeatureFlags.class).build();
         try {
             Assertions.assertEquals("deny-all", scope.get(PermissionService.class).name(), "without a permission platform, the fallback deny-all service must be active");
         } finally {
@@ -112,6 +117,26 @@ class VariantStartTest {
                 String yaml = new String(in.readAllBytes(), StandardCharsets.UTF_8);
                 Assertions.assertFalse(yaml.contains("seasons:"), "no seasons defaults expected in " + url);
             }
+        }
+    }
+
+    @DisplayName("variant.properties lists portalColumn, the portal column is loaded and its module starts against the real LobbyPortals bean")
+    @Test
+    @Timeout(30)
+    void portalColumnIsExpectedLoadedAndWiredToTheLobbyPortalsBean(Env env) {
+        ClassLoader loader = getClass().getClassLoader();
+        VariantDescriptor descriptor = VariantDescriptor.fromClasspath(loader).orElseThrow(() -> new AssertionError("this variant must ship META-INF/titan/variant.properties"));
+        Portal portal = new Portal("survival", new Box(new Vec(0, 64, 0), new Vec(1, 65, 1)), "Survival", null);
+
+        Assertions.assertTrue(descriptor.modules().contains("portalColumn"), "expected modules must include portalColumn, were: " + descriptor.modules());
+        Assertions.assertTrue(LoadedModules.discover(loader).contains("portalColumn"), "the portal column must be on the classpath and load");
+
+        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class, ActiveLobby.with(List.of(portal))).mock(FeatureFlags.class).mock(PermissionService.class, "luckperms").build();
+        try {
+            Assertions.assertNotNull(scope.get(PortalModule.class), "the portal module must be a bean");
+            Assertions.assertEquals(List.of(portal), scope.get(LobbyPortals.class).portals(), "LobbyPortals must serve the portals of the active map");
+        } finally {
+            scope.close();
         }
     }
 
