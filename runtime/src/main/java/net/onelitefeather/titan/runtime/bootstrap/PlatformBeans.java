@@ -20,6 +20,11 @@ import io.avaje.inject.Factory;
 import jakarta.inject.Named;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.ServiceLoader;
+import java.util.stream.Collectors;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.command.CommandManager;
 import net.minestom.server.event.Event;
@@ -30,6 +35,7 @@ import net.minestom.server.timer.Scheduler;
 import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.module.LobbySpawn;
+import net.onelitefeather.titan.core.module.LobbyWorldChoice;
 import net.onelitefeather.titan.common.deliver.DeliverProvider;
 import net.onelitefeather.titan.runtime.feature.ConfigFeatureFlags;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
@@ -54,10 +60,26 @@ public final class PlatformBeans {
         return instance;
     }
 
-    /** Loads map data from {@code worlds/} relative to the working directory. */
+    /**
+     * Loads map data from {@code worlds/} relative to the working directory, in the world a
+     * {@link LobbyWorldChoice} names. Looked up through the service loader, not as a bean: a
+     * column's bean is built after this one and would always be missing here.
+     */
     @Bean
     public MapProvider mapProvider(InstanceContainer instance) {
-        return MapProvider.create(Path.of(""), instance);
+        return loadMapProvider(Path.of(""), instance, ServiceLoader.load(LobbyWorldChoice.class));
+    }
+
+    static MapProvider loadMapProvider(Path base, InstanceContainer instance, Iterable<LobbyWorldChoice> choices) {
+        List<LobbyWorldChoice> found = new ArrayList<>();
+        choices.forEach(found::add);
+        if (found.size() > 1) {
+            // Which world wins must not depend on classpath order.
+            String names = found.stream().map(choice -> choice.getClass().getName()).collect(Collectors.joining(", "));
+            throw new IllegalStateException("More than one LobbyWorldChoice found: " + names);
+        }
+        Optional<String> worldName = found.stream().findFirst().flatMap(LobbyWorldChoice::worldName);
+        return MapProvider.create(base, instance, worldName);
     }
 
     @Bean
