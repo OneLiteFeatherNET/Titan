@@ -33,4 +33,4 @@ Integrationszweig: `feat/daytime` von `origin/main`. Eine Welle, weil das Modul 
 
 ## 5. Pull Request
 
-- [ ] 5.1 Pull Request mit dem Titel `feat(daytime): follow the real wall clock in the lobby` eröffnen (Titel und Beschreibung Englisch); nach dessen Merge PR #217 mit einem Kommentar schließen, der auf den neuen PR verweist (superseded); falls das Archiv nicht mitgeliefert wird, Archiv-Commit `docs(openspec): archive realtime-lobby-daytime`
+- [x] 5.1 Pull Request mit dem Titel `feat(daytime): follow the real wall clock in the lobby` eröffnen (Titel und Beschreibung Englisch); nach dessen Merge PR #217 mit einem Kommentar schließen, der auf den neuen PR verweist (superseded); falls das Archiv nicht mitgeliefert wird, Archiv-Commit `docs(openspec): archive realtime-lobby-daytime`
