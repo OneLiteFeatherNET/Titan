@@ -412,8 +412,8 @@ betreten, an einen CloudNet-Task.
   den Start mit Welt, Id und Grund ab.
 
 Portale ändern: Task in CloudNet anlegen, `map.json` bearbeiten, die Lobby neu starten. Die Liste
-wird nur beim Start gelesen. Befehle zum Bearbeiten im Setup-Server folgen mit einer späteren
-Änderung.
+wird nur beim Start gelesen. Im Setup-Server bearbeitet `/setup portal` die Portale, siehe
+[README](../README.md#portals).
 
 ## Erwartete Columns einer Variante
 
