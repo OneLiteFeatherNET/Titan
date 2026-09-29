@@ -346,10 +346,13 @@ example a winter map in December. To add one:
      zone: Europe/Berlin           # default; time zone of the windows
      winter:                       # any id ("zone" is reserved)
        world: winter               # directory under worlds/
-       from: 2026-12-01T00:00:00   # inclusive, local time in seasons.zone
-       to: 2027-01-07T00:00:00     # exclusive
+       from: "2026-12-01T00:00:00" # inclusive, local time in seasons.zone
+       to: "2027-01-07T00:00:00"   # exclusive
        enabled: true               # kill switch, no restart of the configuration needed
    ```
+
+Date-times must be quoted (`from: "2026-12-01T00:00:00"`); the YAML loader drops an unquoted
+value, and it is reported as missing.
 
 An invalid enabled season aborts startup with the key and the reason. Switching worlds needs a
 restart: once a minute (and after every disconnect) the lobby compares its started world with the

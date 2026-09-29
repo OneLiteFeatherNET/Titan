@@ -368,10 +368,13 @@ Eine Saisonwelt anlegen:
      zone: Europe/Berlin           # Standard; Zeitzone der Fenster
      winter:                       # beliebige Id ("zone" ist reserviert)
        world: winter               # Verzeichnis unter worlds/
-       from: 2026-12-01T00:00:00   # inklusiv, lokale Zeit in seasons.zone
-       to: 2027-01-07T00:00:00     # exklusiv
+       from: "2026-12-01T00:00:00" # inklusiv, lokale Zeit in seasons.zone
+       to: "2027-01-07T00:00:00"   # exklusiv
        enabled: true               # Abschalter, wirkt ohne Neustart der Konfiguration
    ```
+
+Datum-Zeit-Werte müssen in Anführungszeichen stehen (`from: "2026-12-01T00:00:00"`); der
+YAML-Lader verwirft einen unquotierten Wert, er wird als fehlend gemeldet.
 
 Ein ungültiger, aktivierter Eintrag (fehlender Schlüssel, Datum, Welt oder `map.json`) bricht den
 Start mit dem Schlüssel und dem Grund ab. Der Wechsel selbst braucht einen Neustart: Die Column

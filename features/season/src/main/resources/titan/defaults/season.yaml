@@ -5,6 +5,7 @@ seasons:
   zone: Europe/Berlin
   # <id>:
   #   world: winter                 # directory under worlds/, with a map.json
-  #   from: 2026-12-01T00:00:00     # inclusive, local time in seasons.zone
-  #   to: 2027-01-07T00:00:00       # exclusive
+  #   from: "2026-12-01T00:00:00"   # inclusive, local time in seasons.zone
+  #   to: "2027-01-07T00:00:00"     # exclusive
   #   enabled: true                 # switch that takes effect without restarting the configuration
+  # Date-times must be quoted: an unquoted value is dropped by the YAML loader and reported as missing.
