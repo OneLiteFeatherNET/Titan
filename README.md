@@ -78,7 +78,11 @@ Once installed, you can:
   same release; `apps/local` ships no AOT cache). After upgrading to a new build, retrain the
   cache against the new jar rather than reusing an older `.aot` file - the build's own
   `generateAotCache` Gradle task does this by running the jar against `worlds/` for a short
-  training window (see `buildSrc/src/main/kotlin/titan.app-variant.gradle.kts`).
+  training window (see `buildSrc/src/main/kotlin/titan.app-variant.gradle.kts`). Builds without a
+  `worlds/` directory (such as CI releases) skip that task and publish the jar without the `.aot`;
+  train it at deployment in the service directory with
+  `java -XX:AOTCacheOutput=titan-cloudnet.aot -Dtitan.aot.trainSeconds=20 -jar titan-cloudnet.jar`,
+  then start with `-XX:AOTCache=titan-cloudnet.aot` as above.
 - Use the console to manage the server while it's running
 - Stop the server safely by typing `stop` in the console
 
