@@ -21,9 +21,10 @@ import net.onelitefeather.titan.common.map.MapProvider;
 
 public class SetupCommand extends Command {
 
-    public SetupCommand(MapProvider mapProvider) {
+    public SetupCommand(MapProvider mapProvider, PortalCommand portalCommand) {
         super("setup");
         this.setCondition(Conditions::playerOnly);
         this.addSubcommand(new MapCommand(mapProvider));
+        this.addSubcommand(portalCommand);
     }
 }

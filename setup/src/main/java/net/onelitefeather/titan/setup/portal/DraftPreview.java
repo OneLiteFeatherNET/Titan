@@ -44,13 +44,18 @@ public final class DraftPreview {
     /** Previews draft {@code id} for the player, replacing the preview they had. */
     public void start(Player player, String id) {
         UUID uuid = player.getUuid();
+        Running current = running.get(uuid);
+        if (current != null && current.id().equals(id)) {
+            // Every edit calls start; keeping the task also keeps its one-time hint quiet.
+            return;
+        }
         stop(uuid);
         boolean[] hinted = {false};
         Task[] self = new Task[1];
         self[0] = player.scheduler().submitTask(() -> {
             Optional<PortalDraft> draft = editor.drafts(uuid).stream().filter(candidate -> id.equals(candidate.id())).findFirst();
             if (draft.isEmpty() || !player.isOnline()) {
-                running.computeIfPresent(uuid, (key, current) -> current.task() == self[0] ? null : current);
+                running.computeIfPresent(uuid, (key, entry) -> entry.task() == self[0] ? null : entry);
                 return TaskSchedule.stop();
             }
             // Once per switch into the default-radius state, not on every run.

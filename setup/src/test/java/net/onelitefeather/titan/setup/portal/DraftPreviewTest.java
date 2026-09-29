@@ -161,14 +161,17 @@ class DraftPreviewTest {
         assertEquals(0, preview.running(), "no task left");
     }
 
-    @DisplayName("Starting again replaces the task instead of adding one")
+    @DisplayName("Starting another draft replaces the task instead of adding one")
     @Test
-    void secondStartReplacesTheTask(Env env) {
+    void startingAnotherDraftReplacesTheTask(Env env) {
         complete("p");
+        complete("q");
         preview.start(player, "p");
-        preview.start(player, "p");
+        preview.start(player, "q");
 
         assertEquals(1, preview.running(), "one task per player");
+        preview.stop(player.getUuid(), "p");
+        assertEquals(1, preview.running(), "the task now belongs to q");
     }
 
     @DisplayName("The default-radius hint is sent once, not on every run")
@@ -180,6 +183,20 @@ class DraftPreviewTest {
         tick(env, 40);
 
         assertEquals(1, chat.collect().size(), "exactly one hint over eight runs");
+    }
+
+    @DisplayName("Starting the same draft again keeps the task and does not repeat the hint")
+    @Test
+    void restartOfTheSameDraftKeepsTheHintQuiet(Env env) {
+        editor.shape(player.getUuid(), "r", PortalDraft.Form.RING);
+        preview.start(player, "r");
+        tick(env, 6);
+
+        preview.start(player, "r");
+        tick(env, 30);
+
+        assertEquals(1, preview.running(), "still one task");
+        assertEquals(1, chat.collect().size(), "the hint came only once");
     }
 
     @DisplayName("A box draft never gets the radius hint")
