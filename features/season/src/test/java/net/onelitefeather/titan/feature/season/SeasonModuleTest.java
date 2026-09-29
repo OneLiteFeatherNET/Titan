@@ -333,6 +333,23 @@ class SeasonModuleTest {
         Assertions.assertEquals(List.of(), infoMessages());
     }
 
+    @DisplayName("Enabling a season live inside its window makes a restart into its world pending")
+    @Test
+    void liveEnabledSeasonInsideItsWindowMakesARestartPending() {
+        Config.setProperty("seasons.winter.enabled", "false");
+        this.clock.set(IN_WINTER);
+        this.fakeOnline = 1;
+        startInDefaultWorld();
+        tickMinutes(1);
+        Assertions.assertEquals(List.of(), infoMessages(), "precondition: a disabled season schedules nothing");
+
+        Config.setProperty("seasons.winter.enabled", "true");
+        tickMinutes(1);
+
+        Assertions.assertEquals(List.of("Restart for season winter pending since " + IN_WINTER), infoMessages());
+        Assertions.assertEquals(0, this.serverStop.calls(), "a player is online, so the pending restart must not stop the lobby");
+    }
+
     @DisplayName("A value that turns invalid live warns and neither schedules nor stops, even for the running season")
     @Test
     void liveInvalidValueSchedulesNothing() {
