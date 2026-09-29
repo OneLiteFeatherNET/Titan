@@ -99,7 +99,7 @@ public final class NavigatorModule {
     // Synchronized so two threads opening the navigator at once can't observe, or trigger, half of
     // a rebuild.
     private synchronized void applyLayoutIfChanged() {
-        List<Destination> visible = Destination.visible(this.featureFlags);
+        List<Destination> visible = Destination.visible(this.featureFlags, false);
         if (visible.equals(this.appliedVisible)) {
             return;
         }
