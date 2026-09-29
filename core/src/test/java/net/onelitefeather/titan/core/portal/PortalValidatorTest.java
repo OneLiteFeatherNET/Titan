@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -57,28 +58,28 @@ class PortalValidatorTest {
     void reportsARadiusOfZero() {
         List<PortalProblem> problems = problemsOf(withShape(new Disc(new Vec(0, 64, 0), 0, new Vec(0, 0, 1))));
 
-        assertEquals(List.of(new PortalProblem("p", "radius must be greater than 0 but was 0.0")), problems);
+        assertEquals(List.of(new PortalProblem("p", 0, "radius must be greater than 0 but was 0.0")), problems);
     }
 
     @Test
     void reportsANegativeRadius() {
         List<PortalProblem> problems = problemsOf(withShape(new Disc(new Vec(0, 64, 0), -2, new Vec(0, 0, 1))));
 
-        assertEquals(List.of(new PortalProblem("p", "radius must be greater than 0 but was -2.0")), problems);
+        assertEquals(List.of(new PortalProblem("p", 0, "radius must be greater than 0 but was -2.0")), problems);
     }
 
     @Test
     void reportsAZeroLengthNormal() {
         List<PortalProblem> problems = problemsOf(withShape(new Disc(new Vec(0, 64, 0), 3, Vec.ZERO)));
 
-        assertEquals(List.of(new PortalProblem("p", "normal must not have length 0")), problems);
+        assertEquals(List.of(new PortalProblem("p", 0, "normal must not have length 0")), problems);
     }
 
     @Test
     void reportsMinAboveMaxNamingTheAxis() {
         List<PortalProblem> problems = problemsOf(withShape(new Box(new Vec(0, 70, 0), new Vec(5, 64, 5))));
 
-        assertEquals(List.of(new PortalProblem("p", "min.y (70.0) is greater than max.y (64.0)")), problems);
+        assertEquals(List.of(new PortalProblem("p", 0, "min.y (70.0) is greater than max.y (64.0)")), problems);
     }
 
     @Test
@@ -86,7 +87,7 @@ class PortalValidatorTest {
         List<PortalProblem> problems = problemsOf(withShape(new Box(new Vec(9, 0, 9), new Vec(1, 5, 1))));
 
         assertEquals(List.of(
-                new PortalProblem("p", "min.x (9.0) is greater than max.x (1.0)"), new PortalProblem("p", "min.z (9.0) is greater than max.z (1.0)")), problems);
+                new PortalProblem("p", 0, "min.x (9.0) is greater than max.x (1.0)"), new PortalProblem("p", 0, "min.z (9.0) is greater than max.z (1.0)")), problems);
     }
 
     @Test
@@ -100,35 +101,35 @@ class PortalValidatorTest {
     void reportsABlankId() {
         List<PortalProblem> problems = problemsOf(new Portal("  ", VALID_BOX, "Survival", null));
 
-        assertEquals(List.of(new PortalProblem("  ", "id must not be blank")), problems);
+        assertEquals(List.of(new PortalProblem("  ", 0, "id must not be blank")), problems);
     }
 
     @Test
     void reportsAMissingId() {
         List<PortalProblem> problems = problemsOf(new Portal(null, VALID_BOX, "Survival", null));
 
-        assertEquals(List.of(new PortalProblem(null, "id must not be blank")), problems);
+        assertEquals(List.of(new PortalProblem(null, 0, "id must not be blank")), problems);
     }
 
     @Test
     void reportsABlankTask() {
         List<PortalProblem> problems = problemsOf(new Portal("p", VALID_BOX, "", null));
 
-        assertEquals(List.of(new PortalProblem("p", "task must not be blank")), problems);
+        assertEquals(List.of(new PortalProblem("p", 0, "task must not be blank")), problems);
     }
 
     @Test
     void reportsAMissingShape() {
         List<PortalProblem> problems = problemsOf(new Portal("p", null, "Survival", null));
 
-        assertEquals(List.of(new PortalProblem("p", "shape is missing")), problems);
+        assertEquals(List.of(new PortalProblem("p", 0, "shape is missing")), problems);
     }
 
     @Test
     void reportsADuplicateIdOnTheSecondOccurrence() {
         List<PortalProblem> problems = problemsOf(box("same"), box("same"));
 
-        assertEquals(List.of(new PortalProblem("same", "duplicate id")), problems);
+        assertEquals(List.of(new PortalProblem("same", 1, "duplicate id")), problems);
     }
 
     @Test
@@ -138,7 +139,7 @@ class PortalValidatorTest {
         List<PortalProblem> problems = problemsOf(broken);
 
         assertEquals(List.of(
-                new PortalProblem("", "id must not be blank"), new PortalProblem("", "task must not be blank"), new PortalProblem("", "radius must be greater than 0 but was 0.0"), new PortalProblem("", "normal must not have length 0")), problems);
+                new PortalProblem("", 0, "id must not be blank"), new PortalProblem("", 0, "task must not be blank"), new PortalProblem("", 0, "radius must be greater than 0 but was 0.0"), new PortalProblem("", 0, "normal must not have length 0")), problems);
     }
 
     @Test
@@ -163,5 +164,21 @@ class PortalValidatorTest {
         String message = failure.getMessage();
         assertTrue(message.contains("duplicate id"), "message must name the duplicate: " + message);
         assertTrue(message.contains("task must not be blank"), "message must name the blank task: " + message);
+    }
+
+    @Test
+    void requireValidIdentifiesAPortalWithoutIdByItsIndex() {
+        IllegalStateException failure = assertThrows(IllegalStateException.class, () -> PortalValidator.requireValid("lobby", List.of(box("a"), new Portal(null, VALID_BOX, "Survival", null))));
+
+        String message = failure.getMessage();
+        assertTrue(message.contains("portal #1: id must not be blank"), "message must identify the portal by its index: " + message);
+        assertFalse(message.contains("'null'"), "message must not print a null id: " + message);
+    }
+
+    @Test
+    void requireValidIdentifiesABlankIdPortalByItsIndex() {
+        IllegalStateException failure = assertThrows(IllegalStateException.class, () -> PortalValidator.requireValid("lobby", List.of(new Portal(" ", VALID_BOX, "Survival", null))));
+
+        assertTrue(failure.getMessage().contains("portal #0: id must not be blank"), "message must identify the portal by its index: " + failure.getMessage());
     }
 }

@@ -22,7 +22,13 @@ import org.jetbrains.annotations.Nullable;
  *
  * @param portalId the portal's id as written, which may be blank or missing when that is the
  *                 problem
+ * @param index    the portal's position in the list, to find it when it has no id
  * @param reason   what is wrong, in words that name the offending field
  */
-public record PortalProblem(@Nullable String portalId, String reason) {
+public record PortalProblem(@Nullable String portalId, int index, String reason) {
+
+    /** {@code portal 'id'}, or {@code portal #index} when the id is missing or blank. */
+    public String portalLabel() {
+        return portalId == null || portalId.isBlank() ? "portal #" + index : "portal '" + portalId + "'";
+    }
 }

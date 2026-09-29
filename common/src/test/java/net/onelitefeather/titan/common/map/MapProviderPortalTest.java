@@ -75,7 +75,9 @@ class MapProviderPortalTest {
         String message = failure.getMessage();
         assertTrue(message.contains("summer"), "the message must name the world, was: " + message);
         assertTrue(message.contains(reason), "the message must give the reason '" + reason + "', was: " + message);
-        if (!label.contains("missing id")) {
+        if (label.contains("missing id")) {
+            assertTrue(message.contains("portal #0"), "the message must identify the portal by its index, was: " + message);
+        } else {
             assertTrue(message.contains("'p'"), "the message must name the portal id, was: " + message);
         }
     }
