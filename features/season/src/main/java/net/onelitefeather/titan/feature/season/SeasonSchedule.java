@@ -15,6 +15,8 @@
  */
 package net.onelitefeather.titan.feature.season;
 
+import io.avaje.config.Config;
+import io.avaje.config.Configuration;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.nio.file.Path;
@@ -52,9 +54,13 @@ final class SeasonSchedule {
     }
 
     SeasonSchedule(Clock clock, Path worldsDirectory) {
+        this(clock, worldsDirectory, Config.asConfiguration());
+    }
+
+    SeasonSchedule(Clock clock, Path worldsDirectory, Configuration config) {
         this.clock = Objects.requireNonNull(clock, "clock");
         this.calendar = new SeasonCalendar();
-        this.reader = new SeasonConfigReader(worldsDirectory, this.calendar);
+        this.reader = new SeasonConfigReader(config, worldsDirectory, this.calendar);
     }
 
     /**
