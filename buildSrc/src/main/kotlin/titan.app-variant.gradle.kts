@@ -148,7 +148,13 @@ afterEvaluate {
 
     // ---- Ahead-of-Time cache (JDK 25 / JEP 514) for faster lobby startup, only for a variant that
     // opts in via titanVariant { aotCache.set(true) } (only cloudnet). ----
-    if (titanVariant.aotCache.get()) {
+    // The training run boots the lobby against the root worlds/ directory, which is gitignored: without
+    // it (e.g. CI release builds) the cache is skipped and the jar is published alone.
+    val aotWorldsAvailable = rootProject.layout.projectDirectory.dir("worlds").asFile.isDirectory
+    if (titanVariant.aotCache.get() && !aotWorldsAvailable) {
+        logger.lifecycle("AOT cache skipped: worlds/ not found; train it at deployment")
+    }
+    if (titanVariant.aotCache.get() && aotWorldsAvailable) {
         val variantJarName = "titan-${project.name}.jar"
         val aotCacheFileName = "titan-${project.name}.aot"
         val aotTrainSeconds = providers.gradleProperty("titan.aot.trainSeconds").orElse("20")
