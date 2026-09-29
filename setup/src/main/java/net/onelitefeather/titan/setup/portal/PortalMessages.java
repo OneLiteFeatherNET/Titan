@@ -90,6 +90,22 @@ public final class PortalMessages {
         return Component.join(JoinConfiguration.newlines(), lines);
     }
 
+    public static Component nothingToShow() {
+        return MINI.deserialize("<prefix> <yellow>There are no saved portals to show.");
+    }
+
+    public static Component showing(int count) {
+        return MINI.deserialize("<prefix> <green>Showing <count> portal(s) for 8 seconds.", Placeholder.unparsed("count", String.valueOf(count)));
+    }
+
+    public static Component defaultRadiusHint() {
+        return MINI.deserialize("<prefix> <yellow>No radius yet: the preview ring uses radius 3 around your eyes. Set one with <command>.", Placeholder.unparsed("command", "radius <r>"));
+    }
+
+    public static Component usage() {
+        return MINI.deserialize("<prefix> <red>Usage: <usage>", Placeholder.unparsed("usage", "/setup portal list | show | <id> pos1 | pos2 | shape box|ring | centre | radius <r> | disc <r> | task <task> | permission <perm|none> | save | cancel | remove"));
+    }
+
     /** {@code portal 'id': reason}, the validator's wording for one problem. */
     public static Component problem(PortalProblem problem) {
         return MINI.deserialize("<red> - <label>: <reason>", Placeholder.unparsed("label", problem.portalLabel()), Placeholder.unparsed("reason", problem.reason()));

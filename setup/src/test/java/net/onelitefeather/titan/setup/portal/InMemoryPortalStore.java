@@ -21,12 +21,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 /** A {@link PortalStore} that keeps the list in memory and counts how often it was written. */
-final class InMemoryPortalStore implements PortalStore {
+public final class InMemoryPortalStore implements PortalStore {
 
     private List<Portal> portals;
     private int saves;
 
-    InMemoryPortalStore(Portal... portals) {
+    public InMemoryPortalStore(Portal... portals) {
         this.portals = List.of(portals);
     }
 
@@ -46,7 +46,7 @@ final class InMemoryPortalStore implements PortalStore {
         return "test-world";
     }
 
-    int saves() {
+    public int saves() {
         return saves;
     }
 }
