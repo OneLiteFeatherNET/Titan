@@ -56,11 +56,13 @@ development:
   format (LuckPerms group prefix). It comes back as the Minestom extension shipped in the
   `net.onelitefeather:butterfly-minestom` artifact itself; Titan needs no code for it - the
   extension uses the in-process LuckPerms through `LuckPermsProvider.get()`.
-  - Put exactly ONE `butterfly-minestom` jar into `extensions/`, of a version that ships the
-    extension (newer than 1.0.25; exact version to be added once released).
+  - Put exactly ONE `butterfly-minestom` jar into `extensions/`, of version 1.1.0 or newer
+    (the first that ships the extension; not on Maven yet, use the GitHub release asset
+    [butterfly-minestom-1.1.0.jar](https://github.com/OneLiteFeatherNET/Butterfly/releases/download/v1.1.0/butterfly-minestom-1.1.0.jar),
+    sha256 `3fdb00eabdb5397e073d189cce1170fd3829103bb8682fdd9ed6b2e5ef4ee118`).
   - Older versions have no `extension.json` and abort startup with
     `Missing extension.json in extension butterfly-minestom-...jar`.
-  - Until such a version is released, the lobby runs without tab sorting, prefix and chat format.
+  - Without it, the lobby runs without tab sorting, prefix and chat format.
   - Optional settings live in `extensions/Butterfly/flags.properties` (defaults apply when
     absent), not in `application.yaml`.
   - If LuckPerms is not available, Butterfly logs an error and stays inactive (no crash).

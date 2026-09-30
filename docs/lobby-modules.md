@@ -41,7 +41,7 @@ apps/local ────┼─▶ runtime ─────────────
   erteilt“). LuckPerms und Butterfly gehören nicht mehr zu `runtime` - LuckPerms steckt in
   `platform/luckperms` (s. "Permission-Plattform" unten), Butterfly (Tab-Sortierung, Präfix über dem Kopf,
   Chat-Format) ist kein Teil von Titan mehr, sondern liegt als Minestom-Extension im Artefakt
-  `butterfly-minestom` (genau ein Jar in `extensions/`, in einer Version mit Extension, neuer als 1.0.25).
+  `butterfly-minestom` (genau ein Jar in `extensions/`, ab Version 1.1.0, noch nicht auf Maven: [GitHub-Release](https://github.com/OneLiteFeatherNET/Butterfly/releases/download/v1.1.0/butterfly-minestom-1.1.0.jar), sha256 `3fdb00eabdb5397e073d189cce1170fd3829103bb8682fdd9ed6b2e5ef4ee118`).
 - **`platform/<name>`** (Paket `net.onelitefeather.titan.platform.<name>`) ist eine
   Permission-Plattform: ein eigenes Gradle-Modul, das nur an `core` hängt und einen
   `PermissionService` liefert. Der heutige Eintrag: `luckperms`.
