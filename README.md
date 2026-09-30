@@ -47,11 +47,21 @@ development:
 - Every start logs the active service: `Permissions resolved by luckperms` or
   `Permissions resolved by deny-all`.
 - With the LuckPerms platform, the lobby starts and stops LuckPerms itself, in-process - it is no
-  longer loaded as a Minestom extension. **Do not deploy `extensions/luckperms.jar` or
-  `extensions/butterfly.jar`** - Butterfly is removed entirely (unused), and a leftover
-  `extensions/luckperms.jar` makes the lobby refuse to start (it would otherwise load LuckPerms
-  twice). LuckPerms' own data and configuration stay in `data/` next to the jar, unchanged from
-  before - keep that directory across an upgrade.
+  longer loaded as a Minestom extension. **Do not deploy `extensions/luckperms.jar`** - a leftover
+  one makes the lobby refuse to start (it would otherwise load LuckPerms twice). LuckPerms' own
+  data and configuration stay in `data/` next to the jar, unchanged from before - keep that
+  directory across an upgrade.
+- **Butterfly (tab list, name prefix, chat):** Titan 2.0 removed the built-in Butterfly, which
+  provided the tab-list sorting (via teams), the coloured prefix above players' heads and the chat
+  format (LuckPerms group prefix). It comes back as a separate Minestom extension built in the
+  Butterfly repository; Titan needs no code for it - the extension uses the in-process LuckPerms
+  through `LuckPermsProvider.get()`.
+  - Put exactly ONE Butterfly extension jar (a jar containing an `extension.json`, from the
+    Butterfly releases) into `extensions/`.
+  - Never put the library jar `butterfly-minestom-<version>.jar` there: it has no `extension.json`
+    and aborts startup with `Missing extension.json in extension butterfly-minestom-...jar`.
+  - Until the extension is released, the lobby runs without tab sorting, prefix and chat format.
+  - Its settings live in the extension's own data directory, not in `application.yaml`.
 - A CloudNet permission query for a player returns the same result as a permission check inside
   the lobby, including LuckPerms contexts (e.g. a permission granted only for `server=lobby`).
 - `titan-cloudnet.jar`'s classpath changed with this permission platform - retrain its AOT cache

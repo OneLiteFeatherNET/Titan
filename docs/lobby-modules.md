@@ -39,7 +39,9 @@ apps/local ────┼─▶ runtime ─────────────
   Plattform-Typen als `provides`), die Start-Logs sowie der Rechte-Vertrag `PermissionService`
   (`core`) und dessen Fallback `DenyAllPermissionService` (`@Secondary`, liefert immer „nicht
   erteilt“). LuckPerms und Butterfly gehören nicht mehr zu `runtime` - LuckPerms steckt in
-  `platform/luckperms` (s. "Permission-Plattform" unten), Butterfly ist ersatzlos entfernt.
+  `platform/luckperms` (s. "Permission-Plattform" unten), Butterfly (Tab-Sortierung, Präfix über dem Kopf, Chat-Format) ist
+  kein Teil von Titan mehr, sondern kommt als eigenständige Minestom-Extension aus dem Butterfly-Repo
+  (`extensions/`, genau ein Extension-Jar mit `extension.json`, nie das Library-Jar).
 - **`platform/<name>`** (Paket `net.onelitefeather.titan.platform.<name>`) ist eine
   Permission-Plattform: ein eigenes Gradle-Modul, das nur an `core` hängt und einen
   `PermissionService` liefert. Der heutige Eintrag: `luckperms`.
