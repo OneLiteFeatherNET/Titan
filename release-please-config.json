@@ -10,7 +10,7 @@
       "package-name": "titan",
       "changelog-path": "CHANGELOG.md",
       "extra-files": [
-        "gradle.properties"
+        "build.gradle.kts"
       ]
     }
   }
