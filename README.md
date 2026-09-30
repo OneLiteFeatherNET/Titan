@@ -56,10 +56,12 @@ development:
   format (LuckPerms group prefix). It comes back as the Minestom extension shipped in the
   `net.onelitefeather:butterfly-minestom` artifact itself; Titan needs no code for it - the
   extension uses the in-process LuckPerms through `LuckPermsProvider.get()`.
-  - Put exactly ONE `butterfly-minestom` jar into `extensions/`, of version 1.1.0 or newer
-    (the first that ships the extension; not on Maven yet, use the GitHub release asset
-    [butterfly-minestom-1.1.0.jar](https://github.com/OneLiteFeatherNET/Butterfly/releases/download/v1.1.0/butterfly-minestom-1.1.0.jar),
-    sha256 `3fdb00eabdb5397e073d189cce1170fd3829103bb8682fdd9ed6b2e5ef4ee118`).
+  - Put exactly ONE `butterfly-minestom` jar into `extensions/`, of version 1.1.1 or newer
+    (1.1.0 was the first with the extension but spams "Error creating missing file
+    flags.properties" on every spawn and does not update team prefixes of players who are
+    already online; not on Maven yet, use the GitHub release asset
+    [butterfly-minestom-1.1.1.jar](https://github.com/OneLiteFeatherNET/Butterfly/releases/download/v1.1.1/butterfly-minestom-1.1.1.jar),
+    sha256 `033c7ddf02daae27635a1467d4f9055ea52fb1133a2b3eb1a22b3030fbb3226e`).
   - Older versions have no `extension.json` and abort startup with
     `Missing extension.json in extension butterfly-minestom-...jar`.
   - Without it, the lobby runs without tab sorting, prefix and chat format.
