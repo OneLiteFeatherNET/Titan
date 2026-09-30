@@ -53,15 +53,17 @@ development:
   directory across an upgrade.
 - **Butterfly (tab list, name prefix, chat):** Titan 2.0 removed the built-in Butterfly, which
   provided the tab-list sorting (via teams), the coloured prefix above players' heads and the chat
-  format (LuckPerms group prefix). It comes back as a separate Minestom extension built in the
-  Butterfly repository; Titan needs no code for it - the extension uses the in-process LuckPerms
-  through `LuckPermsProvider.get()`.
-  - Put exactly ONE Butterfly extension jar (a jar containing an `extension.json`, from the
-    Butterfly releases) into `extensions/`.
-  - Never put the library jar `butterfly-minestom-<version>.jar` there: it has no `extension.json`
-    and aborts startup with `Missing extension.json in extension butterfly-minestom-...jar`.
-  - Until the extension is released, the lobby runs without tab sorting, prefix and chat format.
-  - Its settings live in the extension's own data directory, not in `application.yaml`.
+  format (LuckPerms group prefix). It comes back as the Minestom extension shipped in the
+  `net.onelitefeather:butterfly-minestom` artifact itself; Titan needs no code for it - the
+  extension uses the in-process LuckPerms through `LuckPermsProvider.get()`.
+  - Put exactly ONE `butterfly-minestom` jar into `extensions/`, of a version that ships the
+    extension (newer than 1.0.25; exact version to be added once released).
+  - Older versions have no `extension.json` and abort startup with
+    `Missing extension.json in extension butterfly-minestom-...jar`.
+  - Until such a version is released, the lobby runs without tab sorting, prefix and chat format.
+  - Optional settings live in `extensions/Butterfly/flags.properties` (defaults apply when
+    absent), not in `application.yaml`.
+  - If LuckPerms is not available, Butterfly logs an error and stays inactive (no crash).
 - A CloudNet permission query for a player returns the same result as a permission check inside
   the lobby, including LuckPerms contexts (e.g. a permission granted only for `server=lobby`).
 - `titan-cloudnet.jar`'s classpath changed with this permission platform - retrain its AOT cache
