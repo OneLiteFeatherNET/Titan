@@ -47,11 +47,23 @@ development:
 - Every start logs the active service: `Permissions resolved by luckperms` or
   `Permissions resolved by deny-all`.
 - With the LuckPerms platform, the lobby starts and stops LuckPerms itself, in-process - it is no
-  longer loaded as a Minestom extension. **Do not deploy `extensions/luckperms.jar` or
-  `extensions/butterfly.jar`** - Butterfly is removed entirely (unused), and a leftover
-  `extensions/luckperms.jar` makes the lobby refuse to start (it would otherwise load LuckPerms
-  twice). LuckPerms' own data and configuration stay in `data/` next to the jar, unchanged from
-  before - keep that directory across an upgrade.
+  longer loaded as a Minestom extension. **Do not deploy `extensions/luckperms.jar`** - a leftover
+  one makes the lobby refuse to start (it would otherwise load LuckPerms twice). LuckPerms' own
+  data and configuration stay in `data/` next to the jar, unchanged from before - keep that
+  directory across an upgrade.
+- **Butterfly (tab list, name prefix, chat):** Titan 2.0 removed the built-in Butterfly, which
+  provided the tab-list sorting (via teams), the coloured prefix above players' heads and the chat
+  format (LuckPerms group prefix). It comes back as the Minestom extension shipped in the
+  `net.onelitefeather:butterfly-minestom` artifact itself; Titan needs no code for it - the
+  extension uses the in-process LuckPerms through `LuckPermsProvider.get()`.
+  - Put exactly ONE `butterfly-minestom` jar into `extensions/`, of a version that ships the
+    extension (newer than 1.0.25; exact version to be added once released).
+  - Older versions have no `extension.json` and abort startup with
+    `Missing extension.json in extension butterfly-minestom-...jar`.
+  - Until such a version is released, the lobby runs without tab sorting, prefix and chat format.
+  - Optional settings live in `extensions/Butterfly/flags.properties` (defaults apply when
+    absent), not in `application.yaml`.
+  - If LuckPerms is not available, Butterfly logs an error and stays inactive (no crash).
 - A CloudNet permission query for a player returns the same result as a permission check inside
   the lobby, including LuckPerms contexts (e.g. a permission granted only for `server=lobby`).
 - `titan-cloudnet.jar`'s classpath changed with this permission platform - retrain its AOT cache
