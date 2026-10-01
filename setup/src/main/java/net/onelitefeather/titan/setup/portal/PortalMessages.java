@@ -24,10 +24,13 @@ import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import net.onelitefeather.titan.core.portal.Box;
 import net.onelitefeather.titan.core.portal.Disc;
+import net.onelitefeather.titan.core.portal.LabelSource;
 import net.onelitefeather.titan.core.portal.Portal;
+import net.onelitefeather.titan.core.portal.PortalLabel;
 import net.onelitefeather.titan.core.portal.PortalProblem;
 import net.onelitefeather.titan.core.portal.PortalShape;
 import net.minestom.server.coordinate.Vec;
+import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -54,6 +57,7 @@ public final class PortalMessages {
             case PortalEditResult.Pending pending ->
                 MINI.deserialize("<prefix> <yellow>Portal <id> is not complete yet, missing: <missing>.", Placeholder.unparsed("id", pending.id()), Placeholder.unparsed("missing", describeMissing(pending.missing())));
             case PortalEditResult.Complete complete -> complete(complete.id());
+            case PortalEditResult.LabelUpdated updated -> labelUpdated(updated);
             case PortalEditResult.Removed removed ->
                 MINI.deserialize("<prefix> <green>Removed portal <id>.", Placeholder.unparsed("id", removed.id()));
             case PortalEditResult.Rejected rejected -> rejected(rejected);
@@ -77,7 +81,7 @@ public final class PortalMessages {
         if (!portals.isEmpty()) {
             lines.add(MINI.deserialize("<prefix> <green>Portals (<count>):", Placeholder.unparsed("count", String.valueOf(portals.size()))));
             for (Portal portal : portals) {
-                lines.add(MINI.deserialize("<gray> - <white><id></white>: <shape>, task <task>, permission <permission>", portalTags(portal)));
+                lines.add(MINI.deserialize("<gray> - <white><id></white>: <shape>, task <task>, permission <permission><label>", portalTags(portal)));
             }
         }
         if (!drafts.isEmpty()) {
@@ -103,7 +107,7 @@ public final class PortalMessages {
     }
 
     public static Component usage() {
-        return MINI.deserialize("<prefix> <red>Usage: <usage>", Placeholder.unparsed("usage", "/setup portal list | show | create <id> | <id> pos1 | pos2 | shape box|ring | centre | radius <r> | disc <r> | task <task> | permission <perm|none> | save | cancel | remove"));
+        return MINI.deserialize("<prefix> <red>Usage: <usage>", Placeholder.unparsed("usage", "/setup portal list | show | create <id> | <id> pos1 | pos2 | shape box|ring | centre | radius <r> | disc <r> | task <task> | permission <perm|none> | save | cancel | remove | label here | text <minimessage> | offline <minimessage> | source <task|group|service|local> [name] | remove"));
     }
 
     /** {@code portal 'id': reason}, the validator's wording for one problem. */
@@ -112,11 +116,40 @@ public final class PortalMessages {
     }
 
     private static Component saved(String verb, Portal portal) {
-        return MINI.deserialize("<prefix> <green><verb> portal <id>: <shape>, task <task>, permission <permission>.", TagResolver.resolver(Placeholder.unparsed("verb", verb), portalTags(portal)));
+        return MINI.deserialize("<prefix> <green><verb> portal <id>: <shape>, task <task>, permission <permission><label>.", TagResolver.resolver(Placeholder.unparsed("verb", verb), portalTags(portal)));
     }
 
     private static TagResolver portalTags(Portal portal) {
-        return TagResolver.resolver(Placeholder.unparsed("id", portal.id()), Placeholder.unparsed("shape", describe(portal.shape())), Placeholder.unparsed("task", portal.task()), Placeholder.unparsed("permission", portal.permission() == null ? "none" : portal.permission()));
+        return TagResolver.resolver(Placeholder.unparsed("id", portal.id()), Placeholder.unparsed("shape", describe(portal.shape())), Placeholder.unparsed("task", portal.task()), Placeholder.unparsed("permission", portal.permission() == null ? "none" : portal.permission()), Placeholder.unparsed("label", portal.label() == null ? "" : ", label " + describe(portal.label())));
+    }
+
+    private static Component labelUpdated(PortalEditResult.LabelUpdated updated) {
+        if (!updated.hasLabel()) {
+            return MINI.deserialize("<prefix> <green>Portal <id> has no label in its draft.", Placeholder.unparsed("id", updated.id()));
+        }
+        Component state = MINI.deserialize("<prefix> <green>Label of portal <id>: position <position>, text <text>, offline text <offline>, source <source>.", TagResolver.resolver(Placeholder.unparsed("id", updated.id()), Placeholder.unparsed("position", updated.position() == null ? "unset" : point(updated.position())), Placeholder.unparsed("text", orUnset(updated.text())), Placeholder.unparsed("offline", orUnset(updated.offlineText())), Placeholder.unparsed("source", updated.source() == null ? "the portal's task" : describe(updated.source()))));
+        if (updated.missing().isEmpty()) {
+            return state;
+        }
+        return state.appendNewline().append(MINI.deserialize("<yellow>Portal <id> is not complete yet, missing: <missing>.", Placeholder.unparsed("id", updated.id()), Placeholder.unparsed("missing", describeMissing(updated.missing()))));
+    }
+
+    private static String describe(PortalLabel label) {
+        return (label.position() == null ? "without position" : "at " + point(label.position())) + " '" + label.text() + "'";
+    }
+
+    private static String describe(LabelSource source) {
+        return switch (source) {
+            case LabelSource.Task task -> "task " + orUnset(task.name());
+            case LabelSource.Group group -> "group " + orUnset(group.name());
+            case LabelSource.Service service -> "service " + orUnset(service.name());
+            case LabelSource.Local ignored -> "local";
+            case LabelSource.Unknown unknown -> "unknown " + orUnset(unknown.type());
+        };
+    }
+
+    private static String orUnset(@Nullable String value) {
+        return value == null ? "unset" : value;
     }
 
     private static Component complete(String id) {
@@ -152,6 +185,8 @@ public final class PortalMessages {
             case CENTRE -> "centre";
             case RADIUS -> "radius";
             case TASK -> "task";
+            case LABEL_POSITION -> "label position (use 'label here')";
+            case LABEL_TEXT -> "label text (use 'label text <minimessage>')";
         };
     }
 

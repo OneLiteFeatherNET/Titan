@@ -35,7 +35,9 @@ import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.common.map.MapEntry;
 import net.onelitefeather.titan.common.map.MapProvider;
 import net.onelitefeather.titan.core.portal.Box;
+import net.onelitefeather.titan.core.portal.LabelSource;
 import net.onelitefeather.titan.core.portal.Portal;
+import net.onelitefeather.titan.core.portal.PortalLabel;
 import net.onelitefeather.titan.setup.listener.PortalDisconnectListener;
 import net.onelitefeather.titan.setup.portal.DiscPlacement;
 import net.onelitefeather.titan.setup.portal.DraftPreview;
@@ -58,6 +60,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -368,6 +371,136 @@ class PortalCommandTest {
         assertEquals(List.of(OLD), provider.getActiveLobby().portals(), "portals kept");
     }
 
+    @DisplayName("label here anchors the draft at the player's exact position")
+    @Test
+    void labelHereTakesThePlayersPosition(Env env) {
+        run("setup portal p label here");
+        env.tick();
+
+        assertEquals(new Vec(10.7, 64.2, -3.5), draft("p").labelPosition(), "exact position, not the block");
+        assertEquals(List.of(OLD), store.portals(), "nothing saved");
+        assertEquals(1, preview.running(), "the preview follows the draft");
+    }
+
+    @DisplayName("label text and offline take every word")
+    @Test
+    void labelTextAndOfflineTakeAllWords() {
+        run("setup portal p label text <gold>Survival <gray><online>/<max>");
+        run("setup portal p label offline <red>Survival startet gleich");
+
+        assertEquals("<gold>Survival <gray><online>/<max>", draft("p").labelText(), "text with spaces");
+        assertEquals("<red>Survival startet gleich", draft("p").labelOffline(), "offline text with spaces");
+    }
+
+    @DisplayName("label source takes a type and, where needed, a name")
+    @Test
+    void labelSourceTakesTypeAndName() {
+        run("setup portal p label source group Games");
+        assertEquals(new LabelSource.Group("Games"), draft("p").labelSource(), "group Games");
+
+        run("setup portal p label source local");
+
+        assertEquals(new LabelSource.Local(), draft("p").labelSource(), "local needs no name");
+    }
+
+    @DisplayName("label source without a name or with an unknown type is refused in chat")
+    @Test
+    void labelSourceMistakesAreAnswered() {
+        run("setup portal p label source group Games");
+
+        Component noName = send("setup portal p label source task");
+        Component unknownType = send("setup portal p label source proxy x");
+
+        assertTrue(PlainTextComponentSerializer.plainText().serialize(noName).contains("needs a name"), "name demanded");
+        assertTrue(PlainTextComponentSerializer.plainText().serialize(unknownType).contains("task, group, service, local"), "types named");
+        assertEquals(new LabelSource.Group("Games"), draft("p").labelSource(), "draft unchanged");
+    }
+
+    @DisplayName("label with missing arguments is refused with the usage")
+    @Test
+    void labelWithMissingArgumentsIsRefused() {
+        Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);
+
+        run("setup portal p label");
+        run("setup portal p label text");
+        run("setup portal p label offline");
+        run("setup portal p label source");
+        run("setup portal p label bogus");
+
+        assertTrue(editor.drafts(player.getUuid()).isEmpty(), "no bad command created a draft");
+        List<String> replies = plain(chat);
+        assertEquals(5, replies.size(), "every bad command is answered");
+        assertTrue(replies.stream().allMatch(reply -> reply.contains("Usage")), "with the usage: " + replies);
+    }
+
+    @DisplayName("The console cannot use the label syntaxes")
+    @Test
+    void consoleCannotEditLabels() {
+        CommandSender console = commands.getConsoleSender();
+
+        for (String command : List.of("setup portal p label here", "setup portal p label text Hi", "setup portal p label source local", "setup portal p label remove")) {
+            assertNotEquals(CommandResult.Type.SUCCESS, commands.execute(console, command).getType(), command + " is refused");
+        }
+        assertTrue(editor.drafts(player.getUuid()).isEmpty(), "no draft appeared");
+    }
+
+    @DisplayName("A label survives save and a later setspawn, in the map file")
+    @Test
+    void labelSurvivesSaveAndSetspawn() throws IOException {
+        run("setup portal p pos1");
+        run("setup portal p pos2");
+        run("setup portal p task Somewhere");
+        run("setup portal p label here");
+        run("setup portal p label text <gold>Hi <online>");
+        run("setup portal p label source group Games");
+        assertFalse(mapFile().contains("\"label\""), "nothing in the file before save");
+
+        run("setup portal p save");
+        run("setup map setspawn");
+
+        PortalLabel label = provider.getActiveLobby().portals().getLast().label();
+        assertNotNull(label, "the label is in the active map");
+        assertEquals(new Vec(10.7, 64.2, -3.5), label.position(), "anchor kept");
+        assertEquals("<gold>Hi <online>", label.text(), "text kept");
+        assertEquals(new LabelSource.Group("Games"), label.source(), "source kept");
+        String file = mapFile();
+        assertTrue(file.contains("\"label\"") && file.contains("Hi"), "the label is written: " + file);
+        assertNull(provider.getActiveLobby().portals().getFirst().label(), "the other portal has no label");
+    }
+
+    @DisplayName("label remove followed by save drops the saved label")
+    @Test
+    void labelRemoveThenSaveDropsIt() throws IOException {
+        run("setup portal old label here");
+        run("setup portal old label text Hi");
+        run("setup portal old save");
+        assertNotNull(store.portals().getFirst().label(), "label saved");
+
+        run("setup portal old label remove");
+        assertNotNull(store.portals().getFirst().label(), "still saved until save");
+        run("setup portal old save");
+
+        assertNull(store.portals().getFirst().label(), "label gone");
+        assertFalse(mapFile().contains("\"label\""), "no label block in the file");
+    }
+
+    @DisplayName("A label without text is not saved and names the missing text")
+    @Test
+    void incompleteLabelIsNotSaved() {
+        run("setup portal old label here");
+
+        Component reply = send("setup portal old save");
+
+        assertTrue(PlainTextComponentSerializer.plainText().serialize(reply).contains("label text"), "text named as missing");
+        assertEquals(List.of(OLD), store.portals(), "store unchanged");
+    }
+
+    @DisplayName("Tab completion offers the source types")
+    @Test
+    void completesSourceTypes() {
+        assertEquals(List.of("task", "group", "service", "local"), suggestions("setup portal p label source "), "source types");
+    }
+
     /** Runs the command as the player and returns the one chat message it answered with. */
     private Component send(String command) {
         Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);
@@ -394,6 +527,10 @@ class PortalCommandTest {
 
     private void run(String command) {
         commands.execute(player, command);
+    }
+
+    private String mapFile() throws IOException {
+        return Files.readString(base.resolve("worlds").resolve("world").resolve(MapEntry.MAP_FILE_NAME));
     }
 
     private PortalDraft draft(String id) {

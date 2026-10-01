@@ -28,7 +28,14 @@ final class DraftPoints {
     private DraftPoints() {
     }
 
+    /** The shape's preview plus the label anchor's cross, which follows {@code label here}. */
     static List<Vec> of(PortalDraft draft, Pos position, double eyeHeight) {
+        List<Vec> points = new ArrayList<>(shape(draft, position, eyeHeight));
+        points.addAll(PortalOutline.anchor(draft.labelPosition()));
+        return List.copyOf(points);
+    }
+
+    private static List<Vec> shape(PortalDraft draft, Pos position, double eyeHeight) {
         PortalDraft.Form form = draft.form();
         if (form == null) {
             return List.of();
