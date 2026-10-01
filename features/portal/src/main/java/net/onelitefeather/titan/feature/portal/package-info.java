@@ -17,7 +17,7 @@
  * The {@code portal} column: sends a player to a CloudNet task when they walk or fly through a
  * portal of the lobby world. See {@code docs/lobby-modules.md}, "Portale".
  */
-@InjectModule(name = "portalColumn", requires = {EventNode.class, LobbyPortals.class, Deliver.class, PermissionService.class, Clock.class, Instance.class, Scheduler.class, PlayerCounts.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"})
+@InjectModule(name = "portalColumn", requires = {EventNode.class, LobbyPortals.class, Deliver.class, PermissionService.class, Clock.class, Instance.class, Scheduler.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"})
 package net.onelitefeather.titan.feature.portal;
 
 import io.avaje.inject.InjectModule;
@@ -28,4 +28,3 @@ import net.minestom.server.timer.Scheduler;
 import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.core.permission.PermissionService;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
-import net.onelitefeather.titan.core.portal.PlayerCounts;

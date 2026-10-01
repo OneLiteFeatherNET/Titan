@@ -62,7 +62,7 @@ class PortalLabelDisplayTest {
     }
 
     private PortalModule start(Env env, TestTitanNode titan, Instance lobby, Executor executor, Portal... portals) {
-        PortalModule module = new PortalModule(titan.node(), () -> List.of(portals), new RecordingDeliver(), new FakePermissionService(), new AdjustableClock(Instant.parse("2026-01-01T12:00:00Z"), ZoneOffset.UTC), lobby, env.process().scheduler(), executor, new PlayerCountLabelReadings(this.counts, () -> 9), new PortalSettings(1));
+        PortalModule module = new PortalModule(titan.node(), () -> List.of(portals), new RecordingDeliver(), new FakePermissionService(), new AdjustableClock(Instant.parse("2026-01-01T12:00:00Z"), ZoneOffset.UTC), lobby, env.process().scheduler(), executor, new LabelReader(this.counts, () -> 9), new PortalSettings(1));
         module.start();
         return module;
     }

@@ -77,7 +77,7 @@ final class LabelRefresh {
 
     private void read() {
         try {
-            List<Component> rendered = this.entries.stream().map(entry -> LabelRenderer.render(entry.portal(), entry.label(), this.readings.read(entry.portal(), entry.label()))).toList();
+            List<Component> rendered = this.entries.stream().map(entry -> LabelRenderer.render(entry.portal(), entry.label(), this.readings.read(entry.portal()))).toList();
             this.scheduler.scheduleNextTick(() -> apply(rendered));
         } catch (RuntimeException e) {
             LOGGER.warn("Reading the portal label counts failed, keeping the displayed texts", e);

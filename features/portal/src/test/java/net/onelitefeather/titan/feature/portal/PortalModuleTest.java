@@ -54,7 +54,7 @@ class PortalModuleTest {
     }
 
     private PortalModule start(Env env, TestTitanNode titan, Portal... portals) {
-        PortalModule module = new PortalModule(titan.node(), () -> List.of(portals), this.deliver, this.permissions, this.clock, env.createFlatInstance(), env.process().scheduler(), Runnable::run, (portal, label) -> new LabelReading.Local(0), new PortalSettings(1));
+        PortalModule module = new PortalModule(titan.node(), () -> List.of(portals), this.deliver, this.permissions, this.clock, env.createFlatInstance(), env.process().scheduler(), Runnable::run, portal -> new LabelReading.Local(0), new PortalSettings(1));
         module.start();
         return module;
     }
@@ -148,7 +148,7 @@ class PortalModuleTest {
             try (TestTitanNode titan = TestTitanNode.attach(env)) {
                 Portal vip = new Portal("vip", new Box(new Vec(0, 64, 0), new Vec(1, 65, 1)), "Vip", "titan.portal.vip");
                 Portal open = new Portal("survival", new Box(new Vec(20, 64, 0), new Vec(21, 65, 1)), "Survival", null);
-                PortalModule module = new PortalModule(titan.node(), () -> List.of(vip, open), localDeliver, this.permissions, this.clock, env.createFlatInstance(), env.process().scheduler(), Runnable::run, (portal, label) -> new LabelReading.Local(0), new PortalSettings(1));
+                PortalModule module = new PortalModule(titan.node(), () -> List.of(vip, open), localDeliver, this.permissions, this.clock, env.createFlatInstance(), env.process().scheduler(), Runnable::run, portal -> new LabelReading.Local(0), new PortalSettings(1));
                 module.start();
                 Player player = playerAt(env, OUTSIDE);
                 this.permissions.set(player.getUuid(), "titan.portal.vip", missing);

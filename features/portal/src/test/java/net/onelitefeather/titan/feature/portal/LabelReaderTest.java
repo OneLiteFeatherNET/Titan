@@ -39,6 +39,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class LabelReaderTest {
 
+    private final FakePlayerCounts fake = new FakePlayerCounts();
+
     private static final Box BOX = new Box(new Vec(10, 64, 10), new Vec(14, 68, 11));
 
     private final Logger readerLogger = (Logger) LoggerFactory.getLogger(LabelReader.class);
@@ -142,5 +144,28 @@ class LabelReaderTest {
         reader(providerFor(SourceType.TASK, PlayerCount.NOT_RUNNING)).read(portal("a", new LabelSource.Task("Survival")));
 
         assertEquals(0, warnings().size(), "a task that simply is not running is not a configuration problem");
+    }
+
+    @DisplayName("A type the provider does not support is not asked")
+    @Test
+    void unsupportedTypeIsNotAsked() {
+        this.fake.doNotSupport(SourceType.GROUP);
+
+        assertEquals(new LabelReading.Remote(PlayerCount.NOT_RUNNING), reader(this.fake).read(portal("a", new LabelSource.Group("Games"))), "offline reading");
+        assertEquals(0, this.fake.reads(), "an unsupported type must not reach the provider");
+    }
+
+    @DisplayName("A name the provider does not know reads as not running without a warning")
+    @Test
+    void unknownNameIsNotRunning() {
+        assertEquals(new LabelReading.Remote(PlayerCount.NOT_RUNNING), reader(this.fake).read(portal("a", new LabelSource.Task("Nope"))), "unknown task");
+        assertEquals(0, warnings().size(), "an unknown name is not a configuration problem");
+    }
+
+    @DisplayName("A source without a name reads as not running and is not asked")
+    @Test
+    void sourceWithoutNameIsNotAsked() {
+        assertEquals(new LabelReading.Remote(PlayerCount.NOT_RUNNING), reader(this.fake).read(portal("a", new LabelSource.Task(null))), "nameless source");
+        assertEquals(0, this.fake.reads(), "nothing to ask for");
     }
 }

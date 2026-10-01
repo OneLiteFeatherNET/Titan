@@ -22,6 +22,8 @@ import java.time.Clock;
 import java.util.List;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
+import net.minestom.server.instance.Instance;
+import net.minestom.server.timer.Scheduler;
 import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.permission.PermissionService;
@@ -31,6 +33,7 @@ import net.onelitefeather.titan.core.portal.PlayerCounts;
 import net.onelitefeather.titan.core.portal.SourceType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -41,7 +44,7 @@ class PlayerCountsWiringTest {
     /** What the platform supplies to the column; the portal module itself is built for real. */
     private static BeanScopeBuilder platform() {
         return BeanScope.builder().bean(FeatureNode.TITAN_NODE, new GenericType<EventNode<Event>>() {
-        }.type(), EventNode.all("test-portal-wiring")).bean(Deliver.class, new RecordingDeliver()).bean(PermissionService.class, new FakePermissionService()).bean(LobbyPortals.class, (LobbyPortals) List::of).bean(Clock.class, Clock.systemUTC());
+        }.type(), EventNode.all("test-portal-wiring")).bean(Deliver.class, new RecordingDeliver()).bean(PermissionService.class, new FakePermissionService()).bean(LobbyPortals.class, (LobbyPortals) List::of).bean(Clock.class, Clock.systemUTC()).bean(Instance.class, Mockito.mock(Instance.class)).bean(Scheduler.class, Scheduler.newScheduler());
     }
 
     @DisplayName("Without a provider the fallback answers that nothing runs")

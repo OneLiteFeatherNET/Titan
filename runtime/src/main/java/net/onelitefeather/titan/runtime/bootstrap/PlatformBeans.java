@@ -17,6 +17,7 @@ package net.onelitefeather.titan.runtime.bootstrap;
 
 import io.avaje.inject.Bean;
 import io.avaje.inject.Factory;
+import io.avaje.inject.Profile;
 import jakarta.inject.Named;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -105,8 +106,12 @@ public final class PlatformBeans {
         return DeliverProvider.create();
     }
 
-    /** Reads every source as not running until the CloudNet bridge installs its lookup. */
+    /**
+     * Only as a CloudNet service ({@link BeanProfiles#CLOUDNET}): elsewhere the portal column's
+     * fallback answers, so another provider module wins over it without configuration.
+     */
     @Bean
+    @Profile(BeanProfiles.CLOUDNET)
     public PlayerCounts playerCounts() {
         return new HolderPlayerCounts();
     }

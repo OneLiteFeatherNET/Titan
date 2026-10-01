@@ -15,9 +15,11 @@
  */
 package net.onelitefeather.titan.feature.portal;
 
-import java.util.HashSet;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntSupplier;
 import net.onelitefeather.titan.core.portal.LabelSource;
 import net.onelitefeather.titan.core.portal.PlayerCount;
@@ -28,23 +30,32 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Resolves the source of a portal's label to a {@link LabelReading}. A source the provider cannot
- * serve reads as offline and is reported once per portal and source, not on every refresh.
+ * Resolves the source of a portal's label to a {@link LabelReading}: from the {@link PlayerCounts}
+ * provider, or from this lobby for {@code local}. A source the provider cannot serve reads as
+ * offline and is reported once per portal and source, not on every refresh.
  */
-final class LabelReader {
+@Singleton
+final class LabelReader implements LabelReadings {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LabelReader.class);
 
     private final PlayerCounts counts;
     private final IntSupplier localPlayers;
-    private final Set<String> warned = new HashSet<>();
+    // Reads run on a virtual thread, not on the tick thread.
+    private final Set<String> warned = ConcurrentHashMap.newKeySet();
+
+    @Inject
+    LabelReader(PlayerCounts counts) {
+        this(counts, LocalPlayerCount.ofConnections());
+    }
 
     LabelReader(PlayerCounts counts, IntSupplier localPlayers) {
         this.counts = counts;
         this.localPlayers = localPlayers;
     }
 
-    LabelReading read(Portal portal) {
+    @Override
+    public LabelReading read(Portal portal) {
         return switch (LabelSource.orDefault(portal)) {
             case LabelSource.Task source -> remote(portal, SourceType.TASK, source.name());
             case LabelSource.Group source -> remote(portal, SourceType.GROUP, source.name());
@@ -56,7 +67,7 @@ final class LabelReader {
     }
 
     private LabelReading remote(Portal portal, SourceType type, String name) {
-        if (!this.counts.supports(type)) {
+        if (name == null || !this.counts.supports(type)) {
             return unavailable(portal, type.name().toLowerCase(Locale.ROOT), name);
         }
         return new LabelReading.Remote(this.counts.count(type, name));
