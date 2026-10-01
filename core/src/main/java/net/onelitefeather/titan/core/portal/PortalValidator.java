@@ -36,6 +36,9 @@ public final class PortalValidator {
 
     // MiniMessage keeps a tag it cannot resolve (unknown name, unmatched closing tag) as literal text.
     private static final Pattern TAG_LEFTOVER = Pattern.compile("</?[A-Za-z!#?_][^<>]*>");
+    // An escaped tag (\<gold>) is meant to show literally, so it must not look like a leftover.
+    private static final Pattern ESCAPED_BRACKET = Pattern.compile("(?<!\\\\)\\\\<");
+    private static final String ESCAPED_BRACKET_MARKER = "\uE000";
 
     private PortalValidator() {
     }
@@ -113,7 +116,7 @@ public final class PortalValidator {
             checkText(id, index, "label.offlineText", label.offlineText(), problems);
         }
         checkSource(id, index, label.source(), problems);
-        if (label.billboard() == null || label.billboard() == Billboard.UNKNOWN) {
+        if (label.billboard() == Billboard.UNKNOWN) {
             problems.add(new PortalProblem(id, index, "label.billboard is unknown (expected center or fixed)"));
         }
     }
@@ -124,7 +127,8 @@ public final class PortalValidator {
             return;
         }
         try {
-            String plain = PlainTextComponentSerializer.plainText().serialize(LabelPlaceholders.MINI_MESSAGE.deserialize(text, LabelPlaceholders.samples()));
+            String masked = ESCAPED_BRACKET.matcher(text).replaceAll(ESCAPED_BRACKET_MARKER);
+            String plain = PlainTextComponentSerializer.plainText().serialize(LabelPlaceholders.MINI_MESSAGE.deserialize(masked, LabelPlaceholders.samples()));
             Matcher leftover = TAG_LEFTOVER.matcher(plain);
             if (leftover.find()) {
                 problems.add(new PortalProblem(id, index, field + ": unknown or mismatched tag " + leftover.group()));
@@ -135,9 +139,10 @@ public final class PortalValidator {
     }
 
     private static void checkSource(String id, int index, @Nullable LabelSource source, List<PortalProblem> problems) {
+        if (source == null) {
+            return;
+        }
         switch (source) {
-            case null -> {
-            }
             case LabelSource.Local _ -> {
             }
             case LabelSource.Task task -> checkName(id, index, "task", task.name(), problems);

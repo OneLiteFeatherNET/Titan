@@ -18,6 +18,8 @@ package net.onelitefeather.titan.core.portal;
 import net.minestom.server.coordinate.Vec;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
+
 /**
  * A text display shown in front of a {@link Portal}. Plain data read from the map file;
  * {@link PortalValidator} decides whether it is usable.
@@ -27,9 +29,13 @@ import org.jetbrains.annotations.Nullable;
  * @param offlineText MiniMessage shown instead when it does not run, or {@code null} to show
  *                    {@code text} with zero counts
  * @param source      where the player count comes from, or {@code null} for the portal's task
- * @param billboard   orientation of the display
+ * @param billboard   orientation of the display, never {@code null}
  * @param yaw         rotation used with {@link Billboard#FIXED}
  */
 public record PortalLabel(@Nullable Vec position, String text, @Nullable String offlineText,
                           @Nullable LabelSource source, Billboard billboard, float yaw) {
+
+    public PortalLabel {
+        Objects.requireNonNull(billboard, "billboard");
+    }
 }

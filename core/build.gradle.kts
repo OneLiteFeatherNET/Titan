@@ -11,8 +11,8 @@ dependencies {
     // FeatureNode wraps every listener in ListenerGuard, which reports a failure via SLF4J/MDC.
     implementation(libs.slf4j.api)
 
-    // PortalValidator parses label texts with the same strict MiniMessage the lobby renders them with.
-    implementation(libs.adventure.minimessage)
+    // LabelPlaceholders exposes MiniMessage and TagResolver in its public API.
+    api(libs.adventure.minimessage)
 
     testImplementation(platform(libs.aonyx.bom))
     testImplementation(libs.minestom)

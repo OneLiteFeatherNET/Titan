@@ -283,4 +283,27 @@ class PortalGsonAdapterTest {
 
         assertNull(label.position(), "the validator, not the reader, reports a missing position");
     }
+
+    @DisplayName("An explicit null label reads as no label")
+    @Test
+    void nullLabelReadsAsNoLabel() {
+        assertNull(readLabel("null"), "label: null must mean no label");
+    }
+
+    @DisplayName("An explicit null billboard reads as center")
+    @Test
+    void nullBillboardReadsAsCenter() {
+        PortalLabel label = readLabel("{\"position\":{\"x\":0,\"y\":0,\"z\":0},\"text\":\"t\",\"billboard\":null}");
+
+        assertEquals(Billboard.CENTER, label.billboard(), "null billboard must fall back to the default");
+    }
+
+    @DisplayName("A yaw that is not a number is a read error")
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"\"abc\"", "{}", "[1]"})
+    void nonNumericYawIsAnError(String yaw) {
+        String label = "{\"position\":{\"x\":0,\"y\":0,\"z\":0},\"text\":\"t\",\"yaw\":" + yaw + "}";
+
+        assertThrows(JsonParseException.class, () -> readLabel(label), "yaw " + yaw + " must not load");
+    }
 }

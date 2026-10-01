@@ -77,6 +77,19 @@ class PortalValidatorLabelTest {
         assertTrue(problems(label(text)).isEmpty(), text + " must be valid");
     }
 
+    @DisplayName("Literal angle brackets and escaped tags are plain text, not tags")
+    @ParameterizedTest
+    @ValueSource(strings = {"<3", "a < b", "I <3 you", "\\<gold>", "use \\<red> for red"})
+    void literalBracketsAreValid(String text) {
+        assertTrue(problems(label(text)).isEmpty(), text + " must be valid");
+    }
+
+    @DisplayName("An unescaped unknown tag next to an escaped one is still rejected")
+    @Test
+    void escapedTagDoesNotHideARealOne() {
+        assertSingleReasonContaining(problems(label("\\<gold> <nope>")), "label.text");
+    }
+
     @DisplayName("A wrongly closed tag in text names the field")
     @Test
     void wronglyClosedTag() {
@@ -87,6 +100,18 @@ class PortalValidatorLabelTest {
     @Test
     void unknownTag() {
         assertSingleReasonContaining(problems(label("<online:group:x>")), "label.text");
+    }
+
+    @DisplayName("An invalid hex colour is rejected like any other unknown tag")
+    @Test
+    void invalidHexColour() {
+        assertSingleReasonContaining(problems(label("<#zzzzzz>x")), "label.text");
+    }
+
+    @DisplayName("A local source with a name present is still valid")
+    @Test
+    void localSourceIgnoresNothingElse() {
+        assertTrue(problems(withSource(new LabelSource.Local())).isEmpty(), "local needs no name");
     }
 
     @DisplayName("A bad offlineText names its own field")
