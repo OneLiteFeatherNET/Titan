@@ -1,0 +1,4 @@
+# The "portal" module: labels in front of the lobby portals.
+portal:
+  # How often, in whole seconds (at least 1), the player counts shown by the portal labels are read.
+  labelRefreshSeconds: 5

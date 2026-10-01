@@ -43,16 +43,16 @@ class PortalModuleLeakTest {
     private final AdjustableClock clock = new AdjustableClock(Instant.parse("2026-01-01T12:00:00Z"), ZoneOffset.UTC);
     private final RecordingDeliver deliver = new RecordingDeliver();
 
-    private PortalModule module(TestTitanNode titan) {
+    private PortalModule module(Env env, TestTitanNode titan) {
         Portal portal = new Portal("survival", new Box(new Vec(0, 64, 0), new Vec(1, 65, 1)), "Survival", null);
-        return new PortalModule(titan.node(), () -> List.of(portal), this.deliver, new FakePermissionService(), this.clock);
+        return new PortalModule(titan.node(), () -> List.of(portal), this.deliver, new FakePermissionService(), this.clock, env.createFlatInstance(), env.process().scheduler(), Runnable::run, (unused, label) -> new LabelReading.Local(0), new PortalSettings(1));
     }
 
     @DisplayName("After stop the module's node is gone and a move into a portal delivers nothing")
     @Test
     void stopRemovesTheNodeAndTheListeners(Env env) {
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            PortalModule module = module(titan);
+            PortalModule module = module(env, titan);
             module.start();
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
@@ -71,7 +71,7 @@ class PortalModuleLeakTest {
     @Test
     void movingDoesNotAddListeners(Env env) {
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            PortalModule module = module(titan);
+            PortalModule module = module(env, titan);
             module.start();
             Player player = env.createPlayer(env.createFlatInstance());
             List<EventNode<Event>> children = titan.node().findChildren("titan/portal");
@@ -91,7 +91,7 @@ class PortalModuleLeakTest {
     void priorityIs900AndDoesNotCollide(Env env) {
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
             FeatureNode other = FeatureNode.attach(titan.node(), "other", 200);
-            PortalModule module = module(titan);
+            PortalModule module = module(env, titan);
 
             module.start();
 
