@@ -105,18 +105,7 @@ final class PortalGsonAdapter implements JsonDeserializer<Portal>, JsonSerialize
             return null;
         }
         JsonObject source = asObject(element, "'label.source'");
-        String kind = string(source, TYPE);
-        String name = string(source, NAME);
-        if (kind == null) {
-            return new LabelSource.Unknown(null);
-        }
-        return switch (kind) {
-            case TASK -> new LabelSource.Task(name);
-            case GROUP -> new LabelSource.Group(name);
-            case SERVICE -> new LabelSource.Service(name);
-            case LOCAL -> new LabelSource.Local();
-            default -> new LabelSource.Unknown(kind);
-        };
+        return LabelSource.of(string(source, TYPE), string(source, NAME));
     }
 
     private static PortalShape shape(JsonElement element) {

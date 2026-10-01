@@ -99,7 +99,7 @@ public final class TitanBridgePermissionExtension extends Extension {
 
             @Override
             public int[] lookup(String type, String name) {
-                return ServiceTotals.totalOrNotRunning(() -> services(type, name).stream().map(TitanBridgePermissionExtension::reading).toList());
+                return ServiceTotals.total(services(type, name).stream().map(TitanBridgePermissionExtension::reading).toList());
             }
         });
     }

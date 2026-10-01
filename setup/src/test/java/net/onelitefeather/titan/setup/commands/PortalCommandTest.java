@@ -411,8 +411,8 @@ class PortalCommandTest {
         Component noName = send("setup portal p label source task");
         Component unknownType = send("setup portal p label source proxy x");
 
-        assertTrue(PlainTextComponentSerializer.plainText().serialize(noName).contains("needs a name"), "name demanded");
-        assertTrue(PlainTextComponentSerializer.plainText().serialize(unknownType).contains("task, group, service, local"), "types named");
+        assertTrue(PlainTextComponentSerializer.plainText().serialize(noName).contains("name is missing for type 'task'"), "name demanded");
+        assertTrue(PlainTextComponentSerializer.plainText().serialize(unknownType).contains("task, group, service or local"), "types named");
         assertEquals(new LabelSource.Group("Games"), draft("p").labelSource(), "draft unchanged");
     }
 

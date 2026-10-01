@@ -63,7 +63,11 @@ final class LabelRefresh {
         this.entries = List.copyOf(entries);
     }
 
-    void start(int periodSeconds) {
+    // Not after stop(): a late start must not leave a task running that nothing cancels.
+    synchronized void start(int periodSeconds) {
+        if (this.stopped) {
+            return;
+        }
         // Tick-based on purpose: Minestom's time-based schedules run on a wall-clock timer outside the tick.
         TaskSchedule period = TaskSchedule.tick(Math.multiplyExact(periodSeconds, ServerFlag.SERVER_TICKS_PER_SECOND));
         this.task = this.scheduler.scheduleTask(this::refresh, TaskSchedule.nextTick(), period);
@@ -96,6 +100,10 @@ final class LabelRefresh {
             for (Entry entry : this.entries) {
                 rendered.add(renderOrNull(entry));
             }
+            if (!rendered.contains(null)) {
+                // Fully recovered: a later failure is news again.
+                this.warned.clear();
+            }
             this.scheduler.scheduleNextTick(() -> apply(rendered));
         } catch (RuntimeException e) {
             failed("batch", "Reading the portal label counts failed, keeping the displayed texts", e);
@@ -117,7 +125,7 @@ final class LabelRefresh {
     // Only the first failure of a kind is a warning; a provider that stays down must not flood the log.
     private void failed(String key, String message, RuntimeException e) {
         if (this.warned.add(key)) {
-            LOGGER.warn("{}: {}", message, e.getMessage());
+            LOGGER.warn("{}: {}", message, e.toString());
         }
         LOGGER.debug(message, e);
     }

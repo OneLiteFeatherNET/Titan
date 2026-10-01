@@ -71,7 +71,11 @@ final class LabelReader implements LabelReadings {
             return unavailable(portal, type.id(), name);
         }
         try {
-            return new LabelReading.Remote(this.counts.count(type, name));
+            LabelReading reading = new LabelReading.Remote(this.counts.count(type, name));
+            // Recovered: a later failure is news again.
+            this.warned.remove(key("failed", portal, type.id(), name));
+            this.warned.remove(key("unavailable", portal, type.id(), name));
+            return reading;
         } catch (RuntimeException e) {
             return failed(portal, type.id(), name, e);
         }
@@ -79,17 +83,21 @@ final class LabelReader implements LabelReadings {
 
     // A provider that throws must not take the other labels down with it.
     private LabelReading failed(Portal portal, String type, String name, RuntimeException e) {
-        if (this.warned.add("failed\0" + portal.id() + '\0' + type + '\0' + name)) {
-            LOGGER.warn("Reading portal label source {} '{}' of portal '{}' failed: {}", type, name, portal.id(), e.getMessage());
+        if (this.warned.add(key("failed", portal, type, name))) {
+            LOGGER.warn("Reading portal label source {} '{}' of portal '{}' failed: {}", type, name, portal.id(), e.toString());
         }
         LOGGER.debug("Reading portal label source {} '{}' of portal '{}' failed", type, name, portal.id(), e);
         return new LabelReading.Remote(PlayerCount.NOT_RUNNING);
     }
 
     private LabelReading unavailable(Portal portal, String type, String name) {
-        if (this.warned.add(portal.id() + '\0' + type + '\0' + name)) {
+        if (this.warned.add(key("unavailable", portal, type, name))) {
             LOGGER.warn("Portal label source {} '{}' of portal '{}' is unavailable", type, name, portal.id());
         }
         return new LabelReading.Remote(PlayerCount.NOT_RUNNING);
+    }
+
+    private static String key(String kind, Portal portal, String type, String name) {
+        return kind + '\0' + portal.id() + '\0' + type + '\0' + name;
     }
 }

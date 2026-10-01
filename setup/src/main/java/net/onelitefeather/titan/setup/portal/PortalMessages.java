@@ -107,7 +107,7 @@ public final class PortalMessages {
     }
 
     public static Component usage() {
-        return MINI.deserialize("<prefix> <red>Usage: <usage>", Placeholder.unparsed("usage", "/setup portal list | show | create <id> | <id> pos1 | pos2 | shape box|ring | centre | radius <r> | disc <r> | task <task> | permission <perm|none> | save | cancel | remove | label here | text <minimessage> | offline <minimessage> | source <task|group|service|local> [name] | remove"));
+        return MINI.deserialize("<prefix> <red>Usage: <usage>", Placeholder.unparsed("usage", "/setup portal list | show | create <id> | <id> pos1 | pos2 | shape box|ring | centre | radius <r> | disc <r> | task <task> | permission <perm|none> | save | cancel | remove | label here|text <mm>|offline <mm>|source <type> [name]|remove"));
     }
 
     /** {@code portal 'id': reason}, the validator's wording for one problem. */
@@ -124,10 +124,10 @@ public final class PortalMessages {
     }
 
     private static Component labelUpdated(PortalEditResult.LabelUpdated updated) {
-        if (!updated.hasLabel()) {
+        if (!updated.label().isSet()) {
             return MINI.deserialize("<prefix> <green>Portal <id> has no label in its draft.", Placeholder.unparsed("id", updated.id()));
         }
-        Component state = MINI.deserialize("<prefix> <green>Label of portal <id>: position <position>, text <text>, offline text <offline>, source <source>.", TagResolver.resolver(Placeholder.unparsed("id", updated.id()), Placeholder.unparsed("position", updated.position() == null ? "unset" : point(updated.position())), Placeholder.unparsed("text", orUnset(updated.text())), Placeholder.unparsed("offline", orUnset(updated.offlineText())), Placeholder.unparsed("source", updated.source() == null ? "the portal's task" : describe(updated.source()))));
+        Component state = MINI.deserialize("<prefix> <green>Label of portal <id>: position <position>, text <text>, offline text <offline>, source <source>.", TagResolver.resolver(Placeholder.unparsed("id", updated.id()), Placeholder.unparsed("position", updated.label().position() == null ? "unset" : point(updated.label().position())), Placeholder.unparsed("text", orUnset(updated.label().text())), Placeholder.unparsed("offline", orUnset(updated.label().offlineText())), Placeholder.unparsed("source", updated.label().source() == null ? "the portal's task" : describe(updated.label().source()))));
         if (updated.missing().isEmpty()) {
             return state;
         }

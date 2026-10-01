@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.setup.portal;
 
+import net.onelitefeather.titan.core.portal.LabelSource;
 import net.onelitefeather.titan.core.portal.Portal;
 
 import java.util.LinkedHashSet;
@@ -48,9 +49,9 @@ public final class PortalCompletions {
         return Stream.concat(Stream.of(1.0), DraftOutline.RADIUS_SUGGESTIONS.stream()).map(PortalCompletions::number).toList();
     }
 
-    /** The label source types; the same list the editor accepts. */
+    /** The label source types; the same vocabulary the map file uses. */
     public static List<String> sourceTypes() {
-        return PortalEditor.SOURCE_TYPES;
+        return LabelSource.TYPES;
     }
 
     public static List<String> permissions() {

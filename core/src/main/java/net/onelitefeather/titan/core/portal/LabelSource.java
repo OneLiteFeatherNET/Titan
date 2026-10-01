@@ -17,12 +17,35 @@ package net.onelitefeather.titan.core.portal;
 
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
+
 /**
  * Where a label takes its player count from. Provider-neutral: the system that supplies the
  * numbers maps task, group and service to its own concepts. Plain data, checked by
  * {@link PortalValidator}.
  */
 public sealed interface LabelSource {
+
+    /** The source types of the map contract, in the order a player is told about them. */
+    List<String> TYPES = List.of("task", "group", "service", "local");
+
+    /**
+     * The source for a {@code type} and {@code name}; a type outside {@link #TYPES} (or none)
+     * becomes {@link Unknown} so {@link PortalValidator} can name it. {@code local} ignores the
+     * name.
+     */
+    static LabelSource of(@Nullable String type, @Nullable String name) {
+        if (type == null) {
+            return new Unknown(null);
+        }
+        return switch (type) {
+            case "task" -> new Task(name);
+            case "group" -> new Group(name);
+            case "service" -> new Service(name);
+            case "local" -> new Local();
+            default -> new Unknown(type);
+        };
+    }
 
     /** The label's own source; a label without one counts the players of the portal's task. */
     static LabelSource orDefault(Portal portal) {

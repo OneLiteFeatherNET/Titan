@@ -16,7 +16,6 @@
 package net.onelitefeather.titan.setup.portal;
 
 import net.minestom.server.coordinate.Vec;
-import net.onelitefeather.titan.core.portal.Billboard;
 import net.onelitefeather.titan.core.portal.Box;
 import net.onelitefeather.titan.core.portal.Disc;
 import net.onelitefeather.titan.core.portal.LabelSource;
@@ -51,13 +50,7 @@ public final class PortalDraft {
     /** Set once a permission (or {@code none}) was given, so the guided flow asks only once. */
     private boolean permissionChosen;
     private boolean guided;
-    private @Nullable Vec labelPosition;
-    private @Nullable String labelText;
-    private @Nullable String labelOffline;
-    private @Nullable LabelSource labelSource;
-    // Not editable in-game; kept so editing a saved label does not reset what the map file says.
-    private Billboard labelBillboard = Billboard.CENTER;
-    private float labelYaw;
+    private LabelDraft label = new LabelDraft();
 
     PortalDraft(String id) {
         this.id = id;
@@ -69,15 +62,7 @@ public final class PortalDraft {
         draft.task = portal.task();
         draft.permission = portal.permission();
         draft.permissionChosen = portal.permission() != null;
-        PortalLabel label = portal.label();
-        if (label != null) {
-            draft.labelPosition = label.position();
-            draft.labelText = label.text();
-            draft.labelOffline = label.offlineText();
-            draft.labelSource = label.source();
-            draft.labelBillboard = label.billboard();
-            draft.labelYaw = label.yaw();
-        }
+        draft.label = LabelDraft.of(portal.label());
         switch (portal.shape()) {
             case Box box -> {
                 draft.form = Form.BOX;
@@ -130,25 +115,24 @@ public final class PortalDraft {
         return permission;
     }
 
+    public LabelDraft label() {
+        return label;
+    }
+
     public @Nullable Vec labelPosition() {
-        return labelPosition;
+        return label.position();
     }
 
     public @Nullable String labelText() {
-        return labelText;
+        return label.text();
     }
 
     public @Nullable String labelOffline() {
-        return labelOffline;
+        return label.offlineText();
     }
 
     public @Nullable LabelSource labelSource() {
-        return labelSource;
-    }
-
-    /** Whether any part of a label is set; only then do position and text become required. */
-    public boolean hasLabel() {
-        return labelPosition != null || labelText != null || labelOffline != null || labelSource != null;
+        return label.source();
     }
 
     /** What is still needed before {@code save} can succeed, in the order a builder works. */
@@ -174,14 +158,7 @@ public final class PortalDraft {
         if (task == null) {
             missing.add(Missing.TASK);
         }
-        if (hasLabel()) {
-            if (labelPosition == null) {
-                missing.add(Missing.LABEL_POSITION);
-            }
-            if (labelText == null) {
-                missing.add(Missing.LABEL_TEXT);
-            }
-        }
+        missing.addAll(label.missing());
         return missing;
     }
 
@@ -203,13 +180,13 @@ public final class PortalDraft {
         if (!complete()) {
             return Optional.empty();
         }
-        PortalLabel label = hasLabel() ? new PortalLabel(labelPosition, labelText, labelOffline, labelSource, labelBillboard, labelYaw) : null;
+        PortalLabel savedLabel = label.toLabel();
         if (form == Form.BOX) {
             Vec min = new Vec(Math.min(corner1.x(), corner2.x()), Math.min(corner1.y(), corner2.y()), Math.min(corner1.z(), corner2.z()));
             Vec max = new Vec(Math.max(corner1.x(), corner2.x()), Math.max(corner1.y(), corner2.y()), Math.max(corner1.z(), corner2.z()));
-            return Optional.of(new Portal(id, new Box(min, max), task, permission, label));
+            return Optional.of(new Portal(id, new Box(min, max), task, permission, savedLabel));
         }
-        return Optional.of(new Portal(id, new Disc(centre, radius, normal), task, permission, label));
+        return Optional.of(new Portal(id, new Disc(centre, radius, normal), task, permission, savedLabel));
     }
 
     /** Switching form drops what belongs to the other one; the same form keeps everything. */
@@ -256,28 +233,23 @@ public final class PortalDraft {
     }
 
     void labelPosition(Vec position) {
-        this.labelPosition = position;
+        label.position(position);
     }
 
     void labelText(String text) {
-        this.labelText = text;
+        label.text(text);
     }
 
     void labelOffline(String text) {
-        this.labelOffline = text;
+        label.offlineText(text);
     }
 
     void labelSource(LabelSource source) {
-        this.labelSource = source;
+        label.source(source);
     }
 
     void removeLabel() {
-        labelPosition = null;
-        labelText = null;
-        labelOffline = null;
-        labelSource = null;
-        labelBillboard = Billboard.CENTER;
-        labelYaw = 0;
+        label.remove();
     }
 
     void guided(boolean guided) {

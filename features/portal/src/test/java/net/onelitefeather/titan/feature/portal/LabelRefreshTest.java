@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.minestom.server.coordinate.Vec;
@@ -155,5 +156,45 @@ class LabelRefreshTest {
         LabelRefresh refresh = new LabelRefresh(this.scheduler, Runnable::run, portal -> new LabelReading.Local(1), List.of());
 
         assertThrows(ArithmeticException.class, () -> refresh.start(Integer.MAX_VALUE), "seconds times ticks per second must not wrap");
+    }
+
+    @DisplayName("A start after stop() schedules nothing")
+    @Test
+    void startAfterStopSchedulesNothing() {
+        AtomicInteger offered = new AtomicInteger();
+        LabelRefresh refresh = new LabelRefresh(this.scheduler, task -> offered.incrementAndGet(), portal -> new LabelReading.Local(1), List.of(entry("a", new ArrayList<>())));
+        refresh.stop();
+
+        refresh.start(1);
+        tick(2 * PERIOD_TICKS);
+
+        assertEquals(0, offered.get(), "no refresh may run after stop");
+    }
+
+    @DisplayName("A failure that persists warns once; a failure after a recovery warns again")
+    @Test
+    void warnsAgainAfterRecovery() {
+        AtomicBoolean failing = new AtomicBoolean(true);
+        LabelReadings readings = portal -> {
+            if (failing.get()) {
+                throw new IllegalStateException("provider down");
+            }
+            return new LabelReading.Local(5);
+        };
+        LabelRefresh refresh = new LabelRefresh(this.scheduler, Runnable::run, readings, List.of(entry("a", new ArrayList<>())));
+        refresh.start(1);
+
+        tick(2);
+        tick(PERIOD_TICKS);
+        assertEquals(1, warnings().size(), "two failed reads, one warning");
+
+        failing.set(false);
+        tick(PERIOD_TICKS);
+        failing.set(true);
+        tick(PERIOD_TICKS);
+
+        assertEquals(2, warnings().size(), "the failure after the recovery is reported again");
+        assertEquals("Reading the label of portal 'a' failed, keeping its displayed text: java.lang.IllegalStateException: provider down", warnings().getLast().getFormattedMessage(), "text with the exception type");
+        refresh.stop();
     }
 }
