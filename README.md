@@ -172,6 +172,9 @@ elytra:
   burnDurationTicks: 30
   cooldownTicks: 40
 
+portal:
+  labelRefreshSeconds: 5
+
 features:
   NAVIGATOR_CREATIVE: false
   NAVIGATOR_SLENDER: false
@@ -196,6 +199,8 @@ features:
 - `elytra.cooldownTicks`: how many ticks after a boost starts before the player may use another
   rocket; must be strictly greater than `elytra.burnDurationTicks`, since it is measured from the
   burn's start
+- `portal.labelRefreshSeconds`: how often portal labels re-read their player counts, in seconds -
+  an integer from `1` to `3600` (see "Portal labels" below)
 - `features`: plain booleans, one per feature flag, with the same sources and override order as
   every other key (see "Feature flags" below).
 
@@ -220,6 +225,7 @@ with no restart of the navigator or the lobby.
 | `tickle.cooldownMillis` | `TICKLE_COOLDOWNMILLIS` |
 | `elytra.burnDurationTicks` | `ELYTRA_BURNDURATIONTICKS` |
 | `elytra.cooldownTicks` | `ELYTRA_COOLDOWNTICKS` |
+| `portal.labelRefreshSeconds` | `PORTAL_LABELREFRESHSECONDS` |
 | `features.<NAME>` | `FEATURES_<NAME>` |
 
 `<NAME>` is a feature flag's own name, upper-cased - e.g. `features.NAVIGATOR_SLENDER` becomes
@@ -350,6 +356,12 @@ consist of lower-case letters, digits, `-` and `_`; `list`, `show` and `create` 
 - `/setup portal <id> disc <r>`: ring from your eyes, view direction and radius in one step
 - `/setup portal <id> task <task>`
 - `/setup portal <id> permission <permission|none>`
+- `/setup portal <id> label here`: label position at your eyes (the anchor of the text display)
+- `/setup portal <id> label text <minimessage...>`: label text, may contain spaces
+- `/setup portal <id> label offline <minimessage...>`: text shown while the source is offline
+- `/setup portal <id> label source <task|group|service|local> [name]`: where the player count
+  comes from; `local` takes no name
+- `/setup portal <id> label remove`: drop the label
 - `/setup portal <id> save|cancel|remove`
 
 Every edit only changes your draft and answers with what is still missing, or "complete" with a
@@ -359,6 +371,45 @@ shown to you only. Tab completion suggests portal and draft ids, verbs, known ta
 and `ring`.
 
 The lobby reads portals only at startup: restart it to pick up changed portals.
+
+#### Portal labels
+
+A portal can carry an optional `label`: one text display in front of it with a name and a live
+player count, the same for every player. In `map.json`:
+
+```json
+{
+  "id": "survival",
+  "task": "Survival",
+  "label": {
+    "position": { "x": 12.5, "y": 66.0, "z": -3.5 },
+    "text": "<gold>Survival<newline><gray><online>/<max> players",
+    "offlineText": "<red>Survival is starting",
+    "source": { "type": "task", "name": "Survival" },
+    "billboard": "fixed",
+    "yaw": 90
+  }
+}
+```
+
+- Only `position` and `text` are required. A portal without `label` behaves as before.
+- `billboard` is `center` (default, the display turns to each player) or `fixed` with a `yaw`.
+  It can only be set in `map.json`, there is no setup command for it.
+- `source.type` is `task` or `group` (sum over all their servers), `service` (one named server)
+  or `local` (this lobby, no name, never offline, `<max>` shows `?`). A missing `source` counts
+  the portal's own task.
+- Placeholders in `text` and `offlineText` (MiniMessage): `<online>`, `<max>`, `<task>` and
+  `<prefix>`. Argument tags like `<online:group:x>` are invalid.
+- While no server runs for the source, the label shows `offlineText`, or `text` with `0`/`0` if
+  there is none. The counts refresh every `portal.labelRefreshSeconds` (default `5`).
+- An invalid label (bad MiniMessage, missing position, unknown `source.type` or `billboard`, a
+  missing name) aborts startup, naming the portal and the reason.
+
+Player counts come from a `PlayerCounts` provider (an SPI in `core`). CloudNet is one
+implementation, active only inside a CloudNet service (bean profile `cloudnet`). Without a
+provider every remote source (`task`, `group`, `service`) reads as offline, `local` still works.
+Another provider module, e.g. for Redis or a proxy, only has to provide a `PlayerCounts` bean;
+with two real providers, mark the one to use with `@Primary`.
 
 ### Deployment
 
