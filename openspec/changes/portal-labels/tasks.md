@@ -1,0 +1,55 @@
+# Tasks
+
+## Execution Plan
+
+Integrationszweig: `feat/portal-labels` von `origin/main`. Jede Welle endet mit grünem `./gradlew build` und geprüften Diffs. Vor dem Abhaken einer Aufgabe läuft `./gradlew build`. Commits tragen den Typ `feat(portal): …`.
+
+| Wave | Agent | Task IDs | Model | May Touch | Must Not Touch |
+| ---- | ----- | -------- | ----- | --------- | -------------- |
+| 1 | prerequisite-check | 1.1–1.2 | haiku | read-only | alles |
+| 2 | data-model | 2.1–2.3 | sonnet | `core/src/**/portal/**`, `common/src/**/map/**`, entsprechende Tests | `features/**`, `setup/**`, `bridge/**` |
+| 3 | counter-spi | 3.1–3.3 | sonnet | `core/src/**/portal/**` (SPI), `common/src/**/deliver/**` bzw. Ort der CloudNet-Bean, `bridge/**`, `features/portal/**/NoPlayerCounts*` | `setup/**`, `common/src/**/map/**` |
+| 3 | label-display | 3.4–3.7 | sonnet | `features/portal/**` (Rendering, Anzeige, Einstellungen), Tests | `core/**`, `common/**`, `bridge/**`, `setup/**` |
+| 4 | setup-command | 4.1–4.4 | sonnet | `setup/**` | `core/**`, `common/**`, `features/**`, `bridge/**` |
+| 5 | docs | 5.1 | sonnet | `README.md` | Code |
+| 5 | verify | 5.2 | haiku | read-only | alles |
+| 6 | pr | 6.1 | sonnet | Git/GitHub | Code |
+
+Wellen 3 (`counter-spi`) und 3 (`label-display`) berühren getrennte Dateien und laufen parallel, jeder Agent in eigenem Worktree ab `origin/main`; `label-display` nutzt bis zur Fertigstellung des SPI ein Testdouble für `PlayerCounts`. Jeder Agent-Prompt nennt die Regeln, die für seinen Task gelten: erst Vorhandenes nutzen (Adventure-MiniMessage strict, `Placeholder.unparsed`, Minestom-`Scheduler`, `TextDisplayMeta`, virtuelle Threads, `avaje-config` wie `TickleSettings`, Avaje `@Secondary`/`@Primary`, `PortalValidator.problems(...)` statt Regelkopie), Java 25 ohne Preview (Records, sealed `switch`), Anzeigetext ist Kartendaten ohne Übersetzung, Setup-Nachrichten englisch in `PortalMessages`, Spielereingaben nur über `Placeholder.unparsed`, SLF4J mit Parametern (keine Spielernamen), keine Metriken/Spans, Test zuerst, schlanke Kommentare nur fürs Warum ohne Change-Historie, Conventional Commits `feat(portal): …`. F.I.R.S.T.: keine Systemzeit, kein `Thread.sleep`, Takt nur über `env.tick()`, direkter `Executor` im Test statt virtuellem Thread, `@TempDir` für Dateien, frische Fixtures je Test, keine geteilten statischen Zustände, Erfolg nur über Assertions, WARN-Zeilen über einen aufgefangenen Appender.
+
+## 1. Voraussetzung prüfen (Welle 1)
+
+- [x] 1.1 Prüfen gegen `origin/main`: `Portal`, `PortalShape`, `PortalValidator`, `PortalProblem`, `PortalGsonAdapter`, `PortalCommand`/`PortalEditor`/`PortalDraft`/`PortalMessages`/`DraftOutline`/`PortalOutline`/`MapProviderPortalStore`, `PortalModule` (Konstruktor, Beans `Instance`, `Scheduler`), ob `core` Adventure-MiniMessage sieht (sonst sitzt die Prüfung aus D2 in `common`) und wo `TitanMiniMessageImpl` hängt. Abweichungen in design.md (Context, D1, D2, D7, D10) und tasks.md nachtragen. Nachweis: Bericht mit Dateiverweisen; design.md und tasks.md passen zum Code.
+- [x] 1.2 CloudNet-Seite klären (read-only): Version aus dem Katalog, Provider-Aufrufe für Services nach Task, Gruppe und Name, Lifecycle „läuft“, Property-Schlüssel für Online- und Maximalzahl, ob diese Aufrufe lokal gecacht sind oder das Netzwerk berühren; Stand von `optional-extensions-bootstrap` (liegt die CloudNet-Bean noch in `common`?). Ergebnis in design.md D5/D6 nachtragen. Nachweis: Bericht mit Fundstellen, D5 und D6 nennen konkrete Aufrufe.
+
+## 2. Datenmodell und Gson (Welle 2)
+
+- [ ] 2.1 Test zuerst (Unit, `PortalGsonAdapterTest`): Round-Trip eines Portals mit Label (alle vier Quellentypen, ohne `source`, `billboard` `fixed` mit `yaw`), Portal ohne Label serialisiert ohne `label`, unbekannter Quellentyp liest als Marker statt zu scheitern; rot. Dann `PortalLabel`, `LabelSource`, `Billboard`, fünfte Komponente an `Portal` samt altem Vier-Parameter-Konstruktor und Adapter umsetzen; grün. Nachweis: alle bisherigen Portal-Tests bleiben grün.
+- [ ] 2.2 Test zuerst (Unit, `PortalValidatorLabelTest`): jedes Szenario aus `specs/lobby-portal-labels` zum Start (falsch geschlossener Tag, unbekannter Typ, Name fehlt, `local` ohne Namen gültig, Position fehlt, unbekanntes Billboard, `<online>`/`<max>`/`<task>`/`<prefix>` gelten als gültig), Reason nennt das Feld; rot. Dann Prüfung in `PortalValidator.problems(...)` samt `LabelPlaceholders` (gemeinsame Resolver für Prüfung und Rendering, D2) umsetzen; grün. Nachweis: `requireValid` bricht für ein ungültiges Label mit Portal und Grund ab (Test).
+- [ ] 2.3 Test zuerst (Integration, `@TempDir`, vorhandene Persistenz-Fixture): ein Portal mit Label übersteht `saveMap` und `loadMapData`, `LobbyMap.lobbyMapBuilder(map)` behält es, der `setspawn`-Pfad behält es; grün, sonst Fehler beheben. Nachweis: Test grün.
+
+## 3. Zähler und Anzeige (Welle 3)
+
+- [ ] 3.1 Test zuerst (Unit): SPI `PlayerCounts`/`PlayerCount`/`SourceType` mit `NOT_RUNNING`; Test zur Auflösung der Quelle (`LabelSource.orDefault(portal)`: fehlende Quelle = Task des Portals); rot. Dann SPI in `core` und `NoPlayerCounts` (`@Secondary`) in `features/portal` umsetzen; grün. Nachweis: Integrationstest mit Avaje-`BeanScope`: ohne Anbieter liefert der Ersatz „läuft nicht“, mit Testanbieter gewinnt dieser.
+- [ ] 3.2 Test zuerst (Unit): Halter `TitanPlayerCountLookup` in `common` (leer = „läuft nicht“, mit Fake-Lookup = SPI-Werte, `supports` wird durchgereicht) und Bean `HolderPlayerCounts` am Ort des CloudNet-Codes; die reine Summen-Funktion der Bridge (nur laufende Services, Task/Gruppe summieren, Service einzeln) über Testdaten; rot. Dann Halter, Bean und die CloudNet-Implementierung in `TitanBridgePermissionExtension` (Installation im `initialize()`) umsetzen; grün. Nachweis: Tests grün, `bridge` tauscht nur JDK-Typen mit der Anwendung aus (Review).
+- [ ] 3.3 Test zuerst (Unit): WARN einmal je nicht unterstützter oder unbekannter Quelle über einen aufgefangenen Appender, kein zweites WARN beim nächsten Takt; rot. Dann die Quellen-Lesung (`LabelReader`: SPI oder `local`, Warnung dedupliziert) umsetzen; grün. Nachweis: Test grün, kein Log über DEBUG je Takt außer bei Textänderung.
+- [ ] 3.4 Test zuerst (Unit, `LabelRendererTest`): alle Szenarien aus „Platzhalter im Text“ und „Offline-Anzeige“ (Zahlen, Task, `<prefix>`, `offlineText`, 0/0 ohne `offlineText`, `local` mit `<max>` = `?`, `<`-Tags im Task-Namen bleiben wörtlich); rot. Dann `LabelRenderer` als reine Funktion umsetzen; grün. Nachweis: Test grün.
+- [ ] 3.5 Test zuerst (Unit, `PortalSettingsTest`): `portal.labelRefreshSeconds` Standard 5, `2` gültig, `0`, `-1`, `abc` mit Schlüssel und Grund abgelehnt; rot. Dann `PortalSettings` mit `Config.getAs(...)` (Muster `TickleSettings`) umsetzen und im Modul lesen; grün. Nachweis: Test grün.
+- [ ] 3.6 Test zuerst (Unit, `LabelDisplayTest` mit Zählerattrappe): gleicher gerenderter Text sendet nichts erneut, geänderter Text genau einmal; rot. Dann `LabelDisplay` (eine `TextDisplay`-Entity je Label, `billboard`/`yaw`, `setText` nur bei `!rendered.equals(last)`) umsetzen; grün. Nachweis: Test grün.
+- [ ] 3.7 Test zuerst (Integration, Cyano-`Env`, `env.tick()`, direkter `Executor`, `FakePlayerCounts`): eine Entity je Label und keine für Portale ohne Label, Position und Billboard stimmen, Text wechselt nach der eingestellten Tickzahl auf die neuen Zahlen (auch Offline → online), ein noch laufender Abruf lässt den nächsten Takt aus, ein Fake-Anbieter ohne CloudNet liefert 3/20, Entfernen der Entities beim Stoppen, Metadaten auf dem Scheduler-Thread ohne Ausnahme; rot. Dann Takt, Abruf auf virtuellem Thread, Anwendung per `scheduleNextTick` und die Verdrahtung in `PortalModule` (`@PostConstruct`/`@PreDestroy`, INFO „Portal labels started with {} label(s)“) umsetzen; grün. Nachweis: Test grün; `PortalModule` ohne Label-Portal startet wie zuvor.
+
+## 4. Setup-Befehl (Welle 4)
+
+- [ ] 4.1 Test zuerst (Unit, `PortalEditorTest`): jedes Szenario aus `specs/setup-portal-labels` zum Bearbeiten (`here`, `text` mit Leerzeichen, `offline`, `source` mit allen Typen, Quelle ohne Name, unbekannter Typ, Label ohne Position unvollständig, `remove`), `save` mit gültigem und ungültigem Label (Gründe aus `PortalValidator.problems(...)`, keine Regelkopie), Änderung am Label eines gespeicherten Portals wirkt erst nach `save`, Portal ohne Label speichert ohne Block; rot. Dann `PortalDraft`, `PortalEditor` und das Ergebnis erweitern; grün.
+- [ ] 4.2 Test zuerst (Unit, `PortalMessagesTest`): neue Meldungen, Label-Text mit `<click:…>` bleibt wörtlich (`unparsed`); rot. Dann `PortalMessages` erweitern; grün.
+- [ ] 4.3 Test zuerst (Unit, `PortalOutlineTest`, `DraftOutlineTest`): Ankerpunkte nur bei gesetztem Anker, unter der Punktobergrenze, Anker folgt `label here`; rot. Dann Vorschau erweitern; grün. Dazu `PortalCompletions` (Typen `task|group|service|local`) mit Test.
+- [ ] 4.4 `PortalCommand` mit den Syntaxen `label here|text|offline|source|remove` erweitern; Test zuerst (Integration, Cyano-`Env`, `env.tick()`): jede Syntax erreicht den Editor mit den richtigen Werten (Position des Spielers), Konsole wird abgelehnt, fehlende Argumente werden abgelehnt, das Label überlebt `save` und `setspawn` in einer Persistenz-Fixture mit `@TempDir`; grün. Nachweis: Test grün, `/setup map …` und bestehende `/setup portal`-Syntaxen unverändert.
+
+## 5. Doku und Abnahme (Welle 5)
+
+- [ ] 5.1 `README.md` ergänzen: Optionen und Env-Tabelle um `portal.labelRefreshSeconds` / `PORTAL_LABELREFRESHSECONDS`, Abschnitt „Setup server“ um die `label`-Befehle, ein Beispiel des `label`-Blocks in der `map.json`, die Platzhalter, die Quellentypen und den Hinweis auf den austauschbaren Zähler (SPI, `@Primary`). Nachweis: README nennt jede Syntax und jeden Schlüssel aus den Specs.
+- [ ] 5.2 Abnahme (Haiku, read-only): `./gradlew build` grün; jede Anforderung und jedes Szenario aus beiden Specs hat einen Test; F.I.R.S.T.-Prüfung der neuen Tests (keine Sleeps, keine Systemzeit, kein geteilter Zustand, `@TempDir`); keine Validierungsregel im Setup kopiert; kein CloudNet-Typ in `core` und `features/portal`; Diff liegt in `core`, `common`, `bridge`, `features/portal`, `setup`, `README.md`. Manuell: Lobby mit einem Label je Quellentyp (CloudNet-Testsystem: Task, Gruppe, Service, `local`, ein gestoppter Task für den Offline-Text), Setup-Server `label here/text/offline/source/remove` mit Vorschau und `save`, Neustart (Ergebnis im PR).
+
+## 6. Pull Request (Welle 6)
+
+- [ ] 6.1 Pull Request mit dem Titel `feat(portal): show labels with player counts in front of portals` gegen `main` öffnen (Titel und Beschreibung Englisch); die Beschreibung nennt den `label`-Block, die Quellen und Platzhalter, den austauschbaren Zähler (SPI, CloudNet in `bridge`), den Setup-Befehl, die neue Einstellung und den manuellen Abnahmelauf. Nachweis: PR-Link.
