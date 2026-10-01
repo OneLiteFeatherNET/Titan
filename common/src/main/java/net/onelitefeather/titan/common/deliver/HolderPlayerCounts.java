@@ -15,7 +15,6 @@
  */
 package net.onelitefeather.titan.common.deliver;
 
-import java.util.Locale;
 import net.onelitefeather.titan.core.portal.PlayerCount;
 import net.onelitefeather.titan.core.portal.PlayerCounts;
 import net.onelitefeather.titan.core.portal.SourceType;
@@ -29,16 +28,12 @@ public final class HolderPlayerCounts implements PlayerCounts {
 
     @Override
     public boolean supports(SourceType type) {
-        return TitanPlayerCountLookup.supports(typeName(type));
+        return TitanPlayerCountLookup.supports(type.id());
     }
 
     @Override
     public PlayerCount count(SourceType type, String name) {
-        int[] counts = TitanPlayerCountLookup.lookup(typeName(type), name);
+        int[] counts = TitanPlayerCountLookup.lookup(type.id(), name);
         return counts == null ? PlayerCount.NOT_RUNNING : new PlayerCount(counts[0], counts[1], true);
-    }
-
-    private static String typeName(SourceType type) {
-        return type.name().toLowerCase(Locale.ROOT);
     }
 }

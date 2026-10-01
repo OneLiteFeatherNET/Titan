@@ -64,4 +64,14 @@ class PortalSettingsTest {
 
         Assertions.assertTrue(thrown.getMessage().contains(PortalSettings.REFRESH_KEY), "the message must name the key, was: " + thrown.getMessage());
     }
+
+    @DisplayName("3600 is the largest valid value, 3601 is rejected naming the key and the value")
+    @Test
+    void aboveTheCapIsRejected() {
+        Assertions.assertEquals(3600, PortalSettings.refreshSeconds("3600"));
+
+        IllegalArgumentException thrown = Assertions.assertThrows(IllegalArgumentException.class, () -> PortalSettings.refreshSeconds("3601"));
+
+        Assertions.assertTrue(thrown.getMessage().contains(PortalSettings.REFRESH_KEY) && thrown.getMessage().contains("3601"), "the message must name the key and the value, was: " + thrown.getMessage());
+    }
 }

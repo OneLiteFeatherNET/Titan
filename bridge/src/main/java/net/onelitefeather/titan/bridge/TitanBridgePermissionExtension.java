@@ -99,13 +99,16 @@ public final class TitanBridgePermissionExtension extends Extension {
 
             @Override
             public int[] lookup(String type, String name) {
-                return ServiceTotals.total(services(type, name).stream().map(TitanBridgePermissionExtension::reading).toList());
+                return ServiceTotals.totalOrNotRunning(() -> services(type, name).stream().map(TitanBridgePermissionExtension::reading).toList());
             }
         });
     }
 
     private static Collection<ServiceInfoSnapshot> services(String type, String name) {
         CloudServiceProvider provider = ServiceRegistry.registry().defaultInstance(CloudServiceProvider.class);
+        if (provider == null) {
+            return List.of();
+        }
         return switch (type) {
             case "task" -> provider.servicesByTask(name);
             case "group" -> provider.servicesByGroup(name);

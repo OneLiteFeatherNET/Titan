@@ -17,7 +17,6 @@ package net.onelitefeather.titan.feature.portal;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
-import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntSupplier;
@@ -32,7 +31,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Resolves the source of a portal's label to a {@link LabelReading}: from the {@link PlayerCounts}
  * provider, or from this lobby for {@code local}. A source the provider cannot serve reads as
- * offline and is reported once per portal and source, not on every refresh.
+ * offline and is reported once per portal and source, not on every refresh; so does a provider
+ * that throws.
  */
 @Singleton
 final class LabelReader implements LabelReadings {
@@ -68,9 +68,22 @@ final class LabelReader implements LabelReadings {
 
     private LabelReading remote(Portal portal, SourceType type, String name) {
         if (name == null || !this.counts.supports(type)) {
-            return unavailable(portal, type.name().toLowerCase(Locale.ROOT), name);
+            return unavailable(portal, type.id(), name);
         }
-        return new LabelReading.Remote(this.counts.count(type, name));
+        try {
+            return new LabelReading.Remote(this.counts.count(type, name));
+        } catch (RuntimeException e) {
+            return failed(portal, type.id(), name, e);
+        }
+    }
+
+    // A provider that throws must not take the other labels down with it.
+    private LabelReading failed(Portal portal, String type, String name, RuntimeException e) {
+        if (this.warned.add("failed\0" + portal.id() + '\0' + type + '\0' + name)) {
+            LOGGER.warn("Reading portal label source {} '{}' of portal '{}' failed: {}", type, name, portal.id(), e.getMessage());
+        }
+        LOGGER.debug("Reading portal label source {} '{}' of portal '{}' failed", type, name, portal.id(), e);
+        return new LabelReading.Remote(PlayerCount.NOT_RUNNING);
     }
 
     private LabelReading unavailable(Portal portal, String type, String name) {

@@ -53,4 +53,18 @@ class ServiceTotalsTest {
     void emptyRunningServiceIsRunning() {
         assertArrayEquals(new int[]{0, 20}, ServiceTotals.total(List.of(new ServiceReading(true, 0, 20))), "0 online of 20");
     }
+
+    @DisplayName("A lookup that throws is reported as not running")
+    @Test
+    void throwingLookupIsNotRunning() {
+        assertNull(ServiceTotals.totalOrNotRunning(() -> {
+            throw new IllegalStateException("cloud unreachable");
+        }), "the failure must not escape the lookup");
+    }
+
+    @DisplayName("A lookup that works is summed as usual")
+    @Test
+    void workingLookupIsSummed() {
+        assertArrayEquals(new int[]{3, 20}, ServiceTotals.totalOrNotRunning(() -> List.of(new ServiceReading(true, 3, 20))), "online and max");
+    }
 }

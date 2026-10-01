@@ -16,6 +16,7 @@
 package net.onelitefeather.titan.bridge;
 
 import java.util.Collection;
+import java.util.function.Supplier;
 
 /**
  * Sums the player counts of services. Kept free of CloudNet types so it is testable on its own;
@@ -28,6 +29,18 @@ final class ServiceTotals {
     }
 
     private ServiceTotals() {
+    }
+
+    /**
+     * The total of what {@code services} yields, or {@code null} (not running) when asking the
+     * cloud throws: a failing lookup must not break the label refresh.
+     */
+    static int[] totalOrNotRunning(Supplier<Collection<ServiceReading>> services) {
+        try {
+            return total(services.get());
+        } catch (RuntimeException e) {
+            return null;
+        }
     }
 
     /** {@code {online, max}} over the running services, or {@code null} when none runs. */

@@ -18,7 +18,6 @@ package net.onelitefeather.titan.feature.portal;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.onelitefeather.titan.core.portal.LabelPlaceholders;
-import net.onelitefeather.titan.core.portal.PlayerCount;
 import net.onelitefeather.titan.core.portal.Portal;
 import net.onelitefeather.titan.core.portal.PortalLabel;
 
@@ -36,19 +35,25 @@ final class LabelRenderer {
 
     /** The parser is a parameter so a test can bring its own {@code <prefix>}. */
     static Component render(MiniMessage parser, Portal portal, PortalLabel label, LabelReading reading) {
-        return switch (reading) {
-            case LabelReading.Local local ->
-                parser.deserialize(label.text(), LabelPlaceholders.counts(String.valueOf(local.online()), UNKNOWN_MAX, portal.task()));
-            case LabelReading.Remote remote -> renderRemote(parser, portal, label, remote.count());
-        };
-    }
-
-    private static Component renderRemote(MiniMessage parser, Portal portal, PortalLabel label, PlayerCount count) {
-        if (!count.running()) {
-            // A source that is not running shows zeros, whatever the provider reported for it.
-            String text = label.offlineText() != null ? label.offlineText() : label.text();
-            return parser.deserialize(text, LabelPlaceholders.counts("0", "0", portal.task()));
+        String text = label.text();
+        String online;
+        String max;
+        switch (reading) {
+            case LabelReading.Local local -> {
+                online = String.valueOf(local.online());
+                max = UNKNOWN_MAX;
+            }
+            case LabelReading.Remote remote when remote.count().running() -> {
+                online = String.valueOf(remote.count().online());
+                max = String.valueOf(remote.count().max());
+            }
+            case LabelReading.Remote ignored -> {
+                // A source that is not running shows zeros, whatever the provider reported for it.
+                text = label.offlineText() != null ? label.offlineText() : label.text();
+                online = "0";
+                max = "0";
+            }
         }
-        return parser.deserialize(label.text(), LabelPlaceholders.counts(String.valueOf(count.online()), String.valueOf(count.max()), portal.task()));
+        return parser.deserialize(text, LabelPlaceholders.counts(online, max, portal.task()));
     }
 }

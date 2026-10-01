@@ -15,15 +15,20 @@
  */
 package net.onelitefeather.titan.feature.portal;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import net.kyori.adventure.text.Component;
+import net.minestom.server.ServerFlag;
 import net.minestom.server.timer.Scheduler;
 import net.minestom.server.timer.Task;
 import net.minestom.server.timer.TaskSchedule;
 import net.onelitefeather.titan.core.portal.Portal;
 import net.onelitefeather.titan.core.portal.PortalLabel;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +52,8 @@ final class LabelRefresh {
     private final LabelReadings readings;
     private final List<Entry> entries;
     private final AtomicBoolean reading = new AtomicBoolean();
-    private volatile boolean stopped;
+    private final Set<String> warned = ConcurrentHashMap.newKeySet();
+    private boolean stopped;
     private Task task;
 
     LabelRefresh(Scheduler scheduler, Executor executor, LabelReadings readings, List<Entry> entries) {
@@ -58,13 +64,17 @@ final class LabelRefresh {
     }
 
     void start(int periodSeconds) {
-        TaskSchedule period = TaskSchedule.tick(periodSeconds * 20);
+        // Tick-based on purpose: Minestom's time-based schedules run on a wall-clock timer outside the tick.
+        TaskSchedule period = TaskSchedule.tick(Math.multiplyExact(periodSeconds, ServerFlag.SERVER_TICKS_PER_SECOND));
         this.task = this.scheduler.scheduleTask(this::refresh, TaskSchedule.nextTick(), period);
     }
 
-    void stop() {
+    /** After this returns no label is applied any more, so the displays may be removed. */
+    synchronized void stop() {
         this.stopped = true;
-        this.task.cancel();
+        if (this.task != null) {
+            this.task.cancel();
+        }
     }
 
     private void refresh() {
@@ -72,27 +82,55 @@ final class LabelRefresh {
             LOGGER.debug("Skipping a portal label refresh, the previous read is still running");
             return;
         }
-        this.executor.execute(this::read);
+        try {
+            this.executor.execute(this::read);
+        } catch (RuntimeException e) {
+            this.reading.set(false);
+            failed("execute", "Starting the portal label read failed, retrying next period", e);
+        }
     }
 
     private void read() {
         try {
-            List<Component> rendered = this.entries.stream().map(entry -> LabelRenderer.render(entry.portal(), entry.label(), this.readings.read(entry.portal()))).toList();
+            List<Component> rendered = new ArrayList<>(this.entries.size());
+            for (Entry entry : this.entries) {
+                rendered.add(renderOrNull(entry));
+            }
             this.scheduler.scheduleNextTick(() -> apply(rendered));
         } catch (RuntimeException e) {
-            LOGGER.warn("Reading the portal label counts failed, keeping the displayed texts", e);
+            failed("batch", "Reading the portal label counts failed, keeping the displayed texts", e);
         } finally {
             this.reading.set(false);
         }
     }
 
-    private void apply(List<Component> rendered) {
+    // One failing entry keeps its old text and leaves the others alone.
+    private @Nullable Component renderOrNull(Entry entry) {
+        try {
+            return LabelRenderer.render(entry.portal(), entry.label(), this.readings.read(entry.portal()));
+        } catch (RuntimeException e) {
+            failed("entry:" + entry.portal().id(), "Reading the label of portal '" + entry.portal().id() + "' failed, keeping its displayed text", e);
+            return null;
+        }
+    }
+
+    // Only the first failure of a kind is a warning; a provider that stays down must not flood the log.
+    private void failed(String key, String message, RuntimeException e) {
+        if (this.warned.add(key)) {
+            LOGGER.warn("{}: {}", message, e.getMessage());
+        }
+        LOGGER.debug(message, e);
+    }
+
+    // Synchronized with stop(): the displays are removed only once no apply can still touch them.
+    private synchronized void apply(List<Component> rendered) {
         if (this.stopped) {
             return;
         }
         for (int i = 0; i < rendered.size(); i++) {
             Entry entry = this.entries.get(i);
-            if (entry.display().update(rendered.get(i))) {
+            Component text = rendered.get(i);
+            if (text != null && entry.display().update(text)) {
                 LOGGER.debug("Portal label of '{}' changed", entry.portal().id());
             }
         }

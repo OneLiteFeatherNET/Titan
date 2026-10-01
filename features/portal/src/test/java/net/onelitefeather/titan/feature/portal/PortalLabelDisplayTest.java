@@ -27,12 +27,16 @@ import net.minestom.server.entity.EntityType;
 import net.minestom.server.entity.metadata.display.AbstractDisplayMeta.BillboardConstraints;
 import net.minestom.server.entity.metadata.display.TextDisplayMeta;
 import net.minestom.server.instance.Instance;
+import net.minestom.server.network.packet.server.play.EntityMetaDataPacket;
+import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
+import net.minestom.testing.TestConnection;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.portal.Billboard;
 import net.onelitefeather.titan.core.portal.Box;
 import net.onelitefeather.titan.core.portal.LabelSource;
 import net.onelitefeather.titan.core.portal.PlayerCount;
+import net.onelitefeather.titan.core.portal.PlayerCounts;
 import net.onelitefeather.titan.core.portal.Portal;
 import net.onelitefeather.titan.core.portal.PortalLabel;
 import net.onelitefeather.titan.core.portal.SourceType;
@@ -62,7 +66,11 @@ class PortalLabelDisplayTest {
     }
 
     private PortalModule start(Env env, TestTitanNode titan, Instance lobby, Executor executor, Portal... portals) {
-        PortalModule module = new PortalModule(titan.node(), () -> List.of(portals), new RecordingDeliver(), new FakePermissionService(), new AdjustableClock(Instant.parse("2026-01-01T12:00:00Z"), ZoneOffset.UTC), lobby, env.process().scheduler(), executor, new LabelReader(this.counts, () -> 9), new PortalSettings(1));
+        return start(env, titan, lobby, executor, this.counts, portals);
+    }
+
+    private PortalModule start(Env env, TestTitanNode titan, Instance lobby, Executor executor, PlayerCounts provider, Portal... portals) {
+        PortalModule module = new PortalModule(titan.node(), () -> List.of(portals), new RecordingDeliver(), new FakePermissionService(), new AdjustableClock(Instant.parse("2026-01-01T12:00:00Z"), ZoneOffset.UTC), lobby, env.process().scheduler(), executor, new LabelReader(provider, () -> 9), new PortalSettings(1));
         module.start();
         return module;
     }
@@ -227,6 +235,58 @@ class PortalLabelDisplayTest {
 
             Assertions.assertTrue(displays(lobby).isEmpty(), "all displays are gone");
             Assertions.assertEquals(0, executor.pending(), "no read after stop");
+        }
+    }
+
+    @DisplayName("A refresh that finds the same numbers sends no second metadata update")
+    @Test
+    void unchangedNumbersSendNothing(Env env) {
+        this.counts.set(SourceType.TASK, "Survival", new PlayerCount(3, 20, true));
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            Instance lobby = env.createFlatInstance();
+            TestConnection connection = env.createConnection();
+            connection.connect(lobby);
+            Collector<EntityMetaDataPacket> updates = connection.trackIncoming(EntityMetaDataPacket.class);
+            PortalModule module = start(env, titan, lobby, Runnable::run, portal("a", label("<online>/<max>", null, null, Billboard.CENTER, 0f)));
+            tick(env, 2);
+            Assertions.assertEquals("3/20", text(displays(lobby).get(0)), "the first read is shown");
+            int displayId = displays(lobby).get(0).getEntityId();
+            long before = updates.collect().stream().filter(packet -> packet.entityId() == displayId).count();
+            Assertions.assertTrue(before > 0, "the viewer saw the display and its first text");
+
+            tick(env, 3 * PERIOD_TICKS);
+
+            long after = updates.collect().stream().filter(packet -> packet.entityId() == displayId).count();
+            Assertions.assertEquals(before, after, "the same numbers must not be sent again");
+            Assertions.assertTrue(this.counts.reads() >= 3, "the provider was read in every period, only the packet was spared");
+            module.stop();
+        }
+    }
+
+    @DisplayName("Without a provider the offline text is shown end to end")
+    @Test
+    void offlineTextWithoutProvider(Env env) {
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            Instance lobby = env.createFlatInstance();
+            PortalModule module = start(env, titan, lobby, Runnable::run, new NoPlayerCounts(), portal("a", label("<online>/<max>", "<red>Offline", null, Billboard.CENTER, 0f)));
+
+            tick(env, 2);
+
+            Assertions.assertEquals("Offline", text(displays(lobby).get(0)), "the fallback provider reads nothing as running");
+            module.stop();
+        }
+    }
+
+    @DisplayName("A start that fails after spawning removes the displays again")
+    @Test
+    void failedStartCleansUp(Env env) {
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            Instance lobby = env.createFlatInstance();
+            PortalModule module = new PortalModule(titan.node(), () -> List.of(portal("a", label("a", null, null, Billboard.CENTER, 0f))), new RecordingDeliver(), new FakePermissionService(), new AdjustableClock(Instant.parse("2026-01-01T12:00:00Z"), ZoneOffset.UTC), lobby, env.process().scheduler(), Runnable::run, new LabelReader(this.counts, () -> 9), new PortalSettings(Integer.MAX_VALUE));
+
+            Assertions.assertThrows(ArithmeticException.class, module::start, "the period overflows");
+
+            Assertions.assertTrue(displays(lobby).isEmpty(), "no display is left behind");
         }
     }
 }

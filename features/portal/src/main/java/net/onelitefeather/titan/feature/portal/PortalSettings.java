@@ -20,15 +20,18 @@ import io.avaje.config.Config;
 /**
  * The portal module's configuration: how often the label counts are read.
  *
- * @param labelRefreshSeconds whole seconds between two reads, at least 1
+ * @param labelRefreshSeconds whole seconds between two reads, from 1 to
+ *                            {@value #MAX_REFRESH_SECONDS}
  */
 record PortalSettings(int labelRefreshSeconds) {
 
     static final String REFRESH_KEY = "portal.labelRefreshSeconds";
+    // An hour is far beyond any useful label age and keeps seconds * ticks well inside an int.
+    static final int MAX_REFRESH_SECONDS = 3600;
 
     /**
-     * Aborts startup, naming the key, when the configured value is not a whole number of at least
-     * 1.
+     * Aborts startup, naming the key, when the configured value is not a whole number from 1 to
+     * {@value #MAX_REFRESH_SECONDS}.
      */
     static PortalSettings read() {
         return new PortalSettings(Config.getAs(REFRESH_KEY, PortalSettings::refreshSeconds));
@@ -43,6 +46,9 @@ record PortalSettings(int labelRefreshSeconds) {
         }
         if (seconds < 1) {
             throw new IllegalArgumentException(REFRESH_KEY + " must be at least 1, was " + seconds);
+        }
+        if (seconds > MAX_REFRESH_SECONDS) {
+            throw new IllegalArgumentException(REFRESH_KEY + " must be at most " + MAX_REFRESH_SECONDS + ", was " + seconds);
         }
         return seconds;
     }

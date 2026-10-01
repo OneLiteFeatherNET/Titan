@@ -168,4 +168,30 @@ class LabelReaderTest {
         assertEquals(new LabelReading.Remote(PlayerCount.NOT_RUNNING), reader(this.fake).read(portal("a", new LabelSource.Task(null))), "nameless source");
         assertEquals(0, this.fake.reads(), "nothing to ask for");
     }
+
+    @DisplayName("A provider that throws reads as offline and warns once per portal and source, without a stack trace")
+    @Test
+    void throwingProviderIsOfflineAndWarnsOnce() {
+        PlayerCounts throwing = new PlayerCounts() {
+            @Override
+            public boolean supports(SourceType type) {
+                return true;
+            }
+
+            @Override
+            public PlayerCount count(SourceType type, String name) {
+                throw new IllegalStateException("cloud unreachable");
+            }
+        };
+        LabelReader reader = reader(throwing);
+        Portal portal = portal("survival", new LabelSource.Task("Survival"));
+
+        assertEquals(new LabelReading.Remote(PlayerCount.NOT_RUNNING), reader.read(portal), "offline instead of the exception");
+        reader.read(portal);
+        reader.read(portal);
+
+        assertEquals(1, warnings().size(), "the warning must be logged once, not on every refresh");
+        assertEquals("Reading portal label source task 'Survival' of portal 'survival' failed: cloud unreachable", warnings().getFirst().getFormattedMessage(), "warning text");
+        assertEquals(null, warnings().getFirst().getThrowableProxy(), "no stack trace at warn level");
+    }
 }

@@ -15,10 +15,17 @@
  */
 package net.onelitefeather.titan.core.portal;
 
+import java.util.Locale;
+
 /**
  * Provider-neutral remote count sources. {@code local} never reaches a {@link PlayerCounts}
  * provider.
  */
 public enum SourceType {
-    TASK, GROUP, SERVICE
+    TASK, GROUP, SERVICE;
+
+    /** The lowercase name the JDK-typed lookups and log lines use. */
+    public String id() {
+        return name().toLowerCase(Locale.ROOT);
+    }
 }

@@ -69,7 +69,7 @@ public final class PortalModule {
     private FeatureNode node;
     private LabelRefresh refresh;
 
-    public PortalModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbyPortals portals, Deliver deliver, PermissionService permissions, Clock clock, Instance lobby, Scheduler scheduler, @Named(PortalBeans.LABEL_READS) Executor reads, LabelReadings readings, PortalSettings settings) {
+    PortalModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbyPortals portals, Deliver deliver, PermissionService permissions, Clock clock, Instance lobby, Scheduler scheduler, @Named(PortalBeans.LABEL_READS) Executor reads, LabelReadings readings, PortalSettings settings) {
         this.titan = Objects.requireNonNull(titan, "titan");
         this.portals = Objects.requireNonNull(portals, "portals");
         this.deliver = Objects.requireNonNull(deliver, "deliver");
@@ -93,7 +93,13 @@ public final class PortalModule {
             Player player = event.getPlayer();
             trigger.onMove(player.getUuid(), player.getPosition(), event.getNewPosition()).ifPresent(portal -> deliver(player, portal));
         }).on(PlayerDisconnectEvent.class, event -> trigger.forget(event.getPlayer().getUuid()));
-        startLabels(all);
+        try {
+            startLabels(all);
+        } catch (RuntimeException e) {
+            // A half-started column must not leave displays or the node behind.
+            stop();
+            throw e;
+        }
     }
 
     private void startLabels(List<Portal> all) {
@@ -123,6 +129,9 @@ public final class PortalModule {
             this.refresh.stop();
         }
         this.displays.forEach(LabelDisplay::remove);
-        this.node.close();
+        this.displays.clear();
+        if (this.node != null) {
+            this.node.close();
+        }
     }
 }

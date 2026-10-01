@@ -19,7 +19,7 @@ import net.onelitefeather.titan.core.portal.Portal;
 
 /** Reads the current player count of the source of a portal's label; may block. */
 @FunctionalInterface
-public interface LabelReadings {
+interface LabelReadings {
 
     LabelReading read(Portal portal);
 }
