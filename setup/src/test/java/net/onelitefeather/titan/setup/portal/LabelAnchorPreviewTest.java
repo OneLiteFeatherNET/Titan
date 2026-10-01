@@ -54,12 +54,6 @@ class LabelAnchorPreviewTest {
     }
 
     @Test
-    @DisplayName("The anchor's own cap stays well under the outline cap")
-    void anchorCapIsUnderTheOutlineCap() {
-        assertTrue(PortalOutline.ANCHOR_POINTS < PortalOutline.MAX_POINTS, "anchor cap below MAX_POINTS");
-    }
-
-    @Test
     @DisplayName("A portal without label has exactly the shape's outline")
     void portalWithoutLabelKeepsItsOutline() {
         assertEquals(PortalOutline.points(BOX), PortalOutline.points(portal(null)), "outline unchanged");

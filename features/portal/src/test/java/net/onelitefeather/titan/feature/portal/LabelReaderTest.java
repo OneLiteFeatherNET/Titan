@@ -20,6 +20,7 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import net.minestom.server.coordinate.Vec;
 import net.onelitefeather.titan.core.portal.Billboard;
 import net.onelitefeather.titan.core.portal.Box;
@@ -191,7 +192,32 @@ class LabelReaderTest {
         reader.read(portal);
 
         assertEquals(1, warnings().size(), "the warning must be logged once, not on every refresh");
-        assertEquals("Reading portal label source task 'Survival' of portal 'survival' failed: cloud unreachable", warnings().getFirst().getFormattedMessage(), "warning text");
+        assertEquals("Reading portal label source task 'Survival' of portal 'survival' failed: java.lang.IllegalStateException: cloud unreachable", warnings().getFirst().getFormattedMessage(), "warning text");
         assertEquals(null, warnings().getFirst().getThrowableProxy(), "no stack trace at warn level");
+    }
+
+    @DisplayName("A source that recovers and fails again is reported again")
+    @Test
+    void failureAfterRecoveryWarnsAgain() {
+        AtomicBoolean failing = new AtomicBoolean(true);
+        PlayerCounts flaky = (type, name) -> {
+            if (failing.get()) {
+                throw new IllegalStateException("cloud unreachable");
+            }
+            return new PlayerCount(1, 2, true);
+        };
+        LabelReader reader = reader(flaky);
+        Portal portal = portal("survival", new LabelSource.Task("Survival"));
+
+        reader.read(portal);
+        reader.read(portal);
+        assertEquals(1, warnings().size(), "fail, fail: one warning");
+
+        failing.set(false);
+        reader.read(portal);
+        failing.set(true);
+        reader.read(portal);
+
+        assertEquals(2, warnings().size(), "fail, recover, fail: two warnings");
     }
 }

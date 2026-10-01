@@ -60,8 +60,6 @@ public final class PortalEditor {
     /** Words the command uses in the id position. */
     private static final Set<String> RESERVED_IDS = Set.of("list", "show", "create");
     private static final String NO_PERMISSION = "none";
-    /** The source types in the order the player is told about them. */
-    static final List<String> SOURCE_TYPES = List.of("task", "group", "service", "local");
 
     private final PortalStore store;
     private final Map<UUID, Map<String, PortalDraft>> drafts = new HashMap<>();
@@ -138,31 +136,22 @@ public final class PortalEditor {
 
     /** The text is MiniMessage; its rules are the validator's, applied on save. */
     public PortalEditResult labelText(UUID player, String id, String text) {
-        if (text == null || text.isBlank()) {
-            return new Invalid("the label text must not be empty");
-        }
-        return editLabel(player, id, draft -> draft.labelText(text));
+        return editLabelText(player, id, text, "label text", draft -> draft.labelText(text));
     }
 
     public PortalEditResult labelOffline(UUID player, String id, String text) {
-        if (text == null || text.isBlank()) {
-            return new Invalid("the offline text must not be empty");
-        }
-        return editLabel(player, id, draft -> draft.labelOffline(text));
+        return editLabelText(player, id, text, "offline text", draft -> draft.labelOffline(text));
     }
 
-    /** {@code name} is required for every type but {@code local}, which ignores it. */
+    /**
+     * Refuses at once what {@code PortalValidator} would reject on save (unknown type, missing
+     * name); {@code local} ignores the name.
+     */
     public PortalEditResult labelSource(UUID player, String id, String type, @Nullable String name) {
-        String trimmed = name == null || name.isBlank() ? null : name.trim();
-        LabelSource source = switch (type == null ? "" : type) {
-            case "local" -> new LabelSource.Local();
-            case "task" -> trimmed == null ? null : new LabelSource.Task(trimmed);
-            case "group" -> trimmed == null ? null : new LabelSource.Group(trimmed);
-            case "service" -> trimmed == null ? null : new LabelSource.Service(trimmed);
-            default -> null;
-        };
-        if (source == null) {
-            return type != null && SOURCE_TYPES.contains(type) ? new Invalid("the source type '" + type + "' needs a name") : new Invalid("unknown source type '" + type + "', use one of: " + String.join(", ", SOURCE_TYPES));
+        LabelSource source = LabelSource.of(type, name == null || name.isBlank() ? null : name.trim());
+        List<String> reasons = PortalValidator.sourceProblems(source);
+        if (!reasons.isEmpty()) {
+            return new Invalid(String.join("; ", reasons));
         }
         return editLabel(player, id, draft -> draft.labelSource(source));
     }
@@ -249,6 +238,10 @@ public final class PortalEditor {
         drafts.remove(player);
     }
 
+    private PortalEditResult editLabelText(UUID player, String id, String text, String what, Consumer<PortalDraft> change) {
+        return text.isBlank() ? new Invalid("the " + what + " must not be empty") : editLabel(player, id, change);
+    }
+
     /** An edit answered with the label's state instead of the generic progress. */
     private PortalEditResult editLabel(UUID player, String id, Consumer<PortalDraft> change) {
         PortalEditResult result = edit(player, id, change);
@@ -256,7 +249,7 @@ public final class PortalEditor {
             return result;
         }
         PortalDraft draft = draftsOf(player).get(id);
-        return new LabelUpdated(id, draft.labelPosition(), draft.labelText(), draft.labelOffline(), draft.labelSource(), draft.missing());
+        return new LabelUpdated(id, draft.label(), draft.missing());
     }
 
     private PortalEditResult edit(UUID player, String id, Consumer<PortalDraft> change) {

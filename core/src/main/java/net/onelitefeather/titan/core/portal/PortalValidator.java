@@ -115,7 +115,7 @@ public final class PortalValidator {
         if (label.offlineText() != null) {
             checkText(id, index, "label.offlineText", label.offlineText(), problems);
         }
-        checkSource(id, index, label.source(), problems);
+        sourceProblems(label.source()).forEach(reason -> problems.add(new PortalProblem(id, index, reason)));
         if (label.billboard() == Billboard.UNKNOWN) {
             problems.add(new PortalProblem(id, index, "label.billboard is unknown (expected center or fixed)"));
         }
@@ -138,26 +138,26 @@ public final class PortalValidator {
         }
     }
 
-    private static void checkSource(String id, int index, @Nullable LabelSource source, List<PortalProblem> problems) {
-        if (source == null) {
-            return;
-        }
-        switch (source) {
-            case LabelSource.Local _ -> {
-            }
-            case LabelSource.Task task -> checkName(id, index, "task", task.name(), problems);
-            case LabelSource.Group group -> checkName(id, index, "group", group.name(), problems);
-            case LabelSource.Service service ->
-                checkName(id, index, "service", service.name(), problems);
+    /** The reasons a single label source is unusable; empty if it is fine or absent. */
+    public static List<String> sourceProblems(@Nullable LabelSource source) {
+        return switch (source) {
+            case null -> List.of();
+            case LabelSource.Local _ -> List.of();
+            case LabelSource.Task task -> nameProblems("task", task.name());
+            case LabelSource.Group group -> nameProblems("group", group.name());
+            case LabelSource.Service service -> nameProblems("service", service.name());
             case LabelSource.Unknown unknown ->
-                problems.add(new PortalProblem(id, index, "label.source.type " + (unknown.type() == null ? "is missing" : "'" + unknown.type() + "' is unknown") + " (expected task, group, service or local)"));
-        }
+                List.of("label.source.type " + (unknown.type() == null ? "is missing" : "'" + unknown.type() + "' is unknown") + " (expected " + expectedTypes() + ")");
+        };
     }
 
-    private static void checkName(String id, int index, String type, @Nullable String name, List<PortalProblem> problems) {
-        if (isBlank(name)) {
-            problems.add(new PortalProblem(id, index, "label.source.name is missing for type '" + type + "'"));
-        }
+    private static List<String> nameProblems(String type, @Nullable String name) {
+        return isBlank(name) ? List.of("label.source.name is missing for type '" + type + "'") : List.of();
+    }
+
+    private static String expectedTypes() {
+        List<String> types = LabelSource.TYPES;
+        return String.join(", ", types.subList(0, types.size() - 1)) + " or " + types.getLast();
     }
 
     private static boolean isBlank(String value) {

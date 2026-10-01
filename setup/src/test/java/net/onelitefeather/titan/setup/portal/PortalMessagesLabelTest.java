@@ -47,7 +47,7 @@ class PortalMessagesLabelTest {
     @Test
     @DisplayName("A label answer states position, text, offline text and source")
     void labelAnswerStatesTheDraft() {
-        Component message = PortalMessages.render(new LabelUpdated("survival", new Vec(12.5, 66, -3.5), "<gold>Survival", "<red>Soon", new LabelSource.Group("Games"), List.of()));
+        Component message = PortalMessages.render(new LabelUpdated("survival", label(new Vec(12.5, 66, -3.5), "<gold>Survival", "<red>Soon", new LabelSource.Group("Games")), List.of()));
 
         String text = plain(message);
         assertTrue(text.contains("survival"), text);
@@ -60,7 +60,7 @@ class PortalMessagesLabelTest {
     @Test
     @DisplayName("Tags in the label text stay literal and carry no click event")
     void tagsStayLiteral() {
-        Component message = PortalMessages.render(new LabelUpdated("survival", null, CLICK_TEXT, null, null, List.of(Missing.LABEL_POSITION)));
+        Component message = PortalMessages.render(new LabelUpdated("survival", label(null, CLICK_TEXT, null, null), List.of(Missing.LABEL_POSITION)));
 
         assertTrue(plain(message).contains(CLICK_TEXT), "literal text: " + plain(message));
         assertFalse(hasClick(message), "nothing typed becomes a click event");
@@ -81,7 +81,7 @@ class PortalMessagesLabelTest {
     @Test
     @DisplayName("An incomplete label names what is missing")
     void incompleteLabelNamesTheMissingPart() {
-        String text = plain(PortalMessages.render(new LabelUpdated("survival", null, "Hi", null, null, List.of(Missing.LABEL_POSITION))));
+        String text = plain(PortalMessages.render(new LabelUpdated("survival", label(null, "Hi", null, null), List.of(Missing.LABEL_POSITION))));
 
         assertTrue(text.contains("label position"), text);
     }
@@ -89,7 +89,7 @@ class PortalMessagesLabelTest {
     @Test
     @DisplayName("A draft without a label says so")
     void removedLabelIsAnnounced() {
-        String text = plain(PortalMessages.render(new LabelUpdated("survival", null, null, null, null, List.of())));
+        String text = plain(PortalMessages.render(new LabelUpdated("survival", label(null, null, null, null), List.of())));
 
         assertTrue(text.contains("no label"), text);
     }
@@ -108,6 +108,10 @@ class PortalMessagesLabelTest {
     void usageMentionsLabels() {
         String usage = plain(PortalMessages.usage());
 
-        assertTrue(usage.contains("label here | text <minimessage> | offline <minimessage> | source <task|group|service|local> [name] | remove"), usage);
+        assertTrue(usage.contains("label here|text <mm>|offline <mm>|source <type> [name]|remove"), usage);
+    }
+
+    private static LabelDraft label(Vec position, String text, String offline, LabelSource source) {
+        return LabelDraft.of(position == null && text == null && offline == null && source == null ? null : new PortalLabel(position, text, offline, source, Billboard.CENTER, 0f));
     }
 }

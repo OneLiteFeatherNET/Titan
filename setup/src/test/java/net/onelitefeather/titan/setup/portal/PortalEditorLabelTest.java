@@ -140,7 +140,7 @@ class PortalEditorLabelTest {
         PortalEditResult result = editor.labelSource(ALICE, "survival", "proxy", "x");
 
         Invalid invalid = assertInstanceOf(Invalid.class, result, "refused");
-        assertTrue(invalid.reason().contains("task, group, service, local"), "names the types: " + invalid.reason());
+        assertTrue(invalid.reason().contains("'proxy' is unknown") && invalid.reason().contains("task, group, service or local"), "names the types: " + invalid.reason());
     }
 
     @Test

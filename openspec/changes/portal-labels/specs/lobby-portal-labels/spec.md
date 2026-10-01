@@ -128,8 +128,16 @@ Die Spielerzahlen MÜSSEN von einem Zähler-Anbieter stammen, der unabhängig vo
 - **WHEN** der Anbieter den Task eines Labels nicht kennt
 - **THEN** startet die Lobby trotzdem, die Anzeige zeigt den Offline-Fall und das Log enthält genau eine Warnung für diese Quelle
 
+#### Scenario: Anbieter wirft eine Ausnahme
+- **WHEN** der Anbieter beim Abfragen einer Quelle eine Ausnahme wirft
+- **THEN** zeigt die Anzeige den Offline-Fall, die übrigen Labels bleiben unberührt und das Log enthält genau eine Warnung für diese Quelle
+
+#### Scenario: Anbieter fällt erneut aus
+- **WHEN** der Anbieter nach einer Warnung wieder antwortet und später erneut eine Ausnahme wirft
+- **THEN** schreibt die Lobby für diese Quelle eine neue Warnung, während ein andauernder Ausfall nur einmal gemeldet wird
+
 ### Requirement: Regelmäßige Aktualisierung ohne unnötigen Verkehr
-Die Lobby MUSS die Spielerzahlen aller Anzeigen in einem einstellbaren Takt neu abfragen; der Standard sind 5 Sekunden, einstellbar über den Konfigurationsschlüssel `portal.labelRefreshSeconds` des Portal-Moduls. Ein Wert unter 1 oder ein Wert, der keine ganze Zahl ist, MUSS den Start abbrechen und den Schlüssel und den Grund nennen. Die Lobby DARF die Anzeige an die Clients nur senden, wenn sich der gerenderte Text gegenüber dem zuletzt gesendeten geändert hat. Die Abfrage DARF den Server-Tick nicht blockieren.
+Die Lobby MUSS die Spielerzahlen aller Anzeigen in einem einstellbaren Takt neu abfragen; der Standard sind 5 Sekunden, einstellbar über den Konfigurationsschlüssel `portal.labelRefreshSeconds` des Portal-Moduls. Ein Wert unter 1, ein Wert über 3600 oder ein Wert, der keine ganze Zahl ist, MUSS den Start abbrechen und den Schlüssel und den Grund nennen. Die Lobby DARF die Anzeige an die Clients nur senden, wenn sich der gerenderte Text gegenüber dem zuletzt gesendeten geändert hat. Die Abfrage DARF den Server-Tick nicht blockieren.
 
 #### Scenario: Zahl ändert sich
 - **WHEN** die Spielerzahl der Quelle von 12 auf 13 steigt und der nächste Takt abläuft
@@ -146,6 +154,14 @@ Die Lobby MUSS die Spielerzahlen aller Anzeigen in einem einstellbaren Takt neu 
 #### Scenario: Ungültiger Takt
 - **WHEN** `portal.labelRefreshSeconds` 0 oder `abc` ist
 - **THEN** startet die Lobby nicht und meldet `portal.labelRefreshSeconds` mit dem Grund
+
+#### Scenario: Takt über dem Maximum
+- **WHEN** `portal.labelRefreshSeconds` größer als 3600 ist
+- **THEN** startet die Lobby nicht und meldet `portal.labelRefreshSeconds` mit dem Grund
+
+#### Scenario: Ein Label scheitert beim Lesen
+- **WHEN** das Lesen der Spielerzahl für ein Label fehlschlägt, die übrigen Labels aber lesbar sind
+- **THEN** behält das fehlgeschlagene Label seinen zuletzt angezeigten Text und die übrigen Labels werden aktualisiert
 
 ### Requirement: Ungültige Labels verhindern den Start
 Die Lobby MUSS den Start abbrechen, wenn ein Label ungültig ist, so wie bei ungültigen Portalen: ungültiges MiniMessage in `text` oder `offlineText`, fehlende `position`, ein unbekannter `source.type`, ein fehlender Name bei `task`, `group` oder `service`, ein unbekanntes `billboard`. Die Fehlermeldung MUSS das Portal und den Grund nennen. Das Vokabular von `source.type` ist fest: `task`, `group`, `service`, `local`; ein Anbieter erweitert es nicht.

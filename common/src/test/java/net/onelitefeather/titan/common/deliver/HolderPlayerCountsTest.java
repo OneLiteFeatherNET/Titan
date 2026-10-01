@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class HolderPlayerCountsTest {
@@ -79,5 +80,24 @@ class HolderPlayerCountsTest {
 
         assertFalse(this.counts.supports(SourceType.GROUP), "group not supported");
         assertTrue(this.counts.supports(SourceType.TASK), "task supported");
+    }
+
+    @DisplayName("A failing lookup is not swallowed, so the caller can report it")
+    @Test
+    void failingLookupPropagates() {
+        TitanPlayerCountLookup.setLookup(new PlayerCountLookup() {
+            @Override
+            public boolean supports(String type) {
+                return true;
+            }
+
+            @Override
+            public int[] lookup(String type, String name) {
+                throw new IllegalStateException("cloud unreachable");
+            }
+        });
+
+        IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> this.counts.count(SourceType.TASK, "Survival"), "the exception crosses the holder");
+        assertEquals("cloud unreachable", thrown.getMessage(), "the original failure");
     }
 }

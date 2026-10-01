@@ -32,7 +32,10 @@ import java.util.List;
  */
 public final class PortalOutline {
 
-    /** Upper bound per outline; more particles per tick would only lag the client. */
+    /**
+     * Upper bound for the points of a shape; more particles per tick would only lag the client.
+     * {@link #points(Portal)} adds the label anchor's {@link #ANCHOR_POINTS} on top.
+     */
     public static final int MAX_POINTS = 256;
 
     /** The label anchor's cross: the point itself and one on each side of every axis. */
@@ -58,7 +61,10 @@ public final class PortalOutline {
         };
     }
 
-    /** The shape's points plus the label anchor's cross when the portal has an anchor. */
+    /**
+     * The shape's points plus the label anchor's cross when the portal has an anchor: at most
+     * {@link #MAX_POINTS} + {@link #ANCHOR_POINTS}.
+     */
     public static @NotNull List<Vec> points(@NotNull Portal portal) {
         List<Vec> points = new ArrayList<>(points(portal.shape()));
         points.addAll(anchor(portal.label() == null ? null : portal.label().position()));

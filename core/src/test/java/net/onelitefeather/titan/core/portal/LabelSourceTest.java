@@ -52,4 +52,21 @@ class LabelSourceTest {
     void portalWithoutLabelFallsBackToTask() {
         assertEquals(new LabelSource.Task("Survival"), LabelSource.orDefault(portal(null)), "no label must not break the lookup");
     }
+
+    @DisplayName("Every type of the vocabulary builds its own source; local ignores the name")
+    @Test
+    void ofBuildsEveryKnownType() {
+        assertEquals(new LabelSource.Task("T"), LabelSource.of("task", "T"), "task");
+        assertEquals(new LabelSource.Group("G"), LabelSource.of("group", "G"), "group");
+        assertEquals(new LabelSource.Service("S"), LabelSource.of("service", "S"), "service");
+        assertEquals(new LabelSource.Local(), LabelSource.of("local", "ignored"), "local");
+        assertEquals(4, LabelSource.TYPES.size(), "the vocabulary is fixed");
+    }
+
+    @DisplayName("An unknown or missing type becomes Unknown so the validator can name it")
+    @Test
+    void ofKeepsUnknownTypes() {
+        assertEquals(new LabelSource.Unknown("proxy"), LabelSource.of("proxy", "x"), "unknown type");
+        assertEquals(new LabelSource.Unknown(null), LabelSource.of(null, null), "missing type");
+    }
 }

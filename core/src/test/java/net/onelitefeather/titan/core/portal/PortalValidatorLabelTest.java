@@ -175,4 +175,13 @@ class PortalValidatorLabelTest {
         String message = failure.getMessage();
         assertTrue(message.contains("'survival'") && message.contains("label.text"), "message must name portal and field: " + message);
     }
+
+    @DisplayName("A single source is checked on its own with the reasons the lobby reports")
+    @Test
+    void sourceProblemsNameTheReasons() {
+        assertEquals(List.of(), PortalValidator.sourceProblems(null), "no source is fine");
+        assertEquals(List.of(), PortalValidator.sourceProblems(new LabelSource.Local()), "local needs no name");
+        assertEquals(List.of("label.source.name is missing for type 'task'"), PortalValidator.sourceProblems(new LabelSource.Task(" ")), "blank name");
+        assertEquals(List.of("label.source.type 'proxy' is unknown (expected task, group, service or local)"), PortalValidator.sourceProblems(LabelSource.of("proxy", "x")), "unknown type");
+    }
 }
