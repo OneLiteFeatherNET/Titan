@@ -24,6 +24,11 @@ dependencies {
     compileOnly(libs.cloudnet.driver.api)
     compileOnly(libs.cloudnet.bridge)
     compileOnly(libs.cloudnet.bridge.impl)
+
+    testImplementation(platform(libs.aonyx.bom))
+    testImplementation(libs.junit.api)
+    testImplementation(libs.junit.platform.launcher)
+    testRuntimeOnly(libs.junit.engine)
 }
 
 // The annotation processor generates extension.json but cannot know the project version.

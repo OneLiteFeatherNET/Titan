@@ -24,6 +24,13 @@ import org.jetbrains.annotations.Nullable;
  */
 public sealed interface LabelSource {
 
+    /** The label's own source; a label without one counts the players of the portal's task. */
+    static LabelSource orDefault(Portal portal) {
+        PortalLabel label = portal.label();
+        LabelSource source = label == null ? null : label.source();
+        return source != null ? source : new Task(portal.task());
+    }
+
     /** Sum over all servers of one task. */
     record Task(@Nullable String name) implements LabelSource {
     }
