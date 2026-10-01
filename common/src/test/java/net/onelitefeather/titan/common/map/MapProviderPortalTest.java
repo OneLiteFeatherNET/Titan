@@ -20,8 +20,11 @@ import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
+import net.onelitefeather.titan.core.portal.Billboard;
 import net.onelitefeather.titan.core.portal.Box;
+import net.onelitefeather.titan.core.portal.LabelSource;
 import net.onelitefeather.titan.core.portal.Portal;
+import net.onelitefeather.titan.core.portal.PortalLabel;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -115,6 +118,52 @@ class MapProviderPortalTest {
 
         assertEquals(1, provider.getActiveLobby().portals().size(), "a spawn change must keep the portal");
         assertTrue(Files.readString(this.base.resolve("worlds").resolve("world").resolve(MapEntry.MAP_FILE_NAME)).contains("\"portals\""), "the file must still hold the portals");
+    }
+
+    private static final PortalLabel LABEL = new PortalLabel(new Vec(12.5, 66, -3.5), "<gold>Survival<newline><online>/<max>", "<red>soon", new LabelSource.Service("Survival-1"), Billboard.FIXED, 90f);
+
+    private static final String LABEL_JSON = """
+            {"position":{"x":12.5,"y":66,"z":-3.5},"text":"<gold>Survival<newline><online>/<max>","offlineText":"<red>soon",
+             "source":{"type":"service","name":"Survival-1"},"billboard":"fixed","yaw":90}""";
+
+    private static String portalJson(String labelJson) {
+        return "{\"name\":\"world\",\"portals\":[{\"id\":\"p\",\"task\":\"T\",\"shape\":" + BOX + ",\"label\":" + labelJson + "}]}";
+    }
+
+    @DisplayName("A portal label survives saving the map and loading it again")
+    @Test
+    void labelSurvivesSaveAndLoad(Env env) throws IOException {
+        world("world", "{\"name\":\"world\",\"portals\":[{\"id\":\"p\",\"task\":\"T\",\"shape\":" + BOX + "}]}");
+        MapProvider provider = load(env);
+        Portal withLabel = new Portal("p", new Box(new Vec(0, 0, 0), new Vec(1, 1, 1)), "T", null, LABEL);
+
+        provider.saveMap(LobbyMap.lobbyMapBuilder(provider.getActiveLobby()).portals(List.of(withLabel)).build());
+
+        assertEquals(List.of(withLabel), provider.getActiveLobby().portals(), "the label must be unchanged after the reload in saveMap");
+        assertEquals(List.of(withLabel), load(env).getActiveLobby().portals(), "a fresh provider reading the file must see the same label");
+    }
+
+    @DisplayName("Changing the spawn through the builder keeps the portal label")
+    @Test
+    void spawnChangeKeepsTheLabel(Env env) throws IOException {
+        world("world", portalJson(LABEL_JSON));
+        MapProvider provider = load(env);
+
+        provider.saveMap(LobbyMap.lobbyMapBuilder(provider.getActiveLobby()).spawn(new Pos(3, 70, 3)).build());
+
+        assertEquals(LABEL, provider.getActiveLobby().portals().getFirst().label(), "a spawn change must not drop the label");
+        assertEquals(LABEL, load(env).getActiveLobby().portals().getFirst().label(), "the label must be on disk after the spawn change");
+    }
+
+    @DisplayName("An invalid label aborts the start with portal and field")
+    @Test
+    void invalidLabelAbortsTheStart(Env env) throws IOException {
+        world("world", portalJson("""
+                {"position":{"x":0,"y":0,"z":0},"text":"<gold>x</red>","source":{"type":"proxy"}}"""));
+
+        IllegalStateException failure = assertThrows(IllegalStateException.class, () -> load(env), "an invalid label must abort the start");
+
+        assertTrue(failure.getMessage().contains("'p'") && failure.getMessage().contains("label.source.type"), "message must name portal and field: " + failure.getMessage());
     }
 
     private MapProvider load(Env env) {

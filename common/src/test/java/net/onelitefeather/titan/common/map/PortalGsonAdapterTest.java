@@ -21,14 +21,19 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import net.minestom.server.coordinate.Vec;
 import net.onelitefeather.titan.core.portal.Box;
+import net.onelitefeather.titan.core.portal.Billboard;
 import net.onelitefeather.titan.core.portal.Disc;
+import net.onelitefeather.titan.core.portal.LabelSource;
 import net.onelitefeather.titan.core.portal.Portal;
+import net.onelitefeather.titan.core.portal.PortalLabel;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -175,5 +180,107 @@ class PortalGsonAdapterTest {
     })
     void missingRequiredFieldIsAnError(String portalJson) {
         assertThrows(JsonParseException.class, () -> read(map(portalJson)), "a portal without a required field must not load half-built");
+    }
+
+    private static final String BOX_SHAPE = "\"shape\":{\"type\":\"box\",\"min\":{\"x\":0,\"y\":0,\"z\":0},\"max\":{\"x\":1,\"y\":1,\"z\":1}}";
+
+    private static String portalWithLabel(String labelJson) {
+        return "{\"id\":\"a\",\"task\":\"T\"," + BOX_SHAPE + ",\"label\":" + labelJson + "}";
+    }
+
+    private PortalLabel readLabel(String labelJson) {
+        return read(map(portalWithLabel(labelJson))).portals().get(0).label();
+    }
+
+    private PortalLabel roundTrip(PortalLabel label) {
+        Portal portal = new Portal("a", new Box(new Vec(0, 0, 0), new Vec(1, 1, 1)), "T", null, label);
+        LobbyMap written = LobbyMap.lobbyMapBuilder().portals(List.of(portal)).build();
+        return read(this.gson.toJson(written)).portals().get(0).label();
+    }
+
+    private static final Vec ANCHOR = new Vec(12.5, 66, -3.5);
+
+    @DisplayName("A label is read with position, texts, source, billboard and yaw")
+    @Test
+    void readsFullLabel() {
+        PortalLabel label = readLabel("""
+                {"position":{"x":12.5,"y":66,"z":-3.5},"text":"<gold>Survival","offlineText":"<red>soon",
+                 "source":{"type":"group","name":"Games"},"billboard":"fixed","yaw":90}""");
+
+        assertEquals(new PortalLabel(ANCHOR, "<gold>Survival", "<red>soon", new LabelSource.Group("Games"), Billboard.FIXED, 90f), label);
+    }
+
+    @DisplayName("A label without billboard, source and offlineText gets the defaults")
+    @Test
+    void readsLabelDefaults() {
+        PortalLabel label = readLabel("{\"position\":{\"x\":12.5,\"y\":66,\"z\":-3.5},\"text\":\"t\"}");
+
+        assertEquals(new PortalLabel(ANCHOR, "t", null, null, Billboard.CENTER, 0f), label);
+    }
+
+    @DisplayName("Every source type survives a write and a read")
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("sources")
+    void sourceRoundTrips(LabelSource source) {
+        PortalLabel label = new PortalLabel(ANCHOR, "t", "o", source, Billboard.CENTER, 0f);
+
+        assertEquals(label, roundTrip(label));
+    }
+
+    static Stream<LabelSource> sources() {
+        return Stream.of(new LabelSource.Task("Survival"), new LabelSource.Group("Games"), new LabelSource.Service("Survival-1"), new LabelSource.Local(), null);
+    }
+
+    @DisplayName("A fixed billboard keeps its yaw through a write and a read")
+    @Test
+    void fixedBillboardRoundTrips() {
+        PortalLabel label = new PortalLabel(ANCHOR, "t", null, null, Billboard.FIXED, 90f);
+
+        assertEquals(label, roundTrip(label));
+    }
+
+    @DisplayName("A missing source stays missing instead of becoming the portal task")
+    @Test
+    void missingSourceIsNotWritten() {
+        Portal portal = new Portal("a", new Box(new Vec(0, 0, 0), new Vec(1, 1, 1)), "T", null, new PortalLabel(ANCHOR, "t", null, null, Billboard.CENTER, 0f));
+
+        JsonObject label = this.gson.toJsonTree(LobbyMap.lobbyMapBuilder().portals(List.of(portal)).build()).getAsJsonObject().getAsJsonArray("portals").get(0).getAsJsonObject().getAsJsonObject("label");
+
+        assertTrue(!label.has("source"), "a null source must not be written, was: " + label);
+    }
+
+    @DisplayName("A portal without a label is written without the label key")
+    @Test
+    void portalWithoutLabelHasNoKey() {
+        LobbyMap lobbyMap = LobbyMap.lobbyMapBuilder().portals(List.of(new Portal("a", new Box(new Vec(0, 0, 0), new Vec(1, 1, 1)), "T", null))).build();
+
+        JsonObject portal = this.gson.toJsonTree(lobbyMap).getAsJsonObject().getAsJsonArray("portals").get(0).getAsJsonObject();
+
+        assertTrue(!portal.has("label"), "no label must mean no key, was: " + portal);
+        assertNull(read(this.gson.toJson(lobbyMap)).portals().get(0).label());
+    }
+
+    @DisplayName("An unknown source type reads as a marker instead of failing")
+    @Test
+    void unknownSourceTypeReadsAsMarker() {
+        PortalLabel label = readLabel("{\"position\":{\"x\":0,\"y\":0,\"z\":0},\"text\":\"t\",\"source\":{\"type\":\"proxy\",\"name\":\"x\"}}");
+
+        assertEquals(new LabelSource.Unknown("proxy"), label.source());
+    }
+
+    @DisplayName("An unknown billboard reads as a marker instead of failing")
+    @Test
+    void unknownBillboardReadsAsMarker() {
+        PortalLabel label = readLabel("{\"position\":{\"x\":0,\"y\":0,\"z\":0},\"text\":\"t\",\"billboard\":\"spin\"}");
+
+        assertEquals(Billboard.UNKNOWN, label.billboard());
+    }
+
+    @DisplayName("A label without position reads with a null position")
+    @Test
+    void missingPositionReadsAsNull() {
+        PortalLabel label = readLabel("{\"text\":\"t\"}");
+
+        assertNull(label.position(), "the validator, not the reader, reports a missing position");
     }
 }
