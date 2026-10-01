@@ -23,7 +23,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Locks in that the classpath {@code application.yaml} carries exactly the expected defaults of
- * the {@code sit}, {@code spawn}, {@code tickle} and {@code elytra} sections, key by key.
+ * the {@code sit}, {@code spawn}, {@code tickle}, {@code elytra} and {@code portal} sections, key
+ * by key.
  *
  * <p>Loads the file as its own {@link Configuration} instance via
  * {@link Configuration.Builder#load(String)}, never the static {@code io.avaje.config.Config}
@@ -64,6 +65,14 @@ class ApplicationYamlDefaultsCharacterizationTest {
         Configuration configuration = load();
 
         Assertions.assertEquals(4000L, configuration.getLong("tickle.cooldownMillis"), "tickle.cooldownMillis");
+    }
+
+    @DisplayName("portal: application.yaml ships the label refresh period of 5 seconds")
+    @Test
+    void portalMatchesDefaults() {
+        Configuration configuration = load();
+
+        Assertions.assertEquals(5, configuration.getInt("portal.labelRefreshSeconds"), "portal.labelRefreshSeconds");
     }
 
     @DisplayName("config.watch: application.yaml ships file watching off by default")
