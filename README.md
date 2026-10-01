@@ -356,7 +356,7 @@ consist of lower-case letters, digits, `-` and `_`; `list`, `show` and `create` 
 - `/setup portal <id> disc <r>`: ring from your eyes, view direction and radius in one step
 - `/setup portal <id> task <task>`
 - `/setup portal <id> permission <permission|none>`
-- `/setup portal <id> label here`: label position at your eyes (the anchor of the text display)
+- `/setup portal <id> label here`: label position at your feet (the anchor of the text display)
 - `/setup portal <id> label text <minimessage...>`: label text, may contain spaces
 - `/setup portal <id> label offline <minimessage...>`: text shown while the source is offline
 - `/setup portal <id> label source <task|group|service|local> [name]`: where the player count
