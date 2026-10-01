@@ -38,6 +38,8 @@ import net.onelitefeather.titan.core.module.LobbySpawn;
 import net.onelitefeather.titan.core.module.LobbyWorldChoice;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
 import net.onelitefeather.titan.common.deliver.DeliverProvider;
+import net.onelitefeather.titan.common.deliver.HolderPlayerCounts;
+import net.onelitefeather.titan.core.portal.PlayerCounts;
 import net.onelitefeather.titan.runtime.feature.ConfigFeatureFlags;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.common.map.MapProvider;
@@ -101,6 +103,12 @@ public final class PlatformBeans {
     @Bean
     public Deliver deliver() {
         return DeliverProvider.create();
+    }
+
+    /** Reads every source as not running until the CloudNet bridge installs its lookup. */
+    @Bean
+    public PlayerCounts playerCounts() {
+        return new HolderPlayerCounts();
     }
 
     @Bean
