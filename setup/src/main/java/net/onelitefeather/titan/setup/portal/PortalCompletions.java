@@ -48,6 +48,11 @@ public final class PortalCompletions {
         return Stream.concat(Stream.of(1.0), DraftOutline.RADIUS_SUGGESTIONS.stream()).map(PortalCompletions::number).toList();
     }
 
+    /** The label source types; the same list the editor accepts. */
+    public static List<String> sourceTypes() {
+        return PortalEditor.SOURCE_TYPES;
+    }
+
     public static List<String> permissions() {
         return List.of("none");
     }

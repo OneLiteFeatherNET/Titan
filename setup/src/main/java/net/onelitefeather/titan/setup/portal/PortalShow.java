@@ -43,7 +43,7 @@ public final class PortalShow {
         UUID uuid = player.getUuid();
         stop(uuid);
         List<Vec> points = new ArrayList<>();
-        portals.forEach(portal -> points.addAll(PortalOutline.points(portal.shape())));
+        portals.forEach(portal -> points.addAll(PortalOutline.points(portal)));
         if (points.isEmpty()) {
             return false;
         }

@@ -17,5 +17,5 @@ package net.onelitefeather.titan.setup.portal;
 
 /** A part of a {@link PortalDraft} that is still needed before it can be saved. */
 public enum Missing {
-    FORM, CORNER_1, CORNER_2, CENTRE, RADIUS, TASK
+    FORM, CORNER_1, CORNER_2, CENTRE, RADIUS, TASK, LABEL_POSITION, LABEL_TEXT
 }

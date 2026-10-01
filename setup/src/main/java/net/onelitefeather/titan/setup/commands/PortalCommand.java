@@ -55,6 +55,9 @@ public final class PortalCommand extends Command {
     private final Argument<String> newId = ArgumentType.Word("id");
     private final Argument<Double> radius = ArgumentType.Double("value");
     private final Argument<String[]> task = ArgumentType.StringArray("text");
+    private final Argument<String[]> labelText = ArgumentType.StringArray("minimessage");
+    private final Argument<String> sourceType = ArgumentType.Word("type");
+    private final Argument<String> sourceName = ArgumentType.Word("name");
     private final Argument<String> permission = ArgumentType.Word("node");
     private final Argument<String> form = ArgumentType.Word("kind").from("box", "ring");
 
@@ -73,6 +76,8 @@ public final class PortalCommand extends Command {
         id.setSuggestionCallback((sender, context, suggestion) -> suggest(sender, suggestion, player -> PortalCompletions.ids(store.portals(), editor.drafts(player.getUuid()))));
         radius.setSuggestionCallback((sender, context, suggestion) -> suggest(sender, suggestion, player -> PortalCompletions.radii()));
         task.setSuggestionCallback((sender, context, suggestion) -> suggest(sender, suggestion, player -> PortalCompletions.tasks(store.portals())));
+        // Free word, not 'from(...)': the editor answers an unknown type with the allowed ones.
+        sourceType.setSuggestionCallback((sender, context, suggestion) -> suggest(sender, suggestion, player -> PortalCompletions.sourceTypes()));
         permission.setSuggestionCallback((sender, context, suggestion) -> suggest(sender, suggestion, player -> PortalCompletions.permissions()));
 
         setDefaultExecutor((sender, context) -> sender.sendMessage(PortalMessages.usage()));
@@ -87,6 +92,13 @@ public final class PortalCommand extends Command {
         addSyntax(edit((player, context) -> editor.disc(player.getUuid(), context.get(id), eye(player), player.getPosition().direction(), context.get(radius))), id, ArgumentType.Literal("disc"), radius);
         addSyntax(edit((player, context) -> editor.task(player.getUuid(), context.get(id), String.join(" ", context.get(task)))), id, ArgumentType.Literal("task"), task);
         addSyntax(edit((player, context) -> editor.permission(player.getUuid(), context.get(id), context.get(permission))), id, ArgumentType.Literal("permission"), permission);
+        Argument<String> label = ArgumentType.Literal("label");
+        addSyntax(edit((player, context) -> editor.labelHere(player.getUuid(), context.get(id), player.getPosition())), id, label, ArgumentType.Literal("here"));
+        addSyntax(edit((player, context) -> editor.labelText(player.getUuid(), context.get(id), String.join(" ", context.get(labelText)))), id, label, ArgumentType.Literal("text"), labelText);
+        addSyntax(edit((player, context) -> editor.labelOffline(player.getUuid(), context.get(id), String.join(" ", context.get(labelText)))), id, label, ArgumentType.Literal("offline"), labelText);
+        addSyntax(edit((player, context) -> editor.labelSource(player.getUuid(), context.get(id), context.get(sourceType), null)), id, label, ArgumentType.Literal("source"), sourceType);
+        addSyntax(edit((player, context) -> editor.labelSource(player.getUuid(), context.get(id), context.get(sourceType), context.get(sourceName))), id, label, ArgumentType.Literal("source"), sourceType, sourceName);
+        addSyntax(edit((player, context) -> editor.labelRemove(player.getUuid(), context.get(id))), id, label, ArgumentType.Literal("remove"));
         addSyntax(edit((player, context) -> editor.save(player.getUuid(), context.get(id))), id, ArgumentType.Literal("save"));
         addSyntax(edit((player, context) -> editor.cancel(player.getUuid(), context.get(id))), id, ArgumentType.Literal("cancel"));
         addSyntax(edit((player, context) -> editor.remove(player.getUuid(), context.get(id))), id, ArgumentType.Literal("remove"));
@@ -133,6 +145,7 @@ public final class PortalCommand extends Command {
         switch (result) {
             case PortalEditResult.Pending ignored -> preview.start(player, id);
             case PortalEditResult.Complete ignored -> preview.start(player, id);
+            case PortalEditResult.LabelUpdated ignored -> preview.start(player, id);
             case PortalEditResult.Saved ignored -> preview.stop(player.getUuid(), id);
             case PortalEditResult.Updated ignored -> preview.stop(player.getUuid(), id);
             case PortalEditResult.Removed ignored -> preview.stop(player.getUuid(), id);

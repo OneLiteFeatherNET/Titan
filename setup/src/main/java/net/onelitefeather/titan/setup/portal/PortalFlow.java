@@ -79,6 +79,10 @@ public final class PortalFlow {
                 step(draft, "stand in the centre of the ring and look through it.", List.of(run("set centre", base + "centre")));
             case RADIUS -> step(draft, "choose the radius.", radii(base));
             case TASK -> step(draft, "choose what the portal does.", tasks(base, knownTasks));
+            case LABEL_POSITION ->
+                step(draft, "stand where the label floats.", List.of(run("set label position", base + "label here"), run("remove label", base + "label remove")));
+            case LABEL_TEXT ->
+                step(draft, "enter the label text.", List.of(new FlowButton("enter…", base + "label text ", Kind.SUGGEST), run("remove label", base + "label remove")));
         };
     }
 

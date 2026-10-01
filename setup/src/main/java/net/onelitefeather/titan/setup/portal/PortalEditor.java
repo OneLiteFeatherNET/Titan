@@ -17,12 +17,14 @@ package net.onelitefeather.titan.setup.portal;
 
 import net.minestom.server.coordinate.Point;
 import net.minestom.server.coordinate.Vec;
+import net.onelitefeather.titan.core.portal.LabelSource;
 import net.onelitefeather.titan.core.portal.Portal;
 import net.onelitefeather.titan.core.portal.PortalProblem;
 import net.onelitefeather.titan.core.portal.PortalValidator;
 import net.onelitefeather.titan.setup.portal.PortalEditResult.Cancelled;
 import net.onelitefeather.titan.setup.portal.PortalEditResult.Complete;
 import net.onelitefeather.titan.setup.portal.PortalEditResult.Invalid;
+import net.onelitefeather.titan.setup.portal.PortalEditResult.LabelUpdated;
 import net.onelitefeather.titan.setup.portal.PortalEditResult.Pending;
 import net.onelitefeather.titan.setup.portal.PortalEditResult.Rejected;
 import net.onelitefeather.titan.setup.portal.PortalEditResult.Removed;
@@ -30,6 +32,7 @@ import net.onelitefeather.titan.setup.portal.PortalEditResult.Saved;
 import net.onelitefeather.titan.setup.portal.PortalEditResult.Unknown;
 import net.onelitefeather.titan.setup.portal.PortalEditResult.Updated;
 
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +60,8 @@ public final class PortalEditor {
     /** Words the command uses in the id position. */
     private static final Set<String> RESERVED_IDS = Set.of("list", "show", "create");
     private static final String NO_PERMISSION = "none";
+    /** The source types in the order the player is told about them. */
+    static final List<String> SOURCE_TYPES = List.of("task", "group", "service", "local");
 
     private final PortalStore store;
     private final Map<UUID, Map<String, PortalDraft>> drafts = new HashMap<>();
@@ -124,6 +129,47 @@ public final class PortalEditor {
         }
         String value = permission.trim();
         return edit(player, id, draft -> draft.permission(NO_PERMISSION.equals(value) ? null : value));
+    }
+
+    /** Anchors the label where the player stands, unrounded. */
+    public PortalEditResult labelHere(UUID player, String id, Point position) {
+        return editLabel(player, id, draft -> draft.labelPosition(new Vec(position.x(), position.y(), position.z())));
+    }
+
+    /** The text is MiniMessage; its rules are the validator's, applied on save. */
+    public PortalEditResult labelText(UUID player, String id, String text) {
+        if (text == null || text.isBlank()) {
+            return new Invalid("the label text must not be empty");
+        }
+        return editLabel(player, id, draft -> draft.labelText(text));
+    }
+
+    public PortalEditResult labelOffline(UUID player, String id, String text) {
+        if (text == null || text.isBlank()) {
+            return new Invalid("the offline text must not be empty");
+        }
+        return editLabel(player, id, draft -> draft.labelOffline(text));
+    }
+
+    /** {@code name} is required for every type but {@code local}, which ignores it. */
+    public PortalEditResult labelSource(UUID player, String id, String type, @Nullable String name) {
+        String trimmed = name == null || name.isBlank() ? null : name.trim();
+        LabelSource source = switch (type == null ? "" : type) {
+            case "local" -> new LabelSource.Local();
+            case "task" -> trimmed == null ? null : new LabelSource.Task(trimmed);
+            case "group" -> trimmed == null ? null : new LabelSource.Group(trimmed);
+            case "service" -> trimmed == null ? null : new LabelSource.Service(trimmed);
+            default -> null;
+        };
+        if (source == null) {
+            return type != null && SOURCE_TYPES.contains(type) ? new Invalid("the source type '" + type + "' needs a name") : new Invalid("unknown source type '" + type + "', use one of: " + String.join(", ", SOURCE_TYPES));
+        }
+        return editLabel(player, id, draft -> draft.labelSource(source));
+    }
+
+    /** Takes every part of the label from the draft; a saved label goes with the next save. */
+    public PortalEditResult labelRemove(UUID player, String id) {
+        return editLabel(player, id, PortalDraft::removeLabel);
     }
 
     /** Writes the complete, valid draft to the store; otherwise reports why and keeps the draft. */
@@ -201,6 +247,16 @@ public final class PortalEditor {
     /** Forgets every draft of the player, for when they leave. */
     public void discardAll(UUID player) {
         drafts.remove(player);
+    }
+
+    /** An edit answered with the label's state instead of the generic progress. */
+    private PortalEditResult editLabel(UUID player, String id, Consumer<PortalDraft> change) {
+        PortalEditResult result = edit(player, id, change);
+        if (result instanceof Invalid) {
+            return result;
+        }
+        PortalDraft draft = draftsOf(player).get(id);
+        return new LabelUpdated(id, draft.labelPosition(), draft.labelText(), draft.labelOffline(), draft.labelSource(), draft.missing());
     }
 
     private PortalEditResult edit(UUID player, String id, Consumer<PortalDraft> change) {

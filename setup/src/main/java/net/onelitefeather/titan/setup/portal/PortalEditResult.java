@@ -15,8 +15,12 @@
  */
 package net.onelitefeather.titan.setup.portal;
 
+import net.minestom.server.coordinate.Vec;
+import net.onelitefeather.titan.core.portal.LabelSource;
 import net.onelitefeather.titan.core.portal.Portal;
 import net.onelitefeather.titan.core.portal.PortalProblem;
+
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -40,6 +44,23 @@ public sealed interface PortalEditResult {
 
     /** The draft can be saved, but has not been. */
     record Complete(String id) implements PortalEditResult {
+    }
+
+    /**
+     * A label edit; carries the draft's label so the answer can state it. All parts {@code null}
+     * means the draft has no label.
+     */
+    record LabelUpdated(String id, @Nullable Vec position, @Nullable String text,
+                        @Nullable String offlineText,
+                        @Nullable LabelSource source,
+                        List<Missing> missing) implements PortalEditResult {
+        public LabelUpdated {
+            missing = List.copyOf(missing);
+        }
+
+        public boolean hasLabel() {
+            return position != null || text != null || offlineText != null || source != null;
+        }
     }
 
     /** The saved portal and the draft are gone. */
