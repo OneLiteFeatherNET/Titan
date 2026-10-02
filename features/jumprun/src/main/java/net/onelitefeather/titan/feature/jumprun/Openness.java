@@ -15,7 +15,10 @@
  */
 package net.onelitefeather.titan.feature.jumprun;
 
-/** How much free space surrounds a block position, read from a {@link SpaceProbe}. */
+/**
+ * How much free space surrounds a block position, read from a {@link SpaceProbe}. Cells outside
+ * the world count as closed: nothing can be placed or stood on there.
+ */
 record Openness(SpaceProbe probe) {
 
     /** Air blocks a block needs below it to count as standing in the open. */
@@ -39,7 +42,7 @@ record Openness(SpaceProbe probe) {
         for (int level = 0; level <= 1; level++) {
             for (Direction direction : Direction.values()) {
                 cells++;
-                air += probe.isAir(pos.offset(direction.dx(), level, direction.dz())) ? 1 : 0;
+                air += isOpen(pos.offset(direction.dx(), level, direction.dz())) ? 1 : 0;
             }
         }
         return (double) air / cells;
@@ -48,8 +51,12 @@ record Openness(SpaceProbe probe) {
     private int airInColumn(BlockPos pos, int depth) {
         int air = 0;
         for (int below = 1; below <= depth; below++) {
-            air += probe.isAir(pos.offset(0, -below, 0)) ? 1 : 0;
+            air += isOpen(pos.offset(0, -below, 0)) ? 1 : 0;
         }
         return air;
+    }
+
+    private boolean isOpen(BlockPos pos) {
+        return probe.inBounds(pos) && probe.isAir(pos);
     }
 }

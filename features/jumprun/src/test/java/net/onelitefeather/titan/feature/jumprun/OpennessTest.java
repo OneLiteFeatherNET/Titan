@@ -51,6 +51,16 @@ class OpennessTest {
         assertTrue(in(new FakeSpaceProbe().occupyBox(1, 20, -1, 1, 40, 1)).hasAirBelow(TARGET), "a wall next to the column");
     }
 
+    @Test
+    void cellsBelowTheWorldBottomAreNoOpenAir() {
+        assertFalse(in(new FakeSpaceProbe()).hasAirBelow(new BlockPos(0, 3, 0)), "y-4 is below the world");
+    }
+
+    @Test
+    void theLowestBlockWithFourCellsInTheWorldBelowItHasAirBelow() {
+        assertTrue(in(new FakeSpaceProbe()).hasAirBelow(new BlockPos(0, 4, 0)), "y-1 to y-4 are y=3 to y=0");
+    }
+
     // --- openness ---------------------------------------------------------------------------------
 
     @Test
@@ -89,5 +99,17 @@ class OpennessTest {
         FakeSpaceProbe world = new FakeSpaceProbe().occupyBox(1, 32, -1, 1, 40, 1);
 
         assertEquals(1.0, in(world).of(TARGET), 1e-9, "head height is not looked at");
+    }
+
+    @Test
+    void cellsBeyondTheBorderCountAsClosed() {
+        BlockPos atBorder = new BlockPos(50, 30, 0);
+
+        assertEquals(22.0 / 28.0, in(new FakeSpaceProbe()).of(atBorder), 1e-9, "three neighbour cells at y and three at y+1 lie outside");
+    }
+
+    @Test
+    void cellsBelowTheWorldBottomCountAsClosed() {
+        assertEquals(24.0 / 28.0, in(new FakeSpaceProbe()).of(new BlockPos(0, 8, 0)), 1e-9, "four of the twelve cells below lie under y=0");
     }
 }
