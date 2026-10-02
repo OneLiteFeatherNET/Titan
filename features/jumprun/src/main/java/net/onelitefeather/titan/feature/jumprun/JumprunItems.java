@@ -31,13 +31,12 @@ import net.onelitefeather.titan.core.module.item.LobbyItem;
 @Factory
 final class JumprunItems {
 
-    private static final String FEATURE_ID = "jumprun";
     private static final Key ITEM_KEY = Key.key("titan:jumprun");
     private static final int HOTBAR_SLOT = 0;
 
     @Bean
     LobbyItem jumprun(JumprunModule jumprun) {
         ItemStack rabbitFoot = ItemStack.builder(Material.RABBIT_FOOT).customName(MiniMessage.miniMessage().deserialize("<!i><green>Jump & Run")).build();
-        return new LobbyItem(FEATURE_ID, ITEM_KEY, rabbitFoot, ItemSlot.hotbar(HOTBAR_SLOT), (player, event) -> jumprun.toggle(player));
+        return new LobbyItem(JumprunModule.ID, ITEM_KEY, rabbitFoot, ItemSlot.hotbar(HOTBAR_SLOT), (player, event) -> jumprun.toggle(player));
     }
 }

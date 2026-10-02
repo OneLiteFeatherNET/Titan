@@ -22,6 +22,8 @@ import net.minestom.server.entity.PlayerHand;
 import net.minestom.server.event.player.PlayerMoveEvent;
 import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.server.instance.Instance;
+import net.minestom.server.network.packet.client.play.ClientPlayerPositionPacket;
+import net.minestom.server.network.packet.client.play.ClientTeleportConfirmPacket;
 import net.minestom.server.network.packet.server.play.BlockChangePacket;
 import net.minestom.testing.Env;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
@@ -44,11 +46,11 @@ final class JumprunFixture implements AutoCloseable {
     private final TestTitanNode titan;
     private final JumprunModule module;
     private final LobbyItem item;
-    private final InMemoryRunRecords records;
+    private final RunRecords records;
     private final RunMessages messages;
     private boolean moduleStopped;
 
-    private JumprunFixture(Env env, TestTitanNode titan, JumprunModule module, LobbyItem item, InMemoryRunRecords records, RunMessages messages) {
+    private JumprunFixture(Env env, TestTitanNode titan, JumprunModule module, LobbyItem item, RunRecords records, RunMessages messages) {
         this.env = env;
         this.titan = titan;
         this.module = module;
@@ -59,8 +61,11 @@ final class JumprunFixture implements AutoCloseable {
 
     /** The spawn lies west of the usual start spots, so runs head east. */
     static JumprunFixture start(Env env) {
+        return start(env, new InMemoryRunRecords());
+    }
+
+    static JumprunFixture start(Env env, RunRecords records) {
         TestTitanNode titan = TestTitanNode.attach(env);
-        InMemoryRunRecords records = new InMemoryRunRecords();
         RunMessages messages = new RunMessages();
         JumprunModule module = new JumprunModule(titan.node(), () -> new Pos(-5.5, GROUND_Y, 0.5), records, messages, () -> SEED);
         module.start();
@@ -82,7 +87,7 @@ final class JumprunFixture implements AutoCloseable {
         return module;
     }
 
-    InMemoryRunRecords records() {
+    RunRecords records() {
         return records;
     }
 
@@ -98,6 +103,16 @@ final class JumprunFixture implements AutoCloseable {
     /** A move report from the client, as the server turns the movement packet into an event. */
     void move(Player player, Pos to, boolean onGround) {
         env.process().eventHandler().call(new PlayerMoveEvent(player, to, onGround));
+    }
+
+    /**
+     * A position packet through the player's connection, so Minestom's own listener raises the move
+     * event.
+     */
+    void sendPositionPacket(Player player, Pos to, boolean onGround) {
+        // Minestom drops movement until the client has confirmed the last teleport it was sent.
+        env.process().packetListener().processClientPacket(new ClientTeleportConfirmPacket(player.getLastSentTeleportId()), player.getPlayerConnection());
+        env.process().packetListener().processClientPacket(new ClientPlayerPositionPacket(to, onGround, false), player.getPlayerConnection());
     }
 
     /** The player lands on top of a shown block and the client says so. */

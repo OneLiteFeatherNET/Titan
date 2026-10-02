@@ -15,11 +15,13 @@
  */
 package net.onelitefeather.titan.feature.jumprun;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.OptionalInt;
 import net.kyori.adventure.translation.GlobalTranslator;
 import net.minestom.server.event.Event;
@@ -39,14 +41,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(MicrotusExtension.class)
 class JumprunShutdownTest {
-
-    private static long translatorSources() {
-        long count = 0;
-        for (var ignored : GlobalTranslator.translator().sources()) {
-            count++;
-        }
-        return count;
-    }
 
     @Test
     void stoppingDetachesTheColumnsListeners(Env env) {
@@ -103,14 +97,22 @@ class JumprunShutdownTest {
 
     @Test
     void stoppingRemovesTheTranslationStore(Env env) {
-        long before = translatorSources();
-
+        String key = RunMessages.KEYS.getFirst();
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            assertEquals(before + 1, translatorSources(), "the column adds its own store");
+            assertTrue(GlobalTranslator.translator().canTranslate(key, Locale.ENGLISH), "the column's store translates its keys while it runs");
 
             fixture.stopModule();
 
-            assertEquals(before, translatorSources(), "the store is gone again");
+            assertFalse(GlobalTranslator.translator().canTranslate(key, Locale.ENGLISH), "the column's store is gone again");
+        }
+    }
+
+    @Test
+    void stoppingAColumnThatNeverStartedDoesNotFail(Env env) {
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            JumprunModule module = new JumprunModule(titan.node(), () -> null, new InMemoryRunRecords(), new RunMessages(), () -> JumprunFixture.SEED);
+
+            assertDoesNotThrow(module::stop);
         }
     }
 }

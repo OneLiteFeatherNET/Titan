@@ -20,9 +20,11 @@ import io.avaje.inject.PreDestroy;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.LongSupplier;
+import java.util.function.UnaryOperator;
 import java.util.random.RandomGenerator;
 import java.util.random.RandomGeneratorFactory;
 import net.kyori.adventure.text.Component;
@@ -57,7 +59,7 @@ final class JumprunModule {
     /** This feature's position among its sibling {@link FeatureNode}s. */
     static final int EVENT_PRIORITY = 1000;
 
-    private static final String ID = "jumprun";
+    static final String ID = "jumprun";
     private static final String RANDOM_ALGORITHM = "L64X128MixRandom";
     private static final Logger LOGGER = LoggerFactory.getLogger(JumprunModule.class);
 
@@ -71,8 +73,8 @@ final class JumprunModule {
     private FeatureNode node;
 
     @Inject
-    JumprunModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbySpawn spawn) {
-        this(titan, spawn, new InMemoryRunRecords(), new RunMessages(), () -> ThreadLocalRandom.current().nextLong());
+    JumprunModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbySpawn spawn, RunRecords records) {
+        this(titan, spawn, records, new RunMessages(), () -> ThreadLocalRandom.current().nextLong());
     }
 
     JumprunModule(EventNode<Event> titan, LobbySpawn spawn, RunRecords records, RunMessages messages, LongSupplier seeds) {
@@ -86,13 +88,22 @@ final class JumprunModule {
     @PostConstruct
     void start() {
         this.messages.register();
-        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY).on(PlayerMoveEvent.class, this::onMove).on(PlayerStartFlyingWithElytraEvent.class, event -> endRunOf(event.getPlayer(), EndReason.ELYTRA)).on(PlayerDeathEvent.class, event -> endRunOf(event.getPlayer(), EndReason.DEATH)).on(PlayerChunkLoadEvent.class, this::onChunkLoad).on(PlayerBlockInteractEvent.class, event -> resendNextTickIfRunBlock(event.getPlayer(), event.getBlockPosition())).on(PlayerStartDiggingEvent.class, event -> resendNextTickIfRunBlock(event.getPlayer(), event.getBlockPosition())).on(PlayerDisconnectEvent.class, event -> endRunOf(event.getPlayer(), EndReason.DISCONNECT));
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY);
+        this.node.on(PlayerMoveEvent.class, this::onMove);
+        this.node.on(PlayerStartFlyingWithElytraEvent.class, this::onElytra);
+        this.node.on(PlayerDeathEvent.class, this::onDeath);
+        this.node.on(PlayerChunkLoadEvent.class, this::onChunkLoad);
+        this.node.on(PlayerBlockInteractEvent.class, this::onBlockInteract);
+        this.node.on(PlayerStartDiggingEvent.class, this::onStartDigging);
+        this.node.on(PlayerDisconnectEvent.class, this::onDisconnect);
     }
 
     @PreDestroy
     void stop() {
         // Detach first, so no event can start or move a run while they are ended.
-        this.node.close();
+        if (this.node != null) {
+            this.node.close();
+        }
         runs.all().forEach(run -> end(run, EndReason.SHUTDOWN));
         this.messages.close();
     }
@@ -112,14 +123,17 @@ final class JumprunModule {
     }
 
     private void begin(Player player) {
-        Optional<Run> run = player.isOnGround() ? plan(player) : Optional.empty();
-        if (run.isEmpty()) {
+        Optional<Run> planned = player.isOnGround() ? plan(player) : Optional.empty();
+        if (planned.isEmpty()) {
             player.sendMessage(messages.noSpace(player.getLocale()));
             LOGGER.atDebug().addKeyValue("player", player.getUuid()).log("jumprun has no room to start");
             return;
         }
-        runs.add(run.get());
-        fakeBlocks.show(player, run.get().fakeWindow());
+        Run run = planned.get();
+        synchronized (run) {
+            runs.add(run);
+            fakeBlocks.show(player, run.fakeWindow());
+        }
         LOGGER.atDebug().addKeyValue("player", player.getUuid()).log("jumprun started");
     }
 
@@ -133,6 +147,26 @@ final class JumprunModule {
         return Course.start(feet, startBlock, heading, new InstanceSpaceProbe(player.getInstance()), random).map(course -> new Run(player, course, startBlock));
     }
 
+    private void onElytra(PlayerStartFlyingWithElytraEvent event) {
+        endRunOf(event.getPlayer(), EndReason.ELYTRA);
+    }
+
+    private void onDeath(PlayerDeathEvent event) {
+        endRunOf(event.getPlayer(), EndReason.DEATH);
+    }
+
+    private void onDisconnect(PlayerDisconnectEvent event) {
+        endRunOf(event.getPlayer(), EndReason.DISCONNECT);
+    }
+
+    private void onBlockInteract(PlayerBlockInteractEvent event) {
+        resendNextTickIfRunBlock(event.getPlayer(), event.getBlockPosition());
+    }
+
+    private void onStartDigging(PlayerStartDiggingEvent event) {
+        resendNextTickIfRunBlock(event.getPlayer(), event.getBlockPosition());
+    }
+
     private void endRunOf(Player player, EndReason reason) {
         Run run = runs.get(player.getUuid());
         if (run != null) {
@@ -144,7 +178,7 @@ final class JumprunModule {
     private void onChunkLoad(PlayerChunkLoadEvent event) {
         Run run = runs.get(event.getPlayer().getUuid());
         if (run != null) {
-            fakeBlocks.show(run.player(), run.fakeWindow().stream().filter(block -> block.pos().x() >> 4 == event.getChunkX() && block.pos().z() >> 4 == event.getChunkZ()).toList());
+            showIfRegistered(run, window -> window.stream().filter(block -> block.pos().x() >> 4 == event.getChunkX() && block.pos().z() >> 4 == event.getChunkZ()).toList());
         }
     }
 
@@ -155,11 +189,19 @@ final class JumprunModule {
     private void resendNextTickIfRunBlock(Player player, Point block) {
         Run run = runs.get(player.getUuid());
         if (run != null && run.showsFakeBlockAt(block.blockX(), block.blockY(), block.blockZ())) {
-            player.scheduler().scheduleNextTick(() -> {
-                if (runs.get(player.getUuid()) == run) {
-                    fakeBlocks.show(player, run.fakeWindow());
-                }
-            });
+            player.scheduler().scheduleNextTick(() -> showIfRegistered(run, window -> window));
+        }
+    }
+
+    /**
+     * Shows the chosen part of the window unless the run ended meanwhile, so no block outlives its
+     * reset.
+     */
+    private void showIfRegistered(Run run, UnaryOperator<List<CourseBlock>> part) {
+        synchronized (run) {
+            if (runs.get(run.player().getUuid()) == run) {
+                fakeBlocks.show(run.player(), part.apply(run.fakeWindow()));
+            }
         }
     }
 
@@ -168,12 +210,16 @@ final class JumprunModule {
         if (run == null) {
             return;
         }
-        Course course = run.course();
         Pos to = event.getNewPosition();
-        if (course.hasFallen(to.y())) {
-            end(run, EndReason.FALL);
-        } else if (event.isOnGround()) {
-            advance(run, course.advanceTo(to));
+        synchronized (run) {
+            if (runs.get(run.player().getUuid()) != run) {
+                return;
+            }
+            if (run.hasFallen(to.y())) {
+                end(run, EndReason.FALL);
+            } else if (event.isOnGround()) {
+                advance(run, run.advanceTo(to));
+            }
         }
     }
 
@@ -184,52 +230,33 @@ final class JumprunModule {
         Player player = run.player();
         fakeBlocks.reset(player, run.fake(advance.removed()));
         fakeBlocks.show(player, run.fake(advance.added()));
-        player.sendActionBar(messages.scoreActionBar(player.getLocale(), run.course().score()));
+        player.sendActionBar(messages.scoreActionBar(player.getLocale(), run.score()));
         if (advance.exhausted()) {
             end(run, EndReason.EXHAUSTED);
         }
     }
 
     private void end(Run run, EndReason reason) {
-        if (!runs.remove(run)) {
-            return;
-        }
         Player player = run.player();
-        int score = run.course().score();
-        if (reason.restoresBlocks) {
-            fakeBlocks.reset(player, run.fakeWindow());
+        int score;
+        synchronized (run) {
+            if (!runs.remove(run)) {
+                return;
+            }
+            score = run.score();
+            if (reason.restoresBlocks()) {
+                fakeBlocks.reset(player, run.fakeWindow());
+            }
         }
-        boolean isRecord = reason.submitsScore && records.submit(player.getUuid(), score);
-        if (reason.announces) {
+        boolean isRecord = reason.submitsScore() && records.submit(player.getUuid(), score);
+        if (reason.announcesScore()) {
             // A run that never scored is not worth calling a record, even when it is the first.
             Component message = isRecord && score > 0 ? messages.endRecord(player.getLocale(), score) : messages.endScore(player.getLocale(), score);
             player.sendMessage(message);
         }
         if (reason == EndReason.FALL) {
-            player.teleport(run.course().startPoint());
+            player.teleport(run.startPoint());
         }
-        LOGGER.atDebug().addKeyValue("player", player.getUuid()).log("jumprun ended: reason={}, score={}", reason, score);
-    }
-
-    /** Why a run ended, and what the player is owed for it. */
-    private enum EndReason {
-        ABORT(true, true, true), FALL(true, true, true), EXHAUSTED(true, true, true), ELYTRA(true, true, true), DEATH(true, true, true),
-        /** The player is gone: nothing to show or tell, but the score stands. */
-        DISCONNECT(false, true, false),
-        /**
-         * The lobby stops: the blocks go back, but an interrupted run is neither scored nor
-         * reported.
-         */
-        SHUTDOWN(true, false, false);
-
-        private final boolean restoresBlocks;
-        private final boolean submitsScore;
-        private final boolean announces;
-
-        EndReason(boolean restoresBlocks, boolean submitsScore, boolean announces) {
-            this.restoresBlocks = restoresBlocks;
-            this.submitsScore = submitsScore;
-            this.announces = announces;
-        }
+        LOGGER.atDebug().addKeyValue("player", player.getUuid()).addKeyValue("reason", reason).addKeyValue("score", score).log("jumprun ended");
     }
 }

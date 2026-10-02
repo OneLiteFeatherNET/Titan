@@ -148,6 +148,20 @@ class JumprunMoveTest {
     }
 
     @Test
+    void aFallReportedByTheClientPacketEndsTheRunAndSetsThePlayerBackToTheStartPoint(Env env) {
+        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+            StartedRun run = StartedRun.start(env, fixture);
+
+            run.player().teleport(STAND.add(6, 0, 0)).join();
+
+            fixture.sendPositionPacket(run.player(), STAND.add(6, -3.5, 0), false);
+
+            assertFalse(fixture.module().isRunning(run.player()), "the fall ends the run");
+            assertEquals(STAND, run.player().getPosition(), "the player stands where the run began");
+        }
+    }
+
+    @Test
     void aFallSetsThePlayerBackToTheStartPoint(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             StartedRun run = StartedRun.start(env, fixture);

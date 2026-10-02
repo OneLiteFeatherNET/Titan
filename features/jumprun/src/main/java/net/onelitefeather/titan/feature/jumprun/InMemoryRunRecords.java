@@ -15,13 +15,21 @@
  */
 package net.onelitefeather.titan.feature.jumprun;
 
+import io.avaje.inject.Secondary;
+import jakarta.inject.Singleton;
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/** Keeps records until the lobby stops; deliberately not cleared on disconnect. */
+/**
+ * Keeps records until the lobby stops; deliberately not cleared on disconnect. {@code @Secondary},
+ * so a
+ * persistent {@link RunRecords} bean takes its place.
+ */
+@Singleton
+@Secondary
 final class InMemoryRunRecords implements RunRecords {
 
     private final Map<UUID, Integer> best = new ConcurrentHashMap<>();
