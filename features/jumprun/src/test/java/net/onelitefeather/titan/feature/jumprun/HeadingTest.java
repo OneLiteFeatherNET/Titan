@@ -65,4 +65,21 @@ class HeadingTest {
 
         assertEquals(1.0, steered.x(), 1e-12, "the heading only weakens, then is normalized again");
     }
+
+    @Test
+    void aPullTowardsTheWishKeepsThreeQuartersOfTheHeadingBeforeNormalizing() {
+        Heading pulled = EAST.pulledTowards(new Heading(0.0, 1.0));
+
+        double length = Math.hypot(0.75, 0.25);
+        assertEquals(0.75 / length, pulled.x(), 1e-12, "x is 0.75 of the old heading");
+        assertEquals(0.25 / length, pulled.z(), 1e-12, "z is 0.25 of the wish");
+    }
+
+    @Test
+    void aPullTowardsTheSameHeadingKeepsIt() {
+        Heading pulled = EAST.pulledTowards(EAST);
+
+        assertEquals(1.0, pulled.x(), 1e-12, "x");
+        assertEquals(0.0, pulled.z(), 1e-12, "z");
+    }
 }

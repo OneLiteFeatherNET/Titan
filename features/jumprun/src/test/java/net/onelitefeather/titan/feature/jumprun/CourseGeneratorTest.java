@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.IntStream;
 import java.util.random.RandomGenerator;
 import java.util.random.RandomGeneratorFactory;
 import net.minestom.server.instance.block.Block;
@@ -312,6 +313,85 @@ class CourseGeneratorTest {
                 assertNotEquals(course.get(i - back).pos(), course.get(i).pos(), "block " + i + " repeats the one " + back + " before it");
             }
         }
+    }
+
+    // --- snaking around the spawn (D17) -----------------------------------------------------------
+
+    private static final SpawnZone MIDDLE_SPAWN = new SpawnZone(0.5, 0.5);
+    private static final int SNAKE_POINTS = 60;
+    private static final long SNAKE_SEED = 11L;
+
+    private static List<CourseBlock> snake(long seed) {
+        FakeSpaceProbe world = new FakeSpaceProbe(new BlockPos(-300, 0, -300), new BlockPos(300, 100, 300));
+        RandomGenerator random = seeded(seed);
+        Steering steering = Steering.around(MIDDLE_SPAWN, random);
+        CourseGenerator generator = new CourseGenerator(world, MIDDLE_SPAWN, random, PortalClearance.NONE, steering);
+        CourseBlock start = TestBlocks.at(new BlockPos(30, 10, 0), Surface.FULL);
+        return walk(generator, start, new Phase.Scored(0, EAST), SNAKE_POINTS);
+    }
+
+    private static double distanceToSpawn(CourseBlock block) {
+        return Math.hypot(block.pos().x() + 0.5 - MIDDLE_SPAWN.x(), block.pos().z() + 0.5 - MIDDLE_SPAWN.z());
+    }
+
+    /**
+     * The side each step turns to relative to the step before; straight steps count for nothing.
+     */
+    private static List<Integer> turningSides(List<CourseBlock> course) {
+        List<Integer> sides = new ArrayList<>();
+        for (int i = 2; i < course.size(); i++) {
+            Direction before = new Jump(course.get(i - 2), course.get(i - 1)).direction();
+            Direction after = new Jump(course.get(i - 1), course.get(i)).direction();
+            double cross = (double) before.dx() * after.dz() - (double) before.dz() * after.dx();
+            if (cross != 0.0) {
+                sides.add((int) Math.signum(cross));
+            }
+        }
+        return sides;
+    }
+
+    @Test
+    void theSnakeRunsAllSixtyPoints() {
+        assertEquals(SNAKE_POINTS + 1, snake(SNAKE_SEED).size(), "start plus sixty blocks");
+    }
+
+    @Test
+    void theSnakeCurvesToBothSides() {
+        List<Integer> sides = turningSides(snake(SNAKE_SEED));
+
+        long changes = IntStream.range(1, sides.size()).filter(i -> !sides.get(i).equals(sides.get(i - 1))).count();
+        assertTrue(changes >= 4, "the turning side changes several times, got " + changes);
+    }
+
+    @Test
+    void theSnakeComesBackTowardsTheSpawn() {
+        double farthest = 0.0;
+        double biggestDrop = 0.0;
+        for (CourseBlock block : snake(SNAKE_SEED)) {
+            farthest = Math.max(farthest, distanceToSpawn(block));
+            biggestDrop = Math.max(biggestDrop, farthest - distanceToSpawn(block));
+        }
+
+        assertTrue(biggestDrop >= 8.0, "the distance falls at least 8 blocks below an earlier maximum, got " + biggestDrop);
+    }
+
+    @Test
+    void theSnakeStaysInTheRingOnAverage() {
+        double mean = snake(SNAKE_SEED).stream().mapToDouble(CourseGeneratorTest::distanceToSpawn).average().orElseThrow();
+
+        assertTrue(mean >= Steering.Around.RING_MIN && mean <= Steering.Around.RING_MAX, "mean distance " + mean);
+    }
+
+    @Test
+    void theSnakeNeverComesCloserToTheSpawnThanSixteenBlocks() {
+        for (CourseBlock block : snake(SNAKE_SEED)) {
+            assertTrue(distanceToSpawn(block) >= SpawnZone.MIN_SPAWN_DISTANCE, "block " + block.pos());
+        }
+    }
+
+    @Test
+    void theSnakeIsTheSameForTheSameSeed() {
+        assertEquals(snake(SNAKE_SEED), snake(SNAKE_SEED), "same seed, same snake");
     }
 
     // --- randomness -----------------------------------------------------------------------------

@@ -59,16 +59,22 @@ final class CourseGenerator {
     private final SpawnZone spawn;
     private final RandomGenerator random;
     private final PortalClearance portals;
+    private final Steering steering;
 
     CourseGenerator(SpaceProbe probe, SpawnZone spawn, RandomGenerator random) {
         this(probe, spawn, random, PortalClearance.NONE);
     }
 
     CourseGenerator(SpaceProbe probe, SpawnZone spawn, RandomGenerator random, PortalClearance portals) {
+        this(probe, spawn, random, portals, Steering.none());
+    }
+
+    CourseGenerator(SpaceProbe probe, SpawnZone spawn, RandomGenerator random, PortalClearance portals, Steering steering) {
         this.probe = probe;
         this.spawn = spawn;
         this.random = random;
         this.portals = portals;
+        this.steering = steering;
     }
 
     /**
@@ -81,7 +87,8 @@ final class CourseGenerator {
 
     /**
      * The phase for the jump after the last block of {@code course}, which is the one just placed,
-     * with the main heading bent towards the step that led there. The ascent ends at a block far
+     * with the main heading bent towards the step that led there during the ascent, and towards
+     * the {@link Steering}'s choice once the course is scored. The ascent ends at a block far
      * from the spawn with plenty of air below it, so the course does not run along ways and roofs,
      * or around the spawn, from then on.
      *
@@ -118,12 +125,16 @@ final class CourseGenerator {
         }
 
         Phase after(Placement from, Placement placed, Phase phase) {
-            Phase next = switch (phase) {
-                case Phase.Ascent ascent ->
-                    ascent.next(isInTheOpen(placed.pos(), Openness.ASCENT_AIR_BELOW));
-                case Phase.Scored scored -> scored.next();
+            return switch (phase) {
+                case Phase.Ascent ascent -> {
+                    Direction step = new Jump(from, placed).direction();
+                    yield ascent.next(isInTheOpen(placed.pos(), Openness.ASCENT_AIR_BELOW)).withHeading(ascent.heading().steered(step));
+                }
+                case Phase.Scored scored -> {
+                    Direction step = new Jump(from, placed).direction();
+                    yield scored.next().withHeading(steering.follow(scored.heading(), step, placed.pos(), scored.score() + 1));
+                }
             };
-            return next.steered(new Jump(from, placed).direction());
         }
 
         /**

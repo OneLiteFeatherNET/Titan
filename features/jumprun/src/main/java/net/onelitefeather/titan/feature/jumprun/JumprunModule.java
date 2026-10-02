@@ -179,7 +179,7 @@ final class JumprunModule {
         Pos spawnPoint = Optional.ofNullable(spawn.position()).orElse(feet);
         Heading heading = Heading.away(feet.x(), feet.z(), spawnPoint.x(), spawnPoint.z(), feet.direction().x(), feet.direction().z());
         RandomGenerator random = RandomGeneratorFactory.of(RANDOM_ALGORITHM).create(seeds.getAsLong());
-        return Course.start(feet, startBlock, heading, new SpawnZone(spawnPoint.x(), spawnPoint.z()), new InstanceSpaceProbe(player.getInstance()), random, PortalClearance.ofPortals(portals.portals())).map(course -> new Run(player, course, startBlock));
+        return Course.startSteered(feet, startBlock, heading, new SpawnZone(spawnPoint.x(), spawnPoint.z()), new InstanceSpaceProbe(player.getInstance()), random, PortalClearance.ofPortals(portals.portals())).map(course -> new Run(player, course, startBlock));
     }
 
     private void onElytra(PlayerStartFlyingWithElytraEvent event) {

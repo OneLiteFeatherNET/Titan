@@ -48,6 +48,14 @@ record Heading(double x, double z) {
         return normalized(KEEP * x + (1.0 - KEEP) * stepX, KEEP * z + (1.0 - KEEP) * stepZ);
     }
 
+    /** Share of the old heading that survives a pull towards the wish of a scored course. */
+    private static final double KEEP_AGAINST_WISH = 0.75;
+
+    /** The heading after a pull: mostly this one, bent a quarter towards the wish. */
+    Heading pulledTowards(Heading wish) {
+        return normalized(KEEP_AGAINST_WISH * x + (1.0 - KEEP_AGAINST_WISH) * wish.x, KEEP_AGAINST_WISH * z + (1.0 - KEEP_AGAINST_WISH) * wish.z);
+    }
+
     private static Heading normalized(double x, double z) {
         double length = Math.hypot(x, z);
         return new Heading(x / length, z / length);

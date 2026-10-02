@@ -40,11 +40,6 @@ sealed interface Phase {
     /** This phase with another main heading. */
     Phase withHeading(Heading heading);
 
-    /** The phase after a step: the same, with the heading bent towards the step. */
-    default Phase steered(Direction step) {
-        return withHeading(heading().steered(step));
-    }
-
     /** Air blocks between the blocks that a jump of this phase may leave. */
     IntStream gaps();
 

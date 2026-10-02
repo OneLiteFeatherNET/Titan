@@ -450,4 +450,17 @@ class CourseTest {
             assertFalse(landOn(course, ahead(course, 1)).exhausted(), "open world, landing " + (i + 1));
         }
     }
+
+    @Test
+    void aSteeredCourseSnakesAroundTheSpawnInsteadOfLeadingAwayForever() {
+        FakeSpaceProbe world = new FakeSpaceProbe(new BlockPos(-300, 0, -300), new BlockPos(300, 100, 300));
+        SpawnZone spawn = new SpawnZone(0.5, 0.5);
+        Pos startPoint = new Pos(40.5, 11.0, 0.5, 90f, 0f);
+        Course course = Course.startSteered(startPoint, new BlockPos(40, 10, 0), EAST, spawn, world, seeded(3L), PortalClearance.NONE).orElseThrow();
+
+        landOnNext(course, 120);
+
+        double distance = Math.hypot(course.current().pos().x() + 0.5 - spawn.x(), course.current().pos().z() + 0.5 - spawn.z());
+        assertTrue(distance < 80.0, "after 120 blocks the course is still around the spawn, not far away, got " + distance);
+    }
 }

@@ -77,7 +77,19 @@ final class Course {
 
     /** As above, and no block or flight path comes near a portal. */
     static Optional<Course> start(Pos startPoint, BlockPos startBlock, Heading heading, SpawnZone spawn, SpaceProbe probe, RandomGenerator random, PortalClearance portals) {
-        CourseGenerator generator = new CourseGenerator(probe, spawn, random, portals);
+        return start(startPoint, startBlock, heading, spawn, probe, random, portals, Steering.none());
+    }
+
+    /**
+     * As above, and the scored part snakes around the spawn. The sense and phase of the snake are
+     * drawn from {@code random} first, before anything else uses it.
+     */
+    static Optional<Course> startSteered(Pos startPoint, BlockPos startBlock, Heading heading, SpawnZone spawn, SpaceProbe probe, RandomGenerator random, PortalClearance portals) {
+        return start(startPoint, startBlock, heading, spawn, probe, random, portals, Steering.around(spawn, random));
+    }
+
+    private static Optional<Course> start(Pos startPoint, BlockPos startBlock, Heading heading, SpawnZone spawn, SpaceProbe probe, RandomGenerator random, PortalClearance portals, Steering steering) {
+        CourseGenerator generator = new CourseGenerator(probe, spawn, random, portals, steering);
         List<CourseBlock> blocks = new ArrayList<>(List.of(new CourseBlock(startBlock, Surface.FULL, START_MATERIAL)));
         Course course = new Course(startPoint, generator, blocks, Phase.start(heading));
         boolean fits = course.generateAscent() && course.generateThrough(course.blocks.size());
