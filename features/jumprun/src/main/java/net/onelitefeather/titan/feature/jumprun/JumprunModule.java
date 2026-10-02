@@ -47,10 +47,13 @@ import net.minestom.server.event.player.PlayerStartFlyingWithElytraEvent;
 import net.minestom.server.network.packet.client.ClientPacket;
 import net.minestom.server.network.packet.client.play.ClientPlayerActionPacket;
 import net.minestom.server.network.packet.client.play.ClientPlayerBlockPlacementPacket;
+import net.minestom.server.network.packet.client.play.ClientPlayerPositionStatusPacket;
+import net.minestom.server.network.packet.client.play.ClientPlayerRotationPacket;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.module.LobbySpawn;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.spi.LoggingEventBuilder;
 
 /**
  * The {@code jumprun} feature: a random jump and run that only the playing player can walk on,
@@ -217,7 +220,28 @@ final class JumprunModule {
                     suppressedUntil.put(player.getUuid(), player.getAliveTicks() + USE_SUPPRESSION_TICKS);
                 }
             }
+            case ClientPlayerPositionStatusPacket status when status.onGround() ->
+                landIfStanding(player);
+            case ClientPlayerRotationPacket rotation when rotation.onGround() ->
+                landIfStanding(player);
             default -> {
+            }
+        }
+    }
+
+    /**
+     * The client reports ground contact without moving: Minestom raises no move event for a
+     * status-only packet, nor for one that repeats the position, so the landing is read from where
+     * the player already is.
+     */
+    private void landIfStanding(Player player) {
+        Run run = runs.get(player.getUuid());
+        if (run == null) {
+            return;
+        }
+        synchronized (run) {
+            if (runs.get(run.player().getUuid()) == run) {
+                advance(run, run.advanceTo(player.getPosition()));
             }
         }
     }
@@ -293,7 +317,7 @@ final class JumprunModule {
                 return;
             }
             if (run.hasFallen(to.y())) {
-                end(run, EndReason.FALL);
+                end(run, EndReason.FALL, log -> log.addKeyValue("y", to.y()).addKeyValue("threshold", run.fallThreshold()).addKeyValue("currentIndex", run.currentIndex()));
             } else if (event.isOnGround()) {
                 advance(run, run.advanceTo(to));
             }
@@ -324,6 +348,11 @@ final class JumprunModule {
     }
 
     private void end(Run run, EndReason reason) {
+        end(run, reason, log -> log);
+    }
+
+    /** {@code details} adds key-values to the debug line, which only ever reads, never decides. */
+    private void end(Run run, EndReason reason, UnaryOperator<LoggingEventBuilder> details) {
         Player player = run.player();
         int score;
         synchronized (run) {
@@ -349,6 +378,6 @@ final class JumprunModule {
         if (reason == EndReason.FALL) {
             player.teleport(run.startPoint());
         }
-        LOGGER.atDebug().addKeyValue("player", player.getUuid()).addKeyValue("reason", reason).addKeyValue("score", score).log("jumprun ended");
+        details.apply(LOGGER.atDebug().addKeyValue("player", player.getUuid()).addKeyValue("reason", reason).addKeyValue("score", score)).log("jumprun ended");
     }
 }

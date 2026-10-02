@@ -393,6 +393,25 @@ class CourseTest {
     }
 
     @Test
+    void fallThresholdReachesThreeBelowTheLowestVisibleBlockOnADescent() {
+        Course course = start();
+        int landings = 0;
+        while (!hasLowerBlockAhead(course) && landings < 300) {
+            landOnNext(course, 1);
+            landings++;
+        }
+
+        assertTrue(hasLowerBlockAhead(course), "a descent shows up within " + landings + " landings");
+        double lowest = course.window().stream().skip(course.window().indexOf(course.current())).mapToDouble(CourseBlock::topY).min().orElseThrow();
+        assertEquals(lowest - 3.0, course.fallThreshold(), "a player on a lower block ahead stands above the threshold even when the landing there was not seen yet");
+    }
+
+    private static boolean hasLowerBlockAhead(Course course) {
+        List<CourseBlock> window = course.window();
+        return window.stream().skip(window.indexOf(course.current()) + 1L).anyMatch(block -> block.topY() < course.current().topY());
+    }
+
+    @Test
     void fallingExactlyThreeBlocksIsNotYetAFall() {
         Course course = start();
 

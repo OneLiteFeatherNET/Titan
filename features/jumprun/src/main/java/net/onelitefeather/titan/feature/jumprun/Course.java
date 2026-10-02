@@ -111,9 +111,19 @@ final class Course {
         return Math.max(0, current - ascentJumps);
     }
 
-    /** Below this y the player has fallen off the course. */
+    /** Index of the block the player was last seen landing on; block 0 is the start block. */
+    int currentIndex() {
+        return current;
+    }
+
+    /**
+     * Below this y the player has fallen off the course: three under the lowest of the current and
+     * the visible blocks ahead. A landing seen late must not turn a player who stands on a lower
+     * block ahead into a fallen one.
+     */
     double fallThreshold() {
-        return current().topY() - FALL_DEPTH;
+        double lowest = blocks.subList(current, blocks.size()).stream().mapToDouble(CourseBlock::topY).min().orElseThrow();
+        return lowest - FALL_DEPTH;
     }
 
     boolean hasFallen(double y) {
@@ -121,8 +131,8 @@ final class Course {
     }
 
     /**
-     * Moves on when the feet stand on one of the next two blocks (the edge counts). Landing on the
-     * second counts both jumps. When no further block fits, the advance reports it as exhausted
+     * Moves on when the feet stand on one of the blocks ahead (the edge counts). Landing on the
+     * k-th counts k jumps. When no further block fits, the advance reports it as exhausted
      * and the run is over.
      */
     Advance advanceTo(Point feet) {
@@ -142,9 +152,9 @@ final class Course {
         return new Advance(jumps, score() - scoreBefore, removed, added, exhausted);
     }
 
-    /** The furthest of the next blocks the feet stand on, or -1. */
+    /** The furthest of the blocks ahead the feet stand on, or -1. */
     private int landedIndex(Point feet) {
-        for (int index = Math.min(current + AHEAD, blocks.size() - 1); index > current; index--) {
+        for (int index = blocks.size() - 1; index > current; index--) {
             if (isStandingOn(blocks.get(index), feet)) {
                 return index;
             }

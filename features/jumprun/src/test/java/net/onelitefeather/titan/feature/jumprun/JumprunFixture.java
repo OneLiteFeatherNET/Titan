@@ -26,6 +26,7 @@ import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.network.packet.client.ClientPacket;
 import net.minestom.server.network.packet.client.play.ClientPlayerPositionPacket;
+import net.minestom.server.network.packet.client.play.ClientPlayerPositionStatusPacket;
 import net.minestom.server.network.packet.client.play.ClientTeleportConfirmPacket;
 import net.minestom.server.network.packet.server.play.BlockChangePacket;
 import net.minestom.testing.Env;
@@ -131,6 +132,14 @@ final class JumprunFixture implements AutoCloseable {
         env.process().packetListener().processClientPacket(new ClientPlayerPositionPacket(to, onGround, false), player.getPlayerConnection());
     }
 
+    /**
+     * The packet a client sends when only its ground contact changed: Minestom raises no move
+     * event for it.
+     */
+    void sendOnGroundPacket(Player player, boolean onGround) {
+        sendClientPacket(player, new ClientPlayerPositionStatusPacket(onGround, false));
+    }
+
     /** Any client packet through the player's connection, so Minestom's own listener answers. */
     void sendClientPacket(Player player, ClientPacket packet) {
         env.process().packetListener().processClientPacket(packet, player.getPlayerConnection());
@@ -140,6 +149,16 @@ final class JumprunFixture implements AutoCloseable {
     void landOn(Player player, BlockChangePacket block) {
         Point at = block.blockPosition();
         move(player, new Pos(at.blockX() + 0.5, topOf(block), at.blockZ() + 0.5), true);
+    }
+
+    /**
+     * The client reaches the top of a shown block in the air and only afterwards reports that it
+     * stands there, with a status-only packet.
+     */
+    void settleOn(Player player, BlockChangePacket block) {
+        Point at = block.blockPosition();
+        sendPositionPacket(player, new Pos(at.blockX() + 0.5, topOf(block), at.blockZ() + 0.5), false);
+        sendOnGroundPacket(player, true);
     }
 
     /** Walkable top of a shown block, read back from the surface its state id belongs to. */

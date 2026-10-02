@@ -57,6 +57,14 @@ final class Run {
         return course.hasFallen(y);
     }
 
+    synchronized double fallThreshold() {
+        return course.fallThreshold();
+    }
+
+    synchronized int currentIndex() {
+        return course.currentIndex();
+    }
+
     synchronized int score() {
         return course.score();
     }

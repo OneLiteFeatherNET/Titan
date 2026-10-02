@@ -46,6 +46,15 @@ record StartedRun(JumprunFixture fixture, TestConnection connection, Player play
         return new StartedRun(fixture, connection, player, instance, new ArrayDeque<>(shown.collect()));
     }
 
+    /** Reaches the next block ahead and stands still on it, as {@link #landOnNext()} otherwise. */
+    List<ServerPacket> settleOnNext() {
+        Collector<ServerPacket> sent = connection.trackIncoming();
+        fixture.settleOn(player, ahead.removeFirst());
+        List<ServerPacket> packets = sent.collect();
+        packets.stream().filter(BlockChangePacket.class::isInstance).map(BlockChangePacket.class::cast).filter(JumprunFixture::isCourseBlock).forEach(ahead::addLast);
+        return packets;
+    }
+
     /** Lands on the next {@code count} blocks ahead, one after the other. */
     void landOnNext(int count) {
         for (int landing = 0; landing < count; landing++) {
