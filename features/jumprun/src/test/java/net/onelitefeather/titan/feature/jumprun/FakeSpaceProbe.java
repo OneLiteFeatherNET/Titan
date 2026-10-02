@@ -25,6 +25,7 @@ import java.util.Set;
 final class FakeSpaceProbe implements SpaceProbe {
 
     private final boolean solid;
+    private boolean sealed;
     private final Set<BlockPos> marked = new HashSet<>();
     private final BlockPos min;
     private final BlockPos max;
@@ -89,9 +90,15 @@ final class FakeSpaceProbe implements SpaceProbe {
         }
     }
 
+    /** From now on nothing is air any more: the world closes in on a running course. */
+    FakeSpaceProbe seal() {
+        sealed = true;
+        return this;
+    }
+
     @Override
     public boolean isAir(BlockPos pos) {
-        return solid == marked.contains(pos);
+        return !sealed && solid == marked.contains(pos);
     }
 
     @Override

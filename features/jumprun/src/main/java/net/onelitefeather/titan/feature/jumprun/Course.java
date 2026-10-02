@@ -1,0 +1,149 @@
+/**
+ * Copyright 2025 OneLiteFeather Network
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package net.onelitefeather.titan.feature.jumprun;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.random.RandomGenerator;
+import net.minestom.server.coordinate.Pos;
+
+/**
+ * One player's run: the blocks made so far, where the player stands in them and the window the
+ * player can see. Block 0 is the start block, a real block of the world that is never faked.
+ */
+final class Course {
+
+    private static final int BEHIND = 2;
+    private static final int AHEAD = 2;
+    private static final int FALL_DEPTH = 3;
+
+    /** A landing reported by the client is a hair off the exact top; this much is still "standing on it". */
+    private static final double LANDING_TOLERANCE = 0.05;
+
+    private final Pos startPoint;
+    private final CourseGenerator generator;
+    private final List<CourseBlock> blocks;
+    private Phase nextPhase;
+    private int current;
+
+    private Course(Pos startPoint, CourseGenerator generator, List<CourseBlock> blocks, Phase nextPhase) {
+        this.startPoint = startPoint;
+        this.generator = generator;
+        this.blocks = blocks;
+        this.nextPhase = nextPhase;
+    }
+
+    /**
+     * Starts a course at the block under the player. Makes the whole ascent and one more block up
+     * front, and returns empty when that does not fit, so nothing is shown for a run that cannot work.
+     */
+    static Optional<Course> start(Pos startPoint, BlockPos startBlock, Heading heading, SpaceProbe probe, RandomGenerator random) {
+        CourseGenerator generator = new CourseGenerator(probe, random);
+        List<CourseBlock> blocks = new ArrayList<>(List.of(new CourseBlock(startBlock, Surface.FULL)));
+        Course course = new Course(startPoint, generator, blocks, Phase.start(heading));
+        boolean fits = course.generateThrough(Phase.ASCENT_JUMPS + 1);
+        return fits ? Optional.of(course) : Optional.empty();
+    }
+
+    /** What changed in the visible window after a landing. */
+    record Advance(int jumps, List<CourseBlock> removed, List<CourseBlock> added, boolean exhausted) {
+
+        private static final Advance NONE = new Advance(0, List.of(), List.of(), false);
+    }
+
+    Pos startPoint() {
+        return startPoint;
+    }
+
+    CourseBlock current() {
+        return blocks.get(current);
+    }
+
+    /** Oldest first: up to two blocks behind the current one, the current one and up to two ahead. */
+    List<CourseBlock> window() {
+        return List.copyOf(blocks.subList(windowStart(), windowEnd() + 1));
+    }
+
+    /** Scored jumps made: the ascent does not count. */
+    int score() {
+        return Math.max(0, current - Phase.ASCENT_JUMPS);
+    }
+
+    /** Below this y the player has fallen off the course. */
+    double fallThreshold() {
+        return current().topY() - FALL_DEPTH;
+    }
+
+    boolean hasFallen(double y) {
+        return y < fallThreshold();
+    }
+
+    /**
+     * Moves on when the feet stand on one of the next two blocks. Landing on the second counts both
+     * jumps. When no further block fits, the advance reports it as exhausted and the run is over.
+     */
+    Advance advanceTo(double x, double y, double z) {
+        int landed = landedIndex(x, y, z);
+        if (landed < 0) {
+            return Advance.NONE;
+        }
+        int oldStart = windowStart();
+        int oldEnd = windowEnd();
+        int jumps = landed - current;
+        current = landed;
+        boolean exhausted = !generateThrough(current + AHEAD);
+        List<CourseBlock> removed = List.copyOf(blocks.subList(oldStart, Math.min(oldEnd + 1, windowStart())));
+        List<CourseBlock> added = List.copyOf(blocks.subList(oldEnd + 1, windowEnd() + 1));
+        return new Advance(jumps, removed, added, exhausted);
+    }
+
+    private int landedIndex(double x, double y, double z) {
+        for (int index = Math.min(current + AHEAD, blocks.size() - 1); index > current; index--) {
+            if (isStandingOn(blocks.get(index), x, y, z)) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    private static boolean isStandingOn(CourseBlock block, double x, double y, double z) {
+        return Math.floor(x) == block.pos().x()
+                && Math.floor(z) == block.pos().z()
+                && Math.abs(y - block.topY()) <= LANDING_TOLERANCE;
+    }
+
+    private int windowStart() {
+        return Math.max(0, current - BEHIND);
+    }
+
+    private int windowEnd() {
+        return Math.min(blocks.size() - 1, current + AHEAD);
+    }
+
+    /** Makes blocks until {@code lastIndex} exists; false when one does not fit. */
+    private boolean generateThrough(int lastIndex) {
+        while (blocks.size() <= lastIndex) {
+            Optional<CourseBlock> next = generator.next(blocks, nextPhase);
+            if (next.isEmpty()) {
+                return false;
+            }
+            blocks.add(next.get());
+            nextPhase = nextPhase.next();
+        }
+        return true;
+    }
+}
