@@ -18,6 +18,7 @@ package net.onelitefeather.titan.feature.jumprun;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
+import java.util.function.Consumer;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
@@ -38,8 +39,19 @@ record StartedRun(JumprunFixture fixture, TestConnection connection, Player play
     }
 
     static StartedRun start(Env env, JumprunFixture fixture, Instance instance, Pos stand) {
+        return start(env, fixture, instance, stand, _ -> {
+        });
+    }
+
+    /** Starts a run for a player whose best score was already stored before it began. */
+    static StartedRun startWithBest(Env env, JumprunFixture fixture, Instance instance, int best) {
+        return start(env, fixture, instance, STAND, player -> fixture.records().submit(player.getUuid(), best));
+    }
+
+    private static StartedRun start(Env env, JumprunFixture fixture, Instance instance, Pos stand, Consumer<Player> beforeStart) {
         TestConnection connection = env.createConnection();
         Player player = connection.connect(instance, stand);
+        beforeStart.accept(player);
         player.refreshOnGround(true);
         Collector<BlockChangePacket> shown = connection.trackIncoming(BlockChangePacket.class);
         fixture.useItem(player);

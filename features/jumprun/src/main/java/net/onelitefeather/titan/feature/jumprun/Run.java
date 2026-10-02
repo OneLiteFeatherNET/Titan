@@ -17,6 +17,7 @@ package net.onelitefeather.titan.feature.jumprun;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.OptionalInt;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 
@@ -36,8 +37,11 @@ final class Run {
     private final BlockPos startBlock;
     private final Spectators spectators;
     private final ScoreLabel label;
+    private final OptionalInt previousBest;
+    private boolean recordSounded;
 
-    Run(Player player, Course course, BlockPos startBlock) {
+    Run(Player player, Course course, BlockPos startBlock, OptionalInt previousBest) {
+        this.previousBest = previousBest;
         this.player = player;
         this.course = course;
         this.startBlock = startBlock;
@@ -67,6 +71,22 @@ final class Run {
 
     synchronized int score() {
         return course.score();
+    }
+
+    /**
+     * Whether the score has just passed the best from before the run, which is true once per run.
+     * Without a previous best the end of the run announces the record instead.
+     */
+    synchronized boolean passesPreviousBest() {
+        if (recordSounded || previousBest.isEmpty() || course.score() <= previousBest.getAsInt()) {
+            return false;
+        }
+        recordSounded = true;
+        return true;
+    }
+
+    boolean hadNoRecord() {
+        return previousBest.isEmpty();
     }
 
     /** What the other players see; touch it only while holding the lock of the run. */

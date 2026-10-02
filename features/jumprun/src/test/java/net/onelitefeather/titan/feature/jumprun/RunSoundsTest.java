@@ -101,4 +101,14 @@ class RunSoundsTest {
             assertEquals(Sound.Source.PLAYER, note.source());
         });
     }
+
+    @Test
+    void aRecordIsTheLevelUpForThePlayerSource() {
+        Sound record = RunSounds.recordTone();
+
+        assertEquals(SoundEvent.ENTITY_PLAYER_LEVELUP.key(), record.name());
+        assertEquals(Sound.Source.PLAYER, record.source());
+        assertEquals(1.0f, record.volume(), DELTA);
+        assertEquals(1.0f, record.pitch(), DELTA);
+    }
 }
