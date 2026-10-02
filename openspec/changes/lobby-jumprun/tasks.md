@@ -109,7 +109,7 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 
 ## 16. Fall- und Aufstiegs-Animation
 
-- [ ] 16.1 Test zuerst (Integration): Einblenden (Display für alle bei y+6, Interpolation auf 0 über 8 Ticks, echter Block für den Läufer nach 8 Ticks, danach Display für den Läufer aus), Ausblenden (echter Block sofort weg, Display steigt und schrumpft, nach 8 Ticks entfernt), Laufende mit Aufstieg, Shutdown sofort, keine Reste bei Abbruch während der Animation. Dann umsetzen (D20). Nachweis: `./gradlew build` grün, erneuter lokaler Test.
+- [x] 16.1 Test zuerst (Integration): Einblenden (Display für alle bei y+6, Interpolation auf 0 über 8 Ticks, echter Block für den Läufer nach 8 Ticks, danach Display für den Läufer aus), Ausblenden (echter Block sofort weg, Display steigt und schrumpft, nach 8 Ticks entfernt), Laufende mit Aufstieg, Shutdown sofort, keine Reste bei Abbruch während der Animation. Dann umsetzen (D20). Nachweis: `./gradlew build` grün, erneuter lokaler Test.
 
 ## 17. Rekord pro Sitzung, Scheiter-Ton nur ohne Rekord
 
