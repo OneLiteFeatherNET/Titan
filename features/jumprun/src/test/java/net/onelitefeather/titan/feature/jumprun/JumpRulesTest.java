@@ -112,6 +112,16 @@ class JumpRulesTest {
         assertTrue(validIn(new FakeSpaceProbe(), block(0, 10, 0, Surface.FENCE), block(2, 11, 0, Surface.FULL)), "fence top 11.5 to full top 12.0");
     }
 
+    @Test
+    void fullBlockOneHigherThanATrapdoorIsUnreachable() {
+        assertFalse(validIn(new FakeSpaceProbe(), block(0, 10, 0, Surface.TRAPDOOR), block(2, 11, 0, Surface.FULL)), "trapdoor top 10.1875 to full top 12.0");
+    }
+
+    @Test
+    void fullBlockAtTheLevelOfATrapdoorIsReachable() {
+        assertTrue(validIn(new FakeSpaceProbe(), block(0, 10, 0, Surface.TRAPDOOR), block(2, 10, 0, Surface.FULL)), "trapdoor top 10.1875 to full top 11.0");
+    }
+
     // --- room at the target ---------------------------------------------------------------------
 
     @Test
