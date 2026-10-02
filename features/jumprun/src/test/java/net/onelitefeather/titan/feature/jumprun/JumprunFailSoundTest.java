@@ -94,6 +94,46 @@ class JumprunFailSoundTest {
     }
 
     @Test
+    void aFallWithANewRecordSoundsNoBassNote(Env env) {
+        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+            Scene scene = Scene.start(env, fixture);
+            scene.run().landOnNext(JumprunFixture.ASCENT_JUMPS + 1);
+
+            scene.fall(fixture);
+            tick(env, TICKS_FOR_ALL_NOTES);
+
+            assertTrue(bass(scene.runnerHears()).isEmpty(), "the record is the news, not the failure");
+        }
+    }
+
+    @Test
+    void aFallBelowTheBestStillSoundsAllNotes(Env env) {
+        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+            Scene scene = Scene.start(env, fixture);
+            fixture.records().submit(scene.run().player().getUuid(), 5);
+            scene.run().landOnNext(JumprunFixture.ASCENT_JUMPS + 1);
+
+            scene.fall(fixture);
+            tick(env, TICKS_FOR_ALL_NOTES);
+
+            assertEquals(NOTES, bass(scene.runnerHears()).size());
+        }
+    }
+
+    @Test
+    void theElytraWithANewRecordSoundsNoBassNote(Env env) {
+        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+            Scene scene = Scene.start(env, fixture);
+            scene.run().landOnNext(JumprunFixture.ASCENT_JUMPS + 1);
+
+            env.process().eventHandler().call(new PlayerStartFlyingWithElytraEvent(scene.run().player()));
+            tick(env, TICKS_FOR_ALL_NOTES);
+
+            assertTrue(bass(scene.runnerHears()).isEmpty());
+        }
+    }
+
+    @Test
     void aFallSoundsTheFirstNoteAtOnce(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             Scene scene = Scene.start(env, fixture);

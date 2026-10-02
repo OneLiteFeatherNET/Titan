@@ -197,6 +197,7 @@ final class JumprunModule {
     private void onDisconnect(PlayerDisconnectEvent event) {
         forgetClicks(event.getPlayer());
         endRunOf(event.getPlayer(), EndReason.DISCONNECT);
+        records.forget(event.getPlayer().getUuid());
     }
 
     /**
@@ -388,7 +389,8 @@ final class JumprunModule {
                 RunSounds.record(player);
             }
         }
-        if (reason.failed()) {
+        // A new record is the news of the run, so the failure tone stays silent.
+        if (reason.failed() && !(isRecord && score > 0)) {
             RunSounds.fail(player);
         }
         if (reason == EndReason.FALL) {

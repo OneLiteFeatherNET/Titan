@@ -25,4 +25,7 @@ interface RunRecords {
 
     /** Stores the score if it beats the best so far; returns {@code true} on a new record. */
     boolean submit(UUID player, int score);
+
+    /** Drops the player's best; the record lasts only for the session. */
+    void forget(UUID player);
 }

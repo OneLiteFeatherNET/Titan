@@ -24,9 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Keeps records until the lobby stops; deliberately not cleared on disconnect. {@code @Secondary},
- * so a
- * persistent {@link RunRecords} bean takes its place.
+ * Keeps a record until the player disconnects. {@code @Secondary}, so a persistent
+ * {@link RunRecords} bean takes its place.
  */
 @Singleton
 @Secondary
@@ -48,5 +47,10 @@ final class InMemoryRunRecords implements RunRecords {
             return isRecord.get() ? score : previous;
         });
         return isRecord.get();
+    }
+
+    @Override
+    public void forget(UUID player) {
+        best.remove(player);
     }
 }

@@ -113,7 +113,7 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 
 ## 17. Rekord pro Sitzung, Scheiter-Ton nur ohne Rekord
 
-- [ ] 17.1 Test zuerst (Unit + Integration): `RunRecords.forget` beim Disconnect, Rejoin startet ohne Rekord (Spec „Rekord endet mit dem Verlassen“); Scheiter-Ton nicht bei Absturz oder Elytra mit neuem Rekord (Spec „Absturz mit neuem Rekord“). Dann umsetzen (D21). Nachweis: `./gradlew build` grün.
+- [x] 17.1 Test zuerst (Unit + Integration): `RunRecords.forget` beim Disconnect, Rejoin startet ohne Rekord (Spec „Rekord endet mit dem Verlassen“); Scheiter-Ton nicht bei Absturz oder Elytra mit neuem Rekord (Spec „Absturz mit neuem Rekord“). Dann umsetzen (D21). Nachweis: `./gradlew build` grün.
 
 ## 6. Pull Request
 

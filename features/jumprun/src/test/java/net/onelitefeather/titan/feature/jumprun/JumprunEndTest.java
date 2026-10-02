@@ -129,14 +129,44 @@ class JumprunEndTest {
     }
 
     @Test
-    void disconnectingKeepsTheScoreAsRecord(Env env) {
+    void disconnectingForgetsTheRecord(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             StartedRun run = StartedRun.start(env, fixture);
             run.landOnNext(JumprunFixture.ASCENT_JUMPS + 1);
 
             call(env, new PlayerDisconnectEvent(run.player()));
 
-            assertEquals(OptionalInt.of(1), fixture.records().best(run.player().getUuid()), "the record survives the disconnect");
+            assertTrue(fixture.records().best(run.player().getUuid()).isEmpty(), "the record lives only as long as the session");
+        }
+    }
+
+    @Test
+    void afterADisconnectTheNextRunWithPointsIsANewRecord(Env env) {
+        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+            StartedRun run = StartedRun.start(env, fixture);
+            run.landOnNext(JumprunFixture.ASCENT_JUMPS + 5);
+            call(env, new PlayerDisconnectEvent(run.player()));
+            // The test connection cannot rejoin under the same UUID; the still-online player starts the next run, which reads the same UUID-keyed records.
+            StartedRun next = StartedRun.startAgain(fixture, run.instance(), run.connection(), run.player());
+            next.landOnNext(JumprunFixture.ASCENT_JUMPS + 1);
+            Collector<SystemChatPacket> chat = next.connection().trackIncoming(SystemChatPacket.class);
+
+            fixture.useItem(next.player());
+
+            Component expected = fixture.messages().endRecord(next.player().getLocale(), 1);
+            chat.assertSingle(packet -> assertEquals(expected, packet.message()));
+        }
+    }
+
+    @Test
+    void leavingTheInstanceKeepsTheRecordForTheNextRun(Env env) {
+        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+            StartedRun run = StartedRun.start(env, fixture);
+            run.landOnNext(JumprunFixture.ASCENT_JUMPS + 5);
+
+            run.player().setInstance(env.createFlatInstance(), ELSEWHERE).join();
+
+            assertEquals(OptionalInt.of(5), fixture.records().best(run.player().getUuid()));
         }
     }
 
