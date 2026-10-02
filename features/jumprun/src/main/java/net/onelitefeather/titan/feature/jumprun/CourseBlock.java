@@ -15,8 +15,19 @@
  */
 package net.onelitefeather.titan.feature.jumprun;
 
-/** One block of a course: where it sits and what it is made of. */
-record CourseBlock(BlockPos pos, Surface surface) {
+import net.minestom.server.instance.block.Block;
+
+/** One block of a course: where it sits, its shape and the material drawn for it. */
+record CourseBlock(BlockPos pos, Surface surface, Block material) {
+
+    /** With the first material of the shape; for blocks whose look does not matter. */
+    CourseBlock(BlockPos pos, Surface surface) {
+        this(pos, surface, surface.palette().getFirst());
+    }
+
+    CourseBlock withMaterial(Block material) {
+        return new CourseBlock(pos, surface, material);
+    }
 
     /** Absolute y of the walkable top. */
     double topY() {

@@ -27,7 +27,7 @@ final class FakeBlocks {
 
     void show(Player player, Collection<CourseBlock> blocks) {
         for (CourseBlock block : blocks) {
-            player.sendPacket(new BlockChangePacket(toPoint(block.pos()), block.surface().block()));
+            player.sendPacket(new BlockChangePacket(toPoint(block.pos()), block.material()));
         }
     }
 

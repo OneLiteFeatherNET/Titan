@@ -84,7 +84,7 @@ class JumpTest {
 
     @Test
     void maxCostIsTheHardestJumpOnTheFlat() {
-        assertEquals(10.5, Jump.MAX_COST, "pane + gap 4");
+        assertEquals(12.5, Jump.MAX_COST, "post + gap 4");
     }
 
     @Test

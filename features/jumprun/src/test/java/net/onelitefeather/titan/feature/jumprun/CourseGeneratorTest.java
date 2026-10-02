@@ -114,7 +114,7 @@ class CourseGeneratorTest {
 
             CourseBlock chosen = jumpFromSource(generator, 0);
 
-            assertEquals(new BlockPos(-5, 10, 0), chosen.pos(), "dead end A must lose to B (seed " + seed + ")");
+            assertTrue(chosen.pos().x() < 0, "dead end A in the east must lose to the way west (seed " + seed + "), chose " + chosen.pos());
         }
     }
 

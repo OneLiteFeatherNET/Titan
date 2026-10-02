@@ -55,7 +55,7 @@ class FakeBlocksTest {
         List<BlockChangePacket> sent = forTarget.collect();
         assertEquals(1, sent.size(), "the target gets one packet per block");
         assertEquals(new BlockVec(0, 45, 0), sent.getFirst().blockPosition(), "the packet names the block position");
-        assertEquals(Surface.FULL.block().stateId(), sent.getFirst().blockStateId(), "the packet carries the surface block");
+        assertEquals(Surface.FULL.palette().getFirst().stateId(), sent.getFirst().blockStateId(), "the packet carries the surface block");
         forOther.assertEmpty();
     }
 

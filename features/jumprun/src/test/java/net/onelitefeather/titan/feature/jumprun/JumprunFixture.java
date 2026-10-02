@@ -124,7 +124,7 @@ final class JumprunFixture implements AutoCloseable {
     /** Walkable top of a shown block, read back from the surface its state id belongs to. */
     static double topOf(BlockChangePacket block) {
         for (Surface surface : Surface.values()) {
-            if (surface.block().stateId() == block.blockStateId()) {
+            if (surface.palette().stream().anyMatch(material -> material.stateId() == block.blockStateId())) {
                 return block.blockPosition().blockY() + surface.top();
             }
         }

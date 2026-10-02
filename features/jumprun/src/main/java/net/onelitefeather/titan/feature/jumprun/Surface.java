@@ -15,31 +15,38 @@
  */
 package net.onelitefeather.titan.feature.jumprun;
 
+import java.util.List;
+import java.util.random.RandomGenerator;
 import net.minestom.server.instance.block.Block;
 
 /**
- * The block types a jump can land on. Each carries what the course logic needs: the block to
- * show, how high its walkable top sits above the block position, and how much harder it makes a
- * jump.
+ * The shapes a jump can land on. Each carries what the course logic needs: how high its walkable
+ * top sits above the block position, how much harder it makes a jump, and the materials it can be
+ * shown as.
  */
 enum Surface {
-    FULL(Block.STONE, 1.0, 0), SLAB(Block.STONE_SLAB.withProperty("type", "bottom"), 0.5, 1), FENCE(Block.OAK_FENCE, 1.5, 2), PANE(Block.GLASS_PANE, 1.0, 3);
+    FULL(1.0, 0, Palettes.full()), TRAPDOOR(0.1875, 1, Palettes.trapdoor()), SLAB(0.5, 1, Palettes.slab()), FENCE(1.5, 2, Palettes.fence()), PANE(1.0, 3, Palettes.pane()), POST(1.0, 4, Palettes.post());
 
     /** The player stands 1.8 blocks tall; clear space above the top is measured with this. */
     private static final double PLAYER_HEIGHT = 1.8;
 
-    private final Block block;
     private final double top;
     private final int typeCost;
+    private final List<Block> palette;
 
-    Surface(Block block, double top, int typeCost) {
-        this.block = block;
+    Surface(double top, int typeCost, List<Block> palette) {
         this.top = top;
         this.typeCost = typeCost;
+        this.palette = palette;
     }
 
-    Block block() {
-        return block;
+    /** The materials this shape can be shown as; all collide up to {@link #top()}. */
+    List<Block> palette() {
+        return palette;
+    }
+
+    Block draw(RandomGenerator random) {
+        return palette.get(random.nextInt(palette.size()));
     }
 
     /** Height of the walkable top above the block's own y (a fence collides up to 1.5). */
