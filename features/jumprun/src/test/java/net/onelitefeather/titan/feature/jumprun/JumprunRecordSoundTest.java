@@ -16,12 +16,14 @@
 package net.onelitefeather.titan.feature.jumprun;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.instance.Instance;
-import net.minestom.server.network.packet.server.play.SoundEffectPacket;
+import net.minestom.server.network.packet.server.play.EntitySoundEffectPacket;
 import net.minestom.server.sound.SoundEvent;
 import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
@@ -37,8 +39,8 @@ class JumprunRecordSoundTest {
     private static final Pos BYSTANDER_STAND = StartedRun.STAND.add(0, 0, 8);
     private static final int BEST = 12;
 
-    private record Scene(StartedRun run, Collector<SoundEffectPacket> runnerHears,
-                         Collector<SoundEffectPacket> bystanderHears) {
+    private record Scene(StartedRun run, Collector<EntitySoundEffectPacket> runnerHears,
+                         Collector<EntitySoundEffectPacket> bystanderHears) {
 
         static Scene startWithBest(Env env, JumprunFixture fixture, int best) {
             Instance instance = JumprunFixture.loadedInstance(env);
@@ -53,7 +55,7 @@ class JumprunRecordSoundTest {
         private static Scene around(Env env, Instance instance, StartedRun run) {
             TestConnection bystander = env.createConnection();
             bystander.connect(instance, BYSTANDER_STAND);
-            return new Scene(run, run.connection().trackIncoming(SoundEffectPacket.class), bystander.trackIncoming(SoundEffectPacket.class));
+            return new Scene(run, run.connection().trackIncoming(EntitySoundEffectPacket.class), bystander.trackIncoming(EntitySoundEffectPacket.class));
         }
 
         /** Lands through the ascent and then scores {@code points}. */
@@ -62,15 +64,15 @@ class JumprunRecordSoundTest {
         }
 
         /** Counts what the runner hears from now on. */
-        Collector<SoundEffectPacket> listen() {
-            return run.connection().trackIncoming(SoundEffectPacket.class);
+        Collector<EntitySoundEffectPacket> listen() {
+            return run.connection().trackIncoming(EntitySoundEffectPacket.class);
         }
 
         long levelUps() {
             return levelUps(runnerHears);
         }
 
-        static long levelUps(Collector<SoundEffectPacket> heard) {
+        static long levelUps(Collector<EntitySoundEffectPacket> heard) {
             return heard.collect().stream().filter(packet -> packet.soundEvent().equals(SoundEvent.ENTITY_PLAYER_LEVELUP)).count();
         }
     }
@@ -80,7 +82,7 @@ class JumprunRecordSoundTest {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             Scene scene = Scene.startWithBest(env, fixture, BEST);
             scene.score(BEST);
-            Collector<SoundEffectPacket> heard = scene.listen();
+            Collector<EntitySoundEffectPacket> heard = scene.listen();
 
             scene.run().landOnNext();
 
@@ -93,7 +95,7 @@ class JumprunRecordSoundTest {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             Scene scene = Scene.startWithBest(env, fixture, BEST);
             scene.score(BEST + 1);
-            Collector<SoundEffectPacket> heard = scene.listen();
+            Collector<EntitySoundEffectPacket> heard = scene.listen();
 
             scene.run().landOnNext(7);
 
@@ -141,7 +143,7 @@ class JumprunRecordSoundTest {
             Scene scene = Scene.startWithoutBest(env, fixture);
             scene.score(5);
             assertEquals(0, scene.levelUps(), "nothing to pass during the run");
-            Collector<SoundEffectPacket> heard = scene.listen();
+            Collector<EntitySoundEffectPacket> heard = scene.listen();
 
             fixture.useItem(scene.run().player());
 
@@ -169,6 +171,39 @@ class JumprunRecordSoundTest {
             env.process().eventHandler().call(new PlayerDisconnectEvent(scene.run().player()));
 
             assertEquals(0, scene.levelUps(), "a leaving player is told nothing");
+        }
+    }
+
+    @Test
+    void theLevelUpIsBoundToTheRunnersEntity(Env env) {
+        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+            Scene scene = Scene.startWithBest(env, fixture, BEST);
+            Collector<EntitySoundEffectPacket> heard = scene.listen();
+
+            scene.score(BEST + 1);
+
+            List<EntitySoundEffectPacket> levelUps = heard.collect().stream().filter(packet -> packet.soundEvent().equals(SoundEvent.ENTITY_PLAYER_LEVELUP)).toList();
+            assertEquals(1, levelUps.size(), "one level-up");
+            assertEquals(scene.run().player().getEntityId(), levelUps.getFirst().entityId(), "the tone follows the runner");
+        }
+    }
+
+    @Test
+    void aFallWithTheFirstRecordSoundsTheLevelUpAtTheRunnerAndTeleportsBack(Env env) {
+        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+            Scene scene = Scene.startWithoutBest(env, fixture);
+            scene.score(5);
+            Collector<EntitySoundEffectPacket> heard = scene.listen();
+
+            fixture.move(scene.run().player(), StartedRun.STAND.withY(JumprunFixture.GROUND_Y - 3.5), false);
+
+            heard.collect().stream().filter(packet -> packet.soundEvent().equals(SoundEvent.ENTITY_PLAYER_LEVELUP)).reduce((_, _) -> {
+                throw new AssertionError("the level-up sounded more than once");
+            }).ifPresentOrElse(packet -> assertEquals(scene.run().player().getEntityId(), packet.entityId(), "the level-up reaches the runner although the fall teleports"), () -> {
+                throw new AssertionError("no level-up for the first record on a fall");
+            });
+            assertFalse(fixture.module().isRunning(scene.run().player()), "the run ended");
+            assertTrue(scene.run().player().getPosition().y() > JumprunFixture.GROUND_Y - 3.0, "the fall teleported the runner back up");
         }
     }
 }

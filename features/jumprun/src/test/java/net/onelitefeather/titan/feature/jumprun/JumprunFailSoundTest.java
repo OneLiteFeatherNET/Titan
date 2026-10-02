@@ -22,7 +22,7 @@ import java.util.List;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.instance.Instance;
-import net.minestom.server.network.packet.server.play.SoundEffectPacket;
+import net.minestom.server.network.packet.server.play.EntitySoundEffectPacket;
 import net.minestom.server.sound.SoundEvent;
 import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
@@ -39,15 +39,15 @@ class JumprunFailSoundTest {
     private static final int NOTES = 3;
     private static final int TICKS_FOR_ALL_NOTES = 7;
 
-    private record Scene(StartedRun run, Collector<SoundEffectPacket> runnerHears,
-                         Collector<SoundEffectPacket> bystanderHears) {
+    private record Scene(StartedRun run, Collector<EntitySoundEffectPacket> runnerHears,
+                         Collector<EntitySoundEffectPacket> bystanderHears) {
 
         static Scene start(Env env, JumprunFixture fixture) {
             Instance instance = JumprunFixture.loadedInstance(env);
             TestConnection bystander = env.createConnection();
             bystander.connect(instance, BYSTANDER_STAND);
             StartedRun run = StartedRun.start(env, fixture, instance, StartedRun.STAND);
-            return new Scene(run, run.connection().trackIncoming(SoundEffectPacket.class), bystander.trackIncoming(SoundEffectPacket.class));
+            return new Scene(run, run.connection().trackIncoming(EntitySoundEffectPacket.class), bystander.trackIncoming(EntitySoundEffectPacket.class));
         }
 
         void fall(JumprunFixture fixture) {
@@ -61,7 +61,7 @@ class JumprunFailSoundTest {
         }
     }
 
-    private static List<SoundEffectPacket> bass(Collector<SoundEffectPacket> heard) {
+    private static List<EntitySoundEffectPacket> bass(Collector<EntitySoundEffectPacket> heard) {
         return heard.collect().stream().filter(packet -> packet.soundEvent().equals(SoundEvent.BLOCK_NOTE_BLOCK_BASS)).toList();
     }
 
@@ -72,7 +72,7 @@ class JumprunFailSoundTest {
 
             scene.run().landOnNext();
 
-            List<SoundEffectPacket> heard = scene.runnerHears().collect();
+            List<EntitySoundEffectPacket> heard = scene.runnerHears().collect();
             assertEquals(1, heard.size(), "one cue, not the Shepard tone as well");
             assertEquals(SoundEvent.BLOCK_NOTE_BLOCK_HAT, heard.getFirst().soundEvent());
             assertTrue(scene.bystanderHears().collect().isEmpty(), "the signal is not instance-wide");
@@ -87,7 +87,7 @@ class JumprunFailSoundTest {
             scene.fall(fixture);
             tick(env, TICKS_FOR_ALL_NOTES);
 
-            List<Float> pitches = bass(scene.runnerHears()).stream().map(SoundEffectPacket::pitch).toList();
+            List<Float> pitches = bass(scene.runnerHears()).stream().map(EntitySoundEffectPacket::pitch).toList();
             assertEquals(List.of(1.0f, 0.84f, 0.67f), pitches);
         }
     }
@@ -116,6 +116,20 @@ class JumprunFailSoundTest {
             tick(env, TICKS_FOR_ALL_NOTES);
 
             assertEquals(NOTES, bass(scene.runnerHears()).size());
+        }
+    }
+
+    @Test
+    void everyFallNoteIsBoundToTheRunnersEntity(Env env) {
+        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+            Scene scene = Scene.start(env, fixture);
+
+            scene.fall(fixture);
+            tick(env, TICKS_FOR_ALL_NOTES);
+
+            List<EntitySoundEffectPacket> notes = bass(scene.runnerHears());
+            assertEquals(NOTES, notes.size());
+            notes.forEach(note -> assertEquals(scene.run().player().getEntityId(), note.entityId(), "the note follows the runner"));
         }
     }
 

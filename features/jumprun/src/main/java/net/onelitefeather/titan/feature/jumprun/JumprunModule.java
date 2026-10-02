@@ -183,7 +183,7 @@ final class JumprunModule {
         Mode next = modeOf(player).next();
         modes.put(player.getUuid(), next);
         player.sendMessage(messages.modeChanged(player.getLocale(), next));
-        player.playSound(Sound.sound(SoundEvent.UI_BUTTON_CLICK, Sound.Source.UI, 1.0f, 1.0f));
+        RunSounds.hear(player, Sound.sound(SoundEvent.UI_BUTTON_CLICK, Sound.Source.UI, 1.0f, 1.0f));
     }
 
     boolean suppressesUse(Player player) {

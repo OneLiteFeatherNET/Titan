@@ -27,7 +27,7 @@ import net.minestom.server.entity.Player;
 import net.minestom.server.entity.metadata.display.TextDisplayMeta;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.instance.Instance;
-import net.minestom.server.network.packet.server.play.SoundEffectPacket;
+import net.minestom.server.network.packet.server.play.EntitySoundEffectPacket;
 import net.minestom.server.network.packet.server.play.SystemChatPacket;
 import net.minestom.server.sound.SoundEvent;
 import net.minestom.testing.Collector;
@@ -106,14 +106,17 @@ class JumprunModeTest {
         bystanderConnection.connect(instance, StartedRun.STAND.add(0, 0, 8));
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);
-            Collector<SoundEffectPacket> click = connection.trackIncoming(SoundEffectPacket.class);
-            Collector<SoundEffectPacket> bystanderHears = bystanderConnection.trackIncoming(SoundEffectPacket.class);
+            Collector<EntitySoundEffectPacket> click = connection.trackIncoming(EntitySoundEffectPacket.class);
+            Collector<EntitySoundEffectPacket> bystanderHears = bystanderConnection.trackIncoming(EntitySoundEffectPacket.class);
 
             sneakUse(fixture, player);
 
             Component expected = fixture.messages().modeChanged(player.getLocale(), Mode.HARD);
             chat.assertSingle(packet -> assertEquals(expected, packet.message()));
-            click.assertSingle(packet -> assertEquals(SoundEvent.UI_BUTTON_CLICK, packet.soundEvent()));
+            click.assertSingle(packet -> {
+                assertEquals(SoundEvent.UI_BUTTON_CLICK, packet.soundEvent());
+                assertEquals(player.getEntityId(), packet.entityId(), "the click follows the player");
+            });
             bystanderHears.assertEmpty();
         }
     }

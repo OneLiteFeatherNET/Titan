@@ -40,16 +40,24 @@ final class RunSounds {
     private RunSounds() {
     }
 
+    /**
+     * Bound to the runner instead of a position: a fall teleports the runner in the same tick, and
+     * a tone at the old position would be cut off.
+     */
+    static void hear(Player runner, Sound sound) {
+        runner.playSound(sound, Sound.Emitter.self());
+    }
+
     /** Plays the tone for {@code score} to the runner alone. */
     static void play(Player runner, int score) {
-        tones(score).forEach(runner::playSound);
+        tones(score).forEach(tone -> hear(runner, tone));
     }
 
     /**
      * A steady cue for a landing in the ascent, which scores nothing; the runner alone hears it.
      */
     static void signal(Player runner) {
-        runner.playSound(signalTone());
+        hear(runner, signalTone());
     }
 
     static Sound signalTone() {
@@ -59,13 +67,13 @@ final class RunSounds {
     /** Three falling bass notes for the runner alone, the first at once and the rest staggered. */
     static void fail(Player runner) {
         List<Sound> tones = failTones();
-        runner.playSound(tones.getFirst());
+        hear(runner, tones.getFirst());
         for (int note = 1; note < tones.size(); note++) {
             Sound tone = tones.get(note);
             // The runner may have left by the time a later note is due.
             runner.scheduler().buildTask(() -> {
                 if (runner.isOnline()) {
-                    runner.playSound(tone);
+                    hear(runner, tone);
                 }
             }).delay(TaskSchedule.tick(FAIL_STAGGER_TICKS * note)).schedule();
         }
@@ -73,7 +81,7 @@ final class RunSounds {
 
     /** The level-up for a new record, heard by the runner alone. */
     static void record(Player runner) {
-        runner.playSound(recordTone());
+        hear(runner, recordTone());
     }
 
     static Sound recordTone() {

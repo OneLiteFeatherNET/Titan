@@ -18,9 +18,12 @@ package net.onelitefeather.titan.feature.jumprun;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
+import net.minestom.server.network.packet.server.ServerPacket;
+import net.minestom.server.network.packet.server.play.EntitySoundEffectPacket;
 import net.minestom.server.network.packet.server.play.SoundEffectPacket;
 import net.minestom.server.sound.SoundEvent;
 import net.minestom.testing.Collector;
@@ -52,9 +55,22 @@ class JumprunSoundTest {
             Scene scene = Scene.start(env, fixture);
             scene.run().landOnNext(JumprunFixture.ASCENT_JUMPS);
 
-            long sounds = scene.run().landOnNext().stream().filter(SoundEffectPacket.class::isInstance).count();
+            long sounds = scene.run().landOnNext().stream().filter(EntitySoundEffectPacket.class::isInstance).count();
 
             assertEquals(2, sounds, "two simultaneous plings");
+        }
+    }
+
+    @Test
+    void thePointSoundsAreBoundToTheRunnersEntity(Env env) {
+        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+            Scene scene = Scene.start(env, fixture);
+            scene.run().landOnNext(JumprunFixture.ASCENT_JUMPS);
+
+            List<ServerPacket> landing = scene.run().landOnNext();
+
+            landing.stream().filter(EntitySoundEffectPacket.class::isInstance).map(EntitySoundEffectPacket.class::cast).forEach(packet -> assertEquals(scene.run().player().getEntityId(), packet.entityId(), "the tone follows the runner"));
+            assertTrue(landing.stream().noneMatch(SoundEffectPacket.class::isInstance), "no positional sound");
         }
     }
 
@@ -63,7 +79,7 @@ class JumprunSoundTest {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             Scene scene = Scene.start(env, fixture);
             scene.run().landOnNext(JumprunFixture.ASCENT_JUMPS);
-            Collector<SoundEffectPacket> heard = scene.bystanderConnection().trackIncoming(SoundEffectPacket.class);
+            Collector<EntitySoundEffectPacket> heard = scene.bystanderConnection().trackIncoming(EntitySoundEffectPacket.class);
 
             scene.run().landOnNext();
 
@@ -75,7 +91,7 @@ class JumprunSoundTest {
     void anAscentLandingSoundsNoPointTone(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             Scene scene = Scene.start(env, fixture);
-            Collector<SoundEffectPacket> heard = scene.run().connection().trackIncoming(SoundEffectPacket.class);
+            Collector<EntitySoundEffectPacket> heard = scene.run().connection().trackIncoming(EntitySoundEffectPacket.class);
 
             scene.run().landOnNext();
 
