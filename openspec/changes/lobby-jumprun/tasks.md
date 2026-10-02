@@ -134,7 +134,7 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 
 ## 22. Intervall pro Modus, Töne folgen dem Läufer
 
-- [ ] 22.1 Test zuerst (Unit + Integration): `jumprun.rainbow.rerollTicks` (10) und `jumprun.ultra.rerollTicks` (40) statt `jumprun.rerollTicks`, Startprüfung; alle Run-Töne als Entity-Sound am Läufer (Self-Emitter), Rekord-Ton beim Absturz vollständig (D27). Nachweis: `./gradlew build` grün.
+- [x] 22.1 Test zuerst (Unit + Integration): `jumprun.rainbow.rerollTicks` (10) und `jumprun.ultra.rerollTicks` (40) statt `jumprun.rerollTicks`, Startprüfung; alle Run-Töne als Entity-Sound am Läufer (Self-Emitter), Rekord-Ton beim Absturz vollständig (D27). Nachweis: `./gradlew build` grün.
 
 ## 6. Pull Request
 
