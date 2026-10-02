@@ -18,6 +18,7 @@ package net.onelitefeather.titan.feature.jumprun;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -173,6 +174,26 @@ class CourseGeneratorTest {
 
             assertTrue(chosen.pos().x() < 0, "dead end A in the east must lose to the way west (seed " + seed + "), chose " + chosen.pos());
         }
+    }
+
+    @Test
+    void endsTheCourseWhenTheOnlyFittingBlockLeadsIntoADeadEnd() {
+        for (long seed = 0; seed < 20; seed++) {
+            // The block in the east is free, but nothing can be reached from it.
+            FakeSpaceProbe world = FakeSpaceProbe.solidWorld().carveColumn(2, 3, 0, 12).carveColumn(1, 11, 0, 2);
+            CourseGenerator generator = new CourseGenerator(world, TestBlocks.FAR_SPAWN, withNoise(0.0, seed));
+
+            Optional<CourseBlock> next = generator.next(List.of(SOURCE), new Phase.Scored(0, EAST));
+
+            assertTrue(next.isEmpty(), "a dead end must not be offered, so the run is exhausted (seed " + seed + "), got " + next);
+        }
+    }
+
+    @Test
+    void refusesAPhaseAfterACourseOfOneBlock() {
+        CourseGenerator generator = new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(1L));
+
+        assertThrows(IllegalArgumentException.class, () -> generator.after(List.of(SOURCE), new Phase.Scored(0, EAST)), "there is no jump to steer by yet");
     }
 
     @Test
@@ -432,10 +453,45 @@ class CourseGeneratorTest {
         }
     }
 
+    private static final long MAX_PROBE_CALLS_PER_NEXT = 20_000;
+
+    /** Probe questions of the dearest single {@code next()} over a walk through the world. */
+    private static long mostProbeCallsPerNext(FakeSpaceProbe world, long seed, int jumps) {
+        CountingProbe counting = new CountingProbe(world);
+        CourseGenerator generator = new CourseGenerator(counting, TestBlocks.FAR_SPAWN, seeded(seed));
+        List<CourseBlock> course = new ArrayList<>(List.of(SOURCE));
+        Phase phase = new Phase.Scored(0, EAST);
+        long most = 0;
+        for (int i = 0; i < jumps; i++) {
+            long before = counting.calls();
+            Optional<CourseBlock> next = generator.next(course, phase);
+            most = Math.max(most, counting.calls() - before);
+            if (next.isEmpty()) {
+                break;
+            }
+            course.add(next.get());
+            phase = generator.after(course, phase);
+        }
+        return most;
+    }
+
+    @Test
+    void oneNextCallAsksTheWorldAtMostTwentyThousandTimes() {
+        // The dead-end check runs on the tick thread in the move handler; counting probe calls
+        // bounds its work without a wall clock.
+        long worst = 0;
+        for (long seed = 1; seed <= SEEDS; seed++) {
+            worst = Math.max(worst, mostProbeCallsPerNext(world, seed, 300));
+        }
+
+        assertTrue(worst <= MAX_PROBE_CALLS_PER_NEXT, "one next() asked the world " + worst + " times");
+    }
+
     @Test
     void mostSeedsCompleteTheirJumpsInTheObstacleWorld() {
         // With the main heading (D15) a course cannot turn back, so in this small walled world it
-        // may run into a corner; that must stay the exception, not the rule.
+        // may run into a corner; that must stay the exception, not the rule. The depth-4 dead-end
+        // lookahead (D15) is what keeps it rare.
         long complete = courses.stream().filter(course -> course.size() == JUMPS_PER_SEED).count();
 
         assertTrue(complete >= SEEDS * 8 / 10, complete + " of " + SEEDS + " courses completed their " + JUMPS_PER_SEED + " jumps");
