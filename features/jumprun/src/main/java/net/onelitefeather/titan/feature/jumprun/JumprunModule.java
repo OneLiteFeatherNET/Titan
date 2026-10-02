@@ -26,13 +26,17 @@ import java.util.function.LongSupplier;
 import java.util.random.RandomGenerator;
 import java.util.random.RandomGeneratorFactory;
 import net.kyori.adventure.text.Component;
+import net.minestom.server.coordinate.Point;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
+import net.minestom.server.event.player.PlayerBlockInteractEvent;
+import net.minestom.server.event.player.PlayerChunkLoadEvent;
 import net.minestom.server.event.player.PlayerDeathEvent;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.event.player.PlayerMoveEvent;
+import net.minestom.server.event.player.PlayerStartDiggingEvent;
 import net.minestom.server.event.player.PlayerStartFlyingWithElytraEvent;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.module.LobbySpawn;
@@ -82,7 +86,7 @@ final class JumprunModule {
     @PostConstruct
     void start() {
         this.messages.register();
-        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY).on(PlayerMoveEvent.class, this::onMove).on(PlayerStartFlyingWithElytraEvent.class, event -> endRunOf(event.getPlayer(), EndReason.ELYTRA)).on(PlayerDeathEvent.class, event -> endRunOf(event.getPlayer(), EndReason.DEATH)).on(PlayerDisconnectEvent.class, event -> endRunOf(event.getPlayer(), EndReason.DISCONNECT));
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY).on(PlayerMoveEvent.class, this::onMove).on(PlayerStartFlyingWithElytraEvent.class, event -> endRunOf(event.getPlayer(), EndReason.ELYTRA)).on(PlayerDeathEvent.class, event -> endRunOf(event.getPlayer(), EndReason.DEATH)).on(PlayerChunkLoadEvent.class, this::onChunkLoad).on(PlayerBlockInteractEvent.class, event -> resendNextTickIfRunBlock(event.getPlayer(), event.getBlockPosition())).on(PlayerStartDiggingEvent.class, event -> resendNextTickIfRunBlock(event.getPlayer(), event.getBlockPosition())).on(PlayerDisconnectEvent.class, event -> endRunOf(event.getPlayer(), EndReason.DISCONNECT));
     }
 
     @PreDestroy
@@ -131,6 +135,29 @@ final class JumprunModule {
         Run run = runs.get(player.getUuid());
         if (run != null) {
             end(run, reason);
+        }
+    }
+
+    /** The chunk packet is already out when this fires, so what follows paints over it. */
+    private void onChunkLoad(PlayerChunkLoadEvent event) {
+        Run run = runs.get(event.getPlayer().getUuid());
+        if (run != null) {
+            fakeBlocks.show(run.player(), run.fakeWindow().stream().filter(block -> block.pos().x() >> 4 == event.getChunkX() && block.pos().z() >> 4 == event.getChunkZ()).toList());
+        }
+    }
+
+    /**
+     * Minestom answers a click or dig on a block with the real one, after the event; only a packet
+     * sent on the next tick lands behind that answer.
+     */
+    private void resendNextTickIfRunBlock(Player player, Point block) {
+        Run run = runs.get(player.getUuid());
+        if (run != null && run.showsFakeBlockAt(block.blockX(), block.blockY(), block.blockZ())) {
+            player.scheduler().scheduleNextTick(() -> {
+                if (runs.get(player.getUuid()) == run) {
+                    fakeBlocks.show(player, run.fakeWindow());
+                }
+            });
         }
     }
 
