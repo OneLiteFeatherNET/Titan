@@ -67,6 +67,16 @@ final class Spectators {
         outline.moveTo(next, animated != null && animated.isLanded());
     }
 
+    /** Gives the blocks that have landed their new material, for the others and the runner. */
+    void recolor(Collection<CourseBlock> recolored) {
+        for (CourseBlock block : recolored) {
+            AnimatedBlock animated = blocks.get(block.pos());
+            if (animated != null) {
+                animated.recolor(block);
+            }
+        }
+    }
+
     /** Lets the blocks rise away; the real block for the runner is the caller's business. */
     void hide(Collection<CourseBlock> hidden) {
         for (CourseBlock block : hidden) {

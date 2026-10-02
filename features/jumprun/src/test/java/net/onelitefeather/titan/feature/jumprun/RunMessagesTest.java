@@ -103,4 +103,11 @@ class RunMessagesTest {
     void recordMessageNamesTheMode() {
         assertTrue(plain(messages.endRecord(Locale.US, Mode.EASY, 15)).contains("Easy"), "record message shows the mode");
     }
+
+    @Test
+    void theEndMessagesNameRainbowAndUltra() {
+        assertTrue(plain(messages.endScore(Locale.US, Mode.RAINBOW, 4)).contains("Rainbow"), "rainbow in the end message");
+        assertTrue(plain(messages.endRecord(Locale.GERMANY, Mode.ULTRA, 4)).contains("Ultra"), "ultra in the record message");
+        assertTrue(plain(messages.modeChanged(Locale.US, Mode.ULTRA)).contains("Ultra"), "ultra in the mode change");
+    }
 }

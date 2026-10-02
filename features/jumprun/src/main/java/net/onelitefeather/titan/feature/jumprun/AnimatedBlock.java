@@ -48,7 +48,7 @@ final class AnimatedBlock {
     private final Player runner;
     private final Object lock;
     private final FakeBlocks fakeBlocks;
-    private final CourseBlock block;
+    private CourseBlock block;
     private final HiddenDisplay display;
     private final Consumer<CourseBlock> onLanded;
     private State state = State.FALLING;
@@ -95,6 +95,20 @@ final class AnimatedBlock {
         display.showToRunner(true);
         display.entity().editEntityMeta(BlockDisplayMeta.class, meta -> animateTo(meta, HEIGHT));
         after(ANIMATION_TICKS, this::remove);
+    }
+
+    /**
+     * Shows the block in another material to everyone, runner included, without animation. Only a
+     * landed block changes: one that still falls lands as it is. The caller holds the lock of the
+     * run.
+     */
+    void recolor(CourseBlock recolored) {
+        if (state != State.LANDED) {
+            return;
+        }
+        block = recolored;
+        display.entity().editEntityMeta(BlockDisplayMeta.class, meta -> meta.setBlockState(recolored.material()));
+        fakeBlocks.show(runner, List.of(recolored));
     }
 
     /** Removes the display at once, without animation; the caller holds the lock of the run. */

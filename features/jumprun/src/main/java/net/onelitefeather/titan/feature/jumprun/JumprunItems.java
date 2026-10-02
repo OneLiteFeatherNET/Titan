@@ -38,7 +38,7 @@ final class JumprunItems {
     private static final int HOTBAR_SLOT = 0;
     private static final Component NAME = MiniMessage.miniMessage().deserialize("<!i>" + RunTitle.MARKUP);
     private static final List<Component> LORE = Stream.of(
-            "<!i><gray>Right-click: start / stop a run", "<!i><gray>Sneak + right-click: switch mode", "<!i>", "<!i><green>Easy:</green> <gray>full blocks and slabs, short gaps", "<!i><yellow>Medium:</yellow> <gray>all shapes, steady climb", "<!i><red>Hard:</red> <gray>all shapes early, fast climb").map(MiniMessage.miniMessage()::deserialize).toList();
+            "<!i><gray>Right-click: start / stop a run", "<!i><gray>Sneak + right-click: switch mode", "<!i>", "<!i><green>Easy:</green> <gray>full blocks and slabs, short gaps", "<!i><yellow>Medium:</yellow> <gray>all shapes, steady climb", "<!i><red>Hard:</red> <gray>all shapes early, fast climb", "<!i><rainbow>Rainbow:</rainbow> <gray>blocks change colour while you stand", "<!i><dark_red><b>Ultra:</b></dark_red> <gray>blocks reshuffle while you stand").map(MiniMessage.miniMessage()::deserialize).toList();
 
     @Bean
     LobbyItem jumprun(JumprunModule jumprun) {

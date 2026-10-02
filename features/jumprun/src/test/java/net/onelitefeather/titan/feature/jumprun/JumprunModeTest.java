@@ -147,6 +147,25 @@ class JumprunModeTest {
     }
 
     @Test
+    void theHeadLabelNamesRainbowAndUltra(Env env) {
+        Instance instance = JumprunFixture.loadedInstance(env);
+        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+            Player player = standingPlayer(env, instance);
+            sneakUse(fixture, player);
+            sneakUse(fixture, player);
+            fixture.useItem(player);
+
+            assertTrue(labelText(instance).endsWith("Jump & Run · Rainbow · 0"), "rainbow in the head label: " + labelText(instance));
+            fixture.useItem(player);
+            fixture.settle();
+            sneakUse(fixture, player);
+            fixture.useItem(player);
+
+            assertTrue(labelText(instance).endsWith("Jump & Run · Ultra · 0"), "ultra in the head label: " + labelText(instance));
+        }
+    }
+
+    @Test
     void theEndMessageNamesTheModeOfTheRun(Env env) {
         Instance instance = JumprunFixture.loadedInstance(env);
         TestConnection connection = env.createConnection();

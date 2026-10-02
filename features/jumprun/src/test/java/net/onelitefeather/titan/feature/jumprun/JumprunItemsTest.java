@@ -75,12 +75,20 @@ class JumprunItemsTest {
     }
 
     @Test
-    void theLoreNamesAllThreeModes() {
+    void theLoreNamesAllFiveModes() {
         String lore = plainLore();
 
-        for (String mode : List.of("Easy", "Medium", "Hard")) {
+        for (String mode : List.of("Easy", "Medium", "Hard", "Rainbow", "Ultra")) {
             assertTrue(lore.contains(mode + ":"), "the lore describes the mode " + mode);
         }
+    }
+
+    @Test
+    void theLoreSaysWhatRainbowAndUltraDoWhileYouStand() {
+        String lore = plainLore();
+
+        assertTrue(lore.contains("Rainbow: blocks change colour while you stand"), lore);
+        assertTrue(lore.contains("Ultra: blocks reshuffle while you stand"), lore);
     }
 
     @Test

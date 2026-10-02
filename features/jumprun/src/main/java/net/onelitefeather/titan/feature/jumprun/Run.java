@@ -39,15 +39,21 @@ final class Run {
     private final ScoreLabel label;
     private final Mode mode;
     private final OptionalInt previousBest;
+    private final FakeBlocks fakeBlocks = new FakeBlocks();
+    private final Reroller reroller;
     private boolean recordSounded;
 
-    Run(Player player, Course course, BlockPos startBlock, Mode mode, OptionalInt previousBest) {
+    /**
+     * @param rerollTicks standing ticks between two rerolls, which only a mode that rerolls uses
+     */
+    Run(Player player, Course course, BlockPos startBlock, Mode mode, OptionalInt previousBest, int rerollTicks) {
         this.mode = mode;
+        this.reroller = new Reroller(this, rerollTicks, this::standingBlock, this::reroll);
         this.previousBest = previousBest;
         this.player = player;
         this.course = course;
         this.startBlock = startBlock;
-        this.spectators = new Spectators(player, this, new FakeBlocks());
+        this.spectators = new Spectators(player, this, fakeBlocks);
         this.label = new ScoreLabel(player, mode);
     }
 
@@ -112,9 +118,59 @@ final class Run {
         return course.startPoint();
     }
 
-    /** Outlines the block to reach next for the runner; the caller holds the lock of the run. */
+    /**
+     * Outlines the block to reach next for the runner, in a mode that outlines; the caller holds
+     * the lock of the run.
+     */
     synchronized void outlineNext() {
+        if (!mode.outlined()) {
+            return;
+        }
         course.next().filter(block -> !block.pos().equals(startBlock)).ifPresent(spectators::outlineNext);
+    }
+
+    /** Starts the beat of a mode that rerolls; the caller holds the lock of the run. */
+    synchronized void startRerolls() {
+        if (mode.reroll() != Mode.Reroll.NONE) {
+            reroller.start(player);
+        }
+    }
+
+    /** Ends the beat for good; the run is over. */
+    synchronized void stopRerolls() {
+        reroller.stop();
+    }
+
+    private int standingBlock() {
+        return player.isOnGround() && course.standsOnCurrent(player.getPosition()) ? course.currentIndex() : Reroller.NOT_STANDING;
+    }
+
+    private void reroll() {
+        switch (mode.reroll()) {
+            case MATERIAL -> rerollMaterials();
+            case COURSE -> rerollCourse();
+            case NONE -> {
+            }
+        }
+    }
+
+    /**
+     * Every block that has landed gets another material. A falling one lands as it is and follows
+     * at the next beat.
+     */
+    private void rerollMaterials() {
+        spectators.recolor(course.recolor(spectators.landed(fakeWindow())));
+        outlineNext();
+    }
+
+    /** The blocks ahead rise away and new ones fall in; nothing changes when none fits. */
+    private void rerollCourse() {
+        course.rerollAhead().ifPresent(reroll -> {
+            List<CourseBlock> removed = fake(reroll.removed());
+            fakeBlocks.reset(player, removed);
+            spectators.hide(removed);
+            spectators.show(fake(reroll.added()));
+        });
     }
 
     /** The blocks of the visible window that exist only on the player's screen. */

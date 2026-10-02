@@ -65,7 +65,8 @@ import org.slf4j.spi.LoggingEventBuilder;
 /**
  * The {@code jumprun} feature: a random jump and run that only the playing player can walk on,
  * built from fake blocks and shown to the others as block displays. All state lives in the
- * {@link RunRegistry}; there is no tick task, work happens in the events of the player who runs.
+ * {@link RunRegistry}; work happens in the events of the player who runs, plus one tick task per
+ * run in the modes that reroll.
  *
  * <p>The item calls {@link #use(Player)} on this module directly. {@link LobbyItems} comes as a
  * {@link Provider}, as in {@code elytra}: the hotbar collects this feature's item, so an eager
@@ -200,6 +201,7 @@ final class JumprunModule {
         Run run = planned.get();
         synchronized (run) {
             runs.add(run);
+            run.startRerolls();
             // Without an elytra a second press of the space bar in the air cannot start a glide.
             player.setEquipment(EquipmentSlot.CHESTPLATE, ItemStack.AIR);
             run.spectators().show(run.fakeWindow());
@@ -217,7 +219,7 @@ final class JumprunModule {
         Pos spawnPoint = Optional.ofNullable(spawn.position()).orElse(feet);
         Heading heading = Heading.away(feet.x(), feet.z(), spawnPoint.x(), spawnPoint.z(), feet.direction().x(), feet.direction().z());
         RandomGenerator random = RandomGeneratorFactory.of(RANDOM_ALGORITHM).create(seeds.getAsLong());
-        return Course.startSteered(feet, startBlock, heading, new SpawnZone(spawnPoint.x(), spawnPoint.z()), new InstanceSpaceProbe(player.getInstance()), random, config.palettes(), PortalClearance.ofPortals(portals.portals()), mode).map(course -> new Run(player, course, startBlock, mode, records.best(player.getUuid(), mode)));
+        return Course.startSteered(feet, startBlock, heading, new SpawnZone(spawnPoint.x(), spawnPoint.z()), new InstanceSpaceProbe(player.getInstance()), random, config.palettes(), PortalClearance.ofPortals(portals.portals()), mode).map(course -> new Run(player, course, startBlock, mode, records.best(player.getUuid(), mode), config.rerollTicks()));
     }
 
     private void onDeath(PlayerDeathEvent event) {
@@ -402,6 +404,7 @@ final class JumprunModule {
                 return;
             }
             score = run.score();
+            run.stopRerolls();
             if (reason.risesAway()) {
                 run.spectators().riseAll();
             } else {

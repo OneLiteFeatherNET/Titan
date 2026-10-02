@@ -698,10 +698,17 @@ existieren immer 2 Blöcke hinter und 2 vor dem Spieler, und die Schwierigkeit (
 Höhenunterschied, Blockart) steigt mit dem Punktestand. `EVENT_PRIORITY` ist 1000.
 
 - **Modi:** Rechtsklick mit dem Item bei gedrückter Schleichtaste wechselt außerhalb eines Laufs
-  zyklisch Easy → Medium → Hard (Standard Medium; im Lauf passiert nichts). Der Modus steuert, ab
+  zyklisch Easy → Medium → Hard → Rainbow → Ultra (Standard Medium; im Lauf passiert nichts). Der Modus steuert, ab
   welchem Punktestand die Formen erscheinen, wie steil die Schwierigkeit steigt und wie weit die
   Lücken sind (`Mode`). Er gilt pro Spieler und Sitzung und steht im Kopf-Label und in den
   Meldungen.
+- **Rainbow und Ultra:** Rainbow spielt wie Medium, Ultra wie Hard (ohne Umrandung). Steht der
+  Läufer `jumprun.rerollTicks` Ticks (Standard 40, ganze Zahl über 0) auf dem aktuellen Block,
+  wechseln in Rainbow alle sichtbaren Blöcke ihr Material, in Ultra werden die Blöcke voraus neu
+  erzeugt (Aufstieg und Fall wie sonst). Ein Sprung oder eine Landung setzt den Zähler zurück. Pro
+  Lauf läuft dafür ein Tick-Task auf dem Scheduler des Läufers, der mit dem Lauf endet
+  (`Reroller`). Der Wert wird wie die Paletten beim Start geprüft (Meldung mit
+  `jumprun.rerollTicks`) und zur Laufzeit je Lauf neu gelesen.
 - **Einschränkung Rekorde:** Bestwerte liegen je Modus nur im Speicher (`InMemoryRunRecords`) und
   gehen beim Neustart verloren, bis es einen Stats-Dienst gibt.
 - **Eigene Übersetzungen:** Texte (`titan.jumprun.*`, de/en, Englisch als Fallback) kommen aus einem
