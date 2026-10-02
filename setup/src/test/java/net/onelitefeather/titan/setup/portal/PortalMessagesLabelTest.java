@@ -45,6 +45,15 @@ class PortalMessagesLabelTest {
     }
 
     @Test
+    @DisplayName("The preview problem names the reason and shows tags literally")
+    void previewProblemIsLiteral() {
+        Component message = PortalMessages.previewProblem("label.text: unknown or mismatched tag </red>");
+
+        assertTrue(plain(message).contains("unknown or mismatched tag </red>"), plain(message));
+        assertFalse(hasClick(PortalMessages.previewProblem(CLICK_TEXT)), "no click event from the reason");
+    }
+
+    @Test
     @DisplayName("A label answer states position, text, offline text and source")
     void labelAnswerStatesTheDraft() {
         Component message = PortalMessages.render(new LabelUpdated("survival", label(new Vec(12.5, 66, -3.5), "<gold>Survival", "<red>Soon", new LabelSource.Group("Games")), List.of()));

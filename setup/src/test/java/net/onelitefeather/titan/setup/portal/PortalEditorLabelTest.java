@@ -250,10 +250,26 @@ class PortalEditorLabelTest {
     }
 
     @Test
+    @DisplayName("labelPreview opens the draft of a saved portal and answers with its label")
+    void labelPreviewOpensTheDraft() {
+        PortalLabel old = new PortalLabel(ANCHOR, "Old", null, null, Billboard.CENTER, 0f);
+        store = new InMemoryPortalStore(new Portal("survival", BOX, "Survival", null, old));
+        editor = new PortalEditor(store);
+
+        PortalEditResult result = editor.labelPreview(ALICE, "survival");
+
+        LabelUpdated updated = assertInstanceOf(LabelUpdated.class, result, "answers with the label state");
+        assertEquals("Old", updated.label().text(), "the saved label");
+        assertTrue(editor.draft(ALICE, "survival").isPresent(), "a draft is open");
+        assertEquals(0, store.saves(), "nothing saved");
+    }
+
+    @Test
     @DisplayName("An invalid id is refused by every label verb")
     void invalidIdIsRefused() {
         assertInstanceOf(Invalid.class, editor.labelHere(ALICE, "Bad Id", new Pos(0, 0, 0)), "here");
         assertInstanceOf(Invalid.class, editor.labelText(ALICE, "Bad Id", "x"), "text");
         assertInstanceOf(Invalid.class, editor.labelRemove(ALICE, "Bad Id"), "remove");
+        assertInstanceOf(Invalid.class, editor.labelPreview(ALICE, "Bad Id"), "preview");
     }
 }

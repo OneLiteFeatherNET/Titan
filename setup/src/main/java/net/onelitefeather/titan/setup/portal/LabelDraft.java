@@ -68,6 +68,14 @@ public final class LabelDraft {
         return source;
     }
 
+    public Billboard billboard() {
+        return billboard;
+    }
+
+    public float yaw() {
+        return yaw;
+    }
+
     public boolean isSet() {
         return position != null || text != null || offlineText != null || source != null;
     }

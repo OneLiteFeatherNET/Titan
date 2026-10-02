@@ -28,6 +28,7 @@ import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.onelitefeather.titan.core.portal.Portal;
 import net.onelitefeather.titan.setup.portal.DraftPreview;
+import net.onelitefeather.titan.setup.portal.LabelPreview;
 import net.onelitefeather.titan.setup.portal.PortalCompletions;
 import net.onelitefeather.titan.setup.portal.PortalDraft;
 import net.onelitefeather.titan.setup.portal.PortalEditResult;
@@ -59,19 +60,22 @@ public final class PortalCommand extends Command {
     private final Argument<String> sourceType = ArgumentType.Word("type");
     private final Argument<String> sourceName = ArgumentType.Word("name");
     private final Argument<String> permission = ArgumentType.Word("node");
+    private final Argument<String> previewVariant = ArgumentType.Word("variant").from("online", "offline");
     private final Argument<String> form = ArgumentType.Word("kind").from("box", "ring");
 
     private final PortalEditor editor;
     private final PortalStore store;
     private final DraftPreview preview;
     private final PortalShow show;
+    private final LabelPreview labelPreview;
 
-    public PortalCommand(PortalEditor editor, PortalStore store, DraftPreview preview, PortalShow show) {
+    public PortalCommand(PortalEditor editor, PortalStore store, DraftPreview preview, PortalShow show, LabelPreview labelPreview) {
         super("portal");
         this.editor = editor;
         this.store = store;
         this.preview = preview;
         this.show = show;
+        this.labelPreview = labelPreview;
 
         id.setSuggestionCallback((sender, context, suggestion) -> suggest(sender, suggestion, player -> PortalCompletions.ids(store.portals(), editor.drafts(player.getUuid()))));
         radius.setSuggestionCallback((sender, context, suggestion) -> suggest(sender, suggestion, player -> PortalCompletions.radii()));
@@ -99,9 +103,18 @@ public final class PortalCommand extends Command {
         addSyntax(edit((player, context) -> editor.labelSource(player.getUuid(), context.get(id), context.get(sourceType), null)), id, label, ArgumentType.Literal("source"), sourceType);
         addSyntax(edit((player, context) -> editor.labelSource(player.getUuid(), context.get(id), context.get(sourceType), context.get(sourceName))), id, label, ArgumentType.Literal("source"), sourceType, sourceName);
         addSyntax(edit((player, context) -> editor.labelRemove(player.getUuid(), context.get(id))), id, label, ArgumentType.Literal("remove"));
+        addSyntax(edit(this::labelPreviewVariant), id, label, ArgumentType.Literal("preview"), previewVariant);
         addSyntax(edit((player, context) -> editor.save(player.getUuid(), context.get(id))), id, ArgumentType.Literal("save"));
         addSyntax(edit((player, context) -> editor.cancel(player.getUuid(), context.get(id))), id, ArgumentType.Literal("cancel"));
         addSyntax(edit((player, context) -> editor.remove(player.getUuid(), context.get(id))), id, ArgumentType.Literal("remove"));
+    }
+
+    private PortalEditResult labelPreviewVariant(Player player, CommandContext context) {
+        PortalEditResult result = editor.labelPreview(player.getUuid(), context.get(id));
+        if (result instanceof PortalEditResult.LabelUpdated) {
+            labelPreview.offline(player.getUuid(), context.get(id), "offline".equals(context.get(previewVariant)));
+        }
+        return result;
     }
 
     private void list(@NotNull CommandSender sender, @NotNull CommandContext context) {
@@ -143,13 +156,13 @@ public final class PortalCommand extends Command {
 
     private void followPreview(Player player, String id, PortalEditResult result) {
         switch (result) {
-            case PortalEditResult.Pending ignored -> preview.start(player, id);
-            case PortalEditResult.Complete ignored -> preview.start(player, id);
-            case PortalEditResult.LabelUpdated ignored -> preview.start(player, id);
-            case PortalEditResult.Saved ignored -> preview.stop(player.getUuid(), id);
-            case PortalEditResult.Updated ignored -> preview.stop(player.getUuid(), id);
-            case PortalEditResult.Removed ignored -> preview.stop(player.getUuid(), id);
-            case PortalEditResult.Cancelled ignored -> preview.stop(player.getUuid(), id);
+            case PortalEditResult.Pending ignored -> startPreviews(player, id);
+            case PortalEditResult.Complete ignored -> startPreviews(player, id);
+            case PortalEditResult.LabelUpdated ignored -> startPreviews(player, id);
+            case PortalEditResult.Saved ignored -> stopPreviews(player, id);
+            case PortalEditResult.Updated ignored -> stopPreviews(player, id);
+            case PortalEditResult.Removed ignored -> stopPreviews(player, id);
+            case PortalEditResult.Cancelled ignored -> stopPreviews(player, id);
             case PortalEditResult.Rejected ignored -> {
             }
             case PortalEditResult.Invalid ignored -> {
@@ -157,6 +170,16 @@ public final class PortalCommand extends Command {
             case PortalEditResult.Unknown ignored -> {
             }
         }
+    }
+
+    private void startPreviews(Player player, String id) {
+        preview.start(player, id);
+        editor.draft(player.getUuid(), id).ifPresent(draft -> labelPreview.follow(player, draft).ifPresent(problem -> player.sendMessage(PortalMessages.previewProblem(problem))));
+    }
+
+    private void stopPreviews(Player player, String id) {
+        preview.stop(player.getUuid(), id);
+        labelPreview.clear(player.getUuid(), id);
     }
 
     private static Pos eye(Player player) {

@@ -34,6 +34,7 @@ import net.onelitefeather.titan.setup.listener.PlayerConfigurationListener;
 import net.onelitefeather.titan.setup.listener.PlayerSpawnListener;
 import net.onelitefeather.titan.setup.listener.PortalDisconnectListener;
 import net.onelitefeather.titan.setup.portal.DraftPreview;
+import net.onelitefeather.titan.setup.portal.LabelPreview;
 import net.onelitefeather.titan.setup.portal.MapProviderPortalStore;
 import net.onelitefeather.titan.setup.portal.PortalEditor;
 import net.onelitefeather.titan.setup.portal.PortalShow;
@@ -51,6 +52,7 @@ public final class Titan {
     private final PortalEditor portalEditor;
     private final DraftPreview draftPreview;
     private final PortalShow portalShow;
+    private final LabelPreview labelPreview;
     private final PortalCommand portalCommand;
 
     private Titan() {
@@ -67,7 +69,8 @@ public final class Titan {
         this.portalEditor = new PortalEditor(portalStore);
         this.draftPreview = new DraftPreview(this.portalEditor);
         this.portalShow = new PortalShow();
-        this.portalCommand = new PortalCommand(this.portalEditor, portalStore, this.draftPreview, this.portalShow);
+        this.labelPreview = new LabelPreview();
+        this.portalCommand = new PortalCommand(this.portalEditor, portalStore, this.draftPreview, this.portalShow, this.labelPreview);
 
         initCommands();
         initListeners();
@@ -76,7 +79,7 @@ public final class Titan {
     private void initListeners() {
         eventNode.addListener(AsyncPlayerConfigurationEvent.class, new PlayerConfigurationListener(this.mapProvider));
         eventNode.addListener(PlayerSpawnEvent.class, new PlayerSpawnListener(this.simulationDistance, this.mapProvider));
-        eventNode.addListener(PlayerDisconnectEvent.class, new PortalDisconnectListener(this.portalEditor, this.draftPreview, this.portalShow));
+        eventNode.addListener(PlayerDisconnectEvent.class, new PortalDisconnectListener(this.portalEditor, this.draftPreview, this.portalShow, this.labelPreview));
         eventNode.addListener(InventoryPreClickEvent.class, Cancelable::cancel);
         MinecraftServer.getGlobalEventHandler().addChild(eventNode);
     }

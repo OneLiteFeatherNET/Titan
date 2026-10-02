@@ -161,6 +161,15 @@ public final class PortalEditor {
         return editLabel(player, id, PortalDraft::removeLabel);
     }
 
+    /**
+     * Opens the draft, of a saved portal too, and answers with the label's state. Which variant the
+     * text preview shows is the preview's own business, not draft data.
+     */
+    public PortalEditResult labelPreview(UUID player, String id) {
+        return editLabel(player, id, draft -> {
+        });
+    }
+
     /** Writes the complete, valid draft to the store; otherwise reports why and keeps the draft. */
     public PortalEditResult save(UUID player, String id) {
         Optional<Invalid> invalid = invalidId(id);

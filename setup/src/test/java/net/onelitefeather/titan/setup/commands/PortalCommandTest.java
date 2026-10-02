@@ -25,7 +25,10 @@ import net.minestom.server.command.builder.suggestion.Suggestion;
 import net.minestom.server.command.builder.suggestion.SuggestionEntry;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
+import net.minestom.server.entity.Entity;
+import net.minestom.server.entity.EntityType;
 import net.minestom.server.entity.Player;
+import net.minestom.server.entity.metadata.display.TextDisplayMeta;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.network.packet.server.play.SystemChatPacket;
 import net.minestom.testing.Collector;
@@ -41,6 +44,7 @@ import net.onelitefeather.titan.core.portal.PortalLabel;
 import net.onelitefeather.titan.setup.listener.PortalDisconnectListener;
 import net.onelitefeather.titan.setup.portal.DiscPlacement;
 import net.onelitefeather.titan.setup.portal.DraftPreview;
+import net.onelitefeather.titan.setup.portal.LabelPreview;
 import net.onelitefeather.titan.setup.portal.MapProviderPortalStore;
 import net.onelitefeather.titan.setup.portal.PortalDraft;
 import net.onelitefeather.titan.setup.portal.PortalEditor;
@@ -80,6 +84,7 @@ class PortalCommandTest {
     private PortalEditor editor;
     private DraftPreview preview;
     private PortalShow show;
+    private LabelPreview labelPreview;
     private CommandManager commands;
     private TestConnection connection;
     private Player player;
@@ -95,9 +100,10 @@ class PortalCommandTest {
         editor = new PortalEditor(store);
         preview = new DraftPreview(editor);
         show = new PortalShow();
+        labelPreview = new LabelPreview();
         commands = env.process().command();
-        commands.register(new SetupCommand(provider, new PortalCommand(editor, store, preview, show)));
-        env.process().eventHandler().addListener(PlayerDisconnectEvent.class, new PortalDisconnectListener(editor, preview, show));
+        commands.register(new SetupCommand(provider, new PortalCommand(editor, store, preview, show, labelPreview)));
+        env.process().eventHandler().addListener(PlayerDisconnectEvent.class, new PortalDisconnectListener(editor, preview, show, labelPreview));
         connection = env.createConnection();
         player = connection.connect(env.createFlatInstance(), STANDING);
     }
@@ -438,7 +444,7 @@ class PortalCommandTest {
     void consoleCannotEditLabels() {
         CommandSender console = commands.getConsoleSender();
 
-        for (String command : List.of("setup portal p label here", "setup portal p label text Hi", "setup portal p label source local", "setup portal p label remove")) {
+        for (String command : List.of("setup portal p label here", "setup portal p label text Hi", "setup portal p label source local", "setup portal p label remove", "setup portal p label preview offline")) {
             assertNotEquals(CommandResult.Type.SUCCESS, commands.execute(console, command).getType(), command + " is refused");
         }
         assertTrue(editor.drafts(player.getUuid()).isEmpty(), "no draft appeared");
@@ -499,6 +505,98 @@ class PortalCommandTest {
     @Test
     void completesSourceTypes() {
         assertEquals(List.of("task", "group", "service", "local"), suggestions("setup portal p label source "), "source types");
+    }
+
+    @DisplayName("Label edits show a text preview with the sample values, for the editor only")
+    @Test
+    void labelEditsShowTheTextPreview() {
+        run("setup portal p task Survival");
+        run("setup portal p label here");
+        run("setup portal p label text <task> <online>/<max>");
+
+        Entity display = labelPreview.entity(player.getUuid(), "p").orElseThrow();
+        assertEquals("Survival 12/50", shownText(display), "sample values");
+        assertEquals(1, labelPreview.shown(), "one display");
+    }
+
+    @DisplayName("label preview offline and online switch the variant")
+    @Test
+    void labelPreviewSwitchesTheVariant() {
+        run("setup portal p label here");
+        run("setup portal p label text <online>/<max>");
+        run("setup portal p label offline closed");
+        Entity display = labelPreview.entity(player.getUuid(), "p").orElseThrow();
+
+        run("setup portal p label preview offline");
+        assertEquals("closed", shownText(display), "offline variant");
+
+        run("setup portal p label preview online");
+        assertEquals("12/50", shownText(display), "online variant");
+    }
+
+    @DisplayName("label preview needs a valid variant")
+    @Test
+    void labelPreviewNeedsAVariant() {
+        run("setup portal p label preview");
+        run("setup portal p label preview sideways");
+
+        assertTrue(editor.drafts(player.getUuid()).isEmpty(), "neither reached the editor");
+    }
+
+    @DisplayName("An invalid label text keeps the last valid preview and the reply names the problem")
+    @Test
+    void invalidTextIsReported() {
+        run("setup portal p label here");
+        run("setup portal p label text <gold>Survival");
+        Entity display = labelPreview.entity(player.getUuid(), "p").orElseThrow();
+
+        Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);
+        run("setup portal p label text <gold>Survival</red>");
+
+        assertEquals("Survival", shownText(display), "last valid text stays");
+        assertTrue(plain(chat).stream().anyMatch(line -> line.contains("label.text") && line.contains("last valid")), "the reply names the problem");
+    }
+
+    @DisplayName("save, cancel, remove and label remove end the text preview")
+    @Test
+    void endingTheDraftEndsTheTextPreview() {
+        run("setup portal old label here");
+        run("setup portal old label text Hi");
+        assertEquals(1, labelPreview.shown(), "shown for the edit");
+        run("setup portal old label remove");
+        assertEquals(0, labelPreview.shown(), "label remove ends it");
+
+        run("setup portal old label here");
+        run("setup portal old label text Hi");
+        run("setup portal old save");
+        assertEquals(0, labelPreview.shown(), "save ends it");
+
+        run("setup portal old label text Again");
+        assertEquals(1, labelPreview.shown(), "shown again");
+        run("setup portal old cancel");
+        assertEquals(0, labelPreview.shown(), "cancel ends it");
+
+        run("setup portal old label text Again");
+        run("setup portal old remove");
+        assertEquals(0, labelPreview.shown(), "remove ends it");
+    }
+
+    @DisplayName("Leaving ends the text preview")
+    @Test
+    void leavingEndsTheTextPreview(Env env) {
+        run("setup portal p label here");
+        run("setup portal p label text Hi");
+        Entity display = labelPreview.entity(player.getUuid(), "p").orElseThrow();
+
+        player.remove();
+
+        assertTrue(display.isRemoved(), "display removed");
+        assertEquals(0, labelPreview.shown(), "nothing tracked");
+    }
+
+    private static String shownText(Entity display) {
+        assertEquals(EntityType.TEXT_DISPLAY, display.getEntityType(), "a text display");
+        return PlainTextComponentSerializer.plainText().serialize(((TextDisplayMeta) display.getEntityMeta()).getText());
     }
 
     /** Runs the command as the player and returns the one chat message it answered with. */

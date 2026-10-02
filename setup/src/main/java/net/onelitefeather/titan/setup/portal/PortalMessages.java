@@ -123,6 +123,11 @@ public final class PortalMessages {
         return TagResolver.resolver(Placeholder.unparsed("id", portal.id()), Placeholder.unparsed("shape", describe(portal.shape())), Placeholder.unparsed("task", portal.task()), Placeholder.unparsed("permission", portal.permission() == null ? "none" : portal.permission()), Placeholder.unparsed("label", portal.label() == null ? "" : ", label " + describe(portal.label())));
     }
 
+    /** The text preview kept its last valid text because the shown text is unusable. */
+    public static Component previewProblem(String reason) {
+        return MINI.deserialize("<prefix> <red>The label preview keeps its last valid text: <reason>", Placeholder.unparsed("reason", reason));
+    }
+
     private static Component labelUpdated(PortalEditResult.LabelUpdated updated) {
         if (!updated.label().isSet()) {
             return MINI.deserialize("<prefix> <green>Portal <id> has no label in its draft.", Placeholder.unparsed("id", updated.id()));

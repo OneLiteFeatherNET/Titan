@@ -122,19 +122,24 @@ public final class PortalValidator {
     }
 
     private static void checkText(String id, int index, String field, @Nullable String text, List<PortalProblem> problems) {
+        textProblems(field, text).forEach(reason -> problems.add(new PortalProblem(id, index, reason)));
+    }
+
+    /**
+     * The reasons a label text is unusable; empty if it is fine. {@code field} prefixes each
+     * reason.
+     */
+    public static List<String> textProblems(String field, @Nullable String text) {
         if (isBlank(text)) {
-            problems.add(new PortalProblem(id, index, field + " must not be blank"));
-            return;
+            return List.of(field + " must not be blank");
         }
         try {
             String masked = ESCAPED_BRACKET.matcher(text).replaceAll(ESCAPED_BRACKET_MARKER);
             String plain = PlainTextComponentSerializer.plainText().serialize(LabelPlaceholders.MINI_MESSAGE.deserialize(masked, LabelPlaceholders.samples()));
             Matcher leftover = TAG_LEFTOVER.matcher(plain);
-            if (leftover.find()) {
-                problems.add(new PortalProblem(id, index, field + ": unknown or mismatched tag " + leftover.group()));
-            }
+            return leftover.find() ? List.of(field + ": unknown or mismatched tag " + leftover.group()) : List.of();
         } catch (ParsingException exception) {
-            problems.add(new PortalProblem(id, index, field + ": " + exception.getMessage()));
+            return List.of(field + ": " + exception.getMessage());
         }
     }
 

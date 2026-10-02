@@ -361,6 +361,8 @@ consist of lower-case letters, digits, `-` and `_`; `list`, `show` and `create` 
 - `/setup portal <id> label offline <minimessage...>`: text shown while the source is offline
 - `/setup portal <id> label source <task|group|service|local> [name]`: where the player count
   comes from; `local` takes no name
+- `/setup portal <id> label preview <online|offline>`: which variant the text preview shows
+  (default `online`)
 - `/setup portal <id> label remove`: drop the label
 - `/setup portal <id> save|cancel|remove`
 
@@ -369,6 +371,13 @@ Every edit only changes your draft and answers with what is still missing, or "c
 `cancel` (or disconnecting) discards the draft. While a draft is open, a live particle preview is
 shown to you only. Tab completion suggests portal and draft ids, verbs, known tasks, `none`, `box`
 and `ring`.
+
+Once a draft label has a position and a text, a real text display appears at the anchor, visible
+to you only, rendered like the lobby does with sample values (`<online>` = 12, `<max>` = 50,
+`<task>` = the draft's task, or the portal id without one). It follows every edit, switches to the
+offline variant with `label preview offline`, and disappears on `save`, `cancel`, `remove`,
+`label remove` and when you disconnect. If the shown text is invalid, the preview keeps its last
+valid text and the reply names the problem.
 
 The lobby reads portals only at startup: restart it to pick up changed portals.
 
