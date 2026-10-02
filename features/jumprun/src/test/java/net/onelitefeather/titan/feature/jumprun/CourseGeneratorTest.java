@@ -28,8 +28,11 @@ import java.util.function.Predicate;
 import java.util.random.RandomGenerator;
 import java.util.random.RandomGeneratorFactory;
 import net.minestom.server.instance.block.Block;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CourseGeneratorTest {
 
     private static final CourseBlock SOURCE = new CourseBlock(new BlockPos(0, 10, 0), Surface.FULL);
@@ -294,7 +297,17 @@ class CourseGeneratorTest {
         return new FakeSpaceProbe().occupyBox(-50, 0, -50, 50, 2, 50).occupyBox(-20, 10, 15, 20, 40, 18).occupyBox(30, 10, -50, 33, 60, 50);
     }
 
-    /** The jumps of ten seeded courses of 1000 jumps each, the same ones for every property. */
+    /** Generated once for all properties; immutable, so sharing it keeps the tests independent. */
+    private List<Jump> jumps;
+    private FakeSpaceProbe world;
+
+    @BeforeAll
+    void generateJumps() {
+        world = obstacleWorld();
+        jumps = List.copyOf(generatedJumps(world));
+    }
+
+    /** The jumps of ten seeded courses of 1000 jumps each. */
     private static List<Jump> generatedJumps(FakeSpaceProbe world) {
         List<Jump> jumps = new ArrayList<>();
         for (long seed = 1; seed <= SEEDS; seed++) {
@@ -314,46 +327,41 @@ class CourseGeneratorTest {
 
     @Test
     void everySeedCompletesItsJumpsInTheObstacleWorld() {
-        assertEquals(SEEDS * JUMPS_PER_SEED, generatedJumps(obstacleWorld()).size(), "generated jumps");
+        assertEquals(SEEDS * JUMPS_PER_SEED, jumps.size(), "generated jumps");
     }
 
     @Test
     void generatedGapsStayWithinTheLimits() {
-        assertForEvery(generatedJumps(obstacleWorld()), jump -> jump.gap() >= Jump.MIN_GAP && jump.gap() <= Jump.MAX_GAP, "gap");
+        assertForEvery(jumps, jump -> jump.gap() >= Jump.MIN_GAP && jump.gap() <= Jump.MAX_GAP, "gap");
     }
 
     @Test
     void generatedAscentsStayWithinTheAscentGap() {
-        assertForEvery(generatedJumps(obstacleWorld()), jump -> !jump.isAscent() || jump.gap() <= Jump.MAX_GAP_ASCENT, "ascent gap");
+        assertForEvery(jumps, jump -> !jump.isAscent() || jump.gap() <= Jump.MAX_GAP_ASCENT, "ascent gap");
     }
 
     @Test
     void generatedDiagonalJumpsStayWithinTheDiagonalGap() {
-        assertForEvery(generatedJumps(obstacleWorld()), jump -> !jump.isDiagonal() || jump.gap() <= Jump.MAX_GAP_DIAGONAL, "diagonal gap");
+        assertForEvery(jumps, jump -> !jump.isDiagonal() || jump.gap() <= Jump.MAX_GAP_DIAGONAL, "diagonal gap");
     }
 
     @Test
     void generatedRisesStayWithinTheLimit() {
-        assertForEvery(generatedJumps(obstacleWorld()), jump -> jump.rise() <= Jump.MAX_RISE, "rise");
+        assertForEvery(jumps, jump -> jump.rise() <= Jump.MAX_RISE, "rise");
     }
 
     @Test
     void generatedJumpsAreFreeInTheWorld() {
-        FakeSpaceProbe world = obstacleWorld();
-        JumpRules rules = new JumpRules(world);
-
-        assertForEvery(generatedJumps(world), rules::isValid, "rules");
+        assertForEvery(jumps, new JumpRules(world)::isValid, "rules");
     }
 
     @Test
     void generatedBlocksHaveFourAirBlocksBelowThem() {
-        FakeSpaceProbe world = obstacleWorld();
-
-        assertForEvery(generatedJumps(world), jump -> new Openness(world).hasAirBelow(jump.to().pos()), "air below");
+        assertForEvery(jumps, jump -> new Openness(world).hasAirBelow(jump.to().pos()), "air below");
     }
 
     @Test
     void generatedBlocksKeepTheMarginToTheTop() {
-        assertForEvery(generatedJumps(obstacleWorld()), jump -> jump.to().pos().y() + JumpRules.MAX_Y_MARGIN <= 100, "top margin");
+        assertForEvery(jumps, jump -> jump.to().pos().y() + JumpRules.MAX_Y_MARGIN <= 100, "top margin");
     }
 }
