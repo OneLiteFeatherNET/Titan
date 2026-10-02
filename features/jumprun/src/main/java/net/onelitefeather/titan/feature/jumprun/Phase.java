@@ -27,9 +27,6 @@ sealed interface Phase {
     /** The ascent gives up after this many jumps: the run does not start. */
     int MAX_ASCENT_JUMPS = 30;
 
-    /** Air blocks below the last ascent block, so the scored part starts well above the ground. */
-    int ASCENT_AIR_BELOW = 8;
-
     static Phase start(Heading heading) {
         return new Ascent(0, heading);
     }

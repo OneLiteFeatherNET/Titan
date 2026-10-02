@@ -180,7 +180,7 @@ class AscentPhaseTest {
     /** The way the generator sees it: the four blocks made just before also take up room. */
     private static boolean hasAirBelow(FakeSpaceProbe world, List<CourseBlock> course, int index) {
         Set<BlockPos> earlier = course.subList(Math.max(0, index - Course.VISIBLE_BEFORE_NEW), index).stream().map(CourseBlock::pos).collect(Collectors.toSet());
-        return new Openness(new OccupiedProbe(world, earlier)).hasAirBelow(course.get(index).pos(), Phase.ASCENT_AIR_BELOW);
+        return new Openness(new OccupiedProbe(world, earlier)).hasAirBelow(course.get(index).pos(), Openness.ASCENT_AIR_BELOW);
     }
 
     private static boolean isInTheOpen(FakeSpaceProbe world, SpawnZone spawn, List<CourseBlock> course, int index) {
@@ -193,7 +193,7 @@ class AscentPhaseTest {
 
         List<CourseBlock> course = ascent(world, EAST, 1L);
 
-        assertEquals(Phase.ASCENT_AIR_BELOW, course.size() - 1, "the start stands on the ground and each jump is one higher, so the eighth block has eight air blocks below");
+        assertEquals(Openness.ASCENT_AIR_BELOW, course.size() - 1, "the start stands on the ground and each jump is one higher, so the eighth block has eight air blocks below");
         assertTrue(hasAirBelow(world, course, course.size() - 1), "eight air blocks below the last ascent block");
     }
 
@@ -255,6 +255,16 @@ class AscentPhaseTest {
     }
 
     @Test
+    void ascentFromTheOwnPositionAsSpawnLeavesItWithinThirtyJumps() {
+        SpawnZone ownPosition = new SpawnZone(START.pos().x() + 0.5, START.pos().z() + 0.5);
+
+        List<CourseBlock> course = ascent(new FakeSpaceProbe(), ownPosition, EAST, 1L);
+
+        assertTrue(course.size() - 1 <= Phase.MAX_ASCENT_JUMPS, "at most thirty jumps, got " + (course.size() - 1));
+        assertTrue(ownPosition.isFarEnough(course.getLast().pos()), "the last ascent block is sixteen blocks from where the run began");
+    }
+
+    @Test
     void ascentNeverReachesTheSpawnDistanceInAWorldTooSmall() {
         FakeSpaceProbe walled = new FakeSpaceProbe(new BlockPos(-5, 0, -5), new BlockPos(5, 100, 5));
 
@@ -294,6 +304,15 @@ class AscentPhaseTest {
         Heading heading = Heading.away(5.02, 5.0, 5.0, 5.0, 0.0, 1.0);
 
         assertEquals(1.0, heading.z(), 1e-9, "facing, not the 2 cm offset");
+    }
+
+    @Test
+    void headingOnTheSpawnItselfIsFiniteForAnyFacing() {
+        Heading facing = Heading.away(7.5, 7.5, 7.5, 7.5, 3.0, 4.0);
+        Heading blind = Heading.away(7.5, 7.5, 7.5, 7.5, 0.0, 0.0);
+
+        assertEquals(0.6, facing.x(), 1e-9, "identical points fall back to the facing direction without dividing by zero");
+        assertTrue(Double.isFinite(blind.x()) && Double.isFinite(blind.z()), "no NaN without a facing direction either");
     }
 
     @Test

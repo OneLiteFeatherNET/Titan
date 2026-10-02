@@ -69,7 +69,7 @@ final class CourseGenerator {
     private Phase after(Placement placed, Phase phase, Space space) {
         return switch (phase) {
             case Phase.Ascent ascent ->
-                ascent.next(spawn.isFarEnough(placed.pos()) && space.openness().hasAirBelow(placed.pos(), Phase.ASCENT_AIR_BELOW));
+                ascent.next(isInTheOpen(placed.pos(), space, Openness.ASCENT_AIR_BELOW));
             case Phase.Scored scored -> scored.next();
         };
     }
@@ -82,19 +82,20 @@ final class CourseGenerator {
     /**
      * Candidates in the open enough for the phase. After the ascent they need air below, because a
      * block over a way would make the course run along it, and distance to the spawn, so the
-     * course does not come back to it. Whether the jump itself is free is
-     * left to the caller, which checks it before ranking so openness is only read for free jumps.
+     * course does not come back to it. Whether the jump itself is free is left to the caller, which
+     * checks it before ranking so openness is only read for free jumps.
      */
     private List<Spot> candidatesFor(Placement from, Phase phase, Space space) {
         if (phase instanceof Phase.Ascent ascent && ascent.isOutOfJumps()) {
             return List.of();
         }
         boolean needsAirBelow = phase instanceof Phase.Scored;
-        return candidates(from, phase).stream().filter(candidate -> !needsAirBelow || isInTheOpen(candidate.pos(), space)).toList();
+        return candidates(from, phase).stream().filter(candidate -> !needsAirBelow || isInTheOpen(candidate.pos(), space, Openness.SCORED_AIR_BELOW)).toList();
     }
 
-    private boolean isInTheOpen(BlockPos pos, Space space) {
-        return spawn.isFarEnough(pos) && space.openness().hasAirBelow(pos, Openness.MIN_AIR_BELOW);
+    /** Far from the spawn, with {@code airBelow} air blocks under it. */
+    private boolean isInTheOpen(BlockPos pos, Space space, int airBelow) {
+        return spawn.isFarEnough(pos) && space.openness().hasAirBelow(pos, airBelow);
     }
 
     /** Dead-end check of depth one: some free jump must leave the candidate. */

@@ -33,39 +33,39 @@ class OpennessTest {
 
     @Test
     void sixAirBlocksBelowAreEnoughForTheScoredMinimum() {
-        assertTrue(in(new FakeSpaceProbe().occupy(0, 23, 0)).hasAirBelow(TARGET, Openness.MIN_AIR_BELOW), "y-1 to y-6 are air, y-7 is not");
+        assertTrue(in(new FakeSpaceProbe().occupy(0, 23, 0)).hasAirBelow(TARGET, Openness.SCORED_AIR_BELOW), "y-1 to y-6 are air, y-7 is not");
     }
 
     @Test
     void aBlockSixBelowIsNotEnoughForTheScoredMinimum() {
-        assertFalse(in(new FakeSpaceProbe().occupy(0, 24, 0)).hasAirBelow(TARGET, Openness.MIN_AIR_BELOW), "y-6");
+        assertFalse(in(new FakeSpaceProbe().occupy(0, 24, 0)).hasAirBelow(TARGET, Openness.SCORED_AIR_BELOW), "y-6");
     }
 
     @Test
     void aBlockDirectlyBelowIsNotEnough() {
-        assertFalse(in(new FakeSpaceProbe().occupy(0, 29, 0)).hasAirBelow(TARGET, Openness.MIN_AIR_BELOW), "y-1");
+        assertFalse(in(new FakeSpaceProbe().occupy(0, 29, 0)).hasAirBelow(TARGET, Openness.SCORED_AIR_BELOW), "y-1");
     }
 
     @Test
     void sixAirBlocksBelowAreNotEnoughForTheAscent() {
         Openness openness = in(new FakeSpaceProbe().occupy(0, 23, 0));
 
-        assertFalse(openness.hasAirBelow(TARGET, Phase.ASCENT_AIR_BELOW), "eight air blocks are needed, only six are there");
+        assertFalse(openness.hasAirBelow(TARGET, Openness.ASCENT_AIR_BELOW), "eight air blocks are needed, only six are there");
     }
 
     @Test
     void blocksBesideTheColumnDoNotMatterForTheAirBelow() {
-        assertTrue(in(new FakeSpaceProbe().occupyBox(1, 20, -1, 1, 40, 1)).hasAirBelow(TARGET, Openness.MIN_AIR_BELOW), "a wall next to the column");
+        assertTrue(in(new FakeSpaceProbe().occupyBox(1, 20, -1, 1, 40, 1)).hasAirBelow(TARGET, Openness.SCORED_AIR_BELOW), "a wall next to the column");
     }
 
     @Test
     void cellsBelowTheWorldBottomAreNoOpenAir() {
-        assertFalse(in(new FakeSpaceProbe()).hasAirBelow(new BlockPos(0, 5, 0), Openness.MIN_AIR_BELOW), "y-6 is below the world");
+        assertFalse(in(new FakeSpaceProbe()).hasAirBelow(new BlockPos(0, 5, 0), Openness.SCORED_AIR_BELOW), "y-6 is below the world");
     }
 
     @Test
     void theLowestBlockWithAllCellsInTheWorldBelowItHasAirBelow() {
-        assertTrue(in(new FakeSpaceProbe()).hasAirBelow(new BlockPos(0, 6, 0), Openness.MIN_AIR_BELOW), "y-1 to y-6 are y=5 to y=0");
+        assertTrue(in(new FakeSpaceProbe()).hasAirBelow(new BlockPos(0, 6, 0), Openness.SCORED_AIR_BELOW), "y-1 to y-6 are y=5 to y=0");
     }
 
     // --- openness ---------------------------------------------------------------------------------
