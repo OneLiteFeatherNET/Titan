@@ -18,6 +18,7 @@ package net.onelitefeather.titan.feature.jumprun;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import java.util.Random;
 import net.minestom.server.instance.block.Block;
 import org.junit.jupiter.api.Test;
@@ -82,5 +83,33 @@ class SurfaceTest {
             assertTrue(surface.palette().contains(first), surface + " draws from its own palette");
             assertEquals(first, surface.draw(new Random(7L)), surface + " same seed, same material");
         }
+    }
+
+    @Test
+    void shapesUnlockAtTheirScoreThresholds() {
+        assertEquals(0, Surface.FULL.minScore(), "full block");
+        assertEquals(10, Surface.SLAB.minScore(), "slab");
+        assertEquals(10, Surface.TRAPDOOR.minScore(), "trapdoor");
+        assertEquals(25, Surface.FENCE.minScore(), "fence");
+        assertEquals(25, Surface.PANE.minScore(), "pane");
+        assertEquals(40, Surface.POST.minScore(), "post");
+    }
+
+    @Test
+    void onlyFullBlocksAreUnlockedBelowScoreTen() {
+        assertEquals(List.of(Surface.FULL), Surface.unlockedAt(0), "score 0");
+        assertEquals(List.of(Surface.FULL), Surface.unlockedAt(9), "score 9");
+    }
+
+    @Test
+    void slabAndTrapdoorUnlockAtTenAndFenceAndPaneAtTwentyFive() {
+        assertEquals(List.of(Surface.FULL, Surface.TRAPDOOR, Surface.SLAB), Surface.unlockedAt(10), "score 10");
+        assertEquals(List.of(Surface.FULL, Surface.TRAPDOOR, Surface.SLAB), Surface.unlockedAt(24), "score 24");
+        assertEquals(List.of(Surface.FULL, Surface.TRAPDOOR, Surface.SLAB, Surface.FENCE, Surface.PANE), Surface.unlockedAt(25), "score 25");
+    }
+
+    @Test
+    void everyShapeIsUnlockedFromScoreForty() {
+        assertEquals(List.of(Surface.values()), Surface.unlockedAt(40), "score 40");
     }
 }

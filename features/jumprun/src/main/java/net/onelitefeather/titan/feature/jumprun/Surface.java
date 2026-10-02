@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.feature.jumprun;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.random.RandomGenerator;
 import net.minestom.server.instance.block.Block;
@@ -25,18 +26,20 @@ import net.minestom.server.instance.block.Block;
  * shown as.
  */
 enum Surface {
-    FULL(1.0, 0, Palettes.full()), TRAPDOOR(0.1875, 1, Palettes.trapdoor()), SLAB(0.5, 1, Palettes.slab()), FENCE(1.5, 2, Palettes.fence()), PANE(1.0, 3, Palettes.pane()), POST(1.0, 4, Palettes.post());
+    FULL(1.0, 0, 0, Palettes.full()), TRAPDOOR(0.1875, 1, 10, Palettes.trapdoor()), SLAB(0.5, 1, 10, Palettes.slab()), FENCE(1.5, 2, 25, Palettes.fence()), PANE(1.0, 3, 25, Palettes.pane()), POST(1.0, 4, 40, Palettes.post());
 
     /** The player stands 1.8 blocks tall; clear space above the top is measured with this. */
     private static final double PLAYER_HEIGHT = 1.8;
 
     private final double top;
     private final int typeCost;
+    private final int minScore;
     private final List<Block> palette;
 
-    Surface(double top, int typeCost, List<Block> palette) {
+    Surface(double top, int typeCost, int minScore, List<Block> palette) {
         this.top = top;
         this.typeCost = typeCost;
+        this.minScore = minScore;
         this.palette = palette;
     }
 
@@ -56,6 +59,16 @@ enum Surface {
 
     int typeCost() {
         return typeCost;
+    }
+
+    /** The score from which this shape may appear, so the narrow ones come late. */
+    int minScore() {
+        return minScore;
+    }
+
+    /** The shapes that may appear once the score has reached {@code score}. */
+    static List<Surface> unlockedAt(int score) {
+        return Arrays.stream(values()).filter(surface -> surface.minScore <= score).toList();
     }
 
     /**

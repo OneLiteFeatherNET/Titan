@@ -36,6 +36,9 @@ import org.junit.jupiter.api.TestInstance;
 class CourseGeneratorTest {
 
     private static final CourseBlock SOURCE = TestBlocks.at(new BlockPos(0, 10, 0), Surface.FULL);
+    private static final Heading EAST = new Heading(1.0, 0.0);
+    private static final Heading WEST = new Heading(-1.0, 0.0);
+    private static final Heading NORTH = new Heading(0.0, -1.0);
 
     private static RandomGenerator seeded(long seed) {
         return RandomGeneratorFactory.of("L64X128MixRandom").create(seed);
@@ -58,20 +61,41 @@ class CourseGeneratorTest {
     }
 
     private static CourseBlock jumpFromSource(CourseGenerator generator, int score) {
-        return generator.next(List.of(SOURCE), new Phase.Scored(score)).orElseThrow();
+        return jumpFromSource(generator, score, EAST);
     }
 
-    /** Walks the generator forward from the start and returns the whole course, start included. */
-    private static List<CourseBlock> walk(CourseGenerator generator, CourseBlock start, Phase phase, int jumps) {
+    private static CourseBlock jumpFromSource(CourseGenerator generator, int score, Heading heading) {
+        return generator.next(List.of(SOURCE), new Phase.Scored(score, heading)).orElseThrow();
+    }
+
+    /** A jump as the generator made it, with the phase it was made in. */
+    private record Move(Jump jump, Phase phase) {
+
+        Heading heading() {
+            return phase.heading();
+        }
+    }
+
+    /** Walks the generator forward from the start and returns every jump made on the way. */
+    private static List<Move> moves(CourseGenerator generator, CourseBlock start, Phase phase, int jumps) {
         List<CourseBlock> course = new ArrayList<>(List.of(start));
+        List<Move> moves = new ArrayList<>();
         for (int i = 0; i < jumps; i++) {
             Optional<CourseBlock> next = generator.next(course, phase);
             if (next.isEmpty()) {
                 break;
             }
+            moves.add(new Move(new Jump(course.getLast(), next.get()), phase));
             course.add(next.get());
             phase = generator.after(course, phase);
         }
+        return moves;
+    }
+
+    /** Walks the generator forward from the start and returns the whole course, start included. */
+    private static List<CourseBlock> walk(CourseGenerator generator, CourseBlock start, Phase phase, int jumps) {
+        List<CourseBlock> course = new ArrayList<>(List.of(start));
+        moves(generator, start, phase, jumps).forEach(move -> course.add((CourseBlock) move.jump().to()));
         return course;
     }
 
@@ -88,12 +112,36 @@ class CourseGeneratorTest {
 
     @Test
     void picksTheCandidateClosestToTheTargetCost() {
-        CourseGenerator generator = new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, withNoise(2.0, 1L));
+        // Slabs and trapdoors unlock at score 10 (D15); at 0 only full blocks cost 1.5 or 2.5, never 2.0.
+        double noise = 2.0 - Difficulty.level(10) * Jump.maxCost(Surface.unlockedAt(10));
+        CourseGenerator generator = new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, withNoise(noise, 1L));
 
-        CourseBlock chosen = jumpFromSource(generator, 0);
+        CourseBlock chosen = jumpFromSource(generator, 10);
 
-        assertEquals(2.0, new Jump(SOURCE, chosen).cost(), "target 2.0 is met exactly by a slab");
-        assertEquals(Surface.SLAB, chosen.surface(), "only a slab costs 2.0 without a gap or a rise");
+        assertEquals(2.0, new Jump(SOURCE, chosen).cost(), "target 2.0 is met exactly by a slab or a trapdoor");
+        assertTrue(Set.of(Surface.SLAB, Surface.TRAPDOOR).contains(chosen.surface()), "only these cost 2.0 without a gap or a rise, got " + chosen.surface());
+    }
+
+    @Test
+    void whenCostsTieTheCandidateInTheMainHeadingWins() {
+        for (long seed = 0; seed < 30; seed++) {
+            CourseGenerator generator = new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, withNoise(-100.0, seed));
+
+            BlockPos chosen = jumpFromSource(generator, 0).pos();
+
+            assertTrue(chosen.x() > 0 && chosen.z() == 0, "east is the heading, the sideways jumps cost the same (seed " + seed + "), chose " + chosen);
+        }
+    }
+
+    @Test
+    void aStepAgainstTheMainHeadingIsNeverChosen() {
+        for (long seed = 0; seed < 30; seed++) {
+            CourseGenerator generator = new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, withNoise(100.0, seed));
+
+            BlockPos chosen = jumpFromSource(generator, 10_000).pos();
+
+            assertTrue(chosen.x() >= 0, "the hardest jump may not lead west against an eastern heading (seed " + seed + "), chose " + chosen);
+        }
     }
 
     @Test
@@ -110,14 +158,18 @@ class CourseGeneratorTest {
     @Test
     void rejectsACandidateWithoutAnyFollowUpJump() {
         for (long seed = 0; seed < 20; seed++) {
-            // A is the easiest candidate but nothing is reachable from it; B has a follow-up C.
-            FakeSpaceProbe world = FakeSpaceProbe.solidWorld().carveColumn(2, 3, 0, 12).carveColumn(1, 11, 0, 2).carveColumn(-5, 3, 0, 12).carveColumn(-10, 3, 0, 12);
-            for (int x = -9; x <= -1; x++) {
+            // A is the easiest candidate but nothing is reachable from it; B starts a way west
+            // that goes on for more blocks than the dead-end check looks ahead.
+            FakeSpaceProbe world = FakeSpaceProbe.solidWorld().carveColumn(2, 3, 0, 12).carveColumn(1, 11, 0, 2);
+            for (int x = -35; x <= -5; x += 5) {
+                world.carveColumn(x, 3, 0, 12);
+            }
+            for (int x = -34; x <= -1; x++) {
                 world.carveColumn(x, 11, 0, 2);
             }
             CourseGenerator generator = new CourseGenerator(world, TestBlocks.FAR_SPAWN, withNoise(0.0, seed));
 
-            CourseBlock chosen = jumpFromSource(generator, 0);
+            CourseBlock chosen = jumpFromSource(generator, 0, NORTH);
 
             assertTrue(chosen.pos().x() < 0, "dead end A in the east must lose to the way west (seed " + seed + "), chose " + chosen.pos());
         }
@@ -128,7 +180,7 @@ class CourseGeneratorTest {
         // From y=10 a block reaches at most y=11, which leaves no six air blocks above the way at y<=7.
         FakeSpaceProbe world = new FakeSpaceProbe().occupyBox(0, 0, -50, 50, 7, 50);
         for (long seed = 0; seed < 30; seed++) {
-            CourseBlock chosen = jumpFromSource(new CourseGenerator(world, TestBlocks.FAR_SPAWN, seeded(seed)), 0);
+            CourseBlock chosen = jumpFromSource(new CourseGenerator(world, TestBlocks.FAR_SPAWN, seeded(seed)), 0, WEST);
 
             assertTrue(chosen.pos().x() < 0, "only the open side may be used (seed " + seed + "), chose " + chosen.pos());
         }
@@ -149,7 +201,7 @@ class CourseGeneratorTest {
     void placesNoScoredBlockWithinSixteenBlocksOfTheSpawn() {
         SpawnZone onTheStart = new SpawnZone(0.5, 0.5);
 
-        assertTrue(new CourseGenerator(new FakeSpaceProbe(), onTheStart, seeded(1L)).next(List.of(SOURCE), new Phase.Scored(0)).isEmpty(), "every jump of at most five blocks stays near the spawn");
+        assertTrue(new CourseGenerator(new FakeSpaceProbe(), onTheStart, seeded(1L)).next(List.of(SOURCE), new Phase.Scored(0, EAST)).isEmpty(), "every jump of at most five blocks stays near the spawn");
     }
 
     @Test
@@ -164,12 +216,13 @@ class CourseGeneratorTest {
 
     @Test
     void prefersMoreAirBelowOfTwoEquallyCostlyPlaces() {
-        // Ground below the east side: every place there has fewer air blocks in its column.
-        FakeSpaceProbe world = new FakeSpaceProbe().occupyBox(1, 0, -50, 50, 3, 50);
+        // Ground below the east side, a wall in the north: east and west cost and lead the same,
+        // but every place in the east has fewer air blocks in its column.
+        FakeSpaceProbe world = new FakeSpaceProbe().occupyBox(1, 0, -50, 50, 3, 50).occupyBox(-50, 0, -2, 50, 100, -2);
         for (long seed = 0; seed < 30; seed++) {
-            CourseBlock chosen = jumpFromSource(new CourseGenerator(world, TestBlocks.FAR_SPAWN, withNoise(-100.0, seed)), 0);
+            CourseBlock chosen = jumpFromSource(new CourseGenerator(world, TestBlocks.FAR_SPAWN, withNoise(-100.0, seed)), 0, NORTH);
 
-            assertTrue(chosen.pos().x() <= 0, "the place with the deeper column wins at equal cost (seed " + seed + "), chose " + chosen.pos());
+            assertTrue(chosen.pos().x() < 0, "the place with the deeper column wins at equal cost (seed " + seed + "), chose " + chosen.pos());
         }
     }
 
@@ -177,7 +230,7 @@ class CourseGeneratorTest {
     void reportsNoCandidateWhenEveryPlaceIsOverAWay() {
         FakeSpaceProbe world = new FakeSpaceProbe().occupyBox(-50, 0, -50, 50, 7, 50);
 
-        assertTrue(new CourseGenerator(world, TestBlocks.FAR_SPAWN, seeded(1L)).next(List.of(SOURCE), new Phase.Scored(0)).isEmpty(), "ground three blocks below the start leaves no room");
+        assertTrue(new CourseGenerator(world, TestBlocks.FAR_SPAWN, seeded(1L)).next(List.of(SOURCE), new Phase.Scored(0, EAST)).isEmpty(), "ground three blocks below the start leaves no room");
     }
 
     @Test
@@ -185,7 +238,7 @@ class CourseGeneratorTest {
         // East and west offer the same four zero-cost jumps; a wall hugs the west ones.
         FakeSpaceProbe world = new FakeSpaceProbe().occupyBox(0, 8, 2, 0, 12, 2).occupyBox(0, 8, -2, 0, 12, -2).occupyBox(-3, 0, -50, -3, 100, 50);
         for (long seed = 0; seed < 30; seed++) {
-            CourseBlock chosen = jumpFromSource(new CourseGenerator(world, TestBlocks.FAR_SPAWN, withNoise(-100.0, seed)), 0);
+            CourseBlock chosen = jumpFromSource(new CourseGenerator(world, TestBlocks.FAR_SPAWN, withNoise(-100.0, seed)), 0, NORTH);
 
             assertTrue(chosen.pos().x() > 0, "the open side wins at equal cost (seed " + seed + "), chose " + chosen.pos());
         }
@@ -211,7 +264,7 @@ class CourseGeneratorTest {
     void reportsNoCandidateWhenNothingIsFree() {
         CourseGenerator generator = new CourseGenerator(FakeSpaceProbe.solidWorld(), TestBlocks.FAR_SPAWN, seeded(1L));
 
-        assertTrue(generator.next(List.of(SOURCE), new Phase.Scored(0)).isEmpty(), "walled in");
+        assertTrue(generator.next(List.of(SOURCE), new Phase.Scored(0, EAST)).isEmpty(), "walled in");
     }
 
     @Test
@@ -219,7 +272,7 @@ class CourseGeneratorTest {
         FakeSpaceProbe world = new FakeSpaceProbe().occupyBox(6, 0, -50, 50, 100, 50);
         CourseGenerator generator = new CourseGenerator(world, TestBlocks.FAR_SPAWN, seeded(3L));
 
-        List<CourseBlock> course = walk(generator, SOURCE, new Phase.Scored(0), 60);
+        List<CourseBlock> course = walk(generator, SOURCE, new Phase.Scored(0, EAST), 60);
 
         assertTrue(course.size() > 40, "the course must keep going, got " + course.size());
         for (CourseBlock block : course) {
@@ -231,7 +284,7 @@ class CourseGeneratorTest {
     void doesNotRepeatAPositionOfTheLastFourBlocks() {
         CourseGenerator generator = new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(11L));
 
-        List<CourseBlock> course = walk(generator, SOURCE, new Phase.Scored(0), 300);
+        List<CourseBlock> course = walk(generator, SOURCE, new Phase.Scored(0, EAST), 300);
 
         for (int i = 1; i < course.size(); i++) {
             for (int back = 1; back <= 4 && back <= i; back++) {
@@ -244,16 +297,16 @@ class CourseGeneratorTest {
 
     @Test
     void sameSeedGivesTheSameCourse() {
-        List<CourseBlock> first = walk(new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(42L)), SOURCE, new Phase.Scored(0), 50);
-        List<CourseBlock> second = walk(new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(42L)), SOURCE, new Phase.Scored(0), 50);
+        List<CourseBlock> first = walk(new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(42L)), SOURCE, new Phase.Scored(0, EAST), 50);
+        List<CourseBlock> second = walk(new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(42L)), SOURCE, new Phase.Scored(0, EAST), 50);
 
         assertEquals(first, second, "same seed, same course");
     }
 
     @Test
     void differentSeedsGiveDifferentCourses() {
-        List<CourseBlock> first = walk(new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(1L)), SOURCE, new Phase.Scored(0), 50);
-        List<CourseBlock> second = walk(new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(2L)), SOURCE, new Phase.Scored(0), 50);
+        List<CourseBlock> first = walk(new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(1L)), SOURCE, new Phase.Scored(0, EAST), 50);
+        List<CourseBlock> second = walk(new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(2L)), SOURCE, new Phase.Scored(0, EAST), 50);
 
         assertNotEquals(first, second, "different seeds, different courses");
     }
@@ -261,7 +314,7 @@ class CourseGeneratorTest {
     // --- materials ------------------------------------------------------------------------------
 
     private static List<Block> fullBlockMaterials(long seed) {
-        List<CourseBlock> course = walk(new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(seed)), SOURCE, new Phase.Scored(0), 40);
+        List<CourseBlock> course = walk(new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(seed)), SOURCE, new Phase.Scored(0, EAST), 40);
         return course.stream().skip(1).filter(block -> block.surface() == Surface.FULL).limit(10).map(CourseBlock::material).toList();
     }
 
@@ -280,7 +333,7 @@ class CourseGeneratorTest {
 
     @Test
     void everyGeneratedBlockUsesAMaterialOfItsOwnSurface() {
-        List<CourseBlock> course = walk(new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(9L)), SOURCE, new Phase.Scored(80), 200);
+        List<CourseBlock> course = walk(new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(9L)), SOURCE, new Phase.Scored(80, EAST), 200);
 
         for (CourseBlock block : course.subList(1, course.size())) {
             assertTrue(block.surface().palette().contains(block.material()), block.material() + " is not a material of " + block.surface());
@@ -312,6 +365,22 @@ class CourseGeneratorTest {
     }
 
     @Test
+    void belowScoreTenOnlyFullBlocksAreChosen() {
+        for (int score : new int[]{0, 9}) {
+            long narrow = thousandJumpsAtScore(score, 100L).stream().filter(jump -> jump.to().surface() != Surface.FULL).count();
+
+            assertEquals(0, narrow, "narrow shapes are locked at score " + score);
+        }
+    }
+
+    @Test
+    void slabsAndTrapdoorsAppearOnceTheyAreUnlockedAtScoreTen() {
+        long unlocked = thousandJumpsAtScore(10, 100L).stream().filter(jump -> jump.to().surface() == Surface.SLAB || jump.to().surface() == Surface.TRAPDOOR).count();
+
+        assertTrue(unlocked > 0, "slabs and trapdoors at score 10");
+    }
+
+    @Test
     void jumpsAtScoreEightyAreMuchHarderThanAtScoreZero() {
         double atZero = meanCost(thousandJumpsAtScore(0, 100L));
         double atEighty = meanCost(thousandJumpsAtScore(80, 100L));
@@ -337,25 +406,24 @@ class CourseGeneratorTest {
     }
 
     /** Generated once for all properties; immutable, so sharing it keeps the tests independent. */
+    private List<List<Move>> courses;
     private List<Jump> jumps;
     private FakeSpaceProbe world;
 
     @BeforeAll
     void generateJumps() {
         world = obstacleWorld();
-        jumps = List.copyOf(generatedJumps(world));
+        courses = generatedCourses(world);
+        jumps = courses.stream().flatMap(List::stream).map(Move::jump).toList();
     }
 
-    /** The jumps of ten seeded courses of 1000 jumps each. */
-    private static List<Jump> generatedJumps(FakeSpaceProbe world) {
-        List<Jump> jumps = new ArrayList<>();
+    /** Ten seeded courses of 1000 jumps each. */
+    private static List<List<Move>> generatedCourses(FakeSpaceProbe world) {
+        List<List<Move>> courses = new ArrayList<>();
         for (long seed = 1; seed <= SEEDS; seed++) {
-            List<CourseBlock> course = walk(new CourseGenerator(world, TestBlocks.FAR_SPAWN, seeded(seed)), SOURCE, new Phase.Scored(0), JUMPS_PER_SEED);
-            for (int i = 1; i < course.size(); i++) {
-                jumps.add(new Jump(course.get(i - 1), course.get(i)));
-            }
+            courses.add(List.copyOf(moves(new CourseGenerator(world, TestBlocks.FAR_SPAWN, seeded(seed)), SOURCE, new Phase.Scored(0, EAST), JUMPS_PER_SEED)));
         }
-        return jumps;
+        return List.copyOf(courses);
     }
 
     private static void assertForEvery(List<Jump> jumps, Predicate<Jump> property, String what) {
@@ -365,8 +433,19 @@ class CourseGeneratorTest {
     }
 
     @Test
-    void everySeedCompletesItsJumpsInTheObstacleWorld() {
-        assertEquals(SEEDS * JUMPS_PER_SEED, jumps.size(), "generated jumps");
+    void mostSeedsCompleteTheirJumpsInTheObstacleWorld() {
+        // With the main heading (D15) a course cannot turn back, so in this small walled world it
+        // may run into a corner; that must stay the exception, not the rule.
+        long complete = courses.stream().filter(course -> course.size() == JUMPS_PER_SEED).count();
+
+        assertTrue(complete >= SEEDS * 8 / 10, complete + " of " + SEEDS + " courses completed their " + JUMPS_PER_SEED + " jumps");
+    }
+
+    @Test
+    void everyCourseThatEndsEarlyHasStillMadeHundredsOfJumps() {
+        for (List<Move> course : courses) {
+            assertTrue(course.size() >= 200, "a course ended after only " + course.size() + " jumps");
+        }
     }
 
     @Test
@@ -402,5 +481,53 @@ class CourseGeneratorTest {
     @Test
     void generatedBlocksKeepTheMarginToTheTop() {
         assertForEvery(jumps, jump -> jump.to().pos().y() + JumpRules.MAX_Y_MARGIN <= 100, "top margin");
+    }
+
+    @Test
+    void noGeneratedStepLeadsAgainstTheMainHeading() {
+        for (List<Move> course : courses) {
+            for (Move move : course) {
+                double cosine = move.heading().dot(move.jump().direction());
+                assertTrue(cosine >= 0.0, "step " + move.jump().direction() + " against the heading " + move.heading());
+            }
+        }
+    }
+
+    @Test
+    void everyGeneratedTargetKeepsTwoCellsFromTheThreeBlocksBeforeItsSource() {
+        for (List<Move> course : courses) {
+            for (int i = 0; i < course.size(); i++) {
+                BlockPos target = course.get(i).jump().to().pos();
+                for (int back = 1; back <= 3 && back <= i; back++) {
+                    BlockPos earlier = course.get(i - back).jump().from().pos();
+                    int sourceY = course.get(i).jump().from().pos().y();
+                    boolean inHeightSpan = earlier.y() >= Math.min(sourceY, target.y()) - Clearance.HEIGHT_MARGIN && earlier.y() <= Math.max(sourceY, target.y()) + Clearance.HEIGHT_MARGIN;
+                    int distance = Math.max(Math.abs(earlier.x() - target.x()), Math.abs(earlier.z() - target.z()));
+                    assertTrue(!inHeightSpan || distance >= Clearance.MIN_DISTANCE, "block " + (i + 1) + " at " + target + " is " + distance + " from the earlier " + earlier);
+                }
+            }
+        }
+    }
+
+    @Test
+    void everyGeneratedFlightPathKeepsClearanceToTheEarlierVisibleBlocks() {
+        for (List<Move> course : courses) {
+            List<Placement> blocks = new ArrayList<>(List.of(SOURCE));
+            for (Move move : course) {
+                List<Placement> visible = blocks.subList(Math.max(0, blocks.size() - Course.VISIBLE_BEFORE_NEW), blocks.size());
+                assertTrue(Clearance.isKept(move.jump(), visible), "clearance: " + move.jump());
+                blocks.add(move.jump().to());
+            }
+        }
+    }
+
+    @Test
+    void everyGeneratedShapeIsUnlockedAtTheScoreOfItsJump() {
+        for (List<Move> course : courses) {
+            for (int score = 0; score < course.size(); score++) {
+                Surface surface = course.get(score).jump().to().surface();
+                assertTrue(surface.minScore() <= score, surface + " appeared at score " + score);
+            }
+        }
     }
 }

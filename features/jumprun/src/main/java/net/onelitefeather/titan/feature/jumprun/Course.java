@@ -90,6 +90,11 @@ final class Course {
         return startPoint;
     }
 
+    /** The main heading: where the course leads overall, bent a little by every block made. */
+    Heading heading() {
+        return nextPhase.heading();
+    }
+
     CourseBlock current() {
         return blocks.get(current);
     }

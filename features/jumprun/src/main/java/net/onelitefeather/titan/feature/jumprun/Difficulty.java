@@ -21,7 +21,7 @@ import java.util.random.RandomGenerator;
 final class Difficulty {
 
     /** Score at which the level has climbed to 1 - 1/e; a larger value flattens the curve. */
-    private static final double SCALE = 40.0;
+    private static final double SCALE = 80.0;
     private static final double NOISE_SIGMA = 1.0;
 
     private Difficulty() {
@@ -33,11 +33,13 @@ final class Difficulty {
     }
 
     /**
-     * The cost the next jump should come close to: the level scaled to the hardest jump, plus
-     * noise.
+     * The cost the next jump should come close to: the level scaled to the hardest jump of the
+     * shapes unlocked at the score, plus noise. Scaling to all shapes would push the target into
+     * wide gaps while the narrow shapes are still locked.
      */
     static double targetCost(int score, RandomGenerator random) {
-        double target = level(score) * Jump.MAX_COST + random.nextGaussian() * NOISE_SIGMA;
-        return Math.clamp(target, 0.0, Jump.MAX_COST);
+        double hardest = Jump.maxCost(Surface.unlockedAt(score));
+        double target = level(score) * hardest + random.nextGaussian() * NOISE_SIGMA;
+        return Math.clamp(target, 0.0, hardest);
     }
 }
