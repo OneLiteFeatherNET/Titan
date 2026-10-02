@@ -57,7 +57,7 @@ import org.slf4j.LoggerFactory;
  * built from fake blocks and shown to the others as block displays. All state lives in the
  * {@link RunRegistry}; there is no tick task, work happens in the events of the player who runs.
  *
- * <p>{@code LobbyItems} is not injected: the item calls {@link #toggle(Player)} on this module
+ * <p>{@code LobbyItems} is not injected: the item calls {@link #use(Player)} on this module
  * directly, so there is no dependency on the hotbar column and no cycle with it.
  */
 @Singleton
@@ -206,6 +206,7 @@ final class JumprunModule {
      * breaks the block at once, with no dig event.
      */
     private void onPacket(PlayerPacketEvent event) {
+        // Minestom queues these packets and handles them in the player's own tick, so the player's tick counter is safe to read here.
         ClientPacket packet = event.getPacket();
         Player player = event.getPlayer();
         switch (packet) {
@@ -250,8 +251,7 @@ final class JumprunModule {
 
     /**
      * Minestom answers a click or dig on a block with the real one while it handles the packet;
-     * only
-     * a packet sent on the next tick lands behind that answer.
+     * only a packet sent on the next tick lands behind that answer.
      *
      * @return whether the block belongs to the player's run
      */

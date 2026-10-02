@@ -34,7 +34,7 @@ final class JumprunItems {
 
     private static final Key ITEM_KEY = Key.key("titan:jumprun");
     private static final int HOTBAR_SLOT = 0;
-    private static final Component NAME = MiniMessage.miniMessage().deserialize("<!i><gradient:#7CFC00:#00C853><b>Jump & Run</b></gradient>");
+    private static final Component NAME = MiniMessage.miniMessage().deserialize("<!i>" + RunTitle.MARKUP);
 
     @Bean
     LobbyItem jumprun(JumprunModule jumprun) {

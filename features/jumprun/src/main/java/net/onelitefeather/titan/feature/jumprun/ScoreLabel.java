@@ -34,16 +34,18 @@ import org.jetbrains.annotations.Nullable;
  */
 final class ScoreLabel {
 
-    private static final String TEMPLATE = "<sprite:blocks:block/slime_block> <gradient:#7CFC00:#00C853><b>Jump & Run</b></gradient> <gray>·</gray> <white><score></white>";
+    private static final String TEMPLATE = "<sprite:blocks:block/slime_block> " + RunTitle.MARKUP + " <gray>·</gray> <white><score></white>";
 
     /** A passenger sits at the top of the head; this lifts the text over the name tag. */
     private static final Vec ABOVE_NAME_TAG = new Vec(0.0, 0.5, 0.0);
 
+    /** Scores are never negative, so this never equals one. */
+    private static final int NOTHING_SHOWN = -1;
+
     private final Player runner;
     @Nullable
     private HiddenDisplay label;
-    @Nullable
-    private Integer shownScore;
+    private int shownScore = NOTHING_SHOWN;
 
     ScoreLabel(Player runner) {
         this.runner = runner;
@@ -51,7 +53,7 @@ final class ScoreLabel {
 
     /** Shows the score, creating the label on first use; an unchanged score sends nothing. */
     void show(int score) {
-        if (shownScore != null && shownScore == score) {
+        if (shownScore == score) {
             return;
         }
         shownScore = score;
@@ -71,7 +73,7 @@ final class ScoreLabel {
         if (label != null) {
             label.remove();
             label = null;
-            shownScore = null;
+            shownScore = NOTHING_SHOWN;
         }
     }
 
