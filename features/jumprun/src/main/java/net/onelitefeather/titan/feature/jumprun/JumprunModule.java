@@ -22,6 +22,9 @@ import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.LongSupplier;
 import java.util.function.UnaryOperator;
@@ -34,13 +37,16 @@ import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.event.instance.RemoveEntityFromInstanceEvent;
-import net.minestom.server.event.player.PlayerBlockInteractEvent;
 import net.minestom.server.event.player.PlayerChunkLoadEvent;
 import net.minestom.server.event.player.PlayerDeathEvent;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.event.player.PlayerMoveEvent;
-import net.minestom.server.event.player.PlayerStartDiggingEvent;
+import net.minestom.server.event.player.PlayerPacketEvent;
 import net.minestom.server.event.player.PlayerStartFlyingWithElytraEvent;
+import net.minestom.server.network.packet.client.ClientPacket;
+import net.minestom.server.network.packet.client.play.ClientPlayerActionPacket;
+import net.minestom.server.network.packet.client.play.ClientPlayerBlockPlacementPacket;
+import net.minestom.server.timer.TaskSchedule;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.module.LobbySpawn;
 import org.slf4j.Logger;
@@ -73,6 +79,7 @@ final class JumprunModule {
     private final LongSupplier seeds;
     private final RunRegistry runs = new RunRegistry();
     private final FakeBlocks fakeBlocks = new FakeBlocks();
+    private final Set<UUID> clickedRunBlock = ConcurrentHashMap.newKeySet();
     private FeatureNode node;
 
     @Inject
@@ -96,8 +103,7 @@ final class JumprunModule {
         this.node.on(PlayerStartFlyingWithElytraEvent.class, this::onElytra);
         this.node.on(PlayerDeathEvent.class, this::onDeath);
         this.node.on(PlayerChunkLoadEvent.class, this::onChunkLoad);
-        this.node.on(PlayerBlockInteractEvent.class, this::onBlockInteract);
-        this.node.on(PlayerStartDiggingEvent.class, this::onStartDigging);
+        this.node.on(PlayerPacketEvent.class, this::onPacket);
         this.node.on(PlayerDisconnectEvent.class, this::onDisconnect);
         this.node.on(RemoveEntityFromInstanceEvent.class, this::onLeaveInstance);
     }
@@ -123,6 +129,17 @@ final class JumprunModule {
             begin(player);
         } else {
             end(running, EndReason.ABORT);
+        }
+    }
+
+    /**
+     * The item as the hotbar dispatches it. A client that right-clicks a block with the item sends
+     * the use-on-block packet and then the plain use packet; the second one must not end the run
+     * the click just kept intact.
+     */
+    void use(Player player) {
+        if (!clickedRunBlock.contains(player.getUuid())) {
+            toggle(player);
         }
     }
 
@@ -175,12 +192,33 @@ final class JumprunModule {
         }
     }
 
-    private void onBlockInteract(PlayerBlockInteractEvent event) {
-        resendNextTickIfRunBlock(event.getPlayer(), event.getBlockPosition());
+    /**
+     * Reacts on the client's packet, because Minestom answers a click on a block it knows as air
+     * with the real block, and not every such answer raises an event: a creative player's dig
+     * breaks the block at once, with no dig event.
+     */
+    private void onPacket(PlayerPacketEvent event) {
+        ClientPacket packet = event.getPacket();
+        Player player = event.getPlayer();
+        switch (packet) {
+            case ClientPlayerActionPacket action when isDigging(action.status()) ->
+                resendNextTickIfRunBlock(player, action.blockPosition());
+            case ClientPlayerBlockPlacementPacket placement -> {
+                if (resendNextTickIfRunBlock(player, placement.blockPosition())) {
+                    clickedRunBlock.add(player.getUuid());
+                    player.scheduler().scheduleTask(() -> clickedRunBlock.remove(player.getUuid()), TaskSchedule.tick(2), TaskSchedule.stop());
+                }
+            }
+            default -> {
+            }
+        }
     }
 
-    private void onStartDigging(PlayerStartDiggingEvent event) {
-        resendNextTickIfRunBlock(event.getPlayer(), event.getBlockPosition());
+    private static boolean isDigging(ClientPlayerActionPacket.Status status) {
+        return switch (status) {
+            case STARTED_DIGGING, CANCELLED_DIGGING, FINISHED_DIGGING -> true;
+            default -> false;
+        };
     }
 
     private void endRunOf(Player player, EndReason reason) {
@@ -199,14 +237,19 @@ final class JumprunModule {
     }
 
     /**
-     * Minestom answers a click or dig on a block with the real one, after the event; only a packet
-     * sent on the next tick lands behind that answer.
+     * Minestom answers a click or dig on a block with the real one while it handles the packet;
+     * only
+     * a packet sent on the next tick lands behind that answer.
+     *
+     * @return whether the block belongs to the player's run
      */
-    private void resendNextTickIfRunBlock(Player player, Point block) {
+    private boolean resendNextTickIfRunBlock(Player player, Point block) {
         Run run = runs.get(player.getUuid());
-        if (run != null && run.showsFakeBlockAt(block.blockX(), block.blockY(), block.blockZ())) {
-            player.scheduler().scheduleNextTick(() -> showIfRegistered(run, window -> window));
+        if (run == null || !run.showsFakeBlockAt(block.blockX(), block.blockY(), block.blockZ())) {
+            return false;
         }
+        player.scheduler().scheduleNextTick(() -> showIfRegistered(run, window -> window));
+        return true;
     }
 
     /**

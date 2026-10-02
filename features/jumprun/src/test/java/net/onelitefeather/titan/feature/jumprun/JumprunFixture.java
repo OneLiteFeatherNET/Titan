@@ -24,6 +24,7 @@ import net.minestom.server.entity.PlayerHand;
 import net.minestom.server.event.player.PlayerMoveEvent;
 import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.server.instance.Instance;
+import net.minestom.server.network.packet.client.ClientPacket;
 import net.minestom.server.network.packet.client.play.ClientPlayerPositionPacket;
 import net.minestom.server.network.packet.client.play.ClientTeleportConfirmPacket;
 import net.minestom.server.network.packet.server.play.BlockChangePacket;
@@ -77,7 +78,10 @@ final class JumprunFixture implements AutoCloseable {
         RunMessages messages = new RunMessages();
         JumprunModule module = new JumprunModule(titan.node(), () -> new Pos(-40.5, GROUND_Y, 0.5), records, messages, () -> SEED);
         module.start();
-        return new JumprunFixture(env, titan, module, new JumprunItems().jumprun(module), records, messages);
+        LobbyItem item = new JumprunItems().jumprun(module);
+        // What the hotbar column does with the use packet, without depending on it.
+        titan.node().addListener(PlayerUseItemEvent.class, event -> item.onUse().handle(event.getPlayer(), event));
+        return new JumprunFixture(env, titan, module, item, records, messages);
     }
 
     /** A flat instance whose chunks around the origin are loaded, so the course has room. */
@@ -89,6 +93,10 @@ final class JumprunFixture implements AutoCloseable {
             }
         }
         return instance;
+    }
+
+    LobbyItem item() {
+        return item;
     }
 
     JumprunModule module() {
@@ -121,6 +129,11 @@ final class JumprunFixture implements AutoCloseable {
         // Minestom drops movement until the client has confirmed the last teleport it was sent.
         env.process().packetListener().processClientPacket(new ClientTeleportConfirmPacket(player.getLastSentTeleportId()), player.getPlayerConnection());
         env.process().packetListener().processClientPacket(new ClientPlayerPositionPacket(to, onGround, false), player.getPlayerConnection());
+    }
+
+    /** Any client packet through the player's connection, so Minestom's own listener answers. */
+    void sendClientPacket(Player player, ClientPacket packet) {
+        env.process().packetListener().processClientPacket(packet, player.getPlayerConnection());
     }
 
     /** The player lands on top of a shown block and the client says so. */
