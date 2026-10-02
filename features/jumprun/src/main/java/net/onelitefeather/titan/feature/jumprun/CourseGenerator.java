@@ -51,7 +51,8 @@ final class CourseGenerator {
     Optional<CourseBlock> next(List<CourseBlock> course, Phase phase) {
         CourseBlock from = course.getLast();
         Space space = rulesFor(course);
-        return ranked(candidatesFor(from, phase, space), phase, from, space).stream().filter(candidate -> space.isFree(from, candidate)).filter(candidate -> hasFollowUp(course, candidate, phase)).findFirst().map(this::withDrawnMaterial);
+        List<CourseBlock> free = candidatesFor(from, phase, space).stream().filter(candidate -> space.isFree(from, candidate)).toList();
+        return ranked(free, phase, from, space).stream().filter(candidate -> hasFollowUp(course, candidate, phase)).findFirst().map(this::withDrawnMaterial);
     }
 
     /**
@@ -78,7 +79,7 @@ final class CourseGenerator {
     /**
      * Candidates in the open enough for the phase. After the ascent they need air below, because a
      * block over a way would make the course run along it. Whether the jump itself is free is
-     * checked later and only for the ones that rank first.
+     * left to the caller, which checks it before ranking so openness is only read for free jumps.
      */
     private List<CourseBlock> candidatesFor(CourseBlock from, Phase phase, Space space) {
         if (phase instanceof Phase.Ascent ascent && ascent.isOutOfJumps()) {
