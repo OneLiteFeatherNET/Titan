@@ -25,7 +25,8 @@ import net.kyori.adventure.key.InvalidKeyException;
 import net.minestom.server.instance.block.Block;
 
 /**
- * Parsing and validation of {@code jumprun.palettes.<shape>.<block>: <weight>} and {@code
+ * Parsing and validation of {@code jumprun.palettes.<shape>.<block>: <weight>} (weight 0 switches a
+ * material off) and {@code
  * jumprun.<mode>.rerollTicks}. Every failure names the full key, so the operator finds the line to
  * fix.
  */
@@ -87,7 +88,16 @@ final class JumprunSettings {
             throw new IllegalArgumentException(key(surface) + " must not be empty - the shape could never be shown otherwise");
         }
         List<Palette.Weighted> entries = new ArrayList<>();
-        new TreeMap<>(weights).forEach((name, weight) -> entries.add(new Palette.Weighted(block(surface, name), weight(surface, name, weight))));
+        // Every entry is validated, a switched-off one too, so a typo in its name still shows.
+        new TreeMap<>(weights).forEach((name, weight) -> {
+            Palette.Weighted entry = new Palette.Weighted(block(surface, name), weight(surface, name, weight));
+            if (entry.weight() > 0) {
+                entries.add(entry);
+            }
+        });
+        if (entries.isEmpty()) {
+            throw new IllegalArgumentException(key(surface) + " needs a material with a weight above 0 - the shape could never be shown otherwise");
+        }
         return Palette.of(entries);
     }
 
@@ -118,8 +128,8 @@ final class JumprunSettings {
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException(key + ": weight must be a whole number, got '" + raw + "'");
         }
-        if (weight <= 0) {
-            throw new IllegalArgumentException(key + ": weight must be greater than 0, got " + weight);
+        if (weight < 0) {
+            throw new IllegalArgumentException(key + ": weight must be 0 or greater, got " + weight);
         }
         return weight;
     }

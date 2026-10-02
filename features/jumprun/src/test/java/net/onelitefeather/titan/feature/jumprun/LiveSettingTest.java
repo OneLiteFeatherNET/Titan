@@ -68,7 +68,7 @@ class LiveSettingTest {
 
     @Test
     void anInvalidValueAtStartAbortsWithItsKey() {
-        this.config.setProperty(LIME_KEY, "0");
+        this.config.setProperty(LIME_KEY, "-1");
 
         IllegalArgumentException abort = assertThrows(IllegalArgumentException.class, this.reader::readAtStartup);
 
@@ -122,7 +122,7 @@ class LiveSettingTest {
 
     @Test
     void withoutAValidReadAnInvalidValueStillFails() {
-        this.config.setProperty(LIME_KEY, "0");
+        this.config.setProperty(LIME_KEY, "-1");
 
         assertThrows(IllegalArgumentException.class, this.reader::current, "there is nothing to fall back to");
     }

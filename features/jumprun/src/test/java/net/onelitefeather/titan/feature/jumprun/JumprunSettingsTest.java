@@ -16,12 +16,17 @@
 package net.onelitefeather.titan.feature.jumprun;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.avaje.config.Configuration;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.random.RandomGenerator;
+import java.util.random.RandomGeneratorFactory;
 import net.minestom.server.instance.block.Block;
 import org.junit.jupiter.api.Test;
 
@@ -71,16 +76,56 @@ class JumprunSettingsTest {
     }
 
     @Test
-    void aWeightOfZeroNamesItsKey() {
-        IllegalArgumentException refusal = refusal(Surface.FULL, Map.of("lime_wool", "0"));
+    void aWeightOfZeroSwitchesTheMaterialOff() {
+        Configuration config = TestBlocks.shippedConfiguration();
+        config.setProperty("jumprun.palettes.full.white_concrete", "0");
 
-        assertNamesKey("jumprun.palettes.full.lime_wool", refusal);
-        assertTrue(refusal.getMessage().contains("greater than 0"), "reason: " + refusal.getMessage());
+        Palettes palettes = JumprunSettings.palettes(config);
+
+        assertFalse(palettes.of(Surface.FULL).blocks().contains(Block.WHITE_CONCRETE), "white concrete is off");
+        assertEquals(32, palettes.of(Surface.FULL).blocks().size(), "the other 32 materials stay");
+    }
+
+    @Test
+    void aSwitchedOffMaterialIsNeverDrawnWhileTheOthersAre() {
+        Configuration config = TestBlocks.shippedConfiguration();
+        config.setProperty("jumprun.palettes.full.white_concrete", "0");
+        Palettes palettes = JumprunSettings.palettes(config);
+        RandomGenerator random = RandomGeneratorFactory.of("L64X128MixRandom").create(11L);
+
+        Set<Block> drawn = new HashSet<>();
+        for (int i = 0; i < 4000; i++) {
+            drawn.add(palettes.draw(Surface.FULL, random));
+        }
+
+        assertFalse(drawn.contains(Block.WHITE_CONCRETE), "white concrete was drawn");
+        assertTrue(drawn.contains(Block.ORANGE_CONCRETE) && drawn.contains(Block.LIME_WOOL), "the other materials still appear");
+    }
+
+    @Test
+    void aSwitchedOffMaterialIsStillCheckedForItsShape() {
+        assertNamesKey("jumprun.palettes.trapdoor.stone", refusal(Surface.TRAPDOOR, Map.of("stone", "0", "oak_trapdoor", "1")));
+    }
+
+    @Test
+    void aSwitchedOffMaterialWithATypoNamesItsKey() {
+        assertNamesKey("jumprun.palettes.full.lime_woool", refusal(Surface.FULL, Map.of("lime_woool", "0", "lime_wool", "1")));
+    }
+
+    @Test
+    void aShapeWithOnlyZeroWeightsNamesTheShape() {
+        IllegalArgumentException refusal = refusal(Surface.FULL, Map.of("lime_wool", "0", "red_wool", "0"));
+
+        assertNamesKey("jumprun.palettes.full", refusal);
+        assertTrue(refusal.getMessage().contains("weight above 0"), "reason: " + refusal.getMessage());
     }
 
     @Test
     void aNegativeWeightNamesItsKey() {
-        assertNamesKey("jumprun.palettes.pane.iron_bars", refusal(Surface.PANE, Map.of("iron_bars", "-2")));
+        IllegalArgumentException refusal = refusal(Surface.PANE, Map.of("iron_bars", "-2", "white_stained_glass_pane", "1"));
+
+        assertNamesKey("jumprun.palettes.pane.iron_bars", refusal);
+        assertTrue(refusal.getMessage().contains("0 or greater"), "reason: " + refusal.getMessage());
     }
 
     @Test

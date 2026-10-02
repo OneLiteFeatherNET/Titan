@@ -124,7 +124,7 @@ class JumprunMaterialTest {
 
     @Test
     void anInvalidPaletteAbortsTheStartWithItsKey(Env env) {
-        Configuration config = TestBlocks.shippedWith(Surface.FULL, Map.of("lime_wool", "0"));
+        Configuration config = TestBlocks.shippedWith(Surface.FULL, Map.of("lime_wool", "-1"));
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
             JumprunModule module = new JumprunModule(titan.node(), () -> null, List::of, new InMemoryRunRecords(), RecordingLobbyItems::new, new RunMessages(), () -> JumprunFixture.SEED, new JumprunConfig(config));
 
