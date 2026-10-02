@@ -17,6 +17,8 @@ Integrationszweig: `feat/jumprun` von `origin/main`. Agents, die schreiben, arbe
 | 5c | spectators-distance | 8.1–8.4 | sonnet | `features/jumprun/**` | alles außerhalb `features/jumprun` |
 | 5d | item-label-sound | 9.1–9.3 | sonnet | `features/jumprun/**`, `apps/*/src/test/**` | alles andere |
 | 5d | click-fix | 10.1 | sonnet | `features/jumprun/**`, D14 in `design.md` | alles andere |
+| 5e | course-direction | 11.1–11.2 | sonnet | `features/jumprun/**` (Generator, Course, Surface, Difficulty, Phase, Openness, JumpRules) | `RunSounds`, `EndReason`, `JumprunModule` |
+| 5e | sounds | 11.3 | sonnet | `features/jumprun/**` (`RunSounds`, `EndReason`, `JumprunModule`) | Generator-Klassen |
 | 6 | pr | 6.1 | sonnet | Git/GitHub | Code |
 
 Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhandenes nutzen: `FeatureNode`, `LobbyItem`/`ItemSlot`, `LobbySpawn` aus `core`, Minestom-`BlockChangePacket` und Events, `java.util.random.RandomGenerator`, Adventure `TranslationStore`/`GlobalTranslator`. Java 25 ohne Preview: Records, sealed Types mit `switch`, `_`. Nutzertexte nur über die Bundles (D8), Schlüssel `titan.jumprun.*`, Englisch als Fallback. SLF4J mit Parametern, Lauf-Ereignisse nur auf DEBUG, keine Metriken oder Spans (D10). Test zuerst, schlanke Kommentare nur fürs Warum, Conventional Commits `feat(jumprun): …`. F.I.R.S.T.: fester Seed statt Zufall, kein `Thread.sleep`, keine Systemzeit, frische `Env`/Fixtures je Test, `env.tick()` statt Warten, Erfolg nur über Assertions, kein geteilter statischer Zustand (Rekorde, Registry und Translator-Registrierung je Test neu bzw. im `@AfterEach` entfernt).
@@ -81,6 +83,12 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 ## 10. Bugfix: Anklicken lässt Blöcke verschwinden
 
 - [x] 10.1 Reproduktion zuerst (Integration, echte Client-Pakete über `processClientPacket`): Links- und Rechtsklick auf einen Laufblock, mit und ohne Jump-and-Run-Item in der Hand, enden mit einem Block-Paket, das den Laufblock zeigt, und der Lauf läuft weiter (Spec „Block anklicken“); rot. Ursache und Fix in D14 nachtragen, dann beheben; grün. Nachweis: Test grün, erneuter lokaler Test.
+
+## 11. Zielgerichtet, länger leicht, Signal- und Scheiter-Ton (Nachtrag nach viertem lokalen Test)
+
+- [ ] 11.1 Test zuerst (Unit): Freischalt-Schwellen der Formen (0/10/25/40), `K = 80`, unter Score 10 nur Vollblöcke; bestehende Statistik-Tests begründet anpassen. Dann `Surface`, `Difficulty`, Generator (D15). Nachweis: Tests grün.
+- [ ] 11.2 Test zuerst (Unit): Hauptrichtung im `Course` (Start = Aufstiegsrichtung, Glättung 0.8/0.2), kein Kandidat mit `cos < 0`, 2er-Abstand zu früheren sichtbaren Blöcken außer dem Absprungblock (Ziel und Flugbahn), Richtungs-Bonus im Ranking. Dann umsetzen (D15). Nachweis: Tests grün, 10 000-Sprünge-Invarianten grün.
+- [ ] 11.3 Test zuerst (Unit + Integration): Signalton bei jeder Aufstiegslandung nur an den Läufer; Scheiter-Ton (3 absteigende Bass-Töne über 6 Ticks) nur bei Absturz und Elytra, nicht bei Abbruch, Verlassen, Disconnect oder Shutdown. Dann `RunSounds.signal`/`fail`, `EndReason.failed()`. Nachweis: `./gradlew build` grün, danach erneuter lokaler Test.
 
 ## 6. Pull Request
 

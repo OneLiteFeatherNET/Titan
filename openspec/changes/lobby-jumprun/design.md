@@ -60,7 +60,7 @@ Rein (ohne Minestom-Server testbar):
 ### D3 Schwierigkeit: Formel und Kostenmodell
 
 ```
-d(n)        = 1 - e^(-n / K)                 K = 40, n = Score
+d(n)        = 1 - e^(-n / K)                 K = 80, n = Score (seit D15, vorher 40)
 Ziel(n)     = d(n) * C_max + N(0, σ)         σ = 1.0, auf [0, C_max] begrenzt
 Kosten(s)   = 2*Typ(s) + 1.5*Lücke(s) + 1*Aufstieg(s)
 
@@ -175,6 +175,27 @@ Für jeden gezeigten Fake-Block spawnt der Lauf eine `Entity(EntityType.BLOCK_DI
 Ursache (zwei Stück, beide mit echten Client-Paketen reproduziert): Lobby-Spieler sind im Creative-Modus, dort bricht `PlayerActionListener` den Block bei `STARTED_DIGGING` sofort ab (`breakTicks == 0`), ohne `PlayerStartDiggingEvent`, und `InstanceContainer.breakBlock` schickt für die dem Server bekannte Luft sofort ein `BlockChangePacket` mit Luft; unser Event-basiertes Neusenden lief nie. Außerdem schickt der Client nach dem Rechtsklick mit dem Item auf einen Block zusätzlich `ClientUseItemPacket`, das über das `PlayerUseItemEvent` des Hotbar-Dispatchers den Lauf per `toggle` abbrach und damit alle Blöcke zurücksetzte.
 Fix: Das Neusenden hängt jetzt an `PlayerPacketEvent` (`ClientPlayerActionPacket` Start/Abbruch/Ende und `ClientPlayerBlockPlacementPacket` auf einen Laufblock) und sendet im nächsten Tick, hinter Minestoms Antwort. Ein Rechtsklick auf einen Laufblock sperrt die Item-Benutzung für zwei Ticks (`JumprunModule.use`), alles innerhalb von `features/jumprun`; ein Klick des Items in die Luft schaltet den Lauf weiterhin um.
 - **Test:** Integration mit echten Client-Paketen. Links- und Rechtsklick auf einen Laufblock, mit und ohne Item, lassen als letztes Block-Paket an den Spieler den Laufblock zurück, und der Lauf läuft weiter.
+
+### D15 Zielgerichtet, länger leicht, Signal- und Scheiter-Ton (Nachtrag nach viertem lokalen Test)
+
+- **Freischaltung der Formen:** `Surface` bekommt eine Mindest-Score-Schwelle: Vollblock 0, Stufe und Falltür 10, Zaun/Mauer und Scheibe/Gitter 25, Pfosten 40. Der Generator betrachtet nur freigeschaltete Formen. Dazu steigt `K` von 40 auf 80, sodass die halbe Maximalschwierigkeit erst bei etwa Score 55 erreicht ist. `C_max` und das Ziel beziehen sich auf die bei diesem Score freigeschalteten Formen. Damit kippt das Ziel nicht in breite Lücken, nur weil schmale Formen fehlen.
+- **Hauptrichtung:** Der Kurs führt eine Hauptrichtung `H` als Einheitsvektor. Sie startet als Aufstiegsrichtung und wird nach jedem Block geglättet: `H ← normalize(0.8·H + 0.2·Schritt)`. Kandidaten mit `cos(H, Schritt) < 0` sind ungültig. Ins Ranking geht `W_DIR · (1 − cos)/2` mit `W_DIR = 2.0` ein, gleichrangig mit Kosten und Offenheit. Die Hauptrichtung ist reiner Zustand im `Course` und wird mit dem Seed reproduzierbar.
+- **Abstand zu früheren Blöcken:** Ziel und jede XZ-Zelle der Flugbahn müssen waagrecht (Chebyshev) mindestens 2 Blöcke von jedem sichtbaren Block außer dem Absprungblock entfernt sein, in der Höhenspanne des Sprungs ±2. Das ergänzt die bestehende Überlappungsprüfung (`OccupiedProbe`) als reine Funktion.
+- **Signalton im Aufstieg:** `RunSounds.signal` spielt dem Läufer `BLOCK_NOTE_BLOCK_HAT` (Quelle `PLAYER`, Lautstärke 0.6, Tonhöhe 1.0) bei jeder geschafften Aufstiegslandung. Er ist gleichbleibend und klar anders als der Shepard-Punkte-Ton.
+- **Ton beim Scheitern:** `RunSounds.fail` spielt dem Läufer drei absteigende `BLOCK_NOTE_BLOCK_BASS` (Tonhöhen 1.0, 0.84, 0.67, je 3 Ticks versetzt über `player.scheduler()`), aber nur bei den Endgründen Absturz und Elytra. `EndReason` bekommt dafür eine Eigenschaft `failed()`.
+- **Built-in:** Adventure `Sound`, Minestom-Scheduler für die Staffelung. Ein eigener Sequenzer wurde verworfen, drei geplante Aufgaben genügen.
+- **Test:** Unit:
+  - Unter Score 10 nur Vollblöcke (Statistik mit festem Seed).
+  - Freischalt-Schwellen je Form.
+  - Kein Kandidat mit `cos < 0`.
+  - Kein Kandidat im 2er-Abstand eines früheren Blocks.
+  - Bei Gleichstand gewinnt der Kandidat in Hauptrichtung.
+
+  Die bestehenden Statistik-Tests werden an die neuen Schwellen angepasst und begründet. Integration:
+  - Aufstiegslandung → ein Hat-Sound nur an den Läufer.
+  - Absturz → drei Bass-Sounds über 6 Ticks (`env.tick()`).
+  - Abbruch über das Item → keiner.
+- **SOLID:** OCP (Schwelle als Eigenschaft von `Surface`), SRP (`RunSounds`).
 
 ## Risks / Trade-offs
 

@@ -60,7 +60,7 @@ Während eines Laufs MÜSSEN andere Spieler über dem Kopf des Läufers eine far
 - **THEN** ist die Anzeige über As Kopf für alle verschwunden
 
 ### Requirement: Ton bei jedem Punkt
-Erhöht sich der Score eines Läufers, MUSS der Läufer einen kurzen Ton hören, der als bei jedem Punkt höher wahrgenommen wird, ohne dass je ein hörbarer Sprung zurück nach unten entsteht (endlos ansteigende Tonleiter, Shepard-Skala). Andere Spieler DÜRFEN diesen Ton NICHT hören. Die Sprünge der Aufstiegsphase erzeugen keinen Ton.
+Erhöht sich der Score eines Läufers, MUSS der Läufer einen kurzen Ton hören, der als bei jedem Punkt höher wahrgenommen wird, ohne dass je ein hörbarer Sprung zurück nach unten entsteht (endlos ansteigende Tonleiter, Shepard-Skala). Andere Spieler DÜRFEN diesen Ton NICHT hören. Jede geschaffte Landung in der Aufstiegsphase MUSS stattdessen einen leisen, gleichbleibenden Signalton nur für den Läufer erzeugen, damit er weiß, dass der Sprung zählt.
 
 #### Scenario: Ton nach einem Punkt
 - **WHEN** der Läufer nach der Aufstiegsphase auf dem nächsten Block landet
@@ -69,6 +69,21 @@ Erhöht sich der Score eines Läufers, MUSS der Läufer einen kurzen Ton hören,
 #### Scenario: Ton steigt scheinbar endlos
 - **WHEN** der Läufer nacheinander 30 Punkte erreicht
 - **THEN** steigt jeder Teilton von einem Punkt zum nächsten um einen Halbton, und ein Teilton, der oben aus dem Tonumfang fällt, ist vorher bis zur Unhörbarkeit ausgeblendet, während unten ein neuer leise einsetzt
+
+#### Scenario: Signal im Aufstieg
+- **WHEN** der Läufer in der Aufstiegsphase auf dem nächsten Block landet
+- **THEN** hört er den Signalton und nicht den Punkte-Ton
+
+### Requirement: Ton beim Scheitern
+Endet ein Lauf durch einen Absturz oder durch Gleiten mit der Elytra, MUSS der Läufer einen kurzen, absteigenden Ton hören, der sich klar vom Punkte-Ton unterscheidet. Andere Spieler DÜRFEN ihn NICHT hören. Ein Abbruch über das Item, das Verlassen der Lobby und das Herunterfahren DÜRFEN diesen Ton NICHT auslösen.
+
+#### Scenario: Absturz
+- **WHEN** der Läufer mehr als drei Blöcke unter seinen letzten Block fällt
+- **THEN** hört er den Ton beim Scheitern, und ein Spieler daneben hört ihn nicht
+
+#### Scenario: Freiwilliger Abbruch
+- **WHEN** der Läufer den Lauf über das Item beendet
+- **THEN** hört er den Ton beim Scheitern nicht
 
 ### Requirement: Sichtfenster von zwei Blöcken
 Während eines Laufs MUSS der Spieler genau den Block sehen, auf dem er zuletzt gelandet ist, dazu die bis zu zwei Blöcke davor (bereits geschafft) und die zwei Blöcke danach (die nächsten Sprünge). Weitere Blöcke des Laufs DÜRFEN NICHT sichtbar sein.
@@ -104,7 +119,11 @@ Jeder Lauf MUSS mit mindestens 5 leichten Sprüngen beginnen, die jeweils einen 
 - **THEN** zeigt sein Score 0
 
 ### Requirement: Schwierigkeit steigt mit dem Score
-Nach der Aufstiegsphase MUSS die Schwierigkeit jedes neuen Sprungs aus einer festen, stetig steigenden Funktion des Scores folgen, die sich einem Höchstwert annähert, ohne ihn zu überschreiten. Die Schwierigkeit MUSS sich in der Form des Blocks (Vollblock, Falltür, Stufe, Zaun oder Mauer, Glasscheibe oder Gitter, schmaler Pfosten), in der Lückenbreite und im Höhenunterschied zeigen. Jeder erzeugte Sprung MUSS ohne Hilfsmittel schaffbar sein. Maßgeblich ist die Oberkante der Lauffläche, also z. B. bei einer Falltür knapp ein Fünftel, bei einer Stufe ein halber Block und bei einem Zaun oder einer Mauer anderthalb Blöcke über ihrer Blockposition. Die Oberkante des Ziels darf höchstens einen Block über der des Ausgangsblocks liegen. Die Lücke darf bei einem Aufstieg höchstens 3 Blöcke betragen, auf gleicher Höhe oder abwärts höchstens 4 Blöcke.
+Nach der Aufstiegsphase MUSS die Schwierigkeit jedes neuen Sprungs aus einer festen, stetig steigenden Funktion des Scores folgen, die sich einem Höchstwert annähert, ohne ihn zu überschreiten. Die Schwierigkeit MUSS langsam steigen: Bis Score 10 MÜSSEN alle Blöcke Vollblöcke sein, Stufen und Falltüren DÜRFEN erst ab Score 10, Zäune, Mauern, Scheiben und Gitter erst ab Score 25 und schmale Pfosten erst ab Score 40 vorkommen. Die Schwierigkeit MUSS sich in der Form des Blocks (Vollblock, Falltür, Stufe, Zaun oder Mauer, Glasscheibe oder Gitter, schmaler Pfosten), in der Lückenbreite und im Höhenunterschied zeigen. Jeder erzeugte Sprung MUSS ohne Hilfsmittel schaffbar sein. Maßgeblich ist die Oberkante der Lauffläche, also z. B. bei einer Falltür knapp ein Fünftel, bei einer Stufe ein halber Block und bei einem Zaun oder einer Mauer anderthalb Blöcke über ihrer Blockposition. Die Oberkante des Ziels darf höchstens einen Block über der des Ausgangsblocks liegen. Die Lücke darf bei einem Aufstieg höchstens 3 Blöcke betragen, auf gleicher Höhe oder abwärts höchstens 4 Blöcke.
+
+#### Scenario: Lange nur Vollblöcke
+- **WHEN** der Score unter 10 liegt
+- **THEN** sind alle erzeugten Blöcke Vollblöcke
 
 #### Scenario: Leichter Anfang
 - **WHEN** der Score 0 ist
@@ -148,6 +167,17 @@ Ein neuer Block nach der Aufstiegsphase DARF NUR an einer Stelle entstehen, die 
 #### Scenario: Gar kein Platz mehr
 - **WHEN** von der aktuellen Stelle aus kein gültiger Block mehr möglich ist
 - **THEN** endet der Lauf mit dem erreichten Score
+
+### Requirement: Zielgerichteter Verlauf
+Der Parcours MUSS eine Hauptrichtung verfolgen, die sich nur allmählich ändert. Ein neuer Block DARF NICHT entgegen der aktuellen Hauptrichtung liegen. Ein neuer Block und die Flugbahn dorthin DÜRFEN waagrecht keinem früheren sichtbaren Block des Laufs außer dem Absprungblock näher als 2 Blöcke kommen, damit frühere Blöcke beim Springen nie im Weg sind. Unter den gültigen Stellen MUSS die Lobby solche bevorzugen, die der Hauptrichtung am besten folgen.
+
+#### Scenario: Kein Zurück
+- **WHEN** der Parcours nach Osten läuft
+- **THEN** liegt kein neuer Block westlich seines Absprungblocks
+
+#### Scenario: Frühere Blöcke nicht im Weg
+- **WHEN** ein Kandidat waagrecht direkt neben dem vorletzten Block läge
+- **THEN** wird er nicht gewählt
 
 ### Requirement: Optische Vielfalt der Blöcke
 Jeder Block eines Laufs MUSS sein Material zufällig aus einer festen Auswahl passend zu seiner Form erhalten (z. B. bunter Beton, Wolle und Terrakotta als Vollblock, verschiedene Holz- und Steinstufen, Holzzäune und Mauern, bunte Glasscheiben und Eisengitter). Das Material DARF die Schwierigkeit und die Schaffbarkeit eines Sprungs NICHT verändern.
