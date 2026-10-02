@@ -64,7 +64,7 @@ record StartedRun(JumprunFixture fixture, TestConnection connection, Player play
 
     private static StartedRun start(Env env, JumprunFixture fixture, Instance instance, Pos stand, Consumer<Player> beforeStart, boolean settle) {
         TestConnection connection = env.createConnection();
-        return start(fixture, instance, connection, connection.connect(instance, stand), beforeStart);
+        return start(fixture, instance, connection, connection.connect(instance, stand), beforeStart, settle);
     }
 
     /**
@@ -72,10 +72,10 @@ record StartedRun(JumprunFixture fixture, TestConnection connection, Player play
      */
     static StartedRun startAgain(JumprunFixture fixture, Instance instance, TestConnection connection, Player player) {
         return start(fixture, instance, connection, player, _ -> {
-        });
+        }, true);
     }
 
-    private static StartedRun start(JumprunFixture fixture, Instance instance, TestConnection connection, Player player, Consumer<Player> beforeStart) {
+    private static StartedRun start(JumprunFixture fixture, Instance instance, TestConnection connection, Player player, Consumer<Player> beforeStart, boolean settle) {
         beforeStart.accept(player);
         player.refreshOnGround(true);
         Collector<ServerPacket> shown = connection.trackIncoming();
