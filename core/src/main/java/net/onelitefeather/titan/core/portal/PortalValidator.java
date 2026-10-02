@@ -15,12 +15,17 @@
  */
 package net.onelitefeather.titan.core.portal;
 
+import net.kyori.adventure.text.minimessage.ParsingException;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.minestom.server.coordinate.Vec;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -28,6 +33,12 @@ import java.util.stream.Collectors;
  * in chat) reject the same data for the same reasons.
  */
 public final class PortalValidator {
+
+    // MiniMessage keeps a tag it cannot resolve (unknown name, unmatched closing tag) as literal text.
+    private static final Pattern TAG_LEFTOVER = Pattern.compile("</?[A-Za-z!#?_][^<>]*>");
+    // An escaped tag (\<gold>) is meant to show literally, so it must not look like a leftover.
+    private static final Pattern ESCAPED_BRACKET = Pattern.compile("(?<!\\\\)\\\\<");
+    private static final String ESCAPED_BRACKET_MARKER = "\uE000";
 
     private PortalValidator() {
     }
@@ -51,6 +62,9 @@ public final class PortalValidator {
                 case null -> problems.add(new PortalProblem(id, index, "shape is missing"));
                 case Box box -> checkBox(id, index, box, problems);
                 case Disc disc -> checkDisc(id, index, disc, problems);
+            }
+            if (portal.label() != null) {
+                checkLabel(id, index, portal.label(), problems);
             }
         }
         return problems;
@@ -91,6 +105,64 @@ public final class PortalValidator {
         if (normal.length() == 0) {
             problems.add(new PortalProblem(id, index, "normal must not have length 0"));
         }
+    }
+
+    private static void checkLabel(String id, int index, PortalLabel label, List<PortalProblem> problems) {
+        if (label.position() == null) {
+            problems.add(new PortalProblem(id, index, "label.position is missing"));
+        }
+        checkText(id, index, "label.text", label.text(), problems);
+        if (label.offlineText() != null) {
+            checkText(id, index, "label.offlineText", label.offlineText(), problems);
+        }
+        sourceProblems(label.source()).forEach(reason -> problems.add(new PortalProblem(id, index, reason)));
+        if (label.billboard() == Billboard.UNKNOWN) {
+            problems.add(new PortalProblem(id, index, "label.billboard is unknown (expected center or fixed)"));
+        }
+    }
+
+    private static void checkText(String id, int index, String field, @Nullable String text, List<PortalProblem> problems) {
+        textProblems(field, text).forEach(reason -> problems.add(new PortalProblem(id, index, reason)));
+    }
+
+    /**
+     * The reasons a label text is unusable; empty if it is fine. {@code field} prefixes each
+     * reason.
+     */
+    public static List<String> textProblems(String field, @Nullable String text) {
+        if (isBlank(text)) {
+            return List.of(field + " must not be blank");
+        }
+        try {
+            String masked = ESCAPED_BRACKET.matcher(text).replaceAll(ESCAPED_BRACKET_MARKER);
+            String plain = PlainTextComponentSerializer.plainText().serialize(LabelPlaceholders.MINI_MESSAGE.deserialize(masked, LabelPlaceholders.samples()));
+            Matcher leftover = TAG_LEFTOVER.matcher(plain);
+            return leftover.find() ? List.of(field + ": unknown or mismatched tag " + leftover.group()) : List.of();
+        } catch (ParsingException exception) {
+            return List.of(field + ": " + exception.getMessage());
+        }
+    }
+
+    /** The reasons a single label source is unusable; empty if it is fine or absent. */
+    public static List<String> sourceProblems(@Nullable LabelSource source) {
+        return switch (source) {
+            case null -> List.of();
+            case LabelSource.Local _ -> List.of();
+            case LabelSource.Task task -> nameProblems("task", task.name());
+            case LabelSource.Group group -> nameProblems("group", group.name());
+            case LabelSource.Service service -> nameProblems("service", service.name());
+            case LabelSource.Unknown unknown ->
+                List.of("label.source.type " + (unknown.type() == null ? "is missing" : "'" + unknown.type() + "' is unknown") + " (expected " + expectedTypes() + ")");
+        };
+    }
+
+    private static List<String> nameProblems(String type, @Nullable String name) {
+        return isBlank(name) ? List.of("label.source.name is missing for type '" + type + "'") : List.of();
+    }
+
+    private static String expectedTypes() {
+        List<String> types = LabelSource.TYPES;
+        return String.join(", ", types.subList(0, types.size() - 1)) + " or " + types.getLast();
     }
 
     private static boolean isBlank(String value) {

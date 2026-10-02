@@ -25,7 +25,10 @@ import net.minestom.server.command.builder.suggestion.Suggestion;
 import net.minestom.server.command.builder.suggestion.SuggestionEntry;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
+import net.minestom.server.entity.Entity;
+import net.minestom.server.entity.EntityType;
 import net.minestom.server.entity.Player;
+import net.minestom.server.entity.metadata.display.TextDisplayMeta;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.network.packet.server.play.SystemChatPacket;
 import net.minestom.testing.Collector;
@@ -35,10 +38,16 @@ import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.common.map.MapEntry;
 import net.onelitefeather.titan.common.map.MapProvider;
 import net.onelitefeather.titan.core.portal.Box;
+import net.onelitefeather.titan.core.portal.LabelSource;
 import net.onelitefeather.titan.core.portal.Portal;
+import net.onelitefeather.titan.core.portal.PortalLabel;
 import net.onelitefeather.titan.setup.listener.PortalDisconnectListener;
+import net.onelitefeather.titan.setup.listener.PortalInstanceChangeListener;
+import net.minestom.server.event.instance.RemoveEntityFromInstanceEvent;
+import net.minestom.server.instance.Instance;
 import net.onelitefeather.titan.setup.portal.DiscPlacement;
 import net.onelitefeather.titan.setup.portal.DraftPreview;
+import net.onelitefeather.titan.setup.portal.LabelPreview;
 import net.onelitefeather.titan.setup.portal.MapProviderPortalStore;
 import net.onelitefeather.titan.setup.portal.PortalDraft;
 import net.onelitefeather.titan.setup.portal.PortalEditor;
@@ -58,6 +67,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -77,9 +87,11 @@ class PortalCommandTest {
     private PortalEditor editor;
     private DraftPreview preview;
     private PortalShow show;
+    private LabelPreview labelPreview;
     private CommandManager commands;
     private TestConnection connection;
     private Player player;
+    private Instance world;
 
     @BeforeEach
     void setUp(Env env) throws IOException {
@@ -92,11 +104,14 @@ class PortalCommandTest {
         editor = new PortalEditor(store);
         preview = new DraftPreview(editor);
         show = new PortalShow();
+        labelPreview = new LabelPreview();
         commands = env.process().command();
-        commands.register(new SetupCommand(provider, new PortalCommand(editor, store, preview, show)));
-        env.process().eventHandler().addListener(PlayerDisconnectEvent.class, new PortalDisconnectListener(editor, preview, show));
+        commands.register(new SetupCommand(provider, new PortalCommand(editor, store, preview, show, labelPreview)));
+        env.process().eventHandler().addListener(PlayerDisconnectEvent.class, new PortalDisconnectListener(editor, preview, show, labelPreview));
+        env.process().eventHandler().addListener(RemoveEntityFromInstanceEvent.class, new PortalInstanceChangeListener(labelPreview));
         connection = env.createConnection();
-        player = connection.connect(env.createFlatInstance(), STANDING);
+        world = env.createFlatInstance();
+        player = connection.connect(world, STANDING);
     }
 
     @DisplayName("pos1 and pos2 take the block under the player, rounded down")
@@ -368,6 +383,262 @@ class PortalCommandTest {
         assertEquals(List.of(OLD), provider.getActiveLobby().portals(), "portals kept");
     }
 
+    @DisplayName("label here anchors the draft at the player's exact position")
+    @Test
+    void labelHereTakesThePlayersPosition(Env env) {
+        run("setup portal p label here");
+        env.tick();
+
+        assertEquals(new Vec(10.7, 64.2, -3.5), draft("p").labelPosition(), "exact position, not the block");
+        assertEquals(List.of(OLD), store.portals(), "nothing saved");
+        assertEquals(1, preview.running(), "the preview follows the draft");
+    }
+
+    @DisplayName("label text and offline take every word")
+    @Test
+    void labelTextAndOfflineTakeAllWords() {
+        run("setup portal p label text <gold>Survival <gray><online>/<max>");
+        run("setup portal p label offline <red>Survival startet gleich");
+
+        assertEquals("<gold>Survival <gray><online>/<max>", draft("p").labelText(), "text with spaces");
+        assertEquals("<red>Survival startet gleich", draft("p").labelOffline(), "offline text with spaces");
+    }
+
+    @DisplayName("label source takes a type and, where needed, a name")
+    @Test
+    void labelSourceTakesTypeAndName() {
+        run("setup portal p label source group Games");
+        assertEquals(new LabelSource.Group("Games"), draft("p").labelSource(), "group Games");
+
+        run("setup portal p label source local");
+
+        assertEquals(new LabelSource.Local(), draft("p").labelSource(), "local needs no name");
+    }
+
+    @DisplayName("label source without a name or with an unknown type is refused in chat")
+    @Test
+    void labelSourceMistakesAreAnswered() {
+        run("setup portal p label source group Games");
+
+        Component noName = send("setup portal p label source task");
+        Component unknownType = send("setup portal p label source proxy x");
+
+        assertTrue(PlainTextComponentSerializer.plainText().serialize(noName).contains("name is missing for type 'task'"), "name demanded");
+        assertTrue(PlainTextComponentSerializer.plainText().serialize(unknownType).contains("task, group, service or local"), "types named");
+        assertEquals(new LabelSource.Group("Games"), draft("p").labelSource(), "draft unchanged");
+    }
+
+    @DisplayName("label with missing arguments is refused with the usage")
+    @Test
+    void labelWithMissingArgumentsIsRefused() {
+        Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);
+
+        run("setup portal p label");
+        run("setup portal p label text");
+        run("setup portal p label offline");
+        run("setup portal p label source");
+        run("setup portal p label bogus");
+
+        assertTrue(editor.drafts(player.getUuid()).isEmpty(), "no bad command created a draft");
+        List<String> replies = plain(chat);
+        assertEquals(5, replies.size(), "every bad command is answered");
+        assertTrue(replies.stream().allMatch(reply -> reply.contains("Usage")), "with the usage: " + replies);
+    }
+
+    @DisplayName("The console cannot use the label syntaxes")
+    @Test
+    void consoleCannotEditLabels() {
+        CommandSender console = commands.getConsoleSender();
+
+        for (String command : List.of("setup portal p label here", "setup portal p label text Hi", "setup portal p label source local", "setup portal p label remove", "setup portal p label preview offline")) {
+            assertNotEquals(CommandResult.Type.SUCCESS, commands.execute(console, command).getType(), command + " is refused");
+        }
+        assertTrue(editor.drafts(player.getUuid()).isEmpty(), "no draft appeared");
+    }
+
+    @DisplayName("A label survives save and a later setspawn, in the map file")
+    @Test
+    void labelSurvivesSaveAndSetspawn() throws IOException {
+        run("setup portal p pos1");
+        run("setup portal p pos2");
+        run("setup portal p task Somewhere");
+        run("setup portal p label here");
+        run("setup portal p label text <gold>Hi <online>");
+        run("setup portal p label source group Games");
+        assertFalse(mapFile().contains("\"label\""), "nothing in the file before save");
+
+        run("setup portal p save");
+        run("setup map setspawn");
+
+        PortalLabel label = provider.getActiveLobby().portals().getLast().label();
+        assertNotNull(label, "the label is in the active map");
+        assertEquals(new Vec(10.7, 64.2, -3.5), label.position(), "anchor kept");
+        assertEquals("<gold>Hi <online>", label.text(), "text kept");
+        assertEquals(new LabelSource.Group("Games"), label.source(), "source kept");
+        String file = mapFile();
+        assertTrue(file.contains("\"label\"") && file.contains("Hi"), "the label is written: " + file);
+        assertNull(provider.getActiveLobby().portals().getFirst().label(), "the other portal has no label");
+    }
+
+    @DisplayName("label remove followed by save drops the saved label")
+    @Test
+    void labelRemoveThenSaveDropsIt() throws IOException {
+        run("setup portal old label here");
+        run("setup portal old label text Hi");
+        run("setup portal old save");
+        assertNotNull(store.portals().getFirst().label(), "label saved");
+
+        run("setup portal old label remove");
+        assertNotNull(store.portals().getFirst().label(), "still saved until save");
+        run("setup portal old save");
+
+        assertNull(store.portals().getFirst().label(), "label gone");
+        assertFalse(mapFile().contains("\"label\""), "no label block in the file");
+    }
+
+    @DisplayName("A label without text is not saved and names the missing text")
+    @Test
+    void incompleteLabelIsNotSaved() {
+        run("setup portal old label here");
+
+        Component reply = send("setup portal old save");
+
+        assertTrue(PlainTextComponentSerializer.plainText().serialize(reply).contains("label text"), "text named as missing");
+        assertEquals(List.of(OLD), store.portals(), "store unchanged");
+    }
+
+    @DisplayName("Tab completion offers the source types")
+    @Test
+    void completesSourceTypes() {
+        assertEquals(List.of("task", "group", "service", "local"), suggestions("setup portal p label source "), "source types");
+    }
+
+    @DisplayName("Label edits show a text preview with the sample values, for the editor only")
+    @Test
+    void labelEditsShowTheTextPreview() {
+        run("setup portal p task Survival");
+        run("setup portal p label here");
+        run("setup portal p label text <task> <online>/<max>");
+
+        Entity display = onlyDisplay();
+        assertEquals("Survival 12/50", shownText(display), "sample values");
+        assertEquals(1, displays().size(), "one display");
+    }
+
+    @DisplayName("label preview offline and online switch the variant")
+    @Test
+    void labelPreviewSwitchesTheVariant() {
+        run("setup portal p label here");
+        run("setup portal p label text <online>/<max>");
+        run("setup portal p label offline closed");
+        Entity display = onlyDisplay();
+
+        run("setup portal p label preview offline");
+        assertEquals("closed", shownText(display), "offline variant");
+
+        run("setup portal p label preview online");
+        assertEquals("12/50", shownText(display), "online variant");
+    }
+
+    @DisplayName("label preview needs a valid variant")
+    @Test
+    void labelPreviewNeedsAVariant() {
+        run("setup portal p label preview");
+        run("setup portal p label preview sideways");
+
+        assertTrue(editor.drafts(player.getUuid()).isEmpty(), "neither reached the editor");
+    }
+
+    @DisplayName("An invalid label text keeps the last valid preview and the reply names the problem")
+    @Test
+    void invalidTextIsReported() {
+        run("setup portal p label here");
+        run("setup portal p label text <gold>Survival");
+        Entity display = onlyDisplay();
+
+        Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);
+        run("setup portal p label text <gold>Survival</red>");
+
+        assertEquals("Survival", shownText(display), "last valid text stays");
+        List<String> replies = plain(chat);
+        assertTrue(replies.stream().anyMatch(line -> line.contains("keeps its last valid text") && line.contains("label.text: unknown or mismatched tag </red>")), "the reply names the problem: " + replies);
+    }
+
+    @DisplayName("save, cancel, remove and label remove end the text preview")
+    @Test
+    void endingTheDraftEndsTheTextPreview() {
+        run("setup portal old label here");
+        run("setup portal old label text Hi");
+        assertEquals(1, displays().size(), "shown for the edit");
+        run("setup portal old label remove");
+        assertEquals(0, displays().size(), "label remove ends it");
+
+        run("setup portal old label here");
+        run("setup portal old label text Hi");
+        run("setup portal old save");
+        assertEquals(0, displays().size(), "save ends it");
+
+        run("setup portal old label text Again");
+        assertEquals(1, displays().size(), "shown again");
+        run("setup portal old cancel");
+        assertEquals(0, displays().size(), "cancel ends it");
+
+        run("setup portal old label text Again");
+        run("setup portal old remove");
+        assertEquals(0, displays().size(), "remove ends it");
+    }
+
+    @DisplayName("A pending edit that is not about the label does not repeat the label problem")
+    @Test
+    void otherEditsStayQuietAboutTheLabel() {
+        run("setup portal p label here");
+        run("setup portal p label text <gold>Survival</red>");
+
+        Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);
+        run("setup portal p task Survival");
+
+        assertTrue(plain(chat).stream().noneMatch(line -> line.contains("last valid text")), "no label problem for a task edit");
+    }
+
+    @DisplayName("Changing the instance ends the text preview")
+    @Test
+    void changingTheInstanceEndsTheTextPreview(Env env) {
+        run("setup portal p label here");
+        run("setup portal p label text Hi");
+        Entity display = onlyDisplay();
+
+        player.setInstance(env.createFlatInstance(), STANDING).join();
+
+        assertTrue(display.isRemoved(), "display removed with the world change");
+    }
+
+    @DisplayName("Leaving ends the text preview")
+    @Test
+    void leavingEndsTheTextPreview(Env env) {
+        run("setup portal p label here");
+        run("setup portal p label text Hi");
+        Entity display = onlyDisplay();
+
+        player.remove();
+
+        assertTrue(display.isRemoved(), "display removed");
+        assertEquals(0, displays().size(), "nothing tracked");
+    }
+
+    private List<Entity> displays() {
+        return world.getEntities().stream().filter(entity -> entity.getEntityType() == EntityType.TEXT_DISPLAY && !entity.isRemoved()).toList();
+    }
+
+    private Entity onlyDisplay() {
+        assertEquals(1, displays().size(), "exactly one text display in the world");
+        return displays().getFirst();
+    }
+
+    private static String shownText(Entity display) {
+        assertEquals(EntityType.TEXT_DISPLAY, display.getEntityType(), "a text display");
+        return PlainTextComponentSerializer.plainText().serialize(((TextDisplayMeta) display.getEntityMeta()).getText());
+    }
+
     /** Runs the command as the player and returns the one chat message it answered with. */
     private Component send(String command) {
         Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);
@@ -394,6 +665,10 @@ class PortalCommandTest {
 
     private void run(String command) {
         commands.execute(player, command);
+    }
+
+    private String mapFile() throws IOException {
+        return Files.readString(base.resolve("worlds").resolve("world").resolve(MapEntry.MAP_FILE_NAME));
     }
 
     private PortalDraft draft(String id) {

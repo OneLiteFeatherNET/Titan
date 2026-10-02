@@ -18,8 +18,10 @@ package net.onelitefeather.titan.setup.portal;
 import net.minestom.server.coordinate.Vec;
 import net.onelitefeather.titan.core.portal.Box;
 import net.onelitefeather.titan.core.portal.Disc;
+import net.onelitefeather.titan.core.portal.Portal;
 import net.onelitefeather.titan.core.portal.PortalShape;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,8 +32,17 @@ import java.util.List;
  */
 public final class PortalOutline {
 
-    /** Upper bound per outline; more particles per tick would only lag the client. */
+    /**
+     * Upper bound for the points of a shape; more particles per tick would only lag the client.
+     * {@link #points(Portal)} adds the label anchor's {@link #ANCHOR_POINTS} on top.
+     */
     public static final int MAX_POINTS = 256;
+
+    /** The label anchor's cross: the point itself and one on each side of every axis. */
+    public static final int ANCHOR_POINTS = 7;
+
+    /** How far the cross arms reach from the anchor, in blocks. */
+    private static final double ANCHOR_ARM = 0.3;
 
     /** Wanted distance between neighbouring points, in blocks. */
     private static final double STEP = 0.5;
@@ -48,6 +59,24 @@ public final class PortalOutline {
             case Box box -> boxEdges(box.min(), box.max().add(1, 1, 1), MAX_POINTS);
             case Disc disc -> circle(disc.center(), disc.radius(), disc.normal(), MAX_POINTS);
         };
+    }
+
+    /**
+     * The shape's points plus the label anchor's cross when the portal has an anchor: at most
+     * {@link #MAX_POINTS} + {@link #ANCHOR_POINTS}.
+     */
+    public static @NotNull List<Vec> points(@NotNull Portal portal) {
+        List<Vec> points = new ArrayList<>(points(portal.shape()));
+        points.addAll(anchor(portal.label() == null ? null : portal.label().position()));
+        return List.copyOf(points);
+    }
+
+    /** A small cross marking where a label floats; nothing while there is no anchor. */
+    public static @NotNull List<Vec> anchor(@Nullable Vec position) {
+        if (position == null) {
+            return List.of();
+        }
+        return List.of(position, position.add(ANCHOR_ARM, 0, 0), position.sub(ANCHOR_ARM, 0, 0), position.add(0, ANCHOR_ARM, 0), position.sub(0, ANCHOR_ARM, 0), position.add(0, 0, ANCHOR_ARM), position.sub(0, 0, ANCHOR_ARM));
     }
 
     /**

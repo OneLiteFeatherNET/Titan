@@ -25,6 +25,12 @@ import org.jetbrains.annotations.Nullable;
  * @param shape      the area that triggers the portal
  * @param task       name of the CloudNet task to send the player to
  * @param permission required permission, or {@code null} for everyone
+ * @param label      text display in front of the portal, or {@code null} for none
  */
-public record Portal(String id, PortalShape shape, String task, @Nullable String permission) {
+public record Portal(String id, PortalShape shape, String task, @Nullable String permission,
+                     @Nullable PortalLabel label) {
+
+    public Portal(String id, PortalShape shape, String task, @Nullable String permission) {
+        this(id, shape, task, permission, null);
+    }
 }

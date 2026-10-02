@@ -16,6 +16,7 @@
 package net.onelitefeather.titan.runtime.bootstrap;
 
 import io.avaje.inject.BeanScope;
+import java.util.List;
 import net.minestom.server.timer.Scheduler;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
@@ -24,7 +25,11 @@ import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.core.permission.PermissionService;
 import net.onelitefeather.titan.platform.luckperms.LuckPermsPermissionService;
 import net.onelitefeather.titan.apps.cloudnet.ActiveLobby;
+import net.onelitefeather.titan.common.deliver.HolderPlayerCounts;
 import net.onelitefeather.titan.common.map.MapProvider;
+import net.onelitefeather.titan.core.portal.PlayerCount;
+import net.onelitefeather.titan.core.portal.PlayerCounts;
+import net.onelitefeather.titan.core.portal.SourceType;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -57,6 +62,31 @@ class PlatformBeansWiringTest {
             Assertions.assertNotNull(lobbyItems, "LobbyItems must build from the features' item beans");
         } finally {
             Assertions.assertDoesNotThrow(scope::close, "closing a fully built scope must not throw");
+        }
+    }
+
+    @DisplayName("Outside CloudNet the portal column's fallback provides the player counts")
+    @Test
+    void fallbackProvidesPlayerCountsOutsideCloudNet(Env env) {
+        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class, ActiveLobby.empty()).mock(FeatureFlags.class).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).profiles(BeanProfiles.active(List.of(), false)).build();
+
+        try {
+            Assertions.assertFalse(scope.get(PlayerCounts.class) instanceof HolderPlayerCounts, "the CloudNet bridge lookup must not be registered outside CloudNet");
+            Assertions.assertEquals(PlayerCount.NOT_RUNNING, scope.get(PlayerCounts.class).count(SourceType.TASK, "Survival"), "the fallback reads every source as not running");
+        } finally {
+            scope.close();
+        }
+    }
+
+    @DisplayName("As a CloudNet service the bridge lookup provides the player counts")
+    @Test
+    void holderProvidesPlayerCountsInCloudNet(Env env) {
+        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class, ActiveLobby.empty()).mock(FeatureFlags.class).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).profiles(BeanProfiles.active(List.of(), true)).build();
+
+        try {
+            Assertions.assertInstanceOf(HolderPlayerCounts.class, scope.get(PlayerCounts.class), "the CloudNet profile must register the bridge lookup");
+        } finally {
+            scope.close();
         }
     }
 }

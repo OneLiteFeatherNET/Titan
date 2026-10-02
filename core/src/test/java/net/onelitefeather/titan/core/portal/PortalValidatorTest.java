@@ -50,6 +50,11 @@ class PortalValidatorTest {
     }
 
     @Test
+    void fourArgumentConstructorMeansNoLabel() {
+        assertEquals(new Portal("p", VALID_BOX, "Survival", "perm", null), new Portal("p", VALID_BOX, "Survival", "perm"), "the short constructor must equal one with a null label");
+    }
+
+    @Test
     void reportsNothingForNoPortals() {
         assertTrue(PortalValidator.problems(List.of()).isEmpty(), "an empty list is valid");
     }

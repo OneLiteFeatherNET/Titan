@@ -62,4 +62,10 @@ class PortalCompletionsTest {
     void permissions() {
         assertEquals(List.of("none"), PortalCompletions.permissions());
     }
+
+    @Test
+    @DisplayName("Label source types are task, group, service and local")
+    void sourceTypes() {
+        assertEquals(List.of("task", "group", "service", "local"), PortalCompletions.sourceTypes());
+    }
 }

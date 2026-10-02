@@ -18,7 +18,9 @@ package net.onelitefeather.titan.setup.portal;
 import net.minestom.server.coordinate.Vec;
 import net.onelitefeather.titan.core.portal.Box;
 import net.onelitefeather.titan.core.portal.Disc;
+import net.onelitefeather.titan.core.portal.LabelSource;
 import net.onelitefeather.titan.core.portal.Portal;
+import net.onelitefeather.titan.core.portal.PortalLabel;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -48,6 +50,7 @@ public final class PortalDraft {
     /** Set once a permission (or {@code none}) was given, so the guided flow asks only once. */
     private boolean permissionChosen;
     private boolean guided;
+    private LabelDraft label = new LabelDraft();
 
     PortalDraft(String id) {
         this.id = id;
@@ -59,6 +62,7 @@ public final class PortalDraft {
         draft.task = portal.task();
         draft.permission = portal.permission();
         draft.permissionChosen = portal.permission() != null;
+        draft.label = LabelDraft.of(portal.label());
         switch (portal.shape()) {
             case Box box -> {
                 draft.form = Form.BOX;
@@ -111,6 +115,26 @@ public final class PortalDraft {
         return permission;
     }
 
+    public LabelDraft label() {
+        return label;
+    }
+
+    public @Nullable Vec labelPosition() {
+        return label.position();
+    }
+
+    public @Nullable String labelText() {
+        return label.text();
+    }
+
+    public @Nullable String labelOffline() {
+        return label.offlineText();
+    }
+
+    public @Nullable LabelSource labelSource() {
+        return label.source();
+    }
+
     /** What is still needed before {@code save} can succeed, in the order a builder works. */
     public List<Missing> missing() {
         List<Missing> missing = new ArrayList<>();
@@ -134,6 +158,7 @@ public final class PortalDraft {
         if (task == null) {
             missing.add(Missing.TASK);
         }
+        missing.addAll(label.missing());
         return missing;
     }
 
@@ -155,12 +180,13 @@ public final class PortalDraft {
         if (!complete()) {
             return Optional.empty();
         }
+        PortalLabel savedLabel = label.toLabel();
         if (form == Form.BOX) {
             Vec min = new Vec(Math.min(corner1.x(), corner2.x()), Math.min(corner1.y(), corner2.y()), Math.min(corner1.z(), corner2.z()));
             Vec max = new Vec(Math.max(corner1.x(), corner2.x()), Math.max(corner1.y(), corner2.y()), Math.max(corner1.z(), corner2.z()));
-            return Optional.of(new Portal(id, new Box(min, max), task, permission));
+            return Optional.of(new Portal(id, new Box(min, max), task, permission, savedLabel));
         }
-        return Optional.of(new Portal(id, new Disc(centre, radius, normal), task, permission));
+        return Optional.of(new Portal(id, new Disc(centre, radius, normal), task, permission, savedLabel));
     }
 
     /** Switching form drops what belongs to the other one; the same form keeps everything. */
@@ -204,6 +230,26 @@ public final class PortalDraft {
     void permission(@Nullable String permission) {
         this.permission = permission;
         this.permissionChosen = true;
+    }
+
+    void labelPosition(Vec position) {
+        label.position(position);
+    }
+
+    void labelText(String text) {
+        label.text(text);
+    }
+
+    void labelOffline(String text) {
+        label.offlineText(text);
+    }
+
+    void labelSource(LabelSource source) {
+        label.source(source);
+    }
+
+    void removeLabel() {
+        label.remove();
     }
 
     void guided(boolean guided) {

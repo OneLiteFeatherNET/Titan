@@ -15,11 +15,14 @@
  */
 package net.onelitefeather.titan.runtime;
 
+import io.avaje.config.Config;
 import io.avaje.inject.BeanScope;
 import io.avaje.inject.spi.GenericType;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
+import net.onelitefeather.titan.common.utils.CloudNetEnvironment;
+import net.onelitefeather.titan.runtime.bootstrap.BeanProfiles;
 import net.onelitefeather.titan.runtime.bootstrap.ConfigurationStartupLog;
 import net.onelitefeather.titan.runtime.bootstrap.FeatureStartupLog;
 import net.onelitefeather.titan.runtime.bootstrap.PermissionStartupLog;
@@ -54,7 +57,7 @@ public final class Titan {
 
         // Runs every feature's @PostConstruct, attaching it to the titan event node before any
         // player can connect.
-        this.beanScope = BeanScope.builder().build();
+        this.beanScope = BeanScope.builder().profiles(BeanProfiles.active(Config.asConfiguration().list().of(ConfigurationStartupLog.ACTIVE_PROFILES_KEY), CloudNetEnvironment.isPresent())).build();
 
         VariantStartupCheck.verify(Titan.class.getClassLoader());
 

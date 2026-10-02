@@ -17,6 +17,7 @@ package net.onelitefeather.titan.runtime.bootstrap;
 
 import io.avaje.inject.Bean;
 import io.avaje.inject.Factory;
+import io.avaje.inject.Profile;
 import jakarta.inject.Named;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -38,6 +39,8 @@ import net.onelitefeather.titan.core.module.LobbySpawn;
 import net.onelitefeather.titan.core.module.LobbyWorldChoice;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
 import net.onelitefeather.titan.common.deliver.DeliverProvider;
+import net.onelitefeather.titan.common.deliver.HolderPlayerCounts;
+import net.onelitefeather.titan.core.portal.PlayerCounts;
 import net.onelitefeather.titan.runtime.feature.ConfigFeatureFlags;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.common.map.MapProvider;
@@ -101,6 +104,16 @@ public final class PlatformBeans {
     @Bean
     public Deliver deliver() {
         return DeliverProvider.create();
+    }
+
+    /**
+     * Only as a CloudNet service ({@link BeanProfiles#CLOUDNET}): elsewhere the portal column's
+     * fallback answers, so another provider module wins over it without configuration.
+     */
+    @Bean
+    @Profile(BeanProfiles.CLOUDNET)
+    public PlayerCounts playerCounts() {
+        return new HolderPlayerCounts();
     }
 
     @Bean

@@ -42,6 +42,14 @@ public sealed interface PortalEditResult {
     record Complete(String id) implements PortalEditResult {
     }
 
+    /** A label edit; carries the draft's label so the answer can state it. */
+    record LabelUpdated(String id, LabelDraft label,
+                        List<Missing> missing) implements PortalEditResult {
+        public LabelUpdated {
+            missing = List.copyOf(missing);
+        }
+    }
+
     /** The saved portal and the draft are gone. */
     record Removed(String id) implements PortalEditResult {
     }

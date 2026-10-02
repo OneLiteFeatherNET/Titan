@@ -53,8 +53,8 @@ class PortalModuleTest {
         return new Portal("survival", new Box(new Vec(0, 64, 0), new Vec(1, 65, 1)), "Survival", null);
     }
 
-    private PortalModule start(TestTitanNode titan, Portal... portals) {
-        PortalModule module = new PortalModule(titan.node(), () -> List.of(portals), this.deliver, this.permissions, this.clock);
+    private PortalModule start(Env env, TestTitanNode titan, Portal... portals) {
+        PortalModule module = new PortalModule(titan.node(), () -> List.of(portals), this.deliver, this.permissions, this.clock, env.createFlatInstance(), env.process().scheduler(), Runnable::run, portal -> new LabelReading.Local(0), new PortalSettings(1));
         module.start();
         return module;
     }
@@ -77,7 +77,7 @@ class PortalModuleTest {
     @Test
     void walkingIntoBoxDeliversOnce(Env env) {
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            PortalModule module = start(titan, survivalBox());
+            PortalModule module = start(env, titan, survivalBox());
             Player player = playerAt(env, OUTSIDE);
 
             move(env, player, INSIDE);
@@ -91,7 +91,7 @@ class PortalModuleTest {
     @Test
     void elytraStepThroughThinDiscDelivers(Env env) {
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            PortalModule module = start(titan, new Portal("gate", new Disc(new Vec(0, 64, 0), 3, new Vec(1, 0, 0)), "Gate", null));
+            PortalModule module = start(env, titan, new Portal("gate", new Disc(new Vec(0, 64, 0), 3, new Vec(1, 0, 0)), "Gate", null));
             Player player = playerAt(env, new Pos(-4, 64, 0));
 
             move(env, player, new Pos(4, 64, 0));
@@ -105,7 +105,7 @@ class PortalModuleTest {
     @Test
     void stayingDoesNotDeliverAgain(Env env) {
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            PortalModule module = start(titan, survivalBox());
+            PortalModule module = start(env, titan, survivalBox());
             Player player = playerAt(env, OUTSIDE);
             move(env, player, INSIDE);
             this.clock.advance(Duration.ofSeconds(10));
@@ -121,7 +121,7 @@ class PortalModuleTest {
     @Test
     void reenteringRespectsCooldown(Env env) {
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            PortalModule module = start(titan, survivalBox());
+            PortalModule module = start(env, titan, survivalBox());
             Player player = playerAt(env, OUTSIDE);
             move(env, player, INSIDE);
             move(env, player, OUTSIDE);
@@ -148,7 +148,7 @@ class PortalModuleTest {
             try (TestTitanNode titan = TestTitanNode.attach(env)) {
                 Portal vip = new Portal("vip", new Box(new Vec(0, 64, 0), new Vec(1, 65, 1)), "Vip", "titan.portal.vip");
                 Portal open = new Portal("survival", new Box(new Vec(20, 64, 0), new Vec(21, 65, 1)), "Survival", null);
-                PortalModule module = new PortalModule(titan.node(), () -> List.of(vip, open), localDeliver, this.permissions, this.clock);
+                PortalModule module = new PortalModule(titan.node(), () -> List.of(vip, open), localDeliver, this.permissions, this.clock, env.createFlatInstance(), env.process().scheduler(), Runnable::run, portal -> new LabelReading.Local(0), new PortalSettings(1));
                 module.start();
                 Player player = playerAt(env, OUTSIDE);
                 this.permissions.set(player.getUuid(), "titan.portal.vip", missing);
@@ -167,7 +167,7 @@ class PortalModuleTest {
     @Test
     void grantedPermissionDelivers(Env env) {
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            PortalModule module = start(titan, new Portal("vip", new Box(new Vec(0, 64, 0), new Vec(1, 65, 1)), "Vip", "titan.portal.vip"));
+            PortalModule module = start(env, titan, new Portal("vip", new Box(new Vec(0, 64, 0), new Vec(1, 65, 1)), "Vip", "titan.portal.vip"));
             Player player = playerAt(env, OUTSIDE);
             this.permissions.set(player.getUuid(), "titan.portal.vip", PermissionResult.ALLOWED);
 
@@ -182,7 +182,7 @@ class PortalModuleTest {
     @Test
     void worldWithoutPortalsDeliversNothing(Env env) {
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            PortalModule module = start(titan);
+            PortalModule module = start(env, titan);
             Player player = playerAt(env, OUTSIDE);
 
             move(env, player, INSIDE);
@@ -196,7 +196,7 @@ class PortalModuleTest {
     @Test
     void disconnectClearsState(Env env) {
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            PortalModule module = start(titan, survivalBox());
+            PortalModule module = start(env, titan, survivalBox());
             Player player = playerAt(env, OUTSIDE);
             move(env, player, INSIDE);
             move(env, player, OUTSIDE);

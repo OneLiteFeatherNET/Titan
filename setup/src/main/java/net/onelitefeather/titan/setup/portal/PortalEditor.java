@@ -17,12 +17,14 @@ package net.onelitefeather.titan.setup.portal;
 
 import net.minestom.server.coordinate.Point;
 import net.minestom.server.coordinate.Vec;
+import net.onelitefeather.titan.core.portal.LabelSource;
 import net.onelitefeather.titan.core.portal.Portal;
 import net.onelitefeather.titan.core.portal.PortalProblem;
 import net.onelitefeather.titan.core.portal.PortalValidator;
 import net.onelitefeather.titan.setup.portal.PortalEditResult.Cancelled;
 import net.onelitefeather.titan.setup.portal.PortalEditResult.Complete;
 import net.onelitefeather.titan.setup.portal.PortalEditResult.Invalid;
+import net.onelitefeather.titan.setup.portal.PortalEditResult.LabelUpdated;
 import net.onelitefeather.titan.setup.portal.PortalEditResult.Pending;
 import net.onelitefeather.titan.setup.portal.PortalEditResult.Rejected;
 import net.onelitefeather.titan.setup.portal.PortalEditResult.Removed;
@@ -30,6 +32,7 @@ import net.onelitefeather.titan.setup.portal.PortalEditResult.Saved;
 import net.onelitefeather.titan.setup.portal.PortalEditResult.Unknown;
 import net.onelitefeather.titan.setup.portal.PortalEditResult.Updated;
 
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -126,6 +129,47 @@ public final class PortalEditor {
         return edit(player, id, draft -> draft.permission(NO_PERMISSION.equals(value) ? null : value));
     }
 
+    /** Anchors the label where the player stands, unrounded. */
+    public PortalEditResult labelHere(UUID player, String id, Point position) {
+        return editLabel(player, id, draft -> draft.labelPosition(new Vec(position.x(), position.y(), position.z())));
+    }
+
+    /** The text is MiniMessage; its rules are the validator's, applied on save. */
+    public PortalEditResult labelText(UUID player, String id, String text) {
+        return editLabelText(player, id, text, "label text", draft -> draft.labelText(text));
+    }
+
+    public PortalEditResult labelOffline(UUID player, String id, String text) {
+        return editLabelText(player, id, text, "offline text", draft -> draft.labelOffline(text));
+    }
+
+    /**
+     * Refuses at once what {@code PortalValidator} would reject on save (unknown type, missing
+     * name); {@code local} ignores the name.
+     */
+    public PortalEditResult labelSource(UUID player, String id, String type, @Nullable String name) {
+        LabelSource source = LabelSource.of(type, name == null || name.isBlank() ? null : name.trim());
+        List<String> reasons = PortalValidator.sourceProblems(source);
+        if (!reasons.isEmpty()) {
+            return new Invalid(String.join("; ", reasons));
+        }
+        return editLabel(player, id, draft -> draft.labelSource(source));
+    }
+
+    /** Takes every part of the label from the draft; a saved label goes with the next save. */
+    public PortalEditResult labelRemove(UUID player, String id) {
+        return editLabel(player, id, PortalDraft::removeLabel);
+    }
+
+    /**
+     * Opens the draft, of a saved portal too, and answers with the label's state. Which variant the
+     * text preview shows is the preview's own business, not draft data.
+     */
+    public PortalEditResult labelPreview(UUID player, String id) {
+        return editLabel(player, id, draft -> {
+        });
+    }
+
     /** Writes the complete, valid draft to the store; otherwise reports why and keeps the draft. */
     public PortalEditResult save(UUID player, String id) {
         Optional<Invalid> invalid = invalidId(id);
@@ -201,6 +245,20 @@ public final class PortalEditor {
     /** Forgets every draft of the player, for when they leave. */
     public void discardAll(UUID player) {
         drafts.remove(player);
+    }
+
+    private PortalEditResult editLabelText(UUID player, String id, String text, String what, Consumer<PortalDraft> change) {
+        return text.isBlank() ? new Invalid("the " + what + " must not be empty") : editLabel(player, id, change);
+    }
+
+    /** An edit answered with the label's state instead of the generic progress. */
+    private PortalEditResult editLabel(UUID player, String id, Consumer<PortalDraft> change) {
+        PortalEditResult result = edit(player, id, change);
+        if (result instanceof Invalid) {
+            return result;
+        }
+        PortalDraft draft = draftsOf(player).get(id);
+        return new LabelUpdated(id, draft.label(), draft.missing());
     }
 
     private PortalEditResult edit(UUID player, String id, Consumer<PortalDraft> change) {

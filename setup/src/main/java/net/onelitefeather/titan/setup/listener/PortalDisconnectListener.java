@@ -17,23 +17,26 @@ package net.onelitefeather.titan.setup.listener;
 
 import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.onelitefeather.titan.setup.portal.DraftPreview;
+import net.onelitefeather.titan.setup.portal.LabelPreview;
 import net.onelitefeather.titan.setup.portal.PortalEditor;
 import net.onelitefeather.titan.setup.portal.PortalShow;
 
 import java.util.UUID;
 import java.util.function.Consumer;
 
-/** Drops a leaving player's portal drafts and stops their preview and show. */
+/** Drops a leaving player's portal drafts and stops their previews and show. */
 public final class PortalDisconnectListener implements Consumer<PlayerDisconnectEvent> {
 
     private final PortalEditor editor;
     private final DraftPreview preview;
     private final PortalShow show;
+    private final LabelPreview labelPreview;
 
-    public PortalDisconnectListener(PortalEditor editor, DraftPreview preview, PortalShow show) {
+    public PortalDisconnectListener(PortalEditor editor, DraftPreview preview, PortalShow show, LabelPreview labelPreview) {
         this.editor = editor;
         this.preview = preview;
         this.show = show;
+        this.labelPreview = labelPreview;
     }
 
     @Override
@@ -42,5 +45,6 @@ public final class PortalDisconnectListener implements Consumer<PlayerDisconnect
         editor.discardAll(player);
         preview.stop(player);
         show.stop(player);
+        labelPreview.clear(player);
     }
 }

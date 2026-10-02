@@ -15,15 +15,24 @@
  */
 package net.onelitefeather.titan.bridge;
 
+import eu.cloudnetservice.driver.provider.CloudServiceProvider;
 import eu.cloudnetservice.driver.registry.ServiceRegistry;
+import eu.cloudnetservice.driver.service.ServiceInfoSnapshot;
+import eu.cloudnetservice.driver.service.ServiceLifeCycle;
+import eu.cloudnetservice.modules.bridge.BridgeDocProperties;
 import eu.cloudnetservice.modules.bridge.impl.platform.minestom.MinestomPermissionChecker;
 import eu.cloudnetservice.modules.bridge.player.PlayerManager;
 import eu.cloudnetservice.modules.bridge.player.executor.PlayerExecutor;
 import eu.cloudnetservice.modules.bridge.player.executor.ServerSelectorType;
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 import net.minestom.server.extensions.Extension;
 import net.onelitefeather.minestom.extensions.processor.ExtensionInfo;
+import net.onelitefeather.titan.bridge.ServiceTotals.ServiceReading;
+import net.onelitefeather.titan.common.deliver.PlayerCountLookup;
 import net.onelitefeather.titan.common.deliver.ServerConnector;
+import net.onelitefeather.titan.common.deliver.TitanPlayerCountLookup;
 import net.onelitefeather.titan.common.deliver.TitanServerConnector;
 import net.onelitefeather.titan.common.permission.TitanPermissionBridge;
 
@@ -45,6 +54,10 @@ import net.onelitefeather.titan.common.permission.TitanPermissionBridge;
  * <li><b>Server switching:</b> installs a {@link ServerConnector} (used by
  * {@code MessageChannelDeliver}) that connects players through the bridge
  * {@link PlayerManager} / {@link PlayerExecutor}.
+ * <li><b>Player counts:</b> installs a {@link PlayerCountLookup} (used by
+ * {@code HolderPlayerCounts})
+ * that sums the bridge's player counts of the running services of a task or group, or reads one
+ * service by name.
  * </ul>
  *
  * <p>{@link ExtensionInfo} generates {@code extension.json} at compile time; the version is
@@ -77,6 +90,42 @@ public final class TitanBridgePermissionExtension extends Extension {
                 }
             }
         });
+
+        TitanPlayerCountLookup.setLookup(new PlayerCountLookup() {
+            @Override
+            public boolean supports(String type) {
+                return type.equals("task") || type.equals("group") || type.equals("service");
+            }
+
+            @Override
+            public int[] lookup(String type, String name) {
+                return ServiceTotals.total(services(type, name).stream().map(TitanBridgePermissionExtension::reading).toList());
+            }
+        });
+    }
+
+    private static Collection<ServiceInfoSnapshot> services(String type, String name) {
+        CloudServiceProvider provider = ServiceRegistry.registry().defaultInstance(CloudServiceProvider.class);
+        if (provider == null) {
+            return List.of();
+        }
+        return switch (type) {
+            case "task" -> provider.servicesByTask(name);
+            case "group" -> provider.servicesByGroup(name);
+            case "service" -> {
+                ServiceInfoSnapshot service = provider.serviceByName(name);
+                yield service == null ? List.of() : List.of(service);
+            }
+            default -> List.of();
+        };
+    }
+
+    private static ServiceReading reading(ServiceInfoSnapshot service) {
+        return new ServiceReading(service.lifeCycle() == ServiceLifeCycle.RUNNING, count(service.readProperty(BridgeDocProperties.ONLINE_COUNT)), count(service.readProperty(BridgeDocProperties.MAX_PLAYERS)));
+    }
+
+    private static int count(Integer value) {
+        return value == null ? 0 : value;
     }
 
     private static PlayerExecutor playerExecutor(UUID playerId) {

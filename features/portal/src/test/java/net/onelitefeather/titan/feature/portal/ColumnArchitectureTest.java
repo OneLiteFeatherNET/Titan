@@ -25,7 +25,7 @@ import net.onelitefeather.titan.core.testfixtures.architecture.ColumnArchitectur
 
 /**
  * Applies the architecture rules every column shares to this column's own package, plus the
- * portal's own rule: portals are map data, the column reads no configuration.
+ * portal's own rule: portals are map data, only {@link PortalSettings} reads configuration.
  */
 @AnalyzeClasses(packages = "net.onelitefeather.titan.feature.portal", importOptions = ImportOption.DoNotIncludeTests.class)
 class ColumnArchitectureTest {
@@ -40,7 +40,7 @@ class ColumnArchitectureTest {
     static final ArchRule featureModulesDoNotUseBeanScope = ColumnArchitectureRules.FEATURE_MODULES_DO_NOT_USE_BEAN_SCOPE;
 
     @ArchTest
-    static final ArchRule portalDoesNotDependOnAvajeConfig = noClasses().should().dependOnClassesThat().resideInAPackage("io.avaje.config..").because("portals are map data, not configuration keys");
+    static final ArchRule onlyPortalSettingsDependsOnAvajeConfig = noClasses().that().doNotHaveSimpleName("PortalSettings").should().dependOnClassesThat().resideInAPackage("io.avaje.config..").because("portals are map data, the one configuration key lives in PortalSettings");
 
     ColumnArchitectureTest() {
     }
