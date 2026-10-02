@@ -45,15 +45,26 @@ Die Blöcke eines Laufs MÜSSEN ausschließlich für den Spieler begehbar sein, 
 - **THEN** kann jeder nur auf seinen eigenen Blöcken stehen, sieht die Blöcke des anderen nur als Darstellung, und das Ende des einen Laufs ändert nichts am anderen
 
 ### Requirement: Anzeige über dem Läufer
-Während eines Laufs MÜSSEN andere Spieler über dem Kopf des Läufers den Spielnamen und seinen aktuellen Score sehen („Jump & Run · <Score>“). Die Anzeige MUSS sich bei jedem geschafften Sprung aktualisieren und mit dem Ende des Laufs verschwinden. Der Läufer selbst DARF diese Anzeige NICHT sehen, er hat seinen Score in der Action Bar. Die Anzeige ist sprachneutral.
+Während eines Laufs MÜSSEN andere Spieler über dem Kopf des Läufers eine farbig gestaltete Anzeige sehen, die das Symbol des Jump-and-Run-Items, den Spielnamen „Jump & Run“ und den aktuellen Score zeigt. Die Anzeige MUSS sich aktualisieren, sobald sich der Score ändert, und mit dem Ende des Laufs verschwinden. Der Läufer selbst DARF diese Anzeige NICHT sehen, er hat seinen Score in der Action Bar. Die Anzeige ist sprachneutral.
 
 #### Scenario: Score über dem Kopf
 - **WHEN** A einen Lauf spielt und Score 7 erreicht
-- **THEN** sieht B über As Kopf „Jump & Run · 7“
+- **THEN** sieht B über As Kopf das Item-Symbol, „Jump & Run“ und die 7
 
 #### Scenario: Anzeige verschwindet
 - **WHEN** As Lauf endet
 - **THEN** ist die Anzeige über As Kopf für alle verschwunden
+
+### Requirement: Ton bei jedem Punkt
+Erhöht sich der Score eines Läufers, MUSS der Läufer einen kurzen Ton hören. Die Tonhöhe MUSS mit dem Score ansteigen und nach einer festen Zahl von Stufen wieder von vorn beginnen. Andere Spieler DÜRFEN diesen Ton NICHT hören. Die Sprünge der Aufstiegsphase erzeugen keinen Ton.
+
+#### Scenario: Ton nach einem Punkt
+- **WHEN** der Läufer nach der Aufstiegsphase auf dem nächsten Block landet
+- **THEN** hört er einen Ton, und ein danebenstehender Spieler hört ihn nicht
+
+#### Scenario: Tonhöhe steigt
+- **WHEN** der Läufer Score 2 und danach Score 3 erreicht
+- **THEN** ist der Ton bei Score 3 höher als bei Score 2
 
 ### Requirement: Sichtfenster von zwei Blöcken
 Während eines Laufs MUSS der Spieler genau den Block sehen, auf dem er zuletzt gelandet ist, dazu die bis zu zwei Blöcke davor (bereits geschafft) und die zwei Blöcke danach (die nächsten Sprünge). Weitere Blöcke des Laufs DÜRFEN NICHT sichtbar sein.

@@ -127,7 +127,7 @@ Jeder Lauf bekommt einen eigenen `RandomGenerator`. Dafür hat das Modul einen p
 Die Column registriert in `@PostConstruct` einen eigenen Adventure-`TranslationStore` mit MiniMessage-Format bei `GlobalTranslator` und entfernt ihn in `@PreDestroy`. Die Bundles liegen in `src/main/resources/titan/jumprun/messages_en.properties` (Fallback) und `messages_de.properties`, UTF-8, Schlüssel `titan.jumprun.<message>`: `start.no_space`, `score.actionbar`, `end.score`, `end.record`. Gesendet wird ein explizit gerendertes Component: `GlobalTranslator.render(Component.translatable(key, args), player.getLocale())`. Argumente laufen als Adventure-Argumente (Score als Zahl), nicht als String-Verkettung.
 
 - **Built-in:** Adventure `TranslationStore` und `GlobalTranslator`. Geprüft: Adventure 5.2.0 enthält `MiniMessageTranslationStore` (Argumente per `Argument.numeric("score", n)` als `<score>`), die Column verwendet ihn direkt. Ist `MiniMessageTranslationStore` in der mitgelieferten Adventure-Version vorhanden, wird er verwendet, sonst ein `TranslationStore.messageFormat` plus MiniMessage-Rendering in `RunMessages`. Der globale Schalter `minestom.automatic-component-translation` wurde verworfen. Er müsste in `runtime` vor `ServerFlag` gesetzt werden, wirkt auf die ganze Lobby und braucht einen eigenen Smoke-Test. Das wäre ein eigener Change, wenn Titan i18n insgesamt einführt.
-- **Item-Name:** „Jump & Run“ ist sprachneutral und ohne Beschreibung, weil ein `LobbyItem` einen `ItemStack` für alle Spieler hat (Spec).
+- **Item-Name:** „Jump & Run“ ist sprachneutral und ohne Beschreibung (seit D13 MiniMessage-gestaltet auf einem Schleimblock), weil ein `LobbyItem` einen `ItemStack` für alle Spieler hat (Spec).
 - **Test:** Unit: Jeder Schlüssel aus `RunMessages` steht in jedem Bundle, und jedes Bundle hat dieselben Schlüssel. Unit: `de`-Locale rendert deutsch, `ja`-Locale rendert englisch. **Smoke-Test** mit Shaded-Jar: Eine Action Bar ist nicht leer (Minestom-26.1-Falle, siehe Context).
 - **SOLID:** SRP (`RunMessages`).
 
@@ -160,6 +160,15 @@ Für jeden gezeigten Fake-Block spawnt der Lauf eine `Entity(EntityType.BLOCK_DI
 - **Test:** Integration (Cyano). Beim Start sieht B 2 Block-Displays mit dem Material der Laufblöcke, A keins. Vorrücken entfernt und spawnt je eins. Das Ende entfernt alle, und die Instanz enthält danach keine Entities des Laufs. Der Text-Display zeigt den Score nach einem Sprung und ist für A unsichtbar.
 - **SOLID:** SRP. Eine eigene Klasse `Spectators` kümmert sich um die Displays, `FakeBlocks` bleibt nur für den Läufer.
 - **Threading:** Displays werden aus denselben Events wie die Fake-Blöcke unter dem Lauf-Lock angelegt und entfernt. Es gibt keinen Tick-Task.
+
+### D13 Item, Kopfanzeige mit MiniMessage, Ton pro Punkt (Nachtrag nach drittem lokalen Test)
+
+- **Item:** Das Hotbar-Item ist ein Schleimblock (`Material.SLIME_BLOCK`), weil er im Spiel für Springen steht. Der Name „Jump & Run“ ist in MiniMessage gestaltet und sprachneutral.
+- **Kopfanzeige:** Der Text-Display-Inhalt wird aus einer MiniMessage-Vorlage in Code gerendert (`<sprite:blocks:block/slime_block> <gradient:#7CFC00:#00C853><b>Jump & Run</b></gradient> <gray>·</gray> <white><score></white>`, Score über `Placeholder`/`Argument`, keine String-Verkettung). Das Item-Symbol kommt über ein Objekt-Text-Component mit Atlas-Sprite (seit 1.21.9 im Spiel, in Adventure als MiniMessage-Tag `<sprite>`). Fehlt der Tag in der mitgelieferten Adventure-Version, zeigt ein zusätzliches `ITEM_DISPLAY` (Schleimblock, klein) links neben dem Text dasselbe Symbol, mit denselben Sichtbarkeitsregeln wie die Kopfanzeige. Ein neues Paket an die Betrachter geht nur raus, wenn sich der Score ändert.
+- **Ton:** Bei jedem Score-Anstieg spielt der Lauf dem Läufer allein (`player.playSound`, nicht der Instanz) `BLOCK_NOTE_BLOCK_PLING` (Quelle `PLAYER`) mit der Tonhöhe `0.5 · 2^((score mod 12) / 12)`, also einer chromatischen Leiter über eine Oktave, die nach 12 Punkten von vorn beginnt. Landet der Spieler direkt auf +2, gibt es einen Ton mit dem neuen Score. Aufstiegssprünge bleiben stumm.
+- **Built-in:** MiniMessage aus `core` (Adventure 5.2), Adventure `Sound` und Minestoms `SoundEvent`. Eine eigene Notenberechnung gibt es nicht, nur die Standardformel für Halbtöne.
+- **Test:** Unit: Die Tonhöhe steigt von Score 2 auf 3 und ist bei Score 12 gleich der bei 0. Die Vorlage rendert für Score 7 einen Text, der „Jump & Run“ und „7“ enthält. Integration: Nach einem Punkt bekommt der Läufer ein Sound-Paket, ein Zuschauer keins. Ein Aufstiegssprung erzeugt keins. Ein unveränderter Score sendet kein Metadaten-Paket.
+- **SOLID:** SRP. `RunSounds` übernimmt den Ton, `ScoreLabel` rendert nur die Vorlage.
 
 ## Risks / Trade-offs
 

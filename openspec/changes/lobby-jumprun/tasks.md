@@ -15,6 +15,7 @@ Integrationszweig: `feat/jumprun` von `origin/main`. Agents, die schreiben, arbe
 | 5 | verify | 5.4 | haiku | read-only | alles |
 | 5b | variety-openness | 7.1–7.5 | sonnet | `features/jumprun/**` | alles außerhalb `features/jumprun` |
 | 5c | spectators-distance | 8.1–8.4 | sonnet | `features/jumprun/**` | alles außerhalb `features/jumprun` |
+| 5d | item-label-sound | 9.1–9.3 | sonnet | `features/jumprun/**`, `apps/*/src/test/**` | alles andere |
 | 6 | pr | 6.1 | sonnet | Git/GitHub | Code |
 
 Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhandenes nutzen: `FeatureNode`, `LobbyItem`/`ItemSlot`, `LobbySpawn` aus `core`, Minestom-`BlockChangePacket` und Events, `java.util.random.RandomGenerator`, Adventure `TranslationStore`/`GlobalTranslator`. Java 25 ohne Preview: Records, sealed Types mit `switch`, `_`. Nutzertexte nur über die Bundles (D8), Schlüssel `titan.jumprun.*`, Englisch als Fallback. SLF4J mit Parametern, Lauf-Ereignisse nur auf DEBUG, keine Metriken oder Spans (D10). Test zuerst, schlanke Kommentare nur fürs Warum, Conventional Commits `feat(jumprun): …`. F.I.R.S.T.: fester Seed statt Zufall, kein `Thread.sleep`, keine Systemzeit, frische `Env`/Fixtures je Test, `env.tick()` statt Warten, Erfolg nur über Assertions, kein geteilter statischer Zustand (Rekorde, Registry und Translator-Registrierung je Test neu bzw. im `@AfterEach` entfernt).
@@ -69,6 +70,12 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 - [ ] 8.2 Test zuerst (Unit): Aufstieg endet erst bei ≥ 16 Blöcken Abstand zum Spawn und ≥ 8 Blöcken Luft darunter, mindestens 5, höchstens 30 Sprünge, sonst kein Start (Spec „Aufstieg bis ins Freie“). Dann die Aufstiegsphase anpassen (D5). Nachweis: Tests grün.
 - [ ] 8.3 Test zuerst (Integration, Cyano, zwei Spieler): B sieht beim Start 2 Block-Displays im Material der Laufblöcke, A keins; Vorrücken entfernt und spawnt je eins; jedes Laufende und der Shutdown entfernen alle Displays des Laufs; B kann nicht auf einem Display stehen (keine Kollision, z. B. B fällt durch die Position). Dann `Spectators` (D12). Nachweis: Tests grün.
 - [ ] 8.4 Test zuerst (Integration): Text-Display als Passagier des Läufers zeigt „Jump & Run · <Score>“ nach jedem Sprung, ist für den Läufer unsichtbar und verschwindet mit dem Laufende. Dann umsetzen. Nachweis: `./gradlew build` grün, danach erneuter lokaler Test.
+
+## 9. Item, Kopfanzeige und Ton (Nachtrag nach drittem lokalen Test)
+
+- [ ] 9.1 Test zuerst (Unit/Integration): Das Item `titan:jumprun` ist ein Schleimblock mit MiniMessage-gestaltetem Namen „Jump & Run“; `StandardLoadoutTest` in `apps/cloudnet` erwartet Slot 0 mit `SLIME_BLOCK`. Dann `JumprunItems` umstellen (D13). Nachweis: Tests grün.
+- [ ] 9.2 Prüfen, ob MiniMessage in der mitgelieferten Adventure-Version den `<sprite>`-Tag hat (Ergebnis in D13 eintragen). Test zuerst (Unit): Die Vorlage rendert für Score 7 Symbol, „Jump & Run“ und 7; ohne Sprite-Tag zeigt der Integrationstest ein `ITEM_DISPLAY` mit Schleimblock neben dem Text, unsichtbar für den Läufer. Dann `ScoreLabel` auf die Vorlage umstellen. Nachweis: Tests grün.
+- [ ] 9.3 Test zuerst (Unit `RunSoundsTest`, Integration): Die Tonhöhe steigt von Score 2 auf 3 und wiederholt sich nach 12; nach einem Punkt bekommt nur der Läufer ein Sound-Paket; Aufstiegssprünge bleiben stumm. Dann `RunSounds` und Aufruf beim Vorrücken. Nachweis: `./gradlew build` grün, danach erneuter lokaler Test.
 
 ## 6. Pull Request
 
