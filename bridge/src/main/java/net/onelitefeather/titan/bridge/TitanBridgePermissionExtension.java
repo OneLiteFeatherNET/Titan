@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.bridge;
 
+import eu.cloudnetservice.driver.inject.InjectionLayer;
 import eu.cloudnetservice.driver.provider.CloudServiceProvider;
 import eu.cloudnetservice.driver.registry.ServiceRegistry;
 import eu.cloudnetservice.driver.service.ServiceInfoSnapshot;
@@ -24,6 +25,7 @@ import eu.cloudnetservice.modules.bridge.impl.platform.minestom.MinestomPermissi
 import eu.cloudnetservice.modules.bridge.player.PlayerManager;
 import eu.cloudnetservice.modules.bridge.player.executor.PlayerExecutor;
 import eu.cloudnetservice.modules.bridge.player.executor.ServerSelectorType;
+import java.lang.System.Logger;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -91,6 +93,8 @@ public final class TitanBridgePermissionExtension extends Extension {
             }
         });
 
+        Logger logger = System.getLogger(TitanBridgePermissionExtension.class.getName());
+        ServiceReadings readings = new ServiceReadings(TitanBridgePermissionExtension::resolveSource, logger);
         TitanPlayerCountLookup.setLookup(new PlayerCountLookup() {
             @Override
             public boolean supports(String type) {
@@ -99,16 +103,24 @@ public final class TitanBridgePermissionExtension extends Extension {
 
             @Override
             public int[] lookup(String type, String name) {
-                return ServiceTotals.total(services(type, name).stream().map(TitanBridgePermissionExtension::reading).toList());
+                return ServiceTotals.total(readings.read(type, name));
             }
         });
+        logger.log(Logger.Level.INFO, "Player count lookup installed");
     }
 
-    private static Collection<ServiceInfoSnapshot> services(String type, String name) {
-        CloudServiceProvider provider = ServiceRegistry.registry().defaultInstance(CloudServiceProvider.class);
-        if (provider == null) {
-            return List.of();
+    /** The provider is bound in CloudNet's injection layer, not in the {@code ServiceRegistry}. */
+    private static ServiceReadings.Source resolveSource() {
+        CloudServiceProvider provider;
+        try {
+            provider = InjectionLayer.ext().instance(CloudServiceProvider.class);
+        } catch (RuntimeException e) {
+            return null;
         }
+        return provider == null ? null : (type, name) -> services(provider, type, name).stream().map(TitanBridgePermissionExtension::reading).toList();
+    }
+
+    private static Collection<ServiceInfoSnapshot> services(CloudServiceProvider provider, String type, String name) {
         return switch (type) {
             case "task" -> provider.servicesByTask(name);
             case "group" -> provider.servicesByGroup(name);
