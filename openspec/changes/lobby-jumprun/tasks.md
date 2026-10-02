@@ -105,7 +105,7 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 
 ## 15. Paletten mit Gewichten in der Konfiguration
 
-- [ ] 15.1 Test zuerst (Unit + Integration): Standard-YAML `titan/defaults/jumprun.yaml` mit allen heutigen Materialien; Prüfung beim Start (unbekannter Block, falsche Form, Gewicht ≤ 0, leere Liste → Abbruch mit Schlüssel); gewichtete Ziehung (3:1 → 70–80 % bei festem Seed); Live-Regeln nach `lobby-module-config`. Dann `JumprunSettings`, gewichtete `Palettes` (D19), Doku in `docs/lobby-modules.md`. Nachweis: `./gradlew build` grün, `application.example.yaml` der Varianten enthält den Abschnitt.
+- [x] 15.1 Test zuerst (Unit + Integration): Standard-YAML `titan/defaults/jumprun.yaml` mit allen heutigen Materialien; Prüfung beim Start (unbekannter Block, falsche Form, Gewicht ≤ 0, leere Liste → Abbruch mit Schlüssel); gewichtete Ziehung (3:1 → 70–80 % bei festem Seed); Live-Regeln nach `lobby-module-config`. Dann `JumprunSettings`, gewichtete `Palettes` (D19), Doku in `docs/lobby-modules.md`. Nachweis: `./gradlew build` grün, `application.example.yaml` der Varianten enthält den Abschnitt.
 
 ## 16. Fall- und Aufstiegs-Animation
 
