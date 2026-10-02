@@ -94,7 +94,7 @@ final class JumprunFixture implements AutoCloseable {
         TestTitanNode titan = TestTitanNode.attach(env);
         RunMessages messages = new RunMessages();
         RecordingLobbyItems lobbyItems = new RecordingLobbyItems();
-        JumprunModule module = new JumprunModule(titan.node(), () -> new Pos(-40.5, GROUND_Y, 0.5), List::of, records, () -> lobbyItems, messages, () -> SEED, new PalettesReader(config));
+        JumprunModule module = new JumprunModule(titan.node(), () -> new Pos(-40.5, GROUND_Y, 0.5), List::of, records, () -> lobbyItems, messages, () -> SEED, new JumprunConfig(config));
         module.start();
         LobbyItem item = new JumprunItems().jumprun(module);
         // What the hotbar column does with the use packet, without depending on it.

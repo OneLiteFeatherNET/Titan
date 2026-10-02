@@ -126,11 +126,24 @@ class JumprunMaterialTest {
     void anInvalidPaletteAbortsTheStartWithItsKey(Env env) {
         Configuration config = TestBlocks.shippedWith(Surface.FULL, Map.of("lime_wool", "0"));
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            JumprunModule module = new JumprunModule(titan.node(), () -> null, List::of, new InMemoryRunRecords(), RecordingLobbyItems::new, new RunMessages(), () -> JumprunFixture.SEED, new PalettesReader(config));
+            JumprunModule module = new JumprunModule(titan.node(), () -> null, List::of, new InMemoryRunRecords(), RecordingLobbyItems::new, new RunMessages(), () -> JumprunFixture.SEED, new JumprunConfig(config));
 
             IllegalArgumentException abort = assertThrows(IllegalArgumentException.class, module::start);
 
             assertTrue(abort.getMessage().startsWith("jumprun.palettes.full.lime_wool"), "the abort names the key: " + abort.getMessage());
+        }
+    }
+
+    @Test
+    void anInvalidRerollIntervalAbortsTheStartWithItsKey(Env env) {
+        Configuration config = TestBlocks.shippedConfiguration();
+        config.setProperty(JumprunSettings.REROLL_TICKS_KEY, "0");
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            JumprunModule module = new JumprunModule(titan.node(), () -> null, List::of, new InMemoryRunRecords(), RecordingLobbyItems::new, new RunMessages(), () -> JumprunFixture.SEED, new JumprunConfig(config));
+
+            IllegalArgumentException abort = assertThrows(IllegalArgumentException.class, module::start);
+
+            assertTrue(abort.getMessage().startsWith("jumprun.rerollTicks"), "the abort names the key: " + abort.getMessage());
         }
     }
 }

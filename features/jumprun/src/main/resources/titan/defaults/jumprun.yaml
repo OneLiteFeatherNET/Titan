@@ -1,5 +1,9 @@
 # The "jumprun" module: the random single-player jump and run.
 jumprun:
+  # Rainbow and Ultra runs: ticks (20 per second) the runner has to stand on a block before the
+  # blocks change colour (Rainbow) or are made anew (Ultra). A whole number above 0. Read when a
+  # run starts; an invalid edit is logged and the last valid value stays.
+  rerollTicks: 40
   # The materials each shape of the course is shown as. Key: the block name without namespace;
   # value: its weight, a whole number above 0 (a weight of 3 is drawn three times as often as 1).
   # The shape sets the block state (lower half, closed, upright) and all materials of a shape must

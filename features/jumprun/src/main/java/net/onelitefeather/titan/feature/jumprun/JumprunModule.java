@@ -90,7 +90,7 @@ final class JumprunModule {
     private final RunRecords records;
     private final RunMessages messages;
     private final LongSupplier seeds;
-    private final PalettesReader palettes;
+    private final JumprunConfig config;
     private final RunRegistry runs = new RunRegistry();
     private final FakeBlocks fakeBlocks = new FakeBlocks();
     /** Player tick until which the item is ignored after a click on a run block. */
@@ -102,10 +102,10 @@ final class JumprunModule {
 
     @Inject
     JumprunModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records, Provider<LobbyItems> lobbyItems) {
-        this(titan, spawn, portals, records, lobbyItems, new RunMessages(), () -> ThreadLocalRandom.current().nextLong(), new PalettesReader(Config.asConfiguration()));
+        this(titan, spawn, portals, records, lobbyItems, new RunMessages(), () -> ThreadLocalRandom.current().nextLong(), new JumprunConfig(Config.asConfiguration()));
     }
 
-    JumprunModule(EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records, Provider<LobbyItems> lobbyItems, RunMessages messages, LongSupplier seeds, PalettesReader palettes) {
+    JumprunModule(EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records, Provider<LobbyItems> lobbyItems, RunMessages messages, LongSupplier seeds, JumprunConfig config) {
         this.titan = titan;
         this.spawn = spawn;
         this.portals = portals;
@@ -113,13 +113,13 @@ final class JumprunModule {
         this.lobbyItems = lobbyItems;
         this.messages = messages;
         this.seeds = seeds;
-        this.palettes = palettes;
+        this.config = config;
     }
 
     @PostConstruct
     void start() {
-        // Strict once, so an invalid palette aborts the start; runs read it again live.
-        this.palettes.readAtStartup();
+        // Strict once, so an invalid palette or reroll interval aborts the start; runs read it again live.
+        this.config.readAtStartup();
         this.messages.register();
         this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY);
         this.node.on(PlayerMoveEvent.class, this::onMove);
@@ -217,7 +217,7 @@ final class JumprunModule {
         Pos spawnPoint = Optional.ofNullable(spawn.position()).orElse(feet);
         Heading heading = Heading.away(feet.x(), feet.z(), spawnPoint.x(), spawnPoint.z(), feet.direction().x(), feet.direction().z());
         RandomGenerator random = RandomGeneratorFactory.of(RANDOM_ALGORITHM).create(seeds.getAsLong());
-        return Course.startSteered(feet, startBlock, heading, new SpawnZone(spawnPoint.x(), spawnPoint.z()), new InstanceSpaceProbe(player.getInstance()), random, palettes.current(), PortalClearance.ofPortals(portals.portals()), mode).map(course -> new Run(player, course, startBlock, mode, records.best(player.getUuid(), mode)));
+        return Course.startSteered(feet, startBlock, heading, new SpawnZone(spawnPoint.x(), spawnPoint.z()), new InstanceSpaceProbe(player.getInstance()), random, config.palettes(), PortalClearance.ofPortals(portals.portals()), mode).map(course -> new Run(player, course, startBlock, mode, records.best(player.getUuid(), mode)));
     }
 
     private void onDeath(PlayerDeathEvent event) {

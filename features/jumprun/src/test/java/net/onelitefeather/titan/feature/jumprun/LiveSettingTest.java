@@ -32,21 +32,21 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 
-/** Start and live reads of the palettes, on a configuration each test owns. */
-class PalettesReaderTest {
+/** Start and live reads of a setting, shown on the palettes, on a configuration each test owns. */
+class LiveSettingTest {
 
     private static final String LIME_KEY = JumprunSettings.key(Surface.FULL, "lime_wool");
 
-    private final Logger readerLogger = (Logger) LoggerFactory.getLogger(PalettesReader.class);
+    private final Logger readerLogger = (Logger) LoggerFactory.getLogger(LiveSetting.class);
     private final ListAppender<ILoggingEvent> lines = new ListAppender<>();
 
     private Configuration config;
-    private PalettesReader reader;
+    private LiveSetting<Palettes> reader;
 
     @BeforeEach
     void setUp() {
         this.config = TestBlocks.shippedConfiguration();
-        this.reader = new PalettesReader(this.config);
+        this.reader = new LiveSetting<>("palettes", () -> JumprunSettings.palettes(this.config));
         this.lines.start();
         this.readerLogger.addAppender(this.lines);
     }

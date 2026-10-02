@@ -55,8 +55,8 @@ final class TestBlocks {
         return config;
     }
 
-    static PalettesReader shippedReader() {
-        return new PalettesReader(shippedConfiguration());
+    static JumprunConfig shippedReader() {
+        return new JumprunConfig(shippedConfiguration());
     }
 
     /** A block with the first material of its shape. */

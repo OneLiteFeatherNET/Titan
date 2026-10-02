@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.avaje.config.Configuration;
 import java.util.List;
 import java.util.Map;
 import net.minestom.server.instance.block.Block;
@@ -96,5 +97,37 @@ class JumprunSettingsTest {
 
         assertNamesKey("jumprun.palettes.fence", refusal);
         assertTrue(refusal.getMessage().contains("must not be empty"), "reason: " + refusal.getMessage());
+    }
+
+    private static IllegalArgumentException rerollRefusal(String value) {
+        Configuration config = TestBlocks.shippedConfiguration();
+        config.setProperty(JumprunSettings.REROLL_TICKS_KEY, value);
+        return assertThrows(IllegalArgumentException.class, () -> JumprunSettings.rerollTicks(config));
+    }
+
+    @Test
+    void theShippedRerollIntervalIsFortyTicks() {
+        assertEquals(40, JumprunSettings.rerollTicks(TestBlocks.shippedConfiguration()));
+    }
+
+    @Test
+    void aRerollIntervalOfZeroNamesItsKey() {
+        IllegalArgumentException refusal = rerollRefusal("0");
+
+        assertNamesKey("jumprun.rerollTicks", refusal);
+        assertTrue(refusal.getMessage().contains("greater than 0"), "reason: " + refusal.getMessage());
+    }
+
+    @Test
+    void aNegativeRerollIntervalNamesItsKey() {
+        assertNamesKey("jumprun.rerollTicks", rerollRefusal("-5"));
+    }
+
+    @Test
+    void aRerollIntervalThatIsNoNumberNamesItsKey() {
+        IllegalArgumentException refusal = rerollRefusal("often");
+
+        assertNamesKey("jumprun.rerollTicks", refusal);
+        assertTrue(refusal.getMessage().contains("whole number"), "reason: " + refusal.getMessage());
     }
 }

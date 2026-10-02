@@ -15,51 +15,57 @@
  */
 package net.onelitefeather.titan.feature.jumprun;
 
-import io.avaje.config.Configuration;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Reads the palettes from the config: strictly once at start, then whenever a run starts, so an
- * edited file takes effect without a restart.
+ * A setting read from the config: strictly once at start, then whenever a run starts, so an edited
+ * file takes effect without a restart. An invalid live value keeps the last valid one.
  */
-final class PalettesReader {
+final class LiveSetting<T> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(PalettesReader.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(LiveSetting.class);
 
-    private final Configuration config;
+    private final String name;
+    private final Supplier<T> parser;
     private final Set<String> warned = new HashSet<>();
-    private Palettes lastValid;
+    private T lastValid;
 
-    PalettesReader(Configuration config) {
-        this.config = config;
+    /**
+     * @param parser reads and validates the value; it throws {@link IllegalArgumentException}
+     *               naming the key and the reason
+     */
+    LiveSetting(String name, Supplier<T> parser) {
+        this.name = name;
+        this.parser = parser;
     }
 
     /**
      * @throws IllegalArgumentException naming the invalid key and the reason, which aborts the
      *                                  start
      */
-    synchronized Palettes readAtStartup() {
-        this.lastValid = JumprunSettings.palettes(this.config);
+    synchronized T readAtStartup() {
+        this.lastValid = this.parser.get();
         return this.lastValid;
     }
 
     /**
-     * The current palettes, or the last valid ones while the config is invalid; each problem is
-     * warned about once.
+     * The current value, or the last valid one while the config is invalid; each problem is warned
+     * about once.
      */
-    synchronized Palettes current() {
+    synchronized T current() {
         try {
-            this.lastValid = JumprunSettings.palettes(this.config);
+            this.lastValid = this.parser.get();
             this.warned.clear();
         } catch (IllegalArgumentException e) {
             if (this.lastValid == null) {
                 throw e;
             }
             if (this.warned.add(e.getMessage())) {
-                LOGGER.warn("Invalid jumprun palettes, keeping the last valid ones: {}", e.getMessage());
+                LOGGER.warn("Invalid jumprun {}, keeping the last valid one: {}", this.name, e.getMessage());
             }
         }
         return this.lastValid;
