@@ -51,6 +51,7 @@ import net.minestom.server.network.packet.client.play.ClientPlayerPositionStatus
 import net.minestom.server.network.packet.client.play.ClientPlayerRotationPacket;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.module.LobbySpawn;
+import net.onelitefeather.titan.core.portal.LobbyPortals;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.spi.LoggingEventBuilder;
@@ -76,6 +77,7 @@ final class JumprunModule {
 
     private final EventNode<Event> titan;
     private final LobbySpawn spawn;
+    private final LobbyPortals portals;
     private final RunRecords records;
     private final RunMessages messages;
     private final LongSupplier seeds;
@@ -87,13 +89,14 @@ final class JumprunModule {
     private FeatureNode node;
 
     @Inject
-    JumprunModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbySpawn spawn, RunRecords records) {
-        this(titan, spawn, records, new RunMessages(), () -> ThreadLocalRandom.current().nextLong());
+    JumprunModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records) {
+        this(titan, spawn, portals, records, new RunMessages(), () -> ThreadLocalRandom.current().nextLong());
     }
 
-    JumprunModule(EventNode<Event> titan, LobbySpawn spawn, RunRecords records, RunMessages messages, LongSupplier seeds) {
+    JumprunModule(EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records, RunMessages messages, LongSupplier seeds) {
         this.titan = titan;
         this.spawn = spawn;
+        this.portals = portals;
         this.records = records;
         this.messages = messages;
         this.seeds = seeds;
@@ -176,7 +179,7 @@ final class JumprunModule {
         Pos spawnPoint = Optional.ofNullable(spawn.position()).orElse(feet);
         Heading heading = Heading.away(feet.x(), feet.z(), spawnPoint.x(), spawnPoint.z(), feet.direction().x(), feet.direction().z());
         RandomGenerator random = RandomGeneratorFactory.of(RANDOM_ALGORITHM).create(seeds.getAsLong());
-        return Course.start(feet, startBlock, heading, new SpawnZone(spawnPoint.x(), spawnPoint.z()), new InstanceSpaceProbe(player.getInstance()), random).map(course -> new Run(player, course, startBlock));
+        return Course.start(feet, startBlock, heading, new SpawnZone(spawnPoint.x(), spawnPoint.z()), new InstanceSpaceProbe(player.getInstance()), random, PortalClearance.ofPortals(portals.portals())).map(course -> new Run(player, course, startBlock));
     }
 
     private void onElytra(PlayerStartFlyingWithElytraEvent event) {

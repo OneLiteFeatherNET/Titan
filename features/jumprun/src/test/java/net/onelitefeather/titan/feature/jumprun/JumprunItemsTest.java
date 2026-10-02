@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 @RegistriesTest
 class JumprunItemsTest {
 
-    private final LobbyItem item = new JumprunItems().jumprun(new JumprunModule(EventNode.all("unused"), () -> null, new InMemoryRunRecords(), new RunMessages(), () -> 1L));
+    private final LobbyItem item = new JumprunItems().jumprun(new JumprunModule(EventNode.all("unused"), () -> null, List::of, new InMemoryRunRecords(), new RunMessages(), () -> 1L));
 
     @Test
     void theItemHasTheJumprunKeyAndBelongsToTheFeature() {

@@ -58,11 +58,17 @@ final class CourseGenerator {
     private final SpaceProbe probe;
     private final SpawnZone spawn;
     private final RandomGenerator random;
+    private final PortalClearance portals;
 
     CourseGenerator(SpaceProbe probe, SpawnZone spawn, RandomGenerator random) {
+        this(probe, spawn, random, PortalClearance.NONE);
+    }
+
+    CourseGenerator(SpaceProbe probe, SpawnZone spawn, RandomGenerator random, PortalClearance portals) {
         this.probe = probe;
         this.spawn = spawn;
         this.random = random;
+        this.portals = portals;
     }
 
     /**
@@ -203,7 +209,7 @@ final class CourseGenerator {
         /** Geometry first, then the world: the cheap check decides most candidates. */
         boolean isFree(Placement from, Placement to) {
             Jump jump = new Jump(from, to);
-            return Clearance.isKept(jump, visible) && rules().isFree(jump);
+            return Clearance.isKept(jump, visible) && portals.isKept(jump) && rules().isFree(jump);
         }
 
         Openness openness() {

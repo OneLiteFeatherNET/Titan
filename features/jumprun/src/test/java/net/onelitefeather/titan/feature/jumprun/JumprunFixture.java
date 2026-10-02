@@ -16,6 +16,7 @@
 package net.onelitefeather.titan.feature.jumprun;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import net.minestom.server.coordinate.Point;
 import net.minestom.server.coordinate.Pos;
@@ -77,7 +78,7 @@ final class JumprunFixture implements AutoCloseable {
     static JumprunFixture start(Env env, RunRecords records) {
         TestTitanNode titan = TestTitanNode.attach(env);
         RunMessages messages = new RunMessages();
-        JumprunModule module = new JumprunModule(titan.node(), () -> new Pos(-40.5, GROUND_Y, 0.5), records, messages, () -> SEED);
+        JumprunModule module = new JumprunModule(titan.node(), () -> new Pos(-40.5, GROUND_Y, 0.5), List::of, records, messages, () -> SEED);
         module.start();
         LobbyItem item = new JumprunItems().jumprun(module);
         // What the hotbar column does with the use packet, without depending on it.

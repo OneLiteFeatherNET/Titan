@@ -17,7 +17,6 @@ package net.onelitefeather.titan.feature.jumprun;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Stream;
 
 /**
  * Keeps a new jump away from the blocks the player still sees, so earlier blocks do not get in the
@@ -47,13 +46,8 @@ final class Clearance {
         if (others.isEmpty()) {
             return true;
         }
-        List<FlightPath.Cell> cells = flownOver(jump);
+        List<FlightPath.Cell> cells = FlightPath.cellsUpTo(jump.from().pos(), jump.to().pos());
         return others.stream().noneMatch(pos -> cells.stream().anyMatch(cell -> isTooClose(cell, pos)));
-    }
-
-    private static List<FlightPath.Cell> flownOver(Jump jump) {
-        BlockPos target = jump.to().pos();
-        return Stream.concat(FlightPath.cellsBetween(jump.from().pos(), target).stream(), Stream.of(new FlightPath.Cell(target.x(), target.z()))).toList();
     }
 
     private static boolean isTooClose(FlightPath.Cell cell, BlockPos pos) {

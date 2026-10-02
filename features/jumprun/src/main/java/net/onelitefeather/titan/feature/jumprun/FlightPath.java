@@ -17,6 +17,7 @@ package net.onelitefeather.titan.feature.jumprun;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 /** The cells a jump flies over, shared by the checks that look at the way between two blocks. */
 final class FlightPath {
@@ -26,6 +27,11 @@ final class FlightPath {
 
     /** A cell of the XZ plane. */
     record Cell(int x, int z) {
+    }
+
+    /** What a jump flies over and lands in: {@link #cellsBetween} plus the target's cell. */
+    static List<Cell> cellsUpTo(BlockPos from, BlockPos target) {
+        return Stream.concat(cellsBetween(from, target).stream(), Stream.of(new Cell(target.x(), target.z()))).toList();
     }
 
     /** Bresenham line in the XZ plane without its two ends. */

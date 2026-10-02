@@ -72,7 +72,12 @@ final class Course {
      * does not fit, so nothing is shown for a run that cannot work.
      */
     static Optional<Course> start(Pos startPoint, BlockPos startBlock, Heading heading, SpawnZone spawn, SpaceProbe probe, RandomGenerator random) {
-        CourseGenerator generator = new CourseGenerator(probe, spawn, random);
+        return start(startPoint, startBlock, heading, spawn, probe, random, PortalClearance.NONE);
+    }
+
+    /** As above, and no block or flight path comes near a portal. */
+    static Optional<Course> start(Pos startPoint, BlockPos startBlock, Heading heading, SpawnZone spawn, SpaceProbe probe, RandomGenerator random, PortalClearance portals) {
+        CourseGenerator generator = new CourseGenerator(probe, spawn, random, portals);
         List<CourseBlock> blocks = new ArrayList<>(List.of(new CourseBlock(startBlock, Surface.FULL, START_MATERIAL)));
         Course course = new Course(startPoint, generator, blocks, Phase.start(heading));
         boolean fits = course.generateAscent() && course.generateThrough(course.blocks.size());
