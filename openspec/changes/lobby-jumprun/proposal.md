@@ -10,7 +10,7 @@ Die Lobby hat außer Elytra, Sitzen und Kitzeln nichts, womit sich ein Spieler b
 - Neues Hotbar-Item, das einen Lauf startet und bei erneuter Benutzung abbricht.
 - Ein Lauf startet an der Stelle, an der der Spieler steht. Eine Vorab-Prüfung stellt sicher, dass von dort ein Weg aus dem Spawn-Bereich hinaus möglich ist. Sonst startet kein Lauf, und der Spieler bekommt eine Meldung.
 - Die ersten Sprünge sind eine leichte Aufstiegsphase, die nach oben und vom Spawn weg führt. Sie zählt nicht zum Score.
-- Die Blöcke existieren nur für den Spieler, als Blöcke auf dem Client. Andere Spieler und die echte Welt sehen sie nicht. Sichtbar sind immer genau 2 Blöcke hinter und 2 vor dem Block, auf dem der Spieler steht.
+- Begehbar sind die Blöcke nur für den Spieler, als Blöcke auf seinem Client; die echte Welt bleibt unverändert. Andere Spieler sehen dieselben Blöcke als nicht begehbare Darstellung und über dem Kopf des Läufers „Jump & Run · <Score>“. Sichtbar sind immer genau 2 Blöcke hinter und 2 vor dem Block, auf dem der Spieler steht.
 - Die Schwierigkeit steigt über eine mathematische Formel mit der Zahl geschaffter Sprünge. Sie zeigt sich in Blocktyp (Vollblock, Stufe, Zaun, …), Lückenbreite und Höhenunterschied.
 - Neue Blöcke entstehen nur dort, wo in der echten Welt Platz ist und der Sprung schaffbar bleibt. Sackgassen werden vermieden.
 - Ein Lauf endet bei einem Absturz, beim Gleiten mit der Elytra, bei einem Abbruch über das Item und beim Verlassen des Servers.
@@ -30,7 +30,7 @@ Die Lobby hat außer Elytra, Sitzen und Kitzeln nichts, womit sich ein Spieler b
 - **Code:** neues Gradle-Modul `features/jumprun`, das nur an `core` hängt. Die App-Varianten übernehmen es über den Verzeichnis-Scan ohne Änderung. Querschnitts-Tests in `apps/cloudnet` (Standardausstattung, Slot-Konflikte) bekommen das neue Item.
 - **Abhängigkeiten:** keine neuen Laufzeit- oder Build-Abhängigkeiten. Benötigt werden nur Minestom (Block-Change-Pakete, Events) und Adventure.
 - **Nutzertexte (neu):** Item-Name „Jump & Run“ (sprachneutral, ohne Beschreibung), Meldung „kein Platz zum Starten“, Score in der Action Bar, Meldung zum Laufende mit Score, Meldung „neuer Rekord“. Alle in den Sprachdateien mit Englisch als Fallback.
-- **Spielerverhalten:** Ein Spieler im Lauf scheint für andere in der Luft zu schweben. Das ist bewusst so gewollt.
+- **Spielerverhalten:** Andere Spieler sehen den Läufer samt seinen Blöcken (ohne Kollision) und seinem Score über dem Kopf. Läufe liegen mindestens 16 Blöcke vom Spawn entfernt über offenem Raum.
 
 ## Delivery
 
