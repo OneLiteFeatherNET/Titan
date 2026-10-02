@@ -126,7 +126,7 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 
 ## 20. Englische Lore am Item
 
-- [ ] 20.1 Test zuerst (Unit): Lore mit Bedienung und den Modi Easy/Medium/Hard, MiniMessage, nicht kursiv (D25). Nachweis: `./gradlew :features:jumprun:build` grün.
+- [x] 20.1 Test zuerst (Unit): Lore mit Bedienung und den Modi Easy/Medium/Hard, MiniMessage, nicht kursiv (D25). Nachweis: `./gradlew :features:jumprun:build` grün.
 
 ## 6. Pull Request
 
