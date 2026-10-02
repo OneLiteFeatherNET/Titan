@@ -80,4 +80,25 @@ class RunSoundsTest {
     void theStepRepeatsEveryTwelvePoints() {
         assertEquals(RunSounds.tones(5), RunSounds.tones(29));
     }
+
+    @Test
+    void theSignalIsAQuietHatForThePlayerSource() {
+        Sound signal = RunSounds.signalTone();
+
+        assertEquals(SoundEvent.BLOCK_NOTE_BLOCK_HAT.key(), signal.name());
+        assertEquals(Sound.Source.PLAYER, signal.source());
+        assertEquals(0.6f, signal.volume(), DELTA);
+        assertEquals(1.0f, signal.pitch(), DELTA);
+    }
+
+    @Test
+    void theFailureIsThreeFallingBassNotes() {
+        List<Sound> notes = RunSounds.failTones();
+
+        assertEquals(List.of(1.0f, 0.84f, 0.67f), notes.stream().map(Sound::pitch).toList());
+        notes.forEach(note -> {
+            assertEquals(SoundEvent.BLOCK_NOTE_BLOCK_BASS.key(), note.name());
+            assertEquals(Sound.Source.PLAYER, note.source());
+        });
+    }
 }

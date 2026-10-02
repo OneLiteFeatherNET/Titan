@@ -43,6 +43,14 @@ enum EndReason {
         return owed.submitsScore;
     }
 
+    /**
+     * Only a fall and the elytra are a failure worth a sound; a death in the lobby is not the run's
+     * doing.
+     */
+    boolean failed() {
+        return this == FALL || this == ELYTRA;
+    }
+
     boolean announcesScore() {
         return owed.announces;
     }

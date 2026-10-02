@@ -22,6 +22,7 @@ import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.network.packet.server.play.SoundEffectPacket;
+import net.minestom.server.sound.SoundEvent;
 import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.TestConnection;
@@ -71,14 +72,14 @@ class JumprunSoundTest {
     }
 
     @Test
-    void theAscentIsSilent(Env env) {
+    void anAscentLandingSoundsNoPointTone(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             Scene scene = Scene.start(env, fixture);
             Collector<SoundEffectPacket> heard = scene.run().connection().trackIncoming(SoundEffectPacket.class);
 
-            scene.run().landOnNext(JumprunFixture.ASCENT_JUMPS);
+            scene.run().landOnNext();
 
-            assertTrue(heard.collect().isEmpty(), "ascent jumps do not score");
+            assertTrue(heard.collect().stream().noneMatch(packet -> packet.soundEvent().equals(SoundEvent.BLOCK_NOTE_BLOCK_PLING)), "ascent jumps do not score");
         }
     }
 }
