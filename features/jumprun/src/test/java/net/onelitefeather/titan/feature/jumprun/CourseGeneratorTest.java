@@ -1,0 +1,243 @@
+/**
+ * Copyright 2025 OneLiteFeather Network
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package net.onelitefeather.titan.feature.jumprun;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.random.RandomGenerator;
+import java.util.random.RandomGeneratorFactory;
+import org.junit.jupiter.api.Test;
+
+class CourseGeneratorTest {
+
+    private static final CourseBlock SOURCE = new CourseBlock(new BlockPos(0, 10, 0), Surface.FULL);
+
+    private static RandomGenerator seeded(long seed) {
+        return RandomGeneratorFactory.of("L64X128MixRandom").create(seed);
+    }
+
+    /** Seeded randomness whose Gaussian noise is pinned, so the target cost is exactly known. */
+    private static RandomGenerator withNoise(double noise, long seed) {
+        RandomGenerator base = seeded(seed);
+        return new RandomGenerator() {
+            @Override
+            public long nextLong() {
+                return base.nextLong();
+            }
+
+            @Override
+            public double nextGaussian() {
+                return noise;
+            }
+        };
+    }
+
+    private static CourseBlock jumpFromSource(CourseGenerator generator, int score) {
+        return generator.next(List.of(SOURCE), new Phase.Scored(score)).orElseThrow();
+    }
+
+    /** Walks the generator forward from the start and returns the whole course, start included. */
+    private static List<CourseBlock> walk(CourseGenerator generator, CourseBlock start, Phase phase, int jumps) {
+        List<CourseBlock> course = new ArrayList<>(List.of(start));
+        for (int i = 0; i < jumps; i++) {
+            Optional<CourseBlock> next = generator.next(course, phase);
+            if (next.isEmpty()) {
+                break;
+            }
+            course.add(next.get());
+            phase = phase.next();
+        }
+        return course;
+    }
+
+    // --- choosing by cost -----------------------------------------------------------------------
+
+    @Test
+    void picksTheCandidateWithTheTargetCostWhenTheTargetIsZero() {
+        CourseGenerator generator = new CourseGenerator(new FakeSpaceProbe(), withNoise(-100.0, 1L));
+
+        CourseBlock chosen = jumpFromSource(generator, 0);
+
+        assertEquals(0.0, new Jump(SOURCE, chosen).cost(), "an easiest jump");
+    }
+
+    @Test
+    void picksTheCandidateClosestToTheTargetCost() {
+        CourseGenerator generator = new CourseGenerator(new FakeSpaceProbe(), withNoise(2.0, 1L));
+
+        CourseBlock chosen = jumpFromSource(generator, 0);
+
+        assertEquals(2.0, new Jump(SOURCE, chosen).cost(), "target 2.0 is met exactly by a slab");
+        assertEquals(Surface.SLAB, chosen.surface(), "only a slab costs 2.0 without a gap or a rise");
+    }
+
+    @Test
+    void picksTheHardestJumpWhenTheTargetIsAboveEverything() {
+        CourseGenerator generator = new CourseGenerator(new FakeSpaceProbe(), withNoise(100.0, 1L));
+
+        CourseBlock chosen = jumpFromSource(generator, 10_000);
+
+        assertEquals(Jump.MAX_COST, new Jump(SOURCE, chosen).cost(), "hardest allowed jump");
+    }
+
+    // --- space ----------------------------------------------------------------------------------
+
+    @Test
+    void rejectsACandidateWithoutAnyFollowUpJump() {
+        for (long seed = 0; seed < 20; seed++) {
+            // A is the easiest candidate but nothing is reachable from it; B has a follow-up C.
+            FakeSpaceProbe world = FakeSpaceProbe.solidWorld()
+                    .carveColumn(2, 10, 0, 5).carveColumn(1, 11, 0, 2)
+                    .carveColumn(-5, 10, 0, 5)
+                    .carveColumn(-10, 10, 0, 5);
+            for (int x = -9; x <= -1; x++) {
+                world.carveColumn(x, 11, 0, 2);
+            }
+            CourseGenerator generator = new CourseGenerator(world, withNoise(0.0, seed));
+
+            CourseBlock chosen = jumpFromSource(generator, 0);
+
+            assertEquals(new BlockPos(-5, 10, 0), chosen.pos(), "dead end A must lose to B (seed " + seed + ")");
+        }
+    }
+
+    @Test
+    void reportsNoCandidateWhenNothingIsFree() {
+        CourseGenerator generator = new CourseGenerator(FakeSpaceProbe.solidWorld(), seeded(1L));
+
+        assertTrue(generator.next(List.of(SOURCE), new Phase.Scored(0)).isEmpty(), "walled in");
+    }
+
+    @Test
+    void leadsAroundAWallInsteadOfThroughIt() {
+        FakeSpaceProbe world = new FakeSpaceProbe().occupyBox(6, 0, -50, 50, 100, 50);
+        CourseGenerator generator = new CourseGenerator(world, seeded(3L));
+
+        List<CourseBlock> course = walk(generator, SOURCE, new Phase.Scored(0), 60);
+
+        assertTrue(course.size() > 40, "the course must keep going, got " + course.size());
+        for (CourseBlock block : course) {
+            assertTrue(block.pos().x() < 6, "block inside the wall: " + block.pos());
+        }
+    }
+
+    @Test
+    void doesNotRepeatAPositionOfTheLastFourBlocks() {
+        CourseGenerator generator = new CourseGenerator(new FakeSpaceProbe(), seeded(11L));
+
+        List<CourseBlock> course = walk(generator, SOURCE, new Phase.Scored(0), 300);
+
+        for (int i = 1; i < course.size(); i++) {
+            for (int back = 1; back <= 4 && back <= i; back++) {
+                assertNotEquals(course.get(i - back).pos(), course.get(i).pos(),
+                        "block " + i + " repeats the one " + back + " before it");
+            }
+        }
+    }
+
+    // --- randomness -----------------------------------------------------------------------------
+
+    @Test
+    void sameSeedGivesTheSameCourse() {
+        List<CourseBlock> first = walk(new CourseGenerator(new FakeSpaceProbe(), seeded(42L)), SOURCE, new Phase.Scored(0), 50);
+        List<CourseBlock> second = walk(new CourseGenerator(new FakeSpaceProbe(), seeded(42L)), SOURCE, new Phase.Scored(0), 50);
+
+        assertEquals(first, second, "same seed, same course");
+    }
+
+    @Test
+    void differentSeedsGiveDifferentCourses() {
+        List<CourseBlock> first = walk(new CourseGenerator(new FakeSpaceProbe(), seeded(1L)), SOURCE, new Phase.Scored(0), 50);
+        List<CourseBlock> second = walk(new CourseGenerator(new FakeSpaceProbe(), seeded(2L)), SOURCE, new Phase.Scored(0), 50);
+
+        assertNotEquals(first, second, "different seeds, different courses");
+    }
+
+    // --- statistics -----------------------------------------------------------------------------
+
+    private static List<Jump> thousandJumpsAtScore(int score, long seed) {
+        CourseGenerator generator = new CourseGenerator(new FakeSpaceProbe(), seeded(seed));
+        List<Jump> jumps = new ArrayList<>();
+        for (int i = 0; i < 1000; i++) {
+            jumps.add(new Jump(SOURCE, jumpFromSource(generator, score)));
+        }
+        return jumps;
+    }
+
+    private static double meanCost(List<Jump> jumps) {
+        return jumps.stream().mapToDouble(Jump::cost).average().orElseThrow();
+    }
+
+    @Test
+    void theStartIsMostlyFullBlocksWithShortGaps() {
+        List<Jump> jumps = thousandJumpsAtScore(0, 100L);
+
+        long easy = jumps.stream()
+                .filter(jump -> jump.to().surface() == Surface.FULL && jump.gap() <= 2)
+                .count();
+
+        assertTrue(easy > 800, "over 80% easy jumps at score 0, got " + easy + " of 1000");
+    }
+
+    @Test
+    void jumpsAtScoreEightyAreMuchHarderThanAtScoreZero() {
+        double atZero = meanCost(thousandJumpsAtScore(0, 100L));
+        double atEighty = meanCost(thousandJumpsAtScore(80, 100L));
+
+        assertTrue(atEighty > atZero + 4.0, "mean cost " + atZero + " at 0 vs " + atEighty + " at 80");
+    }
+
+    @Test
+    void jumpsAtScoreEightyUseNarrowSurfacesMoreOften() {
+        long narrowAtZero = thousandJumpsAtScore(0, 100L).stream().filter(j -> j.to().surface() != Surface.FULL).count();
+        long narrowAtEighty = thousandJumpsAtScore(80, 100L).stream().filter(j -> j.to().surface() != Surface.FULL).count();
+
+        assertTrue(narrowAtEighty > narrowAtZero + 300, "narrow surfaces " + narrowAtZero + " vs " + narrowAtEighty);
+    }
+
+    // --- property: no impossible jump -----------------------------------------------------------
+
+    @Test
+    void tenThousandJumpsOverTenSeedsNeverBreakTheLimits() {
+        FakeSpaceProbe world = new FakeSpaceProbe()
+                .occupyBox(-50, 0, -50, 50, 9, 50)
+                .occupyBox(-20, 10, 15, 20, 40, 18)
+                .occupyBox(30, 10, -50, 33, 60, 50);
+        JumpRules rules = new JumpRules(world);
+        int checked = 0;
+
+        for (long seed = 1; seed <= 10; seed++) {
+            List<CourseBlock> course = walk(new CourseGenerator(world, seeded(seed)), SOURCE, new Phase.Scored(0), 1000);
+            checked += course.size() - 1;
+            for (int i = 1; i < course.size(); i++) {
+                Jump jump = new Jump(course.get(i - 1), course.get(i));
+                String where = "seed " + seed + " jump " + i + " " + jump;
+                assertTrue(jump.gap() >= Jump.MIN_GAP && jump.gap() <= Jump.MAX_GAP, "gap " + where);
+                assertTrue(!jump.isAscent() || jump.gap() <= Jump.MAX_GAP_ASCENT, "ascent gap " + where);
+                assertTrue(jump.rise() <= Jump.MAX_RISE, "rise " + where);
+                assertTrue(rules.isValid(jump), "rules " + where);
+                assertTrue(course.get(i).pos().y() + JumpRules.MAX_Y_MARGIN <= 100, "top margin " + where);
+            }
+        }
+
+        assertEquals(10_000, checked, "every seed must complete its 1000 jumps in this world");
+    }
+}

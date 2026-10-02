@@ -38,7 +38,7 @@ final class JumpRules {
     }
 
     /** Pure geometry: the player can bridge the gap and the rise, whatever stands in the way. */
-    boolean isReachable(Jump jump) {
+    static boolean isReachable(Jump jump) {
         int maxGap = jump.isAscent() ? Jump.MAX_GAP_ASCENT : Jump.MAX_GAP;
         return jump.gap() >= Jump.MIN_GAP && jump.gap() <= maxGap && jump.rise() <= Jump.MAX_RISE;
     }
