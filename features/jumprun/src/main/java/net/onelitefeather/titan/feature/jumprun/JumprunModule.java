@@ -179,7 +179,7 @@ final class JumprunModule {
         Pos spawnPoint = Optional.ofNullable(spawn.position()).orElse(feet);
         Heading heading = Heading.away(feet.x(), feet.z(), spawnPoint.x(), spawnPoint.z(), feet.direction().x(), feet.direction().z());
         RandomGenerator random = RandomGeneratorFactory.of(RANDOM_ALGORITHM).create(seeds.getAsLong());
-        return Course.startSteered(feet, startBlock, heading, new SpawnZone(spawnPoint.x(), spawnPoint.z()), new InstanceSpaceProbe(player.getInstance()), random, PortalClearance.ofPortals(portals.portals())).map(course -> new Run(player, course, startBlock));
+        return Course.startSteered(feet, startBlock, heading, new SpawnZone(spawnPoint.x(), spawnPoint.z()), new InstanceSpaceProbe(player.getInstance()), random, PortalClearance.ofPortals(portals.portals())).map(course -> new Run(player, course, startBlock, records.best(player.getUuid())));
     }
 
     private void onElytra(PlayerStartFlyingWithElytraEvent event) {
@@ -341,6 +341,9 @@ final class JumprunModule {
         run.label().show(run.score());
         if (advance.scored() > 0) {
             RunSounds.play(player, run.score());
+            if (run.passesPreviousBest()) {
+                RunSounds.record(player);
+            }
         } else {
             RunSounds.signal(player);
         }
@@ -374,6 +377,9 @@ final class JumprunModule {
             // A run that never scored is not worth calling a record, even when it is the first.
             Component message = isRecord && score > 0 ? messages.endRecord(player.getLocale(), score) : messages.endScore(player.getLocale(), score);
             player.sendMessage(message);
+            if (isRecord && score > 0 && run.hadNoRecord()) {
+                RunSounds.record(player);
+            }
         }
         if (reason.failed()) {
             RunSounds.fail(player);

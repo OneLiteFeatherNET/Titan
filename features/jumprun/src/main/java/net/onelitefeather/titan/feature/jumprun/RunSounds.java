@@ -71,6 +71,15 @@ final class RunSounds {
         }
     }
 
+    /** The level-up for a new record, heard by the runner alone. */
+    static void record(Player runner) {
+        runner.playSound(recordTone());
+    }
+
+    static Sound recordTone() {
+        return Sound.sound(SoundEvent.ENTITY_PLAYER_LEVELUP, Sound.Source.PLAYER, 1.0f, 1.0f);
+    }
+
     static List<Sound> failTones() {
         return IntStream.range(0, FAIL_PITCHES.length).mapToObj(note -> Sound.sound(SoundEvent.BLOCK_NOTE_BLOCK_BASS, Sound.Source.PLAYER, 1.0f, FAIL_PITCHES[note])).toList();
     }
