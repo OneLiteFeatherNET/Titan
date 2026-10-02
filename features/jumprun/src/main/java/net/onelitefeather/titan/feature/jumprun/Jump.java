@@ -15,7 +15,8 @@
  */
 package net.onelitefeather.titan.feature.jumprun;
 
-import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 
 /** The step from one course block to the next, with its geometry and its difficulty cost. */
 record Jump(Placement from, Placement to) {
@@ -32,14 +33,28 @@ record Jump(Placement from, Placement to) {
     private static final double GAP_WEIGHT = 1.5;
     private static final double ASCENT_WEIGHT = 1.0;
 
-    /** Cost of the hardest allowed jump: the hardest surface over the widest flat gap. */
-    static final double MAX_COST = TYPE_WEIGHT * Arrays.stream(Surface.values()).mapToInt(Surface::typeCost).max().orElse(0) + GAP_WEIGHT * (MAX_GAP - MIN_GAP);
+    /**
+     * Cost of the hardest allowed jump with any shape: the hardest surface over the widest flat
+     * gap.
+     */
+    static final double MAX_COST = maxCost(List.of(Surface.values()));
+
+    /** Cost of the hardest jump onto one of the {@code surfaces} over the widest flat gap. */
+    static double maxCost(Collection<Surface> surfaces) {
+        int hardest = surfaces.stream().mapToInt(Surface::typeCost).max().orElse(0);
+        return TYPE_WEIGHT * hardest + GAP_WEIGHT * (MAX_GAP - MIN_GAP);
+    }
 
     /** Air blocks between the two blocks: the horizontal Chebyshev distance minus one. */
     int gap() {
         int dx = Math.abs(to.pos().x() - from.pos().x());
         int dz = Math.abs(to.pos().z() - from.pos().z());
         return Math.max(dx, dz) - 1;
+    }
+
+    /** The way the jump leads, judged by the signs of the offset. */
+    Direction direction() {
+        return Direction.toward(to.pos().x() - from.pos().x(), to.pos().z() - from.pos().z());
     }
 
     /** Whether the jump leaves along both axes at once. */

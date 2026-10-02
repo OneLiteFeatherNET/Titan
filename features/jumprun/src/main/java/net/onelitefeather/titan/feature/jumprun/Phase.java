@@ -31,6 +31,20 @@ sealed interface Phase {
         return new Ascent(0, heading);
     }
 
+    /**
+     * The main heading of the course: the direction it leads in overall. It starts as the ascent
+     * heading and bends towards every step made, so a course keeps its direction.
+     */
+    Heading heading();
+
+    /** This phase with another main heading. */
+    Phase withHeading(Heading heading);
+
+    /** The phase after a step: the same, with the heading bent towards the step. */
+    default Phase steered(Direction step) {
+        return withHeading(heading().steered(step));
+    }
+
     /** Air blocks between the blocks that a jump of this phase may leave. */
     IntStream gaps();
 
@@ -51,7 +65,12 @@ sealed interface Phase {
         /** The phase after one more jump, whose block is or is not yet in the open. */
         Phase next(boolean inTheOpen) {
             int made = jumps + 1;
-            return made >= MIN_ASCENT_JUMPS && inTheOpen ? new Scored(0) : new Ascent(made, heading);
+            return made >= MIN_ASCENT_JUMPS && inTheOpen ? new Scored(0, heading) : new Ascent(made, heading);
+        }
+
+        @Override
+        public Phase withHeading(Heading heading) {
+            return new Ascent(jumps, heading);
         }
 
         boolean isOutOfJumps() {
@@ -74,10 +93,18 @@ sealed interface Phase {
         }
     }
 
-    /** Jumps whose difficulty follows {@code score}, the number of scored jumps before this one. */
-    record Scored(int score) implements Phase {
+    /**
+     * Jumps whose difficulty follows {@code score}, the number of scored jumps before this one.
+     * Only the shapes unlocked at that score appear.
+     */
+    record Scored(int score, Heading heading) implements Phase {
         Phase next() {
-            return new Scored(score + 1);
+            return new Scored(score + 1, heading);
+        }
+
+        @Override
+        public Phase withHeading(Heading heading) {
+            return new Scored(score, heading);
         }
 
         @Override
@@ -92,7 +119,7 @@ sealed interface Phase {
 
         @Override
         public List<Surface> surfaces() {
-            return List.of(Surface.values());
+            return Surface.unlockedAt(score);
         }
     }
 }

@@ -100,4 +100,10 @@ class JumpTest {
     void aShortDiagonalJumpStillCostsMoreThanAnAxisJumpWithTheSameGap() {
         assertEquals(1.5, jump(block(0, 0, 0, Surface.FULL), block(2, 0, 2, Surface.FULL)).cost(), "diagonal, gap 1");
     }
+
+    @Test
+    void directionFollowsTheSignsOfTheOffset() {
+        assertEquals(Direction.EAST, jump(block(0, 0, 0, Surface.FULL), block(3, 1, 0, Surface.FULL)).direction(), "east");
+        assertEquals(Direction.NORTH_WEST, jump(block(0, 0, 0, Surface.FULL), block(-2, 0, -2, Surface.FULL)).direction(), "north west");
+    }
 }

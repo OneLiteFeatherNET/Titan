@@ -15,7 +15,7 @@
  */
 package net.onelitefeather.titan.feature.jumprun;
 
-/** A horizontal unit direction: where the ascent should lead. */
+/** A horizontal unit direction: where a course should lead. */
 record Heading(double x, double z) {
 
     /** Closer to the spawn than this, the offset is noise and the facing direction decides. */
@@ -33,9 +33,19 @@ record Heading(double x, double z) {
         return Math.hypot(facingX, facingZ) > 0.0 ? normalized(facingX, facingZ) : DEFAULT;
     }
 
+    /** Share of the old heading that survives a step; the rest comes from the step. */
+    private static final double KEEP = 0.8;
+
     /** Cosine between this heading and a step in the direction. */
     double dot(Direction direction) {
         return (x * direction.dx() + z * direction.dz()) / direction.length();
+    }
+
+    /** The heading after a step: mostly this one, bent a little towards the step. */
+    Heading steered(Direction step) {
+        double stepX = step.dx() / step.length();
+        double stepZ = step.dz() / step.length();
+        return normalized(KEEP * x + (1.0 - KEEP) * stepX, KEEP * z + (1.0 - KEEP) * stepZ);
     }
 
     private static Heading normalized(double x, double z) {

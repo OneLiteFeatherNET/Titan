@@ -62,6 +62,20 @@ final class FakeSpaceProbe implements SpaceProbe {
         return world;
     }
 
+    /**
+     * An open world whose ground tops out at y=9 at the origin and climbs one block every {@code
+     * run} blocks of Manhattan distance from it, so no sideways step escapes the climb.
+     */
+    static FakeSpaceProbe risingGroundAround(int run) {
+        FakeSpaceProbe world = new FakeSpaceProbe();
+        for (int x = -50; x <= 50; x++) {
+            for (int z = -50; z <= 50; z++) {
+                world.occupyBox(x, 0, z, x, 9 + (Math.abs(x) + Math.abs(z)) / run, z);
+            }
+        }
+        return world;
+    }
+
     /** Occupies the position; meant for an open world. */
     FakeSpaceProbe occupy(int x, int y, int z) {
         marked.add(new BlockPos(x, y, z));

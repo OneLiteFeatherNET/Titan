@@ -48,6 +48,21 @@ class JumprunResendTest {
     }
 
     /**
+     * The course leads where its seed and heading take it, so the chunk is taken from the window.
+     */
+    private static int chunkX(StartedRun run) {
+        return run.ahead().peekFirst().blockPosition().blockX() >> 4;
+    }
+
+    private static int chunkZ(StartedRun run) {
+        return run.ahead().peekFirst().blockPosition().blockZ() >> 4;
+    }
+
+    private static List<BlockChangePacket> inChunk(StartedRun run, int chunkX, int chunkZ) {
+        return run.ahead().stream().filter(packet -> packet.blockPosition().blockX() >> 4 == chunkX && packet.blockPosition().blockZ() >> 4 == chunkZ).toList();
+    }
+
+    /**
      * Cyano's test player sends a chunk at once and fires no event, so this replays what Minestom's
      * own {@code sendPendingChunks} does for a real player: the chunk packet, then the event.
      */
@@ -57,15 +72,17 @@ class JumprunResendTest {
             StartedRun run = StartedRun.start(env, fixture);
             Collector<ServerPacket> sent = run.connection().trackIncoming();
 
-            run.player().sendChunk(run.instance().getChunk(0, 0));
-            call(env, new PlayerChunkLoadEvent(run.player(), 0, 0));
+            int chunkX = chunkX(run);
+            int chunkZ = chunkZ(run);
+            run.player().sendChunk(run.instance().getChunk(chunkX, chunkZ));
+            call(env, new PlayerChunkLoadEvent(run.player(), chunkX, chunkZ));
 
             List<ServerPacket> packets = sent.collect();
             int chunkAt = indexOfFirst(packets, ChunkDataPacket.class);
             assertTrue(chunkAt >= 0, "the chunk was sent to the player");
             List<ServerPacket> afterChunk = packets.subList(chunkAt + 1, packets.size());
             long blocksAfterChunk = afterChunk.stream().filter(BlockChangePacket.class::isInstance).count();
-            assertEquals(run.ahead().size(), blocksAfterChunk, "every visible block follows the chunk, so the chunk cannot paint over it");
+            assertEquals(inChunk(run, chunkX, chunkZ).size(), blocksAfterChunk, "every visible block of the chunk follows it, so the chunk cannot paint over it");
         }
     }
 
@@ -73,12 +90,14 @@ class JumprunResendTest {
     void theChunkLoadEventSendsTheBlocksInThatChunkAgain(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             StartedRun run = StartedRun.start(env, fixture);
-            List<Point> visible = positions(run.ahead().stream().toList());
+            int chunkX = chunkX(run);
+            int chunkZ = chunkZ(run);
+            List<Point> visible = positions(inChunk(run, chunkX, chunkZ));
             Collector<BlockChangePacket> sent = run.connection().trackIncoming(BlockChangePacket.class);
 
-            call(env, new PlayerChunkLoadEvent(run.player(), 0, 0));
+            call(env, new PlayerChunkLoadEvent(run.player(), chunkX, chunkZ));
 
-            assertEquals(visible, positions(sent.collect()), "the blocks of the window, all in chunk 0 0");
+            assertEquals(visible, positions(sent.collect()), "the blocks of the window that lie in the loaded chunk");
         }
     }
 

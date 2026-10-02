@@ -53,8 +53,9 @@ class DifficultyTest {
     }
 
     @Test
-    void levelReachesAboutHalfAtScoreTwentyEight() {
-        assertEquals(0.5, Difficulty.level(28), 0.01, "half difficulty near score 28");
+    void levelReachesAboutHalfAtScoreFiftyFive() {
+        // The scale doubled from 40 to 80 (D15), so the half-way point moved from 28 to 55.
+        assertEquals(0.5, Difficulty.level(55), 0.01, "half difficulty near score 55");
     }
 
     @Test
@@ -66,6 +67,26 @@ class DifficultyTest {
                 assertTrue(target >= 0.0 && target <= Jump.MAX_COST, "target " + target + " outside [0, " + Jump.MAX_COST + "] at score " + score);
             }
         }
+    }
+
+    @Test
+    void targetCostNeverExceedsTheHardestJumpOfTheShapesUnlockedAtTheScore() {
+        RandomGenerator random = random(3L);
+        for (int score : new int[]{0, 9, 10, 24, 25, 39, 40}) {
+            double hardest = Jump.maxCost(Surface.unlockedAt(score));
+            for (int i = 0; i < 500; i++) {
+                double target = Difficulty.targetCost(score, random);
+                assertTrue(target <= hardest, "target " + target + " above " + hardest + " at score " + score);
+            }
+        }
+    }
+
+    @Test
+    void theHardestJumpGrowsWithTheUnlockedShapes() {
+        assertEquals(4.5, Jump.maxCost(Surface.unlockedAt(0)), "full blocks over the widest gap");
+        assertEquals(6.5, Jump.maxCost(Surface.unlockedAt(10)), "slabs and trapdoors");
+        assertEquals(10.5, Jump.maxCost(Surface.unlockedAt(25)), "panes");
+        assertEquals(Jump.MAX_COST, Jump.maxCost(Surface.unlockedAt(40)), "posts");
     }
 
     @Test

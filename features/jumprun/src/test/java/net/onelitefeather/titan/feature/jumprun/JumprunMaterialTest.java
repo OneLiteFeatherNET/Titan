@@ -92,10 +92,11 @@ class JumprunMaterialTest {
             }
             Collector<BlockChangePacket> resent = run.connection().trackIncoming(BlockChangePacket.class);
 
-            env.process().eventHandler().call(new PlayerChunkLoadEvent(run.player(), 0, 0));
+            Point first = shown.keySet().stream().reduce((older, newer) -> newer).orElseThrow();
+            env.process().eventHandler().call(new PlayerChunkLoadEvent(run.player(), first.blockX() >> 4, first.blockZ() >> 4));
 
             List<BlockChangePacket> packets = resent.collect();
-            assertFalse(packets.isEmpty(), "the window lies in chunk 0 0 and is sent again");
+            assertFalse(packets.isEmpty(), "the chunk of the newest window block is sent again");
             for (BlockChangePacket packet : packets) {
                 assertEquals(shown.get(packet.blockPosition()), packet.blockStateId(), "material at " + packet.blockPosition() + " must not be drawn again");
             }

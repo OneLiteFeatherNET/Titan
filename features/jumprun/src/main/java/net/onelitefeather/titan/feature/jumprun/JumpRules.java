@@ -15,7 +15,6 @@
  */
 package net.onelitefeather.titan.feature.jumprun;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /** Decides whether a jump can be made and whether the real world leaves room for it. */
@@ -66,7 +65,7 @@ final class JumpRules {
         double higherTop = Math.max(jump.from().topY(), jump.to().topY());
         int lowest = (int) Math.floor(higherTop);
         int highest = Surface.highestBlockReached(higherTop);
-        List<Cell> path = cellsBetween(jump.from().pos(), jump.to().pos());
+        List<FlightPath.Cell> path = FlightPath.cellsBetween(jump.from().pos(), jump.to().pos());
         return path.stream().allMatch(cell -> isColumnFree(cell.x(), cell.z(), lowest, highest));
     }
 
@@ -77,41 +76,5 @@ final class JumpRules {
             }
         }
         return true;
-    }
-
-    private record Cell(int x, int z) {
-    }
-
-    /** Bresenham line in the XZ plane without its two ends. */
-    private static List<Cell> cellsBetween(BlockPos from, BlockPos to) {
-        int dx = Math.abs(to.x() - from.x());
-        int dz = Math.abs(to.z() - from.z());
-        int stepX = Integer.signum(to.x() - from.x());
-        int stepZ = Integer.signum(to.z() - from.z());
-        int error = dx - dz;
-        int x = from.x();
-        int z = from.z();
-        List<Cell> cells = new ArrayList<>();
-        while (x != to.x() || z != to.z()) {
-            int doubled = 2 * error;
-            boolean movesX = doubled > -dz;
-            boolean movesZ = doubled < dx;
-            if (movesX) {
-                error -= dz;
-                x += stepX;
-            }
-            if (movesZ) {
-                error += dx;
-                z += stepZ;
-            }
-            if (movesX && movesZ) {
-                cells.add(new Cell(x, z - stepZ));
-                cells.add(new Cell(x - stepX, z));
-            }
-            if (x != to.x() || z != to.z()) {
-                cells.add(new Cell(x, z));
-            }
-        }
-        return cells;
     }
 }

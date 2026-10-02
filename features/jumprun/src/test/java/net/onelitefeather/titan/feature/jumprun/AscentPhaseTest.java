@@ -73,7 +73,7 @@ class AscentPhaseTest {
             assertInstanceOf(Phase.Ascent.class, phase, "jump " + (i + 1) + " is still ascent");
         }
 
-        assertEquals(new Phase.Scored(0), ((Phase.Ascent) phase).next(true), "the fifth jump ends it once there is air below");
+        assertEquals(new Phase.Scored(0, EAST), ((Phase.Ascent) phase).next(true), "the fifth jump ends it once there is air below");
     }
 
     @Test
@@ -83,7 +83,7 @@ class AscentPhaseTest {
 
     @Test
     void endsTheAscentAsSoonAsTheBlockHasAirBelowAfterTheMinimum() {
-        assertEquals(new Phase.Scored(0), new Phase.Ascent(7, EAST).next(true), "the eighth jump has air below");
+        assertEquals(new Phase.Scored(0, EAST), new Phase.Ascent(7, EAST).next(true), "the eighth jump has air below");
     }
 
     @Test
@@ -95,7 +95,7 @@ class AscentPhaseTest {
 
     @Test
     void scoredPhaseCountsUp() {
-        assertEquals(new Phase.Scored(8), new Phase.Scored(7).next(), "score");
+        assertEquals(new Phase.Scored(8, EAST), new Phase.Scored(7, EAST).next(), "score");
     }
 
     @Test
@@ -108,8 +108,9 @@ class AscentPhaseTest {
     }
 
     @Test
-    void scoredJumpsMayHaveAnyGapRiseAndSurface() {
-        Phase scored = new Phase.Scored(0);
+    void scoredJumpsMayHaveAnyGapRiseAndSurfaceOnceAllShapesAreUnlocked() {
+        // The narrow shapes unlock one by one (D15); score 40 is the first with all of them.
+        Phase scored = new Phase.Scored(40, EAST);
 
         assertEquals(List.of(1, 2, 3, 4), scored.gaps().boxed().toList(), "gaps");
         assertEquals(List.of(-1, 0, 1), scored.rises().boxed().toList(), "rises");
@@ -133,13 +134,28 @@ class AscentPhaseTest {
 
     @Test
     void ascentLeadsAwayFromTheSpawn() {
+        // The main heading bends with the ascent (D15), so a jump may run sideways but never back.
         for (long seed = 0; seed < 30; seed++) {
             List<CourseBlock> course = ascent(new FakeSpaceProbe(), EAST, seed);
             for (int i = 1; i < course.size(); i++) {
                 int dx = course.get(i).pos().x() - course.get(i - 1).pos().x();
-                assertTrue(dx > 0, "jump " + i + " must go east, away from the spawn (seed " + seed + "), dx " + dx);
+                assertTrue(dx >= 0, "jump " + i + " must not go back towards the spawn (seed " + seed + "), dx " + dx);
             }
+            assertTrue(course.getLast().pos().x() > course.getFirst().pos().x(), "the ascent as a whole goes east (seed " + seed + ")");
         }
+    }
+
+    @Test
+    void ascentBendsItsHeadingTowardsEveryStep() {
+        CourseGenerator generator = new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(3L));
+        List<CourseBlock> course = new ArrayList<>(List.of(START));
+        Phase phase = Phase.start(EAST);
+
+        course.add(generator.next(course, phase).orElseThrow());
+        Phase after = generator.after(course, phase);
+
+        Direction step = new Jump(course.get(0), course.get(1)).direction();
+        assertEquals(EAST.steered(step), after.heading(), "the phase after a block carries the heading bent towards its step");
     }
 
     @Test
@@ -221,7 +237,8 @@ class AscentPhaseTest {
 
     @Test
     void ascentGivesUpWhenTheGroundClimbsAsFastAsTheBlocks() {
-        FakeSpaceProbe world = FakeSpaceProbe.risingGround(2);
+        // Ground that rises in every direction: a sideways step no longer escapes it.
+        FakeSpaceProbe world = FakeSpaceProbe.risingGroundAround(2);
 
         List<CourseBlock> course = ascent(world, EAST, 1L);
 

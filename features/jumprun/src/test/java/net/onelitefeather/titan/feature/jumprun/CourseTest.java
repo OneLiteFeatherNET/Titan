@@ -17,6 +17,7 @@ package net.onelitefeather.titan.feature.jumprun;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -126,9 +127,9 @@ class CourseTest {
 
     @Test
     void doesNotStartWhenTheOpenIsNotReachedWithinThirtyJumps() {
-        Optional<Course> course = Course.start(START_POINT, START_BLOCK, EAST, TestBlocks.FAR_SPAWN, FakeSpaceProbe.risingGround(2), seeded(1L));
+        Optional<Course> course = Course.start(START_POINT, START_BLOCK, EAST, TestBlocks.FAR_SPAWN, FakeSpaceProbe.risingGroundAround(2), seeded(1L));
 
-        assertTrue(course.isEmpty(), "ground that climbs as fast as the ascent never leaves room below");
+        assertTrue(course.isEmpty(), "ground that climbs as fast as the ascent in every direction never leaves room below");
     }
 
     @Test
@@ -142,6 +143,38 @@ class CourseTest {
 
         assertTrue(ascentJumps - 1 > Phase.MIN_ASCENT_JUMPS, "the rising ground needs more than five ascent jumps, got " + (ascentJumps - 1));
         assertEquals(1, course.score(), "the first jump after the last ascent block scores one");
+    }
+
+    // --- main heading -------------------------------------------------------------------------------
+
+    @Test
+    void theMainHeadingStartsAlongTheAscentHeading() {
+        Heading heading = start().heading();
+
+        assertTrue(heading.dot(Direction.EAST) > 0.5, "the ascent leads east, so does the heading, got " + heading);
+        assertEquals(1.0, Math.hypot(heading.x(), heading.z()), 1e-9, "unit vector");
+    }
+
+    @Test
+    void theMainHeadingBendsWithTheBlocksMadeAlongTheWay() {
+        Course course = start();
+        Heading atTheStart = course.heading();
+
+        landOnNext(course, 200);
+
+        assertNotEquals(atTheStart, course.heading(), "two hundred blocks later the heading has moved on");
+        assertEquals(1.0, Math.hypot(course.heading().x(), course.heading().z()), 1e-9, "still a unit vector");
+    }
+
+    @Test
+    void sameSeedGivesTheSameMainHeading() {
+        Course first = startIn(new FakeSpaceProbe(), 9L);
+        Course second = startIn(new FakeSpaceProbe(), 9L);
+
+        landOnNext(first, 50);
+        landOnNext(second, 50);
+
+        assertEquals(first.heading(), second.heading(), "same seed, same heading");
     }
 
     // --- window -----------------------------------------------------------------------------------
