@@ -314,6 +314,8 @@ final class JumprunModule {
         run.label().show(run.score());
         if (advance.scored() > 0) {
             RunSounds.play(player, run.score());
+        } else {
+            RunSounds.signal(player);
         }
         player.sendActionBar(messages.scoreActionBar(player.getLocale(), run.score()));
         if (advance.exhausted()) {
@@ -340,6 +342,9 @@ final class JumprunModule {
             // A run that never scored is not worth calling a record, even when it is the first.
             Component message = isRecord && score > 0 ? messages.endRecord(player.getLocale(), score) : messages.endScore(player.getLocale(), score);
             player.sendMessage(message);
+        }
+        if (reason.failed()) {
+            RunSounds.fail(player);
         }
         if (reason == EndReason.FALL) {
             player.teleport(run.startPoint());

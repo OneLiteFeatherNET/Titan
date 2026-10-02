@@ -20,6 +20,7 @@ import java.util.stream.IntStream;
 import net.kyori.adventure.sound.Sound;
 import net.minestom.server.entity.Player;
 import net.minestom.server.sound.SoundEvent;
+import net.minestom.server.timer.TaskSchedule;
 
 /**
  * The sound of a point: a Shepard scale, which the ear hears as a pitch that rises forever. Two
@@ -32,6 +33,9 @@ final class RunSounds {
     private static final int OCTAVE = 12;
     private static final int RANGE = 2 * OCTAVE;
     private static final int VOICES = 2;
+    private static final float SIGNAL_VOLUME = 0.6f;
+    private static final int FAIL_STAGGER_TICKS = 3;
+    private static final float[] FAIL_PITCHES = {1.0f, 0.84f, 0.67f};
 
     private RunSounds() {
     }
@@ -39,6 +43,36 @@ final class RunSounds {
     /** Plays the tone for {@code score} to the runner alone. */
     static void play(Player runner, int score) {
         tones(score).forEach(runner::playSound);
+    }
+
+    /**
+     * A steady cue for a landing in the ascent, which scores nothing; the runner alone hears it.
+     */
+    static void signal(Player runner) {
+        runner.playSound(signalTone());
+    }
+
+    static Sound signalTone() {
+        return Sound.sound(SoundEvent.BLOCK_NOTE_BLOCK_HAT, Sound.Source.PLAYER, SIGNAL_VOLUME, 1.0f);
+    }
+
+    /** Three falling bass notes for the runner alone, the first at once and the rest staggered. */
+    static void fail(Player runner) {
+        List<Sound> tones = failTones();
+        runner.playSound(tones.getFirst());
+        for (int note = 1; note < tones.size(); note++) {
+            Sound tone = tones.get(note);
+            // The runner may have left by the time a later note is due.
+            runner.scheduler().buildTask(() -> {
+                if (runner.isOnline()) {
+                    runner.playSound(tone);
+                }
+            }).delay(TaskSchedule.tick(FAIL_STAGGER_TICKS * note)).schedule();
+        }
+    }
+
+    static List<Sound> failTones() {
+        return IntStream.range(0, FAIL_PITCHES.length).mapToObj(note -> Sound.sound(SoundEvent.BLOCK_NOTE_BLOCK_BASS, Sound.Source.PLAYER, 1.0f, FAIL_PITCHES[note])).toList();
     }
 
     static List<Sound> tones(int score) {
