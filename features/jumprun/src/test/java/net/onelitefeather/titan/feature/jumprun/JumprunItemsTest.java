@@ -20,9 +20,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.minestom.server.component.DataComponents;
 import net.minestom.server.event.EventNode;
+import net.minestom.server.item.Material;
 import net.minestom.testing.RegistriesTest;
 import net.onelitefeather.titan.core.module.item.ItemSlot;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
@@ -49,6 +51,19 @@ class JumprunItemsTest {
         Component name = item.itemStack().get(DataComponents.CUSTOM_NAME);
 
         assertEquals("Jump & Run", PlainTextComponentSerializer.plainText().serialize(name));
+    }
+
+    @Test
+    void theItemIsASlimeBlock() {
+        assertEquals(Material.SLIME_BLOCK, item.itemStack().material());
+    }
+
+    @Test
+    void theNameIsBoldAndNotItalic() {
+        Component name = item.itemStack().get(DataComponents.CUSTOM_NAME);
+
+        assertEquals(TextDecoration.State.FALSE, name.decoration(TextDecoration.ITALIC), "custom names are italic unless switched off");
+        assertTrue(name.children().stream().anyMatch(child -> child.decoration(TextDecoration.BOLD) == TextDecoration.State.TRUE), "the title is bold");
     }
 
     @Test
