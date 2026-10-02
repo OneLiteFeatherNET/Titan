@@ -57,7 +57,7 @@ class JumprunLateViewerTest {
 
             Player late = connection.connect(instance, NEAR);
 
-            List<Entity> displays = entitiesOf(instance, EntityType.BLOCK_DISPLAY);
+            List<Entity> displays = JumprunFixture.blockDisplays(instance);
             Entity label = entitiesOf(instance, EntityType.TEXT_DISPLAY).getFirst();
             assertEquals(2, displays.size(), "the run shows two blocks");
             assertTrue(displays.stream().allMatch(display -> display.getViewers().contains(late)), "the late player sees every block");
@@ -78,7 +78,7 @@ class JumprunLateViewerTest {
             late.teleport(NEAR).join();
             env.tick();
 
-            assertTrue(entitiesOf(instance, EntityType.BLOCK_DISPLAY).stream().allMatch(display -> display.getViewers().contains(late)), "the blocks come into view");
+            assertTrue(JumprunFixture.blockDisplays(instance).stream().allMatch(display -> display.getViewers().contains(late)), "the blocks come into view");
             assertTrue(entitiesOf(instance, EntityType.TEXT_DISPLAY).getFirst().getViewers().contains(late), "the label comes into view");
         }
     }

@@ -171,6 +171,7 @@ final class JumprunModule {
         synchronized (run) {
             runs.add(run);
             run.spectators().show(run.fakeWindow());
+            run.outlineNext();
             run.label().show(run.score());
         }
         LOGGER.atDebug().addKeyValue("player", player.getUuid()).log("jumprun started");
@@ -342,6 +343,7 @@ final class JumprunModule {
         fakeBlocks.reset(player, removed);
         run.spectators().hide(removed);
         run.spectators().show(added);
+        run.outlineNext();
         run.label().show(run.score());
         if (advance.scored() > 0) {
             RunSounds.play(player, run.score());

@@ -56,7 +56,7 @@ class JumprunBlockAnimationTest {
     }
 
     private static List<Entity> displays(Instance instance) {
-        return instance.getEntities().stream().filter(entity -> entity.getEntityType() == EntityType.BLOCK_DISPLAY).toList();
+        return JumprunFixture.blockDisplays(instance);
     }
 
     private static BlockDisplayMeta meta(Entity display) {

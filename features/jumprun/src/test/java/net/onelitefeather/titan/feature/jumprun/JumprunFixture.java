@@ -21,8 +21,11 @@ import java.util.List;
 import java.util.Optional;
 import net.minestom.server.coordinate.Point;
 import net.minestom.server.coordinate.Pos;
+import net.minestom.server.entity.Entity;
+import net.minestom.server.entity.EntityType;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.PlayerHand;
+import net.minestom.server.entity.metadata.display.BlockDisplayMeta;
 import net.minestom.server.event.player.PlayerMoveEvent;
 import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.server.instance.Instance;
@@ -195,6 +198,20 @@ final class JumprunFixture implements AutoCloseable {
 
     private static Optional<Surface> surfaceOf(BlockChangePacket block) {
         return Arrays.stream(Surface.values()).filter(surface -> TestBlocks.shipped().of(surface).blocks().stream().anyMatch(material -> material.stateId() == block.blockStateId())).findFirst();
+    }
+
+    /** The block displays of the run's blocks; the runner's glowing outline is not one of them. */
+    static List<Entity> blockDisplays(Instance instance) {
+        return blockDisplays(instance, false);
+    }
+
+    /** The glowing outline displays of the next block. */
+    static List<Entity> outlines(Instance instance) {
+        return blockDisplays(instance, true);
+    }
+
+    private static List<Entity> blockDisplays(Instance instance, boolean glowing) {
+        return instance.getEntities().stream().filter(entity -> entity.getEntityType() == EntityType.BLOCK_DISPLAY).filter(entity -> ((BlockDisplayMeta) entity.getEntityMeta()).isHasGlowingEffect() == glowing).toList();
     }
 
     /** Stops only the module, to prove nothing runs once it has; {@link #close()} does the rest. */

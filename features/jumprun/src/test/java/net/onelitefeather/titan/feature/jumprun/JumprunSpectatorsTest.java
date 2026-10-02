@@ -86,17 +86,15 @@ class JumprunSpectatorsTest {
         /** Block displays in the instance by block position, with their block state id. */
         Map<BlockPos, Integer> displays() {
             Map<BlockPos, Integer> displays = new HashMap<>();
-            for (Entity entity : instance.getEntities()) {
-                if (entity.getEntityType() == EntityType.BLOCK_DISPLAY) {
-                    BlockPos pos = new BlockPos(entity.getPosition().blockX(), entity.getPosition().blockY(), entity.getPosition().blockZ());
-                    displays.put(pos, entity.getEntityMeta() instanceof BlockDisplayMeta meta ? meta.getBlockStateId().stateId() : -1);
-                }
+            for (Entity entity : JumprunFixture.blockDisplays(instance)) {
+                BlockPos pos = new BlockPos(entity.getPosition().blockX(), entity.getPosition().blockY(), entity.getPosition().blockZ());
+                displays.put(pos, entity.getEntityMeta() instanceof BlockDisplayMeta meta ? meta.getBlockStateId().stateId() : -1);
             }
             return displays;
         }
 
         List<Entity> displayEntities() {
-            return instance.getEntities().stream().filter(entity -> entity.getEntityType() == EntityType.BLOCK_DISPLAY).toList();
+            return JumprunFixture.blockDisplays(instance);
         }
     }
 

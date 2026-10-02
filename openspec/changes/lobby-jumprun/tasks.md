@@ -117,7 +117,7 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 
 ## 18. Umrandung und Modi
 
-- [ ] 18.1 Test zuerst (Integration): Umrandung des nächsten Blocks nur für den Läufer, wechselt bei jeder Landung, erscheint erst nach der Fall-Animation, verschwindet beim Ende (D22).
+- [x] 18.1 Test zuerst (Integration): Umrandung des nächsten Blocks nur für den Läufer, wechselt bei jeder Landung, erscheint erst nach der Fall-Animation, verschwindet beim Ende (D22).
 - [ ] 18.2 Test zuerst (Unit + Integration): `Mode` Easy/Medium/Hard mit Parametern, Wechsel per Schleich-Rechtsklick außerhalb eines Laufs, keine Wirkung im Lauf, Rekorde pro Modus, Modus in Meldungen und Kopfanzeige, Modus pro Sitzung (D23). Nachweis: `./gradlew build` grün, erneuter lokaler Test.
 
 ## 6. Pull Request

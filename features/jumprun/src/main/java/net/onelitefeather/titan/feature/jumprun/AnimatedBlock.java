@@ -16,6 +16,7 @@
 package net.onelitefeather.titan.feature.jumprun;
 
 import java.util.List;
+import java.util.function.Consumer;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.EntityType;
@@ -49,13 +50,15 @@ final class AnimatedBlock {
     private final FakeBlocks fakeBlocks;
     private final CourseBlock block;
     private final HiddenDisplay display;
+    private final Consumer<CourseBlock> onLanded;
     private State state = State.FALLING;
 
-    private AnimatedBlock(Player runner, Object lock, FakeBlocks fakeBlocks, CourseBlock block, Instance instance) {
+    private AnimatedBlock(Player runner, Object lock, FakeBlocks fakeBlocks, CourseBlock block, Instance instance, Consumer<CourseBlock> onLanded) {
         this.runner = runner;
         this.lock = lock;
         this.fakeBlocks = fakeBlocks;
         this.block = block;
+        this.onLanded = onLanded;
         BlockPos pos = block.pos();
         this.display = HiddenDisplay.spawn(runner, EntityType.BLOCK_DISPLAY, BlockDisplayMeta.class, meta -> {
             meta.setBlockState(block.material());
@@ -66,10 +69,11 @@ final class AnimatedBlock {
 
     /**
      * Spawns the block high up for everyone, runner included, and lets it fall from the next tick
-     * on, so the client has the start position before it moves.
+     * on, so the client has the start position before it moves. {@code onLanded} runs under the
+     * lock of the run once the runner has the real block.
      */
-    static AnimatedBlock fallIn(Player runner, Object lock, FakeBlocks fakeBlocks, CourseBlock block, Instance instance) {
-        AnimatedBlock animated = new AnimatedBlock(runner, lock, fakeBlocks, block, instance);
+    static AnimatedBlock fallIn(Player runner, Object lock, FakeBlocks fakeBlocks, CourseBlock block, Instance instance, Consumer<CourseBlock> onLanded) {
+        AnimatedBlock animated = new AnimatedBlock(runner, lock, fakeBlocks, block, instance, onLanded);
         animated.after(1, animated::startFall);
         return animated;
     }
@@ -114,6 +118,7 @@ final class AnimatedBlock {
         state = State.LANDED;
         fakeBlocks.show(runner, List.of(block));
         display.showToRunner(false);
+        onLanded.accept(block);
     }
 
     /** Fall and rise share this move, so the rise is the fall backwards; the size never changes. */
