@@ -101,7 +101,7 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 
 ## 14. Levelaufstieg bei neuem Rekord
 
-- [ ] 14.1 Test zuerst (Integration): Levelup-Geräusch einmal beim ersten Überschreiten des bisherigen Rekords im Lauf, nur für den Läufer; ohne bisherigen Rekord beim Laufende mit Rekord-Meldung (Score > 0). Dann `RunSounds.record` und Merker im `Run` (D18). Nachweis: `./gradlew build` grün, erneuter lokaler Test.
+- [x] 14.1 Test zuerst (Integration): Levelup-Geräusch einmal beim ersten Überschreiten des bisherigen Rekords im Lauf, nur für den Läufer; ohne bisherigen Rekord beim Laufende mit Rekord-Meldung (Score > 0). Dann `RunSounds.record` und Merker im `Run` (D18). Nachweis: `./gradlew build` grün, erneuter lokaler Test.
 
 ## 15. Paletten mit Gewichten in der Konfiguration
 
