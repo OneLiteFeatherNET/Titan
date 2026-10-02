@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.1.0](https://github.com/OneLiteFeatherNET/Titan/compare/v2.0.1...v2.1.0) (2026-10-02)
+
+
+### Features
+
+* **portal:** show labels with player counts in front of portals ([#342](https://github.com/OneLiteFeatherNET/Titan/issues/342)) ([545a1f5](https://github.com/OneLiteFeatherNET/Titan/commit/545a1f5768e4c28e83fbdf6b52bdf29eb7ef383f))
+
+
+### Bug Fixes
+
+* **deps:** update dependency ch.qos.logback:logback-classic to v1.6.5 ([#339](https://github.com/OneLiteFeatherNET/Titan/issues/339)) ([f708bb5](https://github.com/OneLiteFeatherNET/Titan/commit/f708bb57ab695df22103739ecf24e3200bb9f735))
+
 ## [2.0.1](https://github.com/OneLiteFeatherNET/Titan/compare/v2.0.0...v2.0.1) (2026-09-29)
 
 
