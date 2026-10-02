@@ -176,6 +176,16 @@ class CourseTest {
     }
 
     @Test
+    void anAdvanceReportsOnlyTheScoredJumps() {
+        Course course = start();
+
+        Course.Advance advance = landOn(course, ahead(course, 2));
+
+        assertEquals(course.score(), advance.scored(), "the score started at zero, so the advance carries all of it");
+        assertTrue(advance.scored() <= advance.jumps(), "ascent jumps do not score");
+    }
+
+    @Test
     void theOldestBlockLeavesTheWindowAfterTheThirdLanding() {
         Course course = start();
         CourseBlock start = course.current();

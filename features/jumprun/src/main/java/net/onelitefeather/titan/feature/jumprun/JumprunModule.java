@@ -249,6 +249,9 @@ final class JumprunModule {
         run.spectators().hide(removed);
         run.spectators().show(added);
         run.label().show(run.score());
+        if (advance.scored() > 0) {
+            RunSounds.play(player, run.score());
+        }
         player.sendActionBar(messages.scoreActionBar(player.getLocale(), run.score()));
         if (advance.exhausted()) {
             end(run, EndReason.EXHAUSTED);
