@@ -67,10 +67,10 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 
 ## 8. Sichtbar für andere, mehr Abstand und Luft (Nachtrag nach zweitem lokalen Test)
 
-- [ ] 8.1 Test zuerst (Unit): Ziele nach der Aufstiegsphase brauchen ≥ 6 Blöcke Luft darunter und ≥ 16 Blöcke waagrechten Abstand zum Spawn (Spec „Nicht über Wegen“, „Nicht zurück zum Spawn“); Offenheit `0.7 · Säule (16 tief) + 0.3 · Nachbarn`; Statistik-Tests bleiben grün. Dann Generator und `Openness` anpassen (D4). Nachweis: Tests grün.
-- [ ] 8.2 Test zuerst (Unit): Aufstieg endet erst bei ≥ 16 Blöcken Abstand zum Spawn und ≥ 8 Blöcken Luft darunter, mindestens 5, höchstens 30 Sprünge, sonst kein Start (Spec „Aufstieg bis ins Freie“). Dann die Aufstiegsphase anpassen (D5). Nachweis: Tests grün.
-- [ ] 8.3 Test zuerst (Integration, Cyano, zwei Spieler): B sieht beim Start 2 Block-Displays im Material der Laufblöcke, A keins; Vorrücken entfernt und spawnt je eins; jedes Laufende und der Shutdown entfernen alle Displays des Laufs; B kann nicht auf einem Display stehen (keine Kollision, z. B. B fällt durch die Position). Dann `Spectators` (D12). Nachweis: Tests grün.
-- [ ] 8.4 Test zuerst (Integration): Text-Display als Passagier des Läufers zeigt „Jump & Run · <Score>“ nach jedem Sprung, ist für den Läufer unsichtbar und verschwindet mit dem Laufende. Dann umsetzen. Nachweis: `./gradlew build` grün, danach erneuter lokaler Test.
+- [x] 8.1 Test zuerst (Unit): Ziele nach der Aufstiegsphase brauchen ≥ 6 Blöcke Luft darunter und ≥ 16 Blöcke waagrechten Abstand zum Spawn (Spec „Nicht über Wegen“, „Nicht zurück zum Spawn“); Offenheit `0.7 · Säule (16 tief) + 0.3 · Nachbarn`; Statistik-Tests bleiben grün. Dann Generator und `Openness` anpassen (D4). Nachweis: Tests grün.
+- [x] 8.2 Test zuerst (Unit): Aufstieg endet erst bei ≥ 16 Blöcken Abstand zum Spawn und ≥ 8 Blöcken Luft darunter, mindestens 5, höchstens 30 Sprünge, sonst kein Start (Spec „Aufstieg bis ins Freie“). Dann die Aufstiegsphase anpassen (D5). Nachweis: Tests grün.
+- [x] 8.3 Test zuerst (Integration, Cyano, zwei Spieler): B sieht beim Start 2 Block-Displays im Material der Laufblöcke, A keins; Vorrücken entfernt und spawnt je eins; jedes Laufende und der Shutdown entfernen alle Displays des Laufs; B kann nicht auf einem Display stehen (keine Kollision, z. B. B fällt durch die Position). Dann `Spectators` (D12). Nachweis: Tests grün.
+- [x] 8.4 Test zuerst (Integration): Text-Display als Passagier des Läufers zeigt „Jump & Run · <Score>“ nach jedem Sprung, ist für den Läufer unsichtbar und verschwindet mit dem Laufende. Dann umsetzen. Nachweis: `./gradlew build` grün, danach erneuter lokaler Test.
 
 ## 9. Item, Kopfanzeige und Ton (Nachtrag nach drittem lokalen Test)
 
