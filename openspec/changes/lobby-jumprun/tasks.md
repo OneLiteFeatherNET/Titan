@@ -80,7 +80,7 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 
 ## 10. Bugfix: Anklicken lässt Blöcke verschwinden
 
-- [ ] 10.1 Reproduktion zuerst (Integration, echte Client-Pakete über `processClientPacket`): Links- und Rechtsklick auf einen Laufblock, mit und ohne Jump-and-Run-Item in der Hand, enden mit einem Block-Paket, das den Laufblock zeigt, und der Lauf läuft weiter (Spec „Block anklicken“); rot. Ursache und Fix in D14 nachtragen, dann beheben; grün. Nachweis: Test grün, erneuter lokaler Test.
+- [x] 10.1 Reproduktion zuerst (Integration, echte Client-Pakete über `processClientPacket`): Links- und Rechtsklick auf einen Laufblock, mit und ohne Jump-and-Run-Item in der Hand, enden mit einem Block-Paket, das den Laufblock zeigt, und der Lauf läuft weiter (Spec „Block anklicken“); rot. Ursache und Fix in D14 nachtragen, dann beheben; grün. Nachweis: Test grün, erneuter lokaler Test.
 
 ## 6. Pull Request
 
