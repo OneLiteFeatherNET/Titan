@@ -16,6 +16,7 @@ Integrationszweig: `feat/jumprun` von `origin/main`. Agents, die schreiben, arbe
 | 5b | variety-openness | 7.1–7.5 | sonnet | `features/jumprun/**` | alles außerhalb `features/jumprun` |
 | 5c | spectators-distance | 8.1–8.4 | sonnet | `features/jumprun/**` | alles außerhalb `features/jumprun` |
 | 5d | item-label-sound | 9.1–9.3 | sonnet | `features/jumprun/**`, `apps/*/src/test/**` | alles andere |
+| 5d | click-fix | 10.1 | sonnet | `features/jumprun/**`, D14 in `design.md` | alles andere |
 | 6 | pr | 6.1 | sonnet | Git/GitHub | Code |
 
 Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhandenes nutzen: `FeatureNode`, `LobbyItem`/`ItemSlot`, `LobbySpawn` aus `core`, Minestom-`BlockChangePacket` und Events, `java.util.random.RandomGenerator`, Adventure `TranslationStore`/`GlobalTranslator`. Java 25 ohne Preview: Records, sealed Types mit `switch`, `_`. Nutzertexte nur über die Bundles (D8), Schlüssel `titan.jumprun.*`, Englisch als Fallback. SLF4J mit Parametern, Lauf-Ereignisse nur auf DEBUG, keine Metriken oder Spans (D10). Test zuerst, schlanke Kommentare nur fürs Warum, Conventional Commits `feat(jumprun): …`. F.I.R.S.T.: fester Seed statt Zufall, kein `Thread.sleep`, keine Systemzeit, frische `Env`/Fixtures je Test, `env.tick()` statt Warten, Erfolg nur über Assertions, kein geteilter statischer Zustand (Rekorde, Registry und Translator-Registrierung je Test neu bzw. im `@AfterEach` entfernt).
@@ -75,7 +76,11 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 
 - [ ] 9.1 Test zuerst (Unit/Integration): Das Item `titan:jumprun` ist ein Schleimblock mit MiniMessage-gestaltetem Namen „Jump & Run“; `StandardLoadoutTest` in `apps/cloudnet` erwartet Slot 0 mit `SLIME_BLOCK`. Dann `JumprunItems` umstellen (D13). Nachweis: Tests grün.
 - [ ] 9.2 Prüfen, ob MiniMessage in der mitgelieferten Adventure-Version den `<sprite>`-Tag hat (Ergebnis in D13 eintragen). Test zuerst (Unit): Die Vorlage rendert für Score 7 Symbol, „Jump & Run“ und 7; ohne Sprite-Tag zeigt der Integrationstest ein `ITEM_DISPLAY` mit Schleimblock neben dem Text, unsichtbar für den Läufer. Dann `ScoreLabel` auf die Vorlage umstellen. Nachweis: Tests grün.
-- [ ] 9.3 Test zuerst (Unit `RunSoundsTest`, Integration): Die Tonhöhe steigt von Score 2 auf 3 und wiederholt sich nach 12; nach einem Punkt bekommt nur der Läufer ein Sound-Paket; Aufstiegssprünge bleiben stumm. Dann `RunSounds` und Aufruf beim Vorrücken. Nachweis: `./gradlew build` grün, danach erneuter lokaler Test.
+- [ ] 9.3 Test zuerst (Unit `RunSoundsTest`, Integration): Shepard-Skala nach D13 (Teiltöne steigen je Punkt um einen Halbton, Lautstärke 0 an den Rändern, Summe der Lautstärken konstant); nach einem Punkt bekommt nur der Läufer die Sound-Pakete; Aufstiegssprünge bleiben stumm. Dann `RunSounds` und Aufruf beim Vorrücken. Nachweis: `./gradlew build` grün, danach erneuter lokaler Test.
+
+## 10. Bugfix: Anklicken lässt Blöcke verschwinden
+
+- [ ] 10.1 Reproduktion zuerst (Integration, echte Client-Pakete über `processClientPacket`): Links- und Rechtsklick auf einen Laufblock, mit und ohne Jump-and-Run-Item in der Hand, enden mit einem Block-Paket, das den Laufblock zeigt, und der Lauf läuft weiter (Spec „Block anklicken“); rot. Ursache und Fix in D14 nachtragen, dann beheben; grün. Nachweis: Test grün, erneuter lokaler Test.
 
 ## 6. Pull Request
 

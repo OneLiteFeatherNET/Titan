@@ -22,7 +22,7 @@ Benutzt ein Spieler, der keinen Lauf hat, das Jump-and-Run-Item, MUSS die Lobby 
 - **THEN** beginnt jeder Lauf an der Stelle, an der der Spieler beim Benutzen stand
 
 ### Requirement: Blöcke nur für den laufenden Spieler begehbar
-Die Blöcke eines Laufs MÜSSEN ausschließlich für den Spieler begehbar sein, der den Lauf spielt. Die echte Lobby-Welt DARF sich durch einen Lauf NICHT verändern. Andere Spieler MÜSSEN die Blöcke des Sichtfensters als nicht begehbare Darstellung sehen, durch die sie hindurchlaufen und auf der sie nicht stehen können. Der laufende Spieler selbst DARF diese Darstellung NICHT zusätzlich zu seinen Blöcken sehen. Die Blöcke MÜSSEN für den laufenden Spieler auch dann sichtbar bleiben, wenn die Lobby ihm Chunks erneut schickt.
+Die Blöcke eines Laufs MÜSSEN ausschließlich für den Spieler begehbar sein, der den Lauf spielt. Die echte Lobby-Welt DARF sich durch einen Lauf NICHT verändern. Andere Spieler MÜSSEN die Blöcke des Sichtfensters als nicht begehbare Darstellung sehen, durch die sie hindurchlaufen und auf der sie nicht stehen können. Der laufende Spieler selbst DARF diese Darstellung NICHT zusätzlich zu seinen Blöcken sehen. Die Blöcke MÜSSEN für den laufenden Spieler auch dann sichtbar und begehbar bleiben, wenn die Lobby ihm Chunks erneut schickt oder er sie mit Links- oder Rechtsklick anklickt, egal welches Item er hält.
 
 #### Scenario: Anderer Spieler sieht den Lauf
 - **WHEN** Spieler A einen Lauf spielt und Spieler B in der Nähe ist
@@ -35,6 +35,10 @@ Die Blöcke eines Laufs MÜSSEN ausschließlich für den Spieler begehbar sein, 
 #### Scenario: Ende räumt die Darstellung ab
 - **WHEN** As Lauf endet, egal aus welchem Grund, oder die Lobby herunterfährt
 - **THEN** sieht B keine Darstellung von As Blöcken mehr, und es bleiben keine Objekte des Laufs in der Welt zurück
+
+#### Scenario: Block anklicken
+- **WHEN** der laufende Spieler einen seiner Blöcke mit Links- oder Rechtsklick anklickt, auch mit dem Jump-and-Run-Item in der Hand
+- **THEN** ist der Block danach weiterhin sichtbar und begehbar, und der Lauf läuft weiter
 
 #### Scenario: Chunk wird neu geschickt
 - **WHEN** die Lobby dem laufenden Spieler den Chunk mit seinen Blöcken erneut schickt
@@ -56,15 +60,15 @@ Während eines Laufs MÜSSEN andere Spieler über dem Kopf des Läufers eine far
 - **THEN** ist die Anzeige über As Kopf für alle verschwunden
 
 ### Requirement: Ton bei jedem Punkt
-Erhöht sich der Score eines Läufers, MUSS der Läufer einen kurzen Ton hören. Die Tonhöhe MUSS mit dem Score ansteigen und nach einer festen Zahl von Stufen wieder von vorn beginnen. Andere Spieler DÜRFEN diesen Ton NICHT hören. Die Sprünge der Aufstiegsphase erzeugen keinen Ton.
+Erhöht sich der Score eines Läufers, MUSS der Läufer einen kurzen Ton hören, der als bei jedem Punkt höher wahrgenommen wird, ohne dass je ein hörbarer Sprung zurück nach unten entsteht (endlos ansteigende Tonleiter, Shepard-Skala). Andere Spieler DÜRFEN diesen Ton NICHT hören. Die Sprünge der Aufstiegsphase erzeugen keinen Ton.
 
 #### Scenario: Ton nach einem Punkt
 - **WHEN** der Läufer nach der Aufstiegsphase auf dem nächsten Block landet
 - **THEN** hört er einen Ton, und ein danebenstehender Spieler hört ihn nicht
 
-#### Scenario: Tonhöhe steigt
-- **WHEN** der Läufer Score 2 und danach Score 3 erreicht
-- **THEN** ist der Ton bei Score 3 höher als bei Score 2
+#### Scenario: Ton steigt scheinbar endlos
+- **WHEN** der Läufer nacheinander 30 Punkte erreicht
+- **THEN** steigt jeder Teilton von einem Punkt zum nächsten um einen Halbton, und ein Teilton, der oben aus dem Tonumfang fällt, ist vorher bis zur Unhörbarkeit ausgeblendet, während unten ein neuer leise einsetzt
 
 ### Requirement: Sichtfenster von zwei Blöcken
 Während eines Laufs MUSS der Spieler genau den Block sehen, auf dem er zuletzt gelandet ist, dazu die bis zu zwei Blöcke davor (bereits geschafft) und die zwei Blöcke danach (die nächsten Sprünge). Weitere Blöcke des Laufs DÜRFEN NICHT sichtbar sein.
