@@ -17,16 +17,52 @@ package net.onelitefeather.titan.feature.jumprun;
 
 import java.util.Collection;
 import java.util.List;
+import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 
 /**
  * One player's running course. The start block is a real block of the world, so it is never part
  * of what is shown or reset.
+ *
+ * <p>The player's thread moves the course while the scheduler, the chunk events and the shutdown
+ * read it, so a run is its own lock: every access to the course goes through a synchronized method
+ * here, and a caller that must keep "still registered" and "show" or "remove" and "reset" together
+ * holds {@code synchronized (run)} around both.
  */
-record Run(Player player, Course course, BlockPos startBlock) {
+final class Run {
+
+    private final Player player;
+    private final Course course;
+    private final BlockPos startBlock;
+
+    Run(Player player, Course course, BlockPos startBlock) {
+        this.player = player;
+        this.course = course;
+        this.startBlock = startBlock;
+    }
+
+    Player player() {
+        return player;
+    }
+
+    synchronized Course.Advance advanceTo(Pos feet) {
+        return course.advanceTo(feet);
+    }
+
+    synchronized boolean hasFallen(double y) {
+        return course.hasFallen(y);
+    }
+
+    synchronized int score() {
+        return course.score();
+    }
+
+    Pos startPoint() {
+        return course.startPoint();
+    }
 
     /** The blocks of the visible window that exist only on the player's screen. */
-    List<CourseBlock> fakeWindow() {
+    synchronized List<CourseBlock> fakeWindow() {
         return fake(course.window());
     }
 
@@ -34,7 +70,8 @@ record Run(Player player, Course course, BlockPos startBlock) {
         return blocks.stream().filter(block -> !block.pos().equals(startBlock)).toList();
     }
 
-    boolean showsFakeBlockAt(int x, int y, int z) {
-        return fakeWindow().stream().anyMatch(block -> block.pos().equals(new BlockPos(x, y, z)));
+    synchronized boolean showsFakeBlockAt(int x, int y, int z) {
+        BlockPos target = new BlockPos(x, y, z);
+        return fakeWindow().stream().anyMatch(block -> block.pos().equals(target));
     }
 }

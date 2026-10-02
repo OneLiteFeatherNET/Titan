@@ -35,9 +35,12 @@ record StartedRun(JumprunFixture fixture, TestConnection connection, Player play
     static final Pos STAND = new Pos(0.5, JumprunFixture.GROUND_Y, 0.5);
 
     static StartedRun start(Env env, JumprunFixture fixture) {
-        Instance instance = JumprunFixture.loadedInstance(env);
+        return start(env, fixture, JumprunFixture.loadedInstance(env), STAND);
+    }
+
+    static StartedRun start(Env env, JumprunFixture fixture, Instance instance, Pos stand) {
         TestConnection connection = env.createConnection();
-        Player player = connection.connect(instance, STAND);
+        Player player = connection.connect(instance, stand);
         player.refreshOnGround(true);
         Collector<BlockChangePacket> shown = connection.trackIncoming(BlockChangePacket.class);
         fixture.useItem(player);
