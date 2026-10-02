@@ -33,6 +33,7 @@ import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
+import net.minestom.server.event.instance.RemoveEntityFromInstanceEvent;
 import net.minestom.server.event.player.PlayerBlockInteractEvent;
 import net.minestom.server.event.player.PlayerChunkLoadEvent;
 import net.minestom.server.event.player.PlayerDeathEvent;
@@ -96,6 +97,7 @@ final class JumprunModule {
         this.node.on(PlayerBlockInteractEvent.class, this::onBlockInteract);
         this.node.on(PlayerStartDiggingEvent.class, this::onStartDigging);
         this.node.on(PlayerDisconnectEvent.class, this::onDisconnect);
+        this.node.on(RemoveEntityFromInstanceEvent.class, this::onLeaveInstance);
     }
 
     @PreDestroy
@@ -157,6 +159,16 @@ final class JumprunModule {
 
     private void onDisconnect(PlayerDisconnectEvent event) {
         endRunOf(event.getPlayer(), EndReason.DISCONNECT);
+    }
+
+    /**
+     * Changing the instance without disconnecting: the client switches world, so there is nothing
+     * to send.
+     */
+    private void onLeaveInstance(RemoveEntityFromInstanceEvent event) {
+        if (event.getEntity() instanceof Player player) {
+            endRunOf(player, EndReason.LEFT_INSTANCE);
+        }
     }
 
     private void onBlockInteract(PlayerBlockInteractEvent event) {

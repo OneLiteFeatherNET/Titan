@@ -21,6 +21,10 @@ enum EndReason {
     /** The player is gone: nothing to show or tell, but the score stands. */
     DISCONNECT(Owed.scoreOnly()),
     /**
+     * The player went to another instance: the client changes world on its own, the score stands.
+     */
+    LEFT_INSTANCE(Owed.scoreOnly()),
+    /**
      * The lobby stops: the blocks go back, but an interrupted run is neither scored nor reported.
      */
     SHUTDOWN(Owed.blocksOnly());

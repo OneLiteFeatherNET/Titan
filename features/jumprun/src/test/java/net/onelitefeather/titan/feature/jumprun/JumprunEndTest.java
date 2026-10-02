@@ -29,6 +29,7 @@ import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.event.player.PlayerStartFlyingWithElytraEvent;
 import net.minestom.server.instance.block.Block;
 import net.minestom.server.network.packet.server.ServerPacket;
+import net.minestom.server.network.packet.server.play.ActionBarPacket;
 import net.minestom.server.network.packet.server.play.BlockChangePacket;
 import net.minestom.server.network.packet.server.play.SystemChatPacket;
 import net.minestom.testing.Collector;
@@ -97,6 +98,31 @@ class JumprunEndTest {
             call(env, new PlayerDisconnectEvent(run.player()));
 
             assertTrue(sent.collect().isEmpty(), "a player who is leaving gets no messages and no resets");
+        }
+    }
+
+    @Test
+    void leavingTheInstanceEndsTheRunWithoutAnyMessage(Env env) {
+        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+            StartedRun run = StartedRun.start(env, fixture);
+            Collector<ServerPacket> sent = run.connection().trackIncoming();
+
+            run.player().setInstance(env.createFlatInstance(), ELSEWHERE).join();
+
+            assertFalse(fixture.module().isRunning(run.player()), "the run does not follow the player into another world");
+            assertTrue(sent.collect().stream().noneMatch(packet -> packet instanceof SystemChatPacket || packet instanceof ActionBarPacket), "the client changes world, so there is nothing to tell");
+        }
+    }
+
+    @Test
+    void leavingTheInstanceKeepsTheScoreAsRecord(Env env) {
+        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+            StartedRun run = StartedRun.start(env, fixture);
+            run.landOnNext(Phase.ASCENT_JUMPS + 1);
+
+            run.player().setInstance(env.createFlatInstance(), ELSEWHERE).join();
+
+            assertEquals(OptionalInt.of(1), fixture.records().best(run.player().getUuid()), "the record survives leaving the instance");
         }
     }
 
