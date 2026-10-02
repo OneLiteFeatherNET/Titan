@@ -40,13 +40,19 @@ final class ScoreLabel {
     private final Player runner;
     @Nullable
     private HiddenDisplay label;
+    @Nullable
+    private Integer shownScore;
 
     ScoreLabel(Player runner) {
         this.runner = runner;
     }
 
-    /** Shows the score, creating the label on first use. */
+    /** Shows the score, creating the label on first use; an unchanged score sends nothing. */
     void show(int score) {
+        if (shownScore != null && shownScore == score) {
+            return;
+        }
+        shownScore = score;
         Component text = Component.text(TITLE + " · " + score);
         if (label == null) {
             label = spawn(text);
@@ -59,6 +65,7 @@ final class ScoreLabel {
         if (label != null) {
             label.remove();
             label = null;
+            shownScore = null;
         }
     }
 

@@ -30,6 +30,8 @@ import net.minestom.server.entity.metadata.display.TextDisplayMeta;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.event.player.PlayerStartFlyingWithElytraEvent;
 import net.minestom.server.instance.Instance;
+import net.minestom.server.network.packet.server.play.EntityMetaDataPacket;
+import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.TestConnection;
 import net.minestom.testing.extension.MicrotusExtension;
@@ -42,13 +44,14 @@ class JumprunScoreLabelTest {
 
     private static final Pos BYSTANDER_STAND = StartedRun.STAND.add(0, 0, 8);
 
-    private record Scene(StartedRun run, Player bystander, Instance instance) {
+    private record Scene(StartedRun run, Player bystander, TestConnection bystanderConnection,
+                         Instance instance) {
 
         static Scene start(Env env, JumprunFixture fixture) {
             Instance instance = JumprunFixture.loadedInstance(env);
             TestConnection connection = env.createConnection();
             Player bystander = connection.connect(instance, BYSTANDER_STAND);
-            return new Scene(StartedRun.start(env, fixture, instance, StartedRun.STAND), bystander, instance);
+            return new Scene(StartedRun.start(env, fixture, instance, StartedRun.STAND), bystander, connection, instance);
         }
 
         List<Entity> labels() {
@@ -124,6 +127,33 @@ class JumprunScoreLabelTest {
 
                 assertEquals("Jump & Run · " + score, scene.text(), "after scored jump " + score);
             }
+        }
+    }
+
+    @Test
+    void anUnchangedScoreSendsNoNewMetadata(Env env) {
+        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+            Scene scene = Scene.start(env, fixture);
+            int labelId = scene.label().getEntityId();
+            Collector<EntityMetaDataPacket> metadata = scene.bystanderConnection().trackIncoming(EntityMetaDataPacket.class);
+
+            scene.run().landOnNext(JumprunFixture.ASCENT_JUMPS - 1);
+
+            assertTrue(metadata.collect().stream().noneMatch(packet -> packet.entityId() == labelId), "the ascent keeps the score at zero, so the label is not updated");
+        }
+    }
+
+    @Test
+    void aChangedScoreSendsNewMetadata(Env env) {
+        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+            Scene scene = Scene.start(env, fixture);
+            scene.run().landOnNext(JumprunFixture.ASCENT_JUMPS);
+            int labelId = scene.label().getEntityId();
+            Collector<EntityMetaDataPacket> metadata = scene.bystanderConnection().trackIncoming(EntityMetaDataPacket.class);
+
+            scene.run().landOnNext();
+
+            assertTrue(metadata.collect().stream().anyMatch(packet -> packet.entityId() == labelId), "the first scored jump updates the label");
         }
     }
 
