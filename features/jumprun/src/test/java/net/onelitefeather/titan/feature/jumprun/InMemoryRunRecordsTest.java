@@ -67,4 +67,25 @@ class InMemoryRunRecordsTest {
         assertEquals(OptionalInt.of(15), records.best(player));
         assertEquals(OptionalInt.of(3), records.best(other));
     }
+
+    @Test
+    void forgettingRemovesTheBestSoTheNextScoreIsARecord() {
+        records.submit(player, 15);
+
+        records.forget(player);
+
+        assertTrue(records.best(player).isEmpty(), "the best is gone");
+        assertTrue(records.submit(player, 1), "any score is a record again");
+    }
+
+    @Test
+    void forgettingOnePlayerKeepsTheOthers() {
+        UUID other = UUID.randomUUID();
+        records.submit(player, 15);
+        records.submit(other, 3);
+
+        records.forget(player);
+
+        assertEquals(OptionalInt.of(3), records.best(other));
+    }
 }

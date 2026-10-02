@@ -50,7 +50,18 @@ record StartedRun(JumprunFixture fixture, TestConnection connection, Player play
 
     private static StartedRun start(Env env, JumprunFixture fixture, Instance instance, Pos stand, Consumer<Player> beforeStart) {
         TestConnection connection = env.createConnection();
-        Player player = connection.connect(instance, stand);
+        return start(fixture, instance, connection, connection.connect(instance, stand), beforeStart);
+    }
+
+    /**
+     * Starts another run for a player who is already online, for example after a disconnect event.
+     */
+    static StartedRun startAgain(JumprunFixture fixture, Instance instance, TestConnection connection, Player player) {
+        return start(fixture, instance, connection, player, _ -> {
+        });
+    }
+
+    private static StartedRun start(JumprunFixture fixture, Instance instance, TestConnection connection, Player player, Consumer<Player> beforeStart) {
         beforeStart.accept(player);
         player.refreshOnGround(true);
         Collector<BlockChangePacket> shown = connection.trackIncoming(BlockChangePacket.class);

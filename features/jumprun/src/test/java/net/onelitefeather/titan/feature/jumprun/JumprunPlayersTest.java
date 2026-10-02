@@ -57,6 +57,11 @@ class JumprunPlayersTest {
             submitted.add(score);
             return delegate.submit(player, score);
         }
+
+        @Override
+        public void forget(UUID player) {
+            delegate.forget(player);
+        }
     }
 
     @Test
