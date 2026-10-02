@@ -16,11 +16,8 @@
 package net.onelitefeather.titan.feature.jumprun;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
-import java.util.Random;
-import net.minestom.server.instance.block.Block;
 import org.junit.jupiter.api.Test;
 
 class SurfaceTest {
@@ -73,16 +70,6 @@ class SurfaceTest {
     void headroomOfTheNewShapes() {
         assertEquals(1, Surface.TRAPDOOR.headroomTop(), "trapdoor");
         assertEquals(2, Surface.POST.headroomTop(), "post");
-    }
-
-    @Test
-    void drawnMaterialBelongsToThePaletteAndIsReproducible() {
-        for (Surface surface : Surface.values()) {
-            Block first = surface.draw(new Random(7L));
-
-            assertTrue(surface.palette().contains(first), surface + " draws from its own palette");
-            assertEquals(first, surface.draw(new Random(7L)), surface + " same seed, same material");
-        }
     }
 
     @Test

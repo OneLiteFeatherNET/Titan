@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.feature.jumprun;
 
+import io.avaje.config.Configuration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -76,9 +77,18 @@ final class JumprunFixture implements AutoCloseable {
     }
 
     static JumprunFixture start(Env env, RunRecords records) {
+        return start(env, records, TestBlocks.shippedConfiguration());
+    }
+
+    /** As above, with the palettes read from {@code config} instead of the shipped defaults. */
+    static JumprunFixture start(Env env, Configuration config) {
+        return start(env, new InMemoryRunRecords(), config);
+    }
+
+    private static JumprunFixture start(Env env, RunRecords records, Configuration config) {
         TestTitanNode titan = TestTitanNode.attach(env);
         RunMessages messages = new RunMessages();
-        JumprunModule module = new JumprunModule(titan.node(), () -> new Pos(-40.5, GROUND_Y, 0.5), List::of, records, messages, () -> SEED);
+        JumprunModule module = new JumprunModule(titan.node(), () -> new Pos(-40.5, GROUND_Y, 0.5), List::of, records, messages, () -> SEED, new PalettesReader(config));
         module.start();
         LobbyItem item = new JumprunItems().jumprun(module);
         // What the hotbar column does with the use packet, without depending on it.
@@ -174,7 +184,7 @@ final class JumprunFixture implements AutoCloseable {
     }
 
     private static Optional<Surface> surfaceOf(BlockChangePacket block) {
-        return Arrays.stream(Surface.values()).filter(surface -> surface.palette().stream().anyMatch(material -> material.stateId() == block.blockStateId())).findFirst();
+        return Arrays.stream(Surface.values()).filter(surface -> TestBlocks.shipped().of(surface).blocks().stream().anyMatch(material -> material.stateId() == block.blockStateId())).findFirst();
     }
 
     /** Stops only the module, to prove nothing runs once it has; {@link #close()} does the rest. */

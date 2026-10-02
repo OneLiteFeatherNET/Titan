@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.feature.jumprun;
 
+import io.avaje.config.Config;
 import io.avaje.inject.PostConstruct;
 import io.avaje.inject.PreDestroy;
 import jakarta.inject.Inject;
@@ -81,6 +82,7 @@ final class JumprunModule {
     private final RunRecords records;
     private final RunMessages messages;
     private final LongSupplier seeds;
+    private final PalettesReader palettes;
     private final RunRegistry runs = new RunRegistry();
     private final FakeBlocks fakeBlocks = new FakeBlocks();
     /** Player tick until which the item is ignored after a click on a run block. */
@@ -90,20 +92,23 @@ final class JumprunModule {
 
     @Inject
     JumprunModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records) {
-        this(titan, spawn, portals, records, new RunMessages(), () -> ThreadLocalRandom.current().nextLong());
+        this(titan, spawn, portals, records, new RunMessages(), () -> ThreadLocalRandom.current().nextLong(), new PalettesReader(Config.asConfiguration()));
     }
 
-    JumprunModule(EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records, RunMessages messages, LongSupplier seeds) {
+    JumprunModule(EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records, RunMessages messages, LongSupplier seeds, PalettesReader palettes) {
         this.titan = titan;
         this.spawn = spawn;
         this.portals = portals;
         this.records = records;
         this.messages = messages;
         this.seeds = seeds;
+        this.palettes = palettes;
     }
 
     @PostConstruct
     void start() {
+        // Strict once, so an invalid palette aborts the start; runs read it again live.
+        this.palettes.readAtStartup();
         this.messages.register();
         this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY);
         this.node.on(PlayerMoveEvent.class, this::onMove);
@@ -179,7 +184,7 @@ final class JumprunModule {
         Pos spawnPoint = Optional.ofNullable(spawn.position()).orElse(feet);
         Heading heading = Heading.away(feet.x(), feet.z(), spawnPoint.x(), spawnPoint.z(), feet.direction().x(), feet.direction().z());
         RandomGenerator random = RandomGeneratorFactory.of(RANDOM_ALGORITHM).create(seeds.getAsLong());
-        return Course.startSteered(feet, startBlock, heading, new SpawnZone(spawnPoint.x(), spawnPoint.z()), new InstanceSpaceProbe(player.getInstance()), random, PortalClearance.ofPortals(portals.portals())).map(course -> new Run(player, course, startBlock));
+        return Course.startSteered(feet, startBlock, heading, new SpawnZone(spawnPoint.x(), spawnPoint.z()), new InstanceSpaceProbe(player.getInstance()), random, palettes.current(), PortalClearance.ofPortals(portals.portals())).map(course -> new Run(player, course, startBlock));
     }
 
     private void onElytra(PlayerStartFlyingWithElytraEvent event) {

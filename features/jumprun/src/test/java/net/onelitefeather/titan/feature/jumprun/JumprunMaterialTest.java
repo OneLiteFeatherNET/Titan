@@ -17,8 +17,10 @@ package net.onelitefeather.titan.feature.jumprun;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.avaje.config.Configuration;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -33,6 +35,7 @@ import net.minestom.server.event.player.PlayerChunkLoadEvent;
 import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -46,7 +49,7 @@ class JumprunMaterialTest {
     private static final int LANDINGS = 8;
 
     private static boolean isPaletteMaterial(int stateId) {
-        return Arrays.stream(Surface.values()).flatMap(surface -> surface.palette().stream()).anyMatch(material -> material.stateId() == stateId);
+        return Arrays.stream(Surface.values()).flatMap(surface -> TestBlocks.shipped().of(surface).blocks().stream()).anyMatch(material -> material.stateId() == stateId);
     }
 
     private static List<BlockChangePacket> blockChanges(List<ServerPacket> packets) {
@@ -100,6 +103,34 @@ class JumprunMaterialTest {
             for (BlockChangePacket packet : packets) {
                 assertEquals(shown.get(packet.blockPosition()), packet.blockStateId(), "material at " + packet.blockPosition() + " must not be drawn again");
             }
+        }
+    }
+
+    @Test
+    void anOverriddenPaletteChangesTheMaterialsSent(Env env) {
+        Configuration config = TestBlocks.shippedWith(Surface.FULL, Map.of("lime_wool", "1"));
+        try (JumprunFixture fixture = JumprunFixture.start(env, config)) {
+            StartedRun run = StartedRun.start(env, fixture);
+            Set<Integer> states = new HashSet<>();
+            run.ahead().forEach(packet -> states.add(packet.blockStateId()));
+
+            for (int landing = 0; landing < LANDINGS; landing++) {
+                blockChanges(run.landOnNext()).forEach(packet -> states.add(packet.blockStateId()));
+            }
+
+            assertEquals(Set.of(Block.LIME_WOOL.stateId()), states, "only the configured material is sent");
+        }
+    }
+
+    @Test
+    void anInvalidPaletteAbortsTheStartWithItsKey(Env env) {
+        Configuration config = TestBlocks.shippedWith(Surface.FULL, Map.of("lime_wool", "0"));
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            JumprunModule module = new JumprunModule(titan.node(), () -> null, List::of, new InMemoryRunRecords(), new RunMessages(), () -> JumprunFixture.SEED, new PalettesReader(config));
+
+            IllegalArgumentException abort = assertThrows(IllegalArgumentException.class, module::start);
+
+            assertTrue(abort.getMessage().startsWith("jumprun.palettes.full.lime_wool"), "the abort names the key: " + abort.getMessage());
         }
     }
 }
