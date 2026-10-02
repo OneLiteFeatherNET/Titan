@@ -92,8 +92,8 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 
 ## 12. Bugfix: Reset trotz Landung, Portale meiden
 
-- [ ] 12.1 Reproduktion zuerst (Integration mit echten Client-Paketen): Landen mit anschließendem Stillstand und mehrere Landungen hintereinander auf absteigendem Kurs führen nicht zum Absturz-Ende (Spec „Landen und stehen bleiben“); rot. Ursache und Fix in D16 eintragen, beheben; grün.
-- [ ] 12.2 Test zuerst (Unit): Kein Ziel und keine Flugbahn in einem Portal aus `LobbyPortals` oder näher als 3 Blöcke daran (Spec „Portal in der Nähe“). Dann umsetzen. Nachweis: `./gradlew build` grün, erneuter lokaler Test.
+- [x] 12.1 Reproduktion zuerst (Integration mit echten Client-Paketen): Landen mit anschließendem Stillstand und mehrere Landungen hintereinander auf absteigendem Kurs führen nicht zum Absturz-Ende (Spec „Landen und stehen bleiben“); rot. Ursache und Fix in D16 eintragen, beheben; grün.
+- [x] 12.2 Test zuerst (Unit): Kein Ziel und keine Flugbahn in einem Portal aus `LobbyPortals` oder näher als 3 Blöcke daran (Spec „Portal in der Nähe“). Dann umsetzen. Nachweis: `./gradlew build` grün, erneuter lokaler Test.
 
 ## 6. Pull Request
 
