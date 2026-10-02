@@ -236,6 +236,17 @@ Während eines Laufs MUSS der Spieler seinen aktuellen Score in der Action Bar s
 - **WHEN** ein Spieler die Lobby verlässt und vor einem Neustart wiederkommt
 - **THEN** gilt sein bisheriger Rekord weiter
 
+### Requirement: Ton bei neuem Rekord
+Übertrifft der Score eines Läufers während des Laufs zum ersten Mal seinen bisherigen Rekord, MUSS der Läufer sofort das Levelaufstiegs-Geräusch hören, höchstens einmal pro Lauf. Hat der Spieler noch keinen Rekord, MUSS das Geräusch mit der Meldung über den neuen Rekord am Laufende erklingen. Andere Spieler DÜRFEN es NICHT hören.
+
+#### Scenario: Rekord im Lauf gebrochen
+- **WHEN** ein Spieler mit Rekord 12 im Lauf Score 13 erreicht und danach weiter bis 20 springt
+- **THEN** hört er bei Score 13 genau einmal das Levelaufstiegs-Geräusch und bei 14 bis 20 nicht erneut
+
+#### Scenario: Erster Rekord
+- **WHEN** ein Spieler ohne bisherigen Rekord einen Lauf mit Score 5 beendet
+- **THEN** hört er mit der Rekord-Meldung das Levelaufstiegs-Geräusch
+
 ### Requirement: Texte in der Sprache des Spielers
 Alle Texte des Jump and Run (Score in der Action Bar, Meldungen zu Start, Ende und Rekord) MÜSSEN in der Sprache des Spielers erscheinen. Fehlt seine Sprache, MUSS Englisch erscheinen. Das Item trägt nur den Spielnamen „Jump & Run“, der in allen Sprachen gleich ist, und keine Beschreibung.
 

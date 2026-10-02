@@ -219,6 +219,11 @@ Die Hauptrichtung `H` aus D15 wird nach der Aufstiegsphase nicht mehr nur geglä
   Die bestehenden Invarianten (kein Schritt gegen `H`, Abstand zu früheren Blöcken, Mindestabstand 16) bleiben grün.
 - **SOLID:** SRP. Die Wunschrichtung berechnet ein eigener reiner Typ (`Steering`), den `Phase`/`CourseGenerator` nur nutzen.
 
+### D18 Levelaufstieg bei neuem Rekord
+
+`Run` merkt sich beim Start den bisherigen Rekord aus `RunRecords.best`. Steigt der Score beim Vorrücken zum ersten Mal darüber, spielt `RunSounds.record` dem Läufer allein `ENTITY_PLAYER_LEVELUP` (Quelle `PLAYER`, Lautstärke 1.0, Tonhöhe 1.0), zusätzlich zum Shepard-Ton dieses Punkts. Ein Flag im `Run` verhindert die Wiederholung. Ohne bisherigen Rekord erklingt das Geräusch beim Laufende zusammen mit der Rekord-Meldung (Score > 0).
+- **Test:** Integration. Mit Rekord 12 gibt es bei Score 13 genau ein Levelup-Paket an den Läufer und danach keins mehr, ein Zuschauer bekommt keins. Ohne Rekord kommt eins beim Laufende mit Score > 0, mit Score 0 keins.
+
 ## Risks / Trade-offs
 
 - **Elytra durch Leertaste in der Luft:** Im Spiel startet ein erneuter Druck auf die Leertaste in der Luft das Gleiten. Spieler, die beim Springen hektisch drücken, beenden ihren Lauf versehentlich. → Bewusst so entschieden (Elytra-Gleiten = Ende). Bei der Abnahme wird geprüft, wie oft das passiert. Falls nötig, gibt es einen Folge-Change, der statt Laufende das Gleiten nur unterbindet.
