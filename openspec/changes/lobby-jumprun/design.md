@@ -63,7 +63,7 @@ d(n)        = 1 - e^(-n / K)                 K = 40, n = Score
 Ziel(n)     = d(n) * C_max + N(0, σ)         σ = 1.0, auf [0, C_max] begrenzt
 Kosten(s)   = 2*Typ(s) + 1.5*Lücke(s) + 1*Aufstieg(s)
 
-Typ:      Vollblock 0 | Stufe (unten) 1 | Zaun 2 | Glasscheibe / Eisengitter 3
+Typ:      Vollblock 0 | Falltür (unten, zu) 1 | Stufe (unten) 1 | Zaun / Mauer 2 | Glasscheibe / Eisengitter 3 | Pfosten (Endstab, Kette, Blitzableiter) 4
 Lücke:    1 -> 0 | 2 -> 1 | 3 -> 2 | 4 -> 3        (Lücke = Luftblöcke zwischen den Blöcken)
 Aufstieg: Oberkante Ziel - Oberkante Start > 0 -> 1, sonst 0
 C_max     = Kosten des schwersten erlaubten Sprungs
@@ -78,8 +78,9 @@ Aus allen gültigen Kandidaten (D4) wählt der Generator den mit der kleinsten `
 ### D4 Kandidaten, Schaffbarkeit und Platz
 
 - **Kandidaten** vom letzten Block aus: horizontale Versätze mit Lücke 1–4 in den vier Achsenrichtungen sowie diagonal (Lücke über die Chebyshev-Distanz), Höhe −1/0/+1, jeder `Surface`-Typ.
-- **Schaffbar:** `Oberkante(Ziel) - Oberkante(Start) ≤ 1.0`. Bei Aufstieg ist die Lücke ≤ 3, sonst ≤ 4; diagonale Sprünge sind auf Lücke 2 begrenzt, weil eine diagonale Lücke 4 effektiv etwa 5,7 Blöcke misst, und kosten eine Lückenstufe mehr (Lückenstufe + 1). Oberkanten: Vollblock 1.0, Stufe 0.5, Zaun/Glasscheibe 1.5 bzw. 1.0.
-- **Platz:** Die Zielposition ist Luft. Über der Oberkante sind 2 Blöcke frei (beim Zaun also y+1 bis y+3). Die Flugbahn ist frei: Für jede XZ-Zelle auf der Linie (Bresenham) zwischen Start und Ziel sind die Blöcke von der höheren Oberkante bis +2 frei. Das Ziel liegt in der Instanzgrenze (Dimension min/max Y, Worldborder), mit der eigenen Konstante `MAX_Y_MARGIN = 5` Abstand zur Obergrenze der Dimension. `spawn.maxHeight` liest die Column nicht, weil das die Config einer anderen Column wäre (siehe Risiken). Das Ziel überschneidet keinen Block des eigenen Fensters.
+- **Schaffbar:** `Oberkante(Ziel) - Oberkante(Start) ≤ 1.0`. Bei Aufstieg ist die Lücke ≤ 3, sonst ≤ 4; diagonale Sprünge sind auf Lücke 2 begrenzt, weil eine diagonale Lücke 4 effektiv etwa 5,7 Blöcke misst, und kosten eine Lückenstufe mehr (Lückenstufe + 1). Oberkanten: Vollblock 1.0, Falltür 0.1875, Stufe 0.5, Zaun/Mauer 1.5, Glasscheibe/Gitter 1.0, Pfosten 1.0.
+- **Platz:** Die Zielposition ist Luft. Über der Oberkante sind 2 Blöcke frei (beim Zaun also y+1 bis y+3). Die Flugbahn ist frei: Für jede XZ-Zelle auf der Linie (Bresenham) zwischen Start und Ziel sind die Blöcke von der höheren Oberkante bis +2 frei. Das Ziel liegt in der Instanzgrenze (Dimension min/max Y, Worldborder), mit der eigenen Konstante `MAX_Y_MARGIN = 5` Abstand zur Obergrenze der Dimension. `spawn.maxHeight` liest die Column nicht, weil das die Config einer anderen Column wäre (siehe Risiken). Das Ziel überschneidet keinen Block des eigenen Fensters. Nach der Aufstiegsphase sind unter dem Ziel mindestens `MIN_AIR_BELOW = 4` Blöcke Luft (y−1 bis y−4), damit der Parcours nicht über Wegen und Dächern verläuft.
+- **Vorliebe für offenen Raum:** Jeder gültige Kandidat bekommt eine Offenheit `o ∈ [0, 1]`: Anteil Luft in der Säule unter dem Ziel bis 12 Blöcke tief und in den 8 Nachbarzellen auf Ziel- und Fußhöhe. Gerankt wird nach `|Kosten − Ziel| + W_OPEN · (1 − o)` mit `W_OPEN = 1.5`. Die Kostenabweichung bleibt bestimmend, bei ähnlich schweren Kandidaten gewinnt der offenere. Ein Gewichtungs-Rang statt eines zweiten harten Filters, weil ein harter Filter in engen Lobbys viele Läufe früh beenden würde.
 - **Sackgassen:** Ein Kandidat zählt nur, wenn `CourseGenerator` von ihm aus mit Tiefe 1 mindestens einen weiteren gültigen Kandidaten findet. Gibt es keinen, endet der Lauf (Spec „Gar kein Platz mehr“).
 - **Built-in:** `instance.getBlock(x, y, z, Block.Getter.Condition.TYPE).isAir()` und `WorldBorder` über den Adapter `InstanceSpaceProbe`. Eine eigene Kollisionsprüfung mit Minestom-`BoundingBox` wurde verworfen, weil die Prüfung auf Blockraster für Schaffbarkeit reicht und rein testbar bleibt.
 - **Test:** Unit mit `FakeSpaceProbe` (Set belegter Positionen): Wand blockiert Ziel und Flugbahn, Decke blockiert Kopffreiheit, Sackgasse wird verworfen, Zaun nach Vollblock nur bei dy ≤ 0. Ein Property-artiger Test erzeugt 10 000 Sprünge mit festen Seeds und prüft die Grenzen.
@@ -88,7 +89,7 @@ Aus allen gültigen Kandidaten (D4) wählt der Generator den mit der kleinsten `
 ### D5 Start, Vorab-Prüfung und Aufstiegsphase
 
 - Der Startblock liegt unter den Füßen des Spielers (die Position, auf der er steht). Er wird nicht als Fake-Block gesetzt, ist also ein echter Block der Welt. Ist der Spieler gerade in der Luft, startet kein Lauf (Meldung „kein Platz“).
-- Die Aufstiegsphase besteht aus `ASCENT_JUMPS = 5` Sprüngen: Vollblock, Oberkante +1, Lücke 1–2. Die Richtung wird gewichtet nach `dot(Sprungrichtung, normalize(Spieler - LobbySpawn))`. Steht der Spieler genau auf dem Spawn (Vektor ≈ 0), gilt seine Blickrichtung.
+- Die Aufstiegsphase besteht aus mindestens `ASCENT_JUMPS = 5` Sprüngen und läuft weiter, bis unter dem letzten Block `MIN_AIR_BELOW` Blöcke Luft sind, höchstens `MAX_ASCENT_JUMPS = 20`. Gelingt das nicht, scheitert die Vorab-Prüfung. Jeder Aufstiegssprung: Vollblock, Oberkante +1, Lücke 1–2. Die Richtung wird gewichtet nach `dot(Sprungrichtung, normalize(Spieler - LobbySpawn))`. Steht der Spieler genau auf dem Spawn (Vektor ≈ 0), gilt seine Blickrichtung.
 - **Vorab-Prüfung:** Der Generator erzeugt die ganze Aufstiegsphase plus einen Sprung Vorausschau, bevor etwas gesendet wird. Scheitert das, startet kein Lauf. Danach werden die Blöcke erst beim Vorrücken gesendet (Fenster).
 - **Startpunkt** für den Rücksetz nach einem Absturz: die Position des Spielers beim Start.
 - **Test:** Unit (Aufstieg führt bei freiem Raum weg vom Spawn; niedrige Decke → kein Start; 5 Aufstiegssprünge → Score 0). Integration: Item benutzt → Lauf.
@@ -141,6 +142,14 @@ Die Column registriert in `@PostConstruct` einen eigenen Adventure-`TranslationS
 
 - `LoggerFactory.getLogger(JumprunModule.class)`: Start und Ende eines Laufs gehen auf DEBUG mit `addKeyValue("player", uuid)`, Score und Grund. Pro Move-Event wird nichts geloggt. „Generator fand keinen Platz“ ist DEBUG, weil es ein erwarteter Ausgang ist. INFO gibt es nicht, der Modulstart loggt wie die anderen Columns nichts Eigenes.
 - **Keine Metriken und keine Spans:** Titan exportiert noch nichts. Eine Lauf-Metrik ohne Leser wird nicht angelegt. Das kommt mit dem Stats-Dienst oder einem eigenen Observability-Change.
+
+### D11 Material-Paletten
+
+Jede `Surface` hat eine feste Palette von Minestom-`Block`s gleicher Kollisionsform: Vollblock (16 Betonfarben, 16 Wollfarben, Terrakotta), Falltür (Holzfalltüren aller Holzarten, Eisenfalltür, jeweils unten und geschlossen), Stufe (Stein-, Ziegel-, Quarz- und Holzstufen, jeweils unten), Zaun/Mauer (Holzzäune, Netherziegelzaun, Bruchstein-, Ziegel- und Steinziegelmauer), Scheibe (bunte Glasscheiben, Eisengitter), Pfosten (Endstab und Kette senkrecht, Blitzableiter). Pro Block zieht der Lauf-`RandomGenerator` ein Material. Das Material lebt im `CourseBlock` und geht in Pakete und Neusendungen ein. Es ändert weder Oberkante noch Kosten.
+
+- **Built-in:** Minestom-`Block`-Konstanten mit `withProperty` für Hälfte, Ausrichtung und Zustand. Eine eigene Kollisionsform-Tabelle gibt es nicht, die Oberkante kommt weiter aus `Surface`. Unverbundene Zäune, Mauern und Scheiben sind beim Client nur ein Mittelpfosten. Das ist gewollt, die Kosten berücksichtigen es.
+- **Test:** Unit. Jedes Palettenmaterial hat dieselbe Oberkante wie seine `Surface` (geprüft gegen Minestoms Kollisionsform `registry().collisionShape()`, wo verfügbar). Mit festem Seed haben 10 Vollblöcke nacheinander mehr als ein Material.
+- **SOLID:** OCP. Eine neue Palette oder Form ist ein neuer Enum-Eintrag.
 
 ## Risks / Trade-offs
 

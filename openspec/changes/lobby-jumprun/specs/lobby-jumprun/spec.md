@@ -55,18 +55,22 @@ Ein Sprung MUSS als geschafft gelten, sobald der Spieler auf einem der vor ihm l
 - **THEN** zählen beide Sprünge, und das Sichtfenster rückt um zwei Blöcke vor
 
 ### Requirement: Aufstiegsphase aus dem Spawn-Bereich
-Jeder Lauf MUSS mit einer festen Anzahl leichter Sprünge beginnen, die jeweils einen Block höher liegen und, soweit Platz ist, vom Lobby-Spawn wegführen. Diese Sprünge DÜRFEN NICHT zum Score zählen. Erst danach MUSS die Schwierigkeit nach dem Score greifen.
+Jeder Lauf MUSS mit mindestens 5 leichten Sprüngen beginnen, die jeweils einen Block höher liegen und, soweit Platz ist, vom Lobby-Spawn wegführen. Die Aufstiegsphase MUSS so lange weitergehen, bis unter dem zuletzt erzeugten Block mindestens 4 Blöcke Luft sind, höchstens aber 20 Sprünge lang. Lässt sich dieser Abstand innerhalb von 20 Sprüngen nicht erreichen, DARF der Lauf NICHT beginnen (Meldung „kein Platz“). Die Sprünge der Aufstiegsphase DÜRFEN NICHT zum Score zählen. Erst danach MUSS die Schwierigkeit nach dem Score greifen.
 
 #### Scenario: Weg vom Spawn
 - **WHEN** ein Spieler neben dem Spawn einen Lauf startet und in Richtung weg vom Spawn Platz ist
 - **THEN** führen die Sprünge der Aufstiegsphase nach oben und vom Spawn weg
+
+#### Scenario: Aufstieg bis ins Freie
+- **WHEN** ein Spieler auf flachem Boden startet
+- **THEN** endet die Aufstiegsphase erst mit einem Block, unter dem mindestens 4 Blöcke Luft sind
 
 #### Scenario: Aufstieg zählt nicht
 - **WHEN** der Spieler alle Sprünge der Aufstiegsphase geschafft hat
 - **THEN** zeigt sein Score 0
 
 ### Requirement: Schwierigkeit steigt mit dem Score
-Nach der Aufstiegsphase MUSS die Schwierigkeit jedes neuen Sprungs aus einer festen, stetig steigenden Funktion des Scores folgen, die sich einem Höchstwert annähert, ohne ihn zu überschreiten. Die Schwierigkeit MUSS sich im Blocktyp (z. B. Vollblock, Stufe, Zaun), in der Lückenbreite und im Höhenunterschied zeigen. Jeder erzeugte Sprung MUSS ohne Hilfsmittel schaffbar sein. Maßgeblich ist die Oberkante der Lauffläche, also bei einer Stufe ein halber Block und bei einem Zaun anderthalb Blöcke über ihrer Blockposition. Die Oberkante des Ziels darf höchstens einen Block über der des Ausgangsblocks liegen. Die Lücke darf bei einem Aufstieg höchstens 3 Blöcke betragen, auf gleicher Höhe oder abwärts höchstens 4 Blöcke.
+Nach der Aufstiegsphase MUSS die Schwierigkeit jedes neuen Sprungs aus einer festen, stetig steigenden Funktion des Scores folgen, die sich einem Höchstwert annähert, ohne ihn zu überschreiten. Die Schwierigkeit MUSS sich in der Form des Blocks (Vollblock, Falltür, Stufe, Zaun oder Mauer, Glasscheibe oder Gitter, schmaler Pfosten), in der Lückenbreite und im Höhenunterschied zeigen. Jeder erzeugte Sprung MUSS ohne Hilfsmittel schaffbar sein. Maßgeblich ist die Oberkante der Lauffläche, also z. B. bei einer Falltür knapp ein Fünftel, bei einer Stufe ein halber Block und bei einem Zaun oder einer Mauer anderthalb Blöcke über ihrer Blockposition. Die Oberkante des Ziels darf höchstens einen Block über der des Ausgangsblocks liegen. Die Lücke darf bei einem Aufstieg höchstens 3 Blöcke betragen, auf gleicher Höhe oder abwärts höchstens 4 Blöcke.
 
 #### Scenario: Leichter Anfang
 - **WHEN** der Score 0 ist
@@ -74,7 +78,7 @@ Nach der Aufstiegsphase MUSS die Schwierigkeit jedes neuen Sprungs aus einer fes
 
 #### Scenario: Später schwerer
 - **WHEN** der Score hoch ist (z. B. 80)
-- **THEN** sind die erzeugten Sprünge im Mittel deutlich schwerer als bei Score 0: mehr schmale Blocktypen, breitere Lücken und mehr Aufstiege
+- **THEN** sind die erzeugten Sprünge im Mittel deutlich schwerer als bei Score 0: mehr schmale Formen, breitere Lücken und mehr Aufstiege
 
 #### Scenario: Zaun nach Vollblock
 - **WHEN** ein Zaun auf einen Vollblock folgt
@@ -85,7 +89,15 @@ Nach der Aufstiegsphase MUSS die Schwierigkeit jedes neuen Sprungs aus einer fes
 - **THEN** überschreitet kein Sprung die Grenzen für Lücke und Aufstieg, auch nicht von einem Zaun oder einer Stufe aus
 
 ### Requirement: Sprünge nur, wo Platz ist
-Ein neuer Block DARF NUR an einer Stelle entstehen, an der in der echten Welt Luft ist, über deren Oberkante zwei Blöcke Kopffreiheit sind, deren Flugbahn vom vorigen Block aus frei ist, die keinen sichtbaren Block des eigenen Laufs überschneidet und die innerhalb der Grenzen der Lobby-Welt liegt. Ein neuer Block DARF NUR gewählt werden, wenn von ihm aus mindestens ein weiterer gültiger Sprung möglich ist. Findet die Lobby trotzdem keinen gültigen nächsten Block, MUSS der Lauf mit dem erreichten Score enden.
+Ein neuer Block nach der Aufstiegsphase DARF NUR an einer Stelle entstehen, unter der in der echten Welt mindestens 4 Blöcke Luft sind und an der in der echten Welt Luft ist, über deren Oberkante zwei Blöcke Kopffreiheit sind, deren Flugbahn vom vorigen Block aus frei ist, die keinen sichtbaren Block des eigenen Laufs überschneidet und die innerhalb der Grenzen der Lobby-Welt liegt. Ein neuer Block DARF NUR gewählt werden, wenn von ihm aus mindestens ein weiterer gültiger Sprung möglich ist. Unter den gültigen Stellen MUSS die Lobby solche mit mehr Luft darunter und drumherum bevorzugen, ohne dass dadurch die Schwierigkeit nach dem Score verloren geht. Findet die Lobby trotzdem keinen gültigen nächsten Block, MUSS der Lauf mit dem erreichten Score enden.
+
+#### Scenario: Nicht über Wegen
+- **WHEN** eine Stelle direkt über einem Weg liegt, sodass unter ihr weniger als 4 Blöcke Luft sind
+- **THEN** entsteht dort nach der Aufstiegsphase kein Block
+
+#### Scenario: Ins Leere bevorzugt
+- **WHEN** zwei gleich schwere Stellen möglich sind, eine über offenem Raum und eine dicht neben einem Gebäude
+- **THEN** wählt die Lobby die Stelle über offenem Raum
 
 #### Scenario: Wand im Weg
 - **WHEN** in Laufrichtung eine Wand der Lobby steht
@@ -98,6 +110,17 @@ Ein neuer Block DARF NUR an einer Stelle entstehen, an der in der echten Welt Lu
 #### Scenario: Gar kein Platz mehr
 - **WHEN** von der aktuellen Stelle aus kein gültiger Block mehr möglich ist
 - **THEN** endet der Lauf mit dem erreichten Score
+
+### Requirement: Optische Vielfalt der Blöcke
+Jeder Block eines Laufs MUSS sein Material zufällig aus einer festen Auswahl passend zu seiner Form erhalten (z. B. bunter Beton, Wolle und Terrakotta als Vollblock, verschiedene Holz- und Steinstufen, Holzzäune und Mauern, bunte Glasscheiben und Eisengitter). Das Material DARF die Schwierigkeit und die Schaffbarkeit eines Sprungs NICHT verändern.
+
+#### Scenario: Material wechselt
+- **WHEN** ein Spieler mehrere Vollblöcke hintereinander sieht
+- **THEN** haben sie nicht alle dasselbe Material
+
+#### Scenario: Material ändert nichts an der Form
+- **WHEN** ein Zaun aus Eichenholz und eine Bruchsteinmauer an derselben Stelle möglich wären
+- **THEN** gelten für beide dieselbe Oberkante und dieselben Kosten
 
 ### Requirement: Laufende
 Ein Lauf MUSS enden, wenn der Spieler mehr als drei Blöcke unter den Block fällt, auf dem er zuletzt gelandet ist, wenn er mit der Elytra zu gleiten beginnt, wenn er das Jump-and-Run-Item erneut benutzt, wenn er stirbt oder wenn er die Lobby verlässt. Bei einem Absturz MUSS die Lobby ihn an den Startpunkt seines Laufs zurücksetzen. Nach dem Ende DÜRFEN keine Blöcke des Laufs für ihn sichtbar bleiben, und an ihren Stellen MUSS er wieder die echte Welt sehen.
