@@ -29,6 +29,7 @@ import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
+import net.minestom.server.event.player.PlayerMoveEvent;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.module.LobbySpawn;
 import org.slf4j.Logger;
@@ -77,7 +78,7 @@ final class JumprunModule {
     @PostConstruct
     void start() {
         this.messages.register();
-        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY);
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY).on(PlayerMoveEvent.class, this::onMove);
     }
 
     @PreDestroy
@@ -122,6 +123,33 @@ final class JumprunModule {
         return Course.start(feet, startBlock, heading, new InstanceSpaceProbe(player.getInstance()), random).map(course -> new Run(player, course, startBlock));
     }
 
+    private void onMove(PlayerMoveEvent event) {
+        Run run = runs.get(event.getPlayer().getUuid());
+        if (run == null) {
+            return;
+        }
+        Course course = run.course();
+        Pos to = event.getNewPosition();
+        if (course.hasFallen(to.y())) {
+            end(run, EndReason.FALL);
+        } else if (event.isOnGround()) {
+            advance(run, course.advanceTo(to));
+        }
+    }
+
+    private void advance(Run run, Course.Advance advance) {
+        if (advance.jumps() == 0) {
+            return;
+        }
+        Player player = run.player();
+        fakeBlocks.reset(player, run.fake(advance.removed()));
+        fakeBlocks.show(player, run.fake(advance.added()));
+        player.sendActionBar(messages.scoreActionBar(player.getLocale(), run.course().score()));
+        if (advance.exhausted()) {
+            end(run, EndReason.EXHAUSTED);
+        }
+    }
+
     private void end(Run run, EndReason reason) {
         if (!runs.remove(run)) {
             return;
@@ -132,10 +160,13 @@ final class JumprunModule {
         // A run that never scored is not worth calling a record, even when it is the first.
         boolean isRecord = records.submit(player.getUuid(), score) && score > 0;
         player.sendMessage(isRecord ? messages.endRecord(player.getLocale(), score) : messages.endScore(player.getLocale(), score));
+        if (reason == EndReason.FALL) {
+            player.teleport(run.course().startPoint());
+        }
         LOGGER.atDebug().addKeyValue("player", player.getUuid()).log("jumprun ended: reason={}, score={}", reason, score);
     }
 
     private enum EndReason {
-        ABORT
+        ABORT, FALL, EXHAUSTED
     }
 }
