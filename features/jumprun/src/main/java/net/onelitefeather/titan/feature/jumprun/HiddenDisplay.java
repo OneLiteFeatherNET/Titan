@@ -18,6 +18,7 @@ package net.onelitefeather.titan.feature.jumprun;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Entity;
 import net.minestom.server.entity.EntityType;
@@ -56,11 +57,20 @@ final class HiddenDisplay {
 
     static <M extends EntityMeta> HiddenDisplay spawn(Player runner, EntityType type, Class<M> metaType, Consumer<M> meta, Instance instance, Pos position, boolean visibleToRunner) {
         AtomicBoolean runnerSees = new AtomicBoolean(visibleToRunner);
+        return place(type, metaType, meta, instance, position, viewer -> viewer != runner || runnerSees.get(), runnerSees);
+    }
+
+    /** A display that only the runner sees; the mirror image of the others-only rule above. */
+    static <M extends EntityMeta> HiddenDisplay spawnForRunnerOnly(Player runner, EntityType type, Class<M> metaType, Consumer<M> meta, Instance instance, Pos position) {
+        return place(type, metaType, meta, instance, position, viewer -> viewer == runner, new AtomicBoolean(true));
+    }
+
+    private static <M extends EntityMeta> HiddenDisplay place(EntityType type, Class<M> metaType, Consumer<M> meta, Instance instance, Pos position, Predicate<Player> viewable, AtomicBoolean runnerSees) {
         Entity display = new Entity(type);
         display.editEntityMeta(metaType, meta);
         display.setNoGravity(true);
         display.setHasPhysics(false);
-        display.updateViewableRule(viewer -> viewer != runner || runnerSees.get());
+        display.updateViewableRule(viewable);
         CompletableFuture<Void> placed = display.setInstance(instance, position);
         return new HiddenDisplay(display, placed, runnerSees);
     }

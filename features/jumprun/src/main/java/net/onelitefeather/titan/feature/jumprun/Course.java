@@ -117,6 +117,13 @@ final class Course {
     }
 
     /**
+     * The block after the current one, which the player has to reach next; empty at the very end.
+     */
+    Optional<CourseBlock> next() {
+        return current + 1 < blocks.size() ? Optional.of(blocks.get(current + 1)) : Optional.empty();
+    }
+
+    /**
      * Oldest first: up to two blocks behind the current one, the current one and up to two ahead.
      */
     List<CourseBlock> window() {

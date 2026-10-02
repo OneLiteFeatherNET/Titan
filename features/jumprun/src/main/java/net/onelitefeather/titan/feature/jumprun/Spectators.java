@@ -35,6 +35,7 @@ final class Spectators {
     private final Object lock;
     private final FakeBlocks fakeBlocks;
     private final Map<BlockPos, AnimatedBlock> blocks = new HashMap<>();
+    private final Outline outline;
 
     /**
      * @param lock what the animation steps synchronize on, the run that owns these spectators
@@ -43,6 +44,7 @@ final class Spectators {
         this.runner = runner;
         this.lock = lock;
         this.fakeBlocks = fakeBlocks;
+        this.outline = new Outline(runner);
     }
 
     /** Lets the blocks fall in; the runner gets each one for real when it has landed. */
@@ -52,11 +54,17 @@ final class Spectators {
             return;
         }
         for (CourseBlock block : shown) {
-            AnimatedBlock previous = blocks.put(block.pos(), AnimatedBlock.fallIn(runner, lock, fakeBlocks, block, instance));
+            AnimatedBlock previous = blocks.put(block.pos(), AnimatedBlock.fallIn(runner, lock, fakeBlocks, block, instance, outline::blockLanded));
             if (previous != null) {
                 previous.remove();
             }
         }
+    }
+
+    /** Outlines the block the runner has to reach next, for the runner only, once it has landed. */
+    void outlineNext(CourseBlock next) {
+        AnimatedBlock animated = blocks.get(next.pos());
+        outline.moveTo(next, animated != null && animated.isLanded());
     }
 
     /** Lets the blocks rise away; the real block for the runner is the caller's business. */
@@ -71,12 +79,14 @@ final class Spectators {
 
     /** Lets every remaining block rise away, because the run is over. */
     void riseAll() {
+        outline.remove();
         blocks.values().forEach(AnimatedBlock::riseAway);
         blocks.clear();
     }
 
     /** Removes every display of the run at once. */
     void clear() {
+        outline.remove();
         blocks.values().forEach(AnimatedBlock::remove);
         blocks.clear();
     }

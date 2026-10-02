@@ -105,6 +105,11 @@ final class Run {
         return course.startPoint();
     }
 
+    /** Outlines the block to reach next for the runner; the caller holds the lock of the run. */
+    synchronized void outlineNext() {
+        course.next().filter(block -> !block.pos().equals(startBlock)).ifPresent(spectators::outlineNext);
+    }
+
     /** The blocks of the visible window that exist only on the player's screen. */
     synchronized List<CourseBlock> fakeWindow() {
         return fake(course.window());
