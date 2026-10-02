@@ -420,6 +420,22 @@ provider every remote source (`task`, `group`, `service`) reads as offline, `loc
 Another provider module, e.g. for Redis or a proxy, only has to provide a `PlayerCounts` bean;
 with two real providers, mark the one to use with `@Primary`.
 
+**Labels always show offline on CloudNet:** check the logs in this order.
+
+1. Start log `Portal labels started with N label(s)`: N must match the labels in `map.json`. `0`
+   means the deployed `map.json` has no `label` blocks - the running service is a copy of the
+   template, so update the template.
+2. Bridge log `Player count lookup installed`: if it is missing, the bridge is outdated (see
+   "Deployment").
+3. On the first refresh, `CloudNet service provider resolved, portal labels read live player counts`.
+   Instead, a one-time warning `CloudNet service provider is not available, portal labels show
+   services as offline` means the lookup does not work.
+4. Task, group and service names in `source` must match CloudNet exactly.
+
+`Active configuration profiles` lists only the configured Avaje profiles. The `cloudnet` bean
+profile is added automatically and is not logged there, so it cannot be used to check CloudNet
+detection.
+
 ### Deployment
 
 A CloudNet template, a Docker image or a Kubernetes deployment delivers `application.yaml` (or an
@@ -431,6 +447,10 @@ Before rolling this change out to an existing deployment, migrate every `flags.p
 `flags.properties`" above, then remove `flags.properties` from the template. Add
 `config.watch.enabled: true` to the deployment's own `application.yaml`/profile file/`CONFIG_FILE`
 if it should pick up configuration changes without a restart.
+
+**CloudNet bridge:** `titan-bridge`, the CloudNet bridge extension jar in `extensions/`, must be the
+same version as `titan-cloudnet`. Since 2.1.0 it also supplies the player counts for portal labels,
+so an outdated bridge makes every label read offline without any error.
 
 After rolling out, the start log's "Active configuration profiles" line confirms which profiles are
 active. If the file watcher is enabled, changing a watched key and waiting up to
