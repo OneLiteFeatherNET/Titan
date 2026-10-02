@@ -60,4 +60,4 @@ Wellen 3 (`counter-spi`) und 3 (`label-display`) berühren getrennte Dateien und
 
 ## 6. Pull Request (Welle 6)
 
-- [ ] 6.1 Pull Request mit dem Titel `feat(portal): show labels with player counts in front of portals` gegen `main` öffnen (Titel und Beschreibung Englisch); die Beschreibung nennt den `label`-Block, die Quellen und Platzhalter, den austauschbaren Zähler (SPI, CloudNet in `bridge`), den Setup-Befehl, die neue Einstellung und den manuellen Abnahmelauf. Nachweis: PR-Link.
+- [x] 6.1 Pull Request mit dem Titel `feat(portal): show labels with player counts in front of portals` gegen `main` öffnen (Titel und Beschreibung Englisch); die Beschreibung nennt den `label`-Block, die Quellen und Platzhalter, den austauschbaren Zähler (SPI, CloudNet in `bridge`), den Setup-Befehl, die neue Einstellung und den manuellen Abnahmelauf. Nachweis: PR-Link.
