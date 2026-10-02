@@ -74,9 +74,9 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 
 ## 9. Item, Kopfanzeige und Ton (Nachtrag nach drittem lokalen Test)
 
-- [ ] 9.1 Test zuerst (Unit/Integration): Das Item `titan:jumprun` ist ein Schleimblock mit MiniMessage-gestaltetem Namen „Jump & Run“; `StandardLoadoutTest` in `apps/cloudnet` erwartet Slot 0 mit `SLIME_BLOCK`. Dann `JumprunItems` umstellen (D13). Nachweis: Tests grün.
-- [ ] 9.2 Prüfen, ob MiniMessage in der mitgelieferten Adventure-Version den `<sprite>`-Tag hat (Ergebnis in D13 eintragen). Test zuerst (Unit): Die Vorlage rendert für Score 7 Symbol, „Jump & Run“ und 7; ohne Sprite-Tag zeigt der Integrationstest ein `ITEM_DISPLAY` mit Schleimblock neben dem Text, unsichtbar für den Läufer. Dann `ScoreLabel` auf die Vorlage umstellen. Nachweis: Tests grün.
-- [ ] 9.3 Test zuerst (Unit `RunSoundsTest`, Integration): Shepard-Skala nach D13 (Teiltöne steigen je Punkt um einen Halbton, Lautstärke 0 an den Rändern, Summe der Lautstärken konstant); nach einem Punkt bekommt nur der Läufer die Sound-Pakete; Aufstiegssprünge bleiben stumm. Dann `RunSounds` und Aufruf beim Vorrücken. Nachweis: `./gradlew build` grün, danach erneuter lokaler Test.
+- [x] 9.1 Test zuerst (Unit/Integration): Das Item `titan:jumprun` ist ein Schleimblock mit MiniMessage-gestaltetem Namen „Jump & Run“; `StandardLoadoutTest` in `apps/cloudnet` erwartet Slot 0 mit `SLIME_BLOCK`. Dann `JumprunItems` umstellen (D13). Nachweis: Tests grün.
+- [x] 9.2 Prüfen, ob MiniMessage in der mitgelieferten Adventure-Version den `<sprite>`-Tag hat (Ergebnis in D13 eintragen). Test zuerst (Unit): Die Vorlage rendert für Score 7 Symbol, „Jump & Run“ und 7; ohne Sprite-Tag zeigt der Integrationstest ein `ITEM_DISPLAY` mit Schleimblock neben dem Text, unsichtbar für den Läufer. Dann `ScoreLabel` auf die Vorlage umstellen. Nachweis: Tests grün.
+- [x] 9.3 Test zuerst (Unit `RunSoundsTest`, Integration): Shepard-Skala nach D13 (Teiltöne steigen je Punkt um einen Halbton, Lautstärke 0 an den Rändern, Summe der Lautstärken konstant); nach einem Punkt bekommt nur der Läufer die Sound-Pakete; Aufstiegssprünge bleiben stumm. Dann `RunSounds` und Aufruf beim Vorrücken. Nachweis: `./gradlew build` grün, danach erneuter lokaler Test.
 
 ## 10. Bugfix: Anklicken lässt Blöcke verschwinden
 
