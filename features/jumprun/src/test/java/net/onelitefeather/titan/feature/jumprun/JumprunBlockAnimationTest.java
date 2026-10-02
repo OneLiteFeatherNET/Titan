@@ -196,8 +196,9 @@ class JumprunBlockAnimationTest {
             for (Entity display : rising) {
                 BlockDisplayMeta meta = meta(display);
                 assertEquals(HIGH_UP, meta.getTranslation(), "it rises");
-                assertEquals(Vec.ZERO, meta.getScale(), "and shrinks");
-                assertEquals(TICKS, meta.getTransformationInterpolationDuration(), "over eight ticks");
+                assertEquals(Vec.ONE, meta.getScale(), "without any change of size");
+                assertEquals(TICKS, meta.getTransformationInterpolationDuration(), "over eight ticks, as the fall took");
+                assertEquals(0, meta.getTransformationInterpolationStartDelta(), "starting at once, as the fall did");
                 assertTrue(display.getViewers().contains(run.player()) && display.getViewers().contains(bystander), "everyone sees it rise");
             }
 
@@ -218,12 +219,12 @@ class JumprunBlockAnimationTest {
                 Collector<ServerPacket> sent = run.connection().trackIncoming();
                 shown = displays(instance).size();
                 fixture.landOn(run.player(), run.ahead().removeFirst());
-                rising = displays(instance).stream().anyMatch(display -> Vec.ZERO.equals(meta(display).getScale()));
+                rising = displays(instance).stream().anyMatch(display -> HIGH_UP.equals(meta(display).getTranslation()) && meta(display).getTransformationInterpolationDuration() == TICKS);
                 fixture.settle();
                 run.learn(sent.collect());
             }
 
-            assertTrue(rising, "a block that left the window shrank while it rose");
+            assertTrue(rising, "a block that left the window rose");
             assertEquals(shown, displays(instance).size(), "the risen display is gone and the new one is there, so the window is as big as before");
         }
     }

@@ -89,7 +89,7 @@ final class AnimatedBlock {
         }
         state = State.RISING;
         display.showToRunner(true);
-        display.entity().editEntityMeta(BlockDisplayMeta.class, meta -> animateTo(meta, HEIGHT, Vec.ZERO));
+        display.entity().editEntityMeta(BlockDisplayMeta.class, meta -> animateTo(meta, HEIGHT));
         after(ANIMATION_TICKS, this::remove);
     }
 
@@ -103,7 +103,7 @@ final class AnimatedBlock {
         if (state != State.FALLING) {
             return;
         }
-        display.entity().editEntityMeta(BlockDisplayMeta.class, meta -> animateTo(meta, Vec.ZERO, Vec.ONE));
+        display.entity().editEntityMeta(BlockDisplayMeta.class, meta -> animateTo(meta, Vec.ZERO));
         after(ANIMATION_TICKS, this::land);
     }
 
@@ -116,11 +116,11 @@ final class AnimatedBlock {
         display.showToRunner(false);
     }
 
-    private static void animateTo(BlockDisplayMeta meta, Vec translation, Vec scale) {
+    /** Fall and rise share this move, so the rise is the fall backwards; the size never changes. */
+    private static void animateTo(BlockDisplayMeta meta, Vec translation) {
         meta.setTransformationInterpolationDuration(ANIMATION_TICKS);
         meta.setTransformationInterpolationStartDelta(NO_START_DELAY);
         meta.setTranslation(translation);
-        meta.setScale(scale);
     }
 
     private void after(int ticks, Runnable step) {
