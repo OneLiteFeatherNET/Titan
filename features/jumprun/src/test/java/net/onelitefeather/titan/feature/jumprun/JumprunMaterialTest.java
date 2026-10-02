@@ -126,7 +126,7 @@ class JumprunMaterialTest {
     void anInvalidPaletteAbortsTheStartWithItsKey(Env env) {
         Configuration config = TestBlocks.shippedWith(Surface.FULL, Map.of("lime_wool", "0"));
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            JumprunModule module = new JumprunModule(titan.node(), () -> null, List::of, new InMemoryRunRecords(), new RunMessages(), () -> JumprunFixture.SEED, new PalettesReader(config));
+            JumprunModule module = new JumprunModule(titan.node(), () -> null, List::of, new InMemoryRunRecords(), RecordingLobbyItems::new, new RunMessages(), () -> JumprunFixture.SEED, new PalettesReader(config));
 
             IllegalArgumentException abort = assertThrows(IllegalArgumentException.class, module::start);
 

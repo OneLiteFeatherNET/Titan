@@ -28,7 +28,6 @@ import net.minestom.server.entity.Player;
 import net.minestom.server.entity.metadata.display.AbstractDisplayMeta.BillboardConstraints;
 import net.minestom.server.entity.metadata.display.TextDisplayMeta;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
-import net.minestom.server.event.player.PlayerStartFlyingWithElytraEvent;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.network.packet.server.play.EntityMetaDataPacket;
 import net.minestom.testing.Collector;
@@ -175,17 +174,6 @@ class JumprunScoreLabelTest {
             Scene scene = Scene.start(env, fixture);
 
             fixture.move(scene.run().player(), new Pos(0.5, 5.0, 0.5), false);
-
-            assertTrue(scene.labels().isEmpty(), "no label stays behind");
-        }
-    }
-
-    @Test
-    void endingByElytraRemovesTheLabel(Env env) {
-        try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            Scene scene = Scene.start(env, fixture);
-
-            env.process().eventHandler().call(new PlayerStartFlyingWithElytraEvent(scene.run().player()));
 
             assertTrue(scene.labels().isEmpty(), "no label stays behind");
         }

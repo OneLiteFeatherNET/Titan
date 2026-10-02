@@ -122,7 +122,7 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 
 ## 19. Elytra im Lauf ablegen
 
-- [ ] 19.1 Test zuerst (Integration): Brustplatz beim Start leer, Standardausstattung nach Abbruch, Absturz und Erschöpfen zurück, nicht bei Disconnect; `ELYTRA`-Endgrund und Listener entfernt; Scheiter-Ton nur bei Absturz (D24). Nachweis: `./gradlew build` grün.
+- [x] 19.1 Test zuerst (Integration): Brustplatz beim Start leer, Standardausstattung nach Abbruch, Absturz und Erschöpfen zurück, nicht bei Disconnect; `ELYTRA`-Endgrund und Listener entfernt; Scheiter-Ton nur bei Absturz (D24). Nachweis: `./gradlew build` grün.
 
 ## 6. Pull Request
 

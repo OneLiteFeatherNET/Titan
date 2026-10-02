@@ -20,6 +20,7 @@ import io.avaje.inject.PostConstruct;
 import io.avaje.inject.PreDestroy;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
+import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,7 @@ import java.util.random.RandomGeneratorFactory;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.coordinate.Point;
 import net.minestom.server.coordinate.Pos;
+import net.minestom.server.entity.EquipmentSlot;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
@@ -44,7 +46,7 @@ import net.minestom.server.event.player.PlayerDeathEvent;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.event.player.PlayerMoveEvent;
 import net.minestom.server.event.player.PlayerPacketEvent;
-import net.minestom.server.event.player.PlayerStartFlyingWithElytraEvent;
+import net.minestom.server.item.ItemStack;
 import net.minestom.server.network.packet.client.ClientPacket;
 import net.minestom.server.network.packet.client.play.ClientPlayerActionPacket;
 import net.minestom.server.network.packet.client.play.ClientPlayerBlockPlacementPacket;
@@ -52,6 +54,7 @@ import net.minestom.server.network.packet.client.play.ClientPlayerPositionStatus
 import net.minestom.server.network.packet.client.play.ClientPlayerRotationPacket;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.module.LobbySpawn;
+import net.onelitefeather.titan.core.module.item.LobbyItems;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,8 +65,9 @@ import org.slf4j.spi.LoggingEventBuilder;
  * built from fake blocks and shown to the others as block displays. All state lives in the
  * {@link RunRegistry}; there is no tick task, work happens in the events of the player who runs.
  *
- * <p>{@code LobbyItems} is not injected: the item calls {@link #use(Player)} on this module
- * directly, so there is no dependency on the hotbar column and no cycle with it.
+ * <p>The item calls {@link #use(Player)} on this module directly. {@link LobbyItems} comes as a
+ * {@link Provider}, as in {@code elytra}: the hotbar collects this feature's item, so an eager
+ * dependency would be a build-order cycle.
  */
 @Singleton
 final class JumprunModule {
@@ -79,6 +83,7 @@ final class JumprunModule {
     private final EventNode<Event> titan;
     private final LobbySpawn spawn;
     private final LobbyPortals portals;
+    private final Provider<LobbyItems> lobbyItems;
     private final RunRecords records;
     private final RunMessages messages;
     private final LongSupplier seeds;
@@ -91,15 +96,16 @@ final class JumprunModule {
     private FeatureNode node;
 
     @Inject
-    JumprunModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records) {
-        this(titan, spawn, portals, records, new RunMessages(), () -> ThreadLocalRandom.current().nextLong(), new PalettesReader(Config.asConfiguration()));
+    JumprunModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records, Provider<LobbyItems> lobbyItems) {
+        this(titan, spawn, portals, records, lobbyItems, new RunMessages(), () -> ThreadLocalRandom.current().nextLong(), new PalettesReader(Config.asConfiguration()));
     }
 
-    JumprunModule(EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records, RunMessages messages, LongSupplier seeds, PalettesReader palettes) {
+    JumprunModule(EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records, Provider<LobbyItems> lobbyItems, RunMessages messages, LongSupplier seeds, PalettesReader palettes) {
         this.titan = titan;
         this.spawn = spawn;
         this.portals = portals;
         this.records = records;
+        this.lobbyItems = lobbyItems;
         this.messages = messages;
         this.seeds = seeds;
         this.palettes = palettes;
@@ -112,7 +118,6 @@ final class JumprunModule {
         this.messages.register();
         this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY);
         this.node.on(PlayerMoveEvent.class, this::onMove);
-        this.node.on(PlayerStartFlyingWithElytraEvent.class, this::onElytra);
         this.node.on(PlayerDeathEvent.class, this::onDeath);
         this.node.on(PlayerChunkLoadEvent.class, this::onChunkLoad);
         this.node.on(PlayerPacketEvent.class, this::onPacket);
@@ -170,6 +175,8 @@ final class JumprunModule {
         Run run = planned.get();
         synchronized (run) {
             runs.add(run);
+            // Without an elytra a second press of the space bar in the air cannot start a glide.
+            player.setEquipment(EquipmentSlot.CHESTPLATE, ItemStack.AIR);
             run.spectators().show(run.fakeWindow());
             run.label().show(run.score());
         }
@@ -184,10 +191,6 @@ final class JumprunModule {
         Heading heading = Heading.away(feet.x(), feet.z(), spawnPoint.x(), spawnPoint.z(), feet.direction().x(), feet.direction().z());
         RandomGenerator random = RandomGeneratorFactory.of(RANDOM_ALGORITHM).create(seeds.getAsLong());
         return Course.startSteered(feet, startBlock, heading, new SpawnZone(spawnPoint.x(), spawnPoint.z()), new InstanceSpaceProbe(player.getInstance()), random, palettes.current(), PortalClearance.ofPortals(portals.portals())).map(course -> new Run(player, course, startBlock, records.best(player.getUuid())));
-    }
-
-    private void onElytra(PlayerStartFlyingWithElytraEvent event) {
-        endRunOf(event.getPlayer(), EndReason.ELYTRA);
     }
 
     private void onDeath(PlayerDeathEvent event) {
@@ -388,6 +391,9 @@ final class JumprunModule {
             if (isRecord && score > 0 && run.hadNoRecord()) {
                 RunSounds.record(player);
             }
+        }
+        if (reason.restoresLoadout()) {
+            lobbyItems.get().equip(player);
         }
         // A new record is the news of the run, so the failure tone stays silent.
         if (reason.failed() && !(isRecord && score > 0)) {

@@ -51,6 +51,11 @@ record StartedRun(JumprunFixture fixture, TestConnection connection, Player play
         return start(env, fixture, instance, STAND, player -> fixture.records().submit(player.getUuid(), best));
     }
 
+    /** Starts a run for a player who was set up by {@code beforeStart} while already online. */
+    static StartedRun startAfter(Env env, JumprunFixture fixture, Consumer<Player> beforeStart) {
+        return start(env, fixture, JumprunFixture.loadedInstance(env), STAND, beforeStart);
+    }
+
     /** Starts the run and lets the first blocks land, which is when the player is sent them. */
     private static StartedRun start(Env env, JumprunFixture fixture, Instance instance, Pos stand, Consumer<Player> beforeStart) {
         return start(env, fixture, instance, stand, beforeStart, true);
