@@ -103,6 +103,10 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 
 - [ ] 14.1 Test zuerst (Integration): Levelup-Geräusch einmal beim ersten Überschreiten des bisherigen Rekords im Lauf, nur für den Läufer; ohne bisherigen Rekord beim Laufende mit Rekord-Meldung (Score > 0). Dann `RunSounds.record` und Merker im `Run` (D18). Nachweis: `./gradlew build` grün, erneuter lokaler Test.
 
+## 15. Paletten mit Gewichten in der Konfiguration
+
+- [ ] 15.1 Test zuerst (Unit + Integration): Standard-YAML `titan/defaults/jumprun.yaml` mit allen heutigen Materialien; Prüfung beim Start (unbekannter Block, falsche Form, Gewicht ≤ 0, leere Liste → Abbruch mit Schlüssel); gewichtete Ziehung (3:1 → 70–80 % bei festem Seed); Live-Regeln nach `lobby-module-config`. Dann `JumprunSettings`, gewichtete `Palettes` (D19), Doku in `docs/lobby-modules.md`. Nachweis: `./gradlew build` grün, `application.example.yaml` der Varianten enthält den Abschnitt.
+
 ## 6. Pull Request
 
 - [ ] 6.1 Pull Request vom Integrationszweig `feat/jumprun` auf `main` unter dem Titel `feat(jumprun): add a random single-player jump and run to the lobby` öffnen (Titel und Beschreibung Englisch), mit Smoke-Test-Ergebnis und dem Hinweis auf die Elytra-Abwägung. Nachweis: PR-URL, CI grün.

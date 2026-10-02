@@ -192,7 +192,15 @@ Der Parcours MUSS eine Hauptrichtung verfolgen, die sich nur allmählich ändert
 - **THEN** wird er nicht gewählt
 
 ### Requirement: Optische Vielfalt der Blöcke
-Jeder Block eines Laufs MUSS sein Material zufällig aus einer festen Auswahl passend zu seiner Form erhalten (z. B. bunter Beton, Wolle und Terrakotta als Vollblock, verschiedene Holz- und Steinstufen, Holzzäune und Mauern, bunte Glasscheiben und Eisengitter). Das Material DARF die Schwierigkeit und die Schaffbarkeit eines Sprungs NICHT verändern.
+Jeder Block eines Laufs MUSS sein Material zufällig aus einer Auswahl passend zu seiner Form erhalten, gewichtet nach dem Gewicht jedes Materials. Auswahl und Gewichte MÜSSEN je Form im Abschnitt `jumprun.palettes.<form>` der Konfiguration stehen (Formen: `full`, `trapdoor`, `slab`, `fence`, `pane`, `post`; je Eintrag Block-Schlüssel und ganzzahliges Gewicht > 0). Die mitgelieferten Standardwerte MÜSSEN die heutige Auswahl enthalten (z. B. bunter Beton, Wolle und Terrakotta als Vollblock, verschiedene Holz- und Steinstufen, Holzzäune und Mauern, bunte Glasscheiben und Eisengitter). Ein unbekannter Block, ein Block, dessen Form nicht zur Form der Liste passt, ein Gewicht ≤ 0 oder eine leere Liste MUSS beim Start den Start abbrechen, mit vollständigem Schlüssel und Grund. Für Änderungen zur Laufzeit gelten die allgemeinen Regeln der Lobby-Konfiguration. Das Material DARF die Schwierigkeit und die Schaffbarkeit eines Sprungs NICHT verändern.
+
+#### Scenario: Gewichtete Auswahl
+- **WHEN** `jumprun.palettes.full` nur `white_concrete` mit Gewicht 3 und `black_wool` mit Gewicht 1 enthält und viele Vollblöcke erzeugt werden
+- **THEN** sind etwa drei Viertel weißer Beton und ein Viertel schwarze Wolle
+
+#### Scenario: Falscher Block in der Liste
+- **WHEN** `jumprun.palettes.fence` den Block `stone` enthält
+- **THEN** startet die Lobby nicht, und die Meldung nennt `jumprun.palettes.fence` und den Grund
 
 #### Scenario: Material wechselt
 - **WHEN** ein Spieler mehrere Vollblöcke hintereinander sieht

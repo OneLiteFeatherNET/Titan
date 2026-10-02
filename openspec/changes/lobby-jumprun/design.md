@@ -224,6 +224,29 @@ Die Hauptrichtung `H` aus D15 wird nach der Aufstiegsphase nicht mehr nur geglä
 `Run` merkt sich beim Start den bisherigen Rekord aus `RunRecords.best`. Steigt der Score beim Vorrücken zum ersten Mal darüber, spielt `RunSounds.record` dem Läufer allein `ENTITY_PLAYER_LEVELUP` (Quelle `PLAYER`, Lautstärke 1.0, Tonhöhe 1.0), zusätzlich zum Shepard-Ton dieses Punkts. Ein Flag im `Run` verhindert die Wiederholung. Ohne bisherigen Rekord erklingt das Geräusch beim Laufende zusammen mit der Rekord-Meldung (Score > 0).
 - **Test:** Integration. Mit Rekord 12 gibt es bei Score 13 genau ein Levelup-Paket an den Läufer und danach keins mehr, ein Zuschauer bekommt keins. Ohne Rekord kommt eins beim Laufende mit Score > 0, mit Score 0 keins.
 
+### D19 Paletten mit Gewichten in der Konfiguration
+
+Die Paletten aus D11 wandern nach `features/jumprun/src/main/resources/titan/defaults/jumprun.yaml`:
+```yaml
+jumprun:
+  palettes:
+    full:
+      white_concrete: 1
+      black_wool: 1
+      # ...
+```
+Schlüssel ist der Block-Name ohne Namensraum, Wert das Gewicht. Die Form setzt weiter die nötigen Zustände (unten, geschlossen, senkrecht), der Betreiber wählt nur Material und Gewicht.
+- **Lesen:** über die `Config`-Fassade wie die anderen Columns. Beim Start prüft `JumprunSettings` jeden Eintrag: Block bekannt (`Block.fromKey`), Oberkante der Kollisionsform passt zur Form (wie der Paletten-Test aus D11), Gewicht > 0, Liste nicht leer. Sonst bricht der Start ab, mit Schlüssel `jumprun.palettes.<form>.<block>` und Grund. Zur Laufzeit gelten die Regeln von `lobby-module-config`: Gelesen wird beim Start eines Laufs. Ein ungültiger Live-Wert führt zu WARN, und es bleiben die zuletzt gültigen Paletten.
+- **Ziehen:** gewichtet mit dem Lauf-`RandomGenerator` (kumulative Gewichte, binäre Suche). Pro Seed bleibt das deterministisch.
+- **Built-in:** avaje-config (`Config`) wie bei `sit`, `spawn` usw. Ein eigener Lader wurde verworfen.
+- **Test:** Unit:
+  - Die Standard-YAML enthält alle heutigen Materialien.
+  - Ein falscher Block, eine falsche Form, ein Gewicht 0 und eine leere Liste brechen jeweils mit Schlüssel ab.
+  - Die gewichtete Ziehung 3:1 ergibt bei festem Seed über 4000 Ziehungen 70–80 %.
+
+  Integration: Ein Override aus `application.yaml` (Test-`Configuration`) wirkt auf die gesendeten Materialien.
+- **Abweichung von KISS-Regel:** Seltenes gehört eigentlich in Code. Der Nutzer will die Auswahl aber ausdrücklich ohne Release ändern können.
+
 ## Risks / Trade-offs
 
 - **Elytra durch Leertaste in der Luft:** Im Spiel startet ein erneuter Druck auf die Leertaste in der Luft das Gleiten. Spieler, die beim Springen hektisch drücken, beenden ihren Lauf versehentlich. → Bewusst so entschieden (Elytra-Gleiten = Ende). Bei der Abnahme wird geprüft, wie oft das passiert. Falls nötig, gibt es einen Folge-Change, der statt Laufende das Gleiten nur unterbindet.
