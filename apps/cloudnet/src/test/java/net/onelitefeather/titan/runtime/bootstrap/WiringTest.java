@@ -63,9 +63,9 @@ class WiringTest {
         }.type(), FeatureNode.TITAN_NODE);
     }
 
-    @DisplayName("The scope builds all seven feature beans and a LobbyItems with exactly three items")
+    @DisplayName("The scope builds the seven module feature beans and a LobbyItems with exactly four items")
     @Test
-    void scopeBuildsAllSevenFeaturesAndLobbyItemsWithThreeItems(Env env) {
+    void scopeBuildsTheFeatureBeansAndLobbyItemsWithFourItems(Env env) {
         // Named mock, not the plain mock(Type) overload - see docs/lobby-modules.md,
         // "Permission-Plattform".
         BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class, ActiveLobby.empty()).mock(FeatureFlags.class).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).build();
@@ -80,7 +80,7 @@ class WiringTest {
             Assertions.assertNotNull(scope.get(ElytraModule.class), "the elytra feature must be a bean");
 
             HotbarLobbyItems lobbyItems = scope.get(HotbarLobbyItems.class);
-            Assertions.assertEquals(3, lobbyItems.itemCount(), "exactly the navigator feather, the elytra chestplate and the elytra firework must be contributed");
+            Assertions.assertEquals(4, lobbyItems.itemCount(), "exactly the jump and run item, the navigator feather, the elytra chestplate and the elytra firework must be contributed");
         } finally {
             Assertions.assertDoesNotThrow(scope::close, "closing a fully built scope must not throw");
         }
