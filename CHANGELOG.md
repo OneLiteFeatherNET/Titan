@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.1](https://github.com/OneLiteFeatherNET/Titan/compare/v2.1.0...v2.1.1) (2026-10-02)
+
+
+### Bug Fixes
+
+* **portal:** read player counts through cloudnet's injection layer ([#343](https://github.com/OneLiteFeatherNET/Titan/issues/343)) ([ad262ce](https://github.com/OneLiteFeatherNET/Titan/commit/ad262cee02b30808c15002d154401ba1132163a2))
+
 ## [2.1.0](https://github.com/OneLiteFeatherNET/Titan/compare/v2.0.1...v2.1.0) (2026-10-02)
 
 
