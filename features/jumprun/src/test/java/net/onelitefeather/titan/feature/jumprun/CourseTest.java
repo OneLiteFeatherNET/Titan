@@ -116,6 +116,15 @@ class CourseTest {
     }
 
     @Test
+    void startsFromTheOwnPositionAsSpawnWhenThereIsRoom() {
+        SpawnZone ownPosition = new SpawnZone(START_POINT.x(), START_POINT.z());
+
+        Optional<Course> course = Course.start(START_POINT, START_BLOCK, EAST, ownPosition, new FakeSpaceProbe(), seeded(1L));
+
+        assertTrue(course.isPresent(), "a lobby without a known spawn still lets a run start in an open world");
+    }
+
+    @Test
     void doesNotStartWhenTheOpenIsNotReachedWithinThirtyJumps() {
         Optional<Course> course = Course.start(START_POINT, START_BLOCK, EAST, TestBlocks.FAR_SPAWN, FakeSpaceProbe.risingGround(2), seeded(1L));
 
