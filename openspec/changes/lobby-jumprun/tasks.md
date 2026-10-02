@@ -128,6 +128,10 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 
 - [x] 20.1 Test zuerst (Unit): Lore mit Bedienung und den Modi Easy/Medium/Hard, MiniMessage, nicht kursiv (D25). Nachweis: `./gradlew :features:jumprun:build` grün.
 
+## 21. Modi Rainbow und Ultra
+
+- [ ] 21.1 Test zuerst (Unit + Integration): `Mode.RAINBOW`/`ULTRA`, Zyklus über fünf Modi, Reroll-Takt pro Lauf (`jumprun.rerollTicks`, Standard 40, Startprüfung), Rainbow wechselt Material, Ultra würfelt Position und Form neu ohne Umrandung, Zähler setzt bei Landung zurück, Task endet mit dem Lauf; Lore, Bundles, Kopfanzeige um beide Modi ergänzt (D26). Nachweis: `./gradlew build` grün.
+
 ## 6. Pull Request
 
 - [ ] 6.1 Pull Request vom Integrationszweig `feat/jumprun` auf `main` unter dem Titel `feat(jumprun): add a random single-player jump and run to the lobby` öffnen (Titel und Beschreibung Englisch), mit Smoke-Test-Ergebnis und dem Hinweis auf die Elytra-Abwägung. Nachweis: PR-URL, CI grün.

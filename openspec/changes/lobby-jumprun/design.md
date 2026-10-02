@@ -323,6 +323,32 @@ Die DEBUG-Logs aus dem lokalen Test zeigen, dass Läufe durch versehentliches Gl
 `JumprunItems` gibt dem Schleimblock eine Lore aus MiniMessage-Zeilen (kursiv aus, gleiche Farbwelt wie Titel und Modi): erst die Bedienung („Right-click: start / stop a run“, „Sneak + right-click: switch mode“), dann je eine Zeile pro Modus („Easy: full blocks and slabs, short gaps“, „Medium: all shapes, steady climb“, „Hard: all shapes early, fast climb“). Englisch, weil ein `LobbyItem` einen `ItemStack` für alle Spieler hat. Das ist eine bewusste Ausnahme von der i18n-Regel.
 - **Test:** Unit. Das Item hat eine Lore mit Bedienung und den drei Modusnamen, nicht kursiv.
 
+### D26 Modi Rainbow und Ultra
+
+- **`Mode` bekommt zwei Einträge:**
+  - `RAINBOW` mit den Generator-Parametern von `MEDIUM`, Reroll-Art `MATERIAL`, mit Umrandung.
+  - `ULTRA` mit den Parametern von `HARD`, Reroll-Art `COURSE`, ohne Umrandung.
+  - Die anderen Modi haben die Reroll-Art `NONE`.
+  - Die Zyklus-Reihenfolge folgt der Enum-Reihenfolge.
+  - Farben in der Kopfanzeige: Rainbow als MiniMessage-`<rainbow>`, Ultra in Dunkelrot fett.
+  - Lore und Bundles werden um beide Modi ergänzt.
+- **Takt:** Ein Lauf mit Reroll-Art ≠ `NONE` hat einen Tick-Task (`player.scheduler().buildTask(...).repeat(TaskSchedule.tick(1))`, abgebrochen bei Laufende und Shutdown). Er zählt die Ticks, in denen der Läufer auf dem aktuellen Block steht (`isOnGround` und Füße über dem aktuellen Block), und setzt den Zähler bei jeder Landung zurück. Erreicht der Zähler `jumprun.rerollTicks` (Standard 40, Wert > 0, Prüfung beim Start nach `lobby-module-config`), wird neu gewürfelt und der Zähler zurückgesetzt.
+- **Reroll `MATERIAL`:** Alle sichtbaren Laufblöcke außer dem Startblock ziehen ein neues Material aus der Palette ihrer Form. Der Läufer bekommt neue Block-Pakete, die Zuschauer-Displays bekommen den neuen Blockzustand, es gibt keine Animation. Fallende Blöcke werden erst nach der Landung umgefärbt.
+- **Reroll `COURSE`:**
+  - Die Blöcke voraus (`current+1 … current+2`) werden verworfen und steigen auf (D20).
+  - Der Generator erzeugt ab dem aktuellen Block neue Blöcke mit denselben Regeln und demselben Score. Die Hauptrichtung bleibt, Steering läuft weiter.
+  - Die neuen Blöcke fallen ein.
+  - Findet der Generator nichts, bleiben die alten Blöcke stehen, und es wird nicht neu gewürfelt.
+- **Built-in:** Minestom-Scheduler am Spieler. Ein globaler Lobby-Task wurde verworfen, weil er pro Lauf filtern müsste. Der Task lebt mit dem Lauf.
+- **Test:**
+  - Unit: Zyklus mit fünf Modi, Parameter wie Medium bzw. Hard.
+  - Integration (`env.tick()`):
+    - Rainbow: Nach 40 Ticks Stehen kommen neue Materialien an denselben Positionen.
+    - Ultra: Nach 40 Ticks steigen die alten Blöcke voraus auf, neue fallen an anderen Positionen ein, und es gibt keine Umrandung.
+    - Eine Landung vor 40 Ticks setzt den Zähler zurück.
+    - Nach dem Laufende läuft kein Task mehr.
+    - Ein ungültiges `rerollTicks` bricht den Start mit Schlüssel ab.
+
 ## Risks / Trade-offs
 
 - **Elytra durch Leertaste in der Luft (gelöst durch D24):** Im Spiel startet ein erneuter Druck auf die Leertaste in der Luft das Gleiten. Spieler, die beim Springen hektisch drücken, beenden ihren Lauf versehentlich. → Bewusst so entschieden (Elytra-Gleiten = Ende). Bei der Abnahme wird geprüft, wie oft das passiert. Falls nötig, gibt es einen Folge-Change, der statt Laufende das Gleiten nur unterbindet.

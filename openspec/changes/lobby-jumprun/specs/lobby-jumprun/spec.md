@@ -218,10 +218,12 @@ Der Parcours MUSS eine Hauptrichtung verfolgen, die sich nur allmählich ändert
 - **THEN** wird er nicht gewählt
 
 ### Requirement: Schwierigkeitsmodi
-Ein Spieler MUSS zwischen den Modi Easy, Medium und Hard wählen können, indem er das Jump-and-Run-Item mit gedrückter Schleichtaste rechtsklickt; jeder solche Klick MUSS zum nächsten Modus wechseln (Easy → Medium → Hard → Easy) und den gewählten Modus in der Sprache des Spielers anzeigen. Außerhalb eines Laufs DARF ein Klick mit Schleichtaste KEINEN Lauf starten; während eines Laufs DARF er den Modus NICHT wechseln und den Lauf NICHT beenden. Standard ist Medium; der gewählte Modus gilt, bis der Spieler die Lobby verlässt. Ein Lauf behält den Modus, mit dem er gestartet wurde:
+Ein Spieler MUSS zwischen den Modi Easy, Medium, Hard, Rainbow und Ultra wählen können, indem er das Jump-and-Run-Item mit gedrückter Schleichtaste rechtsklickt; jeder solche Klick MUSS zum nächsten Modus wechseln (Easy → Medium → Hard → Rainbow → Ultra → Easy) und den gewählten Modus in der Sprache des Spielers anzeigen. Außerhalb eines Laufs DARF ein Klick mit Schleichtaste KEINEN Lauf starten; während eines Laufs DARF er den Modus NICHT wechseln und den Lauf NICHT beenden. Standard ist Medium; der gewählte Modus gilt, bis der Spieler die Lobby verlässt. Ein Lauf behält den Modus, mit dem er gestartet wurde:
 - Easy: nur Vollblöcke und Stufen, Lücke höchstens 2, seltene Aufstiege, Schwierigkeit steigt halb so schnell wie Medium.
 - Medium: Verhalten wie in den übrigen Anforderungen beschrieben.
 - Hard: Formen früher frei (Stufen und Falltüren ab 5, Zäune, Mauern, Scheiben und Gitter ab 10, Pfosten ab 20), Schwierigkeit steigt doppelt so schnell wie Medium.
+- Rainbow: Schwierigkeit wie Medium; solange der Läufer auf einem Block steht, wechseln alle sichtbaren Laufblöcke alle `jumprun.rerollTicks` Ticks (Standard 40) ihr Material, Position und Form bleiben.
+- Ultra: Schwierigkeit wie Hard, ohne Umrandung; solange der Läufer auf einem Block steht, werden die Blöcke voraus alle `jumprun.rerollTicks` Ticks an neuer Stelle mit neuer Form und neuem Material neu erzeugt (mit Aufstiegs- und Fall-Animation).
 Rekorde MÜSSEN pro Modus getrennt geführt werden, und Score-Meldungen, Rekord-Meldungen und die Anzeige über dem Läufer MÜSSEN den Modus nennen.
 
 #### Scenario: Modus wechseln
@@ -235,6 +237,18 @@ Rekorde MÜSSEN pro Modus getrennt geführt werden, und Score-Meldungen, Rekord-
 #### Scenario: Easy bleibt leicht
 - **WHEN** ein Lauf im Modus Easy Score 60 erreicht
 - **THEN** waren alle Blöcke Vollblöcke oder Stufen, und keine Lücke war größer als 2
+
+#### Scenario: Rainbow wechselt das Material
+- **WHEN** ein Läufer im Modus Rainbow 40 Ticks auf einem Block steht
+- **THEN** haben seine sichtbaren Blöcke neue Materialien an denselben Stellen und mit derselben Form
+
+#### Scenario: Ultra würfelt neu
+- **WHEN** ein Läufer im Modus Ultra 40 Ticks auf einem Block steht
+- **THEN** steigen die Blöcke voraus auf, an neuen gültigen Stellen fallen neue Blöcke ein, und er sieht keine Umrandung
+
+#### Scenario: Kein Wechsel im Sprung
+- **WHEN** ein Läufer in Rainbow oder Ultra springt, bevor 40 Ticks vergangen sind
+- **THEN** wechselt nichts, und der Zähler beginnt nach der nächsten Landung neu
 
 #### Scenario: Rekord pro Modus
 - **WHEN** ein Spieler in Easy Rekord 30 und in Hard Rekord 8 hat und in Hard 9 erreicht
