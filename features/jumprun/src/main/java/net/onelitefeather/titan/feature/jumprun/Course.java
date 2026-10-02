@@ -117,8 +117,8 @@ final class Course {
 
     /**
      * Moves on when the feet stand on one of the next two blocks (the edge counts). Landing on the
-     * second counts both
-     * jumps. When no further block fits, the advance reports it as exhausted and the run is over.
+     * second counts both jumps. When no further block fits, the advance reports it as exhausted
+     * and the run is over.
      */
     Advance advanceTo(Point feet) {
         int landed = landedIndex(feet);
@@ -151,7 +151,11 @@ final class Course {
         return atHeight && overlapsBlock(feet.x(), block.pos().x()) && overlapsBlock(feet.z(), block.pos().z());
     }
 
-    /** Whether a hitbox centred on {@code center} reaches over the block cell at {@code cell}. */
+    /**
+     * Whether a hitbox centred on {@code center} reaches over the block cell at {@code cell}. The
+     * same half width serves every shape: the height check gates it, and being lenient on thin
+     * posts and panes is intended.
+     */
     private static boolean overlapsBlock(double center, int cell) {
         return center >= cell - PLAYER_HALF_WIDTH && center <= cell + 1 + PLAYER_HALF_WIDTH;
     }
