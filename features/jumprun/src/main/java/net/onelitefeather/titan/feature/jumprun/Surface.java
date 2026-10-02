@@ -56,6 +56,11 @@ enum Surface {
 
     /** Highest block offset above the block position a standing player reaches into (fence: y+3). */
     int headroomTop() {
-        return (int) Math.ceil(top + PLAYER_HEIGHT) - 1;
+        return highestBlockReached(top);
+    }
+
+    /** The y of the highest block a player standing at the given walkable top reaches into. */
+    static int highestBlockReached(double standingY) {
+        return (int) Math.ceil(standingY + PLAYER_HEIGHT) - 1;
     }
 }
