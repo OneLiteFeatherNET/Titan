@@ -31,8 +31,8 @@ apps/local ────┼─▶ runtime ─────────────
   geteilten ArchUnit-Regeln `ColumnArchitectureRules` (s. "Architekturregeln" unten).
 - **`features/<name>`** (Paket `net.onelitefeather.titan.feature.<name>`) ist eine Column: ein
   eigenes Gradle-Modul, das die Convention `titan.column` anwendet und **nur** an `core` hängt -
-  nie an einer anderen Column, nie an `runtime` oder einer App-Variante. Die neun heutigen
-  Columns: `protection`, `spawn`, `respawn`, `navigator`, `sit`, `tickle`, `elytra`, `hotbar`
+  nie an einer anderen Column, nie an `runtime` oder einer App-Variante. Die heutigen
+  Columns: `protection`, `spawn`, `respawn`, `navigator`, `sit`, `tickle`, `elytra`, `jumprun`, `hotbar`
   (Hotbar-/Ausrüstungsitems, `LobbyItems`-Implementierung) und `admin` (`/stop`, `/end`).
 - **`runtime`** ist der gemeinsame Starter: `TitanApplication` (`main`), `Titan` (baut den
   `BeanScope`), `PlatformBeans`-Äquivalent (`runtime`s eigene `package-info.java` deklariert die
@@ -174,7 +174,7 @@ gebaut und über sein `@PostConstruct` gestartet wird. Fehlt `@Singleton` an ein
 
 **Die Reihenfolge, in der zwei Features dasselbe Event verarbeiten, legt `EVENT_PRIORITY` fest**,
 nicht eine Startreihenfolge - Minestoms `EventNode#setPriority(int)` ordnet Geschwisterknoten. Die
-heutigen neun Features, in Hunderterschritten mit Platz dazwischen:
+heutigen Features, in Hunderterschritten mit Platz dazwischen:
 
 | Feature | `EVENT_PRIORITY` |
 |---|---|
@@ -186,6 +186,7 @@ heutigen neun Features, in Hunderterschritten mit Platz dazwischen:
 | tickle | 600 |
 | elytra | 700 |
 | portal | 900 |
+| jumprun | 1000 |
 
 (`hotbar` und `admin` reagieren nicht über einen eigenen Feature-Node auf ein Event, das mit einem
 anderen Feature kollidieren könnte, und tragen deshalb kein `EVENT_PRIORITY`.)
@@ -676,6 +677,7 @@ als `provides`):
 | `sit` | `EventNode.class` | `EventNode<Event>:titan` | - |
 | `tickle` | `EventNode.class`, `Clock.class` | `EventNode<Event>:titan` | - |
 | `elytra` | `EventNode.class`, `Scheduler.class` | `EventNode<Event>:titan` | `LobbyItem.class` |
+| `jumprun` | `EventNode.class`, `LobbySpawn.class`, `LobbyItems.class` | `EventNode<Event>:titan` | `LobbyItem.class` |
 | `hotbar` | `EventNode.class` | `EventNode<Event>:titan` | `LobbyItems.class` |
 | `portal` | `EventNode.class`, `LobbyPortals.class`, `Deliver.class`, `PermissionService.class`, `Clock.class` | `EventNode<Event>:titan` | - |
 | `season` (nur `cloudnet`) | `Scheduler.class`, `Clock.class`, `EventNode.class` | `EventNode<Event>:titan` | - |
@@ -686,6 +688,20 @@ noch `@Named`, für sie reicht die `requires`-Form allein. `LobbyItems` steht be
 `respawn`, weil ihre Module `LobbyItems` direkt injizieren; `elytra` injiziert es stattdessen als
 `Provider<LobbyItems>` (siehe oben) und lässt es deshalb aus `requires` weg, obwohl es
 `LobbyItem` liefert.
+
+## jumprun
+
+Ein zufälliges Einzelspieler-Jump-and-Run: Das Item `titan:jumprun` (Hasenpfote „Jump & Run“) in
+Hotbar-Slot 0 startet einen Lauf, erneutes Benutzen beendet ihn. Die Plattformen sind reine
+Client-Blöcke (`BlockChangePacket`, nur der Spieler sieht sie, die Welt bleibt unverändert); es
+existieren immer 2 Blöcke hinter und 2 vor dem Spieler, und die Schwierigkeit (Lücke,
+Höhenunterschied, Blockart) steigt mit dem Punktestand. `EVENT_PRIORITY` ist 1000.
+
+- **Einschränkung Rekorde:** Bestwerte liegen nur im Speicher (`InMemoryRunRecords`) und gehen beim
+  Neustart verloren, bis es einen Stats-Dienst gibt.
+- **Eigene Übersetzungen:** Texte (`titan.jumprun.*`, de/en, Englisch als Fallback) kommen aus einem
+  eigenen Bundle und werden pro Spieler gerendert. Minestoms globales Flag für automatische
+  Übersetzung bleibt aus.
 
 ## Checkliste: neues Feature = neues Modul unter `features/`
 
