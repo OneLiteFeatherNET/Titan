@@ -50,6 +50,18 @@ final class FakeSpaceProbe implements SpaceProbe {
         return new FakeSpaceProbe(true, new BlockPos(-50, 0, -50), new BlockPos(50, 100, 50));
     }
 
+    /**
+     * An open world whose ground tops out at y=9 for x <= 0 and climbs one block every {@code run}
+     * blocks east of it.
+     */
+    static FakeSpaceProbe risingGround(int run) {
+        FakeSpaceProbe world = new FakeSpaceProbe().occupyBox(-50, 0, -50, 0, 9, 50);
+        for (int x = 1; x <= 50; x++) {
+            world.occupyBox(x, 0, -50, x, 9 + (x - 1) / run, 50);
+        }
+        return world;
+    }
+
     /** Occupies the position; meant for an open world. */
     FakeSpaceProbe occupy(int x, int y, int z) {
         marked.add(new BlockPos(x, y, z));

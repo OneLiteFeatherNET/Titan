@@ -105,6 +105,26 @@ class CourseTest {
         }
     }
 
+    @Test
+    void doesNotStartWhenTheOpenIsNotReachedWithinTwentyJumps() {
+        Optional<Course> course = Course.start(START_POINT, START_BLOCK, EAST, FakeSpaceProbe.risingGround(2), seeded(1L));
+
+        assertTrue(course.isEmpty(), "ground that climbs as fast as the ascent never leaves room below");
+    }
+
+    @Test
+    void aLongAscentStillScoresNothingUntilItsLastBlock() {
+        Course course = startIn(FakeSpaceProbe.risingGround(3), 3L);
+        int ascentJumps = 0;
+        while (course.score() == 0 && ascentJumps < Phase.MAX_ASCENT_JUMPS + 1) {
+            landOnNext(course, 1);
+            ascentJumps++;
+        }
+
+        assertTrue(ascentJumps - 1 > Phase.MIN_ASCENT_JUMPS, "the rising ground needs more than five ascent jumps, got " + (ascentJumps - 1));
+        assertEquals(1, course.score(), "the first jump after the last ascent block scores one");
+    }
+
     // --- window -----------------------------------------------------------------------------------
 
     @Test
@@ -256,7 +276,7 @@ class CourseTest {
     void theAscentDoesNotCountTowardsTheScore() {
         Course course = start();
 
-        landOnNext(course, Phase.ASCENT_JUMPS);
+        landOnNext(course, Phase.MIN_ASCENT_JUMPS);
 
         assertEquals(0, course.score(), "score after the five ascent jumps");
     }
@@ -264,7 +284,7 @@ class CourseTest {
     @Test
     void everyJumpAfterTheAscentScoresOne() {
         Course course = start();
-        landOnNext(course, Phase.ASCENT_JUMPS + 1);
+        landOnNext(course, Phase.MIN_ASCENT_JUMPS + 1);
 
         assertEquals(1, course.score(), "first scored jump");
 
@@ -276,7 +296,7 @@ class CourseTest {
     @Test
     void landingTwoAheadScoresBothJumps() {
         Course course = start();
-        landOnNext(course, Phase.ASCENT_JUMPS);
+        landOnNext(course, Phase.MIN_ASCENT_JUMPS);
 
         landOn(course, ahead(course, 2));
 
@@ -286,7 +306,7 @@ class CourseTest {
     @Test
     void landingTwoAheadAcrossTheEndOfTheAscentScoresOnlyTheScoredJump() {
         Course course = start();
-        landOnNext(course, Phase.ASCENT_JUMPS - 1);
+        landOnNext(course, Phase.MIN_ASCENT_JUMPS - 1);
 
         landOn(course, ahead(course, 2));
 
@@ -326,7 +346,7 @@ class CourseTest {
         Course course = startIn(world, 4L);
         world.seal();
 
-        for (int landing = 1; landing < Phase.ASCENT_JUMPS + 1; landing++) {
+        for (int landing = 1; landing < Phase.MIN_ASCENT_JUMPS + 1; landing++) {
             assertFalse(landOn(course, ahead(course, 1)).exhausted(), "a block is still ahead after landing " + landing);
         }
     }
@@ -336,7 +356,7 @@ class CourseTest {
         FakeSpaceProbe world = new FakeSpaceProbe();
         Course course = startIn(world, 4L);
         world.seal();
-        landOnNext(course, Phase.ASCENT_JUMPS);
+        landOnNext(course, Phase.MIN_ASCENT_JUMPS);
 
         assertTrue(landOn(course, ahead(course, 1)).exhausted(), "no room for a block after the last one");
     }

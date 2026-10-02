@@ -18,8 +18,10 @@ package net.onelitefeather.titan.feature.jumprun;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.ToDoubleFunction;
@@ -27,6 +29,12 @@ import java.util.random.RandomGenerator;
 
 /** Picks the next block of a course: the valid jump that best fits the wanted difficulty. */
 final class CourseGenerator {
+
+    /**
+     * What a fully walled-in place costs against a fully open one, in cost units: a tie-breaker
+     * between similar jumps, not a replacement for the wanted difficulty.
+     */
+    static final double OPEN_WEIGHT = 1.5;
 
     private final SpaceProbe probe;
     private final RandomGenerator random;
@@ -42,9 +50,19 @@ final class CourseGenerator {
      */
     Optional<CourseBlock> next(List<CourseBlock> course, Phase phase) {
         CourseBlock from = course.getLast();
-        JumpRules rules = rulesFor(course);
-        Phase following = phase.next();
-        return ranked(candidates(from, phase), phase, from).stream().filter(candidate -> rules.isFree(new Jump(from, candidate))).filter(candidate -> hasFollowUp(course, candidate, following)).findFirst().map(this::withDrawnMaterial);
+        Space space = rulesFor(course);
+        return ranked(candidatesFor(from, phase, space), phase, from, space).stream().filter(candidate -> space.isFree(from, candidate)).filter(candidate -> hasFollowUp(course, candidate, phase)).findFirst().map(this::withDrawnMaterial);
+    }
+
+    /**
+     * The phase for the jump after {@code placed}. The ascent ends at a block with air below it in
+     * the real world, so the course does not run along ways and roofs from then on.
+     */
+    Phase after(CourseBlock placed, Phase phase) {
+        return switch (phase) {
+            case Phase.Ascent ascent -> ascent.next(new Openness(probe).hasAirBelow(placed.pos()));
+            case Phase.Scored scored -> scored.next();
+        };
     }
 
     /** The material is drawn once the position is settled, so it cannot steer the choice. */
@@ -52,17 +70,38 @@ final class CourseGenerator {
         return block.withMaterial(block.surface().draw(random));
     }
 
+    /**
+     * Candidates in the open enough for the phase. After the ascent they need air below, because a
+     * block over a way would make the course run along it. Whether the jump itself is free is
+     * checked later and only for the ones that rank first.
+     */
+    private List<CourseBlock> candidatesFor(CourseBlock from, Phase phase, Space space) {
+        if (phase instanceof Phase.Ascent ascent && ascent.isOutOfJumps()) {
+            return List.of();
+        }
+        boolean needsAirBelow = phase instanceof Phase.Scored;
+        return candidates(from, phase).stream().filter(candidate -> !needsAirBelow || space.openness().hasAirBelow(candidate.pos())).toList();
+    }
+
     /** Dead-end check of depth one: some free jump must leave the candidate. */
-    private boolean hasFollowUp(List<CourseBlock> course, CourseBlock candidate, Phase following) {
+    private boolean hasFollowUp(List<CourseBlock> course, CourseBlock candidate, Phase phase) {
         List<CourseBlock> extended = new ArrayList<>(course);
         extended.add(candidate);
-        JumpRules rules = rulesFor(extended);
-        return candidates(candidate, following).stream().anyMatch(next -> rules.isFree(new Jump(candidate, next)));
+        Space space = rulesFor(extended);
+        return candidatesFor(candidate, after(candidate, phase), space).stream().anyMatch(next -> space.isFree(candidate, next));
+    }
+
+    private record Space(JumpRules rules, Openness openness) {
+
+        boolean isFree(CourseBlock from, CourseBlock to) {
+            return rules.isFree(new Jump(from, to));
+        }
     }
 
     /** The real world plus the blocks of the course the player could see. */
-    private JumpRules rulesFor(List<CourseBlock> course) {
-        return new JumpRules(new OccupiedProbe(probe, occupiedBy(course)));
+    private Space rulesFor(List<CourseBlock> course) {
+        SpaceProbe seen = new OccupiedProbe(probe, occupiedBy(course));
+        return new Space(new JumpRules(seen), new Openness(seen));
     }
 
     /**
@@ -97,20 +136,25 @@ final class CourseGenerator {
     }
 
     /** Best candidate first. */
-    private List<CourseBlock> ranked(List<CourseBlock> candidates, Phase phase, CourseBlock from) {
+    private List<CourseBlock> ranked(List<CourseBlock> candidates, Phase phase, CourseBlock from, Space space) {
         return switch (phase) {
-            case Phase.Scored scored -> closestToTargetCost(candidates, scored, from);
+            case Phase.Scored scored ->
+                closestToTargetCost(candidates, scored, from, space.openness());
             case Phase.Ascent ascent ->
                 sorted(candidates, candidate -> headingKey(from, candidate, ascent.heading()));
         };
     }
 
-    /** Shuffling before the stable sort lets the random source break ties between equal costs. */
-    private List<CourseBlock> closestToTargetCost(List<CourseBlock> candidates, Phase.Scored phase, CourseBlock from) {
+    /**
+     * Cost deviation plus a penalty for tight surroundings, so among similarly hard candidates the
+     * open one wins. Shuffling before the stable sort lets the random source break ties.
+     */
+    private List<CourseBlock> closestToTargetCost(List<CourseBlock> candidates, Phase.Scored phase, CourseBlock from, Openness openness) {
         List<CourseBlock> shuffled = new ArrayList<>(candidates);
         Collections.shuffle(shuffled, random);
         double target = Difficulty.targetCost(phase.score(), random);
-        return sorted(shuffled, candidate -> Math.abs(new Jump(from, candidate).cost() - target));
+        Map<BlockPos, Double> opennessAt = new HashMap<>();
+        return sorted(shuffled, candidate -> Math.abs(new Jump(from, candidate).cost() - target) + OPEN_WEIGHT * (1.0 - opennessAt.computeIfAbsent(candidate.pos(), openness::of)));
     }
 
     /**

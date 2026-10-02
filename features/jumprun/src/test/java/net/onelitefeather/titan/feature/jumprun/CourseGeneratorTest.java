@@ -67,7 +67,7 @@ class CourseGeneratorTest {
                 break;
             }
             course.add(next.get());
-            phase = phase.next();
+            phase = generator.after(next.get(), phase);
         }
         return course;
     }
@@ -108,7 +108,7 @@ class CourseGeneratorTest {
     void rejectsACandidateWithoutAnyFollowUpJump() {
         for (long seed = 0; seed < 20; seed++) {
             // A is the easiest candidate but nothing is reachable from it; B has a follow-up C.
-            FakeSpaceProbe world = FakeSpaceProbe.solidWorld().carveColumn(2, 10, 0, 5).carveColumn(1, 11, 0, 2).carveColumn(-5, 10, 0, 5).carveColumn(-10, 10, 0, 5);
+            FakeSpaceProbe world = FakeSpaceProbe.solidWorld().carveColumn(2, 5, 0, 10).carveColumn(1, 11, 0, 2).carveColumn(-5, 5, 0, 10).carveColumn(-10, 5, 0, 10);
             for (int x = -9; x <= -1; x++) {
                 world.carveColumn(x, 11, 0, 2);
             }
@@ -121,10 +121,39 @@ class CourseGeneratorTest {
     }
 
     @Test
+    void neverPlacesAScoredBlockOverAWay() {
+        // From y=10 a block reaches at most y=11, which leaves no four air blocks above the way at y<=7.
+        FakeSpaceProbe world = new FakeSpaceProbe().occupyBox(0, 0, -50, 50, 7, 50);
+        for (long seed = 0; seed < 30; seed++) {
+            CourseBlock chosen = jumpFromSource(new CourseGenerator(world, seeded(seed)), 0);
+
+            assertTrue(chosen.pos().x() < 0, "only the open side may be used (seed " + seed + "), chose " + chosen.pos());
+        }
+    }
+
+    @Test
+    void reportsNoCandidateWhenEveryPlaceIsOverAWay() {
+        FakeSpaceProbe world = new FakeSpaceProbe().occupyBox(-50, 0, -50, 50, 7, 50);
+
+        assertTrue(new CourseGenerator(world, seeded(1L)).next(List.of(SOURCE), new Phase.Scored(0)).isEmpty(), "ground three blocks below the start leaves no room");
+    }
+
+    @Test
+    void prefersTheMoreOpenOfTwoEquallyCostlyPlaces() {
+        // East and west offer the same four zero-cost jumps; a wall hugs the west ones.
+        FakeSpaceProbe world = new FakeSpaceProbe().occupyBox(0, 8, 2, 0, 12, 2).occupyBox(0, 8, -2, 0, 12, -2).occupyBox(-3, 0, -50, -3, 100, 50);
+        for (long seed = 0; seed < 30; seed++) {
+            CourseBlock chosen = jumpFromSource(new CourseGenerator(world, withNoise(-100.0, seed)), 0);
+
+            assertTrue(chosen.pos().x() > 0, "the open side wins at equal cost (seed " + seed + "), chose " + chosen.pos());
+        }
+    }
+
+    @Test
     void neverPlacesABlockIntoTheHeadroomOfAnEarlierBlock() {
         CourseBlock earlier = new CourseBlock(new BlockPos(0, 10, 0), Surface.FULL);
         CourseBlock last = new CourseBlock(new BlockPos(2, 10, 0), Surface.FULL);
-        Phase towardsTheEarlierBlock = new Phase.Ascent(Phase.ASCENT_JUMPS, new Heading(-1.0, 0.0));
+        Phase towardsTheEarlierBlock = new Phase.Ascent(Phase.MIN_ASCENT_JUMPS, new Heading(-1.0, 0.0));
 
         for (long seed = 0; seed < 200; seed++) {
             CourseGenerator generator = new CourseGenerator(new FakeSpaceProbe(), seeded(seed));
@@ -262,7 +291,7 @@ class CourseGeneratorTest {
     private static final int JUMPS_PER_SEED = 1000;
 
     private static FakeSpaceProbe obstacleWorld() {
-        return new FakeSpaceProbe().occupyBox(-50, 0, -50, 50, 9, 50).occupyBox(-20, 10, 15, 20, 40, 18).occupyBox(30, 10, -50, 33, 60, 50);
+        return new FakeSpaceProbe().occupyBox(-50, 0, -50, 50, 2, 50).occupyBox(-20, 10, 15, 20, 40, 18).occupyBox(30, 10, -50, 33, 60, 50);
     }
 
     /** The jumps of ten seeded courses of 1000 jumps each, the same ones for every property. */
@@ -314,6 +343,13 @@ class CourseGeneratorTest {
         JumpRules rules = new JumpRules(world);
 
         assertForEvery(generatedJumps(world), rules::isValid, "rules");
+    }
+
+    @Test
+    void generatedBlocksHaveFourAirBlocksBelowThem() {
+        FakeSpaceProbe world = obstacleWorld();
+
+        assertForEvery(generatedJumps(world), jump -> new Openness(world).hasAirBelow(jump.to().pos()), "air below");
     }
 
     @Test

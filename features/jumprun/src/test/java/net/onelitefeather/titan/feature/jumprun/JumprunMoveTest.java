@@ -110,7 +110,7 @@ class JumprunMoveTest {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             StartedRun run = StartedRun.start(env, fixture);
             List<ServerPacket> last = List.of();
-            for (int landing = 0; landing <= Phase.ASCENT_JUMPS; landing++) {
+            for (int landing = 0; landing <= Phase.MIN_ASCENT_JUMPS; landing++) {
                 last = run.landOnNext();
             }
 

@@ -118,7 +118,7 @@ class JumprunEndTest {
     void leavingTheInstanceKeepsTheScoreAsRecord(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             StartedRun run = StartedRun.start(env, fixture);
-            run.landOnNext(Phase.ASCENT_JUMPS + 1);
+            run.landOnNext(Phase.MIN_ASCENT_JUMPS + 1);
 
             run.player().setInstance(env.createFlatInstance(), ELSEWHERE).join();
 
@@ -130,7 +130,7 @@ class JumprunEndTest {
     void disconnectingKeepsTheScoreAsRecord(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             StartedRun run = StartedRun.start(env, fixture);
-            run.landOnNext(Phase.ASCENT_JUMPS + 1);
+            run.landOnNext(Phase.MIN_ASCENT_JUMPS + 1);
 
             call(env, new PlayerDisconnectEvent(run.player()));
 
@@ -142,7 +142,7 @@ class JumprunEndTest {
     void aScoreAboveTheRecordIsReportedAsNewRecord(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             StartedRun run = StartedRun.start(env, fixture);
-            run.landOnNext(Phase.ASCENT_JUMPS + 1);
+            run.landOnNext(Phase.MIN_ASCENT_JUMPS + 1);
             Collector<SystemChatPacket> chat = run.connection().trackIncoming(SystemChatPacket.class);
 
             fixture.useItem(run.player());
@@ -158,7 +158,7 @@ class JumprunEndTest {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             StartedRun run = StartedRun.start(env, fixture);
             fixture.records().submit(run.player().getUuid(), 5);
-            run.landOnNext(Phase.ASCENT_JUMPS + 1);
+            run.landOnNext(Phase.MIN_ASCENT_JUMPS + 1);
             Collector<SystemChatPacket> chat = run.connection().trackIncoming(SystemChatPacket.class);
 
             fixture.useItem(run.player());

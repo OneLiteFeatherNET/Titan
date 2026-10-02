@@ -52,6 +52,7 @@ final class Course {
     private final CourseGenerator generator;
     private final List<CourseBlock> blocks;
     private Phase nextPhase;
+    private int ascentJumps;
     private int current;
 
     private Course(Pos startPoint, CourseGenerator generator, List<CourseBlock> blocks, Phase nextPhase) {
@@ -62,15 +63,15 @@ final class Course {
     }
 
     /**
-     * Starts a course at the block under the player. Makes the whole ascent and one more block up
-     * front, and returns empty when that does not fit, so nothing is shown for a run that cannot
-     * work.
+     * Starts a course at the block under the player. Makes the whole ascent, which ends at a block
+     * in the open, and one more block up front. Returns empty when that does not fit, so nothing
+     * is shown for a run that cannot work.
      */
     static Optional<Course> start(Pos startPoint, BlockPos startBlock, Heading heading, SpaceProbe probe, RandomGenerator random) {
         CourseGenerator generator = new CourseGenerator(probe, random);
         List<CourseBlock> blocks = new ArrayList<>(List.of(new CourseBlock(startBlock, Surface.FULL)));
         Course course = new Course(startPoint, generator, blocks, Phase.start(heading));
-        boolean fits = course.generateThrough(Phase.ASCENT_JUMPS + 1);
+        boolean fits = course.generateAscent() && course.generateThrough(course.blocks.size());
         return fits ? Optional.of(course) : Optional.empty();
     }
 
@@ -98,7 +99,7 @@ final class Course {
 
     /** Scored jumps made: the ascent does not count. */
     int score() {
-        return Math.max(0, current - Phase.ASCENT_JUMPS);
+        return Math.max(0, current - ascentJumps);
     }
 
     /** Below this y the player has fallen off the course. */
@@ -159,16 +160,33 @@ final class Course {
         return Math.min(blocks.size() - 1, current + AHEAD);
     }
 
+    /** Makes the ascent blocks; false when the ascent does not reach the open in time. */
+    private boolean generateAscent() {
+        while (nextPhase instanceof Phase.Ascent) {
+            if (!generateNext()) {
+                return false;
+            }
+        }
+        ascentJumps = blocks.size() - 1;
+        return true;
+    }
+
     /** Makes blocks until {@code lastIndex} exists; false when one does not fit. */
     private boolean generateThrough(int lastIndex) {
         while (blocks.size() <= lastIndex) {
-            Optional<CourseBlock> next = generator.next(blocks, nextPhase);
-            if (next.isEmpty()) {
+            if (!generateNext()) {
                 return false;
             }
-            blocks.add(next.get());
-            nextPhase = nextPhase.next();
         }
         return true;
+    }
+
+    private boolean generateNext() {
+        Optional<CourseBlock> next = generator.next(blocks, nextPhase);
+        next.ifPresent(block -> {
+            blocks.add(block);
+            nextPhase = generator.after(block, nextPhase);
+        });
+        return next.isPresent();
     }
 }

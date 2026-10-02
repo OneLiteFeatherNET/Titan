@@ -21,14 +21,15 @@ import java.util.stream.IntStream;
 /** How the next jump of a course is generated: first an easy ascent, then by score. */
 sealed interface Phase {
 
-    int ASCENT_JUMPS = 5;
+    /** The ascent lasts at least this many jumps, however open the space below already is. */
+    int MIN_ASCENT_JUMPS = 5;
+
+    /** The ascent gives up after this many jumps: the run does not start. */
+    int MAX_ASCENT_JUMPS = 20;
 
     static Phase start(Heading heading) {
-        return new Ascent(ASCENT_JUMPS, heading);
+        return new Ascent(0, heading);
     }
-
-    /** The phase for the jump after this one. */
-    Phase next();
 
     /** Air blocks between the blocks that a jump of this phase may leave. */
     IntStream gaps();
@@ -39,14 +40,22 @@ sealed interface Phase {
     /** The surfaces a block of this phase may have. */
     List<Surface> surfaces();
 
-    /** Easy jumps upward and away from the spawn; they do not count towards the score. */
-    record Ascent(int remaining, Heading heading) implements Phase {
+    /**
+     * Easy jumps upward and away from the spawn, until a block stands in the open; they do not
+     * count towards the score. {@code jumps} is how many were made so far.
+     */
+    record Ascent(int jumps, Heading heading) implements Phase {
 
         private static final int MAX_GAP = 2;
 
-        @Override
-        public Phase next() {
-            return remaining <= 1 ? new Scored(0) : new Ascent(remaining - 1, heading);
+        /** The phase after one more jump, whose block has or lacks air below it. */
+        Phase next(boolean openBelow) {
+            int made = jumps + 1;
+            return made >= MIN_ASCENT_JUMPS && openBelow ? new Scored(0) : new Ascent(made, heading);
+        }
+
+        boolean isOutOfJumps() {
+            return jumps >= MAX_ASCENT_JUMPS;
         }
 
         @Override
@@ -67,8 +76,7 @@ sealed interface Phase {
 
     /** Jumps whose difficulty follows {@code score}, the number of scored jumps before this one. */
     record Scored(int score) implements Phase {
-        @Override
-        public Phase next() {
+        Phase next() {
             return new Scored(score + 1);
         }
 

@@ -16,6 +16,7 @@
 package net.onelitefeather.titan.feature.jumprun;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -46,7 +47,7 @@ class AscentPhaseTest {
                 break;
             }
             course.add(next.get());
-            phase = phase.next();
+            phase = generator.after(next.get(), phase);
         }
         return course;
     }
@@ -54,13 +55,36 @@ class AscentPhaseTest {
     // --- phase sequence ---------------------------------------------------------------------------
 
     @Test
-    void startsWithFiveAscentJumps() {
+    void startsWithNoJumpsMade() {
+        assertEquals(new Phase.Ascent(0, EAST), Phase.start(EAST), "nothing made yet");
+    }
+
+    @Test
+    void staysInTheAscentForAtLeastFiveJumpsEvenWithAirBelow() {
         Phase phase = Phase.start(EAST);
-        for (int i = 0; i < Phase.ASCENT_JUMPS; i++) {
+        for (int i = 0; i < Phase.MIN_ASCENT_JUMPS - 1; i++) {
+            phase = ((Phase.Ascent) phase).next(true);
             assertInstanceOf(Phase.Ascent.class, phase, "jump " + (i + 1) + " is still ascent");
-            phase = phase.next();
         }
-        assertEquals(new Phase.Scored(0), phase, "the sixth jump is the first scored one");
+
+        assertEquals(new Phase.Scored(0), ((Phase.Ascent) phase).next(true), "the fifth jump ends it once there is air below");
+    }
+
+    @Test
+    void keepsAscendingAfterFiveJumpsWhileThereIsNoAirBelow() {
+        assertEquals(new Phase.Ascent(6, EAST), new Phase.Ascent(5, EAST).next(false), "the sixth jump is still ascent");
+    }
+
+    @Test
+    void endsTheAscentAsSoonAsTheBlockHasAirBelowAfterTheMinimum() {
+        assertEquals(new Phase.Scored(0), new Phase.Ascent(7, EAST).next(true), "the eighth jump has air below");
+    }
+
+    @Test
+    void generatesNoAscentJumpBeyondTheMaximum() {
+        CourseGenerator generator = new CourseGenerator(new FakeSpaceProbe(), seeded(1L));
+
+        assertTrue(generator.next(List.of(START), new Phase.Ascent(Phase.MAX_ASCENT_JUMPS, EAST)).isEmpty(), "twenty jumps are the limit");
     }
 
     @Test
@@ -92,7 +116,7 @@ class AscentPhaseTest {
     void ascentIsFiveFullBlocksEachOneHigherWithAShortGap() {
         List<CourseBlock> course = ascent(new FakeSpaceProbe(), EAST, 1L);
 
-        assertEquals(Phase.ASCENT_JUMPS + 1, course.size(), "start plus five jumps");
+        assertEquals(Phase.MIN_ASCENT_JUMPS + 1, course.size(), "start plus five jumps");
         for (int i = 1; i < course.size(); i++) {
             Jump jump = new Jump(course.get(i - 1), course.get(i));
             assertEquals(Surface.FULL, jump.to().surface(), "full block at jump " + i);
@@ -130,7 +154,7 @@ class AscentPhaseTest {
 
         List<CourseBlock> course = ascent(world, EAST, 5L);
 
-        assertEquals(Phase.ASCENT_JUMPS + 1, course.size(), "still room to ascend");
+        assertEquals(Phase.MIN_ASCENT_JUMPS + 1, course.size(), "still room to ascend");
         for (CourseBlock block : course) {
             assertTrue(block.pos().x() < 3, "block inside the wall: " + block.pos());
         }
@@ -143,6 +167,54 @@ class AscentPhaseTest {
         List<CourseBlock> course = ascent(world, EAST, 1L);
 
         assertEquals(1, course.size(), "not even the first jump fits under a ceiling two blocks above the start");
+    }
+
+    // --- ending in the open -------------------------------------------------------------------------
+
+    private static boolean hasAirBelow(FakeSpaceProbe world, CourseBlock block) {
+        return new Openness(world).hasAirBelow(block.pos());
+    }
+
+    @Test
+    void ascentOnFlatGroundEndsAtTheFifthJumpWithAirBelow() {
+        FakeSpaceProbe world = new FakeSpaceProbe().occupyBox(-50, 0, -50, 50, 9, 50);
+
+        List<CourseBlock> course = ascent(world, EAST, 1L);
+
+        assertEquals(Phase.MIN_ASCENT_JUMPS + 1, course.size(), "start plus five jumps");
+        assertTrue(hasAirBelow(world, course.getLast()), "four air blocks below the last ascent block");
+    }
+
+    @Test
+    void ascentOnRisingGroundGoesOnUntilTheLastBlockHasAirBelow() {
+        FakeSpaceProbe world = FakeSpaceProbe.risingGround(3);
+        for (long seed = 0; seed < 10; seed++) {
+            List<CourseBlock> course = ascent(world, EAST, seed);
+
+            assertTrue(course.size() > Phase.MIN_ASCENT_JUMPS + 1, "the ground climbs along, so more than five jumps (seed " + seed + "), got " + (course.size() - 1));
+            assertTrue(hasAirBelow(world, course.getLast()), "the last block must stand in the open (seed " + seed + ")");
+            assertFalse(hasAirBelow(world, course.get(course.size() - 2)), "the one before it was not in the open yet (seed " + seed + ")");
+        }
+    }
+
+    @Test
+    void ascentLeavesTheStepsBeforeTheLastOneUncheckedForAirBelow() {
+        FakeSpaceProbe world = FakeSpaceProbe.risingGround(3);
+
+        List<CourseBlock> course = ascent(world, EAST, 2L);
+
+        assertEquals(Surface.FULL, course.get(1).surface(), "even the first block, right above the ground, is built");
+        assertFalse(hasAirBelow(world, course.get(1)), "and it has no air below");
+    }
+
+    @Test
+    void ascentGivesUpWhenTheGroundClimbsAsFastAsTheBlocks() {
+        FakeSpaceProbe world = FakeSpaceProbe.risingGround(2);
+
+        List<CourseBlock> course = ascent(world, EAST, 1L);
+
+        assertTrue(course.size() - 1 <= Phase.MAX_ASCENT_JUMPS, "never more than twenty jumps");
+        assertFalse(hasAirBelow(world, course.getLast()), "the open was never reached");
     }
 
     // --- heading ----------------------------------------------------------------------------------
