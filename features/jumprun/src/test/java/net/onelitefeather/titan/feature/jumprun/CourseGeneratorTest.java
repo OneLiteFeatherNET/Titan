@@ -23,9 +23,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.random.RandomGenerator;
 import java.util.random.RandomGeneratorFactory;
+import net.minestom.server.instance.block.Block;
 import org.junit.jupiter.api.Test;
 
 class CourseGeneratorTest {
@@ -183,6 +185,35 @@ class CourseGeneratorTest {
         List<CourseBlock> second = walk(new CourseGenerator(new FakeSpaceProbe(), seeded(2L)), SOURCE, new Phase.Scored(0), 50);
 
         assertNotEquals(first, second, "different seeds, different courses");
+    }
+
+    // --- materials ------------------------------------------------------------------------------
+
+    private static List<Block> fullBlockMaterials(long seed) {
+        List<CourseBlock> course = walk(new CourseGenerator(new FakeSpaceProbe(), seeded(seed)), SOURCE, new Phase.Scored(0), 40);
+        return course.stream().skip(1).filter(block -> block.surface() == Surface.FULL).limit(10).map(CourseBlock::material).toList();
+    }
+
+    @Test
+    void tenFullBlocksInARowShowMoreThanOneMaterial() {
+        List<Block> materials = fullBlockMaterials(5L);
+
+        assertEquals(10, materials.size(), "ten full blocks within forty jumps");
+        assertTrue(Set.copyOf(materials).size() > 1, "materials must vary, got " + materials);
+    }
+
+    @Test
+    void sameSeedGivesTheSameMaterials() {
+        assertEquals(fullBlockMaterials(5L), fullBlockMaterials(5L), "same seed, same materials");
+    }
+
+    @Test
+    void everyGeneratedBlockUsesAMaterialOfItsOwnSurface() {
+        List<CourseBlock> course = walk(new CourseGenerator(new FakeSpaceProbe(), seeded(9L)), SOURCE, new Phase.Scored(80), 200);
+
+        for (CourseBlock block : course.subList(1, course.size())) {
+            assertTrue(block.surface().palette().contains(block.material()), block.material() + " is not a material of " + block.surface());
+        }
     }
 
     // --- statistics -----------------------------------------------------------------------------

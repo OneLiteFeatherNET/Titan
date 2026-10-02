@@ -44,7 +44,12 @@ final class CourseGenerator {
         CourseBlock from = course.getLast();
         JumpRules rules = rulesFor(course);
         Phase following = phase.next();
-        return ranked(candidates(from, phase), phase, from).stream().filter(candidate -> rules.isFree(new Jump(from, candidate))).filter(candidate -> hasFollowUp(course, candidate, following)).findFirst();
+        return ranked(candidates(from, phase), phase, from).stream().filter(candidate -> rules.isFree(new Jump(from, candidate))).filter(candidate -> hasFollowUp(course, candidate, following)).findFirst().map(this::withDrawnMaterial);
+    }
+
+    /** The material is drawn once the position is settled, so it cannot steer the choice. */
+    private CourseBlock withDrawnMaterial(CourseBlock block) {
+        return block.withMaterial(block.surface().draw(random));
     }
 
     /** Dead-end check of depth one: some free jump must leave the candidate. */
