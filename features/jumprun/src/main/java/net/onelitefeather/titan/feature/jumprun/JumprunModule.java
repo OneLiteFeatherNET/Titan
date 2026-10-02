@@ -32,6 +32,7 @@ import java.util.function.LongSupplier;
 import java.util.function.UnaryOperator;
 import java.util.random.RandomGenerator;
 import java.util.random.RandomGeneratorFactory;
+import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.coordinate.Point;
 import net.minestom.server.coordinate.Pos;
@@ -50,6 +51,7 @@ import net.minestom.server.network.packet.client.play.ClientPlayerActionPacket;
 import net.minestom.server.network.packet.client.play.ClientPlayerBlockPlacementPacket;
 import net.minestom.server.network.packet.client.play.ClientPlayerPositionStatusPacket;
 import net.minestom.server.network.packet.client.play.ClientPlayerRotationPacket;
+import net.minestom.server.sound.SoundEvent;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.module.LobbySpawn;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
@@ -72,6 +74,7 @@ final class JumprunModule {
     static final int EVENT_PRIORITY = 1000;
 
     static final String ID = "jumprun";
+    static final Mode DEFAULT_MODE = Mode.MEDIUM;
     private static final int USE_SUPPRESSION_TICKS = 2;
     private static final String RANDOM_ALGORITHM = "L64X128MixRandom";
     private static final Logger LOGGER = LoggerFactory.getLogger(JumprunModule.class);
@@ -87,6 +90,8 @@ final class JumprunModule {
     private final FakeBlocks fakeBlocks = new FakeBlocks();
     /** Player tick until which the item is ignored after a click on a run block. */
     private final Map<UUID, Long> suppressedUntil = new ConcurrentHashMap<>();
+    /** The chosen mode of each player; absent means {@link #DEFAULT_MODE}. */
+    private final Map<UUID, Mode> modes = new ConcurrentHashMap<>();
     private final Set<UUID> resendPending = ConcurrentHashMap.newKeySet();
     private FeatureNode node;
 
@@ -144,15 +149,35 @@ final class JumprunModule {
         }
     }
 
+    /** The mode the player's next run starts in. */
+    Mode modeOf(Player player) {
+        return modes.getOrDefault(player.getUuid(), DEFAULT_MODE);
+    }
+
     /**
      * The item as the hotbar dispatches it. A client that right-clicks a block with the item sends
      * the use-on-block packet and then the plain use packet; the second one must not end the run
      * the click just kept intact.
      */
     void use(Player player) {
-        if (!suppressesUse(player)) {
-            toggle(player);
+        if (suppressesUse(player)) {
+            return;
         }
+        if (player.isSneaking()) {
+            // Sneaking only picks the mode between runs; a run is never aborted by it.
+            if (!isRunning(player)) {
+                cycleMode(player);
+            }
+            return;
+        }
+        toggle(player);
+    }
+
+    private void cycleMode(Player player) {
+        Mode next = modeOf(player).next();
+        modes.put(player.getUuid(), next);
+        player.sendMessage(messages.modeChanged(player.getLocale(), next));
+        player.playSound(Sound.sound(SoundEvent.UI_BUTTON_CLICK, Sound.Source.UI, 1.0f, 1.0f));
     }
 
     boolean suppressesUse(Player player) {
@@ -177,13 +202,14 @@ final class JumprunModule {
     }
 
     private Optional<Run> plan(Player player) {
+        Mode mode = modeOf(player);
         Pos feet = player.getPosition();
         // One below the feet, so the assumed top is never above the real surface (a slab, say).
         BlockPos startBlock = new BlockPos(feet.blockX(), feet.blockY() - 1, feet.blockZ());
         Pos spawnPoint = Optional.ofNullable(spawn.position()).orElse(feet);
         Heading heading = Heading.away(feet.x(), feet.z(), spawnPoint.x(), spawnPoint.z(), feet.direction().x(), feet.direction().z());
         RandomGenerator random = RandomGeneratorFactory.of(RANDOM_ALGORITHM).create(seeds.getAsLong());
-        return Course.startSteered(feet, startBlock, heading, new SpawnZone(spawnPoint.x(), spawnPoint.z()), new InstanceSpaceProbe(player.getInstance()), random, palettes.current(), PortalClearance.ofPortals(portals.portals())).map(course -> new Run(player, course, startBlock, records.best(player.getUuid())));
+        return Course.startSteered(feet, startBlock, heading, new SpawnZone(spawnPoint.x(), spawnPoint.z()), new InstanceSpaceProbe(player.getInstance()), random, palettes.current(), PortalClearance.ofPortals(portals.portals()), mode).map(course -> new Run(player, course, startBlock, mode, records.best(player.getUuid(), mode)));
     }
 
     private void onElytra(PlayerStartFlyingWithElytraEvent event) {
@@ -198,6 +224,7 @@ final class JumprunModule {
         forgetClicks(event.getPlayer());
         endRunOf(event.getPlayer(), EndReason.DISCONNECT);
         records.forget(event.getPlayer().getUuid());
+        modes.remove(event.getPlayer().getUuid());
     }
 
     /**
@@ -380,10 +407,10 @@ final class JumprunModule {
                 fakeBlocks.reset(player, run.fakeWindow());
             }
         }
-        boolean isRecord = reason.submitsScore() && records.submit(player.getUuid(), score);
+        boolean isRecord = reason.submitsScore() && records.submit(player.getUuid(), run.mode(), score);
         if (reason.announcesScore()) {
             // A run that never scored is not worth calling a record, even when it is the first.
-            Component message = isRecord && score > 0 ? messages.endRecord(player.getLocale(), score) : messages.endScore(player.getLocale(), score);
+            Component message = isRecord && score > 0 ? messages.endRecord(player.getLocale(), run.mode(), score) : messages.endScore(player.getLocale(), run.mode(), score);
             player.sendMessage(message);
             if (isRecord && score > 0 && run.hadNoRecord()) {
                 RunSounds.record(player);

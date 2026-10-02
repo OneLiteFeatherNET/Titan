@@ -34,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
  */
 final class ScoreLabel {
 
-    private static final String TEMPLATE = "<sprite:blocks:block/slime_block> " + RunTitle.MARKUP + " <gray>·</gray> <white><score></white>";
+    private static final String TEMPLATE = "<sprite:blocks:block/slime_block> " + RunTitle.MARKUP + " <gray>·</gray> <mode> <gray>·</gray> <white><score></white>";
 
     /** A passenger sits at the top of the head; this lifts the text over the name tag. */
     private static final Vec ABOVE_NAME_TAG = new Vec(0.0, 0.5, 0.0);
@@ -43,12 +43,14 @@ final class ScoreLabel {
     private static final int NOTHING_SHOWN = -1;
 
     private final Player runner;
+    private final Mode mode;
     @Nullable
     private HiddenDisplay label;
     private int shownScore = NOTHING_SHOWN;
 
-    ScoreLabel(Player runner) {
+    ScoreLabel(Player runner, Mode mode) {
         this.runner = runner;
+        this.mode = mode;
     }
 
     /** Shows the score, creating the label on first use; an unchanged score sends nothing. */
@@ -57,7 +59,7 @@ final class ScoreLabel {
             return;
         }
         shownScore = score;
-        Component text = render(score);
+        Component text = render(mode, score);
         if (label == null) {
             label = spawn(text);
         } else {
@@ -65,8 +67,8 @@ final class ScoreLabel {
         }
     }
 
-    static Component render(int score) {
-        return MiniMessage.miniMessage().deserialize(TEMPLATE, Placeholder.unparsed("score", Integer.toString(score)));
+    static Component render(Mode mode, int score) {
+        return MiniMessage.miniMessage().deserialize(TEMPLATE, Placeholder.component("mode", mode.label()), Placeholder.unparsed("score", Integer.toString(score)));
     }
 
     void remove() {

@@ -32,8 +32,8 @@ final class JumpRules {
         this.probe = probe;
     }
 
-    boolean isValid(Jump jump) {
-        return isReachable(jump) && isFree(jump);
+    boolean isValid(Jump jump, Mode mode) {
+        return isReachable(jump, mode) && isFree(jump);
     }
 
     /** The world leaves room for the jump: at the target and along the way. */
@@ -42,12 +42,12 @@ final class JumpRules {
     }
 
     /** Pure geometry: the player can bridge the gap and the rise, whatever stands in the way. */
-    static boolean isReachable(Jump jump) {
-        return jump.gap() >= Jump.MIN_GAP && jump.gap() <= maxGap(jump) && jump.rise() <= Jump.MAX_RISE;
+    static boolean isReachable(Jump jump, Mode mode) {
+        return jump.gap() >= Jump.MIN_GAP && jump.gap() <= maxGap(jump, mode) && jump.rise() <= Jump.MAX_RISE;
     }
 
-    private static int maxGap(Jump jump) {
-        int maxGap = jump.isAscent() ? Jump.MAX_GAP_ASCENT : Jump.MAX_GAP;
+    private static int maxGap(Jump jump, Mode mode) {
+        int maxGap = jump.isAscent() ? mode.maxGapAscent() : mode.maxGap();
         return jump.isDiagonal() ? Math.min(maxGap, Jump.MAX_GAP_DIAGONAL) : maxGap;
     }
 

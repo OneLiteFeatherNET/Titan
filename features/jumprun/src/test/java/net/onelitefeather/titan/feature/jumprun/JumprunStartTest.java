@@ -162,7 +162,7 @@ class JumprunStartTest {
 
             fixture.useItem(player);
 
-            Component expected = fixture.messages().endScore(player.getLocale(), 0);
+            Component expected = fixture.messages().endScore(player.getLocale(), Mode.MEDIUM, 0);
             chat.assertSingle(packet -> assertEquals(expected, packet.message()));
         }
     }

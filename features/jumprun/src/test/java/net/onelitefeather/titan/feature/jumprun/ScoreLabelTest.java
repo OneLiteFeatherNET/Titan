@@ -35,7 +35,7 @@ class ScoreLabelTest {
 
     @Test
     void theLabelNamesTheGameAndTheScore() {
-        String text = PlainTextComponentSerializer.plainText().serialize(ScoreLabel.render(7));
+        String text = PlainTextComponentSerializer.plainText().serialize(ScoreLabel.render(Mode.MEDIUM, 7));
 
         assertTrue(text.contains("Jump & Run"), "the title, was: " + text);
         assertTrue(text.endsWith("· 7"), "the score, was: " + text);
@@ -43,6 +43,6 @@ class ScoreLabelTest {
 
     @Test
     void theLabelCarriesTheSlimeBlockSprite() {
-        assertTrue(hasSlimeSprite(ScoreLabel.render(7)), "the item icon is part of the text");
+        assertTrue(hasSlimeSprite(ScoreLabel.render(Mode.MEDIUM, 7)), "the item icon is part of the text");
     }
 }

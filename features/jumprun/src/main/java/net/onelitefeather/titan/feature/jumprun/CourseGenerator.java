@@ -263,7 +263,7 @@ final class CourseGenerator {
                 }
             }
         }
-        return candidates.stream().filter(candidate -> JumpRules.isReachable(new Jump(from, candidate))).toList();
+        return candidates.stream().filter(candidate -> JumpRules.isReachable(new Jump(from, candidate), phase.mode())).toList();
     }
 
     /** Best candidate first. */
@@ -284,12 +284,12 @@ final class CourseGenerator {
     private List<Spot> closestToTargetCost(List<Spot> candidates, Phase.Scored phase, Placement from, Openness openness) {
         List<Spot> shuffled = new ArrayList<>(candidates);
         Collections.shuffle(shuffled, random);
-        double target = Difficulty.targetCost(phase.score(), random);
+        double target = Difficulty.targetCost(phase.mode(), phase.score(), random);
         Map<BlockPos, Double> opennessAt = new HashMap<>();
         return sorted(shuffled, candidate -> {
             Jump jump = new Jump(from, candidate);
             double turn = (1.0 - phase.heading().dot(jump.direction())) / 2.0;
-            return Math.abs(jump.cost() - target) + OPEN_WEIGHT * (1.0 - opennessAt.computeIfAbsent(candidate.pos(), openness::of)) + DIRECTION_WEIGHT * turn;
+            return Math.abs(jump.cost(phase.mode()) - target) + OPEN_WEIGHT * (1.0 - opennessAt.computeIfAbsent(candidate.pos(), openness::of)) + DIRECTION_WEIGHT * turn;
         });
     }
 

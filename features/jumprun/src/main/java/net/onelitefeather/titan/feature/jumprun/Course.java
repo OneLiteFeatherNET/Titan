@@ -77,21 +77,21 @@ final class Course {
 
     /** As above, and no block or flight path comes near a portal. */
     static Optional<Course> start(Pos startPoint, BlockPos startBlock, Heading heading, SpawnZone spawn, SpaceProbe probe, RandomGenerator random, Palettes palettes, PortalClearance portals) {
-        return start(startPoint, startBlock, heading, spawn, probe, random, palettes, portals, Steering.none());
+        return start(startPoint, startBlock, heading, spawn, probe, random, palettes, portals, Steering.none(), Mode.MEDIUM);
     }
 
     /**
      * As above, and the scored part snakes around the spawn. The sense and phase of the snake are
      * drawn from {@code random} first, before anything else uses it.
      */
-    static Optional<Course> startSteered(Pos startPoint, BlockPos startBlock, Heading heading, SpawnZone spawn, SpaceProbe probe, RandomGenerator random, Palettes palettes, PortalClearance portals) {
-        return start(startPoint, startBlock, heading, spawn, probe, random, palettes, portals, Steering.around(spawn, random));
+    static Optional<Course> startSteered(Pos startPoint, BlockPos startBlock, Heading heading, SpawnZone spawn, SpaceProbe probe, RandomGenerator random, Palettes palettes, PortalClearance portals, Mode mode) {
+        return start(startPoint, startBlock, heading, spawn, probe, random, palettes, portals, Steering.around(spawn, random), mode);
     }
 
-    private static Optional<Course> start(Pos startPoint, BlockPos startBlock, Heading heading, SpawnZone spawn, SpaceProbe probe, RandomGenerator random, Palettes palettes, PortalClearance portals, Steering steering) {
+    private static Optional<Course> start(Pos startPoint, BlockPos startBlock, Heading heading, SpawnZone spawn, SpaceProbe probe, RandomGenerator random, Palettes palettes, PortalClearance portals, Steering steering, Mode mode) {
         CourseGenerator generator = new CourseGenerator(probe, spawn, random, palettes, portals, steering);
         List<CourseBlock> blocks = new ArrayList<>(List.of(new CourseBlock(startBlock, Surface.FULL, START_MATERIAL)));
-        Course course = new Course(startPoint, generator, blocks, Phase.start(heading));
+        Course course = new Course(startPoint, generator, blocks, Phase.start(heading, mode));
         boolean fits = course.generateAscent() && course.generateThrough(course.blocks.size());
         return fits ? Optional.of(course) : Optional.empty();
     }

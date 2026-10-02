@@ -48,14 +48,14 @@ class JumprunPlayersTest {
         private final List<Integer> submitted = new ArrayList<>();
 
         @Override
-        public OptionalInt best(UUID player) {
-            return delegate.best(player);
+        public OptionalInt best(UUID player, Mode mode) {
+            return delegate.best(player, mode);
         }
 
         @Override
-        public boolean submit(UUID player, int score) {
+        public boolean submit(UUID player, Mode mode, int score) {
             submitted.add(score);
-            return delegate.submit(player, score);
+            return delegate.submit(player, mode, score);
         }
 
         @Override

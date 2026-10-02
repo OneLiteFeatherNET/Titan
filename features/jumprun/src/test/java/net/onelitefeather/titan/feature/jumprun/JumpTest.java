@@ -45,30 +45,30 @@ class JumpTest {
 
     @Test
     void easiestJumpCostsNothing() {
-        assertEquals(0.0, jump(block(0, 0, 0, Surface.FULL), block(2, 0, 0, Surface.FULL)).cost(), "full, gap 1, flat");
+        assertEquals(0.0, jump(block(0, 0, 0, Surface.FULL), block(2, 0, 0, Surface.FULL)).cost(Mode.MEDIUM), "full, gap 1, flat");
     }
 
     @Test
     void costGrowsByOneAndAHalfPerExtraGapBlock() {
-        assertEquals(4.5, jump(block(0, 0, 0, Surface.FULL), block(5, 0, 0, Surface.FULL)).cost(), "gap 4");
+        assertEquals(4.5, jump(block(0, 0, 0, Surface.FULL), block(5, 0, 0, Surface.FULL)).cost(Mode.MEDIUM), "gap 4");
     }
 
     @Test
     void costGrowsByTwoPerTypeStep() {
-        assertEquals(2.0, jump(block(0, 0, 0, Surface.FULL), block(2, 0, 0, Surface.SLAB)).cost(), "slab");
-        assertEquals(6.0, jump(block(0, 0, 0, Surface.FULL), block(2, -1, 0, Surface.PANE)).cost(), "pane, lower");
+        assertEquals(2.0, jump(block(0, 0, 0, Surface.FULL), block(2, 0, 0, Surface.SLAB)).cost(Mode.MEDIUM), "slab");
+        assertEquals(6.0, jump(block(0, 0, 0, Surface.FULL), block(2, -1, 0, Surface.PANE)).cost(Mode.MEDIUM), "pane, lower");
     }
 
     @Test
     void costGrowsByOneWhenTheTopRises() {
-        assertEquals(1.0, jump(block(0, 0, 0, Surface.FULL), block(2, 1, 0, Surface.FULL)).cost(), "one block up");
+        assertEquals(1.0, jump(block(0, 0, 0, Surface.FULL), block(2, 1, 0, Surface.FULL)).cost(Mode.MEDIUM), "one block up");
     }
 
     @Test
     void aRisingTopCountsEvenWhenTheBlockPositionStaysLevel() {
         Jump fenceAfterFull = jump(block(0, 0, 0, Surface.FULL), block(2, 0, 0, Surface.FENCE));
         assertTrue(fenceAfterFull.isAscent(), "fence top is above a full block top");
-        assertEquals(2 * 2 + 1.0, fenceAfterFull.cost(), "fence + ascent");
+        assertEquals(2 * 2 + 1.0, fenceAfterFull.cost(Mode.MEDIUM), "fence + ascent");
     }
 
     @Test
@@ -89,8 +89,8 @@ class JumpTest {
 
     @Test
     void aDiagonalJumpCostsOneGapLevelMoreThanAnAxisJumpOfTheSameGap() {
-        double axis = jump(block(0, 0, 0, Surface.FULL), block(3, 0, 0, Surface.FULL)).cost();
-        double diagonal = jump(block(0, 0, 0, Surface.FULL), block(3, 0, 3, Surface.FULL)).cost();
+        double axis = jump(block(0, 0, 0, Surface.FULL), block(3, 0, 0, Surface.FULL)).cost(Mode.MEDIUM);
+        double diagonal = jump(block(0, 0, 0, Surface.FULL), block(3, 0, 3, Surface.FULL)).cost(Mode.MEDIUM);
 
         assertEquals(1.5, axis, "axis, gap 2");
         assertEquals(3.0, diagonal, "diagonal, gap 2 costs like gap level 2");
@@ -98,7 +98,7 @@ class JumpTest {
 
     @Test
     void aShortDiagonalJumpStillCostsMoreThanAnAxisJumpWithTheSameGap() {
-        assertEquals(1.5, jump(block(0, 0, 0, Surface.FULL), block(2, 0, 2, Surface.FULL)).cost(), "diagonal, gap 1");
+        assertEquals(1.5, jump(block(0, 0, 0, Surface.FULL), block(2, 0, 2, Surface.FULL)).cost(Mode.MEDIUM), "diagonal, gap 1");
     }
 
     @Test

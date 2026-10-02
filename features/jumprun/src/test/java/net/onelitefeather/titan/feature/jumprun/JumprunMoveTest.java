@@ -182,7 +182,7 @@ class JumprunMoveTest {
 
             fixture.move(run.player(), STAND.withY(JumprunFixture.GROUND_Y - 3.5), false);
 
-            Component expected = fixture.messages().endScore(run.player().getLocale(), 0);
+            Component expected = fixture.messages().endScore(run.player().getLocale(), Mode.MEDIUM, 0);
             chat.assertSingle(packet -> assertEquals(expected, packet.message()));
         }
     }
@@ -215,7 +215,7 @@ class JumprunMoveTest {
                 run.landOnNext();
             }
 
-            Component expected = fixture.messages().endRecord(run.player().getLocale(), 1);
+            Component expected = fixture.messages().endRecord(run.player().getLocale(), Mode.MEDIUM, 1);
             chat.assertSingle(packet -> assertEquals(expected, packet.message()));
         }
     }

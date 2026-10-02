@@ -124,7 +124,7 @@ class JumprunEndTest {
 
             run.player().setInstance(env.createFlatInstance(), ELSEWHERE).join();
 
-            assertEquals(OptionalInt.of(1), fixture.records().best(run.player().getUuid()), "the record survives leaving the instance");
+            assertEquals(OptionalInt.of(1), fixture.records().best(run.player().getUuid(), Mode.MEDIUM), "the record survives leaving the instance");
         }
     }
 
@@ -136,7 +136,7 @@ class JumprunEndTest {
 
             call(env, new PlayerDisconnectEvent(run.player()));
 
-            assertTrue(fixture.records().best(run.player().getUuid()).isEmpty(), "the record lives only as long as the session");
+            assertTrue(fixture.records().best(run.player().getUuid(), Mode.MEDIUM).isEmpty(), "the record lives only as long as the session");
         }
     }
 
@@ -153,7 +153,7 @@ class JumprunEndTest {
 
             fixture.useItem(next.player());
 
-            Component expected = fixture.messages().endRecord(next.player().getLocale(), 1);
+            Component expected = fixture.messages().endRecord(next.player().getLocale(), Mode.MEDIUM, 1);
             chat.assertSingle(packet -> assertEquals(expected, packet.message()));
         }
     }
@@ -166,7 +166,7 @@ class JumprunEndTest {
 
             run.player().setInstance(env.createFlatInstance(), ELSEWHERE).join();
 
-            assertEquals(OptionalInt.of(5), fixture.records().best(run.player().getUuid()));
+            assertEquals(OptionalInt.of(5), fixture.records().best(run.player().getUuid(), Mode.MEDIUM));
         }
     }
 
@@ -179,9 +179,9 @@ class JumprunEndTest {
 
             fixture.useItem(run.player());
 
-            Component expected = fixture.messages().endRecord(run.player().getLocale(), 1);
+            Component expected = fixture.messages().endRecord(run.player().getLocale(), Mode.MEDIUM, 1);
             chat.assertSingle(packet -> assertEquals(expected, packet.message()));
-            assertEquals(OptionalInt.of(1), fixture.records().best(run.player().getUuid()));
+            assertEquals(OptionalInt.of(1), fixture.records().best(run.player().getUuid(), Mode.MEDIUM));
         }
     }
 
@@ -189,15 +189,15 @@ class JumprunEndTest {
     void aScoreBelowTheRecordIsReportedWithoutRecordAndKeepsTheRecord(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             StartedRun run = StartedRun.start(env, fixture);
-            fixture.records().submit(run.player().getUuid(), 5);
+            fixture.records().submit(run.player().getUuid(), Mode.MEDIUM, 5);
             run.landOnNext(JumprunFixture.ASCENT_JUMPS + 1);
             Collector<SystemChatPacket> chat = run.connection().trackIncoming(SystemChatPacket.class);
 
             fixture.useItem(run.player());
 
-            Component expected = fixture.messages().endScore(run.player().getLocale(), 1);
+            Component expected = fixture.messages().endScore(run.player().getLocale(), Mode.MEDIUM, 1);
             chat.assertSingle(packet -> assertEquals(expected, packet.message()));
-            assertEquals(OptionalInt.of(5), fixture.records().best(run.player().getUuid()));
+            assertEquals(OptionalInt.of(5), fixture.records().best(run.player().getUuid(), Mode.MEDIUM));
         }
     }
 }

@@ -91,7 +91,7 @@ class JumprunShutdownTest {
 
             fixture.stopModule();
 
-            assertEquals(OptionalInt.empty(), fixture.records().best(run.player().getUuid()));
+            assertEquals(OptionalInt.empty(), fixture.records().best(run.player().getUuid(), Mode.MEDIUM));
         }
     }
 

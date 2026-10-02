@@ -46,7 +46,7 @@ class AscentPhaseTest {
     private static List<CourseBlock> ascent(FakeSpaceProbe world, SpawnZone spawn, Heading heading, long seed) {
         CourseGenerator generator = TestBlocks.generator(world, spawn, seeded(seed));
         List<CourseBlock> course = new ArrayList<>(List.of(START));
-        Phase phase = Phase.start(heading);
+        Phase phase = Phase.start(heading, Mode.MEDIUM);
         while (phase instanceof Phase.Ascent) {
             Optional<CourseBlock> next = generator.next(course, phase);
             if (next.isEmpty()) {
@@ -62,12 +62,12 @@ class AscentPhaseTest {
 
     @Test
     void startsWithNoJumpsMade() {
-        assertEquals(new Phase.Ascent(0, EAST), Phase.start(EAST), "nothing made yet");
+        assertEquals(new Phase.Ascent(0, EAST), Phase.start(EAST, Mode.MEDIUM), "nothing made yet");
     }
 
     @Test
     void staysInTheAscentForAtLeastFiveJumpsEvenWithAirBelow() {
-        Phase phase = Phase.start(EAST);
+        Phase phase = Phase.start(EAST, Mode.MEDIUM);
         for (int i = 0; i < Phase.MIN_ASCENT_JUMPS - 1; i++) {
             phase = ((Phase.Ascent) phase).next(true);
             assertInstanceOf(Phase.Ascent.class, phase, "jump " + (i + 1) + " is still ascent");
@@ -100,7 +100,7 @@ class AscentPhaseTest {
 
     @Test
     void ascentJumpsAreShortAndUpwardOnFullBlocks() {
-        Phase ascent = Phase.start(EAST);
+        Phase ascent = Phase.start(EAST, Mode.MEDIUM);
 
         assertEquals(List.of(1, 2), ascent.gaps().boxed().toList(), "gaps");
         assertEquals(List.of(1), ascent.rises().boxed().toList(), "rises");
@@ -149,7 +149,7 @@ class AscentPhaseTest {
     void ascentBendsItsHeadingTowardsEveryStep() {
         CourseGenerator generator = TestBlocks.generator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(3L));
         List<CourseBlock> course = new ArrayList<>(List.of(START));
-        Phase phase = Phase.start(EAST);
+        Phase phase = Phase.start(EAST, Mode.MEDIUM);
 
         course.add(generator.next(course, phase).orElseThrow());
         Phase after = generator.after(course, phase);

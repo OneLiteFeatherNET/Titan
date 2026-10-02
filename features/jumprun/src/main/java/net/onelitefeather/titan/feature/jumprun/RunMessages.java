@@ -20,6 +20,7 @@ import java.util.Locale;
 import java.util.ResourceBundle;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.ComponentLike;
 import net.kyori.adventure.text.minimessage.translation.Argument;
 import net.kyori.adventure.text.minimessage.translation.MiniMessageTranslationStore;
 import net.kyori.adventure.translation.GlobalTranslator;
@@ -35,9 +36,10 @@ final class RunMessages implements AutoCloseable {
     private static final String SCORE_ACTIONBAR = "titan.jumprun.score.actionbar";
     private static final String END_SCORE = "titan.jumprun.end.score";
     private static final String END_RECORD = "titan.jumprun.end.record";
+    private static final String MODE_CHANGED = "titan.jumprun.mode.changed";
 
     /** Every key this class renders; the bundle test checks them against the property files. */
-    static final List<String> KEYS = List.of(NO_SPACE, SCORE_ACTIONBAR, END_SCORE, END_RECORD);
+    static final List<String> KEYS = List.of(NO_SPACE, SCORE_ACTIONBAR, END_SCORE, END_RECORD, MODE_CHANGED);
 
     private final MiniMessageTranslationStore store = MiniMessageTranslationStore.create(Key.key("titan", "jumprun"));
     private boolean registered;
@@ -72,16 +74,28 @@ final class RunMessages implements AutoCloseable {
         return render(scored(SCORE_ACTIONBAR, score), locale);
     }
 
-    Component endScore(Locale locale, int score) {
-        return render(scored(END_SCORE, score), locale);
+    Component endScore(Locale locale, Mode mode, int score) {
+        return render(scored(END_SCORE, mode, score), locale);
     }
 
-    Component endRecord(Locale locale, int score) {
-        return render(scored(END_RECORD, score), locale);
+    Component endRecord(Locale locale, Mode mode, int score) {
+        return render(scored(END_RECORD, mode, score), locale);
+    }
+
+    Component modeChanged(Locale locale, Mode mode) {
+        return render(Component.translatable(MODE_CHANGED, modeArgument(mode)), locale);
+    }
+
+    private static ComponentLike modeArgument(Mode mode) {
+        return Argument.component("mode", mode.label());
     }
 
     private static Component scored(String key, int score) {
         return Component.translatable(key, Argument.numeric("score", score));
+    }
+
+    private static Component scored(String key, Mode mode, int score) {
+        return Component.translatable(key, Argument.numeric("score", score), modeArgument(mode));
     }
 
     private static Component render(Component translatable, Locale locale) {
