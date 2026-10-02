@@ -14,6 +14,7 @@ Integrationszweig: `feat/jumprun` von `origin/main`. Agents, die schreiben, arbe
 | 4 | smoke | 5.3 | sonnet | nur lokale Läufe, Ergebnis in den PR-Text | Code |
 | 5 | verify | 5.4 | haiku | read-only | alles |
 | 5b | variety-openness | 7.1–7.5 | sonnet | `features/jumprun/**` | alles außerhalb `features/jumprun` |
+| 5c | spectators-distance | 8.1–8.4 | sonnet | `features/jumprun/**` | alles außerhalb `features/jumprun` |
 | 6 | pr | 6.1 | sonnet | Git/GitHub | Code |
 
 Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhandenes nutzen: `FeatureNode`, `LobbyItem`/`ItemSlot`, `LobbySpawn` aus `core`, Minestom-`BlockChangePacket` und Events, `java.util.random.RandomGenerator`, Adventure `TranslationStore`/`GlobalTranslator`. Java 25 ohne Preview: Records, sealed Types mit `switch`, `_`. Nutzertexte nur über die Bundles (D8), Schlüssel `titan.jumprun.*`, Englisch als Fallback. SLF4J mit Parametern, Lauf-Ereignisse nur auf DEBUG, keine Metriken oder Spans (D10). Test zuerst, schlanke Kommentare nur fürs Warum, Conventional Commits `feat(jumprun): …`. F.I.R.S.T.: fester Seed statt Zufall, kein `Thread.sleep`, keine Systemzeit, frische `Env`/Fixtures je Test, `env.tick()` statt Warten, Erfolg nur über Assertions, kein geteilter statischer Zustand (Rekorde, Registry und Translator-Registrierung je Test neu bzw. im `@AfterEach` entfernt).
@@ -61,6 +62,13 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 - [x] 7.3 Test zuerst (Unit, `JumpRulesTest`/`CourseGeneratorTest`, `FakeSpaceProbe`): nach der Aufstiegsphase kein Ziel mit weniger als 4 Blöcken Luft darunter (Spec „Nicht über Wegen“); bei zwei gleich teuren Kandidaten gewinnt der offenere (Spec „Ins Leere bevorzugt“); die Statistik-Tests aus 2.4 bleiben grün. Dann `MIN_AIR_BELOW`, Offenheit und Ranking (D4). Nachweis: Tests grün.
 - [x] 7.4 Test zuerst (Unit, `AscentPhaseTest`/`CourseTest`): Aufstieg auf flachem Boden endet erst mit ≥ 4 Blöcken Luft unter dem Block (Spec „Aufstieg bis ins Freie“), mindestens 5 Sprünge, kein Start, wenn das in 20 Sprüngen nicht gelingt; Score 0 nach dem Aufstieg. Dann die dynamische Aufstiegsphase (D5). Nachweis: Tests grün.
 - [ ] 7.5 Integration: Die Pakete beim Start und Vorrücken tragen das gewählte Material; Neusenden nutzt dasselbe Material. Nachweis: `./gradlew build` grün, danach erneuter lokaler Test (5.3).
+
+## 8. Sichtbar für andere, mehr Abstand und Luft (Nachtrag nach zweitem lokalen Test)
+
+- [ ] 8.1 Test zuerst (Unit): Ziele nach der Aufstiegsphase brauchen ≥ 6 Blöcke Luft darunter und ≥ 16 Blöcke waagrechten Abstand zum Spawn (Spec „Nicht über Wegen“, „Nicht zurück zum Spawn“); Offenheit `0.7 · Säule (16 tief) + 0.3 · Nachbarn`; Statistik-Tests bleiben grün. Dann Generator und `Openness` anpassen (D4). Nachweis: Tests grün.
+- [ ] 8.2 Test zuerst (Unit): Aufstieg endet erst bei ≥ 16 Blöcken Abstand zum Spawn und ≥ 8 Blöcken Luft darunter, mindestens 5, höchstens 30 Sprünge, sonst kein Start (Spec „Aufstieg bis ins Freie“). Dann die Aufstiegsphase anpassen (D5). Nachweis: Tests grün.
+- [ ] 8.3 Test zuerst (Integration, Cyano, zwei Spieler): B sieht beim Start 2 Block-Displays im Material der Laufblöcke, A keins; Vorrücken entfernt und spawnt je eins; jedes Laufende und der Shutdown entfernen alle Displays des Laufs; B kann nicht auf einem Display stehen (keine Kollision, z. B. B fällt durch die Position). Dann `Spectators` (D12). Nachweis: Tests grün.
+- [ ] 8.4 Test zuerst (Integration): Text-Display als Passagier des Läufers zeigt „Jump & Run · <Score>“ nach jedem Sprung, ist für den Läufer unsichtbar und verschwindet mit dem Laufende. Dann umsetzen. Nachweis: `./gradlew build` grün, danach erneuter lokaler Test.
 
 ## 6. Pull Request
 

@@ -21,12 +21,20 @@ Benutzt ein Spieler, der keinen Lauf hat, das Jump-and-Run-Item, MUSS die Lobby 
 - **WHEN** ein Spieler an zwei verschiedenen freien Stellen der Lobby nacheinander einen Lauf startet
 - **THEN** beginnt jeder Lauf an der Stelle, an der der Spieler beim Benutzen stand
 
-### Requirement: Blöcke nur für den laufenden Spieler
-Die Blöcke eines Laufs MÜSSEN ausschließlich für den Spieler sichtbar und begehbar sein, der den Lauf spielt. Die echte Lobby-Welt DARF sich durch einen Lauf NICHT verändern. Andere Spieler DÜRFEN die Blöcke NICHT sehen. Die Blöcke MÜSSEN für den laufenden Spieler auch dann sichtbar bleiben, wenn die Lobby ihm Chunks erneut schickt.
+### Requirement: Blöcke nur für den laufenden Spieler begehbar
+Die Blöcke eines Laufs MÜSSEN ausschließlich für den Spieler begehbar sein, der den Lauf spielt. Die echte Lobby-Welt DARF sich durch einen Lauf NICHT verändern. Andere Spieler MÜSSEN die Blöcke des Sichtfensters als nicht begehbare Darstellung sehen, durch die sie hindurchlaufen und auf der sie nicht stehen können. Der laufende Spieler selbst DARF diese Darstellung NICHT zusätzlich zu seinen Blöcken sehen. Die Blöcke MÜSSEN für den laufenden Spieler auch dann sichtbar bleiben, wenn die Lobby ihm Chunks erneut schickt.
 
-#### Scenario: Anderer Spieler steht daneben
-- **WHEN** Spieler A einen Lauf spielt und Spieler B an derselben Stelle steht
-- **THEN** sieht B keinen der Blöcke von A, und an deren Positionen ist in der echten Welt weiterhin Luft
+#### Scenario: Anderer Spieler sieht den Lauf
+- **WHEN** Spieler A einen Lauf spielt und Spieler B in der Nähe ist
+- **THEN** sieht B an den Positionen von As Sichtfenster die Blöcke in As Material, kann aber nicht auf ihnen stehen, und an diesen Positionen ist in der echten Welt weiterhin Luft
+
+#### Scenario: Darstellung folgt dem Fenster
+- **WHEN** A auf dem nächsten Block landet
+- **THEN** verschwindet bei B die Darstellung des ältesten Blocks, und die des neuen Blocks erscheint
+
+#### Scenario: Ende räumt die Darstellung ab
+- **WHEN** As Lauf endet, egal aus welchem Grund, oder die Lobby herunterfährt
+- **THEN** sieht B keine Darstellung von As Blöcken mehr, und es bleiben keine Objekte des Laufs in der Welt zurück
 
 #### Scenario: Chunk wird neu geschickt
 - **WHEN** die Lobby dem laufenden Spieler den Chunk mit seinen Blöcken erneut schickt
@@ -34,7 +42,18 @@ Die Blöcke eines Laufs MÜSSEN ausschließlich für den Spieler sichtbar und be
 
 #### Scenario: Zwei Läufe gleichzeitig
 - **WHEN** zwei Spieler gleichzeitig je einen Lauf spielen
-- **THEN** sieht jeder nur seine eigenen Blöcke, und das Ende des einen Laufs ändert nichts am anderen
+- **THEN** kann jeder nur auf seinen eigenen Blöcken stehen, sieht die Blöcke des anderen nur als Darstellung, und das Ende des einen Laufs ändert nichts am anderen
+
+### Requirement: Anzeige über dem Läufer
+Während eines Laufs MÜSSEN andere Spieler über dem Kopf des Läufers den Spielnamen und seinen aktuellen Score sehen („Jump & Run · <Score>“). Die Anzeige MUSS sich bei jedem geschafften Sprung aktualisieren und mit dem Ende des Laufs verschwinden. Der Läufer selbst DARF diese Anzeige NICHT sehen, er hat seinen Score in der Action Bar. Die Anzeige ist sprachneutral.
+
+#### Scenario: Score über dem Kopf
+- **WHEN** A einen Lauf spielt und Score 7 erreicht
+- **THEN** sieht B über As Kopf „Jump & Run · 7“
+
+#### Scenario: Anzeige verschwindet
+- **WHEN** As Lauf endet
+- **THEN** ist die Anzeige über As Kopf für alle verschwunden
 
 ### Requirement: Sichtfenster von zwei Blöcken
 Während eines Laufs MUSS der Spieler genau den Block sehen, auf dem er zuletzt gelandet ist, dazu die bis zu zwei Blöcke davor (bereits geschafft) und die zwei Blöcke danach (die nächsten Sprünge). Weitere Blöcke des Laufs DÜRFEN NICHT sichtbar sein.
@@ -55,7 +74,7 @@ Ein Sprung MUSS als geschafft gelten, sobald der Spieler auf einem der vor ihm l
 - **THEN** zählen beide Sprünge, und das Sichtfenster rückt um zwei Blöcke vor
 
 ### Requirement: Aufstiegsphase aus dem Spawn-Bereich
-Jeder Lauf MUSS mit mindestens 5 leichten Sprüngen beginnen, die jeweils einen Block höher liegen und, soweit Platz ist, vom Lobby-Spawn wegführen. Die Aufstiegsphase MUSS so lange weitergehen, bis unter dem zuletzt erzeugten Block mindestens 4 Blöcke Luft sind, höchstens aber 20 Sprünge lang. Lässt sich dieser Abstand innerhalb von 20 Sprüngen nicht erreichen, DARF der Lauf NICHT beginnen (Meldung „kein Platz“). Die Sprünge der Aufstiegsphase DÜRFEN NICHT zum Score zählen. Erst danach MUSS die Schwierigkeit nach dem Score greifen.
+Jeder Lauf MUSS mit mindestens 5 leichten Sprüngen beginnen, die jeweils einen Block höher liegen und, soweit Platz ist, vom Lobby-Spawn wegführen. Die Aufstiegsphase MUSS so lange weitergehen, bis der zuletzt erzeugte Block waagrecht mindestens 16 Blöcke vom Lobby-Spawn entfernt ist und unter ihm mindestens 8 Blöcke Luft sind, höchstens aber 30 Sprünge lang. Lässt sich das innerhalb von 30 Sprüngen nicht erreichen, DARF der Lauf NICHT beginnen (Meldung „kein Platz“). Die Sprünge der Aufstiegsphase DÜRFEN NICHT zum Score zählen. Erst danach MUSS die Schwierigkeit nach dem Score greifen.
 
 #### Scenario: Weg vom Spawn
 - **WHEN** ein Spieler neben dem Spawn einen Lauf startet und in Richtung weg vom Spawn Platz ist
@@ -63,7 +82,7 @@ Jeder Lauf MUSS mit mindestens 5 leichten Sprüngen beginnen, die jeweils einen 
 
 #### Scenario: Aufstieg bis ins Freie
 - **WHEN** ein Spieler auf flachem Boden startet
-- **THEN** endet die Aufstiegsphase erst mit einem Block, unter dem mindestens 4 Blöcke Luft sind
+- **THEN** endet die Aufstiegsphase erst mit einem Block, der mindestens 16 Blöcke waagrecht vom Spawn entfernt ist und unter dem mindestens 8 Blöcke Luft sind
 
 #### Scenario: Aufstieg zählt nicht
 - **WHEN** der Spieler alle Sprünge der Aufstiegsphase geschafft hat
@@ -89,10 +108,14 @@ Nach der Aufstiegsphase MUSS die Schwierigkeit jedes neuen Sprungs aus einer fes
 - **THEN** überschreitet kein Sprung die Grenzen für Lücke und Aufstieg, auch nicht von einem Zaun oder einer Stufe aus
 
 ### Requirement: Sprünge nur, wo Platz ist
-Ein neuer Block nach der Aufstiegsphase DARF NUR an einer Stelle entstehen, unter der in der echten Welt mindestens 4 Blöcke Luft sind und an der in der echten Welt Luft ist, über deren Oberkante zwei Blöcke Kopffreiheit sind, deren Flugbahn vom vorigen Block aus frei ist, die keinen sichtbaren Block des eigenen Laufs überschneidet und die innerhalb der Grenzen der Lobby-Welt liegt. Ein neuer Block DARF NUR gewählt werden, wenn von ihm aus mindestens ein weiterer gültiger Sprung möglich ist. Unter den gültigen Stellen MUSS die Lobby solche mit mehr Luft darunter und drumherum bevorzugen, ohne dass dadurch die Schwierigkeit nach dem Score verloren geht. Findet die Lobby trotzdem keinen gültigen nächsten Block, MUSS der Lauf mit dem erreichten Score enden.
+Ein neuer Block nach der Aufstiegsphase DARF NUR an einer Stelle entstehen, die waagrecht mindestens 16 Blöcke vom Lobby-Spawn entfernt ist, unter der in der echten Welt mindestens 6 Blöcke Luft sind und an der in der echten Welt Luft ist, über deren Oberkante zwei Blöcke Kopffreiheit sind, deren Flugbahn vom vorigen Block aus frei ist, die keinen sichtbaren Block des eigenen Laufs überschneidet und die innerhalb der Grenzen der Lobby-Welt liegt. Ein neuer Block DARF NUR gewählt werden, wenn von ihm aus mindestens ein weiterer gültiger Sprung möglich ist. Unter den gültigen Stellen MUSS die Lobby solche mit mehr Luft darunter, vor allem in der Senkrechten, und drumherum bevorzugen, ohne dass dadurch die Schwierigkeit nach dem Score verloren geht. Findet die Lobby trotzdem keinen gültigen nächsten Block, MUSS der Lauf mit dem erreichten Score enden.
 
 #### Scenario: Nicht über Wegen
-- **WHEN** eine Stelle direkt über einem Weg liegt, sodass unter ihr weniger als 4 Blöcke Luft sind
+- **WHEN** eine Stelle direkt über einem Weg liegt, sodass unter ihr weniger als 6 Blöcke Luft sind
+- **THEN** entsteht dort nach der Aufstiegsphase kein Block
+
+#### Scenario: Nicht zurück zum Spawn
+- **WHEN** eine sonst gültige Stelle waagrecht weniger als 16 Blöcke vom Spawn entfernt liegt
 - **THEN** entsteht dort nach der Aufstiegsphase kein Block
 
 #### Scenario: Ins Leere bevorzugt
