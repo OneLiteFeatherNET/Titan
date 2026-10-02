@@ -16,6 +16,8 @@
 package net.onelitefeather.titan.feature.jumprun;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.EntityType;
 import net.minestom.server.entity.Player;
@@ -32,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
  */
 final class ScoreLabel {
 
-    private static final String TITLE = "Jump & Run";
+    private static final String TEMPLATE = "<sprite:blocks:block/slime_block> <gradient:#7CFC00:#00C853><b>Jump & Run</b></gradient> <gray>·</gray> <white><score></white>";
 
     /** A passenger sits at the top of the head; this lifts the text over the name tag. */
     private static final Vec ABOVE_NAME_TAG = new Vec(0.0, 0.5, 0.0);
@@ -53,12 +55,16 @@ final class ScoreLabel {
             return;
         }
         shownScore = score;
-        Component text = Component.text(TITLE + " · " + score);
+        Component text = render(score);
         if (label == null) {
             label = spawn(text);
         } else {
             label.entity().editEntityMeta(TextDisplayMeta.class, meta -> meta.setText(text));
         }
+    }
+
+    static Component render(int score) {
+        return MiniMessage.miniMessage().deserialize(TEMPLATE, Placeholder.unparsed("score", Integer.toString(score)));
     }
 
     void remove() {
