@@ -85,7 +85,7 @@ class StandardLoadoutTest {
 
             lobbyItems.equip(player);
 
-            Assertions.assertEquals(Material.RABBIT_FOOT, player.getInventory().getItemStack(0).material(), "hotbar slot 0 must hold the Jump & Run item");
+            Assertions.assertEquals(Material.SLIME_BLOCK, player.getInventory().getItemStack(0).material(), "hotbar slot 0 must hold the Jump & Run item");
             Assertions.assertEquals(Material.FEATHER, player.getInventory().getItemStack(4).material(), "hotbar slot 4 must hold the navigator feather");
             for (int slot = 0; slot < 9; slot++) {
                 if (slot == 0 || slot == 4) {

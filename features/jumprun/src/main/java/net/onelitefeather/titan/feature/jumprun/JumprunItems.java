@@ -18,6 +18,7 @@ package net.onelitefeather.titan.feature.jumprun;
 import io.avaje.inject.Bean;
 import io.avaje.inject.Factory;
 import net.kyori.adventure.key.Key;
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
@@ -33,10 +34,11 @@ final class JumprunItems {
 
     private static final Key ITEM_KEY = Key.key("titan:jumprun");
     private static final int HOTBAR_SLOT = 0;
+    private static final Component NAME = MiniMessage.miniMessage().deserialize("<!i><gradient:#7CFC00:#00C853><b>Jump & Run</b></gradient>");
 
     @Bean
     LobbyItem jumprun(JumprunModule jumprun) {
-        ItemStack rabbitFoot = ItemStack.builder(Material.RABBIT_FOOT).customName(MiniMessage.miniMessage().deserialize("<!i><green>Jump & Run")).build();
-        return new LobbyItem(JumprunModule.ID, ITEM_KEY, rabbitFoot, ItemSlot.hotbar(HOTBAR_SLOT), (player, event) -> jumprun.use(player));
+        ItemStack slimeBlock = ItemStack.builder(Material.SLIME_BLOCK).customName(NAME).build();
+        return new LobbyItem(JumprunModule.ID, ITEM_KEY, slimeBlock, ItemSlot.hotbar(HOTBAR_SLOT), (player, event) -> jumprun.use(player));
     }
 }

@@ -80,10 +80,10 @@ final class Course {
     }
 
     /** What changed in the visible window after a landing. */
-    record Advance(int jumps, List<CourseBlock> removed, List<CourseBlock> added,
+    record Advance(int jumps, int scored, List<CourseBlock> removed, List<CourseBlock> added,
                    boolean exhausted) {
 
-        private static final Advance NONE = new Advance(0, List.of(), List.of(), false);
+        private static final Advance NONE = new Advance(0, 0, List.of(), List.of(), false);
     }
 
     Pos startPoint() {
@@ -128,12 +128,13 @@ final class Course {
         int oldStart = windowStart();
         int oldEnd = windowEnd();
         int jumps = landed - current;
+        int scoreBefore = score();
         current = landed;
         generateThrough(current + AHEAD);
         boolean exhausted = current == blocks.size() - 1;
         List<CourseBlock> removed = List.copyOf(blocks.subList(oldStart, Math.min(oldEnd + 1, windowStart())));
         List<CourseBlock> added = List.copyOf(blocks.subList(oldEnd + 1, windowEnd() + 1));
-        return new Advance(jumps, removed, added, exhausted);
+        return new Advance(jumps, score() - scoreBefore, removed, added, exhausted);
     }
 
     /** The furthest of the next blocks the feet stand on, or -1. */
