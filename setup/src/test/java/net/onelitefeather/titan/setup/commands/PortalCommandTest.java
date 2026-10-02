@@ -42,6 +42,9 @@ import net.onelitefeather.titan.core.portal.LabelSource;
 import net.onelitefeather.titan.core.portal.Portal;
 import net.onelitefeather.titan.core.portal.PortalLabel;
 import net.onelitefeather.titan.setup.listener.PortalDisconnectListener;
+import net.onelitefeather.titan.setup.listener.PortalInstanceChangeListener;
+import net.minestom.server.event.instance.RemoveEntityFromInstanceEvent;
+import net.minestom.server.instance.Instance;
 import net.onelitefeather.titan.setup.portal.DiscPlacement;
 import net.onelitefeather.titan.setup.portal.DraftPreview;
 import net.onelitefeather.titan.setup.portal.LabelPreview;
@@ -88,6 +91,7 @@ class PortalCommandTest {
     private CommandManager commands;
     private TestConnection connection;
     private Player player;
+    private Instance world;
 
     @BeforeEach
     void setUp(Env env) throws IOException {
@@ -104,8 +108,10 @@ class PortalCommandTest {
         commands = env.process().command();
         commands.register(new SetupCommand(provider, new PortalCommand(editor, store, preview, show, labelPreview)));
         env.process().eventHandler().addListener(PlayerDisconnectEvent.class, new PortalDisconnectListener(editor, preview, show, labelPreview));
+        env.process().eventHandler().addListener(RemoveEntityFromInstanceEvent.class, new PortalInstanceChangeListener(labelPreview));
         connection = env.createConnection();
-        player = connection.connect(env.createFlatInstance(), STANDING);
+        world = env.createFlatInstance();
+        player = connection.connect(world, STANDING);
     }
 
     @DisplayName("pos1 and pos2 take the block under the player, rounded down")
@@ -514,9 +520,9 @@ class PortalCommandTest {
         run("setup portal p label here");
         run("setup portal p label text <task> <online>/<max>");
 
-        Entity display = labelPreview.entity(player.getUuid(), "p").orElseThrow();
+        Entity display = onlyDisplay();
         assertEquals("Survival 12/50", shownText(display), "sample values");
-        assertEquals(1, labelPreview.shown(), "one display");
+        assertEquals(1, displays().size(), "one display");
     }
 
     @DisplayName("label preview offline and online switch the variant")
@@ -525,7 +531,7 @@ class PortalCommandTest {
         run("setup portal p label here");
         run("setup portal p label text <online>/<max>");
         run("setup portal p label offline closed");
-        Entity display = labelPreview.entity(player.getUuid(), "p").orElseThrow();
+        Entity display = onlyDisplay();
 
         run("setup portal p label preview offline");
         assertEquals("closed", shownText(display), "offline variant");
@@ -548,13 +554,14 @@ class PortalCommandTest {
     void invalidTextIsReported() {
         run("setup portal p label here");
         run("setup portal p label text <gold>Survival");
-        Entity display = labelPreview.entity(player.getUuid(), "p").orElseThrow();
+        Entity display = onlyDisplay();
 
         Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);
         run("setup portal p label text <gold>Survival</red>");
 
         assertEquals("Survival", shownText(display), "last valid text stays");
-        assertTrue(plain(chat).stream().anyMatch(line -> line.contains("label.text") && line.contains("last valid")), "the reply names the problem");
+        List<String> replies = plain(chat);
+        assertTrue(replies.stream().anyMatch(line -> line.contains("keeps its last valid text") && line.contains("label.text: unknown or mismatched tag </red>")), "the reply names the problem: " + replies);
     }
 
     @DisplayName("save, cancel, remove and label remove end the text preview")
@@ -562,23 +569,47 @@ class PortalCommandTest {
     void endingTheDraftEndsTheTextPreview() {
         run("setup portal old label here");
         run("setup portal old label text Hi");
-        assertEquals(1, labelPreview.shown(), "shown for the edit");
+        assertEquals(1, displays().size(), "shown for the edit");
         run("setup portal old label remove");
-        assertEquals(0, labelPreview.shown(), "label remove ends it");
+        assertEquals(0, displays().size(), "label remove ends it");
 
         run("setup portal old label here");
         run("setup portal old label text Hi");
         run("setup portal old save");
-        assertEquals(0, labelPreview.shown(), "save ends it");
+        assertEquals(0, displays().size(), "save ends it");
 
         run("setup portal old label text Again");
-        assertEquals(1, labelPreview.shown(), "shown again");
+        assertEquals(1, displays().size(), "shown again");
         run("setup portal old cancel");
-        assertEquals(0, labelPreview.shown(), "cancel ends it");
+        assertEquals(0, displays().size(), "cancel ends it");
 
         run("setup portal old label text Again");
         run("setup portal old remove");
-        assertEquals(0, labelPreview.shown(), "remove ends it");
+        assertEquals(0, displays().size(), "remove ends it");
+    }
+
+    @DisplayName("A pending edit that is not about the label does not repeat the label problem")
+    @Test
+    void otherEditsStayQuietAboutTheLabel() {
+        run("setup portal p label here");
+        run("setup portal p label text <gold>Survival</red>");
+
+        Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);
+        run("setup portal p task Survival");
+
+        assertTrue(plain(chat).stream().noneMatch(line -> line.contains("last valid text")), "no label problem for a task edit");
+    }
+
+    @DisplayName("Changing the instance ends the text preview")
+    @Test
+    void changingTheInstanceEndsTheTextPreview(Env env) {
+        run("setup portal p label here");
+        run("setup portal p label text Hi");
+        Entity display = onlyDisplay();
+
+        player.setInstance(env.createFlatInstance(), STANDING).join();
+
+        assertTrue(display.isRemoved(), "display removed with the world change");
     }
 
     @DisplayName("Leaving ends the text preview")
@@ -586,12 +617,21 @@ class PortalCommandTest {
     void leavingEndsTheTextPreview(Env env) {
         run("setup portal p label here");
         run("setup portal p label text Hi");
-        Entity display = labelPreview.entity(player.getUuid(), "p").orElseThrow();
+        Entity display = onlyDisplay();
 
         player.remove();
 
         assertTrue(display.isRemoved(), "display removed");
-        assertEquals(0, labelPreview.shown(), "nothing tracked");
+        assertEquals(0, displays().size(), "nothing tracked");
+    }
+
+    private List<Entity> displays() {
+        return world.getEntities().stream().filter(entity -> entity.getEntityType() == EntityType.TEXT_DISPLAY && !entity.isRemoved()).toList();
+    }
+
+    private Entity onlyDisplay() {
+        assertEquals(1, displays().size(), "exactly one text display in the world");
+        return displays().getFirst();
     }
 
     private static String shownText(Entity display) {

@@ -142,7 +142,7 @@ class LabelPreviewTest {
     @Test
     void offlineAndBack() {
         label("p", "<online>/<max>");
-        preview.offline(player.getUuid(), "p", true);
+        preview.offline(player, "p", true);
         follow("p");
         Entity entity = preview.entity(player.getUuid(), "p").orElseThrow();
         assertEquals("0/0", shown(entity), "text with zeros without offline text");
@@ -151,7 +151,7 @@ class LabelPreviewTest {
         follow("p");
         assertEquals("closed", shown(entity), "offline text");
 
-        preview.offline(player.getUuid(), "p", false);
+        preview.offline(player, "p", false);
         follow("p");
         assertEquals("12/50", shown(entity), "online again");
     }
@@ -243,5 +243,58 @@ class LabelPreviewTest {
 
         assertNotNull(problem.orElse(null), "the problem is reported");
         assertEquals(0, displays().size(), "nothing shown");
+    }
+
+    @DisplayName("A follow after the player is cleared and gone creates no display")
+    @Test
+    void lateFollowOfALeftPlayerCreatesNothing() {
+        label("p", "x");
+        follow("p");
+        PortalDraft draft = editor.draft(player.getUuid(), "p").orElseThrow();
+
+        preview.clear(player.getUuid());
+        player.remove();
+        preview.follow(player, draft);
+
+        assertEquals(0, displays().size(), "no orphaned display");
+        assertEquals(0, preview.shown(), "nothing tracked");
+    }
+
+    @DisplayName("Choosing a variant for a player who is gone tracks nothing")
+    @Test
+    void offlineOfALeftPlayerCreatesNoState() {
+        player.remove();
+
+        preview.offline(player, "p", true);
+
+        assertTrue(preview.entity(player.getUuid(), "p").isEmpty(), "no display");
+        assertEquals(0, preview.shown(), "nothing tracked");
+    }
+
+    @DisplayName("Clearing twice is harmless")
+    @Test
+    void clearIsIdempotent() {
+        label("p", "x");
+        follow("p");
+
+        preview.clear(player.getUuid(), "p");
+        preview.clear(player.getUuid(), "p");
+        preview.clear(player.getUuid());
+
+        assertEquals(0, displays().size(), "no display left");
+    }
+
+    @DisplayName("A follow after a clear shows a fresh display, never a second one")
+    @Test
+    void followAfterClearStartsFresh() {
+        label("p", "x");
+        follow("p");
+        Entity first = preview.entity(player.getUuid(), "p").orElseThrow();
+
+        preview.clear(player.getUuid(), "p");
+        follow("p");
+
+        assertTrue(first.isRemoved(), "the old display is gone");
+        assertEquals(1, displays().size(), "exactly one display");
     }
 }

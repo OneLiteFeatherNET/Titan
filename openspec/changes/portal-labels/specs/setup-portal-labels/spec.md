@@ -88,7 +88,7 @@ Die Partikel-Vorschau eines Portals (`show` und die Live-Vorschau des Entwurfs) 
 - **THEN** markiert die Live-Vorschau den neuen Anker
 
 ### Requirement: Text-Vorschau des Labels
-Der Setup-Server MUSS das Label eines Entwurfs, sobald es Position und Text hat, als echte `TextDisplay`-Entität am Anker anzeigen, und nur dem Bearbeiter. Der angezeigte Text MUSS derselbe sein, den die Lobby aus Text, Platzhaltern und Offline-Text bildet (gemeinsame Rendering-Funktion), mit festen Beispielwerten: `<online>` = 12, `<max>` = 50, `<task>` = Task des Entwurfs (ohne Task die Id des Portals), `<prefix>` wie im Chat. Die Vorschau MUSS jeder Änderung des Entwurfs folgen und dieselbe Entität aktualisieren, nie eine zweite anlegen. `/setup portal <id> label preview offline|online` MUSS zwischen der Offline-Variante (`offlineText`, sonst `text` mit 0/0) und der Online-Variante wechseln; Standard ist online. Die Vorschau MUSS verschwinden, wenn der Entwurf endet (`save`, `cancel`, `remove`), wenn das Label entfernt wird und wenn der Spieler die Verbindung trennt. Ist der Text nach den Regeln des Validators ungültig, MUSS die Vorschau den zuletzt gültigen Text behalten (oder nichts neu anzeigen, wenn es noch keinen gab), und die Antwort des Befehls MUSS das Problem nennen.
+Der Setup-Server MUSS das Label eines Entwurfs, sobald es Position und Text hat, als echte `TextDisplay`-Entität am Anker anzeigen, und nur dem Bearbeiter. Der angezeigte Text MUSS derselbe sein, den die Lobby aus Text, Platzhaltern und Offline-Text bildet (gemeinsame Rendering-Funktion), mit festen Beispielwerten: `<online>` = 12, `<max>` = 50, `<task>` = Task des Entwurfs (ohne Task die Id des Portals), `<prefix>` wie im Chat. Die Vorschau MUSS jeder Änderung des Entwurfs folgen und dieselbe Entität aktualisieren, nie eine zweite anlegen. `/setup portal <id> label preview offline|online` MUSS zwischen der Offline-Variante (`offlineText`, sonst `text` mit 0/0) und der Online-Variante wechseln; Standard ist online. Die Vorschau MUSS verschwinden, wenn der Entwurf endet (`save`, `cancel`, `remove`), wenn das Label entfernt wird wenn der Spieler die Verbindung trennt und wenn er die Instanz wechselt. Ist der Text nach den Regeln des Validators ungültig, MUSS die Vorschau den zuletzt gültigen Text behalten (oder nichts neu anzeigen, wenn es noch keinen gab), und die Antwort des Befehls MUSS das Problem nennen.
 
 #### Scenario: Vorschau erscheint
 - **WHEN** der Entwurf Anker und Text `<gold><task> <gray><online>/<max>` hat und der Task „Survival“ ist
@@ -125,6 +125,10 @@ Der Setup-Server MUSS das Label eines Entwurfs, sobald es Position und Text hat,
 #### Scenario: Vorschau verschwindet beim Trennen
 - **WHEN** der Bearbeiter die Verbindung trennt
 - **THEN** ist die Vorschau-Entität entfernt
+
+#### Scenario: Vorschau verschwindet beim Instanzwechsel
+- **WHEN** der Bearbeiter in eine andere Instanz wechselt
+- **THEN** ist die Vorschau-Entität in der alten Instanz entfernt
 
 #### Scenario: Ungültiger Text
 - **WHEN** der Spieler `label text <gold>Survival</red>` ausführt, während die Vorschau „Survival 12/50“ zeigt

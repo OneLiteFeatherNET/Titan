@@ -112,7 +112,7 @@ public final class PortalCommand extends Command {
     private PortalEditResult labelPreviewVariant(Player player, CommandContext context) {
         PortalEditResult result = editor.labelPreview(player.getUuid(), context.get(id));
         if (result instanceof PortalEditResult.LabelUpdated) {
-            labelPreview.offline(player.getUuid(), context.get(id), "offline".equals(context.get(previewVariant)));
+            labelPreview.offline(player, context.get(id), "offline".equals(context.get(previewVariant)));
         }
         return result;
     }
@@ -156,9 +156,9 @@ public final class PortalCommand extends Command {
 
     private void followPreview(Player player, String id, PortalEditResult result) {
         switch (result) {
-            case PortalEditResult.Pending ignored -> startPreviews(player, id);
-            case PortalEditResult.Complete ignored -> startPreviews(player, id);
-            case PortalEditResult.LabelUpdated ignored -> startPreviews(player, id);
+            case PortalEditResult.Pending ignored -> startPreviews(player, id, false);
+            case PortalEditResult.Complete ignored -> startPreviews(player, id, false);
+            case PortalEditResult.LabelUpdated ignored -> startPreviews(player, id, true);
             case PortalEditResult.Saved ignored -> stopPreviews(player, id);
             case PortalEditResult.Updated ignored -> stopPreviews(player, id);
             case PortalEditResult.Removed ignored -> stopPreviews(player, id);
@@ -172,9 +172,15 @@ public final class PortalCommand extends Command {
         }
     }
 
-    private void startPreviews(Player player, String id) {
+    /** The label problem is only news when the edit was about the label. */
+    private void startPreviews(Player player, String id, boolean labelEdit) {
         preview.start(player, id);
-        editor.draft(player.getUuid(), id).ifPresent(draft -> labelPreview.follow(player, draft).ifPresent(problem -> player.sendMessage(PortalMessages.previewProblem(problem))));
+        editor.draft(player.getUuid(), id).ifPresent(draft -> {
+            Optional<String> problem = labelPreview.follow(player, draft);
+            if (labelEdit) {
+                problem.ifPresent(reason -> player.sendMessage(PortalMessages.previewProblem(reason)));
+            }
+        });
     }
 
     private void stopPreviews(Player player, String id) {

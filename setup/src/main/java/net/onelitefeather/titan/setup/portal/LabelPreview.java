@@ -35,11 +35,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 /**
  * Text preview of the label in a player's draft: one real text display per player and portal,
  * visible to that player only, rendered by the same {@link LabelText} the lobby uses with sample
  * counts. The display lives until {@link #clear} or until the draft has no label.
+ * <p>
+ * Commands, the scheduler and disconnects reach it from different threads, so every state change
+ * happens under that state's lock, and a cleared state is closed for good.
  */
 public final class LabelPreview {
 
@@ -50,6 +54,7 @@ public final class LabelPreview {
     }
 
     private static final class State {
+        private boolean closed;
         private boolean offline;
         private @Nullable Entity entity;
         private @Nullable Component text;
@@ -58,8 +63,8 @@ public final class LabelPreview {
     private final Map<Key, State> states = new ConcurrentHashMap<>();
 
     /** Chooses the variant the portal's preview shows; it applies from the next {@link #follow}. */
-    public void offline(UUID player, String id, boolean offline) {
-        states.computeIfAbsent(new Key(player, id), key -> new State()).offline = offline;
+    public void offline(Player player, String id, boolean offline) {
+        update(player, id, state -> state.offline = offline);
     }
 
     /**
@@ -72,47 +77,81 @@ public final class LabelPreview {
             clear(player.getUuid(), draft.id());
             return Optional.empty();
         }
-        State state = states.computeIfAbsent(new Key(player.getUuid(), draft.id()), key -> new State());
         Instance instance = player.getInstance();
         if (label.position() == null || label.text() == null || instance == null) {
-            despawn(state);
+            update(player, draft.id(), LabelPreview::despawn);
             return Optional.empty();
         }
+        String[] problem = new String[1];
+        update(player, draft.id(), state -> problem[0] = render(player, draft, state, instance));
+        return Optional.ofNullable(problem[0]);
+    }
+
+    private static @Nullable String render(Player player, PortalDraft draft, State state, Instance instance) {
+        LabelDraft label = draft.label();
         boolean offlineText = state.offline && label.offlineText() != null;
         String field = offlineText ? "label.offlineText" : "label.text";
         List<String> problems = PortalValidator.textProblems(field, offlineText ? label.offlineText() : label.text());
         if (!problems.isEmpty()) {
-            return Optional.of(String.join("; ", problems));
+            return String.join("; ", problems);
         }
         PortalLabel portalLabel = label.toLabel();
         String task = draft.task() != null ? draft.task() : draft.id();
         Component text = state.offline ? LabelText.render(portalLabel, task, "0", "0", true) : LabelText.render(portalLabel, task, SAMPLE_ONLINE, SAMPLE_MAX, false);
         show(player, state, instance, label, text);
-        return Optional.empty();
+        return null;
     }
 
     /** Removes the preview of one portal and forgets its variant. */
     public void clear(UUID player, String id) {
-        State state = states.remove(new Key(player, id));
-        if (state != null) {
-            despawn(state);
-        }
+        close(states.remove(new Key(player, id)));
     }
 
-    /** Removes every preview of the player, for when they leave. */
+    /** Removes every preview of the player, for when they leave or change the instance. */
     public void clear(UUID player) {
         states.keySet().stream().filter(key -> key.player().equals(player)).forEach(key -> clear(key.player(), key.id()));
     }
 
     /** The display of this player's preview of the portal, if one is shown. */
-    public Optional<Entity> entity(UUID player, String id) {
+    Optional<Entity> entity(UUID player, String id) {
         State state = states.get(new Key(player, id));
-        return state == null ? Optional.empty() : Optional.ofNullable(state.entity);
+        if (state == null) {
+            return Optional.empty();
+        }
+        synchronized (state) {
+            return Optional.ofNullable(state.entity);
+        }
     }
 
     /** Displays currently shown, for tests that check nothing leaks. */
-    public int shown() {
-        return (int) states.values().stream().filter(state -> state.entity != null).count();
+    int shown() {
+        return (int) states.keySet().stream().filter(key -> entity(key.player(), key.id()).isPresent()).count();
+    }
+
+    /**
+     * Runs the change on the portal's state. A closed state was cleared meanwhile, so the change
+     * retries on a fresh one; a player who is gone gets none, or the display would outlive them.
+     */
+    private void update(Player player, String id, Consumer<State> change) {
+        Key key = new Key(player.getUuid(), id);
+        while (player.isOnline() && !player.isRemoved()) {
+            State state = states.computeIfAbsent(key, ignored -> new State());
+            synchronized (state) {
+                if (!state.closed) {
+                    change.accept(state);
+                    return;
+                }
+            }
+        }
+    }
+
+    private static void close(@Nullable State state) {
+        if (state != null) {
+            synchronized (state) {
+                state.closed = true;
+                despawn(state);
+            }
+        }
     }
 
     private static void show(Player player, State state, Instance instance, LabelDraft label, Component text) {
@@ -125,15 +164,19 @@ public final class LabelPreview {
             entity = null;
         }
         if (entity == null) {
-            entity = new Entity(EntityType.TEXT_DISPLAY);
+            Entity display = new Entity(EntityType.TEXT_DISPLAY);
             // Per-player visibility is Minestom's own: no automatic viewers, only the editor.
-            entity.setAutoViewable(false);
-            entity.setNoGravity(true);
-            entity.setInstance(instance, target).join();
-            entity.addViewer(player);
-            state.entity = entity;
+            display.setAutoViewable(false);
+            display.setNoGravity(true);
+            display.setInstance(instance, target).thenRun(() -> {
+                if (!display.isRemoved() && player.isOnline()) {
+                    display.addViewer(player);
+                }
+            });
+            state.entity = display;
+            entity = display;
         } else if (!entity.getPosition().equals(target)) {
-            entity.teleport(target).join();
+            entity.teleport(target);
         }
         BillboardConstraints constraints = fixed ? BillboardConstraints.FIXED : BillboardConstraints.CENTER;
         entity.editEntityMeta(TextDisplayMeta.class, meta -> {
@@ -146,8 +189,9 @@ public final class LabelPreview {
     }
 
     private static void despawn(State state) {
-        if (state.entity != null) {
-            state.entity.remove();
+        Entity entity = state.entity;
+        if (entity != null) {
+            entity.remove();
             state.entity = null;
             state.text = null;
         }

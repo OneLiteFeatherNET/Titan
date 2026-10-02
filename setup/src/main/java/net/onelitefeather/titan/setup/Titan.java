@@ -20,6 +20,7 @@ import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.event.inventory.InventoryPreClickEvent;
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent;
+import net.minestom.server.event.instance.RemoveEntityFromInstanceEvent;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.event.player.PlayerSpawnEvent;
 import net.minestom.server.instance.InstanceContainer;
@@ -33,6 +34,7 @@ import net.onelitefeather.titan.setup.config.SetupSpawnConfig;
 import net.onelitefeather.titan.setup.listener.PlayerConfigurationListener;
 import net.onelitefeather.titan.setup.listener.PlayerSpawnListener;
 import net.onelitefeather.titan.setup.listener.PortalDisconnectListener;
+import net.onelitefeather.titan.setup.listener.PortalInstanceChangeListener;
 import net.onelitefeather.titan.setup.portal.DraftPreview;
 import net.onelitefeather.titan.setup.portal.LabelPreview;
 import net.onelitefeather.titan.setup.portal.MapProviderPortalStore;
@@ -80,6 +82,7 @@ public final class Titan {
         eventNode.addListener(AsyncPlayerConfigurationEvent.class, new PlayerConfigurationListener(this.mapProvider));
         eventNode.addListener(PlayerSpawnEvent.class, new PlayerSpawnListener(this.simulationDistance, this.mapProvider));
         eventNode.addListener(PlayerDisconnectEvent.class, new PortalDisconnectListener(this.portalEditor, this.draftPreview, this.portalShow, this.labelPreview));
+        eventNode.addListener(RemoveEntityFromInstanceEvent.class, new PortalInstanceChangeListener(this.labelPreview));
         eventNode.addListener(InventoryPreClickEvent.class, Cancelable::cancel);
         MinecraftServer.getGlobalEventHandler().addChild(eventNode);
     }
