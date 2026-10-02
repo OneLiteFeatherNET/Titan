@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.0](https://github.com/OneLiteFeatherNET/Titan/compare/v2.1.1...v2.2.0) (2026-10-02)
+
+
+### Features
+
+* **jumprun:** add a random single-player jump and run to the lobby ([#347](https://github.com/OneLiteFeatherNET/Titan/issues/347)) ([d0d590b](https://github.com/OneLiteFeatherNET/Titan/commit/d0d590b546369eb1ade6ba83db7fe9ec0e79316f))
+
 ## [2.1.1](https://github.com/OneLiteFeatherNET/Titan/compare/v2.1.0...v2.1.1) (2026-10-02)
 
 
