@@ -10,7 +10,7 @@ Ein Feature MUSS ein Lobby-Item zusammen mit seinem Platz bereitstellen können,
 
 #### Scenario: Standardausstattung
 - **WHEN** ein Spieler die Lobby betritt
-- **THEN** liegt der Navigator (Feder) in Hotbar-Slot 4, er trägt eine unzerstörbare Elytra auf dem Brustplatz, und sonst ist sein Inventar leer
+- **THEN** liegt das Jump-and-Run-Item in Hotbar-Slot 0 und der Navigator (Feder) in Hotbar-Slot 4, er trägt eine unzerstörbare Elytra auf dem Brustplatz, und sonst ist sein Inventar leer
 
 #### Scenario: Ausstattung nach Respawn
 - **WHEN** ein Spieler stirbt und respawnt
