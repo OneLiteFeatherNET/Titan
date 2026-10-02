@@ -236,7 +236,7 @@ jumprun:
       # ...
 ```
 Schlüssel ist der Block-Name ohne Namensraum, Wert das Gewicht. Die Form setzt weiter die nötigen Zustände (unten, geschlossen, senkrecht), der Betreiber wählt nur Material und Gewicht.
-- **Lesen:** über die `Config`-Fassade wie die anderen Columns. Beim Start prüft `JumprunSettings` jeden Eintrag: Block bekannt (`Block.fromKey`), Oberkante der Kollisionsform passt zur Form (wie der Paletten-Test aus D11), Gewicht > 0, Liste nicht leer. Sonst bricht der Start ab, mit Schlüssel `jumprun.palettes.<form>.<block>` und Grund. Zur Laufzeit gelten die Regeln von `lobby-module-config`: Gelesen wird beim Start eines Laufs. Ein ungültiger Live-Wert führt zu WARN, und es bleiben die zuletzt gültigen Paletten.
+- **Lesen:** über die `Config`-Fassade wie die anderen Columns. Beim Start prüft `JumprunSettings` jeden Eintrag: Block bekannt (`Block.fromKey`), Oberkante der Kollisionsform passt zur Form (wie der Paletten-Test aus D11), Gewicht ≥ 0, wobei 0 das Material abschaltet (so kann ein Betreiber ein mitgeliefertes Material per Override entfernen), und mindestens ein Material mit Gewicht > 0. Sonst bricht der Start ab, mit Schlüssel `jumprun.palettes.<form>.<block>` und Grund. Zur Laufzeit gelten die Regeln von `lobby-module-config`: Gelesen wird beim Start eines Laufs. Ein ungültiger Live-Wert führt zu WARN, und es bleiben die zuletzt gültigen Paletten.
 - **Ziehen:** gewichtet mit dem Lauf-`RandomGenerator` (kumulative Gewichte, binäre Suche). Pro Seed bleibt das deterministisch.
 - **Built-in:** avaje-config (`Config`) wie bei `sit`, `spawn` usw. Ein eigener Lader wurde verworfen.
 - **Test:** Unit:

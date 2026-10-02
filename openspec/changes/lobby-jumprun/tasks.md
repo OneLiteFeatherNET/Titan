@@ -56,7 +56,7 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 
 - [x] 5.1 Test zuerst (Integration in `apps/cloudnet`, z. B. `StandardLoadoutTest`/`WiringTest`): Die Standardausstattung enthält „Jump & Run“ in Hotbar-Slot 0 neben Navigator (Slot 4) und Elytra, `jumprunColumn` wird geladen und im Startcheck erwartet, es gibt keinen Slot- oder Prioritätskonflikt; rot, dann grün durch die Column aus Welle 3 (keine Änderung an `build.gradle.kts` der Varianten). Nachweis: Tests grün.
 - [x] 5.2 `docs/lobby-modules.md` (Tabelle der Columns, Prioritäten, Hotbar-Slots) und README (Abschnitt Lobby-Features) um `jumprun` ergänzen: Was es tut, Slot 0, Priorität 1000, Rekorde nur im Speicher, eigene Übersetzungen ohne globales Flag. Nachweis: Doku nennt Slot, Priorität und Einschränkungen.
-- [ ] 5.3 Smoke-Test mit dem Shaded-Jar `titan-local.jar` und echtem Client: Start im Freien, Start unter Decke, 30+ Sprünge (sichtbar schwerer), Absturz, Elytra-Ende, Rechtsklick auf Laufblock, Chunk-Grenze überqueren, deutscher und englischer Client (Action Bar nicht leer, Minestom-26.1-Falle). Dabei auch beobachten, wie oft die Leertaste versehentlich das Gleiten auslöst (Risiko in design.md). Nachweis: Checkliste mit Ergebnis im PR-Text.
+- [x] 5.3 Smoke-Test mit dem Shaded-Jar `titan-local.jar` und echtem Client: Start im Freien, Start unter Decke, 30+ Sprünge (sichtbar schwerer), Absturz, Elytra-Ende, Rechtsklick auf Laufblock, Chunk-Grenze überqueren, deutscher und englischer Client (Action Bar nicht leer, Minestom-26.1-Falle). Dabei auch beobachten, wie oft die Leertaste versehentlich das Gleiten auslöst (Risiko in design.md). Nachweis: Checkliste mit Ergebnis im PR-Text.
 - [x] 5.4 Verifikation (Haiku, read-only): alle Szenarien aus `specs/lobby-jumprun` und `specs/lobby-hotbar` Test für Test zuordnen; F.I.R.S.T.-Check (fester Seed, keine Sleeps, keine Systemzeit, kein geteilter statischer Zustand, insbesondere `GlobalTranslator` im Test aufgeräumt). Nachweis: Bericht ohne Lücken.
 
 ## 7. Variation und offener Raum (Nachtrag nach lokalem Test)
@@ -65,7 +65,7 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 - [x] 7.2 Test zuerst (Unit, `CourseGeneratorTest`): mit festem Seed haben 10 Vollblöcke nacheinander mehr als ein Material; gleicher Seed → gleiche Materialien. Dann Materialwahl im Generator. Nachweis: Tests grün.
 - [x] 7.3 Test zuerst (Unit, `JumpRulesTest`/`CourseGeneratorTest`, `FakeSpaceProbe`): nach der Aufstiegsphase kein Ziel mit weniger als 4 Blöcken Luft darunter (Spec „Nicht über Wegen“); bei zwei gleich teuren Kandidaten gewinnt der offenere (Spec „Ins Leere bevorzugt“); die Statistik-Tests aus 2.4 bleiben grün. Dann `MIN_AIR_BELOW`, Offenheit und Ranking (D4). Nachweis: Tests grün.
 - [x] 7.4 Test zuerst (Unit, `AscentPhaseTest`/`CourseTest`): Aufstieg auf flachem Boden endet erst mit ≥ 4 Blöcken Luft unter dem Block (Spec „Aufstieg bis ins Freie“), mindestens 5 Sprünge, kein Start, wenn das in 20 Sprüngen nicht gelingt; Score 0 nach dem Aufstieg. Dann die dynamische Aufstiegsphase (D5). Nachweis: Tests grün.
-- [ ] 7.5 Integration: Die Pakete beim Start und Vorrücken tragen das gewählte Material; Neusenden nutzt dasselbe Material. Nachweis: `./gradlew build` grün, danach erneuter lokaler Test (5.3).
+- [x] 7.5 Integration: Die Pakete beim Start und Vorrücken tragen das gewählte Material; Neusenden nutzt dasselbe Material. Nachweis: `./gradlew build` grün, danach erneuter lokaler Test (5.3).
 
 ## 8. Sichtbar für andere, mehr Abstand und Luft (Nachtrag nach zweitem lokalen Test)
 
@@ -135,6 +135,10 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 ## 22. Intervall pro Modus, Töne folgen dem Läufer
 
 - [x] 22.1 Test zuerst (Unit + Integration): `jumprun.rainbow.rerollTicks` (10) und `jumprun.ultra.rerollTicks` (40) statt `jumprun.rerollTicks`, Startprüfung; alle Run-Töne als Entity-Sound am Läufer (Self-Emitter), Rekord-Ton beim Absturz vollständig (D27). Nachweis: `./gradlew build` grün.
+
+## 23. Gewicht 0 schaltet ab
+
+- [ ] 23.1 Test zuerst (Unit + Integration): Gewicht 0 schaltet ein Material ab (nie gezogen), negative Gewichte und Listen ohne Gewicht > 0 brechen den Start mit Schlüssel ab; Doku in `docs/lobby-modules.md`. Nachweis: `./gradlew build` grün.
 
 ## 6. Pull Request
 
