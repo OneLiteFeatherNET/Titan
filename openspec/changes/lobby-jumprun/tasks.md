@@ -132,6 +132,10 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 
 - [x] 21.1 Test zuerst (Unit + Integration): `Mode.RAINBOW`/`ULTRA`, Zyklus über fünf Modi, Reroll-Takt pro Lauf (`jumprun.rerollTicks`, Standard 40, Startprüfung), Rainbow wechselt Material, Ultra würfelt Position und Form neu ohne Umrandung, Zähler setzt bei Landung zurück, Task endet mit dem Lauf; Lore, Bundles, Kopfanzeige um beide Modi ergänzt (D26). Nachweis: `./gradlew build` grün.
 
+## 22. Intervall pro Modus, Töne folgen dem Läufer
+
+- [ ] 22.1 Test zuerst (Unit + Integration): `jumprun.rainbow.rerollTicks` (10) und `jumprun.ultra.rerollTicks` (40) statt `jumprun.rerollTicks`, Startprüfung; alle Run-Töne als Entity-Sound am Läufer (Self-Emitter), Rekord-Ton beim Absturz vollständig (D27). Nachweis: `./gradlew build` grün.
+
 ## 6. Pull Request
 
 - [ ] 6.1 Pull Request vom Integrationszweig `feat/jumprun` auf `main` unter dem Titel `feat(jumprun): add a random single-player jump and run to the lobby` öffnen (Titel und Beschreibung Englisch), mit Smoke-Test-Ergebnis und dem Hinweis auf die Elytra-Abwägung. Nachweis: PR-URL, CI grün.

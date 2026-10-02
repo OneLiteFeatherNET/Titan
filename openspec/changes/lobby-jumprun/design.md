@@ -349,6 +349,15 @@ Die DEBUG-Logs aus dem lokalen Test zeigen, dass Läufe durch versehentliches Gl
     - Nach dem Laufende läuft kein Task mehr.
     - Ein ungültiges `rerollTicks` bricht den Start mit Schlüssel ab.
 
+### D27 Intervall pro Modus, Töne folgen dem Läufer
+
+- `jumprun.rerollTicks` wird zu `jumprun.rainbow.rerollTicks` (Standard 10, schnelles Farbspiel) und `jumprun.ultra.rerollTicks` (Standard 40). Beide werden wie bisher beim Start mit vollem Schlüssel geprüft und live gelesen. Der `Mode` bestimmt, welcher Schlüssel gilt.
+- **Töne folgen dem Läufer:** Lokal brach das Levelaufstiegs-Geräusch beim ersten Rekord ab, weil der Ton an der Position des Läufers erklang und der Absturz ihn im selben Tick zum Startpunkt teleportierte. Alle `RunSounds` spielen deshalb mit `Sound.Emitter.self()` (`player.playSound(sound, Sound.Emitter.self())`). Der Ton hängt damit am Spieler statt an einer Position. Beim Absturz läuft das Laufende vor dem Teleport, die Töne bleiben trotzdem hörbar.
+- **Test:**
+  - Unit: Jeder `RunSounds`-Aufruf nutzt den Self-Emitter. Das zeigt sich am Paket: `EntitySoundEffectPacket` statt `SoundEffectPacket`.
+  - Integration: Absturz mit erstem Rekord, das Levelup kommt als Entity-Sound an den Läufer.
+  - Eigene Intervalle pro Modus, Startprüfung beider Schlüssel.
+
 ## Risks / Trade-offs
 
 - **Elytra durch Leertaste in der Luft (gelöst durch D24):** Im Spiel startet ein erneuter Druck auf die Leertaste in der Luft das Gleiten. Spieler, die beim Springen hektisch drücken, beenden ihren Lauf versehentlich. → Bewusst so entschieden (Elytra-Gleiten = Ende). Bei der Abnahme wird geprüft, wie oft das passiert. Falls nötig, gibt es einen Folge-Change, der statt Laufende das Gleiten nur unterbindet.

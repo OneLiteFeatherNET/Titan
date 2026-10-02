@@ -222,8 +222,8 @@ Ein Spieler MUSS zwischen den Modi Easy, Medium, Hard, Rainbow und Ultra wählen
 - Easy: nur Vollblöcke und Stufen, Lücke höchstens 2, seltene Aufstiege, Schwierigkeit steigt halb so schnell wie Medium.
 - Medium: Verhalten wie in den übrigen Anforderungen beschrieben.
 - Hard: Formen früher frei (Stufen und Falltüren ab 5, Zäune, Mauern, Scheiben und Gitter ab 10, Pfosten ab 20), Schwierigkeit steigt doppelt so schnell wie Medium.
-- Rainbow: Schwierigkeit wie Medium; solange der Läufer auf einem Block steht, wechseln alle sichtbaren Laufblöcke alle `jumprun.rerollTicks` Ticks (Standard 40) ihr Material, Position und Form bleiben.
-- Ultra: Schwierigkeit wie Hard, ohne Umrandung; solange der Läufer auf einem Block steht, werden die Blöcke voraus alle `jumprun.rerollTicks` Ticks an neuer Stelle mit neuer Form und neuem Material neu erzeugt (mit Aufstiegs- und Fall-Animation).
+- Rainbow: Schwierigkeit wie Medium; solange der Läufer auf einem Block steht, wechseln alle sichtbaren Laufblöcke alle `jumprun.rainbow.rerollTicks` Ticks (Standard 10) ihr Material, Position und Form bleiben.
+- Ultra: Schwierigkeit wie Hard, ohne Umrandung; solange der Läufer auf einem Block steht, werden die Blöcke voraus alle `jumprun.ultra.rerollTicks` Ticks (Standard 40) an neuer Stelle mit neuer Form und neuem Material neu erzeugt (mit Aufstiegs- und Fall-Animation).
 Rekorde MÜSSEN pro Modus getrennt geführt werden, und Score-Meldungen, Rekord-Meldungen und die Anzeige über dem Läufer MÜSSEN den Modus nennen.
 
 #### Scenario: Modus wechseln
@@ -239,7 +239,7 @@ Rekorde MÜSSEN pro Modus getrennt geführt werden, und Score-Meldungen, Rekord-
 - **THEN** waren alle Blöcke Vollblöcke oder Stufen, und keine Lücke war größer als 2
 
 #### Scenario: Rainbow wechselt das Material
-- **WHEN** ein Läufer im Modus Rainbow 40 Ticks auf einem Block steht
+- **WHEN** ein Läufer im Modus Rainbow 10 Ticks auf einem Block steht
 - **THEN** haben seine sichtbaren Blöcke neue Materialien an denselben Stellen und mit derselben Form
 
 #### Scenario: Ultra würfelt neu
@@ -247,7 +247,7 @@ Rekorde MÜSSEN pro Modus getrennt geführt werden, und Score-Meldungen, Rekord-
 - **THEN** steigen die Blöcke voraus auf, an neuen gültigen Stellen fallen neue Blöcke ein, und er sieht keine Umrandung
 
 #### Scenario: Kein Wechsel im Sprung
-- **WHEN** ein Läufer in Rainbow oder Ultra springt, bevor 40 Ticks vergangen sind
+- **WHEN** ein Läufer in Rainbow oder Ultra springt, bevor das Intervall seines Modus vergangen ist
 - **THEN** wechselt nichts, und der Zähler beginnt nach der nächsten Landung neu
 
 #### Scenario: Rekord pro Modus
@@ -312,11 +312,15 @@ Während eines Laufs MUSS der Spieler seinen aktuellen Score in der Action Bar s
 - **THEN** hat er keinen Rekord mehr, und sein nächster Lauf mit Score > 0 ist ein neuer Rekord
 
 ### Requirement: Ton bei neuem Rekord
-Übertrifft der Score eines Läufers während des Laufs zum ersten Mal seinen bisherigen Rekord, MUSS der Läufer sofort das Levelaufstiegs-Geräusch hören, höchstens einmal pro Lauf. Hat der Spieler noch keinen Rekord, MUSS das Geräusch mit der Meldung über den neuen Rekord am Laufende erklingen. Andere Spieler DÜRFEN es NICHT hören.
+Übertrifft der Score eines Läufers während des Laufs zum ersten Mal seinen bisherigen Rekord, MUSS der Läufer sofort das Levelaufstiegs-Geräusch hören, höchstens einmal pro Lauf. Hat der Spieler noch keinen Rekord, MUSS das Geräusch mit der Meldung über den neuen Rekord am Laufende erklingen. Alle Töne des Laufs MÜSSEN dem Läufer folgen und DÜRFEN NICHT abbrechen, wenn er dabei versetzt wird (z. B. beim Zurücksetzen nach einem Absturz). Andere Spieler DÜRFEN es NICHT hören.
 
 #### Scenario: Rekord im Lauf gebrochen
 - **WHEN** ein Spieler mit Rekord 12 im Lauf Score 13 erreicht und danach weiter bis 20 springt
 - **THEN** hört er bei Score 13 genau einmal das Levelaufstiegs-Geräusch und bei 14 bis 20 nicht erneut
+
+#### Scenario: Rekord-Ton beim Absturz
+- **WHEN** ein Spieler ohne bisherigen Rekord mit Score 5 abstürzt und an den Startpunkt zurückgesetzt wird
+- **THEN** hört er das Levelaufstiegs-Geräusch vollständig
 
 #### Scenario: Erster Rekord
 - **WHEN** ein Spieler ohne bisherigen Rekord einen Lauf mit Score 5 beendet
