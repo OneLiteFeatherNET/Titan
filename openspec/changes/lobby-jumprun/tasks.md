@@ -86,9 +86,9 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 
 ## 11. Zielgerichtet, länger leicht, Signal- und Scheiter-Ton (Nachtrag nach viertem lokalen Test)
 
-- [ ] 11.1 Test zuerst (Unit): Freischalt-Schwellen der Formen (0/10/25/40), `K = 80`, unter Score 10 nur Vollblöcke; bestehende Statistik-Tests begründet anpassen. Dann `Surface`, `Difficulty`, Generator (D15). Nachweis: Tests grün.
-- [ ] 11.2 Test zuerst (Unit): Hauptrichtung im `Course` (Start = Aufstiegsrichtung, Glättung 0.8/0.2), kein Kandidat mit `cos < 0`, 2er-Abstand zu früheren sichtbaren Blöcken außer dem Absprungblock (Ziel und Flugbahn), Richtungs-Bonus im Ranking. Dann umsetzen (D15). Nachweis: Tests grün, 10 000-Sprünge-Invarianten grün.
-- [ ] 11.3 Test zuerst (Unit + Integration): Signalton bei jeder Aufstiegslandung nur an den Läufer; Scheiter-Ton (3 absteigende Bass-Töne über 6 Ticks) nur bei Absturz und Elytra, nicht bei Abbruch, Verlassen, Disconnect oder Shutdown. Dann `RunSounds.signal`/`fail`, `EndReason.failed()`. Nachweis: `./gradlew build` grün, danach erneuter lokaler Test.
+- [x] 11.1 Test zuerst (Unit): Freischalt-Schwellen der Formen (0/10/25/40), `K = 80`, unter Score 10 nur Vollblöcke; bestehende Statistik-Tests begründet anpassen. Dann `Surface`, `Difficulty`, Generator (D15). Nachweis: Tests grün.
+- [x] 11.2 Test zuerst (Unit): Hauptrichtung im `Course` (Start = Aufstiegsrichtung, Glättung 0.8/0.2), kein Kandidat mit `cos < 0`, 2er-Abstand zu früheren sichtbaren Blöcken außer dem Absprungblock (Ziel und Flugbahn), Richtungs-Bonus im Ranking. Dann umsetzen (D15). Nachweis: Tests grün, 10 000-Sprünge-Invarianten grün.
+- [x] 11.3 Test zuerst (Unit + Integration): Signalton bei jeder Aufstiegslandung nur an den Läufer; Scheiter-Ton (3 absteigende Bass-Töne über 6 Ticks) nur bei Absturz und Elytra, nicht bei Abbruch, Verlassen, Disconnect oder Shutdown. Dann `RunSounds.signal`/`fail`, `EndReason.failed()`. Nachweis: `./gradlew build` grün, danach erneuter lokaler Test.
 
 ## 6. Pull Request
 
