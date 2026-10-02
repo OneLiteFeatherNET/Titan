@@ -21,11 +21,13 @@ import io.avaje.config.Configuration;
 final class JumprunConfig {
 
     private final LiveSetting<Palettes> palettes;
-    private final LiveSetting<Integer> rerollTicks;
+    private final LiveSetting<Integer> rainbowRerollTicks;
+    private final LiveSetting<Integer> ultraRerollTicks;
 
     JumprunConfig(Configuration config) {
         this.palettes = new LiveSetting<>("palettes", () -> JumprunSettings.palettes(config));
-        this.rerollTicks = new LiveSetting<>("rerollTicks", () -> JumprunSettings.rerollTicks(config));
+        this.rainbowRerollTicks = new LiveSetting<>("rainbow.rerollTicks", () -> JumprunSettings.rerollTicks(config, JumprunSettings.RAINBOW_REROLL_TICKS_KEY));
+        this.ultraRerollTicks = new LiveSetting<>("ultra.rerollTicks", () -> JumprunSettings.rerollTicks(config, JumprunSettings.ULTRA_REROLL_TICKS_KEY));
     }
 
     /**
@@ -34,15 +36,22 @@ final class JumprunConfig {
      */
     void readAtStartup() {
         this.palettes.readAtStartup();
-        this.rerollTicks.readAtStartup();
+        this.rainbowRerollTicks.readAtStartup();
+        this.ultraRerollTicks.readAtStartup();
     }
 
     Palettes palettes() {
         return this.palettes.current();
     }
 
-    /** Standing ticks between two rerolls of a Rainbow or Ultra run. */
-    int rerollTicks() {
-        return this.rerollTicks.current();
+    /**
+     * Standing ticks between two rerolls of a run in {@code mode}; 0 for a mode that never rerolls.
+     */
+    int rerollTicks(Mode mode) {
+        return switch (mode.reroll()) {
+            case NONE -> 0;
+            case MATERIAL -> this.rainbowRerollTicks.current();
+            case COURSE -> this.ultraRerollTicks.current();
+        };
     }
 }

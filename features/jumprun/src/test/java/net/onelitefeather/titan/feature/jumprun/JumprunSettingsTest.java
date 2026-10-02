@@ -99,35 +99,60 @@ class JumprunSettingsTest {
         assertTrue(refusal.getMessage().contains("must not be empty"), "reason: " + refusal.getMessage());
     }
 
-    private static IllegalArgumentException rerollRefusal(String value) {
+    private static final List<String> REROLL_KEYS = List.of(JumprunSettings.RAINBOW_REROLL_TICKS_KEY, JumprunSettings.ULTRA_REROLL_TICKS_KEY);
+
+    private static IllegalArgumentException rerollRefusal(String key, String value) {
         Configuration config = TestBlocks.shippedConfiguration();
-        config.setProperty(JumprunSettings.REROLL_TICKS_KEY, value);
-        return assertThrows(IllegalArgumentException.class, () -> JumprunSettings.rerollTicks(config));
+        config.setProperty(key, value);
+        return assertThrows(IllegalArgumentException.class, () -> JumprunSettings.rerollTicks(config, key));
     }
 
     @Test
-    void theShippedRerollIntervalIsFortyTicks() {
-        assertEquals(40, JumprunSettings.rerollTicks(TestBlocks.shippedConfiguration()));
+    void theShippedRerollIntervalsAreTenForRainbowAndFortyForUltra() {
+        Configuration config = TestBlocks.shippedConfiguration();
+
+        assertEquals(10, JumprunSettings.rerollTicks(config, JumprunSettings.RAINBOW_REROLL_TICKS_KEY));
+        assertEquals(40, JumprunSettings.rerollTicks(config, JumprunSettings.ULTRA_REROLL_TICKS_KEY));
+    }
+
+    @Test
+    void theKeysCarryTheMode() {
+        assertEquals("jumprun.rainbow.rerollTicks", JumprunSettings.RAINBOW_REROLL_TICKS_KEY);
+        assertEquals("jumprun.ultra.rerollTicks", JumprunSettings.ULTRA_REROLL_TICKS_KEY);
     }
 
     @Test
     void aRerollIntervalOfZeroNamesItsKey() {
-        IllegalArgumentException refusal = rerollRefusal("0");
+        for (String key : REROLL_KEYS) {
+            IllegalArgumentException refusal = rerollRefusal(key, "0");
 
-        assertNamesKey("jumprun.rerollTicks", refusal);
-        assertTrue(refusal.getMessage().contains("greater than 0"), "reason: " + refusal.getMessage());
+            assertNamesKey(key, refusal);
+            assertTrue(refusal.getMessage().contains("greater than 0"), "reason: " + refusal.getMessage());
+        }
     }
 
     @Test
     void aNegativeRerollIntervalNamesItsKey() {
-        assertNamesKey("jumprun.rerollTicks", rerollRefusal("-5"));
+        REROLL_KEYS.forEach(key -> assertNamesKey(key, rerollRefusal(key, "-5")));
     }
 
     @Test
     void aRerollIntervalThatIsNoNumberNamesItsKey() {
-        IllegalArgumentException refusal = rerollRefusal("often");
+        for (String key : REROLL_KEYS) {
+            IllegalArgumentException refusal = rerollRefusal(key, "often");
 
-        assertNamesKey("jumprun.rerollTicks", refusal);
-        assertTrue(refusal.getMessage().contains("whole number"), "reason: " + refusal.getMessage());
+            assertNamesKey(key, refusal);
+            assertTrue(refusal.getMessage().contains("whole number"), "reason: " + refusal.getMessage());
+        }
+    }
+
+    @Test
+    void aMissingRerollIntervalNamesItsKey() {
+        for (String key : REROLL_KEYS) {
+            Configuration config = TestBlocks.shippedConfiguration();
+            config.clearProperty(key);
+
+            assertNamesKey(key, assertThrows(IllegalArgumentException.class, () -> JumprunSettings.rerollTicks(config, key)));
+        }
     }
 }

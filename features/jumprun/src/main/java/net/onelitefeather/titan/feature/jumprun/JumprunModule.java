@@ -219,7 +219,7 @@ final class JumprunModule {
         Pos spawnPoint = Optional.ofNullable(spawn.position()).orElse(feet);
         Heading heading = Heading.away(feet.x(), feet.z(), spawnPoint.x(), spawnPoint.z(), feet.direction().x(), feet.direction().z());
         RandomGenerator random = RandomGeneratorFactory.of(RANDOM_ALGORITHM).create(seeds.getAsLong());
-        return Course.startSteered(feet, startBlock, heading, new SpawnZone(spawnPoint.x(), spawnPoint.z()), new InstanceSpaceProbe(player.getInstance()), random, config.palettes(), PortalClearance.ofPortals(portals.portals()), mode).map(course -> new Run(player, course, startBlock, mode, records.best(player.getUuid(), mode), config.rerollTicks()));
+        return Course.startSteered(feet, startBlock, heading, new SpawnZone(spawnPoint.x(), spawnPoint.z()), new InstanceSpaceProbe(player.getInstance()), random, config.palettes(), PortalClearance.ofPortals(portals.portals()), mode).map(course -> new Run(player, course, startBlock, mode, records.best(player.getUuid(), mode), config.rerollTicks(mode)));
     }
 
     private void onDeath(PlayerDeathEvent event) {

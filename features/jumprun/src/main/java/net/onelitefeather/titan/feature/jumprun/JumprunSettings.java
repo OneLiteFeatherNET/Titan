@@ -26,12 +26,14 @@ import net.minestom.server.instance.block.Block;
 
 /**
  * Parsing and validation of {@code jumprun.palettes.<shape>.<block>: <weight>} and {@code
- * jumprun.rerollTicks}. Every failure names the full key, so the operator finds the line to fix.
+ * jumprun.<mode>.rerollTicks}. Every failure names the full key, so the operator finds the line to
+ * fix.
  */
 final class JumprunSettings {
 
     static final String PALETTES_KEY = "jumprun.palettes";
-    static final String REROLL_TICKS_KEY = "jumprun.rerollTicks";
+    static final String RAINBOW_REROLL_TICKS_KEY = "jumprun.rainbow.rerollTicks";
+    static final String ULTRA_REROLL_TICKS_KEY = "jumprun.ultra.rerollTicks";
 
     /** Tolerance for comparing collision heights, which are multiples of 1/16. */
     private static final double TOP_TOLERANCE = 1e-9;
@@ -62,19 +64,19 @@ final class JumprunSettings {
     }
 
     /**
-     * @throws IllegalArgumentException naming {@value #REROLL_TICKS_KEY} when it is missing, not a
-     *                                  whole number or not above 0
+     * @throws IllegalArgumentException naming {@code key} when it is missing, not a whole number
+     *                                  or not above 0
      */
-    static int rerollTicks(Configuration config) {
-        String raw = config.getOptional(REROLL_TICKS_KEY).orElseThrow(() -> new IllegalArgumentException(REROLL_TICKS_KEY + ": missing, it needs a whole number above 0"));
+    static int rerollTicks(Configuration config, String key) {
+        String raw = config.getOptional(key).orElseThrow(() -> new IllegalArgumentException(key + ": missing, it needs a whole number above 0"));
         int ticks;
         try {
             ticks = Integer.parseInt(raw.trim());
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException(REROLL_TICKS_KEY + ": must be a whole number, got '" + raw + "'");
+            throw new IllegalArgumentException(key + ": must be a whole number, got '" + raw + "'");
         }
         if (ticks <= 0) {
-            throw new IllegalArgumentException(REROLL_TICKS_KEY + ": must be greater than 0, got " + ticks);
+            throw new IllegalArgumentException(key + ": must be greater than 0, got " + ticks);
         }
         return ticks;
     }

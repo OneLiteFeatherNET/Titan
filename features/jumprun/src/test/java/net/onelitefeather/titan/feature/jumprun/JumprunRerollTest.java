@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.avaje.config.Configuration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -38,7 +39,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Rainbow and Ultra while the runner stands: the blocks change colour or are made anew every
- * {@code jumprun.rerollTicks} (40) standing ticks. The run has already stood for the ticks it took
+ * {@code jumprun.<mode>.rerollTicks} standing ticks, which these tests set to {@link #INTERVAL}
+ * for both modes. The run has already stood for the ticks it took
  * to let the first blocks land when {@link #start} returns, so the margins below are a few ticks.
  */
 @ExtendWith(MicrotusExtension.class)
@@ -50,6 +52,13 @@ class JumprunRerollTest {
     private static final int BEFORE_REROLL = INTERVAL - LANDED_AT_START - 8;
     /** Standing ticks after the start that are past the interval, but short of a second one. */
     private static final int PAST_REROLL = INTERVAL + 5;
+
+    private static JumprunFixture fixture(Env env, int rainbowTicks, int ultraTicks) {
+        Configuration config = TestBlocks.shippedConfiguration();
+        config.setProperty(JumprunSettings.RAINBOW_REROLL_TICKS_KEY, Integer.toString(rainbowTicks));
+        config.setProperty(JumprunSettings.ULTRA_REROLL_TICKS_KEY, Integer.toString(ultraTicks));
+        return JumprunFixture.start(env, config);
+    }
 
     private static StartedRun start(Env env, JumprunFixture fixture, Mode mode) {
         return StartedRun.startAfter(env, fixture, player -> choose(fixture, player, mode));
@@ -105,7 +114,7 @@ class JumprunRerollTest {
 
     @Test
     void rainbowGivesTheBlocksNewMaterialsAtTheSamePlacesWithTheSameShapes(Env env) {
-        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+        try (JumprunFixture fixture = fixture(env, INTERVAL, INTERVAL)) {
             StartedRun run = start(env, fixture, Mode.RAINBOW);
             Map<BlockPos, BlockChangePacket> before = byPosition(List.copyOf(run.ahead()));
             Collector<ServerPacket> sent = run.connection().trackIncoming();
@@ -124,7 +133,7 @@ class JumprunRerollTest {
 
     @Test
     void rainbowShowsTheNewMaterialsToTheOthersAndOutlinesTheNextBlockInIt(Env env) {
-        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+        try (JumprunFixture fixture = fixture(env, INTERVAL, INTERVAL)) {
             StartedRun run = start(env, fixture, Mode.RAINBOW);
             Set<BlockPos> places = placesOfDisplays(run);
             Collector<ServerPacket> sent = run.connection().trackIncoming();
@@ -144,7 +153,7 @@ class JumprunRerollTest {
 
     @Test
     void nothingChangesBeforeTheIntervalIsFull(Env env) {
-        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+        try (JumprunFixture fixture = fixture(env, INTERVAL, INTERVAL)) {
             StartedRun run = start(env, fixture, Mode.RAINBOW);
             Collector<ServerPacket> sent = run.connection().trackIncoming();
 
@@ -156,7 +165,7 @@ class JumprunRerollTest {
 
     @Test
     void aLandingBeforeTheIntervalIsFullStartsTheCountAgain(Env env) {
-        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+        try (JumprunFixture fixture = fixture(env, INTERVAL, INTERVAL)) {
             StartedRun run = start(env, fixture, Mode.RAINBOW);
             Set<BlockPos> shownBefore = byPosition(List.copyOf(run.ahead())).keySet();
             tick(env, BEFORE_REROLL);
@@ -177,7 +186,7 @@ class JumprunRerollTest {
 
     @Test
     void ultraShowsNoOutlineEver(Env env) {
-        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+        try (JumprunFixture fixture = fixture(env, INTERVAL, INTERVAL)) {
             StartedRun run = start(env, fixture, Mode.ULTRA);
 
             assertTrue(JumprunFixture.outlines(run.instance()).isEmpty(), "no outline at the start");
@@ -191,7 +200,7 @@ class JumprunRerollTest {
 
     @Test
     void ultraLetsTheOldBlocksRiseAndNewOnesFallInElsewhere(Env env) {
-        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+        try (JumprunFixture fixture = fixture(env, INTERVAL, INTERVAL)) {
             StartedRun run = start(env, fixture, Mode.ULTRA);
             Set<BlockPos> oldPlaces = placesOfDisplays(run);
             List<Entity> oldDisplays = JumprunFixture.blockDisplays(run.instance());
@@ -216,7 +225,7 @@ class JumprunRerollTest {
 
     @Test
     void ultraRunsOnOverTheNewBlocks(Env env) {
-        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+        try (JumprunFixture fixture = fixture(env, INTERVAL, INTERVAL)) {
             StartedRun run = start(env, fixture, Mode.ULTRA);
             Collector<ServerPacket> sent = run.connection().trackIncoming();
             tick(env, PAST_REROLL);
@@ -235,7 +244,7 @@ class JumprunRerollTest {
 
     @Test
     void afterTheRunEndedNoRerollFiresAnymore(Env env) {
-        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+        try (JumprunFixture fixture = fixture(env, INTERVAL, INTERVAL)) {
             StartedRun run = start(env, fixture, Mode.ULTRA);
             fixture.useItem(run.player());
             fixture.settle();
@@ -250,7 +259,7 @@ class JumprunRerollTest {
 
     @Test
     void afterTheShutdownNoRerollFiresAnymore(Env env) {
-        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+        try (JumprunFixture fixture = fixture(env, INTERVAL, INTERVAL)) {
             StartedRun run = start(env, fixture, Mode.RAINBOW);
             fixture.stopModule();
             Collector<ServerPacket> sent = run.connection().trackIncoming();
@@ -263,13 +272,45 @@ class JumprunRerollTest {
 
     @Test
     void otherModesNeverReroll(Env env) {
-        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+        try (JumprunFixture fixture = fixture(env, INTERVAL, INTERVAL)) {
             StartedRun run = start(env, fixture, Mode.HARD);
             Collector<ServerPacket> sent = run.connection().trackIncoming();
 
             tick(env, PAST_REROLL * 2);
 
             assertTrue(courseBlocks(sent.collect()).isEmpty(), "a Hard run stands still");
+        }
+    }
+
+    // --- one interval per mode -----------------------------------------------------------------
+
+    @Test
+    void rainbowRerollsAfterItsOwnIntervalNotUltras(Env env) {
+        try (JumprunFixture fixture = fixture(env, 25, 80)) {
+            StartedRun run = start(env, fixture, Mode.RAINBOW);
+            Collector<ServerPacket> early = run.connection().trackIncoming();
+
+            tick(env, 5);
+            assertTrue(courseBlocks(early.collect()).isEmpty(), "short of the Rainbow interval");
+            Collector<ServerPacket> later = run.connection().trackIncoming();
+            tick(env, 20);
+
+            assertFalse(courseBlocks(later.collect()).isEmpty(), "past the Rainbow interval, far short of the Ultra one");
+        }
+    }
+
+    @Test
+    void ultraRerollsAfterItsOwnIntervalNotRainbows(Env env) {
+        try (JumprunFixture fixture = fixture(env, 15, 60)) {
+            StartedRun run = start(env, fixture, Mode.ULTRA);
+            Collector<ServerPacket> early = run.connection().trackIncoming();
+
+            tick(env, 30);
+            assertTrue(courseBlocks(early.collect()).isEmpty(), "past the Rainbow interval, short of the Ultra one");
+            Collector<ServerPacket> later = run.connection().trackIncoming();
+            tick(env, 40);
+
+            assertFalse(courseBlocks(later.collect()).isEmpty(), "past the Ultra interval");
         }
     }
 }

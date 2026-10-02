@@ -703,12 +703,16 @@ Höhenunterschied, Blockart) steigt mit dem Punktestand. `EVENT_PRIORITY` ist 10
   Lücken sind (`Mode`). Er gilt pro Spieler und Sitzung und steht im Kopf-Label und in den
   Meldungen.
 - **Rainbow und Ultra:** Rainbow spielt wie Medium, Ultra wie Hard (ohne Umrandung). Steht der
-  Läufer `jumprun.rerollTicks` Ticks (Standard 40, ganze Zahl über 0) auf dem aktuellen Block,
+  Läufer so viele Ticks auf dem aktuellen Block, wie der Modus vorgibt (`jumprun.rainbow.rerollTicks`,
+  Standard 10; `jumprun.ultra.rerollTicks`, Standard 40; jeweils eine ganze Zahl über 0),
   wechseln in Rainbow alle sichtbaren Blöcke ihr Material, in Ultra werden die Blöcke voraus neu
   erzeugt (Aufstieg und Fall wie sonst). Ein Sprung oder eine Landung setzt den Zähler zurück. Pro
   Lauf läuft dafür ein Tick-Task auf dem Scheduler des Läufers, der mit dem Lauf endet
-  (`Reroller`). Der Wert wird wie die Paletten beim Start geprüft (Meldung mit
-  `jumprun.rerollTicks`) und zur Laufzeit je Lauf neu gelesen.
+  (`Reroller`). Beide Werte werden wie die Paletten beim Start geprüft (Meldung mit dem
+  vollen Schlüssel) und zur Laufzeit je Lauf neu gelesen; der Modus des Laufs wählt den Schlüssel.
+- **Töne:** Alle Lauftöne (Punkt, Aufstiegssignal, Absturz, Rekord, Modus-Klick) spielen am Läufer
+  gebunden (`Sound.Emitter.self()`, `EntitySoundEffectPacket`) und nur für ihn. Das Level-up beim
+  ersten Rekord bleibt so hörbar, obwohl der Absturz im selben Tick zum Startpunkt teleportiert.
 - **Einschränkung Rekorde:** Bestwerte liegen je Modus nur im Speicher (`InMemoryRunRecords`) und
   gehen beim Neustart verloren, bis es einen Stats-Dienst gibt.
 - **Eigene Übersetzungen:** Texte (`titan.jumprun.*`, de/en, Englisch als Fallback) kommen aus einem

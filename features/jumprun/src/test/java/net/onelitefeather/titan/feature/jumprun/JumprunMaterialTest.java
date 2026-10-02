@@ -135,15 +135,24 @@ class JumprunMaterialTest {
     }
 
     @Test
-    void anInvalidRerollIntervalAbortsTheStartWithItsKey(Env env) {
+    void anInvalidRainbowRerollIntervalAbortsTheStartWithItsKey(Env env) {
+        assertInvalidRerollAborts(env, JumprunSettings.RAINBOW_REROLL_TICKS_KEY);
+    }
+
+    @Test
+    void anInvalidUltraRerollIntervalAbortsTheStartWithItsKey(Env env) {
+        assertInvalidRerollAborts(env, JumprunSettings.ULTRA_REROLL_TICKS_KEY);
+    }
+
+    private static void assertInvalidRerollAborts(Env env, String key) {
         Configuration config = TestBlocks.shippedConfiguration();
-        config.setProperty(JumprunSettings.REROLL_TICKS_KEY, "0");
+        config.setProperty(key, "0");
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
             JumprunModule module = new JumprunModule(titan.node(), () -> null, List::of, new InMemoryRunRecords(), RecordingLobbyItems::new, new RunMessages(), () -> JumprunFixture.SEED, new JumprunConfig(config));
 
             IllegalArgumentException abort = assertThrows(IllegalArgumentException.class, module::start);
 
-            assertTrue(abort.getMessage().startsWith("jumprun.rerollTicks"), "the abort names the key: " + abort.getMessage());
+            assertTrue(abort.getMessage().startsWith(key), "the abort names the key: " + abort.getMessage());
         }
     }
 }
