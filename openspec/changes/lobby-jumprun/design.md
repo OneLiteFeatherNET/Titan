@@ -278,6 +278,40 @@ Die Zuschauer-Displays aus D12 übernehmen die Animation für alle:
   - Nach Disconnect und Rejoin gilt der nächste Lauf mit Score > 0 als Rekord, inklusive Rekord-Meldung.
   - Unit: `forget` entfernt den Rekord.
 
+### D22 Umrandung des nächsten Blocks
+
+Für den Läufer allein spawnt der Lauf am nächsten Block einen zweiten `BLOCK_DISPLAY` mit demselben Material, Skala 1.02 und Translation −0.01. Er hat Leuchten (`setHasGlowingEffect(true)`) mit fester Leuchtfarbe (`glowColorOverride`, Grün `#7CFC00` passend zum Titel) und ist nur für den Läufer sichtbar (`HiddenDisplay` mit umgekehrter Regel `viewer == runner`). Er erscheint, sobald der nächste Block gelandet ist (Ende der Fall-Animation, D20), und wechselt bei jeder Landung. Beim Laufende und beim Shutdown verschwindet er sofort.
+- **Built-in:** Display-Glow von Minecraft. Partikel-Umrisse wurden verworfen, sie sind flackernd und teuer.
+- **Test:** Integration. Nach dem Landen des nächsten Blocks sieht nur der Läufer ein glühendes Display an dessen Position. Nach einer Landung steht die Umrandung beim neuen nächsten Block. Ein Zuschauer bekommt kein Spawn-Paket. Beim Ende bleibt nichts zurück.
+
+### D23 Modi Easy, Medium, Hard
+
+- **`Mode`** ist ein Enum mit Parametern: Freischalt-Schwellen je `Surface` (Easy: FULL 0 und SLAB 10, alle anderen nie; Medium: wie D15; Hard: 0/5/10/20), Steilheit `K` (Easy 160, Medium 80, Hard 40), maximale Lücke (Easy 2, sonst 4) und ein Aufstiegs-Gewicht im Kostenmodell (Easy: Aufstieg kostet das Dreifache, damit er selten gewählt wird). `CourseGenerator`, `Difficulty` und `Surface` lesen diese Werte aus dem `Mode` des Laufs statt aus Konstanten.
+- **Wahl:** `JumprunModule.use(player)` unterscheidet `player.isSneaking()`.
+  - Mit Schleichtaste und ohne Lauf wird zyklisch gewechselt.
+  - Danach gehen eine übersetzte Meldung `titan.jumprun.mode.changed` (Argument: Modusname, MiniMessage-Gradient) und ein `UI_BUTTON_CLICK` an den Spieler.
+  - Mit Schleichtaste im Lauf passiert nichts.
+  - Ohne Schleichtaste gilt das bisherige Verhalten (Start bzw. Abbruch).
+  - Der Modus liegt pro Spieler in einer `ConcurrentHashMap`, Standard ist `MEDIUM`. Er wird beim Disconnect gelöscht (wie die Rekorde, D21).
+- **Rekorde:** `RunRecords` wird pro `(UUID, Mode)` geführt (`best(UUID, Mode)`, `submit(UUID, Mode, int)`, `forget(UUID)` löscht alle Modi). `Run` kennt seinen Modus.
+- **Anzeige:**
+  - Die Kopfanzeige wird `… Jump & Run · <Mode> · <score>`.
+  - Die Modusnamen „Easy“, „Medium“ und „Hard“ sind sprachneutral und je Modus in Grün, Gelb und Rot eingefärbt.
+  - `end.score` und `end.record` bekommen das Argument `<mode>`, in allen Sprach-Bundles.
+- **Built-in:** Minestoms `isSneaking`, Adventure-Übersetzungen.
+- **Test:**
+  - Unit: `Mode`-Parameter.
+  - Easy über 60 Punkte nur FULL/SLAB, Lücke ≤ 2.
+  - Hard schaltet Formen bei 5/10/20 frei.
+  - Rekorde pro Modus getrennt.
+  - Integration:
+    - Schleich-Rechtsklick ohne Lauf wechselt, startet nichts und schickt die Meldung.
+    - Im Lauf ändert er nichts.
+    - Normaler Rechtsklick startet im gewählten Modus.
+    - Die Kopfanzeige nennt den Modus.
+    - Nach Disconnect gilt wieder Medium.
+- **SOLID:** OCP. Ein neuer Modus ist ein Enum-Eintrag.
+
 ## Risks / Trade-offs
 
 - **Elytra durch Leertaste in der Luft:** Im Spiel startet ein erneuter Druck auf die Leertaste in der Luft das Gleiten. Spieler, die beim Springen hektisch drücken, beenden ihren Lauf versehentlich. → Bewusst so entschieden (Elytra-Gleiten = Ende). Bei der Abnahme wird geprüft, wie oft das passiert. Falls nötig, gibt es einen Folge-Change, der statt Laufende das Gleiten nur unterbindet.

@@ -111,6 +111,17 @@ Ein neuer Block des Sichtfensters MUSS für alle, die ihn sehen, aus der Höhe a
 - **WHEN** ein Block das Sichtfenster hinter dem Läufer verlässt
 - **THEN** steigt er für alle sichtbar nach oben und verschwindet
 
+### Requirement: Nächster Block hervorgehoben
+Während eines Laufs MUSS der Läufer den nächsten Block, auf den er springen soll, mit einer leuchtenden Umrandung sehen, sobald dieser begehbar ist. Nach jeder Landung MUSS die Umrandung auf den neuen nächsten Block wechseln. Andere Spieler DÜRFEN die Umrandung NICHT sehen.
+
+#### Scenario: Umrandung wandert mit
+- **WHEN** der Läufer auf dem hervorgehobenen Block landet
+- **THEN** ist dieser nicht mehr umrandet, und der nun nächste Block ist umrandet
+
+#### Scenario: Nur für den Läufer
+- **WHEN** ein anderer Spieler den Lauf beobachtet
+- **THEN** sieht er keine Umrandung
+
 ### Requirement: Fortschritt durch Landen
 Ein Sprung MUSS als geschafft gelten, sobald der Spieler auf einem der vor ihm liegenden Blöcke seines Laufs steht. Landet er direkt auf dem übernächsten Block, MÜSSEN beide Sprünge als geschafft gelten.
 
@@ -205,6 +216,29 @@ Der Parcours MUSS eine Hauptrichtung verfolgen, die sich nur allmählich ändert
 #### Scenario: Frühere Blöcke nicht im Weg
 - **WHEN** ein Kandidat waagrecht direkt neben dem vorletzten Block läge
 - **THEN** wird er nicht gewählt
+
+### Requirement: Schwierigkeitsmodi
+Ein Spieler MUSS zwischen den Modi Easy, Medium und Hard wählen können, indem er das Jump-and-Run-Item mit gedrückter Schleichtaste rechtsklickt; jeder solche Klick MUSS zum nächsten Modus wechseln (Easy → Medium → Hard → Easy) und den gewählten Modus in der Sprache des Spielers anzeigen. Außerhalb eines Laufs DARF ein Klick mit Schleichtaste KEINEN Lauf starten; während eines Laufs DARF er den Modus NICHT wechseln und den Lauf NICHT beenden. Standard ist Medium; der gewählte Modus gilt, bis der Spieler die Lobby verlässt. Ein Lauf behält den Modus, mit dem er gestartet wurde:
+- Easy: nur Vollblöcke und Stufen, Lücke höchstens 2, seltene Aufstiege, Schwierigkeit steigt halb so schnell wie Medium.
+- Medium: Verhalten wie in den übrigen Anforderungen beschrieben.
+- Hard: Formen früher frei (Stufen und Falltüren ab 5, Zäune, Mauern, Scheiben und Gitter ab 10, Pfosten ab 20), Schwierigkeit steigt doppelt so schnell wie Medium.
+Rekorde MÜSSEN pro Modus getrennt geführt werden, und Score-Meldungen, Rekord-Meldungen und die Anzeige über dem Läufer MÜSSEN den Modus nennen.
+
+#### Scenario: Modus wechseln
+- **WHEN** ein Spieler ohne laufenden Lauf das Item mit Schleichtaste rechtsklickt, während Medium aktiv ist
+- **THEN** ist Hard aktiv, er sieht den neuen Modus, und es startet kein Lauf
+
+#### Scenario: Kein Wechsel im Lauf
+- **WHEN** ein Läufer das Item mit Schleichtaste rechtsklickt
+- **THEN** bleiben Modus und Lauf unverändert
+
+#### Scenario: Easy bleibt leicht
+- **WHEN** ein Lauf im Modus Easy Score 60 erreicht
+- **THEN** waren alle Blöcke Vollblöcke oder Stufen, und keine Lücke war größer als 2
+
+#### Scenario: Rekord pro Modus
+- **WHEN** ein Spieler in Easy Rekord 30 und in Hard Rekord 8 hat und in Hard 9 erreicht
+- **THEN** ist das ein neuer Hard-Rekord, und sein Easy-Rekord bleibt 30
 
 ### Requirement: Optische Vielfalt der Blöcke
 Jeder Block eines Laufs MUSS sein Material zufällig aus einer Auswahl passend zu seiner Form erhalten, gewichtet nach dem Gewicht jedes Materials. Auswahl und Gewichte MÜSSEN je Form im Abschnitt `jumprun.palettes.<form>` der Konfiguration stehen (Formen: `full`, `trapdoor`, `slab`, `fence`, `pane`, `post`; je Eintrag Block-Schlüssel und ganzzahliges Gewicht > 0). Die mitgelieferten Standardwerte MÜSSEN die heutige Auswahl enthalten (z. B. bunter Beton, Wolle und Terrakotta als Vollblock, verschiedene Holz- und Steinstufen, Holzzäune und Mauern, bunte Glasscheiben und Eisengitter). Ein unbekannter Block, ein Block, dessen Form nicht zur Form der Liste passt, ein Gewicht ≤ 0 oder eine leere Liste MUSS beim Start den Start abbrechen, mit vollständigem Schlüssel und Grund. Für Änderungen zur Laufzeit gelten die allgemeinen Regeln der Lobby-Konfiguration. Das Material DARF die Schwierigkeit und die Schaffbarkeit eines Sprungs NICHT verändern.
