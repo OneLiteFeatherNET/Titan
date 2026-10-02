@@ -23,6 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.random.RandomGenerator;
 import java.util.random.RandomGeneratorFactory;
 import org.junit.jupiter.api.Test;
@@ -38,7 +40,11 @@ class AscentPhaseTest {
 
     /** The five ascent jumps, or fewer when the generator runs out of room. */
     private static List<CourseBlock> ascent(FakeSpaceProbe world, Heading heading, long seed) {
-        CourseGenerator generator = new CourseGenerator(world, seeded(seed));
+        return ascent(world, TestBlocks.FAR_SPAWN, heading, seed);
+    }
+
+    private static List<CourseBlock> ascent(FakeSpaceProbe world, SpawnZone spawn, Heading heading, long seed) {
+        CourseGenerator generator = new CourseGenerator(world, spawn, seeded(seed));
         List<CourseBlock> course = new ArrayList<>(List.of(START));
         Phase phase = Phase.start(heading);
         while (phase instanceof Phase.Ascent) {
@@ -82,9 +88,9 @@ class AscentPhaseTest {
 
     @Test
     void generatesNoAscentJumpBeyondTheMaximum() {
-        CourseGenerator generator = new CourseGenerator(new FakeSpaceProbe(), seeded(1L));
+        CourseGenerator generator = new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(1L));
 
-        assertTrue(generator.next(List.of(START), new Phase.Ascent(Phase.MAX_ASCENT_JUMPS, EAST)).isEmpty(), "twenty jumps are the limit");
+        assertTrue(generator.next(List.of(START), new Phase.Ascent(Phase.MAX_ASCENT_JUMPS, EAST)).isEmpty(), "thirty jumps are the limit");
     }
 
     @Test
@@ -171,18 +177,24 @@ class AscentPhaseTest {
 
     // --- ending in the open -------------------------------------------------------------------------
 
-    private static boolean hasAirBelow(FakeSpaceProbe world, CourseBlock block) {
-        return new Openness(world).hasAirBelow(block.pos());
+    /** The way the generator sees it: the four blocks made just before also take up room. */
+    private static boolean hasAirBelow(FakeSpaceProbe world, List<CourseBlock> course, int index) {
+        Set<BlockPos> earlier = course.subList(Math.max(0, index - Course.VISIBLE_BEFORE_NEW), index).stream().map(CourseBlock::pos).collect(Collectors.toSet());
+        return new Openness(new OccupiedProbe(world, earlier)).hasAirBelow(course.get(index).pos(), Phase.ASCENT_AIR_BELOW);
+    }
+
+    private static boolean isInTheOpen(FakeSpaceProbe world, SpawnZone spawn, List<CourseBlock> course, int index) {
+        return spawn.isFarEnough(course.get(index).pos()) && hasAirBelow(world, course, index);
     }
 
     @Test
-    void ascentOnFlatGroundEndsAtTheFifthJumpWithAirBelow() {
+    void ascentOnFlatGroundEndsAtTheFirstBlockWithEightAirBlocksBelow() {
         FakeSpaceProbe world = new FakeSpaceProbe().occupyBox(-50, 0, -50, 50, 9, 50);
 
         List<CourseBlock> course = ascent(world, EAST, 1L);
 
-        assertEquals(Phase.MIN_ASCENT_JUMPS + 1, course.size(), "start plus five jumps");
-        assertTrue(hasAirBelow(world, course.getLast()), "four air blocks below the last ascent block");
+        assertEquals(Phase.ASCENT_AIR_BELOW, course.size() - 1, "the start stands on the ground and each jump is one higher, so the eighth block has eight air blocks below");
+        assertTrue(hasAirBelow(world, course, course.size() - 1), "eight air blocks below the last ascent block");
     }
 
     @Test
@@ -192,8 +204,8 @@ class AscentPhaseTest {
             List<CourseBlock> course = ascent(world, EAST, seed);
 
             assertTrue(course.size() > Phase.MIN_ASCENT_JUMPS + 1, "the ground climbs along, so more than five jumps (seed " + seed + "), got " + (course.size() - 1));
-            assertTrue(hasAirBelow(world, course.getLast()), "the last block must stand in the open (seed " + seed + ")");
-            assertFalse(hasAirBelow(world, course.get(course.size() - 2)), "the one before it was not in the open yet (seed " + seed + ")");
+            assertTrue(hasAirBelow(world, course, course.size() - 1), "the last block must stand in the open (seed " + seed + ")");
+            assertFalse(hasAirBelow(world, course, course.size() - 2), "the one before it was not in the open yet (seed " + seed + ")");
         }
     }
 
@@ -204,7 +216,7 @@ class AscentPhaseTest {
         List<CourseBlock> course = ascent(world, EAST, 2L);
 
         assertEquals(Surface.FULL, course.get(1).surface(), "even the first block, right above the ground, is built");
-        assertFalse(hasAirBelow(world, course.get(1)), "and it has no air below");
+        assertFalse(hasAirBelow(world, course, 1), "and it has no air below");
     }
 
     @Test
@@ -213,8 +225,42 @@ class AscentPhaseTest {
 
         List<CourseBlock> course = ascent(world, EAST, 1L);
 
-        assertTrue(course.size() - 1 <= Phase.MAX_ASCENT_JUMPS, "never more than twenty jumps");
-        assertFalse(hasAirBelow(world, course.getLast()), "the open was never reached");
+        assertTrue(course.size() - 1 <= Phase.MAX_ASCENT_JUMPS, "never more than thirty jumps");
+        assertFalse(hasAirBelow(world, course, course.size() - 1), "the open was never reached");
+    }
+
+    // --- distance to the spawn -----------------------------------------------------------------------
+
+    @Test
+    void ascentGoesOnUntilTheLastBlockIsSixteenBlocksFromTheSpawn() {
+        FakeSpaceProbe world = new FakeSpaceProbe();
+        SpawnZone spawn = new SpawnZone(-3.5, 0.5);
+        for (long seed = 0; seed < 10; seed++) {
+            List<CourseBlock> course = ascent(world, spawn, EAST, seed);
+
+            assertTrue(isInTheOpen(world, spawn, course, course.size() - 1), "the last block must be far from the spawn, in the open (seed " + seed + ")");
+            for (int index = Phase.MIN_ASCENT_JUMPS; index < course.size() - 1; index++) {
+                assertFalse(isInTheOpen(world, spawn, course, index), "block " + index + " was already far and open, the ascent should have ended (seed " + seed + ")");
+            }
+        }
+    }
+
+    @Test
+    void ascentNeedsMoreJumpsCloseToTheSpawn() {
+        FakeSpaceProbe world = new FakeSpaceProbe();
+        List<CourseBlock> near = ascent(world, new SpawnZone(0.5, 0.5), EAST, 1L);
+        List<CourseBlock> far = ascent(world, TestBlocks.FAR_SPAWN, EAST, 1L);
+
+        assertTrue(near.size() > far.size(), "close to the spawn the ascent needs more jumps: " + near.size() + " vs " + far.size());
+    }
+
+    @Test
+    void ascentNeverReachesTheSpawnDistanceInAWorldTooSmall() {
+        FakeSpaceProbe walled = new FakeSpaceProbe(new BlockPos(-5, 0, -5), new BlockPos(5, 100, 5));
+
+        List<CourseBlock> course = ascent(walled, new SpawnZone(0.5, 0.5), EAST, 1L);
+
+        assertTrue(course.stream().skip(1).noneMatch(block -> new SpawnZone(0.5, 0.5).isFarEnough(block.pos())), "a world of eleven blocks never gets sixteen from the spawn");
     }
 
     // --- heading ----------------------------------------------------------------------------------

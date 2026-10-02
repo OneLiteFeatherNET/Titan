@@ -109,7 +109,7 @@ class JumprunPlayersTest {
         CountingRecords records = new CountingRecords();
         try (JumprunFixture fixture = JumprunFixture.start(env, records)) {
             StartedRun run = StartedRun.start(env, fixture);
-            run.landOnNext(Phase.MIN_ASCENT_JUMPS + 1);
+            run.landOnNext(JumprunFixture.ASCENT_JUMPS + 1);
             Collector<SystemChatPacket> chat = run.connection().trackIncoming(SystemChatPacket.class);
 
             fixture.useItem(run.player());

@@ -15,17 +15,17 @@
  */
 package net.onelitefeather.titan.feature.jumprun;
 
-/** Fixture factory for blocks whose material does not matter to the test. */
-final class TestBlocks {
+/**
+ * Where the lobby spawn is, so a course can keep away from it. A pure value: the check needs no
+ * world.
+ */
+record SpawnZone(double x, double z) {
 
-    /** A spawn so far away that its distance never matters to a test. */
-    static final SpawnZone FAR_SPAWN = new SpawnZone(-1000.0, 0.0);
+    /** Horizontal distance a course block keeps to the spawn once the ascent is over. */
+    static final int MIN_SPAWN_DISTANCE = 16;
 
-    private TestBlocks() {
-    }
-
-    /** A block with the first material of its shape. */
-    static CourseBlock at(BlockPos pos, Surface surface) {
-        return new CourseBlock(pos, surface, surface.palette().getFirst());
+    /** Whether the block cell is at least {@link #MIN_SPAWN_DISTANCE} blocks from the spawn. */
+    boolean isFarEnough(BlockPos pos) {
+        return Math.hypot(pos.x() + 0.5 - x, pos.z() + 0.5 - z) >= MIN_SPAWN_DISTANCE;
     }
 }

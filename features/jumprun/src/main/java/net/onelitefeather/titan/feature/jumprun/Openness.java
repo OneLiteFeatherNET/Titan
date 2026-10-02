@@ -21,31 +21,40 @@ package net.onelitefeather.titan.feature.jumprun;
  */
 record Openness(SpaceProbe probe) {
 
-    /** Air blocks a block needs below it to count as standing in the open. */
-    static final int MIN_AIR_BELOW = 4;
+    /** Air blocks a scored block needs below it to count as standing in the open. */
+    static final int MIN_AIR_BELOW = 6;
 
     /** How far down the column below a target is looked at. */
-    private static final int COLUMN_DEPTH = 12;
+    private static final int COLUMN_DEPTH = 16;
 
-    /** Whether the {@link #MIN_AIR_BELOW} blocks directly below the position are all air. */
-    boolean hasAirBelow(BlockPos pos) {
-        return airInColumn(pos, MIN_AIR_BELOW) == MIN_AIR_BELOW;
+    /** The cells around a position that are looked at: the eight neighbours on two levels. */
+    private static final int NEIGHBOURS = 2 * Direction.values().length;
+
+    /** Weight of the vertical air in {@link #of}: space below matters more than beside. */
+    private static final double COLUMN_WEIGHT = 0.7;
+
+    /** Whether the {@code blocks} blocks directly below the position are all air. */
+    boolean hasAirBelow(BlockPos pos, int blocks) {
+        return airInColumn(pos, blocks) == blocks;
     }
 
     /**
-     * The share of air in the column below the position and in the eight cells around it at its own
-     * and the feet level: 1 in the open, 0 when walled in.
+     * How open the position is, from 1 in the open to 0 when walled in: the share of air in the
+     * column below it, weighted 0.7, plus the share in the eight cells around it at its own and
+     * the feet level, weighted 0.3.
      */
     double of(BlockPos pos) {
-        int cells = COLUMN_DEPTH;
-        int air = airInColumn(pos, COLUMN_DEPTH);
+        return COLUMN_WEIGHT * airInColumn(pos, COLUMN_DEPTH) / COLUMN_DEPTH + (1.0 - COLUMN_WEIGHT) * airAround(pos) / NEIGHBOURS;
+    }
+
+    private int airAround(BlockPos pos) {
+        int air = 0;
         for (int level = 0; level <= 1; level++) {
             for (Direction direction : Direction.values()) {
-                cells++;
                 air += isOpen(pos.offset(direction.dx(), level, direction.dz())) ? 1 : 0;
             }
         }
-        return (double) air / cells;
+        return air;
     }
 
     private int airInColumn(BlockPos pos, int depth) {

@@ -79,7 +79,7 @@ class CourseGeneratorTest {
 
     @Test
     void picksTheCandidateWithTheTargetCostWhenTheTargetIsZero() {
-        CourseGenerator generator = new CourseGenerator(new FakeSpaceProbe(), withNoise(-100.0, 1L));
+        CourseGenerator generator = new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, withNoise(-100.0, 1L));
 
         CourseBlock chosen = jumpFromSource(generator, 0);
 
@@ -88,7 +88,7 @@ class CourseGeneratorTest {
 
     @Test
     void picksTheCandidateClosestToTheTargetCost() {
-        CourseGenerator generator = new CourseGenerator(new FakeSpaceProbe(), withNoise(2.0, 1L));
+        CourseGenerator generator = new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, withNoise(2.0, 1L));
 
         CourseBlock chosen = jumpFromSource(generator, 0);
 
@@ -98,7 +98,7 @@ class CourseGeneratorTest {
 
     @Test
     void picksTheHardestJumpWhenTheTargetIsAboveEverything() {
-        CourseGenerator generator = new CourseGenerator(new FakeSpaceProbe(), withNoise(100.0, 1L));
+        CourseGenerator generator = new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, withNoise(100.0, 1L));
 
         CourseBlock chosen = jumpFromSource(generator, 10_000);
 
@@ -111,11 +111,11 @@ class CourseGeneratorTest {
     void rejectsACandidateWithoutAnyFollowUpJump() {
         for (long seed = 0; seed < 20; seed++) {
             // A is the easiest candidate but nothing is reachable from it; B has a follow-up C.
-            FakeSpaceProbe world = FakeSpaceProbe.solidWorld().carveColumn(2, 5, 0, 10).carveColumn(1, 11, 0, 2).carveColumn(-5, 5, 0, 10).carveColumn(-10, 5, 0, 10);
+            FakeSpaceProbe world = FakeSpaceProbe.solidWorld().carveColumn(2, 3, 0, 12).carveColumn(1, 11, 0, 2).carveColumn(-5, 3, 0, 12).carveColumn(-10, 3, 0, 12);
             for (int x = -9; x <= -1; x++) {
                 world.carveColumn(x, 11, 0, 2);
             }
-            CourseGenerator generator = new CourseGenerator(world, withNoise(0.0, seed));
+            CourseGenerator generator = new CourseGenerator(world, TestBlocks.FAR_SPAWN, withNoise(0.0, seed));
 
             CourseBlock chosen = jumpFromSource(generator, 0);
 
@@ -125,12 +125,51 @@ class CourseGeneratorTest {
 
     @Test
     void neverPlacesAScoredBlockOverAWay() {
-        // From y=10 a block reaches at most y=11, which leaves no four air blocks above the way at y<=7.
+        // From y=10 a block reaches at most y=11, which leaves no six air blocks above the way at y<=7.
         FakeSpaceProbe world = new FakeSpaceProbe().occupyBox(0, 0, -50, 50, 7, 50);
         for (long seed = 0; seed < 30; seed++) {
-            CourseBlock chosen = jumpFromSource(new CourseGenerator(world, seeded(seed)), 0);
+            CourseBlock chosen = jumpFromSource(new CourseGenerator(world, TestBlocks.FAR_SPAWN, seeded(seed)), 0);
 
             assertTrue(chosen.pos().x() < 0, "only the open side may be used (seed " + seed + "), chose " + chosen.pos());
+        }
+    }
+
+    @Test
+    void placesNoScoredBlockWithFewerThanSixAirBlocksBelow() {
+        // The way tops out at y=4: a block at y=10 has five air blocks below, one at y=11 has six.
+        FakeSpaceProbe world = new FakeSpaceProbe().occupyBox(-50, 0, -50, 50, 4, 50);
+        for (long seed = 0; seed < 30; seed++) {
+            CourseBlock chosen = jumpFromSource(new CourseGenerator(world, TestBlocks.FAR_SPAWN, seeded(seed)), 0);
+
+            assertEquals(11, chosen.pos().y(), "the only height with six air blocks below (seed " + seed + ")");
+        }
+    }
+
+    @Test
+    void placesNoScoredBlockWithinSixteenBlocksOfTheSpawn() {
+        SpawnZone onTheStart = new SpawnZone(0.5, 0.5);
+
+        assertTrue(new CourseGenerator(new FakeSpaceProbe(), onTheStart, seeded(1L)).next(List.of(SOURCE), new Phase.Scored(0)).isEmpty(), "every jump of at most five blocks stays near the spawn");
+    }
+
+    @Test
+    void placesScoredBlocksOnlyWhereTheSpawnIsSixteenBlocksAway() {
+        SpawnZone behind = new SpawnZone(-12.5, 0.5);
+        for (long seed = 0; seed < 30; seed++) {
+            CourseBlock chosen = jumpFromSource(new CourseGenerator(new FakeSpaceProbe(), behind, seeded(seed)), 0);
+
+            assertTrue(behind.isFarEnough(chosen.pos()), "chose " + chosen.pos() + " near the spawn (seed " + seed + ")");
+        }
+    }
+
+    @Test
+    void prefersMoreAirBelowOfTwoEquallyCostlyPlaces() {
+        // Ground below the east side: every place there has fewer air blocks in its column.
+        FakeSpaceProbe world = new FakeSpaceProbe().occupyBox(1, 0, -50, 50, 3, 50);
+        for (long seed = 0; seed < 30; seed++) {
+            CourseBlock chosen = jumpFromSource(new CourseGenerator(world, TestBlocks.FAR_SPAWN, withNoise(-100.0, seed)), 0);
+
+            assertTrue(chosen.pos().x() <= 0, "the place with the deeper column wins at equal cost (seed " + seed + "), chose " + chosen.pos());
         }
     }
 
@@ -138,7 +177,7 @@ class CourseGeneratorTest {
     void reportsNoCandidateWhenEveryPlaceIsOverAWay() {
         FakeSpaceProbe world = new FakeSpaceProbe().occupyBox(-50, 0, -50, 50, 7, 50);
 
-        assertTrue(new CourseGenerator(world, seeded(1L)).next(List.of(SOURCE), new Phase.Scored(0)).isEmpty(), "ground three blocks below the start leaves no room");
+        assertTrue(new CourseGenerator(world, TestBlocks.FAR_SPAWN, seeded(1L)).next(List.of(SOURCE), new Phase.Scored(0)).isEmpty(), "ground three blocks below the start leaves no room");
     }
 
     @Test
@@ -146,7 +185,7 @@ class CourseGeneratorTest {
         // East and west offer the same four zero-cost jumps; a wall hugs the west ones.
         FakeSpaceProbe world = new FakeSpaceProbe().occupyBox(0, 8, 2, 0, 12, 2).occupyBox(0, 8, -2, 0, 12, -2).occupyBox(-3, 0, -50, -3, 100, 50);
         for (long seed = 0; seed < 30; seed++) {
-            CourseBlock chosen = jumpFromSource(new CourseGenerator(world, withNoise(-100.0, seed)), 0);
+            CourseBlock chosen = jumpFromSource(new CourseGenerator(world, TestBlocks.FAR_SPAWN, withNoise(-100.0, seed)), 0);
 
             assertTrue(chosen.pos().x() > 0, "the open side wins at equal cost (seed " + seed + "), chose " + chosen.pos());
         }
@@ -159,7 +198,7 @@ class CourseGeneratorTest {
         Phase towardsTheEarlierBlock = new Phase.Ascent(Phase.MIN_ASCENT_JUMPS, new Heading(-1.0, 0.0));
 
         for (long seed = 0; seed < 200; seed++) {
-            CourseGenerator generator = new CourseGenerator(new FakeSpaceProbe(), seeded(seed));
+            CourseGenerator generator = new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(seed));
 
             BlockPos chosen = generator.next(List.of(earlier, last), towardsTheEarlierBlock).orElseThrow().pos();
 
@@ -170,7 +209,7 @@ class CourseGeneratorTest {
 
     @Test
     void reportsNoCandidateWhenNothingIsFree() {
-        CourseGenerator generator = new CourseGenerator(FakeSpaceProbe.solidWorld(), seeded(1L));
+        CourseGenerator generator = new CourseGenerator(FakeSpaceProbe.solidWorld(), TestBlocks.FAR_SPAWN, seeded(1L));
 
         assertTrue(generator.next(List.of(SOURCE), new Phase.Scored(0)).isEmpty(), "walled in");
     }
@@ -178,7 +217,7 @@ class CourseGeneratorTest {
     @Test
     void leadsAroundAWallInsteadOfThroughIt() {
         FakeSpaceProbe world = new FakeSpaceProbe().occupyBox(6, 0, -50, 50, 100, 50);
-        CourseGenerator generator = new CourseGenerator(world, seeded(3L));
+        CourseGenerator generator = new CourseGenerator(world, TestBlocks.FAR_SPAWN, seeded(3L));
 
         List<CourseBlock> course = walk(generator, SOURCE, new Phase.Scored(0), 60);
 
@@ -190,7 +229,7 @@ class CourseGeneratorTest {
 
     @Test
     void doesNotRepeatAPositionOfTheLastFourBlocks() {
-        CourseGenerator generator = new CourseGenerator(new FakeSpaceProbe(), seeded(11L));
+        CourseGenerator generator = new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(11L));
 
         List<CourseBlock> course = walk(generator, SOURCE, new Phase.Scored(0), 300);
 
@@ -205,16 +244,16 @@ class CourseGeneratorTest {
 
     @Test
     void sameSeedGivesTheSameCourse() {
-        List<CourseBlock> first = walk(new CourseGenerator(new FakeSpaceProbe(), seeded(42L)), SOURCE, new Phase.Scored(0), 50);
-        List<CourseBlock> second = walk(new CourseGenerator(new FakeSpaceProbe(), seeded(42L)), SOURCE, new Phase.Scored(0), 50);
+        List<CourseBlock> first = walk(new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(42L)), SOURCE, new Phase.Scored(0), 50);
+        List<CourseBlock> second = walk(new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(42L)), SOURCE, new Phase.Scored(0), 50);
 
         assertEquals(first, second, "same seed, same course");
     }
 
     @Test
     void differentSeedsGiveDifferentCourses() {
-        List<CourseBlock> first = walk(new CourseGenerator(new FakeSpaceProbe(), seeded(1L)), SOURCE, new Phase.Scored(0), 50);
-        List<CourseBlock> second = walk(new CourseGenerator(new FakeSpaceProbe(), seeded(2L)), SOURCE, new Phase.Scored(0), 50);
+        List<CourseBlock> first = walk(new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(1L)), SOURCE, new Phase.Scored(0), 50);
+        List<CourseBlock> second = walk(new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(2L)), SOURCE, new Phase.Scored(0), 50);
 
         assertNotEquals(first, second, "different seeds, different courses");
     }
@@ -222,7 +261,7 @@ class CourseGeneratorTest {
     // --- materials ------------------------------------------------------------------------------
 
     private static List<Block> fullBlockMaterials(long seed) {
-        List<CourseBlock> course = walk(new CourseGenerator(new FakeSpaceProbe(), seeded(seed)), SOURCE, new Phase.Scored(0), 40);
+        List<CourseBlock> course = walk(new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(seed)), SOURCE, new Phase.Scored(0), 40);
         return course.stream().skip(1).filter(block -> block.surface() == Surface.FULL).limit(10).map(CourseBlock::material).toList();
     }
 
@@ -241,7 +280,7 @@ class CourseGeneratorTest {
 
     @Test
     void everyGeneratedBlockUsesAMaterialOfItsOwnSurface() {
-        List<CourseBlock> course = walk(new CourseGenerator(new FakeSpaceProbe(), seeded(9L)), SOURCE, new Phase.Scored(80), 200);
+        List<CourseBlock> course = walk(new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(9L)), SOURCE, new Phase.Scored(80), 200);
 
         for (CourseBlock block : course.subList(1, course.size())) {
             assertTrue(block.surface().palette().contains(block.material()), block.material() + " is not a material of " + block.surface());
@@ -251,7 +290,7 @@ class CourseGeneratorTest {
     // --- statistics -----------------------------------------------------------------------------
 
     private static List<Jump> thousandJumpsAtScore(int score, long seed) {
-        CourseGenerator generator = new CourseGenerator(new FakeSpaceProbe(), seeded(seed));
+        CourseGenerator generator = new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(seed));
         List<Jump> jumps = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
             jumps.add(new Jump(SOURCE, jumpFromSource(generator, score)));
@@ -311,7 +350,7 @@ class CourseGeneratorTest {
     private static List<Jump> generatedJumps(FakeSpaceProbe world) {
         List<Jump> jumps = new ArrayList<>();
         for (long seed = 1; seed <= SEEDS; seed++) {
-            List<CourseBlock> course = walk(new CourseGenerator(world, seeded(seed)), SOURCE, new Phase.Scored(0), JUMPS_PER_SEED);
+            List<CourseBlock> course = walk(new CourseGenerator(world, TestBlocks.FAR_SPAWN, seeded(seed)), SOURCE, new Phase.Scored(0), JUMPS_PER_SEED);
             for (int i = 1; i < course.size(); i++) {
                 jumps.add(new Jump(course.get(i - 1), course.get(i)));
             }
@@ -356,8 +395,8 @@ class CourseGeneratorTest {
     }
 
     @Test
-    void generatedBlocksHaveFourAirBlocksBelowThem() {
-        assertForEvery(jumps, jump -> new Openness(world).hasAirBelow(jump.to().pos()), "air below");
+    void generatedBlocksHaveSixAirBlocksBelowThem() {
+        assertForEvery(jumps, jump -> new Openness(world).hasAirBelow(jump.to().pos(), Openness.MIN_AIR_BELOW), "air below");
     }
 
     @Test

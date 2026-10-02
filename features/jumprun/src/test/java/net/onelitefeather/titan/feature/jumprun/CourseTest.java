@@ -38,7 +38,7 @@ class CourseTest {
     }
 
     private static Course startIn(FakeSpaceProbe world, long seed) {
-        return Course.start(START_POINT, START_BLOCK, EAST, world, seeded(seed)).orElseThrow();
+        return Course.start(START_POINT, START_BLOCK, EAST, TestBlocks.FAR_SPAWN, world, seeded(seed)).orElseThrow();
     }
 
     private static Course start() {
@@ -88,7 +88,7 @@ class CourseTest {
     void doesNotStartUnderALowCeiling() {
         FakeSpaceProbe world = new FakeSpaceProbe().occupyBox(-50, 12, -50, 50, 12, 50);
 
-        Optional<Course> course = Course.start(START_POINT, START_BLOCK, EAST, world, seeded(1L));
+        Optional<Course> course = Course.start(START_POINT, START_BLOCK, EAST, TestBlocks.FAR_SPAWN, world, seeded(1L));
 
         assertTrue(course.isEmpty(), "the ascent needs room");
     }
@@ -106,8 +106,18 @@ class CourseTest {
     }
 
     @Test
-    void doesNotStartWhenTheOpenIsNotReachedWithinTwentyJumps() {
-        Optional<Course> course = Course.start(START_POINT, START_BLOCK, EAST, FakeSpaceProbe.risingGround(2), seeded(1L));
+    void doesNotStartWhenTheSpawnIsNotLeftWithinThirtyJumps() {
+        FakeSpaceProbe walled = new FakeSpaceProbe(new BlockPos(-5, 0, -5), new BlockPos(5, 100, 5));
+        SpawnZone spawn = new SpawnZone(0.5, 0.5);
+
+        Optional<Course> course = Course.start(START_POINT, START_BLOCK, EAST, spawn, walled, seeded(1L));
+
+        assertTrue(course.isEmpty(), "there is no room for a block sixteen blocks from the spawn");
+    }
+
+    @Test
+    void doesNotStartWhenTheOpenIsNotReachedWithinThirtyJumps() {
+        Optional<Course> course = Course.start(START_POINT, START_BLOCK, EAST, TestBlocks.FAR_SPAWN, FakeSpaceProbe.risingGround(2), seeded(1L));
 
         assertTrue(course.isEmpty(), "ground that climbs as fast as the ascent never leaves room below");
     }

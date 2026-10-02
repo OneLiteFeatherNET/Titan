@@ -32,33 +32,40 @@ class OpennessTest {
     // --- air below --------------------------------------------------------------------------------
 
     @Test
-    void fourAirBlocksBelowAreEnough() {
-        assertTrue(in(new FakeSpaceProbe().occupy(0, 25, 0)).hasAirBelow(TARGET), "y-1 to y-4 are air, y-5 is not");
+    void sixAirBlocksBelowAreEnoughForTheScoredMinimum() {
+        assertTrue(in(new FakeSpaceProbe().occupy(0, 23, 0)).hasAirBelow(TARGET, Openness.MIN_AIR_BELOW), "y-1 to y-6 are air, y-7 is not");
+    }
+
+    @Test
+    void aBlockSixBelowIsNotEnoughForTheScoredMinimum() {
+        assertFalse(in(new FakeSpaceProbe().occupy(0, 24, 0)).hasAirBelow(TARGET, Openness.MIN_AIR_BELOW), "y-6");
     }
 
     @Test
     void aBlockDirectlyBelowIsNotEnough() {
-        assertFalse(in(new FakeSpaceProbe().occupy(0, 29, 0)).hasAirBelow(TARGET), "y-1");
+        assertFalse(in(new FakeSpaceProbe().occupy(0, 29, 0)).hasAirBelow(TARGET, Openness.MIN_AIR_BELOW), "y-1");
     }
 
     @Test
-    void aBlockFourBelowIsNotEnough() {
-        assertFalse(in(new FakeSpaceProbe().occupy(0, 26, 0)).hasAirBelow(TARGET), "y-4");
+    void sixAirBlocksBelowAreNotEnoughForTheAscent() {
+        Openness openness = in(new FakeSpaceProbe().occupy(0, 23, 0));
+
+        assertFalse(openness.hasAirBelow(TARGET, Phase.ASCENT_AIR_BELOW), "eight air blocks are needed, only six are there");
     }
 
     @Test
     void blocksBesideTheColumnDoNotMatterForTheAirBelow() {
-        assertTrue(in(new FakeSpaceProbe().occupyBox(1, 20, -1, 1, 40, 1)).hasAirBelow(TARGET), "a wall next to the column");
+        assertTrue(in(new FakeSpaceProbe().occupyBox(1, 20, -1, 1, 40, 1)).hasAirBelow(TARGET, Openness.MIN_AIR_BELOW), "a wall next to the column");
     }
 
     @Test
     void cellsBelowTheWorldBottomAreNoOpenAir() {
-        assertFalse(in(new FakeSpaceProbe()).hasAirBelow(new BlockPos(0, 3, 0)), "y-4 is below the world");
+        assertFalse(in(new FakeSpaceProbe()).hasAirBelow(new BlockPos(0, 5, 0), Openness.MIN_AIR_BELOW), "y-6 is below the world");
     }
 
     @Test
-    void theLowestBlockWithFourCellsInTheWorldBelowItHasAirBelow() {
-        assertTrue(in(new FakeSpaceProbe()).hasAirBelow(new BlockPos(0, 4, 0)), "y-1 to y-4 are y=3 to y=0");
+    void theLowestBlockWithAllCellsInTheWorldBelowItHasAirBelow() {
+        assertTrue(in(new FakeSpaceProbe()).hasAirBelow(new BlockPos(0, 6, 0), Openness.MIN_AIR_BELOW), "y-1 to y-6 are y=5 to y=0");
     }
 
     // --- openness ---------------------------------------------------------------------------------
@@ -74,24 +81,31 @@ class OpennessTest {
     }
 
     @Test
-    void groundTwelveBlocksDeepCountsAsTwelveOfTwentyEightCells() {
-        FakeSpaceProbe world = new FakeSpaceProbe().occupyBox(0, 18, 0, 0, 29, 0);
+    void groundEightBlocksDeepTakesHalfOfTheColumnShare() {
+        FakeSpaceProbe world = new FakeSpaceProbe().occupyBox(0, 22, 0, 0, 29, 0);
 
-        assertEquals(16.0 / 28.0, in(world).of(TARGET), 1e-9, "the 12 cells below the target are taken");
+        assertEquals(0.7 * 8.0 / 16.0 + 0.3, in(world).of(TARGET), 1e-9, "half the column is taken, the neighbours are open");
     }
 
     @Test
-    void groundBeyondTwelveBlocksIsNotLookedAt() {
-        FakeSpaceProbe world = new FakeSpaceProbe().occupyBox(0, 0, 0, 0, 17, 0);
-
-        assertEquals(1.0, in(world).of(TARGET), 1e-9, "only the first 12 blocks below count");
+    void theColumnIsLookedAtSixteenBlocksDown() {
+        assertEquals(0.7 * 15.0 / 16.0 + 0.3, in(new FakeSpaceProbe().occupy(0, 14, 0)).of(TARGET), 1e-9, "y-16 counts");
+        assertEquals(1.0, in(new FakeSpaceProbe().occupy(0, 13, 0)).of(TARGET), 1e-9, "y-17 does not");
     }
 
     @Test
-    void aWallBesideTheTargetCountsItsEightNeighboursAtTargetAndFeetLevel() {
+    void aWallBesideTheTargetCostsOnlyThePartOfTheNeighbours() {
         FakeSpaceProbe world = new FakeSpaceProbe().occupyBox(1, 0, -5, 1, 60, 5);
 
-        assertEquals(22.0 / 28.0, in(world).of(TARGET), 1e-9, "three neighbour cells at y and three at y+1 are taken");
+        assertEquals(0.7 + 0.3 * 10.0 / 16.0, in(world).of(TARGET), 1e-9, "three neighbour cells at y and three at y+1 are taken");
+    }
+
+    @Test
+    void aTakenColumnWeighsMoreThanTakenNeighbours() {
+        double walledIn = in(new FakeSpaceProbe().occupyBox(1, 0, -5, 1, 60, 5)).of(TARGET);
+        double overAWay = in(new FakeSpaceProbe().occupyBox(-5, 14, -5, 5, 29, 5)).of(TARGET);
+
+        assertTrue(overAWay < walledIn, "air below is what counts: " + overAWay + " vs " + walledIn);
     }
 
     @Test
@@ -105,11 +119,11 @@ class OpennessTest {
     void cellsBeyondTheBorderCountAsClosed() {
         BlockPos atBorder = new BlockPos(50, 30, 0);
 
-        assertEquals(22.0 / 28.0, in(new FakeSpaceProbe()).of(atBorder), 1e-9, "three neighbour cells at y and three at y+1 lie outside");
+        assertEquals(0.7 + 0.3 * 10.0 / 16.0, in(new FakeSpaceProbe()).of(atBorder), 1e-9, "three neighbour cells at y and three at y+1 lie outside");
     }
 
     @Test
     void cellsBelowTheWorldBottomCountAsClosed() {
-        assertEquals(24.0 / 28.0, in(new FakeSpaceProbe()).of(new BlockPos(0, 8, 0)), 1e-9, "four of the twelve cells below lie under y=0");
+        assertEquals(0.7 * 8.0 / 16.0 + 0.3, in(new FakeSpaceProbe()).of(new BlockPos(0, 8, 0)), 1e-9, "eight of the sixteen cells below lie under y=0");
     }
 }

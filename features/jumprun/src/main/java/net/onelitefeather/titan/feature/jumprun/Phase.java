@@ -25,7 +25,10 @@ sealed interface Phase {
     int MIN_ASCENT_JUMPS = 5;
 
     /** The ascent gives up after this many jumps: the run does not start. */
-    int MAX_ASCENT_JUMPS = 20;
+    int MAX_ASCENT_JUMPS = 30;
+
+    /** Air blocks below the last ascent block, so the scored part starts well above the ground. */
+    int ASCENT_AIR_BELOW = 8;
 
     static Phase start(Heading heading) {
         return new Ascent(0, heading);
@@ -41,17 +44,17 @@ sealed interface Phase {
     List<Surface> surfaces();
 
     /**
-     * Easy jumps upward and away from the spawn, until a block stands in the open; they do not
-     * count towards the score. {@code jumps} is how many were made so far.
+     * Easy jumps upward and away from the spawn, until a block stands in the open and far from the
+     * spawn; they do not count towards the score. {@code jumps} is how many were made so far.
      */
     record Ascent(int jumps, Heading heading) implements Phase {
 
         private static final int MAX_GAP = 2;
 
-        /** The phase after one more jump, whose block has or lacks air below it. */
-        Phase next(boolean openBelow) {
+        /** The phase after one more jump, whose block is or is not yet in the open. */
+        Phase next(boolean inTheOpen) {
             int made = jumps + 1;
-            return made >= MIN_ASCENT_JUMPS && openBelow ? new Scored(0) : new Ascent(made, heading);
+            return made >= MIN_ASCENT_JUMPS && inTheOpen ? new Scored(0) : new Ascent(made, heading);
         }
 
         boolean isOutOfJumps() {

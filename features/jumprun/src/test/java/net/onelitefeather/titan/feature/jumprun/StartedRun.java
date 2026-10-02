@@ -21,7 +21,6 @@ import java.util.List;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
-import net.minestom.server.instance.block.Block;
 import net.minestom.server.network.packet.server.ServerPacket;
 import net.minestom.server.network.packet.server.play.BlockChangePacket;
 import net.minestom.testing.Collector;
@@ -59,7 +58,7 @@ record StartedRun(JumprunFixture fixture, TestConnection connection, Player play
         Collector<ServerPacket> sent = connection.trackIncoming();
         fixture.landOn(player, ahead.removeFirst());
         List<ServerPacket> packets = sent.collect();
-        packets.stream().filter(BlockChangePacket.class::isInstance).map(BlockChangePacket.class::cast).filter(packet -> packet.blockStateId() != Block.AIR.stateId()).forEach(ahead::addLast);
+        packets.stream().filter(BlockChangePacket.class::isInstance).map(BlockChangePacket.class::cast).filter(JumprunFixture::isCourseBlock).forEach(ahead::addLast);
         return packets;
     }
 }

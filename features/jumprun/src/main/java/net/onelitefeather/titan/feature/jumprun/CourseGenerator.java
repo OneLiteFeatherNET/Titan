@@ -37,10 +37,12 @@ final class CourseGenerator {
     static final double OPEN_WEIGHT = 1.5;
 
     private final SpaceProbe probe;
+    private final SpawnZone spawn;
     private final RandomGenerator random;
 
-    CourseGenerator(SpaceProbe probe, RandomGenerator random) {
+    CourseGenerator(SpaceProbe probe, SpawnZone spawn, RandomGenerator random) {
         this.probe = probe;
+        this.spawn = spawn;
         this.random = random;
     }
 
@@ -57,16 +59,17 @@ final class CourseGenerator {
 
     /**
      * The phase for the jump after the last block of {@code course}, which is the one just placed.
-     * The ascent ends at a block with air below it, so the course does not run along ways and
-     * roofs from then on.
+     * The ascent ends at a block far from the spawn with plenty of air below it, so the course
+     * does not run along ways and roofs, or around the spawn, from then on.
      */
     Phase after(List<CourseBlock> course, Phase phase) {
         return after(course.getLast(), phase, rulesFor(course));
     }
 
-    private static Phase after(Placement placed, Phase phase, Space space) {
+    private Phase after(Placement placed, Phase phase, Space space) {
         return switch (phase) {
-            case Phase.Ascent ascent -> ascent.next(space.openness().hasAirBelow(placed.pos()));
+            case Phase.Ascent ascent ->
+                ascent.next(spawn.isFarEnough(placed.pos()) && space.openness().hasAirBelow(placed.pos(), Phase.ASCENT_AIR_BELOW));
             case Phase.Scored scored -> scored.next();
         };
     }
@@ -78,7 +81,8 @@ final class CourseGenerator {
 
     /**
      * Candidates in the open enough for the phase. After the ascent they need air below, because a
-     * block over a way would make the course run along it. Whether the jump itself is free is
+     * block over a way would make the course run along it, and distance to the spawn, so the
+     * course does not come back to it. Whether the jump itself is free is
      * left to the caller, which checks it before ranking so openness is only read for free jumps.
      */
     private List<Spot> candidatesFor(Placement from, Phase phase, Space space) {
@@ -86,7 +90,11 @@ final class CourseGenerator {
             return List.of();
         }
         boolean needsAirBelow = phase instanceof Phase.Scored;
-        return candidates(from, phase).stream().filter(candidate -> !needsAirBelow || space.openness().hasAirBelow(candidate.pos())).toList();
+        return candidates(from, phase).stream().filter(candidate -> !needsAirBelow || isInTheOpen(candidate.pos(), space)).toList();
+    }
+
+    private boolean isInTheOpen(BlockPos pos, Space space) {
+        return spawn.isFarEnough(pos) && space.openness().hasAirBelow(pos, Openness.MIN_AIR_BELOW);
     }
 
     /** Dead-end check of depth one: some free jump must leave the candidate. */

@@ -15,6 +15,8 @@
  */
 package net.onelitefeather.titan.feature.jumprun;
 
+import java.util.Arrays;
+import java.util.Optional;
 import net.minestom.server.coordinate.Point;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
@@ -39,6 +41,12 @@ final class JumprunFixture implements AutoCloseable {
 
     /** The flat instance is stone up to y 39, so a player stands at y 40. */
     static final double GROUND_Y = 40.0;
+
+    /**
+     * The flat instance has stone up to y 39, so the start block is at 39 and the first block with
+     * eight air blocks below is nine jumps up. The spawn is far enough away not to lengthen it.
+     */
+    static final int ASCENT_JUMPS = 9;
 
     private static final int PRELOADED_CHUNK_RADIUS = 3;
 
@@ -67,7 +75,7 @@ final class JumprunFixture implements AutoCloseable {
     static JumprunFixture start(Env env, RunRecords records) {
         TestTitanNode titan = TestTitanNode.attach(env);
         RunMessages messages = new RunMessages();
-        JumprunModule module = new JumprunModule(titan.node(), () -> new Pos(-5.5, GROUND_Y, 0.5), records, messages, () -> SEED);
+        JumprunModule module = new JumprunModule(titan.node(), () -> new Pos(-40.5, GROUND_Y, 0.5), records, messages, () -> SEED);
         module.start();
         return new JumprunFixture(env, titan, module, new JumprunItems().jumprun(module), records, messages);
     }
@@ -123,12 +131,17 @@ final class JumprunFixture implements AutoCloseable {
 
     /** Walkable top of a shown block, read back from the surface its state id belongs to. */
     static double topOf(BlockChangePacket block) {
-        for (Surface surface : Surface.values()) {
-            if (surface.palette().stream().anyMatch(material -> material.stateId() == block.blockStateId())) {
-                return block.blockPosition().blockY() + surface.top();
-            }
-        }
-        throw new IllegalArgumentException("not a course surface: " + block);
+        Surface surface = surfaceOf(block).orElseThrow(() -> new IllegalArgumentException("not a course surface: " + block));
+        return block.blockPosition().blockY() + surface.top();
+    }
+
+    /** Whether the packet shows a course block, as opposed to a real block put back. */
+    static boolean isCourseBlock(BlockChangePacket block) {
+        return surfaceOf(block).isPresent();
+    }
+
+    private static Optional<Surface> surfaceOf(BlockChangePacket block) {
+        return Arrays.stream(Surface.values()).filter(surface -> surface.palette().stream().anyMatch(material -> material.stateId() == block.blockStateId())).findFirst();
     }
 
     /** Stops only the module, to prove nothing runs once it has; {@link #close()} does the rest. */

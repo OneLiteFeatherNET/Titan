@@ -68,11 +68,12 @@ final class Course {
 
     /**
      * Starts a course at the block under the player. Makes the whole ascent, which ends at a block
-     * in the open, and one more block up front. Returns empty when that does not fit, so nothing
+     * in the open and away from the spawn, and one more block up front. Returns empty when that
+     * does not fit, so nothing
      * is shown for a run that cannot work.
      */
-    static Optional<Course> start(Pos startPoint, BlockPos startBlock, Heading heading, SpaceProbe probe, RandomGenerator random) {
-        CourseGenerator generator = new CourseGenerator(probe, random);
+    static Optional<Course> start(Pos startPoint, BlockPos startBlock, Heading heading, SpawnZone spawn, SpaceProbe probe, RandomGenerator random) {
+        CourseGenerator generator = new CourseGenerator(probe, spawn, random);
         List<CourseBlock> blocks = new ArrayList<>(List.of(new CourseBlock(startBlock, Surface.FULL, START_MATERIAL)));
         Course course = new Course(startPoint, generator, blocks, Phase.start(heading));
         boolean fits = course.generateAscent() && course.generateThrough(course.blocks.size());
