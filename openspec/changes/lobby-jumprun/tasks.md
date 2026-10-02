@@ -130,7 +130,7 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 
 ## 21. Modi Rainbow und Ultra
 
-- [ ] 21.1 Test zuerst (Unit + Integration): `Mode.RAINBOW`/`ULTRA`, Zyklus über fünf Modi, Reroll-Takt pro Lauf (`jumprun.rerollTicks`, Standard 40, Startprüfung), Rainbow wechselt Material, Ultra würfelt Position und Form neu ohne Umrandung, Zähler setzt bei Landung zurück, Task endet mit dem Lauf; Lore, Bundles, Kopfanzeige um beide Modi ergänzt (D26). Nachweis: `./gradlew build` grün.
+- [x] 21.1 Test zuerst (Unit + Integration): `Mode.RAINBOW`/`ULTRA`, Zyklus über fünf Modi, Reroll-Takt pro Lauf (`jumprun.rerollTicks`, Standard 40, Startprüfung), Rainbow wechselt Material, Ultra würfelt Position und Form neu ohne Umrandung, Zähler setzt bei Landung zurück, Task endet mit dem Lauf; Lore, Bundles, Kopfanzeige um beide Modi ergänzt (D26). Nachweis: `./gradlew build` grün.
 
 ## 6. Pull Request
 
