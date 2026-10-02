@@ -107,6 +107,10 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 
 - [ ] 15.1 Test zuerst (Unit + Integration): Standard-YAML `titan/defaults/jumprun.yaml` mit allen heutigen Materialien; Prüfung beim Start (unbekannter Block, falsche Form, Gewicht ≤ 0, leere Liste → Abbruch mit Schlüssel); gewichtete Ziehung (3:1 → 70–80 % bei festem Seed); Live-Regeln nach `lobby-module-config`. Dann `JumprunSettings`, gewichtete `Palettes` (D19), Doku in `docs/lobby-modules.md`. Nachweis: `./gradlew build` grün, `application.example.yaml` der Varianten enthält den Abschnitt.
 
+## 16. Fall- und Aufstiegs-Animation
+
+- [ ] 16.1 Test zuerst (Integration): Einblenden (Display für alle bei y+6, Interpolation auf 0 über 8 Ticks, echter Block für den Läufer nach 8 Ticks, danach Display für den Läufer aus), Ausblenden (echter Block sofort weg, Display steigt und schrumpft, nach 8 Ticks entfernt), Laufende mit Aufstieg, Shutdown sofort, keine Reste bei Abbruch während der Animation. Dann umsetzen (D20). Nachweis: `./gradlew build` grün, erneuter lokaler Test.
+
 ## 6. Pull Request
 
 - [ ] 6.1 Pull Request vom Integrationszweig `feat/jumprun` auf `main` unter dem Titel `feat(jumprun): add a random single-player jump and run to the lobby` öffnen (Titel und Beschreibung Englisch), mit Smoke-Test-Ergebnis und dem Hinweis auf die Elytra-Abwägung. Nachweis: PR-URL, CI grün.

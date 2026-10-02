@@ -96,6 +96,17 @@ Während eines Laufs MUSS der Spieler genau den Block sehen, auf dem er zuletzt 
 - **WHEN** ein Lauf beginnt
 - **THEN** sieht der Spieler den Startblock und die zwei nächsten Blöcke, aber noch keine Blöcke dahinter
 
+### Requirement: Blöcke fallen ein und steigen auf
+Ein neuer Block des Sichtfensters MUSS für alle, die ihn sehen, aus der Höhe an seine Stelle herabfallen, bevor er steht. Ein Block, der das Sichtfenster verlässt, MUSS umgekehrt von seiner Stelle nach oben steigen und dabei verschwinden. Für den Läufer MUSS ein neuer Block spätestens dann begehbar sein, wenn die Fallbewegung endet, und diese MUSS kürzer als eine halbe Sekunde dauern. Ein Block, der aufsteigt, DARF für den Läufer NICHT mehr begehbar sein.
+
+#### Scenario: Neuer Block fällt herab
+- **WHEN** der Läufer auf dem nächsten Block landet
+- **THEN** sehen er und andere Spieler den neuen Block zwei Sprünge voraus von oben an seine Stelle fallen, und danach kann der Läufer ihn betreten
+
+#### Scenario: Alter Block steigt auf
+- **WHEN** ein Block das Sichtfenster hinter dem Läufer verlässt
+- **THEN** steigt er für alle sichtbar nach oben und verschwindet
+
 ### Requirement: Fortschritt durch Landen
 Ein Sprung MUSS als geschafft gelten, sobald der Spieler auf einem der vor ihm liegenden Blöcke seines Laufs steht. Landet er direkt auf dem übernächsten Block, MÜSSEN beide Sprünge als geschafft gelten.
 

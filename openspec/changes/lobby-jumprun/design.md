@@ -247,6 +247,28 @@ Schlüssel ist der Block-Name ohne Namensraum, Wert das Gewicht. Die Form setzt 
   Integration: Ein Override aus `application.yaml` (Test-`Configuration`) wirkt auf die gesendeten Materialien.
 - **Abweichung von KISS-Regel:** Seltenes gehört eigentlich in Code. Der Nutzer will die Auswahl aber ausdrücklich ohne Release ändern können.
 
+### D20 Fall- und Aufstiegs-Animation
+
+Die Zuschauer-Displays aus D12 übernehmen die Animation für alle:
+- **Einblenden:**
+  - Der `BLOCK_DISPLAY` des neuen Blocks spawnt zunächst **für alle sichtbar, auch für den Läufer**, mit Translation `(0, +6, 0)`.
+  - Im nächsten Tick setzt der Lauf Translation `(0, 0, 0)` mit Interpolationsdauer 8 Ticks (Start-Delta 0). Der Client fällt den Block dadurch flüssig herab.
+  - Nach 8 Ticks bekommt der Läufer den echten Fake-Block (Kollision), und der Display wird über die Sichtbarkeitsregel wieder für den Läufer ausgeblendet. Andere sehen weiter den Display.
+- **Ausblenden:**
+  - Der Läufer bekommt sofort den echten Block zurück (keine Kollision mehr).
+  - Der Display wird wieder für alle sichtbar, steigt mit Interpolation 8 Ticks auf `(0, +6, 0)` und schrumpft dabei auf Skala 0.
+  - Nach 8 Ticks wird er entfernt.
+- **Start:** Die ersten zwei Blöcke fallen ebenfalls ein.
+- **Laufende und Shutdown:** Beim Laufende spielen die verbleibenden Blöcke die Aufstiegs-Animation. Beim Shutdown wird ohne Animation sofort entfernt.
+- **Built-in:** Minestoms `AbstractDisplayMeta` (Translation, Skala, `transformationInterpolationDuration`, Start-Delta) und `scheduler().buildTask(...).delay(TaskSchedule.tick(8))`. Die Schritte laufen unter dem Lauf-Lock. Wurde ein Block inzwischen schon wieder entfernt oder ist der Lauf vorbei, verfällt der Schritt (Generationszähler pro Block).
+- **Test:** Integration (Cyano, `env.tick()`):
+  - Ein neuer Block erzeugt sofort einen Display-Spawn mit Translation y = 6, im nächsten Tick ein Metadaten-Paket mit y = 0 und Dauer 8.
+  - Der echte Block kommt erst nach 8 Ticks.
+  - Beim Entfernen kommt der echte Block sofort, und der Display steigt und verschwindet nach 8 Ticks.
+  - Endet der Lauf während einer Animation, bleibt nichts zurück.
+  - Shutdown entfernt sofort.
+- **Risiko:** Springt ein Läufer innerhalb von 8 Ticks zwei Blöcke weiter, ist der neueste Block noch nicht begehbar. Bei einem Fenster von 2 voraus ist das praktisch ausgeschlossen. Ein Test prüft, dass der direkt nächste Block nie in der Animation steckt, wenn der Läufer landet.
+
 ## Risks / Trade-offs
 
 - **Elytra durch Leertaste in der Luft:** Im Spiel startet ein erneuter Druck auf die Leertaste in der Luft das Gleiten. Spieler, die beim Springen hektisch drücken, beenden ihren Lauf versehentlich. → Bewusst so entschieden (Elytra-Gleiten = Ende). Bei der Abnahme wird geprüft, wie oft das passiert. Falls nötig, gibt es einen Folge-Change, der statt Laufende das Gleiten nur unterbindet.
