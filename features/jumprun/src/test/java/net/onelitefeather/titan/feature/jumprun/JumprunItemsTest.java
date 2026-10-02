@@ -67,9 +67,32 @@ class JumprunItemsTest {
     }
 
     @Test
-    void theItemCarriesNoDescription() {
-        List<Component> lore = item.itemStack().get(DataComponents.LORE);
+    void theLoreExplainsTheControls() {
+        String lore = plainLore();
 
-        assertTrue(lore == null || lore.isEmpty(), "a lobby item is shared by all players, so it has no translated lore");
+        assertTrue(lore.contains("Right-click: start / stop a run"), "the lore names the use click");
+        assertTrue(lore.contains("Sneak + right-click: switch mode"), "the lore names the mode switch");
+    }
+
+    @Test
+    void theLoreNamesAllThreeModes() {
+        String lore = plainLore();
+
+        for (String mode : List.of("Easy", "Medium", "Hard")) {
+            assertTrue(lore.contains(mode + ":"), "the lore describes the mode " + mode);
+        }
+    }
+
+    @Test
+    void everyLoreLineIsNotItalic() {
+        for (Component line : item.itemStack().get(DataComponents.LORE)) {
+            assertEquals(TextDecoration.State.FALSE, line.decoration(TextDecoration.ITALIC), "lore is italic unless switched off");
+        }
+    }
+
+    private String plainLore() {
+        List<Component> lore = item.itemStack().get(DataComponents.LORE);
+        assertTrue(lore != null && !lore.isEmpty(), "the item has a lore");
+        return lore.stream().map(line -> PlainTextComponentSerializer.plainText().serialize(line)).collect(java.util.stream.Collectors.joining("\n"));
     }
 }

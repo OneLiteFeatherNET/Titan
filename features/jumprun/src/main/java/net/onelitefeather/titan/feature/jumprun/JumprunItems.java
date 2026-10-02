@@ -17,6 +17,8 @@ package net.onelitefeather.titan.feature.jumprun;
 
 import io.avaje.inject.Bean;
 import io.avaje.inject.Factory;
+import java.util.List;
+import java.util.stream.Stream;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -26,8 +28,8 @@ import net.onelitefeather.titan.core.module.item.ItemSlot;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
 
 /**
- * Contributes the {@code titan:jumprun} item. The name is the same in every language and there is
- * no lore, because one stack is shared by all players.
+ * Contributes the {@code titan:jumprun} item. One stack is shared by all players, so name and lore
+ * are the same in every language (lore is English on purpose).
  */
 @Factory
 final class JumprunItems {
@@ -35,10 +37,12 @@ final class JumprunItems {
     private static final Key ITEM_KEY = Key.key("titan:jumprun");
     private static final int HOTBAR_SLOT = 0;
     private static final Component NAME = MiniMessage.miniMessage().deserialize("<!i>" + RunTitle.MARKUP);
+    private static final List<Component> LORE = Stream.of(
+            "<!i><gray>Right-click: start / stop a run", "<!i><gray>Sneak + right-click: switch mode", "<!i>", "<!i><green>Easy:</green> <gray>full blocks and slabs, short gaps", "<!i><yellow>Medium:</yellow> <gray>all shapes, steady climb", "<!i><red>Hard:</red> <gray>all shapes early, fast climb").map(MiniMessage.miniMessage()::deserialize).toList();
 
     @Bean
     LobbyItem jumprun(JumprunModule jumprun) {
-        ItemStack slimeBlock = ItemStack.builder(Material.SLIME_BLOCK).customName(NAME).build();
+        ItemStack slimeBlock = ItemStack.builder(Material.SLIME_BLOCK).customName(NAME).lore(LORE).build();
         return new LobbyItem(JumprunModule.ID, ITEM_KEY, slimeBlock, ItemSlot.hotbar(HOTBAR_SLOT), (player, event) -> jumprun.use(player));
     }
 }
