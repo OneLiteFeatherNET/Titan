@@ -97,7 +97,7 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 
 ## 13. Schlangenlinie um den Spawn
 
-- [ ] 13.1 Test zuerst (Unit): Wunschrichtung `Steering` (Tangente, Ring 20–60, Pendel ±50°/14, Drehsinn und Phase per Seed); Kurs über 60 Punkte wechselt mehrfach die Seite und kommt dem Spawn wieder näher (Spec „Schlangenlinie“); alle bisherigen Invarianten grün. Dann umsetzen (D17). Nachweis: `./gradlew build` grün, erneuter lokaler Test.
+- [x] 13.1 Test zuerst (Unit): Wunschrichtung `Steering` (Tangente, Ring 20–60, Pendel ±50°/14, Drehsinn und Phase per Seed); Kurs über 60 Punkte wechselt mehrfach die Seite und kommt dem Spawn wieder näher (Spec „Schlangenlinie“); alle bisherigen Invarianten grün. Dann umsetzen (D17). Nachweis: `./gradlew build` grün, erneuter lokaler Test.
 
 ## 6. Pull Request
 
