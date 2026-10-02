@@ -120,6 +120,16 @@ Der Text einer Anzeige ist vom Build-Team verfasste Kartendaten, eine einzige ge
 - Test (Unit): `PortalEditorTest` je Szenario der Setup-Spec (inkl. `save` mit ungültigem Label, `label remove`, Label an gespeichertem Portal bleibt Entwurf), `PortalOutlineTest`/`DraftOutlineTest` für den Anker; Integration (Cyano-`Env`): jede Syntax erreicht den Editor, Konsole wird abgelehnt, Persistenz mit `@TempDir` (Label überlebt `save` und `setspawn`).
 - SOLID: Open/Closed (neue Verben statt Umbau), Single Responsibility.
 
+### D11: Text-Vorschau im Setup-Server mit gemeinsamer Rendering-Funktion
+
+Die reine Auswahl „Text oder Offline-Text wählen, Platzhalter füllen“ wandert aus `LabelRenderer` (`features/portal`) nach `core` neben `LabelPlaceholders`: `LabelText.render(MiniMessage parser, PortalLabel label, String task, String online, String max, boolean offline)`. `LabelRenderer` bleibt der Übersetzer von `LabelReading` auf diese Werte und delegiert; das Setup-Modul darf `features/*` nicht kennen und ruft `LabelText` direkt mit Beispielwerten (`12`, `50`, Task des Entwurfs sonst Portal-Id; offline `0`/`0`). Die Textprüfung des Validators wird als `PortalValidator.textProblems(field, text)` öffentlich, damit die Vorschau ungültigen Text mit denselben Gründen erkennt, ohne Regelkopie.
+
+Eine `LabelPreview` im Setup besitzt den Lebenszyklus: je Spieler und Portal-Id eine `TextDisplay`-Entität samt Modus (online/offline) und zuletzt gültigem Text. Sichtbarkeit nur für den Bearbeiter über Minestom-Bordmittel: `setAutoViewable(false)` und `addViewer(player)`. Nach jeder Änderung des Entwurfs ruft der Befehl `follow(player, draft)`, das dieselbe Entität aktualisiert (Position, Billboard, Text) oder anlegt; ohne Position oder Text oder ohne Label entfernt es sie. Bei ungültigem Text bleibt der letzte gültige Text, und `follow` liefert den Grund, den der Befehl als eigene Meldung ausgibt. `save`, `cancel`, `remove` und `PlayerDisconnectEvent` (im vorhandenen `PortalDisconnectListener`) räumen auf. Der Modus wird mit `label preview online|offline` gewählt (neues Editor-Verb `labelPreview`, das den Entwurf öffnet und mit dem Labelstand antwortet).
+
+- Built-in first: Minestom `TextDisplayMeta`, Viewer-API, Events; Adventure-MiniMessage. Keine eigene Paketlogik.
+- Test (Unit, `LabelTextTest`): Online, Offline mit und ohne `offlineText`, `<task>` bleibt wörtlich, `<prefix>` über den übergebenen Parser; `LabelRendererTest` bleibt grün. Test (Env, `LabelPreviewTest`): Entität erscheint mit „Survival 12/50“, ohne Task Portal-Id, zweite Aktualisierung ändert dieselbe Entität, Offline und zurück, ein Zuschauer erhält die Entität nicht, Aufräumen bei `clear`, Label entfernen, Trennen, ungültiger Text behält den letzten gültigen. Test (Env, `PortalCommandTest`): `label preview offline|online` erreicht den Editor, Konsole wird abgelehnt, Trennen räumt auf.
+- SOLID: Single Responsibility (Rendering in `core`, Entitäten im Setup), Dependency Inversion (Setup hängt an `core`, nicht an `features/portal`).
+
 ## Risks / Trade-offs
 
 - [CloudNet-Provider-Aufruf blockiert den Tick] → Abruf auf einem virtuellen Thread, Anwendung im Scheduler (D6).

@@ -86,3 +86,46 @@ Die Partikel-Vorschau eines Portals (`show` und die Live-Vorschau des Entwurfs) 
 #### Scenario: Entwurfsanker folgt dem Entwurf
 - **WHEN** der Entwurf einen Anker hat und der Spieler ihn mit `label here` verschiebt
 - **THEN** markiert die Live-Vorschau den neuen Anker
+
+### Requirement: Text-Vorschau des Labels
+Der Setup-Server MUSS das Label eines Entwurfs, sobald es Position und Text hat, als echte `TextDisplay`-Entität am Anker anzeigen, und nur dem Bearbeiter. Der angezeigte Text MUSS derselbe sein, den die Lobby aus Text, Platzhaltern und Offline-Text bildet (gemeinsame Rendering-Funktion), mit festen Beispielwerten: `<online>` = 12, `<max>` = 50, `<task>` = Task des Entwurfs (ohne Task die Id des Portals), `<prefix>` wie im Chat. Die Vorschau MUSS jeder Änderung des Entwurfs folgen und dieselbe Entität aktualisieren, nie eine zweite anlegen. `/setup portal <id> label preview offline|online` MUSS zwischen der Offline-Variante (`offlineText`, sonst `text` mit 0/0) und der Online-Variante wechseln; Standard ist online. Die Vorschau MUSS verschwinden, wenn der Entwurf endet (`save`, `cancel`, `remove`), wenn das Label entfernt wird und wenn der Spieler die Verbindung trennt. Ist der Text nach den Regeln des Validators ungültig, MUSS die Vorschau den zuletzt gültigen Text behalten (oder nichts neu anzeigen, wenn es noch keinen gab), und die Antwort des Befehls MUSS das Problem nennen.
+
+#### Scenario: Vorschau erscheint
+- **WHEN** der Entwurf Anker und Text `<gold><task> <gray><online>/<max>` hat und der Task „Survival“ ist
+- **THEN** zeigt eine echte `TextDisplay` am Anker „Survival 12/50“, mit aufgelöstem `<prefix>`, wenn der Text es enthält
+
+#### Scenario: Vorschau ohne Task
+- **WHEN** der Entwurf Anker und Text mit `<task>` hat, aber keinen Task
+- **THEN** zeigt die Vorschau anstelle von `<task>` die Id des Portals
+
+#### Scenario: Vorschau folgt Änderungen
+- **WHEN** der Spieler `label here`, `label text`, `label offline`, `label source` ausführt oder das Billboard eines gespeicherten Labels der Karte gilt
+- **THEN** ändern sich Position, Text oder Billboard derselben Entität, und es existiert danach genau eine Vorschau-Entität für dieses Portal
+
+#### Scenario: Offline-Variante
+- **WHEN** der Spieler `/setup portal survival label preview offline` ausführt
+- **THEN** zeigt die Vorschau den Offline-Text, oder den Text mit 0/0, wenn es keinen gibt
+
+#### Scenario: Zurück zur Online-Variante
+- **WHEN** der Spieler danach `/setup portal survival label preview online` ausführt
+- **THEN** zeigt die Vorschau wieder den Text mit 12/50
+
+#### Scenario: Nur für den Bearbeiter sichtbar
+- **WHEN** ein zweiter Spieler in derselben Welt ist, während die Vorschau läuft
+- **THEN** erhält nur der Bearbeiter die Entität, der andere nicht
+
+#### Scenario: Vorschau verschwindet beim Speichern, Verwerfen und Entfernen
+- **WHEN** der Spieler `save`, `cancel` oder `remove` für das Portal ausführt
+- **THEN** ist die Vorschau-Entität entfernt
+
+#### Scenario: Vorschau verschwindet mit dem Label
+- **WHEN** der Spieler `label remove` ausführt
+- **THEN** ist die Vorschau-Entität entfernt
+
+#### Scenario: Vorschau verschwindet beim Trennen
+- **WHEN** der Bearbeiter die Verbindung trennt
+- **THEN** ist die Vorschau-Entität entfernt
+
+#### Scenario: Ungültiger Text
+- **WHEN** der Spieler `label text <gold>Survival</red>` ausführt, während die Vorschau „Survival 12/50“ zeigt
+- **THEN** bleibt der letzte gültige Text sichtbar, nichts stürzt ab, und die Antwort nennt das Problem (unbekannter oder falsch geschlossener Tag)

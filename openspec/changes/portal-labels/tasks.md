@@ -11,6 +11,7 @@ Integrationszweig: `feat/portal-labels` von `origin/main`. Jede Welle endet mit 
 | 3 | counter-spi | 3.1–3.3 | sonnet | `core/src/**/portal/**` (SPI), `common/src/**/deliver/**` bzw. Ort der CloudNet-Bean, `bridge/**`, `features/portal/**/NoPlayerCounts*` | `setup/**`, `common/src/**/map/**` |
 | 3 | label-display | 3.4–3.7 | sonnet | `features/portal/**` (Rendering, Anzeige, Einstellungen), Tests | `core/**`, `common/**`, `bridge/**`, `setup/**` |
 | 4 | setup-command | 4.1–4.4 | sonnet | `setup/**` | `core/**`, `common/**`, `features/**`, `bridge/**` |
+| 4b | label-text-preview | 4b.1–4b.4 | sonnet | `core/src/**/portal/**` (nur gemeinsames Rendering), `features/portal/**/LabelRenderer*` (nur Delegation), `setup/**`, `README.md` | `common/**`, `bridge/**`, `runtime/**` |
 | 5 | docs | 5.1 | sonnet | `README.md` | Code |
 | 5 | verify | 5.2 | haiku | read-only | alles |
 | 6 | pr | 6.1 | sonnet | Git/GitHub | Code |
@@ -44,6 +45,13 @@ Wellen 3 (`counter-spi`) und 3 (`label-display`) berühren getrennte Dateien und
 - [x] 4.2 Test zuerst (Unit, `PortalMessagesTest`): neue Meldungen, Label-Text mit `<click:…>` bleibt wörtlich (`unparsed`); rot. Dann `PortalMessages` erweitern; grün.
 - [x] 4.3 Test zuerst (Unit, `PortalOutlineTest`, `DraftOutlineTest`): Ankerpunkte nur bei gesetztem Anker, unter der Punktobergrenze, Anker folgt `label here`; rot. Dann Vorschau erweitern; grün. Dazu `PortalCompletions` (Typen `task|group|service|local`) mit Test.
 - [x] 4.4 `PortalCommand` mit den Syntaxen `label here|text|offline|source|remove` erweitern; Test zuerst (Integration, Cyano-`Env`, `env.tick()`): jede Syntax erreicht den Editor mit den richtigen Werten (Position des Spielers), Konsole wird abgelehnt, fehlende Argumente werden abgelehnt, das Label überlebt `save` und `setspawn` in einer Persistenz-Fixture mit `@TempDir`; grün. Nachweis: Test grün, `/setup map …` und bestehende `/setup portal`-Syntaxen unverändert.
+
+## 4b. Text-Vorschau im Setup (Welle 4b)
+
+- [ ] 4b.1 Test zuerst (Unit, `LabelTextTest`): online, offline mit und ohne `offlineText`, `<task>` mit `<`-Tags bleibt wörtlich, `<prefix>` über den übergebenen Parser, `PortalValidator.textProblems` nennt Feld und Grund; rot. Dann `LabelText.render` in `core` umsetzen und `LabelRenderer` darauf delegieren; grün. Nachweis: `LabelRendererTest` und `PortalValidatorLabelTest` bleiben unverändert grün.
+- [ ] 4b.2 Test zuerst (Env, `LabelPreviewTest`): Entität am Anker mit „Survival 12/50“, ohne Task die Portal-Id, zweites `follow` ändert dieselbe Entität, Offline-Variante, nur der Bearbeiter erhält sie, `clear`, Label entfernt, Trennen, ungültiger Text behält den letzten gültigen und nennt das Problem; rot. Dann `LabelPreview` (Entität je Spieler und Portal, `setAutoViewable(false)`, `addViewer`) umsetzen; grün.
+- [ ] 4b.3 Test zuerst (Env, `PortalCommandTest`, `PortalEditorLabelTest`, `PortalMessagesLabelTest`, `PortalCompletionsTest`): `label preview online|offline` erreicht den Editor (`labelPreview`), Konsole wird abgelehnt, `save`/`cancel`/`remove`/`label remove`/Trennen entfernen die Entität, Problemmeldung bei ungültigem Text, Vorschlagswörter; rot. Dann Befehl, Meldungen, Vervollständigung, `PortalDisconnectListener` und die Verdrahtung in `Titan` umsetzen; grün.
+- [ ] 4b.4 `README.md`: Abschnitt „Setup server“ nennt die Text-Vorschau und `label preview online|offline`. Nachweis: README nennt die Syntax.
 
 ## 5. Doku und Abnahme (Welle 5)
 
