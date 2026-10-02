@@ -19,7 +19,7 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 
 ## 1. Column anlegen (Welle 1)
 
-- [ ] 1.1 `features/jumprun` mit `build.gradle.kts` (`titan.column`, `libs.adventure.minimessage` falls nicht über die Convention vorhanden, `libs.slf4j.api`) und `package-info.java` (`@InjectModule(name = "jumprunColumn", provides = {LobbyItem.class}, requires = {EventNode.class, LobbySpawn.class, LobbyItems.class}, requiresString = {"…EventNode<…Event>:titan"})` nach dem Muster von `features/elytra`) anlegen, dazu `ColumnArchitectureTest` mit `ColumnArchitectureRules`. Nachweis: `./gradlew :features:jumprun:build` grün, `settings.gradle.kts` unverändert.
+- [x] 1.1 `features/jumprun` mit `build.gradle.kts` (`titan.column`, `libs.adventure.minimessage` falls nicht über die Convention vorhanden, `libs.slf4j.api`) und `package-info.java` (`@InjectModule(name = "jumprunColumn", provides = {LobbyItem.class}, requires = {EventNode.class, LobbySpawn.class, LobbyItems.class}, requiresString = {"…EventNode<…Event>:titan"})` nach dem Muster von `features/elytra`) anlegen, dazu `ColumnArchitectureTest` mit `ColumnArchitectureRules`. Nachweis: `./gradlew :features:jumprun:build` grün, `settings.gradle.kts` unverändert.
 
 ## 2. Kurslogik, rein (Welle 2)
 
