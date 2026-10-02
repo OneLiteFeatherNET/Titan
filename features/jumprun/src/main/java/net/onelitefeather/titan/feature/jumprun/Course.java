@@ -69,8 +69,7 @@ final class Course {
     /**
      * Starts a course at the block under the player. Makes the whole ascent, which ends at a block
      * in the open and away from the spawn, and one more block up front. Returns empty when that
-     * does not fit, so nothing
-     * is shown for a run that cannot work.
+     * does not fit, so nothing is shown for a run that cannot work.
      */
     static Optional<Course> start(Pos startPoint, BlockPos startBlock, Heading heading, SpawnZone spawn, SpaceProbe probe, RandomGenerator random) {
         CourseGenerator generator = new CourseGenerator(probe, spawn, random);

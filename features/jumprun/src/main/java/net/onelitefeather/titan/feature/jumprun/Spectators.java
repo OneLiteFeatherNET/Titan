@@ -19,7 +19,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import net.minestom.server.coordinate.Pos;
-import net.minestom.server.entity.Entity;
 import net.minestom.server.entity.EntityType;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.metadata.display.BlockDisplayMeta;
@@ -35,7 +34,7 @@ import net.minestom.server.instance.Instance;
 final class Spectators {
 
     private final Player runner;
-    private final Map<BlockPos, Entity> displays = new HashMap<>();
+    private final Map<BlockPos, HiddenDisplay> displays = new HashMap<>();
 
     Spectators(Player runner) {
         this.runner = runner;
@@ -47,7 +46,7 @@ final class Spectators {
             return;
         }
         for (CourseBlock block : blocks) {
-            Entity previous = displays.put(block.pos(), spawn(instance, block));
+            HiddenDisplay previous = displays.put(block.pos(), spawn(instance, block));
             if (previous != null) {
                 previous.remove();
             }
@@ -56,7 +55,7 @@ final class Spectators {
 
     void hide(Collection<CourseBlock> blocks) {
         for (CourseBlock block : blocks) {
-            Entity display = displays.remove(block.pos());
+            HiddenDisplay display = displays.remove(block.pos());
             if (display != null) {
                 display.remove();
             }
@@ -65,18 +64,12 @@ final class Spectators {
 
     /** Removes every display of the run. */
     void clear() {
-        displays.values().forEach(Entity::remove);
+        displays.values().forEach(HiddenDisplay::remove);
         displays.clear();
     }
 
-    private Entity spawn(Instance instance, CourseBlock block) {
-        Entity display = new Entity(EntityType.BLOCK_DISPLAY);
-        display.editEntityMeta(BlockDisplayMeta.class, meta -> meta.setBlockState(block.material()));
-        display.setNoGravity(true);
-        display.setHasPhysics(false);
-        display.updateViewableRule(viewer -> viewer != runner);
+    private HiddenDisplay spawn(Instance instance, CourseBlock block) {
         BlockPos pos = block.pos();
-        display.setInstance(instance, new Pos(pos.x(), pos.y(), pos.z()));
-        return display;
+        return HiddenDisplay.spawn(runner, EntityType.BLOCK_DISPLAY, BlockDisplayMeta.class, meta -> meta.setBlockState(block.material()), instance, new Pos(pos.x(), pos.y(), pos.z()));
     }
 }

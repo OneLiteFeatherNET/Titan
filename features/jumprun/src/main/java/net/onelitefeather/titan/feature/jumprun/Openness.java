@@ -22,12 +22,18 @@ package net.onelitefeather.titan.feature.jumprun;
 record Openness(SpaceProbe probe) {
 
     /** Air blocks a scored block needs below it to count as standing in the open. */
-    static final int MIN_AIR_BELOW = 6;
+    static final int SCORED_AIR_BELOW = 6;
+
+    /** Air blocks below the last ascent block, so the scored part starts well above the ground. */
+    static final int ASCENT_AIR_BELOW = 8;
 
     /** How far down the column below a target is looked at. */
     private static final int COLUMN_DEPTH = 16;
 
-    /** The cells around a position that are looked at: the eight neighbours on two levels. */
+    /**
+     * The cells around a position that are looked at: the eight neighbours on two levels. The
+     * eight are {@link Direction#values()}, so the count follows the enum.
+     */
     private static final int NEIGHBOURS = 2 * Direction.values().length;
 
     /** Weight of the vertical air in {@link #of}: space below matters more than beside. */

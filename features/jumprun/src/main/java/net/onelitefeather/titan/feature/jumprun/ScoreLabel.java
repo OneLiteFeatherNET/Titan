@@ -17,7 +17,6 @@ package net.onelitefeather.titan.feature.jumprun;
 
 import net.kyori.adventure.text.Component;
 import net.minestom.server.coordinate.Vec;
-import net.minestom.server.entity.Entity;
 import net.minestom.server.entity.EntityType;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.metadata.display.AbstractDisplayMeta.BillboardConstraints;
@@ -40,19 +39,25 @@ final class ScoreLabel {
 
     private final Player runner;
     @Nullable
-    private Entity label;
+    private HiddenDisplay label;
+    @Nullable
+    private Integer shownScore;
 
     ScoreLabel(Player runner) {
         this.runner = runner;
     }
 
-    /** Shows the score, creating the label on first use. */
+    /** Shows the score, creating the label on first use; an unchanged score sends nothing. */
     void show(int score) {
+        if (shownScore != null && shownScore == score) {
+            return;
+        }
+        shownScore = score;
         Component text = Component.text(TITLE + " · " + score);
         if (label == null) {
             label = spawn(text);
         } else {
-            label.editEntityMeta(TextDisplayMeta.class, meta -> meta.setText(text));
+            label.entity().editEntityMeta(TextDisplayMeta.class, meta -> meta.setText(text));
         }
     }
 
@@ -60,24 +65,17 @@ final class ScoreLabel {
         if (label != null) {
             label.remove();
             label = null;
+            shownScore = null;
         }
     }
 
-    private Entity spawn(Component text) {
-        Entity display = new Entity(EntityType.TEXT_DISPLAY);
-        display.editEntityMeta(TextDisplayMeta.class, meta -> {
+    private HiddenDisplay spawn(Component text) {
+        HiddenDisplay display = HiddenDisplay.spawn(runner, EntityType.TEXT_DISPLAY, TextDisplayMeta.class, meta -> {
             meta.setText(text);
             meta.setBillboardRenderConstraints(BillboardConstraints.CENTER);
             meta.setTranslation(ABOVE_NAME_TAG);
-        });
-        display.setNoGravity(true);
-        display.setHasPhysics(false);
-        display.updateViewableRule(viewer -> viewer != runner);
-        display.setInstance(runner.getInstance(), runner.getPosition()).thenRun(() -> {
-            if (!display.isRemoved()) {
-                runner.addPassenger(display);
-            }
-        });
+        }, runner.getInstance(), runner.getPosition());
+        display.whenPlaced(() -> runner.addPassenger(display.entity()));
         return display;
     }
 }

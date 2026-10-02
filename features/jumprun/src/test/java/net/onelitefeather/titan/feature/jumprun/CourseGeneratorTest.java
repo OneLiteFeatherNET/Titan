@@ -396,7 +396,7 @@ class CourseGeneratorTest {
 
     @Test
     void generatedBlocksHaveSixAirBlocksBelowThem() {
-        assertForEvery(jumps, jump -> new Openness(world).hasAirBelow(jump.to().pos(), Openness.MIN_AIR_BELOW), "air below");
+        assertForEvery(jumps, jump -> new Openness(world).hasAirBelow(jump.to().pos(), Openness.SCORED_AIR_BELOW), "air below");
     }
 
     @Test
