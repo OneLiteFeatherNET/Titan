@@ -138,7 +138,7 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 
 ## 23. Gewicht 0 schaltet ab
 
-- [ ] 23.1 Test zuerst (Unit + Integration): Gewicht 0 schaltet ein Material ab (nie gezogen), negative Gewichte und Listen ohne Gewicht > 0 brechen den Start mit Schlüssel ab; Doku in `docs/lobby-modules.md`. Nachweis: `./gradlew build` grün.
+- [x] 23.1 Test zuerst (Unit + Integration): Gewicht 0 schaltet ein Material ab (nie gezogen), negative Gewichte und Listen ohne Gewicht > 0 brechen den Start mit Schlüssel ab; Doku in `docs/lobby-modules.md`. Nachweis: `./gradlew build` grün.
 
 ## 6. Pull Request
 
