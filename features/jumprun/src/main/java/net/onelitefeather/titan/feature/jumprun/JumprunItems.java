@@ -37,6 +37,6 @@ final class JumprunItems {
     @Bean
     LobbyItem jumprun(JumprunModule jumprun) {
         ItemStack rabbitFoot = ItemStack.builder(Material.RABBIT_FOOT).customName(MiniMessage.miniMessage().deserialize("<!i><green>Jump & Run")).build();
-        return new LobbyItem(JumprunModule.ID, ITEM_KEY, rabbitFoot, ItemSlot.hotbar(HOTBAR_SLOT), (player, event) -> jumprun.toggle(player));
+        return new LobbyItem(JumprunModule.ID, ITEM_KEY, rabbitFoot, ItemSlot.hotbar(HOTBAR_SLOT), (player, event) -> jumprun.use(player));
     }
 }

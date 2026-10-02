@@ -172,10 +172,8 @@ Für jeden gezeigten Fake-Block spawnt der Lauf eine `Entity(EntityType.BLOCK_DI
 
 ### D14 Anklicken lässt Blöcke nicht verschwinden (Bugfix nach drittem lokalen Test)
 
-Im echten Client verschwinden Laufblöcke beim Anklicken. Der Integrationstest aus 4.6 feuert die Events nur direkt und hat das nicht gefunden. Die Ursache wird zuerst mit echten Client-Paketen reproduziert (`ClientPlayerDiggingPacket` für Start, Abbruch und Ende, `ClientUseItemOnPacket`/Block-Platzierung mit Sequenznummer, auch mit dem Jump-and-Run-Item in der Hand), und zwar über `processClientPacket` in Cyano: Welche Pakete schickt Minestom zurück (Block-Change mit echter Luft, `AcknowledgeBlockChangePacket`)? Feuern die Events für Positionen, an denen der Server Luft kennt, überhaupt? Löst die Item-Benutzung auf einem Block den Abbruch aus? Der Fix setzt dort an, wo der Test die Ursache zeigt, etwa:
-- Neusenden nach dem Ack über die Paket-Ebene (`PlayerPacketEvent` bzw. `PlayerPacketOutEvent`)
-- Item-Benutzung nur bei `PlayerUseItemEvent` ohne Blockziel als Abbruch werten
-Er wird im Design nachgetragen.
+Ursache (zwei Stück, beide mit echten Client-Paketen reproduziert): Lobby-Spieler sind im Creative-Modus, dort bricht `PlayerActionListener` den Block bei `STARTED_DIGGING` sofort ab (`breakTicks == 0`), ohne `PlayerStartDiggingEvent`, und `InstanceContainer.breakBlock` schickt für die dem Server bekannte Luft sofort ein `BlockChangePacket` mit Luft; unser Event-basiertes Neusenden lief nie. Außerdem schickt der Client nach dem Rechtsklick mit dem Item auf einen Block zusätzlich `ClientUseItemPacket`, das über das `PlayerUseItemEvent` des Hotbar-Dispatchers den Lauf per `toggle` abbrach und damit alle Blöcke zurücksetzte.
+Fix: Das Neusenden hängt jetzt an `PlayerPacketEvent` (`ClientPlayerActionPacket` Start/Abbruch/Ende und `ClientPlayerBlockPlacementPacket` auf einen Laufblock) und sendet im nächsten Tick, hinter Minestoms Antwort. Ein Rechtsklick auf einen Laufblock sperrt die Item-Benutzung für zwei Ticks (`JumprunModule.use`), alles innerhalb von `features/jumprun`; ein Klick des Items in die Luft schaltet den Lauf weiterhin um.
 - **Test:** Integration mit echten Client-Paketen. Links- und Rechtsklick auf einen Laufblock, mit und ohne Item, lassen als letztes Block-Paket an den Spieler den Laufblock zurück, und der Lauf läuft weiter.
 
 ## Risks / Trade-offs

@@ -21,14 +21,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import net.minestom.server.coordinate.BlockVec;
 import net.minestom.server.coordinate.Point;
-import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.PlayerHand;
 import net.minestom.server.event.Event;
-import net.minestom.server.event.player.PlayerBlockInteractEvent;
 import net.minestom.server.event.player.PlayerChunkLoadEvent;
-import net.minestom.server.event.player.PlayerStartDiggingEvent;
-import net.minestom.server.instance.block.Block;
 import net.minestom.server.instance.block.BlockFace;
+import net.minestom.server.network.packet.client.play.ClientPlayerBlockPlacementPacket;
 import net.minestom.server.network.packet.server.ServerPacket;
 import net.minestom.server.network.packet.server.play.BlockChangePacket;
 import net.minestom.server.network.packet.server.play.ChunkDataPacket;
@@ -97,42 +94,12 @@ class JumprunResendTest {
     }
 
     @Test
-    void usingABlockOfTheRunSendsTheWindowAgainOnTheNextTick(Env env) {
-        try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            StartedRun run = StartedRun.start(env, fixture);
-            Point block = run.ahead().peekFirst().blockPosition();
-            List<Point> visible = positions(run.ahead().stream().toList());
-            Collector<BlockChangePacket> sent = run.connection().trackIncoming(BlockChangePacket.class);
-
-            call(env, new PlayerBlockInteractEvent(run.player(), PlayerHand.MAIN, run.instance(), Block.AIR, block.asBlockVec(), new Vec(0.5, 1, 0.5), BlockFace.TOP));
-            env.tick();
-
-            assertEquals(visible, positions(sent.collect()), "Minestom answers the click with the real block, so the fake one is sent after that answer");
-        }
-    }
-
-    @Test
-    void diggingAtABlockOfTheRunSendsTheWindowAgainOnTheNextTick(Env env) {
-        try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            StartedRun run = StartedRun.start(env, fixture);
-            Point block = run.ahead().peekFirst().blockPosition();
-            List<Point> visible = positions(run.ahead().stream().toList());
-            Collector<BlockChangePacket> sent = run.connection().trackIncoming(BlockChangePacket.class);
-
-            call(env, new PlayerStartDiggingEvent(run.player(), run.instance(), Block.AIR, block.asBlockVec(), BlockFace.TOP));
-            env.tick();
-
-            assertEquals(visible, positions(sent.collect()));
-        }
-    }
-
-    @Test
     void usingARealBlockNextToTheRunSendsNothing(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             StartedRun run = StartedRun.start(env, fixture);
             Collector<BlockChangePacket> sent = run.connection().trackIncoming(BlockChangePacket.class);
 
-            call(env, new PlayerBlockInteractEvent(run.player(), PlayerHand.MAIN, run.instance(), Block.STONE, new BlockVec(0, 39, 0), new Vec(0.5, 1, 0.5), BlockFace.TOP));
+            run.fixture().sendClientPacket(run.player(), new ClientPlayerBlockPlacementPacket(PlayerHand.MAIN, new BlockVec(0, 39, 0), BlockFace.TOP, 0.5f, 1f, 0.5f, false, false, 1));
             env.tick();
 
             assertTrue(sent.collect().isEmpty(), "the start block is real and not part of the fake window");
@@ -144,8 +111,8 @@ class JumprunResendTest {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             StartedRun run = StartedRun.start(env, fixture);
             Point block = run.ahead().peekFirst().blockPosition();
-            call(env, new PlayerBlockInteractEvent(run.player(), PlayerHand.MAIN, run.instance(), Block.AIR, block.asBlockVec(), new Vec(0.5, 1, 0.5), BlockFace.TOP));
-            fixture.useItem(run.player());
+            run.fixture().sendClientPacket(run.player(), new ClientPlayerBlockPlacementPacket(PlayerHand.MAIN, block, BlockFace.TOP, 0.5f, 1f, 0.5f, false, false, 1));
+            fixture.module().toggle(run.player());
             Collector<BlockChangePacket> sent = run.connection().trackIncoming(BlockChangePacket.class);
 
             env.tick();
