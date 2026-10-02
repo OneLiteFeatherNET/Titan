@@ -47,8 +47,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 
 /**
- * Cross-feature coverage for a joining player's standard loadout: exactly the feather in hotbar
- * slot 4 and the elytra on the chestplate, and using the feather opens the shared navigator
+ * Cross-feature coverage for a joining player's standard loadout: exactly the Jump & Run item in
+ * hotbar slot 0, the feather in slot 4 and the elytra on the chestplate, and using the feather
+ * opens the shared navigator
  * inventory, driven through the real {@link BeanScope} since neither module's lifecycle is
  * reachable from this package.
  *
@@ -66,10 +67,10 @@ class StandardLoadoutTest {
         return player.getOpenInventory();
     }
 
-    @DisplayName("A joining player gets exactly the feather (slot 4) and the elytra (chestplate), and the feather opens the navigator")
+    @DisplayName("A joining player gets exactly the Jump & Run item (slot 0), the feather (slot 4) and the elytra (chestplate), and the feather opens the navigator")
     @Test
     @Timeout(30)
-    void standardLoadoutHoldsAndTheFeatherOpensTheNavigator(Env env) {
+    void standardLoadoutHoldsJumprunFeatherAndElytraAndTheFeatherOpensTheNavigator(Env env) {
         Instance instance = env.createFlatInstance();
         // Named mock, not the plain mock(Type) overload - see docs/lobby-modules.md,
         // "Permission-Plattform".
@@ -84,9 +85,10 @@ class StandardLoadoutTest {
 
             lobbyItems.equip(player);
 
+            Assertions.assertEquals(Material.SLIME_BLOCK, player.getInventory().getItemStack(0).material(), "hotbar slot 0 must hold the Jump & Run item");
             Assertions.assertEquals(Material.FEATHER, player.getInventory().getItemStack(4).material(), "hotbar slot 4 must hold the navigator feather");
             for (int slot = 0; slot < 9; slot++) {
-                if (slot == 4) {
+                if (slot == 0 || slot == 4) {
                     continue;
                 }
                 Assertions.assertEquals(ItemStack.AIR, player.getInventory().getItemStack(slot), "hotbar slot " + slot + " must be empty");

@@ -31,8 +31,8 @@ apps/local ────┼─▶ runtime ─────────────
   geteilten ArchUnit-Regeln `ColumnArchitectureRules` (s. "Architekturregeln" unten).
 - **`features/<name>`** (Paket `net.onelitefeather.titan.feature.<name>`) ist eine Column: ein
   eigenes Gradle-Modul, das die Convention `titan.column` anwendet und **nur** an `core` hängt -
-  nie an einer anderen Column, nie an `runtime` oder einer App-Variante. Die neun heutigen
-  Columns: `protection`, `spawn`, `respawn`, `navigator`, `sit`, `tickle`, `elytra`, `hotbar`
+  nie an einer anderen Column, nie an `runtime` oder einer App-Variante. Die heutigen
+  Columns: `protection`, `spawn`, `respawn`, `navigator`, `sit`, `tickle`, `elytra`, `jumprun`, `hotbar`
   (Hotbar-/Ausrüstungsitems, `LobbyItems`-Implementierung) und `admin` (`/stop`, `/end`).
 - **`runtime`** ist der gemeinsame Starter: `TitanApplication` (`main`), `Titan` (baut den
   `BeanScope`), `PlatformBeans`-Äquivalent (`runtime`s eigene `package-info.java` deklariert die
@@ -174,7 +174,7 @@ gebaut und über sein `@PostConstruct` gestartet wird. Fehlt `@Singleton` an ein
 
 **Die Reihenfolge, in der zwei Features dasselbe Event verarbeiten, legt `EVENT_PRIORITY` fest**,
 nicht eine Startreihenfolge - Minestoms `EventNode#setPriority(int)` ordnet Geschwisterknoten. Die
-heutigen neun Features, in Hunderterschritten mit Platz dazwischen:
+heutigen Features, in Hunderterschritten mit Platz dazwischen:
 
 | Feature | `EVENT_PRIORITY` |
 |---|---|
@@ -186,6 +186,7 @@ heutigen neun Features, in Hunderterschritten mit Platz dazwischen:
 | tickle | 600 |
 | elytra | 700 |
 | portal | 900 |
+| jumprun | 1000 |
 
 (`hotbar` und `admin` reagieren nicht über einen eigenen Feature-Node auf ein Event, das mit einem
 anderen Feature kollidieren könnte, und tragen deshalb kein `EVENT_PRIORITY`.)
@@ -676,6 +677,7 @@ als `provides`):
 | `sit` | `EventNode.class` | `EventNode<Event>:titan` | - |
 | `tickle` | `EventNode.class`, `Clock.class` | `EventNode<Event>:titan` | - |
 | `elytra` | `EventNode.class`, `Scheduler.class` | `EventNode<Event>:titan` | `LobbyItem.class` |
+| `jumprun` | `EventNode.class`, `LobbySpawn.class`, `LobbyItems.class` | `EventNode<Event>:titan` | `LobbyItem.class` |
 | `hotbar` | `EventNode.class` | `EventNode<Event>:titan` | `LobbyItems.class` |
 | `portal` | `EventNode.class`, `LobbyPortals.class`, `Deliver.class`, `PermissionService.class`, `Clock.class` | `EventNode<Event>:titan` | - |
 | `season` (nur `cloudnet`) | `Scheduler.class`, `Clock.class`, `EventNode.class` | `EventNode<Event>:titan` | - |
@@ -686,6 +688,51 @@ noch `@Named`, für sie reicht die `requires`-Form allein. `LobbyItems` steht be
 `respawn`, weil ihre Module `LobbyItems` direkt injizieren; `elytra` injiziert es stattdessen als
 `Provider<LobbyItems>` (siehe oben) und lässt es deshalb aus `requires` weg, obwohl es
 `LobbyItem` liefert.
+
+## jumprun
+
+Ein zufälliges Einzelspieler-Jump-and-Run: Das Item `titan:jumprun` (Hasenpfote „Jump & Run“) in
+Hotbar-Slot 0 startet einen Lauf, erneutes Benutzen beendet ihn. Die Plattformen sind reine
+Client-Blöcke (`BlockChangePacket`, nur der Spieler sieht sie, die Welt bleibt unverändert); es
+existieren immer 2 Blöcke hinter und 2 vor dem Spieler, und die Schwierigkeit (Lücke,
+Höhenunterschied, Blockart) steigt mit dem Punktestand. `EVENT_PRIORITY` ist 1000.
+
+- **Modi:** Rechtsklick mit dem Item bei gedrückter Schleichtaste wechselt außerhalb eines Laufs
+  zyklisch Easy → Medium → Hard → Rainbow → Ultra (Standard Medium; im Lauf passiert nichts). Der Modus steuert, ab
+  welchem Punktestand die Formen erscheinen, wie steil die Schwierigkeit steigt und wie weit die
+  Lücken sind (`Mode`). Er gilt pro Spieler und Sitzung und steht im Kopf-Label und in den
+  Meldungen.
+- **Rainbow und Ultra:** Rainbow spielt wie Medium, Ultra wie Hard (ohne Umrandung). Steht der
+  Läufer so viele Ticks auf dem aktuellen Block, wie der Modus vorgibt (`jumprun.rainbow.rerollTicks`,
+  Standard 10; `jumprun.ultra.rerollTicks`, Standard 40; jeweils eine ganze Zahl über 0),
+  wechseln in Rainbow alle sichtbaren Blöcke ihr Material, in Ultra werden die Blöcke voraus neu
+  erzeugt (Aufstieg und Fall wie sonst). Ein Sprung oder eine Landung setzt den Zähler zurück. Pro
+  Lauf läuft dafür ein Tick-Task auf dem Scheduler des Läufers, der mit dem Lauf endet
+  (`Reroller`). Beide Werte werden wie die Paletten beim Start geprüft (Meldung mit dem
+  vollen Schlüssel) und zur Laufzeit je Lauf neu gelesen; der Modus des Laufs wählt den Schlüssel.
+- **Töne:** Alle Lauftöne (Punkt, Aufstiegssignal, Absturz, Rekord, Modus-Klick) spielen am Läufer
+  gebunden (`Sound.Emitter.self()`, `EntitySoundEffectPacket`) und nur für ihn. Das Level-up beim
+  ersten Rekord bleibt so hörbar, obwohl der Absturz im selben Tick zum Startpunkt teleportiert.
+- **Einschränkung Rekorde:** Bestwerte liegen je Modus nur im Speicher (`InMemoryRunRecords`) und
+  gehen beim Neustart verloren, bis es einen Stats-Dienst gibt.
+- **Eigene Übersetzungen:** Texte (`titan.jumprun.*`, de/en, Englisch als Fallback) kommen aus einem
+  eigenen Bundle und werden pro Spieler gerendert. Minestoms globales Flag für automatische
+  Übersetzung bleibt aus.
+- **Materialien konfigurieren:** `jumprun.palettes.<form>.<block>: <gewicht>` mit den Formen `full`,
+  `trapdoor`, `slab`, `fence`, `pane`, `post`; Schlüssel ist der Blockname ohne Namensraum, das
+  Gewicht eine ganze Zahl ab 0 (3 wird dreimal so oft gezogen wie 1; 0 schaltet das Material ab,
+  so lässt sich ein mitgeliefertes per Override in `application.yaml` entfernen). Die Standardwerte stehen in
+  `features/jumprun/src/main/resources/titan/defaults/jumprun.yaml`. Die Form setzt die Zustände
+  (untere Hälfte, geschlossen, senkrecht), der Betreiber wählt nur Block und Gewicht. Ein weiterer
+  Eintrag in `application.yaml` ergänzt die Standardliste, er ersetzt sie nicht.
+- **Prüfung:** `JumprunSettings` bricht den Start ab, wenn ein Block unbekannt ist, seine
+  Kollisionsoberkante nicht zur Form passt (Zustände der Form angewendet), das Gewicht keine
+  ganze Zahl ab 0 ist oder eine Form keinen Eintrag mit Gewicht über 0 hat. Abgeschaltete Einträge
+  (Gewicht 0) werden trotzdem geprüft, damit ein Tippfehler im Namen auffällt. Die Meldung nennt
+  `jumprun.palettes.<form>.<block>` (bei leerer Form oder nur Gewicht 0 `jumprun.palettes.<form>`) und den Grund.
+- **Zur Laufzeit:** Die Paletten werden beim Start jedes Laufs neu gelesen. Ein ungültiger Wert
+  erzeugt eine WARN-Zeile mit dem Schlüssel (einmal je Fehler), und es bleiben die zuletzt
+  gültigen Paletten.
 
 ## Checkliste: neues Feature = neues Modul unter `features/`
 

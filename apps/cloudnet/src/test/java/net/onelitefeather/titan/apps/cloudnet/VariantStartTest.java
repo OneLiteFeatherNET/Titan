@@ -87,6 +87,16 @@ class VariantStartTest {
         Assertions.assertTrue(LoadedModules.discover(loader).contains("seasonColumn"), "the season column must be on the classpath and load");
     }
 
+    @DisplayName("variant.properties lists jumprunColumn and the jumprun column is loaded")
+    @Test
+    void jumprunColumnIsExpectedAndLoaded() {
+        ClassLoader loader = getClass().getClassLoader();
+        VariantDescriptor descriptor = VariantDescriptor.fromClasspath(loader).orElseThrow(() -> new AssertionError("this variant must ship META-INF/titan/variant.properties"));
+
+        Assertions.assertTrue(descriptor.modules().contains("jumprunColumn"), "expected modules must include jumprunColumn, were: " + descriptor.modules());
+        Assertions.assertTrue(LoadedModules.discover(loader).contains("jumprunColumn"), "the jumprun column must be on the classpath and load");
+    }
+
     @DisplayName("The shipped application.yaml carries the seasons defaults")
     @Test
     void applicationYamlCarriesTheSeasonsDefaults() throws IOException {

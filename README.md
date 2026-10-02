@@ -7,6 +7,7 @@ Titan is a complete Minestom-based Minecraft lobby server that provides various 
 - **Sitting System**: Allows players to sit on specific blocks like stairs
 - **Tickle Mechanic**: Players can tickle each other using feathers, with cooldown periods
 - **Elytra Boost**: Provides boost functionality for players using elytra
+- **Jump & Run**: A random single-player jump and run in hotbar slot 0 with client-side blocks (2 behind, 2 ahead of the player); the difficulty rises with the score and records are kept in memory only
 - **Height Teleportation**: Automatically teleports players when they exceed certain height limits
 
 ## Requirements
@@ -523,7 +524,7 @@ central feature list to edit:
 - The `<Name>Module` class is a plain `@jakarta.inject.Singleton` bean with a unique
   `static final int EVENT_PRIORITY` - it decides the order in which two features process the same
   event, not a start order; the seven event-driven features use gaps of 100 (protection 100, spawn
-  200, respawn 300, navigator 400, sit 500, tickle 600, elytra 700). A class with an
+  200, respawn 300, navigator 400, sit 500, tickle 600, elytra 700; jumprun uses 1000). A class with an
   `@PostConstruct` method that is missing `@Singleton` fails the build (a shared ArchUnit rule
   every column applies to itself via its own `ColumnArchitectureTest`); two features sharing an
   `EVENT_PRIORITY` fail the lobby's *start* instead (`FeatureNode.attach` throws, naming both

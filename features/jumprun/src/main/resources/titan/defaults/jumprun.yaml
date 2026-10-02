@@ -1,0 +1,130 @@
+# The "jumprun" module: the random single-player jump and run.
+jumprun:
+  # Rainbow runs: ticks (20 per second) the runner has to stand on a block before the blocks
+  # change colour. A whole number above 0. Read when a run starts; an invalid edit is logged and
+  # the last valid value stays.
+  rainbow:
+    rerollTicks: 10
+  # Ultra runs: ticks the runner has to stand on a block before the blocks ahead are made anew.
+  # Same rules as for Rainbow.
+  ultra:
+    rerollTicks: 40
+  # The materials each shape of the course is shown as. Key: the block name without namespace;
+  # value: its weight, a whole number of 0 or more (a weight of 3 is drawn three times as often as
+  # 1; 0 switches the material off, e.g. to drop a shipped one in an override).
+  # The shape sets the block state (lower half, closed, upright) and all materials of a shape must
+  # collide up to the same height, or the start aborts naming the key. Each shape needs at least
+  # one material with a weight above 0. Read when a run starts; an invalid edit is logged and the last valid palettes stay.
+  palettes:
+    # Full blocks.
+    full:
+      white_concrete: 1
+      orange_concrete: 1
+      magenta_concrete: 1
+      light_blue_concrete: 1
+      yellow_concrete: 1
+      lime_concrete: 1
+      pink_concrete: 1
+      gray_concrete: 1
+      light_gray_concrete: 1
+      cyan_concrete: 1
+      purple_concrete: 1
+      blue_concrete: 1
+      brown_concrete: 1
+      green_concrete: 1
+      red_concrete: 1
+      black_concrete: 1
+      white_wool: 1
+      orange_wool: 1
+      magenta_wool: 1
+      light_blue_wool: 1
+      yellow_wool: 1
+      lime_wool: 1
+      pink_wool: 1
+      gray_wool: 1
+      light_gray_wool: 1
+      cyan_wool: 1
+      purple_wool: 1
+      blue_wool: 1
+      brown_wool: 1
+      green_wool: 1
+      red_wool: 1
+      black_wool: 1
+      terracotta: 1
+    # Closed trapdoors in the lower half.
+    trapdoor:
+      oak_trapdoor: 1
+      spruce_trapdoor: 1
+      birch_trapdoor: 1
+      jungle_trapdoor: 1
+      acacia_trapdoor: 1
+      dark_oak_trapdoor: 1
+      mangrove_trapdoor: 1
+      cherry_trapdoor: 1
+      pale_oak_trapdoor: 1
+      bamboo_trapdoor: 1
+      crimson_trapdoor: 1
+      warped_trapdoor: 1
+      iron_trapdoor: 1
+    # Slabs in the lower half.
+    slab:
+      stone_slab: 1
+      cobblestone_slab: 1
+      stone_brick_slab: 1
+      brick_slab: 1
+      nether_brick_slab: 1
+      quartz_slab: 1
+      oak_slab: 1
+      spruce_slab: 1
+      birch_slab: 1
+      jungle_slab: 1
+      acacia_slab: 1
+      dark_oak_slab: 1
+      mangrove_slab: 1
+      cherry_slab: 1
+      pale_oak_slab: 1
+      bamboo_slab: 1
+      crimson_slab: 1
+      warped_slab: 1
+    # Fences and walls.
+    fence:
+      oak_fence: 1
+      spruce_fence: 1
+      birch_fence: 1
+      jungle_fence: 1
+      acacia_fence: 1
+      dark_oak_fence: 1
+      mangrove_fence: 1
+      cherry_fence: 1
+      pale_oak_fence: 1
+      bamboo_fence: 1
+      crimson_fence: 1
+      warped_fence: 1
+      nether_brick_fence: 1
+      cobblestone_wall: 1
+      brick_wall: 1
+      stone_brick_wall: 1
+    # Glass panes and bars.
+    pane:
+      white_stained_glass_pane: 1
+      orange_stained_glass_pane: 1
+      magenta_stained_glass_pane: 1
+      light_blue_stained_glass_pane: 1
+      yellow_stained_glass_pane: 1
+      lime_stained_glass_pane: 1
+      pink_stained_glass_pane: 1
+      gray_stained_glass_pane: 1
+      light_gray_stained_glass_pane: 1
+      cyan_stained_glass_pane: 1
+      purple_stained_glass_pane: 1
+      blue_stained_glass_pane: 1
+      brown_stained_glass_pane: 1
+      green_stained_glass_pane: 1
+      red_stained_glass_pane: 1
+      black_stained_glass_pane: 1
+      iron_bars: 1
+    # Upright posts.
+    post:
+      end_rod: 1
+      iron_chain: 1
+      lightning_rod: 1
