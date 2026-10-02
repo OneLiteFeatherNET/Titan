@@ -58,21 +58,15 @@ final class CourseGenerator {
     private final SpaceProbe probe;
     private final SpawnZone spawn;
     private final RandomGenerator random;
+    private final Palettes palettes;
     private final PortalClearance portals;
     private final Steering steering;
 
-    CourseGenerator(SpaceProbe probe, SpawnZone spawn, RandomGenerator random) {
-        this(probe, spawn, random, PortalClearance.NONE);
-    }
-
-    CourseGenerator(SpaceProbe probe, SpawnZone spawn, RandomGenerator random, PortalClearance portals) {
-        this(probe, spawn, random, portals, Steering.none());
-    }
-
-    CourseGenerator(SpaceProbe probe, SpawnZone spawn, RandomGenerator random, PortalClearance portals, Steering steering) {
+    CourseGenerator(SpaceProbe probe, SpawnZone spawn, RandomGenerator random, Palettes palettes, PortalClearance portals, Steering steering) {
         this.probe = probe;
         this.spawn = spawn;
         this.random = random;
+        this.palettes = palettes;
         this.portals = portals;
         this.steering = steering;
     }
@@ -104,7 +98,7 @@ final class CourseGenerator {
 
     /** The material is drawn once the position is settled, so it cannot steer the choice. */
     private CourseBlock withDrawnMaterial(Spot spot) {
-        return spot.withMaterial(spot.surface().draw(random));
+        return spot.withMaterial(palettes.draw(spot.surface(), random));
     }
 
     /**

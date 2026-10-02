@@ -128,7 +128,7 @@ class PortalClearanceTest {
     @Test
     void aCourseKeepsThreeBlocksFromABoxInItsWay() {
         List<PortalShape> shapes = boxAt(8, 0, -3, 9, 200, 3);
-        Course course = Course.start(START_POINT, START_BLOCK, EAST, TestBlocks.FAR_SPAWN, new FakeSpaceProbe(), RandomGeneratorFactory.of("L64X128MixRandom").create(5L), PortalClearance.of(shapes)).orElseThrow();
+        Course course = TestBlocks.course(START_POINT, START_BLOCK, EAST, TestBlocks.FAR_SPAWN, new FakeSpaceProbe(), RandomGeneratorFactory.of("L64X128MixRandom").create(5L), PortalClearance.of(shapes)).orElseThrow();
 
         for (int landing = 0; landing < LANDINGS; landing++) {
             course.window().forEach(shown -> assertTrue(distanceToBox(shown.pos(), 8, 9, -3, 3) >= 3, "block " + shown.pos() + " keeps three blocks from the box"));

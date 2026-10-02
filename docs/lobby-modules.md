@@ -702,6 +702,19 @@ Höhenunterschied, Blockart) steigt mit dem Punktestand. `EVENT_PRIORITY` ist 10
 - **Eigene Übersetzungen:** Texte (`titan.jumprun.*`, de/en, Englisch als Fallback) kommen aus einem
   eigenen Bundle und werden pro Spieler gerendert. Minestoms globales Flag für automatische
   Übersetzung bleibt aus.
+- **Materialien konfigurieren:** `jumprun.palettes.<form>.<block>: <gewicht>` mit den Formen `full`,
+  `trapdoor`, `slab`, `fence`, `pane`, `post`; Schlüssel ist der Blockname ohne Namensraum, das
+  Gewicht eine ganze Zahl über 0 (3 wird dreimal so oft gezogen wie 1). Die Standardwerte stehen in
+  `features/jumprun/src/main/resources/titan/defaults/jumprun.yaml`. Die Form setzt die Zustände
+  (untere Hälfte, geschlossen, senkrecht), der Betreiber wählt nur Block und Gewicht. Ein weiterer
+  Eintrag in `application.yaml` ergänzt die Standardliste, er ersetzt sie nicht.
+- **Prüfung:** `JumprunSettings` bricht den Start ab, wenn ein Block unbekannt ist, seine
+  Kollisionsoberkante nicht zur Form passt (Zustände der Form angewendet), das Gewicht keine
+  ganze Zahl über 0 ist oder eine Form keinen Eintrag hat. Die Meldung nennt
+  `jumprun.palettes.<form>.<block>` (bei leerer Form `jumprun.palettes.<form>`) und den Grund.
+- **Zur Laufzeit:** Die Paletten werden beim Start jedes Laufs neu gelesen. Ein ungültiger Wert
+  erzeugt eine WARN-Zeile mit dem Schlüssel (einmal je Fehler), und es bleiben die zuletzt
+  gültigen Paletten.
 
 ## Checkliste: neues Feature = neues Modul unter `features/`
 

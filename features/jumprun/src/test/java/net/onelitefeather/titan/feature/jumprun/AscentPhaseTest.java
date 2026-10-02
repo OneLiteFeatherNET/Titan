@@ -44,7 +44,7 @@ class AscentPhaseTest {
     }
 
     private static List<CourseBlock> ascent(FakeSpaceProbe world, SpawnZone spawn, Heading heading, long seed) {
-        CourseGenerator generator = new CourseGenerator(world, spawn, seeded(seed));
+        CourseGenerator generator = TestBlocks.generator(world, spawn, seeded(seed));
         List<CourseBlock> course = new ArrayList<>(List.of(START));
         Phase phase = Phase.start(heading);
         while (phase instanceof Phase.Ascent) {
@@ -88,7 +88,7 @@ class AscentPhaseTest {
 
     @Test
     void generatesNoAscentJumpBeyondTheMaximum() {
-        CourseGenerator generator = new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(1L));
+        CourseGenerator generator = TestBlocks.generator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(1L));
 
         assertTrue(generator.next(List.of(START), new Phase.Ascent(Phase.MAX_ASCENT_JUMPS, EAST)).isEmpty(), "thirty jumps are the limit");
     }
@@ -147,7 +147,7 @@ class AscentPhaseTest {
 
     @Test
     void ascentBendsItsHeadingTowardsEveryStep() {
-        CourseGenerator generator = new CourseGenerator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(3L));
+        CourseGenerator generator = TestBlocks.generator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(3L));
         List<CourseBlock> course = new ArrayList<>(List.of(START));
         Phase phase = Phase.start(EAST);
 

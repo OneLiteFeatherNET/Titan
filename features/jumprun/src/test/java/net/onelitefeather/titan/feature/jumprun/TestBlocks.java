@@ -15,17 +15,68 @@
  */
 package net.onelitefeather.titan.feature.jumprun;
 
-/** Fixture factory for blocks whose material does not matter to the test. */
+import io.avaje.config.Configuration;
+import java.util.Map;
+import java.util.Optional;
+import java.util.random.RandomGenerator;
+import net.minestom.server.coordinate.Pos;
+
+/** Fixture factory for blocks and courses whose material does not matter to the test. */
 final class TestBlocks {
 
     /** A spawn so far away that its distance never matters to a test. */
     static final SpawnZone FAR_SPAWN = new SpawnZone(-1000.0, 0.0);
 
+    private static final String SHIPPED_DEFAULTS = "titan/defaults/jumprun.yaml";
+
+    private static final Palettes SHIPPED = JumprunSettings.palettes(shippedConfiguration());
+
     private TestBlocks() {
+    }
+
+    /**
+     * A configuration holding only the shipped defaults, independent of the global one and of
+     * what other tests set there. Each call returns a fresh, mutable one.
+     */
+    static Configuration shippedConfiguration() {
+        return Configuration.builder().load(SHIPPED_DEFAULTS).build();
+    }
+
+    /** The shipped palettes; {@link Palettes} is immutable, so tests may share it. */
+    static Palettes shipped() {
+        return SHIPPED;
+    }
+
+    /** The shipped defaults with the palette of {@code surface} replaced by {@code weights}. */
+    static Configuration shippedWith(Surface surface, Map<String, String> weights) {
+        Configuration config = shippedConfiguration();
+        config.forPath(JumprunSettings.key(surface)).keys().forEach(block -> config.clearProperty(JumprunSettings.key(surface, block)));
+        weights.forEach((block, weight) -> config.setProperty(JumprunSettings.key(surface, block), weight));
+        return config;
+    }
+
+    static PalettesReader shippedReader() {
+        return new PalettesReader(shippedConfiguration());
     }
 
     /** A block with the first material of its shape. */
     static CourseBlock at(BlockPos pos, Surface surface) {
-        return new CourseBlock(pos, surface, surface.palette().getFirst());
+        return new CourseBlock(pos, surface, shipped().of(surface).blocks().getFirst());
+    }
+
+    static CourseGenerator generator(SpaceProbe probe, SpawnZone spawn, RandomGenerator random) {
+        return generator(probe, spawn, random, Steering.none());
+    }
+
+    static CourseGenerator generator(SpaceProbe probe, SpawnZone spawn, RandomGenerator random, Steering steering) {
+        return new CourseGenerator(probe, spawn, random, shipped(), PortalClearance.NONE, steering);
+    }
+
+    static Optional<Course> course(Pos startPoint, BlockPos startBlock, Heading heading, SpawnZone spawn, SpaceProbe probe, RandomGenerator random) {
+        return Course.start(startPoint, startBlock, heading, spawn, probe, random, shipped());
+    }
+
+    static Optional<Course> course(Pos startPoint, BlockPos startBlock, Heading heading, SpawnZone spawn, SpaceProbe probe, RandomGenerator random, PortalClearance portals) {
+        return Course.start(startPoint, startBlock, heading, spawn, probe, random, shipped(), portals);
     }
 }
