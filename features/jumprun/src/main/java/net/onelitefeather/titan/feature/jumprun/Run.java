@@ -35,12 +35,14 @@ final class Run {
     private final Course course;
     private final BlockPos startBlock;
     private final Spectators spectators;
+    private final ScoreLabel label;
 
     Run(Player player, Course course, BlockPos startBlock) {
         this.player = player;
         this.course = course;
         this.startBlock = startBlock;
         this.spectators = new Spectators(player);
+        this.label = new ScoreLabel(player);
     }
 
     Player player() {
@@ -62,6 +64,13 @@ final class Run {
     /** What the other players see; touch it only while holding the lock of the run. */
     Spectators spectators() {
         return spectators;
+    }
+
+    /**
+     * The score over the runner for the others; touch it only while holding the lock of the run.
+     */
+    ScoreLabel label() {
+        return label;
     }
 
     Pos startPoint() {

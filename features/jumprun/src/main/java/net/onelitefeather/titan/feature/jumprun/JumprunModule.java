@@ -138,6 +138,7 @@ final class JumprunModule {
             runs.add(run);
             fakeBlocks.show(player, run.fakeWindow());
             run.spectators().show(run.fakeWindow());
+            run.label().show(run.score());
         }
         LOGGER.atDebug().addKeyValue("player", player.getUuid()).log("jumprun started");
     }
@@ -249,6 +250,7 @@ final class JumprunModule {
         fakeBlocks.show(player, added);
         run.spectators().hide(removed);
         run.spectators().show(added);
+        run.label().show(run.score());
         player.sendActionBar(messages.scoreActionBar(player.getLocale(), run.score()));
         if (advance.exhausted()) {
             end(run, EndReason.EXHAUSTED);
@@ -264,6 +266,7 @@ final class JumprunModule {
             }
             score = run.score();
             run.spectators().clear();
+            run.label().remove();
             if (reason.restoresBlocks()) {
                 fakeBlocks.reset(player, run.fakeWindow());
             }
