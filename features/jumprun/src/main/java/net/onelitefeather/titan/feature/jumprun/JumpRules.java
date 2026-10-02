@@ -34,18 +34,28 @@ final class JumpRules {
     }
 
     boolean isValid(Jump jump) {
-        return isReachable(jump) && hasRoomAtTarget(jump) && isFlightPathFree(jump);
+        return isReachable(jump) && isFree(jump);
+    }
+
+    /** The world leaves room for the jump: at the target and along the way. */
+    boolean isFree(Jump jump) {
+        return hasRoomAtTarget(jump) && isFlightPathFree(jump);
     }
 
     /** Pure geometry: the player can bridge the gap and the rise, whatever stands in the way. */
     static boolean isReachable(Jump jump) {
+        return jump.gap() >= Jump.MIN_GAP && jump.gap() <= maxGap(jump) && jump.rise() <= Jump.MAX_RISE;
+    }
+
+    private static int maxGap(Jump jump) {
         int maxGap = jump.isAscent() ? Jump.MAX_GAP_ASCENT : Jump.MAX_GAP;
-        return jump.gap() >= Jump.MIN_GAP && jump.gap() <= maxGap && jump.rise() <= Jump.MAX_RISE;
+        return jump.isDiagonal() ? Math.min(maxGap, Jump.MAX_GAP_DIAGONAL) : maxGap;
     }
 
     private boolean hasRoomAtTarget(Jump jump) {
         BlockPos target = jump.to().pos();
-        return probe.inBounds(target) && probe.inBounds(target.above(MAX_Y_MARGIN)) && probe.isAir(target) && isColumnFree(target.x(), target.z(), target.y() + 1, target.y() + jump.to().surface().headroomTop());
+        boolean inBounds = probe.inBounds(target) && probe.inBounds(target.above(MAX_Y_MARGIN));
+        return inBounds && probe.isAir(target) && isColumnFree(target.x(), target.z(), target.y() + 1, jump.to().headroomTopY());
     }
 
     /**
@@ -56,7 +66,8 @@ final class JumpRules {
         double higherTop = Math.max(jump.from().topY(), jump.to().topY());
         int lowest = (int) Math.floor(higherTop);
         int highest = Surface.highestBlockReached(higherTop);
-        return cellsBetween(jump.from().pos(), jump.to().pos()).stream().allMatch(cell -> isColumnFree(cell.x(), cell.z(), lowest, highest));
+        List<Cell> path = cellsBetween(jump.from().pos(), jump.to().pos());
+        return path.stream().allMatch(cell -> isColumnFree(cell.x(), cell.z(), lowest, highest));
     }
 
     private boolean isColumnFree(int x, int z, int fromY, int toY) {

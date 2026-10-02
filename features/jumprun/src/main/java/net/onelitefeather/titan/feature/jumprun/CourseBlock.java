@@ -22,4 +22,9 @@ record CourseBlock(BlockPos pos, Surface surface) {
     double topY() {
         return pos.y() + surface.top();
     }
+
+    /** The highest y a standing player reaches into above this block. */
+    int headroomTopY() {
+        return pos.y() + surface.headroomTop();
+    }
 }

@@ -86,4 +86,18 @@ class JumpTest {
     void maxCostIsTheHardestJumpOnTheFlat() {
         assertEquals(10.5, Jump.MAX_COST, "pane + gap 4");
     }
+
+    @Test
+    void aDiagonalJumpCostsOneGapLevelMoreThanAnAxisJumpOfTheSameGap() {
+        double axis = jump(block(0, 0, 0, Surface.FULL), block(3, 0, 0, Surface.FULL)).cost();
+        double diagonal = jump(block(0, 0, 0, Surface.FULL), block(3, 0, 3, Surface.FULL)).cost();
+
+        assertEquals(1.5, axis, "axis, gap 2");
+        assertEquals(3.0, diagonal, "diagonal, gap 2 costs like gap level 2");
+    }
+
+    @Test
+    void aShortDiagonalJumpStillCostsMoreThanAnAxisJumpWithTheSameGap() {
+        assertEquals(1.5, jump(block(0, 0, 0, Surface.FULL), block(2, 0, 2, Surface.FULL)).cost(), "diagonal, gap 1");
+    }
 }

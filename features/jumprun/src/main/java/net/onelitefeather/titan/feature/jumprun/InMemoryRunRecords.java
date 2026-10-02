@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.OptionalInt;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Keeps records until the lobby stops; deliberately not cleared on disconnect. */
 final class InMemoryRunRecords implements RunRecords {
@@ -33,8 +34,11 @@ final class InMemoryRunRecords implements RunRecords {
 
     @Override
     public boolean submit(UUID player, int score) {
-        Integer previous = best.get(player);
-        best.merge(player, score, Math::max);
-        return previous == null || score > previous;
+        AtomicBoolean isRecord = new AtomicBoolean();
+        best.compute(player, (_, previous) -> {
+            isRecord.set(previous == null || score > previous);
+            return isRecord.get() ? score : previous;
+        });
+        return isRecord.get();
     }
 }

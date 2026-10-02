@@ -53,6 +53,21 @@ class JumpRulesTest {
     }
 
     @Test
+    void diagonalJumpWithGapTwoIsReachable() {
+        assertTrue(valid(Surface.FULL, 3, 0, 3), "gap 2 diagonal");
+    }
+
+    @Test
+    void diagonalJumpWithGapThreeIsTooFar() {
+        assertFalse(valid(Surface.FULL, 4, 0, 4), "gap 3 diagonal covers about 4.2 blocks");
+    }
+
+    @Test
+    void diagonalJumpWithGapFourIsTooFar() {
+        assertFalse(valid(Surface.FULL, 5, 0, 5), "gap 4 diagonal");
+    }
+
+    @Test
     void touchingBlocksAreNoJump() {
         assertFalse(valid(Surface.FULL, 1, 0, 0), "gap 0");
     }
@@ -95,12 +110,6 @@ class JumpRulesTest {
     @Test
     void fullBlockOneHigherThanAFenceIsReachable() {
         assertTrue(validIn(new FakeSpaceProbe(), block(0, 10, 0, Surface.FENCE), block(2, 11, 0, Surface.FULL)), "fence top 11.5 to full top 12.0");
-    }
-
-    @Test
-    void diagonalGapUsesTheLargerHorizontalDistance() {
-        assertTrue(valid(Surface.FULL, 5, 0, 5), "diagonal gap 4");
-        assertFalse(valid(Surface.FULL, 6, 0, 6), "diagonal gap 5");
     }
 
     // --- room at the target ---------------------------------------------------------------------

@@ -16,12 +16,14 @@
 package net.onelitefeather.titan.feature.jumprun;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.random.RandomGenerator;
 import java.util.random.RandomGeneratorFactory;
 import org.junit.jupiter.api.Test;
@@ -113,6 +115,22 @@ class CourseGeneratorTest {
             CourseBlock chosen = jumpFromSource(generator, 0);
 
             assertEquals(new BlockPos(-5, 10, 0), chosen.pos(), "dead end A must lose to B (seed " + seed + ")");
+        }
+    }
+
+    @Test
+    void neverPlacesABlockIntoTheHeadroomOfAnEarlierBlock() {
+        CourseBlock earlier = new CourseBlock(new BlockPos(0, 10, 0), Surface.FULL);
+        CourseBlock last = new CourseBlock(new BlockPos(2, 10, 0), Surface.FULL);
+        Phase towardsTheEarlierBlock = new Phase.Ascent(Phase.ASCENT_JUMPS, new Heading(-1.0, 0.0));
+
+        for (long seed = 0; seed < 200; seed++) {
+            CourseGenerator generator = new CourseGenerator(new FakeSpaceProbe(), seeded(seed));
+
+            BlockPos chosen = generator.next(List.of(earlier, last), towardsTheEarlierBlock).orElseThrow().pos();
+
+            boolean inItsColumn = chosen.x() == 0 && chosen.z() == 0 && chosen.y() <= earlier.headroomTopY();
+            assertFalse(inItsColumn, "inside the earlier block or its headroom: " + chosen + " (seed " + seed + ")");
         }
     }
 
@@ -209,26 +227,66 @@ class CourseGeneratorTest {
 
     // --- property: no impossible jump -----------------------------------------------------------
 
-    @Test
-    void tenThousandJumpsOverTenSeedsNeverBreakTheLimits() {
-        FakeSpaceProbe world = new FakeSpaceProbe().occupyBox(-50, 0, -50, 50, 9, 50).occupyBox(-20, 10, 15, 20, 40, 18).occupyBox(30, 10, -50, 33, 60, 50);
-        JumpRules rules = new JumpRules(world);
-        int checked = 0;
+    private static final int SEEDS = 10;
+    private static final int JUMPS_PER_SEED = 1000;
 
-        for (long seed = 1; seed <= 10; seed++) {
-            List<CourseBlock> course = walk(new CourseGenerator(world, seeded(seed)), SOURCE, new Phase.Scored(0), 1000);
-            checked += course.size() - 1;
+    private static FakeSpaceProbe obstacleWorld() {
+        return new FakeSpaceProbe().occupyBox(-50, 0, -50, 50, 9, 50).occupyBox(-20, 10, 15, 20, 40, 18).occupyBox(30, 10, -50, 33, 60, 50);
+    }
+
+    /** The jumps of ten seeded courses of 1000 jumps each, the same ones for every property. */
+    private static List<Jump> generatedJumps(FakeSpaceProbe world) {
+        List<Jump> jumps = new ArrayList<>();
+        for (long seed = 1; seed <= SEEDS; seed++) {
+            List<CourseBlock> course = walk(new CourseGenerator(world, seeded(seed)), SOURCE, new Phase.Scored(0), JUMPS_PER_SEED);
             for (int i = 1; i < course.size(); i++) {
-                Jump jump = new Jump(course.get(i - 1), course.get(i));
-                String where = "seed " + seed + " jump " + i + " " + jump;
-                assertTrue(jump.gap() >= Jump.MIN_GAP && jump.gap() <= Jump.MAX_GAP, "gap " + where);
-                assertTrue(!jump.isAscent() || jump.gap() <= Jump.MAX_GAP_ASCENT, "ascent gap " + where);
-                assertTrue(jump.rise() <= Jump.MAX_RISE, "rise " + where);
-                assertTrue(rules.isValid(jump), "rules " + where);
-                assertTrue(course.get(i).pos().y() + JumpRules.MAX_Y_MARGIN <= 100, "top margin " + where);
+                jumps.add(new Jump(course.get(i - 1), course.get(i)));
             }
         }
+        return jumps;
+    }
 
-        assertEquals(10_000, checked, "every seed must complete its 1000 jumps in this world");
+    private static void assertForEvery(List<Jump> jumps, Predicate<Jump> property, String what) {
+        for (Jump jump : jumps) {
+            assertTrue(property.test(jump), what + ": " + jump);
+        }
+    }
+
+    @Test
+    void everySeedCompletesItsJumpsInTheObstacleWorld() {
+        assertEquals(SEEDS * JUMPS_PER_SEED, generatedJumps(obstacleWorld()).size(), "generated jumps");
+    }
+
+    @Test
+    void generatedGapsStayWithinTheLimits() {
+        assertForEvery(generatedJumps(obstacleWorld()), jump -> jump.gap() >= Jump.MIN_GAP && jump.gap() <= Jump.MAX_GAP, "gap");
+    }
+
+    @Test
+    void generatedAscentsStayWithinTheAscentGap() {
+        assertForEvery(generatedJumps(obstacleWorld()), jump -> !jump.isAscent() || jump.gap() <= Jump.MAX_GAP_ASCENT, "ascent gap");
+    }
+
+    @Test
+    void generatedDiagonalJumpsStayWithinTheDiagonalGap() {
+        assertForEvery(generatedJumps(obstacleWorld()), jump -> !jump.isDiagonal() || jump.gap() <= Jump.MAX_GAP_DIAGONAL, "diagonal gap");
+    }
+
+    @Test
+    void generatedRisesStayWithinTheLimit() {
+        assertForEvery(generatedJumps(obstacleWorld()), jump -> jump.rise() <= Jump.MAX_RISE, "rise");
+    }
+
+    @Test
+    void generatedJumpsAreFreeInTheWorld() {
+        FakeSpaceProbe world = obstacleWorld();
+        JumpRules rules = new JumpRules(world);
+
+        assertForEvery(generatedJumps(world), rules::isValid, "rules");
+    }
+
+    @Test
+    void generatedBlocksKeepTheMarginToTheTop() {
+        assertForEvery(generatedJumps(obstacleWorld()), jump -> jump.to().pos().y() + JumpRules.MAX_Y_MARGIN <= 100, "top margin");
     }
 }

@@ -33,10 +33,9 @@ record Heading(double x, double z) {
         return Math.hypot(facingX, facingZ) > 0.0 ? normalized(facingX, facingZ) : DEFAULT;
     }
 
-    /** Cosine between this heading and a step of {@code (dx, dz)} blocks. */
-    double dot(int dx, int dz) {
-        double length = Math.hypot(dx, dz);
-        return (x * dx + z * dz) / length;
+    /** Cosine between this heading and a step in the direction. */
+    double dot(Direction direction) {
+        return (x * direction.dx() + z * direction.dz()) / direction.length();
     }
 
     private static Heading normalized(double x, double z) {

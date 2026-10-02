@@ -68,6 +68,24 @@ class AscentPhaseTest {
         assertEquals(new Phase.Scored(8), new Phase.Scored(7).next(), "score");
     }
 
+    @Test
+    void ascentJumpsAreShortAndUpwardOnFullBlocks() {
+        Phase ascent = Phase.start(EAST);
+
+        assertEquals(List.of(1, 2), ascent.gaps().boxed().toList(), "gaps");
+        assertEquals(List.of(1), ascent.rises().boxed().toList(), "rises");
+        assertEquals(List.of(Surface.FULL), ascent.surfaces(), "surfaces");
+    }
+
+    @Test
+    void scoredJumpsMayHaveAnyGapRiseAndSurface() {
+        Phase scored = new Phase.Scored(0);
+
+        assertEquals(List.of(1, 2, 3, 4), scored.gaps().boxed().toList(), "gaps");
+        assertEquals(List.of(-1, 0, 1), scored.rises().boxed().toList(), "rises");
+        assertEquals(List.of(Surface.values()), scored.surfaces(), "surfaces");
+    }
+
     // --- the ascent itself ------------------------------------------------------------------------
 
     @Test
@@ -169,9 +187,9 @@ class AscentPhaseTest {
 
     @Test
     void headingDotProductWeighsDirections() {
-        assertEquals(1.0, EAST.dot(1, 0), 1e-9, "same direction");
-        assertEquals(-1.0, EAST.dot(-1, 0), 1e-9, "opposite");
-        assertEquals(0.0, EAST.dot(0, 1), 1e-9, "sideways");
-        assertEquals(Math.sqrt(0.5), EAST.dot(1, 1), 1e-9, "diagonal is normalized");
+        assertEquals(1.0, EAST.dot(Direction.EAST), 1e-9, "same direction");
+        assertEquals(-1.0, EAST.dot(Direction.WEST), 1e-9, "opposite");
+        assertEquals(0.0, EAST.dot(Direction.SOUTH), 1e-9, "sideways");
+        assertEquals(Math.sqrt(0.5), EAST.dot(Direction.SOUTH_EAST), 1e-9, "diagonal is normalized");
     }
 }

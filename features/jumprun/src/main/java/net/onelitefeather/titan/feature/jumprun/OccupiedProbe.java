@@ -15,17 +15,25 @@
  */
 package net.onelitefeather.titan.feature.jumprun;
 
-/**
- * An integer block position. Minestom's {@code BlockVec} also stores doubles ({@code x()} returns
- * a double, ints only come from {@code blockX()}), so it cannot guarantee a whole-block position.
- */
-record BlockPos(int x, int y, int z) {
+import java.util.Set;
 
-    BlockPos offset(int dx, int dy, int dz) {
-        return new BlockPos(x + dx, y + dy, z + dz);
+/**
+ * The real world plus positions that are taken by blocks which are not in it, such as the blocks
+ * of a course the player can see.
+ */
+record OccupiedProbe(SpaceProbe delegate, Set<BlockPos> occupied) implements SpaceProbe {
+
+    OccupiedProbe {
+        occupied = Set.copyOf(occupied);
     }
 
-    BlockPos above(int blocks) {
-        return new BlockPos(x, y + blocks, z);
+    @Override
+    public boolean isAir(BlockPos pos) {
+        return !occupied.contains(pos) && delegate.isAir(pos);
+    }
+
+    @Override
+    public boolean inBounds(BlockPos pos) {
+        return delegate.inBounds(pos);
     }
 }

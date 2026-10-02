@@ -26,8 +26,7 @@ import net.kyori.adventure.translation.GlobalTranslator;
 
 /**
  * Translated texts of the Jump &amp; Run. Rendering is explicit via {@link GlobalTranslator}, so it
- * does not
- * depend on Minestom's automatic component translation.
+ * does not depend on Minestom's automatic component translation.
  */
 final class RunMessages implements AutoCloseable {
 
