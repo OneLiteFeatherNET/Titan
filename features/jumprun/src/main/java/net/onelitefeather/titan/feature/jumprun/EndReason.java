@@ -55,6 +55,14 @@ enum EndReason {
         return owed.announces;
     }
 
+    /**
+     * Whether the blocks left in the window rise away for the others: not when the player is gone
+     * or the lobby stops, there is nobody to show it to or no time.
+     */
+    boolean risesAway() {
+        return announcesScore();
+    }
+
     private record Owed(boolean restoresBlocks, boolean submitsScore, boolean announces) {
 
         static Owed everything() {

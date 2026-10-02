@@ -16,14 +16,17 @@
 package net.onelitefeather.titan.feature.jumprun;
 
 import java.util.ArrayDeque;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
 import java.util.function.Consumer;
 import net.minestom.server.coordinate.Pos;
+import net.minestom.server.entity.EntityType;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.network.packet.server.ServerPacket;
 import net.minestom.server.network.packet.server.play.BlockChangePacket;
+import net.minestom.server.network.packet.server.play.SpawnEntityPacket;
 import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.TestConnection;
@@ -48,23 +51,43 @@ record StartedRun(JumprunFixture fixture, TestConnection connection, Player play
         return start(env, fixture, instance, STAND, player -> fixture.records().submit(player.getUuid(), best));
     }
 
+    /** Starts the run and lets the first blocks land, which is when the player is sent them. */
     private static StartedRun start(Env env, JumprunFixture fixture, Instance instance, Pos stand, Consumer<Player> beforeStart) {
+        return start(env, fixture, instance, stand, beforeStart, true);
+    }
+
+    /** Starts the run and returns at once, while the first blocks are still falling. */
+    static StartedRun startFalling(Env env, JumprunFixture fixture, Instance instance, Pos stand) {
+        return start(env, fixture, instance, stand, _ -> {
+        }, false);
+    }
+
+    private static StartedRun start(Env env, JumprunFixture fixture, Instance instance, Pos stand, Consumer<Player> beforeStart, boolean settle) {
         TestConnection connection = env.createConnection();
         Player player = connection.connect(instance, stand);
         beforeStart.accept(player);
         player.refreshOnGround(true);
-        Collector<BlockChangePacket> shown = connection.trackIncoming(BlockChangePacket.class);
+        Collector<ServerPacket> shown = connection.trackIncoming();
         fixture.useItem(player);
-        return new StartedRun(fixture, connection, player, instance, new ArrayDeque<>(shown.collect()));
+        if (settle) {
+            fixture.settle();
+        }
+        return new StartedRun(fixture, connection, player, instance, new ArrayDeque<>(courseBlocksInShownOrder(shown.collect())));
     }
 
     /** Reaches the next block ahead and stands still on it, as {@link #landOnNext()} otherwise. */
     List<ServerPacket> settleOnNext() {
         Collector<ServerPacket> sent = connection.trackIncoming();
         fixture.settleOn(player, ahead.removeFirst());
+        fixture.settle();
         List<ServerPacket> packets = sent.collect();
-        packets.stream().filter(BlockChangePacket.class::isInstance).map(BlockChangePacket.class::cast).filter(JumprunFixture::isCourseBlock).forEach(ahead::addLast);
+        learn(packets);
         return packets;
+    }
+
+    /** Takes the blocks the player was sent meanwhile as the next ones ahead. */
+    void learn(List<ServerPacket> packets) {
+        ahead.addAll(courseBlocksInShownOrder(packets));
     }
 
     /** Lands on the next {@code count} blocks ahead, one after the other. */
@@ -78,9 +101,18 @@ record StartedRun(JumprunFixture fixture, TestConnection connection, Player play
     List<ServerPacket> landOnNext() {
         Collector<ServerPacket> sent = connection.trackIncoming();
         fixture.landOn(player, ahead.removeFirst());
+        fixture.settle();
         List<ServerPacket> packets = sent.collect();
-        packets.stream().filter(BlockChangePacket.class::isInstance).map(BlockChangePacket.class::cast).filter(JumprunFixture::isCourseBlock).forEach(ahead::addLast);
+        learn(packets);
         return packets;
     }
-}
 
+    /**
+     * The blocks land in no fixed order, but they were spawned nearest first, and the runner must
+     * reach them in that order.
+     */
+    private static List<BlockChangePacket> courseBlocksInShownOrder(List<ServerPacket> packets) {
+        List<BlockPos> spawned = packets.stream().filter(SpawnEntityPacket.class::isInstance).map(SpawnEntityPacket.class::cast).filter(spawn -> spawn.type() == EntityType.BLOCK_DISPLAY).map(spawn -> new BlockPos(spawn.position().blockX(), spawn.position().blockY(), spawn.position().blockZ())).toList();
+        return packets.stream().filter(BlockChangePacket.class::isInstance).map(BlockChangePacket.class::cast).filter(JumprunFixture::isCourseBlock).sorted(Comparator.comparingInt(block -> spawned.indexOf(new BlockPos(block.blockPosition().blockX(), block.blockPosition().blockY(), block.blockPosition().blockZ())))).toList();
+    }
+}

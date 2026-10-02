@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.Set;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.coordinate.BlockVec;
 import net.minestom.server.coordinate.Pos;
@@ -58,6 +59,7 @@ class JumprunStartTest {
 
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             fixture.useItem(a);
+            fixture.settle();
 
             assertTrue(fixture.module().isRunning(a), "a run begins");
             List<BlockChangePacket> shown = forA.collect();
@@ -135,6 +137,7 @@ class JumprunStartTest {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             Collector<BlockChangePacket> sent = connection.trackIncoming(BlockChangePacket.class);
             fixture.useItem(player);
+            fixture.settle();
             List<BlockChangePacket> shown = sent.collect();
 
             Collector<BlockChangePacket> resets = connection.trackIncoming(BlockChangePacket.class);
@@ -142,7 +145,7 @@ class JumprunStartTest {
 
             assertFalse(fixture.module().isRunning(player), "the second use aborts the run");
             List<BlockChangePacket> restored = resets.collect();
-            assertEquals(shown.stream().map(BlockChangePacket::blockPosition).toList(), restored.stream().map(BlockChangePacket::blockPosition).toList(), "the shown blocks are reset");
+            assertEquals(Set.copyOf(shown.stream().map(BlockChangePacket::blockPosition).toList()), Set.copyOf(restored.stream().map(BlockChangePacket::blockPosition).toList()), "the shown blocks are reset");
             assertTrue(restored.stream().allMatch(packet -> packet.blockStateId() == Block.AIR.stateId()), "the real world is air there");
         }
     }

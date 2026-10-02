@@ -30,4 +30,13 @@ class EndReasonTest {
             assertEquals(failures.contains(reason), reason.failed(), reason.name());
         }
     }
+
+    @Test
+    void theBlocksRiseAwayOnlyWhereSomeoneIsLeftToSeeIt() {
+        Set<EndReason> immediate = Set.of(EndReason.DISCONNECT, EndReason.LEFT_INSTANCE, EndReason.SHUTDOWN);
+
+        for (EndReason reason : EndReason.values()) {
+            assertEquals(!immediate.contains(reason), reason.risesAway(), reason.name());
+        }
+    }
 }
