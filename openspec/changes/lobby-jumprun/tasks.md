@@ -90,6 +90,11 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 - [x] 11.2 Test zuerst (Unit): Hauptrichtung im `Course` (Start = Aufstiegsrichtung, Glättung 0.8/0.2), kein Kandidat mit `cos < 0`, 2er-Abstand zu früheren sichtbaren Blöcken außer dem Absprungblock (Ziel und Flugbahn), Richtungs-Bonus im Ranking. Dann umsetzen (D15). Nachweis: Tests grün, 10 000-Sprünge-Invarianten grün.
 - [x] 11.3 Test zuerst (Unit + Integration): Signalton bei jeder Aufstiegslandung nur an den Läufer; Scheiter-Ton (3 absteigende Bass-Töne über 6 Ticks) nur bei Absturz und Elytra, nicht bei Abbruch, Verlassen, Disconnect oder Shutdown. Dann `RunSounds.signal`/`fail`, `EndReason.failed()`. Nachweis: `./gradlew build` grün, danach erneuter lokaler Test.
 
+## 12. Bugfix: Reset trotz Landung, Portale meiden
+
+- [ ] 12.1 Reproduktion zuerst (Integration mit echten Client-Paketen): Landen mit anschließendem Stillstand und mehrere Landungen hintereinander auf absteigendem Kurs führen nicht zum Absturz-Ende (Spec „Landen und stehen bleiben“); rot. Ursache und Fix in D16 eintragen, beheben; grün.
+- [ ] 12.2 Test zuerst (Unit): Kein Ziel und keine Flugbahn in einem Portal aus `LobbyPortals` oder näher als 3 Blöcke daran (Spec „Portal in der Nähe“). Dann umsetzen. Nachweis: `./gradlew build` grün, erneuter lokaler Test.
+
 ## 6. Pull Request
 
 - [ ] 6.1 Pull Request vom Integrationszweig `feat/jumprun` auf `main` unter dem Titel `feat(jumprun): add a random single-player jump and run to the lobby` öffnen (Titel und Beschreibung Englisch), mit Smoke-Test-Ergebnis und dem Hinweis auf die Elytra-Abwägung. Nachweis: PR-URL, CI grün.

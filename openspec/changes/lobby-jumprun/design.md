@@ -198,6 +198,11 @@ Fix: Das Neusenden hängt jetzt an `PlayerPacketEvent` (`ClientPlayerActionPacke
   - Abbruch über das Item → keiner.
 - **SOLID:** OCP (Schwelle als Eigenschaft von `Surface`), SRP (`RunSounds`).
 
+### D16 Sichere Landungserkennung und Abstand zu Portalen (Bugfix nach fünftem lokalen Test)
+
+- **Fehlerbild:** Spieler wurden zurückgesetzt, obwohl sie gelandet waren. Ursache und Fix trägt die Umsetzung hier nach (Kandidaten: Landung wird nur bei `PlayerMoveEvent` mit `isOnGround` erkannt, ein reines Boden-Status-Paket ohne Bewegung löst kein Move-Event aus; bleiben zwei Landungen hintereinander unerkannt, fällt der Spieler auf absteigenden Kursen unter die Schwelle des zuletzt erkannten Blocks).
+- **Portale:** Der Kurs meidet die Portale aus `LobbyPortals` (`core`) samt 3 Blöcken Rand, für Ziel und Flugbahn. Lokal hat ein Lauf mehrfach das ElytraRace-Portal ausgelöst. In Produktion hätte das den Läufer weggeschickt.
+
 ## Risks / Trade-offs
 
 - **Elytra durch Leertaste in der Luft:** Im Spiel startet ein erneuter Druck auf die Leertaste in der Luft das Gleiten. Spieler, die beim Springen hektisch drücken, beenden ihren Lauf versehentlich. → Bewusst so entschieden (Elytra-Gleiten = Ende). Bei der Abnahme wird geprüft, wie oft das passiert. Falls nötig, gibt es einen Folge-Change, der statt Laufende das Gleiten nur unterbindet.

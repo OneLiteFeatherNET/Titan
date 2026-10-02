@@ -99,6 +99,10 @@ Während eines Laufs MUSS der Spieler genau den Block sehen, auf dem er zuletzt 
 ### Requirement: Fortschritt durch Landen
 Ein Sprung MUSS als geschafft gelten, sobald der Spieler auf einem der vor ihm liegenden Blöcke seines Laufs steht. Landet er direkt auf dem übernächsten Block, MÜSSEN beide Sprünge als geschafft gelten.
 
+#### Scenario: Landen und stehen bleiben
+- **WHEN** der Spieler auf dem nächsten Block landet und danach still stehen bleibt
+- **THEN** zählt der Sprung, und der Lauf endet nicht durch einen Absturz
+
 #### Scenario: Einen Block überspringen
 - **WHEN** der Spieler vom aktuellen Block direkt auf den übernächsten springt
 - **THEN** zählen beide Sprünge, und das Sichtfenster rückt um zwei Blöcke vor
@@ -142,7 +146,7 @@ Nach der Aufstiegsphase MUSS die Schwierigkeit jedes neuen Sprungs aus einer fes
 - **THEN** überschreitet kein Sprung die Grenzen für Lücke und Aufstieg, auch nicht von einem Zaun oder einer Stufe aus
 
 ### Requirement: Sprünge nur, wo Platz ist
-Ein neuer Block nach der Aufstiegsphase DARF NUR an einer Stelle entstehen, die waagrecht mindestens 16 Blöcke vom Lobby-Spawn entfernt ist, unter der in der echten Welt mindestens 6 Blöcke Luft sind und an der in der echten Welt Luft ist, über deren Oberkante zwei Blöcke Kopffreiheit sind, deren Flugbahn vom vorigen Block aus frei ist, die keinen sichtbaren Block des eigenen Laufs überschneidet und die innerhalb der Grenzen der Lobby-Welt liegt. Ein neuer Block DARF NUR gewählt werden, wenn von ihm aus mindestens ein weiterer gültiger Sprung möglich ist. Unter den gültigen Stellen MUSS die Lobby solche mit mehr Luft darunter, vor allem in der Senkrechten, und drumherum bevorzugen, ohne dass dadurch die Schwierigkeit nach dem Score verloren geht. Findet die Lobby trotzdem keinen gültigen nächsten Block, MUSS der Lauf mit dem erreichten Score enden.
+Ein neuer Block nach der Aufstiegsphase DARF NUR an einer Stelle entstehen, die waagrecht mindestens 16 Blöcke vom Lobby-Spawn entfernt ist, unter der in der echten Welt mindestens 6 Blöcke Luft sind und an der in der echten Welt Luft ist, über deren Oberkante zwei Blöcke Kopffreiheit sind, deren Flugbahn vom vorigen Block aus frei ist, die keinen sichtbaren Block des eigenen Laufs überschneidet und die innerhalb der Grenzen der Lobby-Welt liegt. Ein neuer Block und die Flugbahn dorthin DÜRFEN NICHT in einem Lobby-Portal oder näher als 3 Blöcke an einem liegen, damit ein Läufer nie versehentlich auf einen anderen Server geschickt wird. Ein neuer Block DARF NUR gewählt werden, wenn von ihm aus mindestens ein weiterer gültiger Sprung möglich ist. Unter den gültigen Stellen MUSS die Lobby solche mit mehr Luft darunter, vor allem in der Senkrechten, und drumherum bevorzugen, ohne dass dadurch die Schwierigkeit nach dem Score verloren geht. Findet die Lobby trotzdem keinen gültigen nächsten Block, MUSS der Lauf mit dem erreichten Score enden.
 
 #### Scenario: Nicht über Wegen
 - **WHEN** eine Stelle direkt über einem Weg liegt, sodass unter ihr weniger als 6 Blöcke Luft sind
@@ -155,6 +159,10 @@ Ein neuer Block nach der Aufstiegsphase DARF NUR an einer Stelle entstehen, die 
 #### Scenario: Ins Leere bevorzugt
 - **WHEN** zwei gleich schwere Stellen möglich sind, eine über offenem Raum und eine dicht neben einem Gebäude
 - **THEN** wählt die Lobby die Stelle über offenem Raum
+
+#### Scenario: Portal in der Nähe
+- **WHEN** in Laufrichtung ein Lobby-Portal liegt
+- **THEN** führt kein Block und keine Flugbahn in das Portal oder näher als 3 Blöcke daran
 
 #### Scenario: Wand im Weg
 - **WHEN** in Laufrichtung eine Wand der Lobby steht
