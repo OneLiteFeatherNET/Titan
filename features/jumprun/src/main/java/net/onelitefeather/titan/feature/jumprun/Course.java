@@ -16,6 +16,7 @@
 package net.onelitefeather.titan.feature.jumprun;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.random.RandomGenerator;
@@ -55,15 +56,16 @@ final class Course {
     private final Pos startPoint;
     private final CourseGenerator generator;
     private final List<CourseBlock> blocks;
-    private Phase nextPhase;
+    /** Entry {@code i} is the phase for the block after block {@code i}. */
+    private final List<Phase> phases;
     private int ascentJumps;
     private int current;
 
-    private Course(Pos startPoint, CourseGenerator generator, List<CourseBlock> blocks, Phase nextPhase) {
+    private Course(Pos startPoint, CourseGenerator generator, List<CourseBlock> blocks, List<Phase> phases) {
         this.startPoint = startPoint;
         this.generator = generator;
         this.blocks = blocks;
-        this.nextPhase = nextPhase;
+        this.phases = phases;
     }
 
     /**
@@ -91,7 +93,7 @@ final class Course {
     private static Optional<Course> start(Pos startPoint, BlockPos startBlock, Heading heading, SpawnZone spawn, SpaceProbe probe, RandomGenerator random, Palettes palettes, PortalClearance portals, Steering steering, Mode mode) {
         CourseGenerator generator = new CourseGenerator(probe, spawn, random, palettes, portals, steering);
         List<CourseBlock> blocks = new ArrayList<>(List.of(new CourseBlock(startBlock, Surface.FULL, START_MATERIAL)));
-        Course course = new Course(startPoint, generator, blocks, Phase.start(heading, mode));
+        Course course = new Course(startPoint, generator, blocks, new ArrayList<>(List.of(Phase.start(heading, mode))));
         boolean fits = course.generateAscent() && course.generateThrough(course.blocks.size());
         return fits ? Optional.of(course) : Optional.empty();
     }
@@ -103,13 +105,20 @@ final class Course {
         private static final Advance NONE = new Advance(0, 0, List.of(), List.of(), false);
     }
 
+    /**
+     * The blocks ahead that a reroll took away and the ones that replace them, as the player sees
+     * them.
+     */
+    record Reroll(List<CourseBlock> removed, List<CourseBlock> added) {
+    }
+
     Pos startPoint() {
         return startPoint;
     }
 
     /** The main heading: where the course leads overall, bent a little by every block made. */
     Heading heading() {
-        return nextPhase.heading();
+        return phases.getLast().heading();
     }
 
     CourseBlock current() {
@@ -176,6 +185,60 @@ final class Course {
         return new Advance(jumps, score() - scoreBefore, removed, added, exhausted);
     }
 
+    /**
+     * Makes the blocks after the current one anew, from the same phase: same rules, score, main
+     * heading and steering, and as far as the course reached before. Empty, and nothing changed,
+     * when there is nothing ahead or no new block fits.
+     */
+    Optional<Reroll> rerollAhead() {
+        int last = blocks.size() - 1;
+        List<CourseBlock> removed = List.copyOf(blocks.subList(current + 1, windowEnd() + 1));
+        if (removed.isEmpty()) {
+            return Optional.empty();
+        }
+        List<CourseBlock> keptBlocks = List.copyOf(blocks.subList(current + 1, blocks.size()));
+        List<Phase> keptPhases = List.copyOf(phases.subList(current + 1, phases.size()));
+        int keptAscentJumps = ascentJumps;
+        dropAfterCurrent();
+        if (generateThrough(last)) {
+            return Optional.of(new Reroll(removed, List.copyOf(blocks.subList(current + 1, windowEnd() + 1))));
+        }
+        dropAfterCurrent();
+        blocks.addAll(keptBlocks);
+        phases.addAll(keptPhases);
+        ascentJumps = keptAscentJumps;
+        return Optional.empty();
+    }
+
+    private void dropAfterCurrent() {
+        blocks.subList(current + 1, blocks.size()).clear();
+        phases.subList(current + 1, phases.size()).clear();
+    }
+
+    /**
+     * Draws another material for each of the given blocks, keeping place and shape. The start block
+     * is real and keeps its material.
+     *
+     * @return the blocks with their new material
+     */
+    List<CourseBlock> recolor(Collection<CourseBlock> chosen) {
+        List<CourseBlock> recolored = new ArrayList<>();
+        for (CourseBlock block : chosen) {
+            int index = blocks.indexOf(block);
+            if (index > 0) {
+                CourseBlock redrawn = generator.redrawn(block);
+                blocks.set(index, redrawn);
+                recolored.add(redrawn);
+            }
+        }
+        return recolored;
+    }
+
+    /** Whether the feet stand on the current block, edge included. */
+    boolean standsOnCurrent(Point feet) {
+        return isStandingOn(current(), feet);
+    }
+
     /** The furthest of the blocks ahead the feet stand on, or -1. */
     private int landedIndex(Point feet) {
         for (int index = blocks.size() - 1; index > current; index--) {
@@ -210,12 +273,11 @@ final class Course {
 
     /** Makes the ascent blocks; false when the ascent does not reach the open in time. */
     private boolean generateAscent() {
-        while (nextPhase instanceof Phase.Ascent) {
+        while (phases.getLast() instanceof Phase.Ascent) {
             if (!generateNext()) {
                 return false;
             }
         }
-        ascentJumps = blocks.size() - 1;
         return true;
     }
 
@@ -230,10 +292,15 @@ final class Course {
     }
 
     private boolean generateNext() {
-        Optional<CourseBlock> next = generator.next(blocks, nextPhase);
+        Phase phase = phases.getLast();
+        Optional<CourseBlock> next = generator.next(blocks, phase);
         next.ifPresent(block -> {
             blocks.add(block);
-            nextPhase = generator.after(blocks, nextPhase);
+            Phase after = generator.after(blocks, phase);
+            phases.add(after);
+            if (phase instanceof Phase.Ascent && after instanceof Phase.Scored) {
+                ascentJumps = blocks.size() - 1;
+            }
         });
         return next.isPresent();
     }

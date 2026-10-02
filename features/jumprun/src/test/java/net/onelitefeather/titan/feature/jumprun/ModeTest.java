@@ -17,9 +17,16 @@ package net.onelitefeather.titan.feature.jumprun;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.junit.jupiter.api.Test;
 
@@ -30,10 +37,58 @@ class ModeTest {
     }
 
     @Test
-    void theModesCycleFromEasyThroughMediumAndHardBackToEasy() {
+    void theModesCycleThroughAllFiveInTheOrderOfTheEnumAndBackToEasy() {
+        assertEquals(List.of(Mode.EASY, Mode.MEDIUM, Mode.HARD, Mode.RAINBOW, Mode.ULTRA), List.of(Mode.values()));
         assertEquals(Mode.MEDIUM, Mode.EASY.next());
         assertEquals(Mode.HARD, Mode.MEDIUM.next());
-        assertEquals(Mode.EASY, Mode.HARD.next());
+        assertEquals(Mode.RAINBOW, Mode.HARD.next());
+        assertEquals(Mode.ULTRA, Mode.RAINBOW.next());
+        assertEquals(Mode.EASY, Mode.ULTRA.next());
+    }
+
+    private static Set<TextColor> coloursOf(Component component) {
+        Set<TextColor> colours = new HashSet<>();
+        if (component.color() != null) {
+            colours.add(component.color());
+        }
+        component.children().forEach(child -> colours.addAll(coloursOf(child)));
+        return colours;
+    }
+
+    @Test
+    void rainbowGeneratesLikeMedium() {
+        assertSameGeneration(Mode.MEDIUM, Mode.RAINBOW);
+    }
+
+    @Test
+    void ultraGeneratesLikeHard() {
+        assertSameGeneration(Mode.HARD, Mode.ULTRA);
+    }
+
+    private static void assertSameGeneration(Mode expected, Mode actual) {
+        assertEquals(List.of(expected.scale(), expected.maxGap(), expected.maxGapAscent(), expected.ascentWeight()), List.of(actual.scale(), actual.maxGap(), actual.maxGapAscent(), actual.ascentWeight()), "difficulty parameters");
+        for (Surface surface : Surface.values()) {
+            assertEquals(expected.minScore(surface), actual.minScore(surface), "unlock score of " + surface);
+        }
+    }
+
+    @Test
+    void onlyRainbowRerollsTheMaterialAndOnlyUltraTheCourse() {
+        assertEquals(List.of(Mode.Reroll.NONE, Mode.Reroll.NONE, Mode.Reroll.NONE, Mode.Reroll.MATERIAL, Mode.Reroll.COURSE), Arrays.stream(Mode.values()).map(Mode::reroll).toList());
+    }
+
+    @Test
+    void onlyUltraShowsNoOutline() {
+        assertEquals(List.of(true, true, true, true, false), Arrays.stream(Mode.values()).map(Mode::outlined).toList());
+    }
+
+    @Test
+    void rainbowIsNamedInRainbowColoursAndUltraInBoldDarkRed() {
+        assertEquals("Rainbow", plain(Mode.RAINBOW));
+        assertTrue(coloursOf(Mode.RAINBOW.label()).size() > 1, "more than one colour over the letters");
+        assertEquals(NamedTextColor.DARK_RED, Mode.ULTRA.label().color());
+        assertEquals(TextDecoration.State.TRUE, Mode.ULTRA.label().decoration(TextDecoration.BOLD));
+        assertEquals("Ultra", plain(Mode.ULTRA));
     }
 
     @Test

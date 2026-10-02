@@ -188,4 +188,40 @@ class PalettesTest {
     void aPaletteRejectsAWeightBelowOne() {
         assertThrows(IllegalArgumentException.class, () -> Palette.of(List.of(new Palette.Weighted(Block.LIME_WOOL, 0))), "weight 0");
     }
+
+    @Test
+    void drawingAnotherMaterialNeverReturnsTheExcludedOne() {
+        Palette palette = Palette.of(List.of(new Palette.Weighted(Block.RED_CONCRETE, 1), new Palette.Weighted(Block.BLUE_CONCRETE, 2), new Palette.Weighted(Block.LIME_WOOL, 1)));
+        RandomGenerator random = seeded(1L);
+
+        Set<Block> drawn = new HashSet<>();
+        for (int i = 0; i < DRAWS; i++) {
+            drawn.add(palette.drawOther(Block.BLUE_CONCRETE, random));
+        }
+
+        assertEquals(Set.of(Block.RED_CONCRETE, Block.LIME_WOOL), drawn, "every other entry, never the excluded one");
+    }
+
+    @Test
+    void drawingAnotherMaterialKeepsTheWeightsOfTheRest() {
+        Palette palette = Palette.of(List.of(new Palette.Weighted(Block.RED_CONCRETE, 1), new Palette.Weighted(Block.BLUE_CONCRETE, 3), new Palette.Weighted(Block.LIME_WOOL, 1)));
+        RandomGenerator random = seeded(2L);
+
+        int heavy = 0;
+        for (int i = 0; i < DRAWS; i++) {
+            if (palette.drawOther(Block.RED_CONCRETE, random) == Block.BLUE_CONCRETE) {
+                heavy++;
+            }
+        }
+
+        double share = (double) heavy / DRAWS;
+        assertTrue(share >= 0.70 && share <= 0.80, "the weight 3 entry has a share of " + share + " among the others, expected 0.70 to 0.80");
+    }
+
+    @Test
+    void aSingleEntryPaletteDrawsItsOnlyMaterialEvenWhenExcluded() {
+        Palette palette = Palette.of(List.of(new Palette.Weighted(Block.LIME_WOOL, 5)));
+
+        assertEquals(Block.LIME_WOOL, palette.drawOther(Block.LIME_WOOL, seeded(1L)));
+    }
 }

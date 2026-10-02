@@ -65,4 +65,30 @@ final class Palette {
         // The first running sum above the pick owns it; a hit on a sum belongs to the next entry.
         return blocks.get(found >= 0 ? found + 1 : -found - 1);
     }
+
+    /**
+     * A material other than {@code excluded}, weighted like {@link #draw}; the only one a
+     * single-entry palette has is returned as it is.
+     */
+    Block drawOther(Block excluded, RandomGenerator random) {
+        int skipped = blocks.indexOf(excluded);
+        if (skipped < 0 || blocks.size() == 1) {
+            return draw(random);
+        }
+        long pick = random.nextLong(cumulative[cumulative.length - 1] - weightAt(skipped));
+        long running = 0;
+        for (int i = 0; i < blocks.size(); i++) {
+            if (i != skipped) {
+                running += weightAt(i);
+                if (pick < running) {
+                    return blocks.get(i);
+                }
+            }
+        }
+        throw new IllegalStateException("pick " + pick + " is beyond the weights");
+    }
+
+    private long weightAt(int index) {
+        return cumulative[index] - (index == 0 ? 0 : cumulative[index - 1]);
+    }
 }

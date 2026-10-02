@@ -96,6 +96,11 @@ final class CourseGenerator {
         return new Search().after(course.get(course.size() - 2), course.getLast(), phase);
     }
 
+    /** The block at the same place with the same shape and another material of the palette. */
+    CourseBlock redrawn(CourseBlock block) {
+        return new CourseBlock(block.pos(), block.surface(), palettes.of(block.surface()).drawOther(block.material(), random));
+    }
+
     /** The material is drawn once the position is settled, so it cannot steer the choice. */
     private CourseBlock withDrawnMaterial(Spot spot) {
         return spot.withMaterial(palettes.draw(spot.surface(), random));

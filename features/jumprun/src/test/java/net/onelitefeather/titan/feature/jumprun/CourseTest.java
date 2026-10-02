@@ -375,6 +375,108 @@ class CourseTest {
         assertEquals(1, course.score(), "one ascent jump, one scored jump");
     }
 
+    // --- reroll -----------------------------------------------------------------------------------
+
+    private static Course scoredCourse(FakeSpaceProbe world) {
+        Course course = startIn(world, 5L);
+        landOnNext(course, Phase.MIN_ASCENT_JUMPS + 4);
+        return course;
+    }
+
+    private static List<CourseBlock> aheadOf(Course course) {
+        List<CourseBlock> window = course.window();
+        return window.subList(window.indexOf(course.current()) + 1, window.size());
+    }
+
+    @Test
+    void aRerollMakesNewBlocksAheadAndKeepsTheCurrentAndTheOnesBehind() {
+        Course course = scoredCourse(new FakeSpaceProbe());
+        List<CourseBlock> before = course.window();
+        List<CourseBlock> oldAhead = List.copyOf(aheadOf(course));
+        int score = course.score();
+
+        Course.Reroll reroll = course.rerollAhead().orElseThrow();
+
+        assertEquals(oldAhead, reroll.removed(), "the old blocks ahead are reported as removed");
+        assertEquals(aheadOf(course), reroll.added(), "the new blocks ahead are reported as added");
+        assertNotEquals(oldAhead, reroll.added(), "other blocks, not the same ones again");
+        assertEquals(before.subList(0, before.size() - oldAhead.size()), course.window().subList(0, before.size() - oldAhead.size()), "current and behind stay");
+        assertEquals(score, course.score(), "the score stays");
+        assertEquals(2, reroll.added().size(), "two ahead again");
+    }
+
+    @Test
+    void theNewBlockAfterARerollIsAJumpFromTheCurrentBlock() {
+        Course course = scoredCourse(new FakeSpaceProbe());
+
+        course.rerollAhead().orElseThrow();
+
+        assertTrue(JumpRules.isReachable(new Jump(course.current(), ahead(course, 1)), Mode.MEDIUM), "reachable from the block the runner stands on");
+    }
+
+    @Test
+    void theCourseGoesOnAfterARerollFromTheNewBlocks() {
+        Course course = scoredCourse(new FakeSpaceProbe());
+        course.rerollAhead().orElseThrow();
+        int score = course.score();
+
+        landOnNext(course, 3);
+
+        assertEquals(score + 3, course.score(), "the new blocks can be landed on and score");
+    }
+
+    @Test
+    void aRerollInTheAscentKeepsTheAscentFromScoring() {
+        Course course = startIn(new FakeSpaceProbe(), 5L);
+        landOnNext(course, 2);
+
+        course.rerollAhead().orElseThrow();
+        landOnNext(course, 2);
+
+        assertEquals(0, course.score(), "still in the ascent, which never scores");
+    }
+
+    @Test
+    void aRerollThatFindsNoBlockChangesNothing() {
+        FakeSpaceProbe world = new FakeSpaceProbe();
+        Course course = scoredCourse(world);
+        List<CourseBlock> before = course.window();
+        world.occupyBox(-50, course.current().pos().y() - 10, -50, 50, 100, 50);
+
+        Optional<Course.Reroll> reroll = course.rerollAhead();
+
+        assertTrue(reroll.isEmpty(), "nothing fits");
+        assertEquals(before, course.window(), "the old blocks stay");
+    }
+
+    @Test
+    void recolouringKeepsPlaceAndShapeAndChangesTheMaterial() {
+        Course course = scoredCourse(new FakeSpaceProbe());
+        List<CourseBlock> chosen = List.copyOf(aheadOf(course));
+
+        List<CourseBlock> recolored = course.recolor(chosen);
+
+        assertEquals(chosen.size(), recolored.size());
+        for (int i = 0; i < chosen.size(); i++) {
+            assertEquals(chosen.get(i).pos(), recolored.get(i).pos(), "same place");
+            assertEquals(chosen.get(i).surface(), recolored.get(i).surface(), "same shape");
+            assertNotEquals(chosen.get(i).material(), recolored.get(i).material(), "another material");
+            assertTrue(TestBlocks.shipped().of(chosen.get(i).surface()).blocks().contains(recolored.get(i).material()), "from the palette of the shape");
+        }
+        assertEquals(recolored, aheadOf(course), "the course holds the new materials");
+    }
+
+    @Test
+    void theStartBlockIsNeverRecoloured() {
+        Course course = start();
+        CourseBlock startBlock = course.current();
+
+        List<CourseBlock> recolored = course.recolor(List.of(startBlock));
+
+        assertTrue(recolored.isEmpty(), "the start block is real");
+        assertEquals(startBlock, course.current());
+    }
+
     // --- falling ----------------------------------------------------------------------------------
 
     @Test

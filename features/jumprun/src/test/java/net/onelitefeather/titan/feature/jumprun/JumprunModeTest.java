@@ -80,13 +80,17 @@ class JumprunModeTest {
     }
 
     @Test
-    void theModesCycleBackToEasyAndMedium(Env env) {
+    void theFiveModesCycleBackToEasyAndMedium(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             Player player = standingPlayer(env, JumprunFixture.loadedInstance(env));
 
             sneakUse(fixture, player);
             sneakUse(fixture, player);
-            assertEquals(Mode.EASY, fixture.module().modeOf(player), "after hard comes easy");
+            assertEquals(Mode.RAINBOW, fixture.module().modeOf(player), "after hard comes rainbow");
+            sneakUse(fixture, player);
+            assertEquals(Mode.ULTRA, fixture.module().modeOf(player), "after rainbow comes ultra");
+            sneakUse(fixture, player);
+            assertEquals(Mode.EASY, fixture.module().modeOf(player), "after ultra comes easy");
             sneakUse(fixture, player);
 
             assertEquals(Mode.MEDIUM, fixture.module().modeOf(player), "after easy comes medium");
@@ -149,8 +153,9 @@ class JumprunModeTest {
         Player player = connection.connect(instance, StartedRun.STAND);
         player.refreshOnGround(true);
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            sneakUse(fixture, player);
-            sneakUse(fixture, player);
+            for (int clicks = 0; clicks < 4; clicks++) {
+                sneakUse(fixture, player);
+            }
             fixture.useItem(player);
             Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);
 
