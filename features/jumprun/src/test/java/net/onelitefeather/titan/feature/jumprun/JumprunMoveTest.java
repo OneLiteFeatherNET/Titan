@@ -72,6 +72,7 @@ class JumprunMoveTest {
             Collector<BlockChangePacket> sent = run.connection().trackIncoming(BlockChangePacket.class);
 
             fixture.landOn(run.player(), run.ahead().removeFirst());
+            fixture.settle();
 
             assertEquals(2, sent.collect().size(), "both jumps count, so the window moves on by two");
         }

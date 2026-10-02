@@ -165,7 +165,6 @@ final class JumprunModule {
         Run run = planned.get();
         synchronized (run) {
             runs.add(run);
-            fakeBlocks.show(player, run.fakeWindow());
             run.spectators().show(run.fakeWindow());
             run.label().show(run.score());
         }
@@ -304,7 +303,7 @@ final class JumprunModule {
     private void showIfRegistered(Run run, UnaryOperator<List<CourseBlock>> part) {
         synchronized (run) {
             if (runs.get(run.player().getUuid()) == run) {
-                fakeBlocks.show(run.player(), part.apply(run.fakeWindow()));
+                fakeBlocks.show(run.player(), part.apply(run.solidWindow()));
             }
         }
     }
@@ -335,7 +334,6 @@ final class JumprunModule {
         List<CourseBlock> removed = run.fake(advance.removed());
         List<CourseBlock> added = run.fake(advance.added());
         fakeBlocks.reset(player, removed);
-        fakeBlocks.show(player, added);
         run.spectators().hide(removed);
         run.spectators().show(added);
         run.label().show(run.score());
@@ -366,7 +364,11 @@ final class JumprunModule {
                 return;
             }
             score = run.score();
-            run.spectators().clear();
+            if (reason.risesAway()) {
+                run.spectators().riseAll();
+            } else {
+                run.spectators().clear();
+            }
             run.label().remove();
             if (reason.restoresBlocks()) {
                 fakeBlocks.reset(player, run.fakeWindow());

@@ -122,21 +122,18 @@ class JumprunSpectatorsTest {
     }
 
     @Test
-    void theBystanderIsSentTheSpawnOfEveryDisplayAndTheRunnerNone(Env env) {
+    void theBystanderIsSentTheSpawnOfEveryDisplay(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             Instance instance = JumprunFixture.loadedInstance(env);
             TestConnection bystander = env.createConnection();
             bystander.connect(instance, BYSTANDER_STAND);
             Collector<SpawnEntityPacket> seenByBystander = bystander.trackIncoming(SpawnEntityPacket.class);
-            TestConnection runner = env.createConnection();
-            Player player = runner.connect(instance, StartedRun.STAND);
+            Player player = env.createConnection().connect(instance, StartedRun.STAND);
             player.refreshOnGround(true);
-            Collector<SpawnEntityPacket> seenByRunner = runner.trackIncoming(SpawnEntityPacket.class);
 
             fixture.useItem(player);
 
             assertEquals(2, displaysIn(seenByBystander.collect()), "two displays are spawned for the bystander");
-            assertEquals(0, displaysIn(seenByRunner.collect()), "the runner is told of no display");
         }
     }
 
@@ -188,6 +185,7 @@ class JumprunSpectatorsTest {
             scene.landOnNext(2);
 
             fixture.useItem(scene.run().player());
+            fixture.settle();
 
             assertTrue(scene.displays().isEmpty(), "no display survives the end");
         }
@@ -199,6 +197,7 @@ class JumprunSpectatorsTest {
             Scene scene = Scene.start(env, fixture);
 
             fixture.move(scene.run().player(), new Pos(0.5, 5.0, 0.5), false);
+            fixture.settle();
 
             assertTrue(scene.displays().isEmpty(), "no display survives the fall");
         }
@@ -210,6 +209,7 @@ class JumprunSpectatorsTest {
             Scene scene = Scene.start(env, fixture);
 
             env.process().eventHandler().call(new PlayerStartFlyingWithElytraEvent(scene.run().player()));
+            fixture.settle();
 
             assertTrue(scene.displays().isEmpty(), "no display survives the glide");
         }

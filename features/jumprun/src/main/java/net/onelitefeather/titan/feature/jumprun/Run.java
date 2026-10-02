@@ -45,7 +45,7 @@ final class Run {
         this.player = player;
         this.course = course;
         this.startBlock = startBlock;
-        this.spectators = new Spectators(player);
+        this.spectators = new Spectators(player, this, new FakeBlocks());
         this.label = new ScoreLabel(player);
     }
 
@@ -108,6 +108,11 @@ final class Run {
     /** The blocks of the visible window that exist only on the player's screen. */
     synchronized List<CourseBlock> fakeWindow() {
         return fake(course.window());
+    }
+
+    /** The blocks of the window that have finished falling, so only those may be sent again. */
+    synchronized List<CourseBlock> solidWindow() {
+        return spectators.landed(fakeWindow());
     }
 
     List<CourseBlock> fake(Collection<CourseBlock> blocks) {

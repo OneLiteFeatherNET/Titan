@@ -113,6 +113,16 @@ final class JumprunFixture implements AutoCloseable {
         return messages;
     }
 
+    /**
+     * Ticks long enough for every block that was shown to have landed and every removed one to be
+     * gone.
+     */
+    void settle() {
+        for (int tick = 0; tick < AnimatedBlock.ANIMATION_TICKS + 2; tick++) {
+            env.tick();
+        }
+    }
+
     /** Uses the lobby item the way the hotbar's dispatcher would. */
     void useItem(Player player) {
         item.onUse().handle(player, new PlayerUseItemEvent(player, PlayerHand.MAIN, item.itemStack(), 0));

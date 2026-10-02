@@ -16,6 +16,7 @@
 package net.onelitefeather.titan.feature.jumprun;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Entity;
@@ -25,7 +26,8 @@ import net.minestom.server.entity.metadata.EntityMeta;
 import net.minestom.server.instance.Instance;
 
 /**
- * A display entity that everyone but the runner sees, without gravity and physics so it stays
+ * A display entity that everyone but the runner sees (until told otherwise), without gravity and
+ * physics so it stays
  * where it is put.
  *
  * <p>Minestom may still be loading the chunk when {@link #remove()} is called, and an entity
@@ -40,20 +42,33 @@ final class HiddenDisplay {
 
     private final Entity entity;
     private final CompletableFuture<Void> placed;
+    private final AtomicBoolean visibleToRunner;
 
-    private HiddenDisplay(Entity entity, CompletableFuture<Void> placed) {
+    private HiddenDisplay(Entity entity, CompletableFuture<Void> placed, AtomicBoolean visibleToRunner) {
         this.entity = entity;
         this.placed = placed;
+        this.visibleToRunner = visibleToRunner;
     }
 
     static <M extends EntityMeta> HiddenDisplay spawn(Player runner, EntityType type, Class<M> metaType, Consumer<M> meta, Instance instance, Pos position) {
+        return spawn(runner, type, metaType, meta, instance, position, false);
+    }
+
+    static <M extends EntityMeta> HiddenDisplay spawn(Player runner, EntityType type, Class<M> metaType, Consumer<M> meta, Instance instance, Pos position, boolean visibleToRunner) {
+        AtomicBoolean runnerSees = new AtomicBoolean(visibleToRunner);
         Entity display = new Entity(type);
         display.editEntityMeta(metaType, meta);
         display.setNoGravity(true);
         display.setHasPhysics(false);
-        display.updateViewableRule(viewer -> viewer != runner);
+        display.updateViewableRule(viewer -> viewer != runner || runnerSees.get());
         CompletableFuture<Void> placed = display.setInstance(instance, position);
-        return new HiddenDisplay(display, placed);
+        return new HiddenDisplay(display, placed, runnerSees);
+    }
+
+    /** Lets the runner see the display too, or not; takes effect for the viewers right away. */
+    void showToRunner(boolean visible) {
+        visibleToRunner.set(visible);
+        entity.updateViewableRule();
     }
 
     Entity entity() {
