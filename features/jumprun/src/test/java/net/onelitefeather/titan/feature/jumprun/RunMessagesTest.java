@@ -56,17 +56,17 @@ class RunMessagesTest {
 
     @Test
     void germanLocaleRendersGermanEndMessageWithScore() {
-        assertEquals("Jump & Run beendet. Punkte: 9", plain(messages.endScore(Locale.GERMANY, 9)));
+        assertEquals("Jump & Run » Lauf beendet. Punkte: 9", plain(messages.endScore(Locale.GERMANY, 9)));
     }
 
     @Test
     void englishLocaleRendersEnglishEndMessageWithScore() {
-        assertEquals("Jump & Run over. Score: 9", plain(messages.endScore(Locale.US, 9)));
+        assertEquals("Jump & Run » Run over. Score: 9", plain(messages.endScore(Locale.US, 9)));
     }
 
     @Test
     void unknownLocaleFallsBackToEnglish() {
-        assertEquals("Jump & Run over. Score: 9", plain(messages.endScore(Locale.JAPAN, 9)));
+        assertEquals("Jump & Run » Run over. Score: 9", plain(messages.endScore(Locale.JAPAN, 9)));
     }
 
     @Test
