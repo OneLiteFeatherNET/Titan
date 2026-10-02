@@ -45,19 +45,18 @@ final class JumpRules {
 
     private boolean hasRoomAtTarget(Jump jump) {
         BlockPos target = jump.to().pos();
-        return probe.inBounds(target)
-                && probe.inBounds(target.above(MAX_Y_MARGIN))
-                && probe.isAir(target)
-                && isColumnFree(target.x(), target.z(), target.y() + 1, target.y() + jump.to().surface().headroomTop());
+        return probe.inBounds(target) && probe.inBounds(target.above(MAX_Y_MARGIN)) && probe.isAir(target) && isColumnFree(target.x(), target.z(), target.y() + 1, target.y() + jump.to().surface().headroomTop());
     }
 
-    /** The straight line between the blocks, with both side cells at each diagonal step, must be free. */
+    /**
+     * The straight line between the blocks, with both side cells at each diagonal step, must be
+     * free.
+     */
     private boolean isFlightPathFree(Jump jump) {
         double higherTop = Math.max(jump.from().topY(), jump.to().topY());
         int lowest = (int) Math.floor(higherTop);
         int highest = Surface.highestBlockReached(higherTop);
-        return cellsBetween(jump.from().pos(), jump.to().pos()).stream()
-                .allMatch(cell -> isColumnFree(cell.x(), cell.z(), lowest, highest));
+        return cellsBetween(jump.from().pos(), jump.to().pos()).stream().allMatch(cell -> isColumnFree(cell.x(), cell.z(), lowest, highest));
     }
 
     private boolean isColumnFree(int x, int z, int fromY, int toY) {

@@ -103,8 +103,6 @@ final class FakeSpaceProbe implements SpaceProbe {
 
     @Override
     public boolean inBounds(BlockPos pos) {
-        return pos.x() >= min.x() && pos.x() <= max.x()
-                && pos.y() >= min.y() && pos.y() <= max.y()
-                && pos.z() >= min.z() && pos.z() <= max.z();
+        return pos.x() >= min.x() && pos.x() <= max.x() && pos.y() >= min.y() && pos.y() <= max.y() && pos.z() >= min.z() && pos.z() <= max.z();
     }
 }

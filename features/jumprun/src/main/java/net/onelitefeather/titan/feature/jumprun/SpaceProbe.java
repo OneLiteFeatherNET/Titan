@@ -15,7 +15,10 @@
  */
 package net.onelitefeather.titan.feature.jumprun;
 
-/** What the course logic needs to know about the real world; the Minestom side adapts an instance to it. */
+/**
+ * What the course logic needs to know about the real world; the Minestom side adapts an instance to
+ * it.
+ */
 interface SpaceProbe {
 
     /** Whether the real world has nothing solid at the position. */

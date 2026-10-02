@@ -28,12 +28,13 @@ import java.util.random.RandomGenerator;
 /** Picks the next block of a course: the valid jump that best fits the wanted difficulty. */
 final class CourseGenerator {
 
-    /** Blocks a player can see at once: two behind, the current one and two ahead, plus the new one. */
+    /**
+     * Blocks a player can see at once: two behind, the current one and two ahead, plus the new one.
+     */
     private static final int OCCUPIED_SPAN = 4;
 
     private static final List<int[]> DIRECTIONS = List.of(
-            new int[] {1, 0}, new int[] {-1, 0}, new int[] {0, 1}, new int[] {0, -1},
-            new int[] {1, 1}, new int[] {1, -1}, new int[] {-1, 1}, new int[] {-1, -1});
+            new int[]{1, 0}, new int[]{-1, 0}, new int[]{0, 1}, new int[]{0, -1}, new int[]{1, 1}, new int[]{1, -1}, new int[]{-1, 1}, new int[]{-1, -1});
     private static final List<Integer> ASCENT_GAPS = List.of(1, 2);
     private static final List<Integer> SCORED_GAPS = List.of(1, 2, 3, 4);
     private static final List<Integer> ASCENT_RISES = List.of(1);
@@ -54,10 +55,7 @@ final class CourseGenerator {
     Optional<CourseBlock> next(List<CourseBlock> course, Phase phase) {
         CourseBlock from = course.getLast();
         JumpRules rules = rulesFor(course);
-        return rank(candidates(from, phase), phase, from).stream()
-                .filter(candidate -> rules.isValid(new Jump(from, candidate)))
-                .filter(candidate -> hasFollowUp(course, candidate, phase.next()))
-                .findFirst();
+        return rank(candidates(from, phase), phase, from).stream().filter(candidate -> rules.isValid(new Jump(from, candidate))).filter(candidate -> hasFollowUp(course, candidate, phase.next())).findFirst();
     }
 
     /** Dead-end check of depth one: some valid jump must leave the candidate. */
@@ -68,11 +66,13 @@ final class CourseGenerator {
         return candidates(candidate, following).stream().anyMatch(next -> rules.isValid(new Jump(candidate, next)));
     }
 
-    /** The real world plus the blocks of the course the player could see, which are not in the world. */
+    /**
+     * The real world plus the blocks of the course the player could see, which are not in the
+     * world.
+     */
     private JumpRules rulesFor(List<CourseBlock> course) {
         Set<BlockPos> window = new HashSet<>();
-        course.subList(Math.max(0, course.size() - OCCUPIED_SPAN), course.size())
-                .forEach(block -> window.add(block.pos()));
+        course.subList(Math.max(0, course.size() - OCCUPIED_SPAN), course.size()).forEach(block -> window.add(block.pos()));
         return new JumpRules(new SpaceProbe() {
             @Override
             public boolean isAir(BlockPos pos) {
@@ -123,7 +123,8 @@ final class CourseGenerator {
                 double target = Difficulty.targetCost(scored.score(), random);
                 yield sorted(shuffled, c -> Math.abs(new Jump(from, c).cost() - target));
             }
-            case Phase.Ascent ascent -> sorted(shuffled, c -> headingKey(from, c, ascent.heading()));
+            case Phase.Ascent ascent ->
+                sorted(shuffled, c -> headingKey(from, c, ascent.heading()));
         };
     }
 
@@ -142,10 +143,6 @@ final class CourseGenerator {
     private static List<CourseBlock> sorted(List<CourseBlock> blocks, ToDoubleFunction<CourseBlock> key) {
         record Keyed(CourseBlock block, double key) {
         }
-        return blocks.stream()
-                .map(block -> new Keyed(block, key.applyAsDouble(block)))
-                .sorted(Comparator.comparingDouble(Keyed::key))
-                .map(Keyed::block)
-                .toList();
+        return blocks.stream().map(block -> new Keyed(block, key.applyAsDouble(block))).sorted(Comparator.comparingDouble(Keyed::key)).map(Keyed::block).toList();
     }
 }

@@ -15,7 +15,9 @@
  */
 package net.onelitefeather.titan.feature.jumprun;
 
-/** An integer block position; Minestom's own point types hold doubles and are awkward as set keys. */
+/**
+ * An integer block position; Minestom's own point types hold doubles and are awkward as set keys.
+ */
 record BlockPos(int x, int y, int z) {
 
     BlockPos offset(int dx, int dy, int dz) {

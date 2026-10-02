@@ -23,10 +23,7 @@ import net.minestom.server.instance.block.Block;
  * jump.
  */
 enum Surface {
-    FULL(Block.STONE, 1.0, 0),
-    SLAB(Block.STONE_SLAB.withProperty("type", "bottom"), 0.5, 1),
-    FENCE(Block.OAK_FENCE, 1.5, 2),
-    PANE(Block.GLASS_PANE, 1.0, 3);
+    FULL(Block.STONE, 1.0, 0), SLAB(Block.STONE_SLAB.withProperty("type", "bottom"), 0.5, 1), FENCE(Block.OAK_FENCE, 1.5, 2), PANE(Block.GLASS_PANE, 1.0, 3);
 
     /** The player stands 1.8 blocks tall; clear space above the top is measured with this. */
     private static final double PLAYER_HEIGHT = 1.8;
@@ -54,7 +51,9 @@ enum Surface {
         return typeCost;
     }
 
-    /** Highest block offset above the block position a standing player reaches into (fence: y+3). */
+    /**
+     * Highest block offset above the block position a standing player reaches into (fence: y+3).
+     */
     int headroomTop() {
         return highestBlockReached(top);
     }

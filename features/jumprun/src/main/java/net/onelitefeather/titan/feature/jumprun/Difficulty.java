@@ -32,7 +32,10 @@ final class Difficulty {
         return 1.0 - Math.exp(-score / SCALE);
     }
 
-    /** The cost the next jump should come close to: the level scaled to the hardest jump, plus noise. */
+    /**
+     * The cost the next jump should come close to: the level scaled to the hardest jump, plus
+     * noise.
+     */
     static double targetCost(int score, RandomGenerator random) {
         double target = level(score) * Jump.MAX_COST + random.nextGaussian() * NOISE_SIGMA;
         return Math.clamp(target, 0.0, Jump.MAX_COST);

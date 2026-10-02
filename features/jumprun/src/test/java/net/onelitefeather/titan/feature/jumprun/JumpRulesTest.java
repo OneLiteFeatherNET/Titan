@@ -89,14 +89,12 @@ class JumpRulesTest {
 
     @Test
     void fullBlockOneHigherThanASlabIsUnreachable() {
-        assertFalse(validIn(new FakeSpaceProbe(), block(0, 10, 0, Surface.SLAB), block(2, 11, 0, Surface.FULL)),
-                "slab top 10.5 to full top 12.0");
+        assertFalse(validIn(new FakeSpaceProbe(), block(0, 10, 0, Surface.SLAB), block(2, 11, 0, Surface.FULL)), "slab top 10.5 to full top 12.0");
     }
 
     @Test
     void fullBlockOneHigherThanAFenceIsReachable() {
-        assertTrue(validIn(new FakeSpaceProbe(), block(0, 10, 0, Surface.FENCE), block(2, 11, 0, Surface.FULL)),
-                "fence top 11.5 to full top 12.0");
+        assertTrue(validIn(new FakeSpaceProbe(), block(0, 10, 0, Surface.FENCE), block(2, 11, 0, Surface.FULL)), "fence top 11.5 to full top 12.0");
     }
 
     @Test
@@ -146,8 +144,7 @@ class JumpRulesTest {
 
     @Test
     void floorUnderTheGapDoesNotBlockTheFlight() {
-        assertTrue(validIn(new FakeSpaceProbe().occupyBox(-5, 0, -5, 10, 9, 5),
-                ORIGIN, block(3, 10, 0, Surface.FULL)), "lobby floor below the gap is fine");
+        assertTrue(validIn(new FakeSpaceProbe().occupyBox(-5, 0, -5, 10, 9, 5), ORIGIN, block(3, 10, 0, Surface.FULL)), "lobby floor below the gap is fine");
     }
 
     @Test
@@ -158,8 +155,7 @@ class JumpRulesTest {
     @Test
     void flightBetweenTwoSlabsNeedsTheirOwnLevelFree() {
         CourseBlock slab = block(0, 10, 0, Surface.SLAB);
-        assertFalse(validIn(new FakeSpaceProbe().occupy(1, 10, 0), slab, block(2, 10, 0, Surface.SLAB)),
-                "player walks off a slab at its own level");
+        assertFalse(validIn(new FakeSpaceProbe().occupy(1, 10, 0), slab, block(2, 10, 0, Surface.SLAB)), "player walks off a slab at its own level");
     }
 
     @Test
@@ -192,8 +188,7 @@ class JumpRulesTest {
 
     @Test
     void targetBelowTheBoundsIsRejected() {
-        assertFalse(validIn(new FakeSpaceProbe(new BlockPos(-50, 10, -50), new BlockPos(50, 100, 50)), ORIGIN,
-                block(2, 9, 0, Surface.FULL)), "below the world");
+        assertFalse(validIn(new FakeSpaceProbe(new BlockPos(-50, 10, -50), new BlockPos(50, 100, 50)), ORIGIN, block(2, 9, 0, Surface.FULL)), "below the world");
     }
 
     @Test

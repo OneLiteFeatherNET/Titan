@@ -63,8 +63,7 @@ class DifficultyTest {
         for (int score = 0; score <= 500; score++) {
             for (int i = 0; i < 20; i++) {
                 double target = Difficulty.targetCost(score, random);
-                assertTrue(target >= 0.0 && target <= Jump.MAX_COST,
-                        "target " + target + " outside [0, " + Jump.MAX_COST + "] at score " + score);
+                assertTrue(target >= 0.0 && target <= Jump.MAX_COST, "target " + target + " outside [0, " + Jump.MAX_COST + "] at score " + score);
             }
         }
     }

@@ -104,10 +104,7 @@ class CourseGeneratorTest {
     void rejectsACandidateWithoutAnyFollowUpJump() {
         for (long seed = 0; seed < 20; seed++) {
             // A is the easiest candidate but nothing is reachable from it; B has a follow-up C.
-            FakeSpaceProbe world = FakeSpaceProbe.solidWorld()
-                    .carveColumn(2, 10, 0, 5).carveColumn(1, 11, 0, 2)
-                    .carveColumn(-5, 10, 0, 5)
-                    .carveColumn(-10, 10, 0, 5);
+            FakeSpaceProbe world = FakeSpaceProbe.solidWorld().carveColumn(2, 10, 0, 5).carveColumn(1, 11, 0, 2).carveColumn(-5, 10, 0, 5).carveColumn(-10, 10, 0, 5);
             for (int x = -9; x <= -1; x++) {
                 world.carveColumn(x, 11, 0, 2);
             }
@@ -147,8 +144,7 @@ class CourseGeneratorTest {
 
         for (int i = 1; i < course.size(); i++) {
             for (int back = 1; back <= 4 && back <= i; back++) {
-                assertNotEquals(course.get(i - back).pos(), course.get(i).pos(),
-                        "block " + i + " repeats the one " + back + " before it");
+                assertNotEquals(course.get(i - back).pos(), course.get(i).pos(), "block " + i + " repeats the one " + back + " before it");
             }
         }
     }
@@ -190,9 +186,7 @@ class CourseGeneratorTest {
     void theStartIsMostlyFullBlocksWithShortGaps() {
         List<Jump> jumps = thousandJumpsAtScore(0, 100L);
 
-        long easy = jumps.stream()
-                .filter(jump -> jump.to().surface() == Surface.FULL && jump.gap() <= 2)
-                .count();
+        long easy = jumps.stream().filter(jump -> jump.to().surface() == Surface.FULL && jump.gap() <= 2).count();
 
         assertTrue(easy > 800, "over 80% easy jumps at score 0, got " + easy + " of 1000");
     }
@@ -217,10 +211,7 @@ class CourseGeneratorTest {
 
     @Test
     void tenThousandJumpsOverTenSeedsNeverBreakTheLimits() {
-        FakeSpaceProbe world = new FakeSpaceProbe()
-                .occupyBox(-50, 0, -50, 50, 9, 50)
-                .occupyBox(-20, 10, 15, 20, 40, 18)
-                .occupyBox(30, 10, -50, 33, 60, 50);
+        FakeSpaceProbe world = new FakeSpaceProbe().occupyBox(-50, 0, -50, 50, 9, 50).occupyBox(-20, 10, 15, 20, 40, 18).occupyBox(30, 10, -50, 33, 60, 50);
         JumpRules rules = new JumpRules(world);
         int checked = 0;
 

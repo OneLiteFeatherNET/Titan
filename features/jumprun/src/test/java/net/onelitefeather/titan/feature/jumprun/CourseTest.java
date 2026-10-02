@@ -45,7 +45,9 @@ class CourseTest {
         return startIn(new FakeSpaceProbe(), 1L);
     }
 
-    /** The course block {@code ahead} places after the current one; the window has it at 2 + ahead. */
+    /**
+     * The course block {@code ahead} places after the current one; the window has it at 2 + ahead.
+     */
     private static CourseBlock ahead(Course course, int ahead) {
         List<CourseBlock> window = course.window();
         return window.get(window.indexOf(course.current()) + ahead);
@@ -224,8 +226,7 @@ class CourseTest {
         CourseBlock target = ahead(course, 1);
         assertEquals(surface, target.surface(), "a " + surface + " block must show up within 2000 jumps");
 
-        Course.Advance advance = course.advanceTo(target.pos().x() + 0.5, target.pos().y() + surface.top(),
-                target.pos().z() + 0.5);
+        Course.Advance advance = course.advanceTo(target.pos().x() + 0.5, target.pos().y() + surface.top(), target.pos().z() + 0.5);
 
         assertEquals(1, advance.jumps(), surface + " top");
     }
@@ -307,8 +308,7 @@ class CourseTest {
         world.seal();
 
         for (int landing = 1; landing <= 4; landing++) {
-            assertFalse(landOn(course, ahead(course, 1)).exhausted(),
-                    "the blocks made ahead of time suffice for landing " + landing);
+            assertFalse(landOn(course, ahead(course, 1)).exhausted(), "the blocks made ahead of time suffice for landing " + landing);
         }
         assertTrue(landOn(course, ahead(course, 1)).exhausted(), "no room for the next block");
     }

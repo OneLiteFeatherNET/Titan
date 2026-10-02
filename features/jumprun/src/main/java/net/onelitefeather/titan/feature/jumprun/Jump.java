@@ -30,8 +30,7 @@ record Jump(CourseBlock from, CourseBlock to) {
     private static final double ASCENT_WEIGHT = 1.0;
 
     /** Cost of the hardest allowed jump: the hardest surface over the widest flat gap. */
-    static final double MAX_COST = TYPE_WEIGHT * Arrays.stream(Surface.values()).mapToInt(Surface::typeCost).max().orElse(0)
-            + GAP_WEIGHT * (MAX_GAP - MIN_GAP);
+    static final double MAX_COST = TYPE_WEIGHT * Arrays.stream(Surface.values()).mapToInt(Surface::typeCost).max().orElse(0) + GAP_WEIGHT * (MAX_GAP - MIN_GAP);
 
     /** Air blocks between the two blocks: the horizontal Chebyshev distance minus one. */
     int gap() {
@@ -50,8 +49,6 @@ record Jump(CourseBlock from, CourseBlock to) {
     }
 
     double cost() {
-        return TYPE_WEIGHT * to.surface().typeCost()
-                + GAP_WEIGHT * (gap() - MIN_GAP)
-                + (isAscent() ? ASCENT_WEIGHT : 0.0);
+        return TYPE_WEIGHT * to.surface().typeCost() + GAP_WEIGHT * (gap() - MIN_GAP) + (isAscent() ? ASCENT_WEIGHT : 0.0);
     }
 }

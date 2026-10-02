@@ -31,7 +31,10 @@ final class Course {
     private static final int AHEAD = 2;
     private static final int FALL_DEPTH = 3;
 
-    /** A landing reported by the client is a hair off the exact top; this much is still "standing on it". */
+    /**
+     * A landing reported by the client is a hair off the exact top; this much is still "standing on
+     * it".
+     */
     private static final double LANDING_TOLERANCE = 0.05;
 
     private final Pos startPoint;
@@ -49,7 +52,8 @@ final class Course {
 
     /**
      * Starts a course at the block under the player. Makes the whole ascent and one more block up
-     * front, and returns empty when that does not fit, so nothing is shown for a run that cannot work.
+     * front, and returns empty when that does not fit, so nothing is shown for a run that cannot
+     * work.
      */
     static Optional<Course> start(Pos startPoint, BlockPos startBlock, Heading heading, SpaceProbe probe, RandomGenerator random) {
         CourseGenerator generator = new CourseGenerator(probe, random);
@@ -60,7 +64,8 @@ final class Course {
     }
 
     /** What changed in the visible window after a landing. */
-    record Advance(int jumps, List<CourseBlock> removed, List<CourseBlock> added, boolean exhausted) {
+    record Advance(int jumps, List<CourseBlock> removed, List<CourseBlock> added,
+                   boolean exhausted) {
 
         private static final Advance NONE = new Advance(0, List.of(), List.of(), false);
     }
@@ -73,7 +78,9 @@ final class Course {
         return blocks.get(current);
     }
 
-    /** Oldest first: up to two blocks behind the current one, the current one and up to two ahead. */
+    /**
+     * Oldest first: up to two blocks behind the current one, the current one and up to two ahead.
+     */
     List<CourseBlock> window() {
         return List.copyOf(blocks.subList(windowStart(), windowEnd() + 1));
     }
@@ -121,9 +128,7 @@ final class Course {
     }
 
     private static boolean isStandingOn(CourseBlock block, double x, double y, double z) {
-        return Math.floor(x) == block.pos().x()
-                && Math.floor(z) == block.pos().z()
-                && Math.abs(y - block.topY()) <= LANDING_TOLERANCE;
+        return Math.floor(x) == block.pos().x() && Math.floor(z) == block.pos().z() && Math.abs(y - block.topY()) <= LANDING_TOLERANCE;
     }
 
     private int windowStart() {
