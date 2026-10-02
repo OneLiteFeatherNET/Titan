@@ -21,6 +21,7 @@ import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -46,7 +47,6 @@ import net.minestom.server.event.player.PlayerStartFlyingWithElytraEvent;
 import net.minestom.server.network.packet.client.ClientPacket;
 import net.minestom.server.network.packet.client.play.ClientPlayerActionPacket;
 import net.minestom.server.network.packet.client.play.ClientPlayerBlockPlacementPacket;
-import net.minestom.server.timer.TaskSchedule;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.module.LobbySpawn;
 import org.slf4j.Logger;
@@ -67,6 +67,7 @@ final class JumprunModule {
     static final int EVENT_PRIORITY = 1000;
 
     static final String ID = "jumprun";
+    private static final int USE_SUPPRESSION_TICKS = 2;
     private static final String RANDOM_ALGORITHM = "L64X128MixRandom";
     private static final Logger LOGGER = LoggerFactory.getLogger(JumprunModule.class);
 
@@ -77,7 +78,9 @@ final class JumprunModule {
     private final LongSupplier seeds;
     private final RunRegistry runs = new RunRegistry();
     private final FakeBlocks fakeBlocks = new FakeBlocks();
-    private final Set<UUID> clickedRunBlock = ConcurrentHashMap.newKeySet();
+    /** Player tick until which the item is ignored after a click on a run block. */
+    private final Map<UUID, Long> suppressedUntil = new ConcurrentHashMap<>();
+    private final Set<UUID> resendPending = ConcurrentHashMap.newKeySet();
     private FeatureNode node;
 
     @Inject
@@ -136,9 +139,14 @@ final class JumprunModule {
      * the click just kept intact.
      */
     void use(Player player) {
-        if (!clickedRunBlock.contains(player.getUuid())) {
+        if (!suppressesUse(player)) {
             toggle(player);
         }
+    }
+
+    boolean suppressesUse(Player player) {
+        Long until = suppressedUntil.get(player.getUuid());
+        return until != null && player.getAliveTicks() < until;
     }
 
     private void begin(Player player) {
@@ -177,6 +185,7 @@ final class JumprunModule {
     }
 
     private void onDisconnect(PlayerDisconnectEvent event) {
+        forgetClicks(event.getPlayer());
         endRunOf(event.getPlayer(), EndReason.DISCONNECT);
     }
 
@@ -186,6 +195,7 @@ final class JumprunModule {
      */
     private void onLeaveInstance(RemoveEntityFromInstanceEvent event) {
         if (event.getEntity() instanceof Player player) {
+            forgetClicks(player);
             endRunOf(player, EndReason.LEFT_INSTANCE);
         }
     }
@@ -203,13 +213,17 @@ final class JumprunModule {
                 resendNextTickIfRunBlock(player, action.blockPosition());
             case ClientPlayerBlockPlacementPacket placement -> {
                 if (resendNextTickIfRunBlock(player, placement.blockPosition())) {
-                    clickedRunBlock.add(player.getUuid());
-                    player.scheduler().scheduleTask(() -> clickedRunBlock.remove(player.getUuid()), TaskSchedule.tick(2), TaskSchedule.stop());
+                    suppressedUntil.put(player.getUuid(), player.getAliveTicks() + USE_SUPPRESSION_TICKS);
                 }
             }
             default -> {
             }
         }
+    }
+
+    private void forgetClicks(Player player) {
+        suppressedUntil.remove(player.getUuid());
+        resendPending.remove(player.getUuid());
     }
 
     private static boolean isDigging(ClientPlayerActionPacket.Status status) {
@@ -246,7 +260,13 @@ final class JumprunModule {
         if (run == null || !run.showsFakeBlockAt(block.blockX(), block.blockY(), block.blockZ())) {
             return false;
         }
-        player.scheduler().scheduleNextTick(() -> showIfRegistered(run, window -> window));
+        // Several packets in one tick need only one resend.
+        if (resendPending.add(player.getUuid())) {
+            player.scheduler().scheduleNextTick(() -> {
+                resendPending.remove(player.getUuid());
+                showIfRegistered(run, window -> window);
+            });
+        }
         return true;
     }
 

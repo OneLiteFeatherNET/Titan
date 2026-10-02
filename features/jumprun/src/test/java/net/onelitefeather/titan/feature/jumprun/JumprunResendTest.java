@@ -25,6 +25,7 @@ import net.minestom.server.entity.PlayerHand;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.player.PlayerChunkLoadEvent;
 import net.minestom.server.instance.block.BlockFace;
+import net.minestom.server.network.packet.client.play.ClientPlayerActionPacket;
 import net.minestom.server.network.packet.client.play.ClientPlayerBlockPlacementPacket;
 import net.minestom.server.network.packet.server.ServerPacket;
 import net.minestom.server.network.packet.server.play.BlockChangePacket;
@@ -118,6 +119,22 @@ class JumprunResendTest {
             env.tick();
 
             assertTrue(sent.collect().isEmpty(), "no fake block comes back after the run is over");
+        }
+    }
+
+    @Test
+    void severalPacketsInOneTickSendTheWindowOnce(Env env) {
+        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+            StartedRun run = StartedRun.start(env, fixture);
+            Point block = run.ahead().peekFirst().blockPosition();
+            fixture.sendClientPacket(run.player(), new ClientPlayerActionPacket(ClientPlayerActionPacket.Status.STARTED_DIGGING, block, BlockFace.TOP, 1));
+            fixture.sendClientPacket(run.player(), new ClientPlayerActionPacket(ClientPlayerActionPacket.Status.FINISHED_DIGGING, block, BlockFace.TOP, 2));
+            Collector<BlockChangePacket> sent = run.connection().trackIncoming(BlockChangePacket.class);
+
+            env.tick();
+
+            long courseBlocks = sent.collect().stream().filter(JumprunFixture::isCourseBlock).count();
+            assertEquals(run.ahead().size(), courseBlocks, "one batch of the whole window, not one per packet");
         }
     }
 

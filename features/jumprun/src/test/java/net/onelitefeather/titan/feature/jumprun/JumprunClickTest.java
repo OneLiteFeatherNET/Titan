@@ -16,12 +16,15 @@
 package net.onelitefeather.titan.feature.jumprun;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import net.minestom.server.coordinate.Point;
+import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.GameMode;
 import net.minestom.server.entity.PlayerHand;
+import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.instance.block.BlockFace;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.network.packet.client.play.ClientPlayerActionPacket;
@@ -55,9 +58,11 @@ class JumprunClickTest {
         return new ClientUseItemPacket(PlayerHand.MAIN, SEQUENCE, 0f, 0f);
     }
 
+    /** The module's own resend is a block packet for every click, so a missing one is a failure. */
     private static void assertStillShown(StartedRun run, Point block, List<BlockChangePacket> sent) {
         BlockChangePacket last = sent.reversed().stream().filter(packet -> packet.blockPosition().sameBlock(block)).findFirst().orElse(null);
-        assertTrue(last == null || JumprunFixture.isCourseBlock(last), "the last block packet for the clicked position, if any, shows the run block, but was " + last);
+        assertNotNull(last, "a block packet for the clicked position came after the click");
+        assertTrue(JumprunFixture.isCourseBlock(last), "the last block packet for the clicked position shows the run block, but was " + last);
         assertTrue(run.fixture().module().isRunning(run.player()), "the run goes on");
     }
 
@@ -119,7 +124,71 @@ class JumprunClickTest {
             fixture.sendClientPacket(run.player(), dig(status, block));
             env.tick();
 
-            assertStillShown(run, block, sent.collect());
+            List<BlockChangePacket> packets = sent.collect();
+            if (mode == GameMode.CREATIVE) {
+                assertTrue(packets.stream().anyMatch(packet -> packet.blockPosition().sameBlock(block) && !JumprunFixture.isCourseBlock(packet)), "Minestom answered the creative dig with the real block, so the resend has something to paint over");
+            }
+            assertStillShown(run, block, packets);
+        }
+    }
+
+    @Test
+    void theSuppressionEndsAfterTwoTicks(Env env) {
+        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+            StartedRun run = StartedRun.start(env, fixture);
+            run.player().setItemInMainHand(fixture.item().itemStack());
+            fixture.sendClientPacket(run.player(), useOn(run.ahead().peekFirst().blockPosition()));
+            env.tick();
+            env.tick();
+            env.tick();
+
+            fixture.sendClientPacket(run.player(), useItem());
+            env.tick();
+
+            assertFalse(fixture.module().isRunning(run.player()), "an air click after the window ends the run");
+        }
+    }
+
+    @Test
+    void aSecondClickExtendsTheSuppression(Env env) {
+        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+            StartedRun run = StartedRun.start(env, fixture);
+            run.player().setItemInMainHand(fixture.item().itemStack());
+            Point block = run.ahead().peekFirst().blockPosition();
+            fixture.sendClientPacket(run.player(), useOn(block));
+            env.tick();
+            fixture.sendClientPacket(run.player(), useOn(block));
+            env.tick();
+
+            fixture.sendClientPacket(run.player(), useItem());
+            env.tick();
+
+            assertTrue(fixture.module().isRunning(run.player()), "the first click's window does not cut the second one short");
+        }
+    }
+
+    @Test
+    void disconnectingClearsTheSuppression(Env env) {
+        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+            StartedRun run = StartedRun.start(env, fixture);
+            fixture.sendClientPacket(run.player(), useOn(run.ahead().peekFirst().blockPosition()));
+
+            env.process().eventHandler().call(new PlayerDisconnectEvent(run.player()));
+            fixture.useItem(run.player());
+
+            assertTrue(fixture.module().isRunning(run.player()), "the item starts a new run, nothing of the old click is left");
+        }
+    }
+
+    @Test
+    void leavingTheInstanceClearsTheSuppression(Env env) {
+        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+            StartedRun run = StartedRun.start(env, fixture);
+            fixture.sendClientPacket(run.player(), useOn(run.ahead().peekFirst().blockPosition()));
+
+            run.player().setInstance(env.createFlatInstance(), new Pos(0, 40, 0)).join();
+
+            assertFalse(fixture.module().suppressesUse(run.player()), "nothing of the old click is left");
         }
     }
 
