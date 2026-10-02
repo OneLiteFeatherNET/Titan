@@ -256,7 +256,7 @@ Die Zuschauer-Displays aus D12 übernehmen die Animation für alle:
   - Nach 8 Ticks bekommt der Läufer den echten Fake-Block (Kollision), und der Display wird über die Sichtbarkeitsregel wieder für den Läufer ausgeblendet. Andere sehen weiter den Display.
 - **Ausblenden:**
   - Der Läufer bekommt sofort den echten Block zurück (keine Kollision mehr).
-  - Der Display wird wieder für alle sichtbar, steigt mit Interpolation 8 Ticks auf `(0, +6, 0)` und schrumpft dabei auf Skala 0.
+  - Der Display wird wieder für alle sichtbar, steigt mit Interpolation 8 Ticks auf `(0, +6, 0)`, also exakt die Einfall-Bewegung rückwärts, ohne Größenänderung (seit dem sechsten lokalen Test; vorher schrumpfte er zusätzlich).
   - Nach 8 Ticks wird er entfernt.
 - **Start:** Die ersten zwei Blöcke fallen ebenfalls ein.
 - **Laufende und Shutdown:** Beim Laufende spielen die verbleibenden Blöcke die Aufstiegs-Animation. Beim Shutdown wird ohne Animation sofort entfernt.
@@ -264,7 +264,7 @@ Die Zuschauer-Displays aus D12 übernehmen die Animation für alle:
 - **Test:** Integration (Cyano, `env.tick()`):
   - Ein neuer Block erzeugt sofort einen Display-Spawn mit Translation y = 6, im nächsten Tick ein Metadaten-Paket mit y = 0 und Dauer 8.
   - Der echte Block kommt erst nach 8 Ticks.
-  - Beim Entfernen kommt der echte Block sofort, und der Display steigt und verschwindet nach 8 Ticks.
+  - Beim Entfernen kommt der echte Block sofort, und der Display steigt ohne Größenänderung auf y = 6 und verschwindet nach 8 Ticks.
   - Endet der Lauf während einer Animation, bleibt nichts zurück.
   - Shutdown entfernt sofort.
 - **Risiko:** Springt ein Läufer innerhalb von 8 Ticks zwei Blöcke weiter, ist der neueste Block noch nicht begehbar. Bei einem Fenster von 2 voraus ist das praktisch ausgeschlossen. Ein Test prüft, dass der direkt nächste Block nie in der Animation steckt, wenn der Läufer landet.
