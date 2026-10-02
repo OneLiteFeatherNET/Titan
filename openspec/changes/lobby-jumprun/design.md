@@ -318,6 +318,11 @@ Die DEBUG-Logs aus dem lokalen Test zeigen, dass Läufe durch versehentliches Gl
 - **Built-in:** `LobbyItems.equip` als bestehender Andockpunkt. Ein eigenes Merken und Zurücklegen des Items wurde verworfen (DRY).
 - **Test:** Integration. Nach dem Start ist der Brustplatz leer. Nach dem Abbruch, dem Absturz und dem Erschöpfen ist die Standardausstattung wieder da (Elytra und Item in Slot 0). Disconnect ruft `equip` nicht auf.
 
+### D25 Englische Lore am Item
+
+`JumprunItems` gibt dem Schleimblock eine Lore aus MiniMessage-Zeilen (kursiv aus, gleiche Farbwelt wie Titel und Modi): erst die Bedienung („Right-click: start / stop a run“, „Sneak + right-click: switch mode“), dann je eine Zeile pro Modus („Easy: full blocks and slabs, short gaps“, „Medium: all shapes, steady climb“, „Hard: all shapes early, fast climb“). Englisch, weil ein `LobbyItem` einen `ItemStack` für alle Spieler hat. Das ist eine bewusste Ausnahme von der i18n-Regel.
+- **Test:** Unit. Das Item hat eine Lore mit Bedienung und den drei Modusnamen, nicht kursiv.
+
 ## Risks / Trade-offs
 
 - **Elytra durch Leertaste in der Luft (gelöst durch D24):** Im Spiel startet ein erneuter Druck auf die Leertaste in der Luft das Gleiten. Spieler, die beim Springen hektisch drücken, beenden ihren Lauf versehentlich. → Bewusst so entschieden (Elytra-Gleiten = Ende). Bei der Abnahme wird geprüft, wie oft das passiert. Falls nötig, gibt es einen Folge-Change, der statt Laufende das Gleiten nur unterbindet.

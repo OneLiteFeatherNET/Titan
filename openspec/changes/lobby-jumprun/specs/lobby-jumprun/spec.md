@@ -309,7 +309,7 @@ Während eines Laufs MUSS der Spieler seinen aktuellen Score in der Action Bar s
 - **THEN** hört er mit der Rekord-Meldung das Levelaufstiegs-Geräusch
 
 ### Requirement: Texte in der Sprache des Spielers
-Alle Texte des Jump and Run (Score in der Action Bar, Meldungen zu Start, Ende und Rekord) MÜSSEN in der Sprache des Spielers erscheinen. Fehlt seine Sprache, MUSS Englisch erscheinen. Das Item trägt nur den Spielnamen „Jump & Run“, der in allen Sprachen gleich ist, und keine Beschreibung.
+Alle Texte des Jump and Run (Score in der Action Bar, Meldungen zu Start, Ende und Rekord) MÜSSEN in der Sprache des Spielers erscheinen. Fehlt seine Sprache, MUSS Englisch erscheinen. Das Item trägt den Spielnamen „Jump & Run“, der in allen Sprachen gleich ist, und eine englische Beschreibung (Lore), die die Bedienung (Rechtsklick startet und beendet, Schleichen und Rechtsklick wechselt den Modus) und die drei Modi Easy, Medium und Hard kurz erklärt. Ein Item ist für alle Spieler gleich und kann deshalb nicht übersetzt werden.
 
 #### Scenario: Deutscher Client
 - **WHEN** ein Spieler mit deutscher Client-Sprache einen Lauf beendet

@@ -124,6 +124,10 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 
 - [x] 19.1 Test zuerst (Integration): Brustplatz beim Start leer, Standardausstattung nach Abbruch, Absturz und Erschöpfen zurück, nicht bei Disconnect; `ELYTRA`-Endgrund und Listener entfernt; Scheiter-Ton nur bei Absturz (D24). Nachweis: `./gradlew build` grün.
 
+## 20. Englische Lore am Item
+
+- [ ] 20.1 Test zuerst (Unit): Lore mit Bedienung und den Modi Easy/Medium/Hard, MiniMessage, nicht kursiv (D25). Nachweis: `./gradlew :features:jumprun:build` grün.
+
 ## 6. Pull Request
 
 - [ ] 6.1 Pull Request vom Integrationszweig `feat/jumprun` auf `main` unter dem Titel `feat(jumprun): add a random single-player jump and run to the lobby` öffnen (Titel und Beschreibung Englisch), mit Smoke-Test-Ergebnis und dem Hinweis auf die Elytra-Abwägung. Nachweis: PR-URL, CI grün.
