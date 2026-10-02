@@ -23,8 +23,8 @@ import org.junit.jupiter.api.Test;
 class EndReasonTest {
 
     @Test
-    void onlyAFallAndTheElytraAreFailures() {
-        Set<EndReason> failures = Set.of(EndReason.FALL, EndReason.ELYTRA);
+    void onlyAFallIsAFailure() {
+        Set<EndReason> failures = Set.of(EndReason.FALL);
 
         for (EndReason reason : EndReason.values()) {
             assertEquals(failures.contains(reason), reason.failed(), reason.name());
@@ -37,6 +37,15 @@ class EndReasonTest {
 
         for (EndReason reason : EndReason.values()) {
             assertEquals(!immediate.contains(reason), reason.risesAway(), reason.name());
+        }
+    }
+
+    @Test
+    void theLoadoutGoesBackToEveryoneWhoIsStillOnline() {
+        Set<EndReason> gone = Set.of(EndReason.DISCONNECT, EndReason.SHUTDOWN);
+
+        for (EndReason reason : EndReason.values()) {
+            assertEquals(!gone.contains(reason), reason.restoresLoadout(), reason.name());
         }
     }
 }

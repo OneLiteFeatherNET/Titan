@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
-import net.minestom.server.event.player.PlayerStartFlyingWithElytraEvent;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.network.packet.server.play.SoundEffectPacket;
 import net.minestom.server.sound.SoundEvent;
@@ -121,19 +120,6 @@ class JumprunFailSoundTest {
     }
 
     @Test
-    void theElytraWithANewRecordSoundsNoBassNote(Env env) {
-        try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            Scene scene = Scene.start(env, fixture);
-            scene.run().landOnNext(JumprunFixture.ASCENT_JUMPS + 1);
-
-            env.process().eventHandler().call(new PlayerStartFlyingWithElytraEvent(scene.run().player()));
-            tick(env, TICKS_FOR_ALL_NOTES);
-
-            assertTrue(bass(scene.runnerHears()).isEmpty());
-        }
-    }
-
-    @Test
     void aFallSoundsTheFirstNoteAtOnce(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             Scene scene = Scene.start(env, fixture);
@@ -153,18 +139,6 @@ class JumprunFailSoundTest {
             tick(env, TICKS_FOR_ALL_NOTES);
 
             assertTrue(scene.bystanderHears().collect().isEmpty(), "the failure sound is private");
-        }
-    }
-
-    @Test
-    void theElytraSoundsTheFailureToo(Env env) {
-        try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            Scene scene = Scene.start(env, fixture);
-
-            env.process().eventHandler().call(new PlayerStartFlyingWithElytraEvent(scene.run().player()));
-            tick(env, TICKS_FOR_ALL_NOTES);
-
-            assertEquals(NOTES, bass(scene.runnerHears()).size());
         }
     }
 

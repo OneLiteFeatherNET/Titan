@@ -63,15 +63,17 @@ final class JumprunFixture implements AutoCloseable {
     private final LobbyItem item;
     private final RunRecords records;
     private final RunMessages messages;
+    private final RecordingLobbyItems lobbyItems;
     private boolean moduleStopped;
 
-    private JumprunFixture(Env env, TestTitanNode titan, JumprunModule module, LobbyItem item, RunRecords records, RunMessages messages) {
+    private JumprunFixture(Env env, TestTitanNode titan, JumprunModule module, LobbyItem item, RunRecords records, RunMessages messages, RecordingLobbyItems lobbyItems) {
         this.env = env;
         this.titan = titan;
         this.module = module;
         this.item = item;
         this.records = records;
         this.messages = messages;
+        this.lobbyItems = lobbyItems;
     }
 
     /** The spawn lies west of the usual start spots, so runs head east. */
@@ -91,12 +93,13 @@ final class JumprunFixture implements AutoCloseable {
     private static JumprunFixture start(Env env, RunRecords records, Configuration config) {
         TestTitanNode titan = TestTitanNode.attach(env);
         RunMessages messages = new RunMessages();
-        JumprunModule module = new JumprunModule(titan.node(), () -> new Pos(-40.5, GROUND_Y, 0.5), List::of, records, messages, () -> SEED, new PalettesReader(config));
+        RecordingLobbyItems lobbyItems = new RecordingLobbyItems();
+        JumprunModule module = new JumprunModule(titan.node(), () -> new Pos(-40.5, GROUND_Y, 0.5), List::of, records, () -> lobbyItems, messages, () -> SEED, new PalettesReader(config));
         module.start();
         LobbyItem item = new JumprunItems().jumprun(module);
         // What the hotbar column does with the use packet, without depending on it.
         titan.node().addListener(PlayerUseItemEvent.class, event -> item.onUse().handle(event.getPlayer(), event));
-        return new JumprunFixture(env, titan, module, item, records, messages);
+        return new JumprunFixture(env, titan, module, item, records, messages, lobbyItems);
     }
 
     /** A flat instance whose chunks around the origin are loaded, so the course has room. */
@@ -120,6 +123,10 @@ final class JumprunFixture implements AutoCloseable {
 
     RunRecords records() {
         return records;
+    }
+
+    RecordingLobbyItems lobbyItems() {
+        return lobbyItems;
     }
 
     RunMessages messages() {

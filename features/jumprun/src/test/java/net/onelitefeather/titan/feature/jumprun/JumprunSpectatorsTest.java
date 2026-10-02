@@ -29,7 +29,6 @@ import net.minestom.server.entity.EntityType;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.metadata.display.BlockDisplayMeta;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
-import net.minestom.server.event.player.PlayerStartFlyingWithElytraEvent;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.block.Block;
 import net.minestom.server.network.packet.server.play.BlockChangePacket;
@@ -198,18 +197,6 @@ class JumprunSpectatorsTest {
             fixture.settle();
 
             assertTrue(scene.displays().isEmpty(), "no display survives the fall");
-        }
-    }
-
-    @Test
-    void endingByElytraRemovesEveryDisplay(Env env) {
-        try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            Scene scene = Scene.start(env, fixture);
-
-            env.process().eventHandler().call(new PlayerStartFlyingWithElytraEvent(scene.run().player()));
-            fixture.settle();
-
-            assertTrue(scene.displays().isEmpty(), "no display survives the glide");
         }
     }
 

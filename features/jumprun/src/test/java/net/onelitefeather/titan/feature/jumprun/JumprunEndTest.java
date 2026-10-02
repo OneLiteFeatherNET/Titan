@@ -26,8 +26,6 @@ import net.minestom.server.coordinate.Pos;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.player.PlayerDeathEvent;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
-import net.minestom.server.event.player.PlayerStartFlyingWithElytraEvent;
-import net.minestom.server.instance.block.Block;
 import net.minestom.server.network.packet.server.ServerPacket;
 import net.minestom.server.network.packet.server.play.ActionBarPacket;
 import net.minestom.server.network.packet.server.play.BlockChangePacket;
@@ -46,23 +44,6 @@ class JumprunEndTest {
 
     private static void call(Env env, Event event) {
         env.process().eventHandler().call(event);
-    }
-
-    @Test
-    void glidingWithTheElytraEndsTheRunWithoutSettingThePlayerBack(Env env) {
-        try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            StartedRun run = StartedRun.start(env, fixture);
-            run.player().teleport(ELSEWHERE).join();
-            Collector<BlockChangePacket> resets = run.connection().trackIncoming(BlockChangePacket.class);
-
-            call(env, new PlayerStartFlyingWithElytraEvent(run.player()));
-
-            assertFalse(fixture.module().isRunning(run.player()), "gliding ends the run");
-            assertEquals(ELSEWHERE, run.player().getPosition(), "the player is not moved");
-            List<BlockChangePacket> packets = resets.collect();
-            assertEquals(2, packets.size(), "both shown blocks are taken back");
-            assertTrue(packets.stream().allMatch(packet -> packet.blockStateId() == Block.AIR.stateId()));
-        }
     }
 
     @Test
