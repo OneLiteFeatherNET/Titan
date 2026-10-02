@@ -75,11 +75,15 @@ Erhöht sich der Score eines Läufers, MUSS der Läufer einen kurzen Ton hören,
 - **THEN** hört er den Signalton und nicht den Punkte-Ton
 
 ### Requirement: Ton beim Scheitern
-Endet ein Lauf durch einen Absturz oder durch Gleiten mit der Elytra, MUSS der Läufer einen kurzen, absteigenden Ton hören, der sich klar vom Punkte-Ton unterscheidet. Andere Spieler DÜRFEN ihn NICHT hören. Ein Abbruch über das Item, das Verlassen der Lobby und das Herunterfahren DÜRFEN diesen Ton NICHT auslösen.
+Endet ein Lauf durch einen Absturz oder durch Gleiten mit der Elytra, ohne dass er einen neuen Rekord aufgestellt hat, MUSS der Läufer einen kurzen, absteigenden Ton hören, der sich klar vom Punkte-Ton unterscheidet. Andere Spieler DÜRFEN ihn NICHT hören. Ein Abbruch über das Item, das Verlassen der Lobby und das Herunterfahren DÜRFEN diesen Ton NICHT auslösen.
 
 #### Scenario: Absturz
 - **WHEN** der Läufer mehr als drei Blöcke unter seinen letzten Block fällt
 - **THEN** hört er den Ton beim Scheitern, und ein Spieler daneben hört ihn nicht
+
+#### Scenario: Absturz mit neuem Rekord
+- **WHEN** der Läufer mit einem neuen Rekord abstürzt
+- **THEN** hört er den Ton beim Scheitern nicht
 
 #### Scenario: Freiwilliger Abbruch
 - **WHEN** der Läufer den Lauf über das Item beendet
@@ -241,7 +245,7 @@ Ein Lauf MUSS enden, wenn der Spieler mehr als drei Blöcke unter den Block fäl
 - **THEN** endet der Lauf, und die Lobby hält keinen Zustand dieses Laufs mehr
 
 ### Requirement: Score und Rekord
-Während eines Laufs MUSS der Spieler seinen aktuellen Score in der Action Bar sehen. Am Ende eines Laufs MUSS er eine Meldung mit dem erreichten Score erhalten. Die Lobby MUSS pro Spieler den höchsten Score seit ihrem Start im Speicher halten. Übertrifft ein Lauf diesen Rekord, MUSS die Meldung das als neuen Rekord kennzeichnen. Über einen Neustart der Lobby hinweg DARF der Rekord verloren gehen.
+Während eines Laufs MUSS der Spieler seinen aktuellen Score in der Action Bar sehen. Am Ende eines Laufs MUSS er eine Meldung mit dem erreichten Score erhalten. Die Lobby MUSS pro Spieler den höchsten Score im Speicher halten, solange der Spieler in der Lobby ist. Verlässt er die Lobby, MUSS sein Rekord gelöscht werden. Übertrifft ein Lauf diesen Rekord, MUSS die Meldung das als neuen Rekord kennzeichnen. Über einen Neustart der Lobby hinweg DARF der Rekord verloren gehen.
 
 #### Scenario: Neuer Rekord
 - **WHEN** ein Spieler mit bisherigem Rekord 12 einen Lauf mit Score 15 beendet
@@ -251,9 +255,9 @@ Während eines Laufs MUSS der Spieler seinen aktuellen Score in der Action Bar s
 - **WHEN** derselbe Spieler danach einen Lauf mit Score 9 beendet
 - **THEN** meldet die Lobby Score 9 ohne Rekord-Hinweis, und sein Rekord bleibt 15
 
-#### Scenario: Wiederkommen ohne Neustart
-- **WHEN** ein Spieler die Lobby verlässt und vor einem Neustart wiederkommt
-- **THEN** gilt sein bisheriger Rekord weiter
+#### Scenario: Rekord endet mit dem Verlassen
+- **WHEN** ein Spieler die Lobby verlässt und später wiederkommt
+- **THEN** hat er keinen Rekord mehr, und sein nächster Lauf mit Score > 0 ist ein neuer Rekord
 
 ### Requirement: Ton bei neuem Rekord
 Übertrifft der Score eines Läufers während des Laufs zum ersten Mal seinen bisherigen Rekord, MUSS der Läufer sofort das Levelaufstiegs-Geräusch hören, höchstens einmal pro Lauf. Hat der Spieler noch keinen Rekord, MUSS das Geräusch mit der Meldung über den neuen Rekord am Laufende erklingen. Andere Spieler DÜRFEN es NICHT hören.

@@ -133,7 +133,7 @@ Die Column registriert in `@PostConstruct` einen eigenen Adventure-`TranslationS
 
 ### D9 Rekorde im Speicher
 
-`RunRecords` ist ein Interface (`OptionalInt best(UUID)`, `boolean submit(UUID, int)`, liefert `true` bei neuem Rekord). Die einzige Implementierung ist `InMemoryRunRecords` mit einer `ConcurrentHashMap<UUID, Integer>` und `merge(..., Math::max)`. Disconnect löscht den Rekord **nicht** (Spec „Wiederkommen ohne Neustart“). Die Menge wächst mit eindeutigen Spielern seit dem Start. Das ist für eine Lobby vernachlässigbar (UUID + Integer).
+`RunRecords` ist ein Interface (`OptionalInt best(UUID)`, `boolean submit(UUID, int)`, liefert `true` bei neuem Rekord). Die einzige Implementierung ist `InMemoryRunRecords` mit einer `ConcurrentHashMap<UUID, Integer>` und `merge(..., Math::max)`. Seit D21 löscht ein Disconnect den Rekord des Spielers. Die Menge wächst mit eindeutigen Spielern seit dem Start. Das ist für eine Lobby vernachlässigbar (UUID + Integer).
 
 - **Built-in:** `ConcurrentHashMap`. Ein Caffeine-Cache wurde verworfen, weil es keine Ablaufregeln braucht.
 - **Test:** Unit (Spec „Neuer Rekord“ / „Kein neuer Rekord“).
@@ -268,6 +268,15 @@ Die Zuschauer-Displays aus D12 übernehmen die Animation für alle:
   - Endet der Lauf während einer Animation, bleibt nichts zurück.
   - Shutdown entfernt sofort.
 - **Risiko:** Springt ein Läufer innerhalb von 8 Ticks zwei Blöcke weiter, ist der neueste Block noch nicht begehbar. Bei einem Fenster von 2 voraus ist das praktisch ausgeschlossen. Ein Test prüft, dass der direkt nächste Block nie in der Animation steckt, wenn der Läufer landet.
+
+### D21 Rekord pro Sitzung, Scheiter-Ton nur ohne Rekord
+
+- `RunRecords` bekommt `forget(UUID)`. `JumprunModule.onDisconnect` ruft es nach dem Laufende auf, der Rekord gilt also nur für die Sitzung des Spielers in der Lobby. Das Verlassen der Instanz ohne Disconnect lässt den Rekord stehen, weil der Spieler die Lobby dabei nicht verlässt.
+- `RunSounds.fail` spielt nur, wenn der Endgrund `failed()` ist **und** der Lauf den bisherigen Rekord nicht übertroffen hat (`Run.passedPreviousBest()` bzw. erster Rekord mit Score > 0).
+- **Test:** Integration:
+  - Ein Absturz mit neuem Rekord ergibt kein Bass-Paket, ohne neuen Rekord drei.
+  - Nach Disconnect und Rejoin gilt der nächste Lauf mit Score > 0 als Rekord, inklusive Rekord-Meldung.
+  - Unit: `forget` entfernt den Rekord.
 
 ## Risks / Trade-offs
 
