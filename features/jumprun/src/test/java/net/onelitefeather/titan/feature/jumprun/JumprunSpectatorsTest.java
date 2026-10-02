@@ -176,7 +176,7 @@ class JumprunSpectatorsTest {
             scene.landOnNext(5);
             env.tick();
 
-            assertTrue(scene.displayEntities().stream().noneMatch(Entity::isRemoved), "removed displays are gone from the instance");
+            assertEquals(scene.screen().size(), scene.displayEntities().size(), "exactly one display per shown block, none left of the removed ones");
             assertTrue(Set.copyOf(scene.displays().keySet()).stream().noneMatch(first::contains), "the first two blocks are out of the window by now");
         }
     }
