@@ -54,7 +54,7 @@ class CourseTest {
     }
 
     private static Course.Advance landOn(Course course, CourseBlock block) {
-        return course.advanceTo(block.pos().x() + 0.5, block.topY(), block.pos().z() + 0.5);
+        return course.advanceTo(new Pos(block.pos().x() + 0.5, block.topY(), block.pos().z() + 0.5));
     }
 
     private static void landOnNext(Course course, int times) {
@@ -99,8 +99,8 @@ class CourseTest {
         Course second = startIn(new FakeSpaceProbe(), 9L);
 
         for (int i = 0; i < 20; i++) {
-            landOn(first, ahead(first, 1));
-            landOn(second, ahead(second, 1));
+            landOnNext(first, 1);
+            landOnNext(second, 1);
             assertEquals(first.window(), second.window(), "window after landing " + (i + 1));
         }
     }
@@ -144,8 +144,7 @@ class CourseTest {
         CourseBlock beforeThird = course.window().getFirst();
         assertEquals(start, beforeThird, "the start block is still shown after two landings");
 
-        CourseBlock third = ahead(course, 1);
-        Course.Advance advance = landOn(course, third);
+        Course.Advance advance = landOn(course, ahead(course, 1));
 
         assertEquals(List.of(start), advance.removed(), "the start block drops out");
         assertEquals(5, course.window().size(), "two behind, current, two ahead");
@@ -182,7 +181,7 @@ class CourseTest {
         Course course = start();
         List<CourseBlock> before = course.window();
 
-        Course.Advance advance = course.advanceTo(40.5, 11.0, 40.5);
+        Course.Advance advance = course.advanceTo(new Pos(40.5, 11.0, 40.5));
 
         assertEquals(0, advance.jumps(), "no jump");
         assertTrue(advance.added().isEmpty() && advance.removed().isEmpty(), "nothing changed");
@@ -203,9 +202,29 @@ class CourseTest {
         Course course = start();
         CourseBlock next = ahead(course, 1);
 
-        Course.Advance advance = course.advanceTo(next.pos().x() + 0.5, next.topY() + 0.8, next.pos().z() + 0.5);
+        Course.Advance advance = course.advanceTo(new Pos(next.pos().x() + 0.5, next.topY() + 0.8, next.pos().z() + 0.5));
 
         assertEquals(0, advance.jumps(), "still in the air");
+    }
+
+    @Test
+    void standingOnTheEdgeOfABlockCountsAsLanding() {
+        Course course = start();
+        CourseBlock next = ahead(course, 1);
+
+        Course.Advance advance = course.advanceTo(new Pos(next.pos().x() - 0.25, next.topY(), next.pos().z() + 1.25));
+
+        assertEquals(1, advance.jumps(), "the hitbox half width reaches over the edge");
+    }
+
+    @Test
+    void standingBeyondTheHitboxHalfWidthOfABlockDoesNotCountAsLanding() {
+        Course course = start();
+        CourseBlock next = ahead(course, 1);
+
+        Course.Advance advance = course.advanceTo(new Pos(next.pos().x() - 0.35, next.topY(), next.pos().z() + 0.5));
+
+        assertEquals(0, advance.jumps(), "the hitbox does not touch the block");
     }
 
     @Test
@@ -226,7 +245,7 @@ class CourseTest {
         CourseBlock target = ahead(course, 1);
         assertEquals(surface, target.surface(), "a " + surface + " block must show up within 2000 jumps");
 
-        Course.Advance advance = course.advanceTo(target.pos().x() + 0.5, target.pos().y() + surface.top(), target.pos().z() + 0.5);
+        Course.Advance advance = course.advanceTo(new Pos(target.pos().x() + 0.5, target.pos().y() + surface.top(), target.pos().z() + 0.5));
 
         assertEquals(1, advance.jumps(), surface + " top");
     }
@@ -302,15 +321,24 @@ class CourseTest {
     // --- running out of room ------------------------------------------------------------------------
 
     @Test
-    void reportsExhaustionWhenNoFurtherBlockFits() {
+    void isNotExhaustedWhileABlockIsStillAheadEvenIfTheOneAfterItDoesNotFit() {
         FakeSpaceProbe world = new FakeSpaceProbe();
         Course course = startIn(world, 4L);
         world.seal();
 
-        for (int landing = 1; landing <= 4; landing++) {
-            assertFalse(landOn(course, ahead(course, 1)).exhausted(), "the blocks made ahead of time suffice for landing " + landing);
+        for (int landing = 1; landing < Phase.ASCENT_JUMPS + 1; landing++) {
+            assertFalse(landOn(course, ahead(course, 1)).exhausted(), "a block is still ahead after landing " + landing);
         }
-        assertTrue(landOn(course, ahead(course, 1)).exhausted(), "no room for the next block");
+    }
+
+    @Test
+    void isExhaustedWhenLandingOnTheLastBlockAndNoneCanBeAdded() {
+        FakeSpaceProbe world = new FakeSpaceProbe();
+        Course course = startIn(world, 4L);
+        world.seal();
+        landOnNext(course, Phase.ASCENT_JUMPS);
+
+        assertTrue(landOn(course, ahead(course, 1)).exhausted(), "no room for a block after the last one");
     }
 
     @Test

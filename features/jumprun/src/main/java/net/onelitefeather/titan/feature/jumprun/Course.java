@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.random.RandomGenerator;
+import net.minestom.server.coordinate.Point;
 import net.minestom.server.coordinate.Pos;
 
 /**
@@ -29,6 +30,13 @@ final class Course {
 
     private static final int BEHIND = 2;
     private static final int AHEAD = 2;
+
+    /**
+     * Blocks of the course that are on screen while the next one is made: the new block joins the
+     * window, so it has to keep clear of these.
+     */
+    static final int VISIBLE_BEFORE_NEW = BEHIND + AHEAD;
+
     private static final int FALL_DEPTH = 3;
 
     /**
@@ -36,6 +44,9 @@ final class Course {
      * it".
      */
     private static final double LANDING_TOLERANCE = 0.05;
+
+    /** A player standing on an edge still has the block under part of the hitbox. */
+    private static final double PLAYER_HALF_WIDTH = 0.3;
 
     private final Pos startPoint;
     private final CourseGenerator generator;
@@ -100,11 +111,12 @@ final class Course {
     }
 
     /**
-     * Moves on when the feet stand on one of the next two blocks. Landing on the second counts both
+     * Moves on when the feet stand on one of the next two blocks (the edge counts). Landing on the
+     * second counts both
      * jumps. When no further block fits, the advance reports it as exhausted and the run is over.
      */
-    Advance advanceTo(double x, double y, double z) {
-        int landed = landedIndex(x, y, z);
+    Advance advanceTo(Point feet) {
+        int landed = landedIndex(feet);
         if (landed < 0) {
             return Advance.NONE;
         }
@@ -112,23 +124,31 @@ final class Course {
         int oldEnd = windowEnd();
         int jumps = landed - current;
         current = landed;
-        boolean exhausted = !generateThrough(current + AHEAD);
+        generateThrough(current + AHEAD);
+        boolean exhausted = current == blocks.size() - 1;
         List<CourseBlock> removed = List.copyOf(blocks.subList(oldStart, Math.min(oldEnd + 1, windowStart())));
         List<CourseBlock> added = List.copyOf(blocks.subList(oldEnd + 1, windowEnd() + 1));
         return new Advance(jumps, removed, added, exhausted);
     }
 
-    private int landedIndex(double x, double y, double z) {
+    /** The furthest of the next blocks the feet stand on, or -1. */
+    private int landedIndex(Point feet) {
         for (int index = Math.min(current + AHEAD, blocks.size() - 1); index > current; index--) {
-            if (isStandingOn(blocks.get(index), x, y, z)) {
+            if (isStandingOn(blocks.get(index), feet)) {
                 return index;
             }
         }
         return -1;
     }
 
-    private static boolean isStandingOn(CourseBlock block, double x, double y, double z) {
-        return Math.floor(x) == block.pos().x() && Math.floor(z) == block.pos().z() && Math.abs(y - block.topY()) <= LANDING_TOLERANCE;
+    private static boolean isStandingOn(CourseBlock block, Point feet) {
+        boolean atHeight = Math.abs(feet.y() - block.topY()) <= LANDING_TOLERANCE;
+        return atHeight && overlapsBlock(feet.x(), block.pos().x()) && overlapsBlock(feet.z(), block.pos().z());
+    }
+
+    /** Whether a hitbox centred on {@code center} reaches over the block cell at {@code cell}. */
+    private static boolean overlapsBlock(double center, int cell) {
+        return center >= cell - PLAYER_HALF_WIDTH && center <= cell + 1 + PLAYER_HALF_WIDTH;
     }
 
     private int windowStart() {
