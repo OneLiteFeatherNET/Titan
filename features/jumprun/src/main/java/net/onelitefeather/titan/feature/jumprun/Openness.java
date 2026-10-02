@@ -41,7 +41,19 @@ record Openness(SpaceProbe probe) {
 
     /** Whether the {@code blocks} blocks directly below the position are all air. */
     boolean hasAirBelow(BlockPos pos, int blocks) {
-        return airInColumn(pos, blocks) == blocks;
+        return airDepthBelow(pos, blocks) == blocks;
+    }
+
+    /**
+     * How many air blocks lie directly below the position before the first closed one, counted up
+     * to {@code limit}. It stops at that block, so a walled-in column costs one question.
+     */
+    int airDepthBelow(BlockPos pos, int limit) {
+        int depth = 0;
+        while (depth < limit && isOpen(pos.offset(0, -(depth + 1), 0))) {
+            depth++;
+        }
+        return depth;
     }
 
     /**

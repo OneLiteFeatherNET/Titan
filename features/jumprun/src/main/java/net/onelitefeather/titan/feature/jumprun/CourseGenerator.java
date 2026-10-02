@@ -45,8 +45,15 @@ final class CourseGenerator {
     /** Blocks the dead-end check looks ahead. */
     private static final int LOOKAHEAD = 4;
 
-    /** Places the dead-end check visits at most per candidate. */
-    private static final int LOOKAHEAD_BUDGET = 200;
+    /**
+     * Places the dead-end check visits at most per {@link #next} call, shared by all candidates:
+     * the best candidates come first and usually pass within a handful of places, so one budget
+     * bounds the worst case, a ring of dead ends, instead of multiplying it per candidate.
+     */
+    private static final int LOOKAHEAD_BUDGET = 400;
+
+    /** The deepest air column anything asks for, so one read per position serves every check. */
+    private static final int MAX_AIR_BELOW = Math.max(Openness.SCORED_AIR_BELOW, Openness.ASCENT_AIR_BELOW);
 
     private final SpaceProbe probe;
     private final SpawnZone spawn;
@@ -63,10 +70,7 @@ final class CourseGenerator {
      * jump fits or every fitting one leads into a dead end.
      */
     Optional<CourseBlock> next(List<CourseBlock> course, Phase phase) {
-        CourseBlock from = course.getLast();
-        Space space = rulesFor(course);
-        List<Spot> free = candidatesFor(from, phase, space).stream().filter(candidate -> space.isFree(from, candidate)).toList();
-        return ranked(free, phase, from, space).stream().filter(candidate -> hasFollowUp(course, candidate, phase)).findFirst().map(this::withDrawnMaterial);
+        return new Search().next(course, phase);
     }
 
     /**
@@ -74,18 +78,15 @@ final class CourseGenerator {
      * with the main heading bent towards the step that led there. The ascent ends at a block far
      * from the spawn with plenty of air below it, so the course does not run along ways and roofs,
      * or around the spawn, from then on.
+     *
+     * @throws IllegalArgumentException when the course has fewer than two blocks, so no jump led
+     *                                  to the last one
      */
     Phase after(List<CourseBlock> course, Phase phase) {
-        return after(course.get(course.size() - 2), course.getLast(), phase, rulesFor(course));
-    }
-
-    private Phase after(Placement from, Placement placed, Phase phase, Space space) {
-        Phase next = switch (phase) {
-            case Phase.Ascent ascent ->
-                ascent.next(isInTheOpen(placed.pos(), space, Openness.ASCENT_AIR_BELOW));
-            case Phase.Scored scored -> scored.next();
-        };
-        return next.steered(new Jump(from, placed).direction());
+        if (course.size() < 2) {
+            throw new IllegalArgumentException("a course of " + course.size() + " blocks has no jump to steer by");
+        }
+        return new Search().after(course.get(course.size() - 2), course.getLast(), phase);
     }
 
     /** The material is drawn once the position is settled, so it cannot steer the choice. */
@@ -94,73 +95,134 @@ final class CourseGenerator {
     }
 
     /**
-     * Candidates in the open enough for the phase. After the ascent they need air below, because a
-     * block over a way would make the course run along it, and distance to the spawn, so the
-     * course does not come back to it. Whether the jump itself is free is left to the caller, which
-     * checks it before ranking so openness is only read for free jumps. No candidate leads against
-     * the main heading.
+     * The work of one {@link #next} call. It holds what is worth sharing between the many places
+     * the dead-end check visits: the air below a position, read once, and the place budget.
      */
-    private List<Spot> candidatesFor(Placement from, Phase phase, Space space) {
-        if (phase instanceof Phase.Ascent ascent && ascent.isOutOfJumps()) {
-            return List.of();
+    private final class Search {
+
+        private final Openness world = new Openness(probe);
+        private final Map<BlockPos, Integer> airBelow = new HashMap<>();
+        private int budget = LOOKAHEAD_BUDGET;
+
+        Optional<CourseBlock> next(List<CourseBlock> course, Phase phase) {
+            CourseBlock from = course.getLast();
+            Space space = new Space(visibleTail(course));
+            List<Spot> free = candidatesFor(from, phase, false).stream().filter(candidate -> space.isFree(from, candidate)).toList();
+            return ranked(free, phase, from, space).stream().filter(candidate -> hasFollowUp(course, candidate, phase)).findFirst().map(CourseGenerator.this::withDrawnMaterial);
         }
-        boolean needsAirBelow = phase instanceof Phase.Scored;
-        return candidates(from, phase).stream().filter(candidate -> phase.heading().dot(new Jump(from, candidate).direction()) >= 0.0).filter(candidate -> !needsAirBelow || isInTheOpen(candidate.pos(), space, Openness.SCORED_AIR_BELOW)).toList();
+
+        Phase after(Placement from, Placement placed, Phase phase) {
+            Phase next = switch (phase) {
+                case Phase.Ascent ascent ->
+                    ascent.next(isInTheOpen(placed.pos(), Openness.ASCENT_AIR_BELOW));
+                case Phase.Scored scored -> scored.next();
+            };
+            return next.steered(new Jump(from, placed).direction());
+        }
+
+        /**
+         * Candidates in the open enough for the phase. After the ascent they need air below,
+         * because
+         * a block over a way would make the course run along it, and distance to the spawn, so the
+         * course does not come back to it. Whether the jump itself is free is left to the caller,
+         * which checks it before ranking so openness is only read for free jumps. No candidate
+         * leads against the main heading. {@code fullOnly} narrows the shapes to full blocks, the
+         * only ones the dead-end check follows.
+         */
+        private List<Spot> candidatesFor(Placement from, Phase phase, boolean fullOnly) {
+            if (phase instanceof Phase.Ascent ascent && ascent.isOutOfJumps()) {
+                return List.of();
+            }
+            boolean needsAirBelow = phase instanceof Phase.Scored;
+            List<Surface> surfaces = fullOnly ? List.of(Surface.FULL) : phase.surfaces();
+            return candidates(from, phase, surfaces).stream().filter(candidate -> phase.heading().dot(new Jump(from, candidate).direction()) >= 0.0).filter(candidate -> !needsAirBelow || isInTheOpen(candidate.pos(), Openness.SCORED_AIR_BELOW)).toList();
+        }
+
+        /**
+         * Far from the spawn, with {@code blocks} air blocks under it. Read from the real world:
+         * the
+         * visible blocks keep their distance to a target, so none stands in the column below it.
+         */
+        private boolean isInTheOpen(BlockPos pos, int blocks) {
+            return spawn.isFarEnough(pos) && airBelow.computeIfAbsent(pos, at -> world.airDepthBelow(at, MAX_AIR_BELOW)) >= blocks;
+        }
+
+        /**
+         * Dead-end check: the course must be able to go on for {@link #LOOKAHEAD} more blocks. One
+         * block is not enough, because the main heading cannot turn back: a course running along a
+         * wall must start turning before the corner, and only a longer look sees that. The look
+         * only follows full blocks, which keeps the search small. When the budget is used up it
+         * says yes: ending a run needlessly is worse than meeting a dead end later, which the spec
+         * allows.
+         */
+        private boolean hasFollowUp(List<CourseBlock> course, Spot candidate, Phase phase) {
+            return canContinue(visibleTail(course, candidate), after(course.getLast(), candidate, phase), LOOKAHEAD);
+        }
+
+        private boolean canContinue(List<Placement> window, Phase phase, int depth) {
+            if (depth == 0 || budget-- <= 0) {
+                return true;
+            }
+            Placement from = window.getLast();
+            Space space = new Space(window);
+            for (Spot next : candidatesFor(from, phase, true)) {
+                if (space.isFree(from, next) && canContinue(visibleTail(window, next), after(from, next, phase), depth - 1)) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
-    /** Far from the spawn, with {@code airBelow} air blocks under it. */
-    private boolean isInTheOpen(BlockPos pos, Space space, int airBelow) {
-        return spawn.isFarEnough(pos) && space.openness().hasAirBelow(pos, airBelow);
+    /** The last blocks of the course, the ones the player could see. */
+    private static List<Placement> visibleTail(List<? extends Placement> course) {
+        return List.copyOf(course.subList(Math.max(0, course.size() - Course.VISIBLE_BEFORE_NEW), course.size()));
+    }
+
+    /** The visible blocks once {@code added} has been placed after the course. */
+    private static List<Placement> visibleTail(List<? extends Placement> course, Placement added) {
+        List<Placement> visible = new ArrayList<>(course.subList(Math.max(0, course.size() - Course.VISIBLE_BEFORE_NEW + 1), course.size()));
+        visible.add(added);
+        return visible;
     }
 
     /**
-     * Dead-end check: the course must be able to go on for {@link #LOOKAHEAD} more blocks. One
-     * block is not enough, because the main heading cannot turn back: a course running along a wall
-     * must start turning before the corner, and only a longer look sees that. Beyond the candidate
-     * itself the look only follows full blocks, which keeps the search small, and gives up
-     * optimistically when it reaches {@link #LOOKAHEAD_BUDGET} places.
+     * What a jump has to respect: the visible blocks and, around the real world, the room they
+     * take. The world side is built on first use, because most candidates fail on geometry alone.
      */
-    private boolean hasFollowUp(List<CourseBlock> course, Spot candidate, Phase phase) {
-        List<Placement> extended = new ArrayList<>(course);
-        extended.add(candidate);
-        Space space = rulesFor(extended);
-        Phase onward = after(course.getLast(), candidate, phase, space);
-        return canContinue(extended, onward, LOOKAHEAD, new int[]{LOOKAHEAD_BUDGET});
-    }
+    private final class Space {
 
-    private boolean canContinue(List<Placement> course, Phase phase, int depth, int[] budget) {
-        if (depth == 0 || budget[0]-- <= 0) {
-            return true;
+        private final List<Placement> visible;
+        private SpaceProbe seen;
+        private JumpRules rules;
+
+        Space(List<Placement> visible) {
+            this.visible = visible;
         }
-        Placement from = course.getLast();
-        Space space = rulesFor(course);
-        for (Spot next : candidatesFor(from, phase, space)) {
-            if (next.surface() != Surface.FULL && depth < LOOKAHEAD || !space.isFree(from, next)) {
-                continue;
-            }
-            List<Placement> extended = new ArrayList<>(course);
-            extended.add(next);
-            if (canContinue(extended, after(from, next, phase, rulesFor(extended)), depth - 1, budget)) {
-                return true;
-            }
-        }
-        return false;
-    }
 
-    /** What a jump has to respect: the world, the visible blocks in it and their surroundings. */
-    private record Space(JumpRules rules, Openness openness, List<? extends Placement> visible) {
-
+        /** Geometry first, then the world: the cheap check decides most candidates. */
         boolean isFree(Placement from, Placement to) {
             Jump jump = new Jump(from, to);
-            return rules.isFree(jump) && Clearance.isKept(jump, visible);
+            return Clearance.isKept(jump, visible) && rules().isFree(jump);
         }
-    }
 
-    /** The real world plus the blocks of the course the player could see. */
-    private Space rulesFor(List<? extends Placement> course) {
-        List<? extends Placement> visible = course.subList(Math.max(0, course.size() - Course.VISIBLE_BEFORE_NEW), course.size());
-        SpaceProbe seen = new OccupiedProbe(probe, occupiedBy(visible));
-        return new Space(new JumpRules(seen), new Openness(seen), visible);
+        Openness openness() {
+            return new Openness(seen());
+        }
+
+        private JumpRules rules() {
+            if (rules == null) {
+                rules = new JumpRules(seen());
+            }
+            return rules;
+        }
+
+        private SpaceProbe seen() {
+            if (seen == null) {
+                seen = new OccupiedProbe(probe, occupiedBy(visible));
+            }
+            return seen;
+        }
     }
 
     /**
@@ -178,7 +240,7 @@ final class CourseGenerator {
     }
 
     /** Every reachable jump the phase allows from the block, before looking at the world. */
-    private static List<Spot> candidates(Placement from, Phase phase) {
+    private static List<Spot> candidates(Placement from, Phase phase, List<Surface> surfaces) {
         int[] gaps = phase.gaps().toArray();
         int[] rises = phase.rises().toArray();
         List<Spot> candidates = new ArrayList<>();
@@ -186,7 +248,7 @@ final class CourseGenerator {
             for (int gap : gaps) {
                 for (int rise : rises) {
                     BlockPos pos = from.pos().offset(direction.dx() * (gap + 1), rise, direction.dz() * (gap + 1));
-                    phase.surfaces().forEach(surface -> candidates.add(new Spot(pos, surface)));
+                    surfaces.forEach(surface -> candidates.add(new Spot(pos, surface)));
                 }
             }
         }
