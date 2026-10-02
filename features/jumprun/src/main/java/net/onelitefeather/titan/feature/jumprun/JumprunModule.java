@@ -48,10 +48,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * The {@code jumprun} feature: a random jump and run that only the playing player can walk on,
- * built
- * from fake blocks and shown to the others as block displays. All state lives in the
- * {@link RunRegistry}; there is no tick task, work happens in
- * the events of the player who runs.
+ * built from fake blocks and shown to the others as block displays. All state lives in the
+ * {@link RunRegistry}; there is no tick task, work happens in the events of the player who runs.
  *
  * <p>{@code LobbyItems} is not injected: the item calls {@link #toggle(Player)} on this module
  * directly, so there is no dependency on the hotbar column and no cycle with it.
