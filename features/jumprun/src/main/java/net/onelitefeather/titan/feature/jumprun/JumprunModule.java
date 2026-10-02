@@ -25,11 +25,15 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.LongSupplier;
 import java.util.random.RandomGenerator;
 import java.util.random.RandomGeneratorFactory;
+import net.kyori.adventure.text.Component;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
+import net.minestom.server.event.player.PlayerDeathEvent;
+import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.event.player.PlayerMoveEvent;
+import net.minestom.server.event.player.PlayerStartFlyingWithElytraEvent;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.module.LobbySpawn;
 import org.slf4j.Logger;
@@ -78,7 +82,7 @@ final class JumprunModule {
     @PostConstruct
     void start() {
         this.messages.register();
-        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY).on(PlayerMoveEvent.class, this::onMove);
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY).on(PlayerMoveEvent.class, this::onMove).on(PlayerStartFlyingWithElytraEvent.class, event -> endRunOf(event.getPlayer(), EndReason.ELYTRA)).on(PlayerDeathEvent.class, event -> endRunOf(event.getPlayer(), EndReason.DEATH)).on(PlayerDisconnectEvent.class, event -> endRunOf(event.getPlayer(), EndReason.DISCONNECT));
     }
 
     @PreDestroy
@@ -123,6 +127,13 @@ final class JumprunModule {
         return Course.start(feet, startBlock, heading, new InstanceSpaceProbe(player.getInstance()), random).map(course -> new Run(player, course, startBlock));
     }
 
+    private void endRunOf(Player player, EndReason reason) {
+        Run run = runs.get(player.getUuid());
+        if (run != null) {
+            end(run, reason);
+        }
+    }
+
     private void onMove(PlayerMoveEvent event) {
         Run run = runs.get(event.getPlayer().getUuid());
         if (run == null) {
@@ -156,17 +167,33 @@ final class JumprunModule {
         }
         Player player = run.player();
         int score = run.course().score();
-        fakeBlocks.reset(player, run.fakeWindow());
-        // A run that never scored is not worth calling a record, even when it is the first.
-        boolean isRecord = records.submit(player.getUuid(), score) && score > 0;
-        player.sendMessage(isRecord ? messages.endRecord(player.getLocale(), score) : messages.endScore(player.getLocale(), score));
+        if (reason.restoresBlocks) {
+            fakeBlocks.reset(player, run.fakeWindow());
+        }
+        boolean isRecord = records.submit(player.getUuid(), score);
+        if (reason.announces) {
+            // A run that never scored is not worth calling a record, even when it is the first.
+            Component message = isRecord && score > 0 ? messages.endRecord(player.getLocale(), score) : messages.endScore(player.getLocale(), score);
+            player.sendMessage(message);
+        }
         if (reason == EndReason.FALL) {
             player.teleport(run.course().startPoint());
         }
         LOGGER.atDebug().addKeyValue("player", player.getUuid()).log("jumprun ended: reason={}, score={}", reason, score);
     }
 
+    /** Why a run ended, and what the player is owed for it. */
     private enum EndReason {
-        ABORT, FALL, EXHAUSTED
+        ABORT(true, true), FALL(true, true), EXHAUSTED(true, true), ELYTRA(true, true), DEATH(true, true),
+        /** The player is gone: nothing to show or tell, but the score stands. */
+        DISCONNECT(false, false);
+
+        private final boolean restoresBlocks;
+        private final boolean announces;
+
+        EndReason(boolean restoresBlocks, boolean announces) {
+            this.restoresBlocks = restoresBlocks;
+            this.announces = announces;
+        }
     }
 }

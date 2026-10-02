@@ -19,8 +19,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.List;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
@@ -44,31 +42,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(MicrotusExtension.class)
 class JumprunMoveTest {
 
-    private static final Pos STAND = new Pos(0.5, JumprunFixture.GROUND_Y, 0.5);
-
-    /** A started run of one player, with the blocks it was shown at the start. */
-    private record Running(JumprunFixture fixture, TestConnection connection, Player player,
-                           Instance instance, Deque<BlockChangePacket> ahead) {
-
-        static Running start(Env env, JumprunFixture fixture) {
-            Instance instance = JumprunFixture.loadedInstance(env);
-            TestConnection connection = env.createConnection();
-            Player player = connection.connect(instance, STAND);
-            player.refreshOnGround(true);
-            Collector<BlockChangePacket> shown = connection.trackIncoming(BlockChangePacket.class);
-            fixture.useItem(player);
-            return new Running(fixture, connection, player, instance, new ArrayDeque<>(shown.collect()));
-        }
-
-        /** Lands on the next block ahead and returns everything the player was sent for it. */
-        List<ServerPacket> landOnNext() {
-            Collector<ServerPacket> sent = connection.trackIncoming();
-            fixture.landOn(player, ahead.removeFirst());
-            List<ServerPacket> packets = sent.collect();
-            packets.stream().filter(BlockChangePacket.class::isInstance).map(BlockChangePacket.class::cast).filter(packet -> packet.blockStateId() != Block.AIR.stateId()).forEach(ahead::addLast);
-            return packets;
-        }
-    }
+    private static final Pos STAND = StartedRun.STAND;
 
     private static long count(List<ServerPacket> packets, Class<? extends ServerPacket> type) {
         return packets.stream().filter(type::isInstance).count();
@@ -81,7 +55,7 @@ class JumprunMoveTest {
     @Test
     void landingOnTheNextBlockShowsOneNewBlockAhead(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            Running run = Running.start(env, fixture);
+            StartedRun run = StartedRun.start(env, fixture);
 
             List<ServerPacket> packets = run.landOnNext();
 
@@ -93,7 +67,7 @@ class JumprunMoveTest {
     @Test
     void landingOnTheBlockAfterTheNextShowsTwoNewBlocks(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            Running run = Running.start(env, fixture);
+            StartedRun run = StartedRun.start(env, fixture);
             run.ahead().removeFirst();
             Collector<BlockChangePacket> sent = run.connection().trackIncoming(BlockChangePacket.class);
 
@@ -106,7 +80,7 @@ class JumprunMoveTest {
     @Test
     void theStartBlockLeavingTheWindowIsNotTouched(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            Running run = Running.start(env, fixture);
+            StartedRun run = StartedRun.start(env, fixture);
             run.landOnNext();
             run.landOnNext();
 
@@ -119,7 +93,7 @@ class JumprunMoveTest {
     @Test
     void theOldestFakeBlockIsTakenBackOnceItLeavesTheWindow(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            Running run = Running.start(env, fixture);
+            StartedRun run = StartedRun.start(env, fixture);
             Point oldest = run.ahead().peekFirst().blockPosition();
             run.landOnNext();
             run.landOnNext();
@@ -134,7 +108,7 @@ class JumprunMoveTest {
     @Test
     void theScoreAppearsInTheActionBarOnceTheAscentIsDone(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            Running run = Running.start(env, fixture);
+            StartedRun run = StartedRun.start(env, fixture);
             List<ServerPacket> last = List.of();
             for (int landing = 0; landing <= Phase.ASCENT_JUMPS; landing++) {
                 last = run.landOnNext();
@@ -148,7 +122,7 @@ class JumprunMoveTest {
     @Test
     void movingThroughTheAirOverABlockDoesNotAdvance(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            Running run = Running.start(env, fixture);
+            StartedRun run = StartedRun.start(env, fixture);
             BlockChangePacket next = run.ahead().peekFirst();
             Collector<ServerPacket> sent = run.connection().trackIncoming();
 
@@ -161,7 +135,7 @@ class JumprunMoveTest {
     @Test
     void fallingMoreThanThreeBlocksBelowTheBlockEndsTheRunAndResetsTheBlocks(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            Running run = Running.start(env, fixture);
+            StartedRun run = StartedRun.start(env, fixture);
             Collector<BlockChangePacket> resets = run.connection().trackIncoming(BlockChangePacket.class);
 
             fixture.move(run.player(), STAND.withY(JumprunFixture.GROUND_Y - 3.5), false);
@@ -176,7 +150,7 @@ class JumprunMoveTest {
     @Test
     void aFallSetsThePlayerBackToTheStartPoint(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            Running run = Running.start(env, fixture);
+            StartedRun run = StartedRun.start(env, fixture);
             run.player().teleport(STAND.add(6, 0, 0)).join();
 
             fixture.move(run.player(), STAND.add(6, -3.5, 0), false);
@@ -188,7 +162,7 @@ class JumprunMoveTest {
     @Test
     void aFallTellsThePlayerTheScore(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            Running run = Running.start(env, fixture);
+            StartedRun run = StartedRun.start(env, fixture);
             Collector<SystemChatPacket> chat = run.connection().trackIncoming(SystemChatPacket.class);
 
             fixture.move(run.player(), STAND.withY(JumprunFixture.GROUND_Y - 3.5), false);
@@ -201,7 +175,7 @@ class JumprunMoveTest {
     @Test
     void droppingExactlyThreeBlocksDoesNotEndTheRun(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            Running run = Running.start(env, fixture);
+            StartedRun run = StartedRun.start(env, fixture);
 
             fixture.move(run.player(), STAND.withY(JumprunFixture.GROUND_Y - 3.0), false);
 
@@ -212,7 +186,7 @@ class JumprunMoveTest {
     @Test
     void aRunEndsWithTheReachedScoreWhenNoFurtherBlockFits(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            Running run = Running.start(env, fixture);
+            StartedRun run = StartedRun.start(env, fixture);
             for (int x = -40; x <= 40; x++) {
                 for (int z = -40; z <= 40; z++) {
                     for (int y = 41; y <= 70; y++) {
