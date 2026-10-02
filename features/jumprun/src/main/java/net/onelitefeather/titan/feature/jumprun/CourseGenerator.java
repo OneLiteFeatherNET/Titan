@@ -55,12 +55,17 @@ final class CourseGenerator {
     }
 
     /**
-     * The phase for the jump after {@code placed}. The ascent ends at a block with air below it in
-     * the real world, so the course does not run along ways and roofs from then on.
+     * The phase for the jump after the last block of {@code course}, which is the one just placed.
+     * The ascent ends at a block with air below it, so the course does not run along ways and
+     * roofs from then on.
      */
-    Phase after(CourseBlock placed, Phase phase) {
+    Phase after(List<CourseBlock> course, Phase phase) {
+        return after(course.getLast(), phase, rulesFor(course));
+    }
+
+    private static Phase after(CourseBlock placed, Phase phase, Space space) {
         return switch (phase) {
-            case Phase.Ascent ascent -> ascent.next(new Openness(probe).hasAirBelow(placed.pos()));
+            case Phase.Ascent ascent -> ascent.next(space.openness().hasAirBelow(placed.pos()));
             case Phase.Scored scored -> scored.next();
         };
     }
@@ -88,7 +93,7 @@ final class CourseGenerator {
         List<CourseBlock> extended = new ArrayList<>(course);
         extended.add(candidate);
         Space space = rulesFor(extended);
-        return candidatesFor(candidate, after(candidate, phase), space).stream().anyMatch(next -> space.isFree(candidate, next));
+        return candidatesFor(candidate, after(candidate, phase, space), space).stream().anyMatch(next -> space.isFree(candidate, next));
     }
 
     private record Space(JumpRules rules, Openness openness) {

@@ -185,7 +185,7 @@ final class Course {
         Optional<CourseBlock> next = generator.next(blocks, nextPhase);
         next.ifPresent(block -> {
             blocks.add(block);
-            nextPhase = generator.after(block, nextPhase);
+            nextPhase = generator.after(blocks, nextPhase);
         });
         return next.isPresent();
     }

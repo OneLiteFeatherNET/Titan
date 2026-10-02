@@ -47,7 +47,7 @@ class AscentPhaseTest {
                 break;
             }
             course.add(next.get());
-            phase = generator.after(next.get(), phase);
+            phase = generator.after(course, phase);
         }
         return course;
     }
