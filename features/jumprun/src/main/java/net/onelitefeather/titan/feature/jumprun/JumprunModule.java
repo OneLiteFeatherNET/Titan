@@ -16,14 +16,126 @@
 package net.onelitefeather.titan.feature.jumprun;
 
 import io.avaje.inject.PostConstruct;
+import io.avaje.inject.PreDestroy;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import jakarta.inject.Singleton;
+import java.util.Optional;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.LongSupplier;
+import java.util.random.RandomGenerator;
+import java.util.random.RandomGeneratorFactory;
+import net.minestom.server.coordinate.Pos;
+import net.minestom.server.entity.Player;
+import net.minestom.server.event.Event;
+import net.minestom.server.event.EventNode;
+import net.onelitefeather.titan.core.module.FeatureNode;
+import net.onelitefeather.titan.core.module.LobbySpawn;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/** Entry point of the {@code jumprun} column; the wiring follows in later tasks. */
+/**
+ * The {@code jumprun} feature: a random jump and run that only the playing player sees, built from
+ * fake blocks. All state lives in the {@link RunRegistry}; there is no tick task, work happens in
+ * the events of the player who runs.
+ *
+ * <p>{@code LobbyItems} is not injected: the item calls {@link #toggle(Player)} on this module
+ * directly, so there is no dependency on the hotbar column and no cycle with it.
+ */
 @Singleton
 final class JumprunModule {
 
+    /** This feature's position among its sibling {@link FeatureNode}s. */
+    static final int EVENT_PRIORITY = 1000;
+
+    private static final String ID = "jumprun";
+    private static final String RANDOM_ALGORITHM = "L64X128MixRandom";
+    private static final Logger LOGGER = LoggerFactory.getLogger(JumprunModule.class);
+
+    private final EventNode<Event> titan;
+    private final LobbySpawn spawn;
+    private final RunRecords records;
+    private final RunMessages messages;
+    private final LongSupplier seeds;
+    private final RunRegistry runs = new RunRegistry();
+    private final FakeBlocks fakeBlocks = new FakeBlocks();
+    private FeatureNode node;
+
+    @Inject
+    JumprunModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbySpawn spawn) {
+        this(titan, spawn, new InMemoryRunRecords(), new RunMessages(), () -> ThreadLocalRandom.current().nextLong());
+    }
+
+    JumprunModule(EventNode<Event> titan, LobbySpawn spawn, RunRecords records, RunMessages messages, LongSupplier seeds) {
+        this.titan = titan;
+        this.spawn = spawn;
+        this.records = records;
+        this.messages = messages;
+        this.seeds = seeds;
+    }
+
     @PostConstruct
     void start() {
-        // Nothing to start yet.
+        this.messages.register();
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY);
+    }
+
+    @PreDestroy
+    void stop() {
+        this.node.close();
+        this.messages.close();
+    }
+
+    boolean isRunning(Player player) {
+        return runs.get(player.getUuid()) != null;
+    }
+
+    /** The item: starts a run, or ends the one that is running. */
+    void toggle(Player player) {
+        Run running = runs.get(player.getUuid());
+        if (running == null) {
+            begin(player);
+        } else {
+            end(running, EndReason.ABORT);
+        }
+    }
+
+    private void begin(Player player) {
+        Optional<Run> run = player.isOnGround() ? plan(player) : Optional.empty();
+        if (run.isEmpty()) {
+            player.sendMessage(messages.noSpace(player.getLocale()));
+            LOGGER.atDebug().addKeyValue("player", player.getUuid()).log("jumprun has no room to start");
+            return;
+        }
+        runs.add(run.get());
+        fakeBlocks.show(player, run.get().fakeWindow());
+        LOGGER.atDebug().addKeyValue("player", player.getUuid()).log("jumprun started");
+    }
+
+    private Optional<Run> plan(Player player) {
+        Pos feet = player.getPosition();
+        // One below the feet, so the assumed top is never above the real surface (a slab, say).
+        BlockPos startBlock = new BlockPos(feet.blockX(), feet.blockY() - 1, feet.blockZ());
+        Pos spawnPoint = Optional.ofNullable(spawn.position()).orElse(feet);
+        Heading heading = Heading.away(feet.x(), feet.z(), spawnPoint.x(), spawnPoint.z(), feet.direction().x(), feet.direction().z());
+        RandomGenerator random = RandomGeneratorFactory.of(RANDOM_ALGORITHM).create(seeds.getAsLong());
+        return Course.start(feet, startBlock, heading, new InstanceSpaceProbe(player.getInstance()), random).map(course -> new Run(player, course, startBlock));
+    }
+
+    private void end(Run run, EndReason reason) {
+        if (!runs.remove(run)) {
+            return;
+        }
+        Player player = run.player();
+        int score = run.course().score();
+        fakeBlocks.reset(player, run.fakeWindow());
+        // A run that never scored is not worth calling a record, even when it is the first.
+        boolean isRecord = records.submit(player.getUuid(), score) && score > 0;
+        player.sendMessage(isRecord ? messages.endRecord(player.getLocale(), score) : messages.endScore(player.getLocale(), score));
+        LOGGER.atDebug().addKeyValue("player", player.getUuid()).log("jumprun ended: reason={}, score={}", reason, score);
+    }
+
+    private enum EndReason {
+        ABORT
     }
 }

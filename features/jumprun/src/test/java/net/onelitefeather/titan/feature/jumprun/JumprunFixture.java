@@ -1,0 +1,132 @@
+/**
+ * Copyright 2025 OneLiteFeather Network
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package net.onelitefeather.titan.feature.jumprun;
+
+import net.minestom.server.coordinate.Point;
+import net.minestom.server.coordinate.Pos;
+import net.minestom.server.entity.Player;
+import net.minestom.server.entity.PlayerHand;
+import net.minestom.server.event.player.PlayerMoveEvent;
+import net.minestom.server.event.player.PlayerUseItemEvent;
+import net.minestom.server.instance.Instance;
+import net.minestom.server.network.packet.server.play.BlockChangePacket;
+import net.minestom.testing.Env;
+import net.onelitefeather.titan.core.module.item.LobbyItem;
+import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
+
+/**
+ * A started {@link JumprunModule} on a fresh {@code titan} node with a fixed seed, in-memory
+ * records and its own message store, torn down again by {@link #close()}.
+ */
+final class JumprunFixture implements AutoCloseable {
+
+    static final long SEED = 42L;
+
+    /** The flat instance is stone up to y 39, so a player stands at y 40. */
+    static final double GROUND_Y = 40.0;
+
+    private static final int PRELOADED_CHUNK_RADIUS = 3;
+
+    private final Env env;
+    private final TestTitanNode titan;
+    private final JumprunModule module;
+    private final LobbyItem item;
+    private final InMemoryRunRecords records;
+    private final RunMessages messages;
+    private boolean moduleStopped;
+
+    private JumprunFixture(Env env, TestTitanNode titan, JumprunModule module, LobbyItem item, InMemoryRunRecords records, RunMessages messages) {
+        this.env = env;
+        this.titan = titan;
+        this.module = module;
+        this.item = item;
+        this.records = records;
+        this.messages = messages;
+    }
+
+    /** The spawn lies west of the usual start spots, so runs head east. */
+    static JumprunFixture start(Env env) {
+        TestTitanNode titan = TestTitanNode.attach(env);
+        InMemoryRunRecords records = new InMemoryRunRecords();
+        RunMessages messages = new RunMessages();
+        JumprunModule module = new JumprunModule(titan.node(), () -> new Pos(-5.5, GROUND_Y, 0.5), records, messages, () -> SEED);
+        module.start();
+        return new JumprunFixture(env, titan, module, new JumprunItems().jumprun(module), records, messages);
+    }
+
+    /** A flat instance whose chunks around the origin are loaded, so the course has room. */
+    static Instance loadedInstance(Env env) {
+        Instance instance = env.createFlatInstance();
+        for (int x = -PRELOADED_CHUNK_RADIUS; x <= PRELOADED_CHUNK_RADIUS; x++) {
+            for (int z = -PRELOADED_CHUNK_RADIUS; z <= PRELOADED_CHUNK_RADIUS; z++) {
+                instance.loadChunk(x, z).join();
+            }
+        }
+        return instance;
+    }
+
+    JumprunModule module() {
+        return module;
+    }
+
+    InMemoryRunRecords records() {
+        return records;
+    }
+
+    RunMessages messages() {
+        return messages;
+    }
+
+    /** Uses the lobby item the way the hotbar's dispatcher would. */
+    void useItem(Player player) {
+        item.onUse().handle(player, new PlayerUseItemEvent(player, PlayerHand.MAIN, item.itemStack(), 0));
+    }
+
+    /** A move report from the client, as the server turns the movement packet into an event. */
+    void move(Player player, Pos to, boolean onGround) {
+        env.process().eventHandler().call(new PlayerMoveEvent(player, to, onGround));
+    }
+
+    /** The player lands on top of a shown block and the client says so. */
+    void landOn(Player player, BlockChangePacket block) {
+        Point at = block.blockPosition();
+        move(player, new Pos(at.blockX() + 0.5, topOf(block), at.blockZ() + 0.5), true);
+    }
+
+    /** Walkable top of a shown block, read back from the surface its state id belongs to. */
+    static double topOf(BlockChangePacket block) {
+        for (Surface surface : Surface.values()) {
+            if (surface.block().stateId() == block.blockStateId()) {
+                return block.blockPosition().blockY() + surface.top();
+            }
+        }
+        throw new IllegalArgumentException("not a course surface: " + block);
+    }
+
+    /** Stops only the module, to prove nothing runs once it has; {@link #close()} does the rest. */
+    void stopModule() {
+        if (!moduleStopped) {
+            moduleStopped = true;
+            module.stop();
+        }
+    }
+
+    @Override
+    public void close() {
+        stopModule();
+        titan.close();
+    }
+}
