@@ -177,7 +177,11 @@ Ein neuer Block nach der Aufstiegsphase DARF NUR an einer Stelle entstehen, die 
 - **THEN** endet der Lauf mit dem erreichten Score
 
 ### Requirement: Zielgerichteter Verlauf
-Der Parcours MUSS eine Hauptrichtung verfolgen, die sich nur allmählich ändert. Ein neuer Block DARF NICHT entgegen der aktuellen Hauptrichtung liegen. Ein neuer Block und die Flugbahn dorthin DÜRFEN waagrecht keinem früheren sichtbaren Block des Laufs außer dem Absprungblock näher als 2 Blöcke kommen, damit frühere Blöcke beim Springen nie im Weg sind. Unter den gültigen Stellen MUSS die Lobby solche bevorzugen, die der Hauptrichtung am besten folgen.
+Der Parcours MUSS eine Hauptrichtung verfolgen, die sich nur allmählich ändert. Nach der Aufstiegsphase MUSS die Hauptrichtung schlangenförmig hin und her pendeln und den Parcours mit der Zeit um den Spawn herumführen, statt nur vom Spawn weg: Der Parcours MUSS sich in einem Ring von 20 bis 60 Blöcken waagrechtem Abstand zum Spawn halten, soweit Platz ist. Ein neuer Block DARF NICHT entgegen der aktuellen Hauptrichtung liegen. Ein neuer Block und die Flugbahn dorthin DÜRFEN waagrecht keinem früheren sichtbaren Block des Laufs außer dem Absprungblock näher als 2 Blöcke kommen, damit frühere Blöcke beim Springen nie im Weg sind. Unter den gültigen Stellen MUSS die Lobby solche bevorzugen, die der Hauptrichtung am besten folgen.
+
+#### Scenario: Schlangenlinie
+- **WHEN** ein Läufer 40 Punkte erreicht
+- **THEN** hat der Parcours mehrfach die Seite gewechselt (Links- und Rechtsbögen) und ist dabei mindestens einmal wieder näher an den Spawn herangekommen, ohne den Abstand von 16 Blöcken zu unterschreiten
 
 #### Scenario: Kein Zurück
 - **WHEN** der Parcours nach Osten läuft

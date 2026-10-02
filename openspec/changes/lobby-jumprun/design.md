@@ -203,6 +203,22 @@ Fix: Das Neusenden hängt jetzt an `PlayerPacketEvent` (`ClientPlayerActionPacke
 - **Fehlerbild:** Spieler wurden zurückgesetzt, obwohl sie gelandet waren. Ursache: Die Landung wurde nur bei einem `PlayerMoveEvent` mit `isOnGround` erkannt. Minestom 26.2 meldet `isOnGround` aus dem neuen Paketzustand, ruft aber für ein reines Boden-Status-Paket (`ClientPlayerPositionStatusPacket`) und für ein Paket mit unveränderter Position kein Move-Event auf (`PlayerPositionListener`, dort nur `refreshOnGround` bzw. früher Rücksprung). Meldet der Client die Landung erst so, bleibt sie unerkannt, und auf einem absteigenden Kurs liegt der Spieler nach zwei verpassten Landungen mehr als 3 unter dem zuletzt erkannten Block, was ein falsches Absturz-Ende auslöst. Fix: Boden-Status- und Rotationspakete mit Bodenkontakt werden über `PlayerPacketEvent` an der aktuellen Position als Landung geprüft, die Landungssuche läuft über alle sichtbaren Blöcke voraus, und die Absturzschwelle liegt 3 unter dem tiefsten Block von aktuellem und sichtbaren Folgeblöcken. Das Absturz-Ende schreibt `y`, Schwelle und aktuellen Index ins Debug-Log.
 - **Portale:** Der Kurs meidet die Portale aus `LobbyPortals` (`core`) samt 3 Blöcken Rand, für Ziel und Flugbahn. Lokal hat ein Lauf mehrfach das ElytraRace-Portal ausgelöst. In Produktion hätte das den Läufer weggeschickt.
 
+### D17 Schlangenlinie um den Spawn (Nachtrag nach fünftem lokalen Test)
+
+Die Hauptrichtung `H` aus D15 wird nach der Aufstiegsphase nicht mehr nur geglättet, sondern zu einer Wunschrichtung `W` hingezogen:
+- **Umlauf:** Die Grundrichtung ist die Tangente eines Kreises um den Spawn. Die Drehrichtung (im oder gegen den Uhrzeigersinn) wird pro Lauf mit dem Seed gewählt.
+- **Ring:** Eine radiale Korrektur hält den Abstand im Ring 20–60 Blöcke. Unter 24 Blöcken zieht sie nach außen, über 56 nach innen, linear stärker zu den Rändern.
+- **Pendeln:** Darauf kommt ein Schlangen-Pendel von ±50° mit einer Periode von 14 Blöcken (Phase pro Lauf aus dem Seed).
+- **Folgen:** `H ← normalize(0.75·H + 0.25·W)`. Die Regel „kein Kandidat gegen `H`“ und der Richtungs-Bonus aus D15 bleiben. Da `H` sich dreht, kommt der Kurs zwangsläufig auch wieder näher an den Spawn, nie aber unter 16 Blöcke (D4).
+- **Built-in:** reine Vektorrechnung mit `Math`. Alles ist deterministisch per Seed.
+- **Test:** Unit mit offener Welt und festem Seed über 60 Punkte:
+  - Die Seite (Vorzeichen der Querabweichung zu `H`) wechselt mehrfach.
+  - Der Abstand zum Spawn sinkt mindestens einmal um ≥ 8 Blöcke gegenüber einem früheren Maximum.
+  - Er bleibt im Mittel im Ring.
+
+  Die bestehenden Invarianten (kein Schritt gegen `H`, Abstand zu früheren Blöcken, Mindestabstand 16) bleiben grün.
+- **SOLID:** SRP. Die Wunschrichtung berechnet ein eigener reiner Typ (`Steering`), den `Phase`/`CourseGenerator` nur nutzen.
+
 ## Risks / Trade-offs
 
 - **Elytra durch Leertaste in der Luft:** Im Spiel startet ein erneuter Druck auf die Leertaste in der Luft das Gleiten. Spieler, die beim Springen hektisch drücken, beenden ihren Lauf versehentlich. → Bewusst so entschieden (Elytra-Gleiten = Ende). Bei der Abnahme wird geprüft, wie oft das passiert. Falls nötig, gibt es einen Folge-Change, der statt Laufende das Gleiten nur unterbindet.

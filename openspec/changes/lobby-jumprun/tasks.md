@@ -95,6 +95,10 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 - [x] 12.1 Reproduktion zuerst (Integration mit echten Client-Paketen): Landen mit anschließendem Stillstand und mehrere Landungen hintereinander auf absteigendem Kurs führen nicht zum Absturz-Ende (Spec „Landen und stehen bleiben“); rot. Ursache und Fix in D16 eintragen, beheben; grün.
 - [x] 12.2 Test zuerst (Unit): Kein Ziel und keine Flugbahn in einem Portal aus `LobbyPortals` oder näher als 3 Blöcke daran (Spec „Portal in der Nähe“). Dann umsetzen. Nachweis: `./gradlew build` grün, erneuter lokaler Test.
 
+## 13. Schlangenlinie um den Spawn
+
+- [ ] 13.1 Test zuerst (Unit): Wunschrichtung `Steering` (Tangente, Ring 20–60, Pendel ±50°/14, Drehsinn und Phase per Seed); Kurs über 60 Punkte wechselt mehrfach die Seite und kommt dem Spawn wieder näher (Spec „Schlangenlinie“); alle bisherigen Invarianten grün. Dann umsetzen (D17). Nachweis: `./gradlew build` grün, erneuter lokaler Test.
+
 ## 6. Pull Request
 
 - [ ] 6.1 Pull Request vom Integrationszweig `feat/jumprun` auf `main` unter dem Titel `feat(jumprun): add a random single-player jump and run to the lobby` öffnen (Titel und Beschreibung Englisch), mit Smoke-Test-Ergebnis und dem Hinweis auf die Elytra-Abwägung. Nachweis: PR-URL, CI grün.
