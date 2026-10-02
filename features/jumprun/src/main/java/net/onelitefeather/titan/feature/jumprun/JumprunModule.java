@@ -91,7 +91,9 @@ final class JumprunModule {
 
     @PreDestroy
     void stop() {
+        // Detach first, so no event can start or move a run while they are ended.
         this.node.close();
+        runs.all().forEach(run -> end(run, EndReason.SHUTDOWN));
         this.messages.close();
     }
 
@@ -197,7 +199,7 @@ final class JumprunModule {
         if (reason.restoresBlocks) {
             fakeBlocks.reset(player, run.fakeWindow());
         }
-        boolean isRecord = records.submit(player.getUuid(), score);
+        boolean isRecord = reason.submitsScore && records.submit(player.getUuid(), score);
         if (reason.announces) {
             // A run that never scored is not worth calling a record, even when it is the first.
             Component message = isRecord && score > 0 ? messages.endRecord(player.getLocale(), score) : messages.endScore(player.getLocale(), score);
@@ -211,15 +213,22 @@ final class JumprunModule {
 
     /** Why a run ended, and what the player is owed for it. */
     private enum EndReason {
-        ABORT(true, true), FALL(true, true), EXHAUSTED(true, true), ELYTRA(true, true), DEATH(true, true),
+        ABORT(true, true, true), FALL(true, true, true), EXHAUSTED(true, true, true), ELYTRA(true, true, true), DEATH(true, true, true),
         /** The player is gone: nothing to show or tell, but the score stands. */
-        DISCONNECT(false, false);
+        DISCONNECT(false, true, false),
+        /**
+         * The lobby stops: the blocks go back, but an interrupted run is neither scored nor
+         * reported.
+         */
+        SHUTDOWN(true, false, false);
 
         private final boolean restoresBlocks;
+        private final boolean submitsScore;
         private final boolean announces;
 
-        EndReason(boolean restoresBlocks, boolean announces) {
+        EndReason(boolean restoresBlocks, boolean submitsScore, boolean announces) {
             this.restoresBlocks = restoresBlocks;
+            this.submitsScore = submitsScore;
             this.announces = announces;
         }
     }
