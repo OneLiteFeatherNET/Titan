@@ -312,9 +312,15 @@ Für den Läufer allein spawnt der Lauf am nächsten Block einen zweiten `BLOCK_
     - Nach Disconnect gilt wieder Medium.
 - **SOLID:** OCP. Ein neuer Modus ist ein Enum-Eintrag.
 
+### D24 Elytra im Lauf ablegen (ersetzt das Laufende durch Gleiten)
+
+Die DEBUG-Logs aus dem lokalen Test zeigen, dass Läufe durch versehentliches Gleiten enden (`reason=ELYTRA`), wie im Risiko oben vermutet. Beim Start setzt der Lauf deshalb `player.getEquipment(CHESTPLATE)` auf leer. Beim Ende gibt `LobbyItems.equip(player)` (aus `core`, per `Provider` wie bei Elytra, um den Zyklus mit `hotbar` zu vermeiden) die Standardausstattung zurück, außer bei Disconnect und Shutdown. Der Listener auf `PlayerStartFlyingWithElytraEvent` und der Endgrund `ELYTRA` entfallen. Der Scheiter-Ton gilt damit nur noch für den Absturz.
+- **Built-in:** `LobbyItems.equip` als bestehender Andockpunkt. Ein eigenes Merken und Zurücklegen des Items wurde verworfen (DRY).
+- **Test:** Integration. Nach dem Start ist der Brustplatz leer. Nach dem Abbruch, dem Absturz und dem Erschöpfen ist die Standardausstattung wieder da (Elytra und Item in Slot 0). Disconnect ruft `equip` nicht auf.
+
 ## Risks / Trade-offs
 
-- **Elytra durch Leertaste in der Luft:** Im Spiel startet ein erneuter Druck auf die Leertaste in der Luft das Gleiten. Spieler, die beim Springen hektisch drücken, beenden ihren Lauf versehentlich. → Bewusst so entschieden (Elytra-Gleiten = Ende). Bei der Abnahme wird geprüft, wie oft das passiert. Falls nötig, gibt es einen Folge-Change, der statt Laufende das Gleiten nur unterbindet.
+- **Elytra durch Leertaste in der Luft (gelöst durch D24):** Im Spiel startet ein erneuter Druck auf die Leertaste in der Luft das Gleiten. Spieler, die beim Springen hektisch drücken, beenden ihren Lauf versehentlich. → Bewusst so entschieden (Elytra-Gleiten = Ende). Bei der Abnahme wird geprüft, wie oft das passiert. Falls nötig, gibt es einen Folge-Change, der statt Laufende das Gleiten nur unterbindet.
 - **Minestom schickt bei Interaktionen echte Blöcke zurück** (Korrektur nach abgebrochenem Platzieren/Abbauen). Der Fake-Block wäre dann weg, und der Spieler fällt. → Fenster neu senden bei Interact/Digging (D1). Ein Integrationstest deckt Rechtsklick auf einen Laufblock ab.
 - **Andere Spieler sehen einen schwebenden Spieler.** → Gewollt (Proposal), keine Maßnahme.
 - **Der Spawn-Höhen-Teleport greift über 310.** → Die Column hält Abstand über die eigene Grenze aus der Dimension (D4). Ein Lauf erreicht 310 praktisch nie, weil der Aufstieg nur +1 pro Sprung macht und der Score-Teil meist eben oder abwärts verläuft. Wenn doch, teleportiert die Spawn-Column, und der Fall-Check beendet den Lauf. Das Ergebnis ist sauber, nur ohne Rücksetz zum Startpunkt.

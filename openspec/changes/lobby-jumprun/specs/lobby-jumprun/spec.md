@@ -75,7 +75,7 @@ Erhöht sich der Score eines Läufers, MUSS der Läufer einen kurzen Ton hören,
 - **THEN** hört er den Signalton und nicht den Punkte-Ton
 
 ### Requirement: Ton beim Scheitern
-Endet ein Lauf durch einen Absturz oder durch Gleiten mit der Elytra, ohne dass er einen neuen Rekord aufgestellt hat, MUSS der Läufer einen kurzen, absteigenden Ton hören, der sich klar vom Punkte-Ton unterscheidet. Andere Spieler DÜRFEN ihn NICHT hören. Ein Abbruch über das Item, das Verlassen der Lobby und das Herunterfahren DÜRFEN diesen Ton NICHT auslösen.
+Endet ein Lauf durch einen Absturz, ohne dass er einen neuen Rekord aufgestellt hat, MUSS der Läufer einen kurzen, absteigenden Ton hören, der sich klar vom Punkte-Ton unterscheidet. Andere Spieler DÜRFEN ihn NICHT hören. Ein Abbruch über das Item, das Verlassen der Lobby und das Herunterfahren DÜRFEN diesen Ton NICHT auslösen.
 
 #### Scenario: Absturz
 - **WHEN** der Läufer mehr als drei Blöcke unter seinen letzten Block fällt
@@ -260,15 +260,19 @@ Jeder Block eines Laufs MUSS sein Material zufällig aus einer Auswahl passend z
 - **THEN** gelten für beide dieselbe Oberkante und dieselben Kosten
 
 ### Requirement: Laufende
-Ein Lauf MUSS enden, wenn der Spieler mehr als drei Blöcke unter den Block fällt, auf dem er zuletzt gelandet ist, wenn er mit der Elytra zu gleiten beginnt, wenn er das Jump-and-Run-Item erneut benutzt, wenn er stirbt oder wenn er die Lobby verlässt. Bei einem Absturz MUSS die Lobby ihn an den Startpunkt seines Laufs zurücksetzen. Nach dem Ende DÜRFEN keine Blöcke des Laufs für ihn sichtbar bleiben, und an ihren Stellen MUSS er wieder die echte Welt sehen.
+Ein Lauf MUSS enden, wenn der Spieler mehr als drei Blöcke unter den Block fällt, auf dem er zuletzt gelandet ist, wenn er das Jump-and-Run-Item erneut benutzt, wenn er stirbt oder wenn er die Lobby verlässt. Bei einem Absturz MUSS die Lobby ihn an den Startpunkt seines Laufs zurücksetzen. Während eines Laufs DARF der Läufer KEINE Elytra tragen, damit ein Leertastendruck in der Luft kein Gleiten auslöst; mit dem Laufende MUSS er seine normale Lobby-Ausstattung zurückerhalten. Nach dem Ende DÜRFEN keine Blöcke des Laufs für ihn sichtbar bleiben, und an ihren Stellen MUSS er wieder die echte Welt sehen.
 
 #### Scenario: Absturz
 - **WHEN** der Spieler mehr als drei Blöcke unter seinen letzten Block fällt
 - **THEN** endet der Lauf, alle Blöcke verschwinden, und er steht wieder am Startpunkt des Laufs
 
-#### Scenario: Elytra
-- **WHEN** der Spieler während eines Laufs mit der Elytra zu gleiten beginnt
-- **THEN** endet der Lauf wie bei einem Absturz, aber ohne ihn zurückzusetzen
+#### Scenario: Keine Elytra im Lauf
+- **WHEN** ein Spieler einen Lauf startet
+- **THEN** trägt er keine Elytra mehr, und ein Leertastendruck in der Luft beendet den Lauf nicht
+
+#### Scenario: Ausstattung zurück
+- **WHEN** der Lauf endet, egal aus welchem Grund außer Verlassen der Lobby
+- **THEN** trägt der Spieler wieder seine Elytra und hat seine normale Hotbar
 
 #### Scenario: Abbruch über das Item
 - **WHEN** der Spieler während eines Laufs das Jump-and-Run-Item benutzt

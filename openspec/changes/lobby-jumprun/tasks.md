@@ -120,6 +120,10 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten. Erst Vorhand
 - [ ] 18.1 Test zuerst (Integration): Umrandung des nächsten Blocks nur für den Läufer, wechselt bei jeder Landung, erscheint erst nach der Fall-Animation, verschwindet beim Ende (D22).
 - [ ] 18.2 Test zuerst (Unit + Integration): `Mode` Easy/Medium/Hard mit Parametern, Wechsel per Schleich-Rechtsklick außerhalb eines Laufs, keine Wirkung im Lauf, Rekorde pro Modus, Modus in Meldungen und Kopfanzeige, Modus pro Sitzung (D23). Nachweis: `./gradlew build` grün, erneuter lokaler Test.
 
+## 19. Elytra im Lauf ablegen
+
+- [ ] 19.1 Test zuerst (Integration): Brustplatz beim Start leer, Standardausstattung nach Abbruch, Absturz und Erschöpfen zurück, nicht bei Disconnect; `ELYTRA`-Endgrund und Listener entfernt; Scheiter-Ton nur bei Absturz (D24). Nachweis: `./gradlew build` grün.
+
 ## 6. Pull Request
 
 - [ ] 6.1 Pull Request vom Integrationszweig `feat/jumprun` auf `main` unter dem Titel `feat(jumprun): add a random single-player jump and run to the lobby` öffnen (Titel und Beschreibung Englisch), mit Smoke-Test-Ergebnis und dem Hinweis auf die Elytra-Abwägung. Nachweis: PR-URL, CI grün.
