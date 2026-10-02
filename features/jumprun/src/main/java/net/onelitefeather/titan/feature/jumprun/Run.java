@@ -34,11 +34,13 @@ final class Run {
     private final Player player;
     private final Course course;
     private final BlockPos startBlock;
+    private final Spectators spectators;
 
     Run(Player player, Course course, BlockPos startBlock) {
         this.player = player;
         this.course = course;
         this.startBlock = startBlock;
+        this.spectators = new Spectators(player);
     }
 
     Player player() {
@@ -55,6 +57,11 @@ final class Run {
 
     synchronized int score() {
         return course.score();
+    }
+
+    /** What the other players see; touch it only while holding the lock of the run. */
+    Spectators spectators() {
+        return spectators;
     }
 
     Pos startPoint() {

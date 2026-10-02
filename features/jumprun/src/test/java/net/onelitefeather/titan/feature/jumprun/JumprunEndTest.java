@@ -30,6 +30,7 @@ import net.minestom.server.event.player.PlayerStartFlyingWithElytraEvent;
 import net.minestom.server.instance.block.Block;
 import net.minestom.server.network.packet.server.ServerPacket;
 import net.minestom.server.network.packet.server.play.ActionBarPacket;
+import net.minestom.server.network.packet.server.play.DestroyEntitiesPacket;
 import net.minestom.server.network.packet.server.play.BlockChangePacket;
 import net.minestom.server.network.packet.server.play.SystemChatPacket;
 import net.minestom.testing.Collector;
@@ -97,7 +98,9 @@ class JumprunEndTest {
 
             call(env, new PlayerDisconnectEvent(run.player()));
 
-            assertTrue(sent.collect().isEmpty(), "a player who is leaving gets no messages and no resets");
+            // Minestom also tells the runner that a display is gone; the client ignores ids it never saw.
+            List<ServerPacket> visible = sent.collect().stream().filter(packet -> !(packet instanceof DestroyEntitiesPacket)).toList();
+            assertTrue(visible.isEmpty(), "a player who is leaving gets no messages and no resets: " + visible);
         }
     }
 

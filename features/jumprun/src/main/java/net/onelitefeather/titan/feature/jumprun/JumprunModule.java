@@ -47,8 +47,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The {@code jumprun} feature: a random jump and run that only the playing player sees, built from
- * fake blocks. All state lives in the {@link RunRegistry}; there is no tick task, work happens in
+ * The {@code jumprun} feature: a random jump and run that only the playing player can walk on,
+ * built
+ * from fake blocks and shown to the others as block displays. All state lives in the
+ * {@link RunRegistry}; there is no tick task, work happens in
  * the events of the player who runs.
  *
  * <p>{@code LobbyItems} is not injected: the item calls {@link #toggle(Player)} on this module
@@ -135,6 +137,7 @@ final class JumprunModule {
         synchronized (run) {
             runs.add(run);
             fakeBlocks.show(player, run.fakeWindow());
+            run.spectators().show(run.fakeWindow());
         }
         LOGGER.atDebug().addKeyValue("player", player.getUuid()).log("jumprun started");
     }
@@ -240,8 +243,12 @@ final class JumprunModule {
             return;
         }
         Player player = run.player();
-        fakeBlocks.reset(player, run.fake(advance.removed()));
-        fakeBlocks.show(player, run.fake(advance.added()));
+        List<CourseBlock> removed = run.fake(advance.removed());
+        List<CourseBlock> added = run.fake(advance.added());
+        fakeBlocks.reset(player, removed);
+        fakeBlocks.show(player, added);
+        run.spectators().hide(removed);
+        run.spectators().show(added);
         player.sendActionBar(messages.scoreActionBar(player.getLocale(), run.score()));
         if (advance.exhausted()) {
             end(run, EndReason.EXHAUSTED);
@@ -256,6 +263,7 @@ final class JumprunModule {
                 return;
             }
             score = run.score();
+            run.spectators().clear();
             if (reason.restoresBlocks()) {
                 fakeBlocks.reset(player, run.fakeWindow());
             }
