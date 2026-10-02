@@ -18,7 +18,7 @@ package net.onelitefeather.titan.feature.jumprun;
 import java.util.Arrays;
 
 /** The step from one course block to the next, with its geometry and its difficulty cost. */
-record Jump(CourseBlock from, CourseBlock to) {
+record Jump(Placement from, Placement to) {
 
     static final int MIN_GAP = 1;
     static final int MAX_GAP = 4;

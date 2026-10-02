@@ -21,6 +21,7 @@ import java.util.Optional;
 import java.util.random.RandomGenerator;
 import net.minestom.server.coordinate.Point;
 import net.minestom.server.coordinate.Pos;
+import net.minestom.server.instance.block.Block;
 
 /**
  * One player's run: the blocks made so far, where the player stands in them and the window the
@@ -36,6 +37,9 @@ final class Course {
      * window, so it has to keep clear of these.
      */
     static final int VISIBLE_BEFORE_NEW = BEHIND + AHEAD;
+
+    /** Block 0 is a real block of the world and never faked, so its material is never shown. */
+    private static final Block START_MATERIAL = Block.STONE;
 
     private static final int FALL_DEPTH = 3;
 
@@ -69,7 +73,7 @@ final class Course {
      */
     static Optional<Course> start(Pos startPoint, BlockPos startBlock, Heading heading, SpaceProbe probe, RandomGenerator random) {
         CourseGenerator generator = new CourseGenerator(probe, random);
-        List<CourseBlock> blocks = new ArrayList<>(List.of(new CourseBlock(startBlock, Surface.FULL)));
+        List<CourseBlock> blocks = new ArrayList<>(List.of(new CourseBlock(startBlock, Surface.FULL, START_MATERIAL)));
         Course course = new Course(startPoint, generator, blocks, Phase.start(heading));
         boolean fits = course.generateAscent() && course.generateThrough(course.blocks.size());
         return fits ? Optional.of(course) : Optional.empty();

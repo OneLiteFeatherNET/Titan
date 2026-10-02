@@ -35,7 +35,7 @@ import org.junit.jupiter.api.TestInstance;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CourseGeneratorTest {
 
-    private static final CourseBlock SOURCE = new CourseBlock(new BlockPos(0, 10, 0), Surface.FULL);
+    private static final CourseBlock SOURCE = TestBlocks.at(new BlockPos(0, 10, 0), Surface.FULL);
 
     private static RandomGenerator seeded(long seed) {
         return RandomGeneratorFactory.of("L64X128MixRandom").create(seed);
@@ -154,8 +154,8 @@ class CourseGeneratorTest {
 
     @Test
     void neverPlacesABlockIntoTheHeadroomOfAnEarlierBlock() {
-        CourseBlock earlier = new CourseBlock(new BlockPos(0, 10, 0), Surface.FULL);
-        CourseBlock last = new CourseBlock(new BlockPos(2, 10, 0), Surface.FULL);
+        CourseBlock earlier = TestBlocks.at(new BlockPos(0, 10, 0), Surface.FULL);
+        CourseBlock last = TestBlocks.at(new BlockPos(2, 10, 0), Surface.FULL);
         Phase towardsTheEarlierBlock = new Phase.Ascent(Phase.MIN_ASCENT_JUMPS, new Heading(-1.0, 0.0));
 
         for (long seed = 0; seed < 200; seed++) {

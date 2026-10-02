@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 class JumpTest {
 
     private static CourseBlock block(int x, int y, int z, Surface surface) {
-        return new CourseBlock(new BlockPos(x, y, z), surface);
+        return TestBlocks.at(new BlockPos(x, y, z), surface);
     }
 
     private static Jump jump(CourseBlock from, CourseBlock to) {

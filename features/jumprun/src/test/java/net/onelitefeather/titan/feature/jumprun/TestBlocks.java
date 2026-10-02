@@ -15,8 +15,14 @@
  */
 package net.onelitefeather.titan.feature.jumprun;
 
-import net.minestom.server.instance.block.Block;
+/** Fixture factory for blocks whose material does not matter to the test. */
+final class TestBlocks {
 
-/** One block of a course: where it sits, its shape and the material drawn for it. */
-record CourseBlock(BlockPos pos, Surface surface, Block material) implements Placement {
+    private TestBlocks() {
+    }
+
+    /** A block with the first material of its shape. */
+    static CourseBlock at(BlockPos pos, Surface surface) {
+        return new CourseBlock(pos, surface, surface.palette().getFirst());
+    }
 }

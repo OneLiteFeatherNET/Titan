@@ -17,6 +17,10 @@ package net.onelitefeather.titan.feature.jumprun;
 
 import net.minestom.server.instance.block.Block;
 
-/** One block of a course: where it sits, its shape and the material drawn for it. */
-record CourseBlock(BlockPos pos, Surface surface, Block material) implements Placement {
+/** A place a course block could go: position and shape, before a material is drawn for it. */
+record Spot(BlockPos pos, Surface surface) implements Placement {
+
+    CourseBlock withMaterial(Block material) {
+        return new CourseBlock(pos, surface, material);
+    }
 }

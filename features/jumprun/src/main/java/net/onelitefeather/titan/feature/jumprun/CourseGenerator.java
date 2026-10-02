@@ -51,7 +51,7 @@ final class CourseGenerator {
     Optional<CourseBlock> next(List<CourseBlock> course, Phase phase) {
         CourseBlock from = course.getLast();
         Space space = rulesFor(course);
-        List<CourseBlock> free = candidatesFor(from, phase, space).stream().filter(candidate -> space.isFree(from, candidate)).toList();
+        List<Spot> free = candidatesFor(from, phase, space).stream().filter(candidate -> space.isFree(from, candidate)).toList();
         return ranked(free, phase, from, space).stream().filter(candidate -> hasFollowUp(course, candidate, phase)).findFirst().map(this::withDrawnMaterial);
     }
 
@@ -64,7 +64,7 @@ final class CourseGenerator {
         return after(course.getLast(), phase, rulesFor(course));
     }
 
-    private static Phase after(CourseBlock placed, Phase phase, Space space) {
+    private static Phase after(Placement placed, Phase phase, Space space) {
         return switch (phase) {
             case Phase.Ascent ascent -> ascent.next(space.openness().hasAirBelow(placed.pos()));
             case Phase.Scored scored -> scored.next();
@@ -72,8 +72,8 @@ final class CourseGenerator {
     }
 
     /** The material is drawn once the position is settled, so it cannot steer the choice. */
-    private CourseBlock withDrawnMaterial(CourseBlock block) {
-        return block.withMaterial(block.surface().draw(random));
+    private CourseBlock withDrawnMaterial(Spot spot) {
+        return spot.withMaterial(spot.surface().draw(random));
     }
 
     /**
@@ -81,7 +81,7 @@ final class CourseGenerator {
      * block over a way would make the course run along it. Whether the jump itself is free is
      * left to the caller, which checks it before ranking so openness is only read for free jumps.
      */
-    private List<CourseBlock> candidatesFor(CourseBlock from, Phase phase, Space space) {
+    private List<Spot> candidatesFor(Placement from, Phase phase, Space space) {
         if (phase instanceof Phase.Ascent ascent && ascent.isOutOfJumps()) {
             return List.of();
         }
@@ -90,8 +90,8 @@ final class CourseGenerator {
     }
 
     /** Dead-end check of depth one: some free jump must leave the candidate. */
-    private boolean hasFollowUp(List<CourseBlock> course, CourseBlock candidate, Phase phase) {
-        List<CourseBlock> extended = new ArrayList<>(course);
+    private boolean hasFollowUp(List<CourseBlock> course, Spot candidate, Phase phase) {
+        List<Placement> extended = new ArrayList<>(course);
         extended.add(candidate);
         Space space = rulesFor(extended);
         return candidatesFor(candidate, after(candidate, phase, space), space).stream().anyMatch(next -> space.isFree(candidate, next));
@@ -99,13 +99,13 @@ final class CourseGenerator {
 
     private record Space(JumpRules rules, Openness openness) {
 
-        boolean isFree(CourseBlock from, CourseBlock to) {
+        boolean isFree(Placement from, Placement to) {
             return rules.isFree(new Jump(from, to));
         }
     }
 
     /** The real world plus the blocks of the course the player could see. */
-    private Space rulesFor(List<CourseBlock> course) {
+    private Space rulesFor(List<? extends Placement> course) {
         SpaceProbe seen = new OccupiedProbe(probe, occupiedBy(course));
         return new Space(new JumpRules(seen), new Openness(seen));
     }
@@ -114,10 +114,10 @@ final class CourseGenerator {
      * What the visible blocks take up: the blocks themselves and the room a player standing on
      * each needs, so a new block cannot land inside someone's headroom.
      */
-    private static Set<BlockPos> occupiedBy(List<CourseBlock> course) {
-        List<CourseBlock> visible = course.subList(Math.max(0, course.size() - Course.VISIBLE_BEFORE_NEW), course.size());
+    private static Set<BlockPos> occupiedBy(List<? extends Placement> course) {
+        List<? extends Placement> visible = course.subList(Math.max(0, course.size() - Course.VISIBLE_BEFORE_NEW), course.size());
         Set<BlockPos> occupied = new HashSet<>();
-        for (CourseBlock block : visible) {
+        for (Placement block : visible) {
             for (int y = block.pos().y(); y <= block.headroomTopY(); y++) {
                 occupied.add(new BlockPos(block.pos().x(), y, block.pos().z()));
             }
@@ -126,15 +126,15 @@ final class CourseGenerator {
     }
 
     /** Every reachable jump the phase allows from the block, before looking at the world. */
-    private static List<CourseBlock> candidates(CourseBlock from, Phase phase) {
+    private static List<Spot> candidates(Placement from, Phase phase) {
         int[] gaps = phase.gaps().toArray();
         int[] rises = phase.rises().toArray();
-        List<CourseBlock> candidates = new ArrayList<>();
+        List<Spot> candidates = new ArrayList<>();
         for (Direction direction : Direction.values()) {
             for (int gap : gaps) {
                 for (int rise : rises) {
                     BlockPos pos = from.pos().offset(direction.dx() * (gap + 1), rise, direction.dz() * (gap + 1));
-                    phase.surfaces().forEach(surface -> candidates.add(new CourseBlock(pos, surface)));
+                    phase.surfaces().forEach(surface -> candidates.add(new Spot(pos, surface)));
                 }
             }
         }
@@ -142,7 +142,7 @@ final class CourseGenerator {
     }
 
     /** Best candidate first. */
-    private List<CourseBlock> ranked(List<CourseBlock> candidates, Phase phase, CourseBlock from, Space space) {
+    private List<Spot> ranked(List<Spot> candidates, Phase phase, Placement from, Space space) {
         return switch (phase) {
             case Phase.Scored scored ->
                 closestToTargetCost(candidates, scored, from, space.openness());
@@ -155,8 +155,8 @@ final class CourseGenerator {
      * Cost deviation plus a penalty for tight surroundings, so among similarly hard candidates the
      * open one wins. Shuffling before the stable sort lets the random source break ties.
      */
-    private List<CourseBlock> closestToTargetCost(List<CourseBlock> candidates, Phase.Scored phase, CourseBlock from, Openness openness) {
-        List<CourseBlock> shuffled = new ArrayList<>(candidates);
+    private List<Spot> closestToTargetCost(List<Spot> candidates, Phase.Scored phase, Placement from, Openness openness) {
+        List<Spot> shuffled = new ArrayList<>(candidates);
         Collections.shuffle(shuffled, random);
         double target = Difficulty.targetCost(phase.score(), random);
         Map<BlockPos, Double> opennessAt = new HashMap<>();
@@ -167,15 +167,15 @@ final class CourseGenerator {
      * Weighted random order by the cosine to the heading (Efraimidis-Spirakis: lower key first).
      * Candidates that do not point along the heading come after all that do.
      */
-    private double headingKey(CourseBlock from, CourseBlock candidate, Heading heading) {
+    private double headingKey(Placement from, Spot candidate, Heading heading) {
         Direction direction = Direction.toward(candidate.pos().x() - from.pos().x(), candidate.pos().z() - from.pos().z());
         double weight = heading.dot(direction);
         double draw = 1.0 - random.nextDouble();
         return weight > 0 ? -Math.pow(draw, 1.0 / weight) : 1.0 + draw;
     }
 
-    private static List<CourseBlock> sorted(List<CourseBlock> blocks, ToDoubleFunction<CourseBlock> key) {
-        record Keyed(CourseBlock block, double key) {
+    private static List<Spot> sorted(List<Spot> blocks, ToDoubleFunction<Spot> key) {
+        record Keyed(Spot block, double key) {
         }
         return blocks.stream().map(block -> new Keyed(block, key.applyAsDouble(block))).sorted(Comparator.comparingDouble(Keyed::key)).map(Keyed::block).toList();
     }

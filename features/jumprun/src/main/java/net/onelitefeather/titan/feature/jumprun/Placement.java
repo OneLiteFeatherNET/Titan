@@ -15,8 +15,20 @@
  */
 package net.onelitefeather.titan.feature.jumprun;
 
-import net.minestom.server.instance.block.Block;
+/** Where a block of a course sits and what shape it has; what the jump rules need to know. */
+sealed interface Placement permits Spot, CourseBlock {
 
-/** One block of a course: where it sits, its shape and the material drawn for it. */
-record CourseBlock(BlockPos pos, Surface surface, Block material) implements Placement {
+    BlockPos pos();
+
+    Surface surface();
+
+    /** Absolute y of the walkable top. */
+    default double topY() {
+        return pos().y() + surface().top();
+    }
+
+    /** The highest y a standing player reaches into above this block. */
+    default int headroomTopY() {
+        return pos().y() + surface().headroomTop();
+    }
 }

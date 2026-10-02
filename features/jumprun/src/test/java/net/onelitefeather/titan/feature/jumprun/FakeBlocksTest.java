@@ -36,7 +36,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 class FakeBlocksTest {
 
     private static final BlockPos AT = new BlockPos(0, 45, 0);
-    private static final List<CourseBlock> ONE_STONE = List.of(new CourseBlock(AT, Surface.FULL));
+    private static final List<CourseBlock> ONE_STONE = List.of(TestBlocks.at(AT, Surface.FULL));
 
     private final FakeBlocks fakeBlocks = new FakeBlocks();
 

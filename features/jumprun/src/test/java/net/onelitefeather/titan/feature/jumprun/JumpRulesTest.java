@@ -26,7 +26,7 @@ class JumpRulesTest {
     private static final CourseBlock ORIGIN = block(0, 10, 0, Surface.FULL);
 
     private static CourseBlock block(int x, int y, int z, Surface surface) {
-        return new CourseBlock(new BlockPos(x, y, z), surface);
+        return TestBlocks.at(new BlockPos(x, y, z), surface);
     }
 
     /** A jump from the origin block to a block at the given offset, in an open world. */

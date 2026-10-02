@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 
 class AscentPhaseTest {
 
-    private static final CourseBlock START = new CourseBlock(new BlockPos(0, 10, 0), Surface.FULL);
+    private static final CourseBlock START = TestBlocks.at(new BlockPos(0, 10, 0), Surface.FULL);
     private static final Heading EAST = new Heading(1.0, 0.0);
 
     private static RandomGenerator seeded(long seed) {
