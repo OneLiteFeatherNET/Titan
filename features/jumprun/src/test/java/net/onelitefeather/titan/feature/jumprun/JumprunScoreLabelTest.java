@@ -100,7 +100,7 @@ class JumprunScoreLabelTest {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             Scene scene = Scene.start(env, fixture);
 
-            assertTrue(scene.text().endsWith("Jump & Run · 0"), "the same text in every language");
+            assertTrue(scene.text().endsWith("Jump & Run · Medium · 0"), "the same text in every language");
         }
     }
 
@@ -111,7 +111,7 @@ class JumprunScoreLabelTest {
 
             scene.run().landOnNext(JumprunFixture.ASCENT_JUMPS);
 
-            assertTrue(scene.text().endsWith("Jump & Run · 0"), "the ascent does not score");
+            assertTrue(scene.text().endsWith("Jump & Run · Medium · 0"), "the ascent does not score");
         }
     }
 
@@ -124,7 +124,7 @@ class JumprunScoreLabelTest {
             for (int score = 1; score <= 3; score++) {
                 scene.run().landOnNext();
 
-                assertTrue(scene.text().endsWith("Jump & Run · " + score), "after scored jump " + score);
+                assertTrue(scene.text().endsWith("Jump & Run · Medium · " + score), "after scored jump " + score);
             }
         }
     }

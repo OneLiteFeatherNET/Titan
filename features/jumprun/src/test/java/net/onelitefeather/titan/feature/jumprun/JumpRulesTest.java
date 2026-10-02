@@ -35,7 +35,7 @@ class JumpRulesTest {
     }
 
     private static boolean validIn(FakeSpaceProbe world, CourseBlock from, CourseBlock to) {
-        return new JumpRules(world).isValid(new Jump(from, to));
+        return new JumpRules(world).isValid(new Jump(from, to), Mode.MEDIUM);
     }
 
     // --- reachability -------------------------------------------------------------------------

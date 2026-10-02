@@ -30,32 +30,32 @@ class DifficultyTest {
 
     @Test
     void levelStartsAtZero() {
-        assertEquals(0.0, Difficulty.level(0), "no score, no difficulty");
+        assertEquals(0.0, Difficulty.level(Mode.MEDIUM, 0), "no score, no difficulty");
     }
 
     @Test
     void levelRisesStrictlyWithTheScore() {
         for (int score = 0; score < 1000; score++) {
-            assertTrue(Difficulty.level(score + 1) > Difficulty.level(score), "level must rise at score " + score);
+            assertTrue(Difficulty.level(Mode.MEDIUM, score + 1) > Difficulty.level(Mode.MEDIUM, score), "level must rise at score " + score);
         }
     }
 
     @Test
     void levelStaysBelowOneForRealisticScores() {
         for (int score = 0; score <= 1000; score++) {
-            assertTrue(Difficulty.level(score) < 1.0, "level must stay below 1 at score " + score);
+            assertTrue(Difficulty.level(Mode.MEDIUM, score) < 1.0, "level must stay below 1 at score " + score);
         }
     }
 
     @Test
     void levelNeverExceedsOneEvenForAbsurdScores() {
-        assertTrue(Difficulty.level(10_000) <= 1.0, "level is capped at 1");
+        assertTrue(Difficulty.level(Mode.MEDIUM, 10_000) <= 1.0, "level is capped at 1");
     }
 
     @Test
     void levelReachesAboutHalfAtScoreFiftyFive() {
         // The scale doubled from 40 to 80 (D15), so the half-way point moved from 28 to 55.
-        assertEquals(0.5, Difficulty.level(55), 0.01, "half difficulty near score 55");
+        assertEquals(0.5, Difficulty.level(Mode.MEDIUM, 55), 0.01, "half difficulty near score 55");
     }
 
     @Test
@@ -63,7 +63,7 @@ class DifficultyTest {
         RandomGenerator random = random(1L);
         for (int score = 0; score <= 500; score++) {
             for (int i = 0; i < 20; i++) {
-                double target = Difficulty.targetCost(score, random);
+                double target = Difficulty.targetCost(Mode.MEDIUM, score, random);
                 assertTrue(target >= 0.0 && target <= Jump.MAX_COST, "target " + target + " outside [0, " + Jump.MAX_COST + "] at score " + score);
             }
         }
@@ -73,9 +73,9 @@ class DifficultyTest {
     void targetCostNeverExceedsTheHardestJumpOfTheShapesUnlockedAtTheScore() {
         RandomGenerator random = random(3L);
         for (int score : new int[]{0, 9, 10, 24, 25, 39, 40}) {
-            double hardest = Jump.maxCost(Surface.unlockedAt(score));
+            double hardest = Jump.maxCost(Mode.MEDIUM, Mode.MEDIUM.unlockedAt(score));
             for (int i = 0; i < 500; i++) {
-                double target = Difficulty.targetCost(score, random);
+                double target = Difficulty.targetCost(Mode.MEDIUM, score, random);
                 assertTrue(target <= hardest, "target " + target + " above " + hardest + " at score " + score);
             }
         }
@@ -83,10 +83,10 @@ class DifficultyTest {
 
     @Test
     void theHardestJumpGrowsWithTheUnlockedShapes() {
-        assertEquals(4.5, Jump.maxCost(Surface.unlockedAt(0)), "full blocks over the widest gap");
-        assertEquals(6.5, Jump.maxCost(Surface.unlockedAt(10)), "slabs and trapdoors");
-        assertEquals(10.5, Jump.maxCost(Surface.unlockedAt(25)), "panes");
-        assertEquals(Jump.MAX_COST, Jump.maxCost(Surface.unlockedAt(40)), "posts");
+        assertEquals(4.5, Jump.maxCost(Mode.MEDIUM, Mode.MEDIUM.unlockedAt(0)), "full blocks over the widest gap");
+        assertEquals(6.5, Jump.maxCost(Mode.MEDIUM, Mode.MEDIUM.unlockedAt(10)), "slabs and trapdoors");
+        assertEquals(10.5, Jump.maxCost(Mode.MEDIUM, Mode.MEDIUM.unlockedAt(25)), "panes");
+        assertEquals(Jump.MAX_COST, Jump.maxCost(Mode.MEDIUM, Mode.MEDIUM.unlockedAt(40)), "posts");
     }
 
     @Test
@@ -95,7 +95,7 @@ class DifficultyTest {
         double sum = 0;
         int samples = 2000;
         for (int i = 0; i < samples; i++) {
-            sum += Difficulty.targetCost(0, random);
+            sum += Difficulty.targetCost(Mode.MEDIUM, 0, random);
         }
         assertTrue(sum / samples < 1.0, "mean target at score 0 was " + sum / samples);
     }
@@ -106,13 +106,13 @@ class DifficultyTest {
         double sum = 0;
         int samples = 2000;
         for (int i = 0; i < samples; i++) {
-            sum += Difficulty.targetCost(10_000, random);
+            sum += Difficulty.targetCost(Mode.MEDIUM, 10_000, random);
         }
         assertEquals(Jump.MAX_COST, sum / samples, 1.0, "mean target at a huge score approaches the max cost");
     }
 
     @Test
     void sameSeedGivesSameTargets() {
-        assertEquals(Difficulty.targetCost(30, random(5L)), Difficulty.targetCost(30, random(5L)), "same seed");
+        assertEquals(Difficulty.targetCost(Mode.MEDIUM, 30, random(5L)), Difficulty.targetCost(Mode.MEDIUM, 30, random(5L)), "same seed");
     }
 }

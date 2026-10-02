@@ -74,29 +74,29 @@ class SurfaceTest {
 
     @Test
     void shapesUnlockAtTheirScoreThresholds() {
-        assertEquals(0, Surface.FULL.minScore(), "full block");
-        assertEquals(10, Surface.SLAB.minScore(), "slab");
-        assertEquals(10, Surface.TRAPDOOR.minScore(), "trapdoor");
-        assertEquals(25, Surface.FENCE.minScore(), "fence");
-        assertEquals(25, Surface.PANE.minScore(), "pane");
-        assertEquals(40, Surface.POST.minScore(), "post");
+        assertEquals(0, Mode.MEDIUM.minScore(Surface.FULL), "full block");
+        assertEquals(10, Mode.MEDIUM.minScore(Surface.SLAB), "slab");
+        assertEquals(10, Mode.MEDIUM.minScore(Surface.TRAPDOOR), "trapdoor");
+        assertEquals(25, Mode.MEDIUM.minScore(Surface.FENCE), "fence");
+        assertEquals(25, Mode.MEDIUM.minScore(Surface.PANE), "pane");
+        assertEquals(40, Mode.MEDIUM.minScore(Surface.POST), "post");
     }
 
     @Test
     void onlyFullBlocksAreUnlockedBelowScoreTen() {
-        assertEquals(List.of(Surface.FULL), Surface.unlockedAt(0), "score 0");
-        assertEquals(List.of(Surface.FULL), Surface.unlockedAt(9), "score 9");
+        assertEquals(List.of(Surface.FULL), Mode.MEDIUM.unlockedAt(0), "score 0");
+        assertEquals(List.of(Surface.FULL), Mode.MEDIUM.unlockedAt(9), "score 9");
     }
 
     @Test
     void slabAndTrapdoorUnlockAtTenAndFenceAndPaneAtTwentyFive() {
-        assertEquals(List.of(Surface.FULL, Surface.TRAPDOOR, Surface.SLAB), Surface.unlockedAt(10), "score 10");
-        assertEquals(List.of(Surface.FULL, Surface.TRAPDOOR, Surface.SLAB), Surface.unlockedAt(24), "score 24");
-        assertEquals(List.of(Surface.FULL, Surface.TRAPDOOR, Surface.SLAB, Surface.FENCE, Surface.PANE), Surface.unlockedAt(25), "score 25");
+        assertEquals(List.of(Surface.FULL, Surface.TRAPDOOR, Surface.SLAB), Mode.MEDIUM.unlockedAt(10), "score 10");
+        assertEquals(List.of(Surface.FULL, Surface.TRAPDOOR, Surface.SLAB), Mode.MEDIUM.unlockedAt(24), "score 24");
+        assertEquals(List.of(Surface.FULL, Surface.TRAPDOOR, Surface.SLAB, Surface.FENCE, Surface.PANE), Mode.MEDIUM.unlockedAt(25), "score 25");
     }
 
     @Test
     void everyShapeIsUnlockedFromScoreForty() {
-        assertEquals(List.of(Surface.values()), Surface.unlockedAt(40), "score 40");
+        assertEquals(List.of(Surface.values()), Mode.MEDIUM.unlockedAt(40), "score 40");
     }
 }

@@ -31,18 +31,17 @@ record Jump(Placement from, Placement to) {
 
     private static final double TYPE_WEIGHT = 2.0;
     private static final double GAP_WEIGHT = 1.5;
-    private static final double ASCENT_WEIGHT = 1.0;
 
     /**
-     * Cost of the hardest allowed jump with any shape: the hardest surface over the widest flat
-     * gap.
+     * Cost of the hardest allowed jump of the medium mode with any shape: the hardest surface over
+     * the widest flat gap.
      */
-    static final double MAX_COST = maxCost(List.of(Surface.values()));
+    static final double MAX_COST = maxCost(Mode.MEDIUM, List.of(Surface.values()));
 
     /** Cost of the hardest jump onto one of the {@code surfaces} over the widest flat gap. */
-    static double maxCost(Collection<Surface> surfaces) {
+    static double maxCost(Mode mode, Collection<Surface> surfaces) {
         int hardest = surfaces.stream().mapToInt(Surface::typeCost).max().orElse(0);
-        return TYPE_WEIGHT * hardest + GAP_WEIGHT * (MAX_GAP - MIN_GAP);
+        return TYPE_WEIGHT * hardest + GAP_WEIGHT * (mode.maxGap() - MIN_GAP);
     }
 
     /** Air blocks between the two blocks: the horizontal Chebyshev distance minus one. */
@@ -72,8 +71,8 @@ record Jump(Placement from, Placement to) {
     }
 
     /** A diagonal jump is as hard as an axis jump one gap level wider. */
-    double cost() {
+    double cost(Mode mode) {
         int gapLevel = gap() - MIN_GAP + (isDiagonal() ? 1 : 0);
-        return TYPE_WEIGHT * to.surface().typeCost() + GAP_WEIGHT * gapLevel + (isAscent() ? ASCENT_WEIGHT : 0.0);
+        return TYPE_WEIGHT * to.surface().typeCost() + GAP_WEIGHT * gapLevel + (isAscent() ? mode.ascentWeight() : 0.0);
     }
 }

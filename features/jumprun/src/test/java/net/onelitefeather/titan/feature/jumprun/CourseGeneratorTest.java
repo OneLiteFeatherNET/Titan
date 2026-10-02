@@ -109,18 +109,18 @@ class CourseGeneratorTest {
 
         CourseBlock chosen = jumpFromSource(generator, 0);
 
-        assertEquals(0.0, new Jump(SOURCE, chosen).cost(), "an easiest jump");
+        assertEquals(0.0, new Jump(SOURCE, chosen).cost(Mode.MEDIUM), "an easiest jump");
     }
 
     @Test
     void picksTheCandidateClosestToTheTargetCost() {
         // Slabs and trapdoors unlock at score 10 (D15); at 0 only full blocks cost 1.5 or 2.5, never 2.0.
-        double noise = 2.0 - Difficulty.level(10) * Jump.maxCost(Surface.unlockedAt(10));
+        double noise = 2.0 - Difficulty.level(Mode.MEDIUM, 10) * Jump.maxCost(Mode.MEDIUM, Mode.MEDIUM.unlockedAt(10));
         CourseGenerator generator = TestBlocks.generator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, withNoise(noise, 1L));
 
         CourseBlock chosen = jumpFromSource(generator, 10);
 
-        assertEquals(2.0, new Jump(SOURCE, chosen).cost(), "target 2.0 is met exactly by a slab or a trapdoor");
+        assertEquals(2.0, new Jump(SOURCE, chosen).cost(Mode.MEDIUM), "target 2.0 is met exactly by a slab or a trapdoor");
         assertTrue(Set.of(Surface.SLAB, Surface.TRAPDOOR).contains(chosen.surface()), "only these cost 2.0 without a gap or a rise, got " + chosen.surface());
     }
 
@@ -152,7 +152,7 @@ class CourseGeneratorTest {
 
         CourseBlock chosen = jumpFromSource(generator, 10_000);
 
-        assertEquals(Jump.MAX_COST, new Jump(SOURCE, chosen).cost(), "hardest allowed jump");
+        assertEquals(Jump.MAX_COST, new Jump(SOURCE, chosen).cost(Mode.MEDIUM), "hardest allowed jump");
     }
 
     // --- space ----------------------------------------------------------------------------------
@@ -453,7 +453,7 @@ class CourseGeneratorTest {
     }
 
     private static double meanCost(List<Jump> jumps) {
-        return jumps.stream().mapToDouble(Jump::cost).average().orElseThrow();
+        return jumps.stream().mapToDouble(jump -> jump.cost(Mode.MEDIUM)).average().orElseThrow();
     }
 
     @Test
@@ -606,7 +606,7 @@ class CourseGeneratorTest {
 
     @Test
     void generatedJumpsAreFreeInTheWorld() {
-        assertForEvery(jumps, new JumpRules(world)::isValid, "rules");
+        assertForEvery(jumps, jump -> new JumpRules(world).isValid(jump, Mode.MEDIUM), "rules");
     }
 
     @Test
@@ -662,7 +662,7 @@ class CourseGeneratorTest {
         for (List<Move> course : courses) {
             for (int score = 0; score < course.size(); score++) {
                 Surface surface = course.get(score).jump().to().surface();
-                assertTrue(surface.minScore() <= score, surface + " appeared at score " + score);
+                assertTrue(Mode.MEDIUM.minScore(surface) <= score, surface + " appeared at score " + score);
             }
         }
     }

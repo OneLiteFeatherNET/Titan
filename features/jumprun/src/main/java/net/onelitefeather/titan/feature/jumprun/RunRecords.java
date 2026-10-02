@@ -18,14 +18,17 @@ package net.onelitefeather.titan.feature.jumprun;
 import java.util.OptionalInt;
 import java.util.UUID;
 
-/** Best score per player; the seam for a later persistent stats service. */
+/** Best score per player and mode; the seam for a later persistent stats service. */
 interface RunRecords {
 
-    OptionalInt best(UUID player);
+    OptionalInt best(UUID player, Mode mode);
 
-    /** Stores the score if it beats the best so far; returns {@code true} on a new record. */
-    boolean submit(UUID player, int score);
+    /**
+     * Stores the score if it beats the best of the mode so far; returns {@code true} on a new
+     * record.
+     */
+    boolean submit(UUID player, Mode mode, int score);
 
-    /** Drops the player's best; the record lasts only for the session. */
+    /** Drops the player's bests of every mode; the record lasts only for the session. */
     void forget(UUID player);
 }

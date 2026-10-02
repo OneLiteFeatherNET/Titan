@@ -456,7 +456,7 @@ class CourseTest {
         FakeSpaceProbe world = new FakeSpaceProbe(new BlockPos(-300, 0, -300), new BlockPos(300, 100, 300));
         SpawnZone spawn = new SpawnZone(0.5, 0.5);
         Pos startPoint = new Pos(40.5, 11.0, 0.5, 90f, 0f);
-        Course course = Course.startSteered(startPoint, new BlockPos(40, 10, 0), EAST, spawn, world, seeded(3L), TestBlocks.shipped(), PortalClearance.NONE).orElseThrow();
+        Course course = Course.startSteered(startPoint, new BlockPos(40, 10, 0), EAST, spawn, world, seeded(3L), TestBlocks.shipped(), PortalClearance.NONE, Mode.MEDIUM).orElseThrow();
 
         landOnNext(course, 120);
 

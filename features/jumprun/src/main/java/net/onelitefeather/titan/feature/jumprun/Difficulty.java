@@ -20,16 +20,14 @@ import java.util.random.RandomGenerator;
 /** Maps the score to how hard the next jump should be. */
 final class Difficulty {
 
-    /** Score at which the level has climbed to 1 - 1/e; a larger value flattens the curve. */
-    private static final double SCALE = 80.0;
     private static final double NOISE_SIGMA = 1.0;
 
     private Difficulty() {
     }
 
     /** Smooth, rising level in [0, 1) that approaches 1 without a hand-set cap. */
-    static double level(int score) {
-        return 1.0 - Math.exp(-score / SCALE);
+    static double level(Mode mode, int score) {
+        return 1.0 - Math.exp(-score / mode.scale());
     }
 
     /**
@@ -37,9 +35,9 @@ final class Difficulty {
      * shapes unlocked at the score, plus noise. Scaling to all shapes would push the target into
      * wide gaps while the narrow shapes are still locked.
      */
-    static double targetCost(int score, RandomGenerator random) {
-        double hardest = Jump.maxCost(Surface.unlockedAt(score));
-        double target = level(score) * hardest + random.nextGaussian() * NOISE_SIGMA;
+    static double targetCost(Mode mode, int score, RandomGenerator random) {
+        double hardest = Jump.maxCost(mode, mode.unlockedAt(score));
+        double target = level(mode, score) * hardest + random.nextGaussian() * NOISE_SIGMA;
         return Math.clamp(target, 0.0, hardest);
     }
 }

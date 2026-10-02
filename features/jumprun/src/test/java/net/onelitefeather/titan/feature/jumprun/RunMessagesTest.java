@@ -56,22 +56,22 @@ class RunMessagesTest {
 
     @Test
     void germanLocaleRendersGermanEndMessageWithScore() {
-        assertEquals("Jump & Run » Lauf beendet. Punkte: 9", plain(messages.endScore(Locale.GERMANY, 9)));
+        assertEquals("Jump & Run » Lauf beendet. Modus: Medium · Punkte: 9", plain(messages.endScore(Locale.GERMANY, Mode.MEDIUM, 9)));
     }
 
     @Test
     void englishLocaleRendersEnglishEndMessageWithScore() {
-        assertEquals("Jump & Run » Run over. Score: 9", plain(messages.endScore(Locale.US, 9)));
+        assertEquals("Jump & Run » Run over. Mode: Medium · Score: 9", plain(messages.endScore(Locale.US, Mode.MEDIUM, 9)));
     }
 
     @Test
     void unknownLocaleFallsBackToEnglish() {
-        assertEquals("Jump & Run » Run over. Score: 9", plain(messages.endScore(Locale.JAPAN, 9)));
+        assertEquals("Jump & Run » Run over. Mode: Medium · Score: 9", plain(messages.endScore(Locale.JAPAN, Mode.MEDIUM, 9)));
     }
 
     @Test
     void recordMessageCarriesTheScore() {
-        assertTrue(plain(messages.endRecord(Locale.US, 15)).contains("15"), "record message shows the score");
+        assertTrue(plain(messages.endRecord(Locale.US, Mode.MEDIUM, 15)).contains("15"), "record message shows the score");
     }
 
     @Test
@@ -91,5 +91,16 @@ class RunMessagesTest {
         assertEquals(registered - 1, sourceCount(), "close() removes exactly its own store");
         messages.register();
         assertEquals(registered, sourceCount(), "register() adds it again");
+    }
+
+    @Test
+    void modeChangedNamesTheModeInBothLanguages() {
+        assertEquals("Jump & Run » Mode: Hard", plain(messages.modeChanged(Locale.US, Mode.HARD)));
+        assertEquals("Jump & Run » Modus: Hard", plain(messages.modeChanged(Locale.GERMANY, Mode.HARD)));
+    }
+
+    @Test
+    void recordMessageNamesTheMode() {
+        assertTrue(plain(messages.endRecord(Locale.US, Mode.EASY, 15)).contains("Easy"), "record message shows the mode");
     }
 }

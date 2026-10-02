@@ -37,20 +37,27 @@ final class Run {
     private final BlockPos startBlock;
     private final Spectators spectators;
     private final ScoreLabel label;
+    private final Mode mode;
     private final OptionalInt previousBest;
     private boolean recordSounded;
 
-    Run(Player player, Course course, BlockPos startBlock, OptionalInt previousBest) {
+    Run(Player player, Course course, BlockPos startBlock, Mode mode, OptionalInt previousBest) {
+        this.mode = mode;
         this.previousBest = previousBest;
         this.player = player;
         this.course = course;
         this.startBlock = startBlock;
         this.spectators = new Spectators(player, this, new FakeBlocks());
-        this.label = new ScoreLabel(player);
+        this.label = new ScoreLabel(player, mode);
     }
 
     Player player() {
         return player;
+    }
+
+    /** The mode the run started with; it does not change while the run lasts. */
+    Mode mode() {
+        return mode;
     }
 
     synchronized Course.Advance advanceTo(Pos feet) {

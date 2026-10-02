@@ -697,8 +697,13 @@ Client-Blöcke (`BlockChangePacket`, nur der Spieler sieht sie, die Welt bleibt 
 existieren immer 2 Blöcke hinter und 2 vor dem Spieler, und die Schwierigkeit (Lücke,
 Höhenunterschied, Blockart) steigt mit dem Punktestand. `EVENT_PRIORITY` ist 1000.
 
-- **Einschränkung Rekorde:** Bestwerte liegen nur im Speicher (`InMemoryRunRecords`) und gehen beim
-  Neustart verloren, bis es einen Stats-Dienst gibt.
+- **Modi:** Rechtsklick mit dem Item bei gedrückter Schleichtaste wechselt außerhalb eines Laufs
+  zyklisch Easy → Medium → Hard (Standard Medium; im Lauf passiert nichts). Der Modus steuert, ab
+  welchem Punktestand die Formen erscheinen, wie steil die Schwierigkeit steigt und wie weit die
+  Lücken sind (`Mode`). Er gilt pro Spieler und Sitzung und steht im Kopf-Label und in den
+  Meldungen.
+- **Einschränkung Rekorde:** Bestwerte liegen je Modus nur im Speicher (`InMemoryRunRecords`) und
+  gehen beim Neustart verloren, bis es einen Stats-Dienst gibt.
 - **Eigene Übersetzungen:** Texte (`titan.jumprun.*`, de/en, Englisch als Fallback) kommen aus einem
   eigenen Bundle und werden pro Spieler gerendert. Minestoms globales Flag für automatische
   Übersetzung bleibt aus.

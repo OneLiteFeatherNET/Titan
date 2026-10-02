@@ -109,7 +109,7 @@ class JumprunFailSoundTest {
     void aFallBelowTheBestStillSoundsAllNotes(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             Scene scene = Scene.start(env, fixture);
-            fixture.records().submit(scene.run().player().getUuid(), 5);
+            fixture.records().submit(scene.run().player().getUuid(), Mode.MEDIUM, 5);
             scene.run().landOnNext(JumprunFixture.ASCENT_JUMPS + 1);
 
             scene.fall(fixture);

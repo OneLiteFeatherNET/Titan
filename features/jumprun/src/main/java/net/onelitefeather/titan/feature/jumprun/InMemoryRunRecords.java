@@ -17,6 +17,7 @@ package net.onelitefeather.titan.feature.jumprun;
 
 import io.avaje.inject.Secondary;
 import jakarta.inject.Singleton;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.UUID;
@@ -31,20 +32,26 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Secondary
 final class InMemoryRunRecords implements RunRecords {
 
-    private final Map<UUID, Integer> best = new ConcurrentHashMap<>();
+    private final Map<UUID, Map<Mode, Integer>> best = new ConcurrentHashMap<>();
 
     @Override
-    public OptionalInt best(UUID player) {
-        Integer score = best.get(player);
+    public OptionalInt best(UUID player, Mode mode) {
+        Map<Mode, Integer> modes = best.get(player);
+        Integer score = modes == null ? null : modes.get(mode);
         return score == null ? OptionalInt.empty() : OptionalInt.of(score);
     }
 
     @Override
-    public boolean submit(UUID player, int score) {
+    public boolean submit(UUID player, Mode mode, int score) {
         AtomicBoolean isRecord = new AtomicBoolean();
-        best.compute(player, (_, previous) -> {
+        best.compute(player, (_, modes) -> {
+            Map<Mode, Integer> updated = modes == null ? new EnumMap<>(Mode.class) : modes;
+            Integer previous = updated.get(mode);
             isRecord.set(previous == null || score > previous);
-            return isRecord.get() ? score : previous;
+            if (isRecord.get()) {
+                updated.put(mode, score);
+            }
+            return updated;
         });
         return isRecord.get();
     }

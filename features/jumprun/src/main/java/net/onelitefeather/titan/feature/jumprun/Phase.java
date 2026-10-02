@@ -27,9 +27,12 @@ sealed interface Phase {
     /** The ascent gives up after this many jumps: the run does not start. */
     int MAX_ASCENT_JUMPS = 30;
 
-    static Phase start(Heading heading) {
-        return new Ascent(0, heading);
+    static Phase start(Heading heading, Mode mode) {
+        return new Ascent(0, heading, mode);
     }
+
+    /** The mode of the run, which sets the shapes, the gaps and the difficulty. */
+    Mode mode();
 
     /**
      * The main heading of the course: the direction it leads in overall. It starts as the ascent
@@ -53,19 +56,23 @@ sealed interface Phase {
      * Easy jumps upward and away from the spawn, until a block stands in the open and far from the
      * spawn; they do not count towards the score. {@code jumps} is how many were made so far.
      */
-    record Ascent(int jumps, Heading heading) implements Phase {
+    record Ascent(int jumps, Heading heading, Mode mode) implements Phase {
 
         private static final int MAX_GAP = 2;
+
+        Ascent(int jumps, Heading heading) {
+            this(jumps, heading, Mode.MEDIUM);
+        }
 
         /** The phase after one more jump, whose block is or is not yet in the open. */
         Phase next(boolean inTheOpen) {
             int made = jumps + 1;
-            return made >= MIN_ASCENT_JUMPS && inTheOpen ? new Scored(0, heading) : new Ascent(made, heading);
+            return made >= MIN_ASCENT_JUMPS && inTheOpen ? new Scored(0, heading, mode) : new Ascent(made, heading, mode);
         }
 
         @Override
         public Phase withHeading(Heading heading) {
-            return new Ascent(jumps, heading);
+            return new Ascent(jumps, heading, mode);
         }
 
         boolean isOutOfJumps() {
@@ -92,19 +99,24 @@ sealed interface Phase {
      * Jumps whose difficulty follows {@code score}, the number of scored jumps before this one.
      * Only the shapes unlocked at that score appear.
      */
-    record Scored(int score, Heading heading) implements Phase {
+    record Scored(int score, Heading heading, Mode mode) implements Phase {
+
+        Scored(int score, Heading heading) {
+            this(score, heading, Mode.MEDIUM);
+        }
+
         Phase next() {
-            return new Scored(score + 1, heading);
+            return new Scored(score + 1, heading, mode);
         }
 
         @Override
         public Phase withHeading(Heading heading) {
-            return new Scored(score, heading);
+            return new Scored(score, heading, mode);
         }
 
         @Override
         public IntStream gaps() {
-            return IntStream.rangeClosed(Jump.MIN_GAP, Jump.MAX_GAP);
+            return IntStream.rangeClosed(Jump.MIN_GAP, mode.maxGap());
         }
 
         @Override
@@ -114,7 +126,7 @@ sealed interface Phase {
 
         @Override
         public List<Surface> surfaces() {
-            return Surface.unlockedAt(score);
+            return mode.unlockedAt(score);
         }
     }
 }
