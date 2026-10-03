@@ -16,6 +16,11 @@
 package net.onelitefeather.titan.feature.navigator;
 
 import java.util.List;
+import java.util.NoSuchElementException;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
+import net.minestom.server.component.DataComponents;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.inventory.InventoryPreClickEvent;
 import net.minestom.server.instance.Instance;
@@ -26,6 +31,7 @@ import net.minestom.server.inventory.click.Click;
 import net.minestom.server.item.Material;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -67,10 +73,11 @@ class NavigatorModuleTest {
             Assertions.assertInstanceOf(Inventory.class, openInventory);
             Assertions.assertEquals(InventoryType.CHEST_1_ROW, ((Inventory) openInventory).getInventoryType());
             Assertions.assertEquals(Material.ELYTRA, openInventory.getItemStack(0).material());
+            Assertions.assertEquals(Material.COMPASS, openInventory.getItemStack(2).material());
             Assertions.assertEquals(Material.GRASS_BLOCK, openInventory.getItemStack(4).material());
             Assertions.assertEquals(Material.ENDERMAN_SPAWN_EGG, openInventory.getItemStack(5).material());
             Assertions.assertEquals(Material.WOODEN_AXE, openInventory.getItemStack(8).material());
-            for (int slot : List.of(1, 2, 3, 6, 7)) {
+            for (int slot : List.of(1, 3, 6, 7)) {
                 Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, openInventory.getItemStack(slot).material(), "slot " + slot + " should be a blank glass pane");
             }
         }
@@ -166,11 +173,52 @@ class NavigatorModuleTest {
             fixture.equip(player);
             AbstractInventory openInventory = openNavigator(fixture, player);
 
-            InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(2));
+            InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(1));
             env.process().eventHandler().call(clickEvent);
 
             Assertions.assertTrue(deliver.deliveries().isEmpty(), "clicking a blank glass pane must not trigger a delivery");
             Assertions.assertSame(openInventory, player.getOpenInventory(), "the navigator must stay open after clicking a blank slot");
+        }
+    }
+
+    @DisplayName("Clicking Spawn returns the player once, closes the navigator, delivers nowhere and keeps the icon")
+    @Test
+    void clickingSpawnReturnsThePlayerWithoutADelivery(Env env) {
+        RecordingDeliver deliver = new RecordingDeliver();
+        FakeSpawnReturn spawnReturn = new FakeSpawnReturn();
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService(), spawnReturn)) {
+            Instance instance = env.createFlatInstance();
+            Player player = env.createPlayer(instance);
+            fixture.equip(player);
+            AbstractInventory openInventory = openNavigator(fixture, player);
+
+            InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(2));
+            env.process().eventHandler().call(clickEvent);
+
+            Assertions.assertTrue(clickEvent.isCancelled(), "the click must be cancelled so the icon stays in the navigator");
+            Assertions.assertEquals(1, spawnReturn.tellCalls(), "the player must be sent to spawn exactly once");
+            Assertions.assertTrue(deliver.deliveries().isEmpty(), "Spawn must not trigger a Deliver redirect");
+            Assertions.assertNotSame(openInventory, player.getOpenInventory(), "the navigator must close after the click");
+            Assertions.assertEquals(Material.COMPASS, openInventory.getItemStack(2).material(), "the icon must stay in the navigator");
+            Assertions.assertEquals(Component.text("Spawn", NamedTextColor.AQUA).decoration(TextDecoration.ITALIC, false), openInventory.getItemStack(2).get(DataComponents.CUSTOM_NAME), "the compass must be named Spawn, language-neutral");
+        }
+    }
+
+    @DisplayName("Starting fails clearly when the spawn column's SpawnReturn cannot be resolved")
+    @Test
+    void startFailsClearlyWithoutSpawnReturn(Env env) {
+        TestTitanNode titan = TestTitanNode.attach(env);
+        try {
+            NavigatorModule missing = new NavigatorModule(titan.node(), new RecordingDeliver(), slenderActive(), new FakePermissionService(), () -> {
+                throw new NoSuchElementException("no bean");
+            });
+            NavigatorModule absent = new NavigatorModule(titan.node(), new RecordingDeliver(), slenderActive(), new FakePermissionService(), () -> null);
+
+            IllegalStateException thrown = Assertions.assertThrows(IllegalStateException.class, missing::start, "an unresolvable provider must fail the start");
+            Assertions.assertTrue(thrown.getMessage().contains("SpawnReturn") && thrown.getMessage().contains("spawn column"), "the message must name SpawnReturn and the spawn column, was: " + thrown.getMessage());
+            Assertions.assertThrows(IllegalStateException.class, absent::start, "a provider yielding null must fail the start too");
+        } finally {
+            titan.close();
         }
     }
 

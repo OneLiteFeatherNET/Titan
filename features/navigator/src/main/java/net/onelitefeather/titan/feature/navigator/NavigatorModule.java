@@ -18,10 +18,12 @@ package net.onelitefeather.titan.feature.navigator;
 import io.avaje.inject.PostConstruct;
 import io.avaje.inject.PreDestroy;
 import jakarta.inject.Named;
+import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import java.util.List;
 import java.util.Objects;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
@@ -32,6 +34,7 @@ import net.minestom.server.item.Material;
 import net.onelitefeather.deliver.DeliverComponent;
 import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.core.module.FeatureNode;
+import net.onelitefeather.titan.core.module.SpawnReturn;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.core.permission.PermissionResult;
 import net.onelitefeather.titan.core.permission.PermissionService;
@@ -55,6 +58,7 @@ public final class NavigatorModule {
 
     private static final String ID = "navigator";
     private static final int SLOT_COUNT = 9;
+    private static final int SPAWN_SLOT = 2;
     private static final ItemStack BLANK = ItemStack.builder(Material.GRAY_STAINED_GLASS_PANE).customName(Component.empty()).build();
 
     private final EventNode<Event> titan;
@@ -63,17 +67,23 @@ public final class NavigatorModule {
     private final PermissionService permissions;
     private final SharedNavigator publicNavigator = new SharedNavigator(false);
     private final SharedNavigator teamNavigator = new SharedNavigator(true);
+    // A Provider, not a bean: the spawn column sits before this one in module order (spawn ->
+    // hotbar -> navigator item), so requiring SpawnReturn here would close a cycle.
+    private final Provider<SpawnReturn> spawnReturnProvider;
+    private SpawnReturn spawnReturn;
     private FeatureNode node;
 
-    public NavigatorModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Deliver deliver, FeatureFlags featureFlags, PermissionService permissions) {
+    public NavigatorModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Deliver deliver, FeatureFlags featureFlags, PermissionService permissions, Provider<SpawnReturn> spawnReturnProvider) {
         this.titan = Objects.requireNonNull(titan, "titan must not be null");
         this.deliver = Objects.requireNonNull(deliver, "deliver must not be null");
         this.featureFlags = Objects.requireNonNull(featureFlags, "featureFlags must not be null");
         this.permissions = Objects.requireNonNull(permissions, "permissions must not be null");
+        this.spawnReturnProvider = Objects.requireNonNull(spawnReturnProvider, "spawnReturnProvider must not be null");
     }
 
     @PostConstruct
     void start() {
+        this.spawnReturn = resolveSpawnReturn();
         // Listener-less: only attached so this feature shows up in the fixed EVENT_PRIORITY order
         // and the leak test; Aves handles every inventory click itself.
         this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY);
@@ -106,6 +116,19 @@ public final class NavigatorModule {
         return this.teamNavigator.inventory();
     }
 
+    private SpawnReturn resolveSpawnReturn() {
+        SpawnReturn resolved;
+        try {
+            resolved = this.spawnReturnProvider.get();
+        } catch (RuntimeException cause) {
+            throw new IllegalStateException("The navigator needs SpawnReturn from the spawn column, but it could not be resolved", cause);
+        }
+        if (resolved == null) {
+            throw new IllegalStateException("The navigator needs SpawnReturn from the spawn column, but it could not be resolved");
+        }
+        return resolved;
+    }
+
     // NOT_SET counts as not granted, like DENIED (lobby-permissions).
     private boolean isAllowed(Player player, Destination destination) {
         String permission = destination.permission();
@@ -128,6 +151,17 @@ public final class NavigatorModule {
                 player.closeInventory();
             });
         }
+        addSpawnEntry(layout);
         return layout;
+    }
+
+    // Spawn is a fixed entry, not a Destination: it returns the player instead of redirecting them.
+    private void addSpawnEntry(InventoryLayout layout) {
+        ItemStack compass = ItemStack.builder(Material.COMPASS).customName(MiniMessage.miniMessage().deserialize("<!i><aqua>Spawn</aqua>")).build();
+        layout.setItem(SPAWN_SLOT, compass, (player, clickedSlot, click, stack, result) -> {
+            result.accept(ClickHolder.cancelClick());
+            this.spawnReturn.sendToSpawnAndTell(player);
+            player.closeInventory();
+        });
     }
 }
