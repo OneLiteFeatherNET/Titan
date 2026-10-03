@@ -15,7 +15,9 @@
  */
 package net.onelitefeather.titan.persistence;
 
+import com.zaxxer.hikari.HikariDataSource;
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
@@ -32,19 +34,27 @@ import org.flywaydb.core.Flyway;
 record SchemaMigrations(int units, int applied) {
 
     // "TITANMIG" as a long; every lobby must use the same key for the lock to exclude anything.
+    private static final int MINIMUM_POOL_SIZE = 2;
+
     static final long LOCK_KEY = 0x5449_5441_4E4D_4947L;
 
     /**
      * Runs every unit's migrations while holding one database-wide lock, so lobbies that start
      * together apply each version once and never see each other half-way.
      */
-    static SchemaMigrations migrate(DataSource dataSource, List<PersistenceUnit> units) {
+    static SchemaMigrations migrate(HikariDataSource dataSource, List<PersistenceUnit> units) {
         // Flyway locks only its own migration step. Its checks before that (does the history table
         // exist, is the schema empty, baseline or create the table) run unlocked, so a second start
         // can decide on a stale view and fail on the first one's table. A session lock around the
         // whole run closes that window; it blocks without Flyway's one-second polling and retry
-        // limit, and a crashed holder frees it by dropping the connection.
-        try (Connection lock = dataSource.getConnection()) {
+        // limit, and a crashed holder frees it by dropping the connection. The lock connection is
+        // opened outside the pool so a pool of one connection still has one left for Flyway.
+        // Flyway itself holds two pooled connections (main and migration), so a smaller pool can
+        // never migrate; say so up front instead of timing out in Flyway.
+        if (dataSource.getMaximumPoolSize() < MINIMUM_POOL_SIZE) {
+            throw new IllegalStateException("titan.database.hikari.maximumPoolSize must be at least " + MINIMUM_POOL_SIZE + " because Flyway needs two connections");
+        }
+        try (Connection lock = DriverManager.getConnection(dataSource.getJdbcUrl(), dataSource.getUsername(), dataSource.getPassword())) {
             execute(lock, "select pg_advisory_lock(" + LOCK_KEY + ")");
             try {
                 return migrateAll(dataSource, units);

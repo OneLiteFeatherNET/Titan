@@ -190,6 +190,32 @@ class DatabaseFactoryIntegrationTest {
     }
 
     @Test
+    void poolOfTwoConnections_stillMigratesBecauseTheLockUsesItsOwnConnection() throws SQLException {
+        Configuration config = configuration();
+        config.setProperty("titan.database.hikari.maximumPoolSize", "2");
+
+        try (BeanScope scope = start(config, WIDGETS)) {
+            assertTrue(scope.getOptional(SessionFactory.class).isPresent(), "Flyway takes both pooled connections, so the lock must not need one");
+        }
+        assertEquals(List.of("1"), history("widgets"));
+    }
+
+    @Test
+    void poolOfOneConnection_abortsTheStartNamingTheKey() {
+        Configuration config = configuration();
+        config.setProperty("titan.database.hikari.maximumPoolSize", "1");
+
+        RuntimeException failure = assertThrows(RuntimeException.class, () -> start(config, WIDGETS).close(), "Flyway needs two connections, so one can never migrate");
+
+        Throwable root = failure;
+        while (root.getCause() != null) {
+            root = root.getCause();
+        }
+        assertEquals(IllegalStateException.class, root.getClass());
+        assertTrue(root.getMessage().contains("hikari.maximumPoolSize"), "the failure names the key: " + root.getMessage());
+    }
+
+    @Test
     void entityFieldWithoutAColumn_abortsTheStart() {
         RuntimeException failure = assertThrows(RuntimeException.class, () -> start(BROKEN).close(), "validate must reject a mapping the schema does not have");
 
