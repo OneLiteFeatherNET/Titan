@@ -16,6 +16,7 @@
 package net.onelitefeather.titan.feature.spawn;
 
 import io.avaje.config.Config;
+import io.avaje.config.Configuration;
 import io.avaje.inject.Bean;
 import io.avaje.inject.Factory;
 import net.onelitefeather.titan.core.module.LobbyHeightBounds;
@@ -33,16 +34,24 @@ final class SpawnHeightBoundsFactory {
     /** Reads the keys on every call, so a changed bound applies without a restart. */
     @Bean
     LobbyHeightBounds lobbyHeightBounds() {
-        return new LobbyHeightBounds() {
-            @Override
-            public int minHeight() {
-                return Config.getInt(SpawnSettings.MIN_HEIGHT_KEY);
-            }
+        return boundsOf(Config.asConfiguration());
+    }
 
-            @Override
-            public int maxHeight() {
-                return Config.getInt(SpawnSettings.MAX_HEIGHT_KEY);
-            }
-        };
+    /** Takes the configuration as a parameter so a test can bring its own. */
+    static LobbyHeightBounds boundsOf(Configuration config) {
+        return new ConfiguredHeightBounds(config);
+    }
+
+    private record ConfiguredHeightBounds(Configuration config) implements LobbyHeightBounds {
+
+        @Override
+        public int minHeight() {
+            return config.getInt(SpawnSettings.MIN_HEIGHT_KEY);
+        }
+
+        @Override
+        public int maxHeight() {
+            return config.getInt(SpawnSettings.MAX_HEIGHT_KEY);
+        }
     }
 }

@@ -15,11 +15,9 @@
  */
 package net.onelitefeather.titan.feature.spawn;
 
-import io.avaje.config.Config;
+import io.avaje.config.Configuration;
 import net.onelitefeather.titan.core.module.LobbyHeightBounds;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -29,28 +27,16 @@ import org.junit.jupiter.api.Test;
  */
 class SpawnHeightBoundsTest {
 
-    private String originalMin;
-    private String originalMax;
-
-    @BeforeEach
-    void rememberOriginals() {
-        this.originalMin = Config.get(SpawnSettings.MIN_HEIGHT_KEY);
-        this.originalMax = Config.get(SpawnSettings.MAX_HEIGHT_KEY);
-    }
-
-    @AfterEach
-    void restoreOriginals() {
-        Config.setProperty(SpawnSettings.MIN_HEIGHT_KEY, this.originalMin);
-        Config.setProperty(SpawnSettings.MAX_HEIGHT_KEY, this.originalMax);
-    }
+    /** Each test owns its configuration, so nothing leaks into the global {@code Config}. */
+    private final Configuration config = Configuration.builder().build();
 
     @DisplayName("The bean returns the configured minimum and maximum height")
     @Test
     void returnsConfiguredBounds() {
-        Config.setProperty(SpawnSettings.MIN_HEIGHT_KEY, "-10");
-        Config.setProperty(SpawnSettings.MAX_HEIGHT_KEY, "200");
+        this.config.setProperty(SpawnSettings.MIN_HEIGHT_KEY, "-10");
+        this.config.setProperty(SpawnSettings.MAX_HEIGHT_KEY, "200");
 
-        LobbyHeightBounds bounds = new SpawnHeightBoundsFactory().lobbyHeightBounds();
+        LobbyHeightBounds bounds = SpawnHeightBoundsFactory.boundsOf(this.config);
 
         Assertions.assertEquals(-10, bounds.minHeight(), "minHeight must come from " + SpawnSettings.MIN_HEIGHT_KEY);
         Assertions.assertEquals(200, bounds.maxHeight(), "maxHeight must come from " + SpawnSettings.MAX_HEIGHT_KEY);
@@ -59,9 +45,9 @@ class SpawnHeightBoundsTest {
     @DisplayName("The bean returns the new values after the configuration changed")
     @Test
     void followsConfigurationChanges() {
-        LobbyHeightBounds bounds = new SpawnHeightBoundsFactory().lobbyHeightBounds();
-        Config.setProperty(SpawnSettings.MIN_HEIGHT_KEY, "5");
-        Config.setProperty(SpawnSettings.MAX_HEIGHT_KEY, "99");
+        LobbyHeightBounds bounds = SpawnHeightBoundsFactory.boundsOf(this.config);
+        this.config.setProperty(SpawnSettings.MIN_HEIGHT_KEY, "5");
+        this.config.setProperty(SpawnSettings.MAX_HEIGHT_KEY, "99");
 
         Assertions.assertEquals(5, bounds.minHeight(), "minHeight must be read live");
         Assertions.assertEquals(99, bounds.maxHeight(), "maxHeight must be read live");

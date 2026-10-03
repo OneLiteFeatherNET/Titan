@@ -69,8 +69,7 @@ public final class SpawnModule {
     void start() {
         // Abort startup on an invalid value; neither result is kept - the listeners below read
         // the live values again on every join/move.
-        int maxHeightAtStartup = Config.getAs(SpawnSettings.MAX_HEIGHT_KEY, Integer::parseInt);
-        SpawnSettings.minHeight(Config.getAs(SpawnSettings.MIN_HEIGHT_KEY, Integer::parseInt), maxHeightAtStartup);
+        SpawnSettings.minHeight(this.heightBounds.minHeight(), this.heightBounds.maxHeight());
         Config.getAs(SpawnSettings.SIMULATION_DISTANCE_KEY, SpawnSettings::simulationDistance);
 
         this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY).on(AsyncPlayerConfigurationEvent.class, new SpawnConfigurationListener(this.instance, this.spawnPosition::position)).on(PlayerSpawnEvent.class, new SpawnJoinListener(this.spawnPosition::position, this.lobbyItems)).on(PlayerMoveEvent.class, new SpawnBoundsListener(this.spawnPosition::position, this.heightBounds));
