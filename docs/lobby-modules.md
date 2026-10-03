@@ -762,6 +762,14 @@ Umgebungsvariable < Systemproperty. Die drei Schlüssel stehen bewusst nicht in 
 - **Start:** Eine leere URL bricht den Start ab (zum Abschalten den Schlüssel entfernen). Ist die
   Datenbank nicht erreichbar, bricht der Start nach etwa 5 s ab, ebenso bei fehlgeschlagener
   Migration oder wenn das Schema nicht zu den Mappings passt (`validate`).
+- **Migrationssperre:** Gleichzeitig startende Lobbys werden durch eine PostgreSQL-Advisory-Lock der
+  Sitzung (`pg_advisory_lock`) um alle Flyway-Migrationen herum nacheinander abgearbeitet; Flyways
+  eigene Sperre deckt seine Vorprüfungen nicht ab. `titan.database.hikari.maximumPoolSize` muss
+  mindestens 3 sein (Flyway braucht zwei Verbindungen, die Startsperre eine; Standard 4), sonst bricht
+  der Start mit einer Meldung ab. `titan.database.migrationLockTimeoutSeconds` (Standard 60) begrenzt
+  das Warten: Hält eine andere Lobby die Sperre länger, bricht der Start mit klarer Meldung ab.
+  PostgreSQL ist Voraussetzung; hinter PgBouncer im Transaction-Pooling-Modus funktioniert die Sperre
+  nicht.
 - **Laufzeit:** Fällt die Datenbank später aus, bleibt die Lobby spielbar; Lesen und Schreiben
   melden dann eine WARN-Zeile, die Bestwerte bleiben im Speicher.
 - **Hikari:** `titan.database.hikari.*` nimmt jede HikariCP-Eigenschaft unter ihrem
