@@ -15,8 +15,11 @@
  */
 /**
  * The {@code jumprun} column. Like {@code elytra}, it takes {@code LobbyItems} as a {@code
- * Provider} to avoid a build-order cycle with {@code hotbarColumn}, so only {@code EventNode},
- * {@code LobbySpawn}, {@code LobbyPortals}, the platform's {@code Clock} and its {@code Scheduler}
+ * Provider} to avoid a build-order cycle with {@code hotbarColumn}, and {@code LobbyHeightBounds}
+ * the same way, because {@code spawnColumn}, which provides it, needs the hotbar too. So only
+ * {@code EventNode},
+ * {@code LobbySpawn}, {@code LobbyPortals}, the platform's {@code Clock}
+ * and its {@code Scheduler}
  * are declared as required.
  */
 @InjectModule(

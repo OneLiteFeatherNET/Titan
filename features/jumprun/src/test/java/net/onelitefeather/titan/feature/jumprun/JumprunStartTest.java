@@ -129,6 +129,24 @@ class JumprunStartTest {
     }
 
     @Test
+    void startNearTheLobbyUpperLimitBeginsNoRunAndSaysThereIsNoRoom(Env env) {
+        Instance instance = JumprunFixture.loadedInstance(env);
+        TestConnection connection = env.createConnection();
+        Player player = standingPlayer(connection, instance, STAND);
+        Collector<BlockChangePacket> blocks = connection.trackIncoming(BlockChangePacket.class);
+        Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);
+
+        try (JumprunFixture fixture = JumprunFixture.start(env, TestBlocks.bounds(-64, 45))) {
+            fixture.useItem(player);
+
+            assertFalse(fixture.module().isRunning(player), "the ascent would climb past the lobby's upper limit");
+            blocks.assertEmpty();
+            Component expected = fixture.messages().noSpace(player.getLocale());
+            chat.assertSingle(packet -> assertEquals(expected, packet.message()));
+        }
+    }
+
+    @Test
     void usingTheItemAgainEndsTheRunAndRestoresTheRealBlocks(Env env) {
         Instance instance = JumprunFixture.loadedInstance(env);
         TestConnection connection = env.createConnection();

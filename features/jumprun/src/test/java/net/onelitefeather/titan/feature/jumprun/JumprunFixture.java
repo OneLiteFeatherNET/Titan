@@ -40,6 +40,8 @@ import net.minestom.server.network.packet.client.play.ClientPlayerPositionStatus
 import net.minestom.server.network.packet.client.play.ClientTeleportConfirmPacket;
 import net.minestom.server.network.packet.server.play.BlockChangePacket;
 import net.minestom.testing.Env;
+import net.onelitefeather.titan.core.module.LobbyHeightBounds;
+import net.onelitefeather.titan.core.module.LobbyHeightBounds;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 
@@ -106,15 +108,24 @@ final class JumprunFixture implements AutoCloseable {
         return start(env, records, TestBlocks.shippedConfiguration(), Optional.of(leaderboard), refreshes);
     }
 
+    /** As above, in a lobby whose height limits are {@code bounds}. */
+    static JumprunFixture start(Env env, LobbyHeightBounds bounds) {
+        return start(env, new InMemoryRunRecords(), TestBlocks.shippedConfiguration(), Optional.empty(), Runnable::run, bounds);
+    }
+
     private static JumprunFixture start(Env env, RunRecords records, Configuration config) {
         return start(env, records, config, Optional.empty(), Runnable::run);
     }
 
     private static JumprunFixture start(Env env, RunRecords records, Configuration config, Optional<Leaderboard> leaderboard, Executor refreshes) {
+        return start(env, records, config, leaderboard, refreshes, TestBlocks.BOUNDS);
+    }
+
+    private static JumprunFixture start(Env env, RunRecords records, Configuration config, Optional<Leaderboard> leaderboard, Executor refreshes, LobbyHeightBounds bounds) {
         TestTitanNode titan = TestTitanNode.attach(env);
         RunMessages messages = new RunMessages();
         RecordingLobbyItems lobbyItems = new RecordingLobbyItems();
-        JumprunModule module = new JumprunModule(titan.node(), () -> new Pos(-40.5, GROUND_Y, 0.5), List::of, records, leaderboard, refreshes, env.process().scheduler(), () -> lobbyItems, messages, () -> SEED, new JumprunConfig(config), CLOCK);
+        JumprunModule module = new JumprunModule(titan.node(), () -> new Pos(-40.5, GROUND_Y, 0.5), List::of, records, leaderboard, refreshes, env.process().scheduler(), () -> lobbyItems, messages, () -> SEED, new JumprunConfig(config), bounds, CLOCK);
         module.start();
         LobbyItem item = new JumprunItems().jumprun(module);
         // What the hotbar column does with the use packet, without depending on it.

@@ -724,7 +724,7 @@ class CourseGeneratorTest {
 
     @Test
     void generatedJumpsAreFreeInTheWorld() {
-        assertForEvery(jumps, jump -> new JumpRules(world).isValid(jump, Mode.MEDIUM), "rules");
+        assertForEvery(jumps, jump -> new JumpRules(world, TestBlocks.BAND).isValid(jump, Mode.MEDIUM), "rules");
     }
 
     @Test
@@ -733,8 +733,8 @@ class CourseGeneratorTest {
     }
 
     @Test
-    void generatedBlocksKeepTheMarginToTheTop() {
-        assertForEvery(jumps, jump -> jump.to().pos().y() + JumpRules.MAX_Y_MARGIN <= 100, "top margin");
+    void generatedBlocksStayInsideTheHeightBand() {
+        assertForEvery(jumps, jump -> TestBlocks.BAND.allows(jump.to()), "height band");
     }
 
     @Test

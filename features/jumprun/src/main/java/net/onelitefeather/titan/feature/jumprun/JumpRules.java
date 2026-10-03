@@ -20,25 +20,23 @@ import java.util.List;
 /** Decides whether a jump can be made and whether the real world leaves room for it. */
 final class JumpRules {
 
-    /**
-     * Distance kept to the dimension's top. The spawn column teleports players above its own
-     * limit, which this column does not read, so it stays clear of the top instead.
-     */
-    static final int MAX_Y_MARGIN = 5;
-
     private final SpaceProbe probe;
+    private final HeightBand band;
 
-    JumpRules(SpaceProbe probe) {
+    JumpRules(SpaceProbe probe, HeightBand band) {
         this.probe = probe;
+        this.band = band;
     }
 
     boolean isValid(Jump jump, Mode mode) {
         return isReachable(jump, mode) && isFree(jump);
     }
 
-    /** The world leaves room for the jump: at the target and along the way. */
+    /**
+     * The target is in the height band and the world leaves room: at the target and along the way.
+     */
     boolean isFree(Jump jump) {
-        return hasRoomAtTarget(jump) && isFlightPathFree(jump);
+        return band.allows(jump.to()) && hasRoomAtTarget(jump) && isFlightPathFree(jump);
     }
 
     /** Pure geometry: the player can bridge the gap and the rise, whatever stands in the way. */
@@ -53,8 +51,7 @@ final class JumpRules {
 
     private boolean hasRoomAtTarget(Jump jump) {
         BlockPos target = jump.to().pos();
-        boolean inBounds = probe.inBounds(target) && probe.inBounds(target.above(MAX_Y_MARGIN));
-        return inBounds && probe.isAir(target) && isColumnFree(target.x(), target.z(), target.y() + 1, jump.to().jumpRoomTopY());
+        return probe.inBounds(target) && probe.isAir(target) && isColumnFree(target.x(), target.z(), target.y() + 1, jump.to().jumpRoomTopY());
     }
 
     /**

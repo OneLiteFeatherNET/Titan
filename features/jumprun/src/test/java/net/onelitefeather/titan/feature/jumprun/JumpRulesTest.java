@@ -15,7 +15,6 @@
  */
 package net.onelitefeather.titan.feature.jumprun;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -35,7 +34,11 @@ class JumpRulesTest {
     }
 
     private static boolean validIn(FakeSpaceProbe world, CourseBlock from, CourseBlock to) {
-        return new JumpRules(world).isValid(new Jump(from, to), Mode.MEDIUM);
+        return validIn(world, TestBlocks.BAND, from, to);
+    }
+
+    private static boolean validIn(FakeSpaceProbe world, HeightBand band, CourseBlock from, CourseBlock to) {
+        return new JumpRules(world, band).isValid(new Jump(from, to), Mode.MEDIUM);
     }
 
     // --- reachability -------------------------------------------------------------------------
@@ -239,12 +242,28 @@ class JumpRulesTest {
         assertFalse(validIn(new FakeSpaceProbe(new BlockPos(-50, 10, -50), new BlockPos(50, 100, 50)), ORIGIN, block(2, 9, 0, Surface.FULL)), "below the world");
     }
 
+    // --- lobby height band ------------------------------------------------------------------------
+
     @Test
-    void targetKeepsTheMarginToTheDimensionTop() {
-        assertEquals(5, JumpRules.MAX_Y_MARGIN, "margin constant");
+    void targetAtTheLobbyUpperLimitIsValidAndOneAboveIsNot() {
         FakeSpaceProbe world = new FakeSpaceProbe();
-        CourseBlock from = block(0, 94, 0, Surface.FULL);
-        assertTrue(validIn(world, from, block(2, 95, 0, Surface.FULL)), "top at 100 is the last allowed");
-        assertFalse(validIn(world, from, block(2, 96, 0, Surface.FULL)), "one above the margin");
+        HeightBand band = new HeightBand(TestBlocks.bounds(0, 100));
+        assertTrue(validIn(world, band, block(0, 95, 0, Surface.FULL), block(2, 96, 0, Surface.FULL)), "top 97 + 2.2522 fits under 100");
+        assertFalse(validIn(world, band, block(0, 96, 0, Surface.FULL), block(2, 97, 0, Surface.FULL)), "top 98 + 2.2522 passes 100");
+    }
+
+    @Test
+    void targetAboveTheBandIsInvalidEvenWhenTheDimensionHasRoom() {
+        FakeSpaceProbe world = new FakeSpaceProbe();
+        HeightBand band = new HeightBand(TestBlocks.bounds(0, 60));
+        assertFalse(validIn(world, band, block(0, 57, 0, Surface.FULL), block(2, 58, 0, Surface.FULL)), "otherwise valid, but the lobby ends at 60");
+    }
+
+    @Test
+    void targetBelowTheBandIsInvalidWhileTheDimensionStillHasRoom() {
+        FakeSpaceProbe world = new FakeSpaceProbe(new BlockPos(-50, -64, -50), new BlockPos(50, 100, 50));
+        HeightBand band = new HeightBand(TestBlocks.bounds(0, 310));
+        assertTrue(validIn(world, band, block(0, 8, 0, Surface.FULL), block(2, 7, 0, Surface.FULL)), "top 8 keeps the fall allowance above 0");
+        assertFalse(validIn(world, band, block(0, 7, 0, Surface.FULL), block(2, 6, 0, Surface.FULL)), "top 7 lets the fall reach 0");
     }
 }

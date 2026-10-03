@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.random.RandomGenerator;
 import net.minestom.server.coordinate.Pos;
+import net.onelitefeather.titan.core.module.LobbyHeightBounds;
 
 /** Fixture factory for blocks and courses whose material does not matter to the test. */
 final class TestBlocks {
@@ -55,6 +56,26 @@ final class TestBlocks {
         return config;
     }
 
+    /** A lobby whose height limits are the given ones. */
+    static LobbyHeightBounds bounds(int min, int max) {
+        return new LobbyHeightBounds() {
+            @Override
+            public int minHeight() {
+                return min;
+            }
+
+            @Override
+            public int maxHeight() {
+                return max;
+            }
+        };
+    }
+
+    /** The shipped lobby limits (-64 to 310). */
+    static final LobbyHeightBounds BOUNDS = bounds(-64, 310);
+
+    static final HeightBand BAND = new HeightBand(BOUNDS);
+
     static JumprunConfig shippedReader() {
         return new JumprunConfig(shippedConfiguration());
     }
@@ -69,14 +90,22 @@ final class TestBlocks {
     }
 
     static CourseGenerator generator(SpaceProbe probe, SpawnZone spawn, RandomGenerator random, Steering steering) {
-        return new CourseGenerator(probe, spawn, random, shipped(), PortalClearance.NONE, steering);
+        return generator(probe, BAND, spawn, random, steering);
+    }
+
+    static CourseGenerator generator(SpaceProbe probe, HeightBand band, SpawnZone spawn, RandomGenerator random, Steering steering) {
+        return new CourseGenerator(probe, band, spawn, random, shipped(), PortalClearance.NONE, steering);
     }
 
     static Optional<Course> course(Pos startPoint, BlockPos startBlock, Heading heading, SpawnZone spawn, SpaceProbe probe, RandomGenerator random) {
-        return Course.start(startPoint, startBlock, heading, spawn, probe, random, shipped());
+        return course(startPoint, startBlock, heading, spawn, probe, BAND, random);
+    }
+
+    static Optional<Course> course(Pos startPoint, BlockPos startBlock, Heading heading, SpawnZone spawn, SpaceProbe probe, HeightBand band, RandomGenerator random) {
+        return Course.start(startPoint, startBlock, heading, spawn, probe, band, random, shipped());
     }
 
     static Optional<Course> course(Pos startPoint, BlockPos startBlock, Heading heading, SpawnZone spawn, SpaceProbe probe, RandomGenerator random, PortalClearance portals) {
-        return Course.start(startPoint, startBlock, heading, spawn, probe, random, shipped(), portals);
+        return Course.start(startPoint, startBlock, heading, spawn, probe, BAND, random, shipped(), portals);
     }
 }
