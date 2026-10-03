@@ -15,6 +15,9 @@
  */
 package net.onelitefeather.titan.persistence;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.List;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
@@ -28,10 +31,38 @@ import org.flywaydb.core.Flyway;
  */
 record SchemaMigrations(int units, int applied) {
 
+    // "TITANMIG" as a long; every lobby must use the same key for the lock to exclude anything.
+    static final long LOCK_KEY = 0x5449_5441_4E4D_4947L;
+
     /**
-     * Flyway locks the database while it migrates, so concurrent starts apply each version once.
+     * Runs every unit's migrations while holding one database-wide lock, so lobbies that start
+     * together apply each version once and never see each other half-way.
      */
     static SchemaMigrations migrate(DataSource dataSource, List<PersistenceUnit> units) {
+        // Flyway locks only its own migration step. Its checks before that (does the history table
+        // exist, is the schema empty, baseline or create the table) run unlocked, so a second start
+        // can decide on a stale view and fail on the first one's table. A session lock around the
+        // whole run closes that window; it blocks without Flyway's one-second polling and retry
+        // limit, and a crashed holder frees it by dropping the connection.
+        try (Connection lock = dataSource.getConnection()) {
+            execute(lock, "select pg_advisory_lock(" + LOCK_KEY + ")");
+            try {
+                return migrateAll(dataSource, units);
+            } finally {
+                execute(lock, "select pg_advisory_unlock(" + LOCK_KEY + ")");
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Could not take the schema migration lock", e);
+        }
+    }
+
+    private static void execute(Connection connection, String sql) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(sql);
+        }
+    }
+
+    private static SchemaMigrations migrateAll(DataSource dataSource, List<PersistenceUnit> units) {
         int applied = 0;
         for (PersistenceUnit unit : units) {
             // The schema is shared: a unit's first run finds other units' tables but no history of
