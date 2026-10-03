@@ -724,6 +724,19 @@ Höhenunterschied, Blockart) steigt mit dem Punktestand. `EVENT_PRIORITY` ist 10
   übersetzt. Ohne Datenbank entfallen die Top-drei-Zeilen. Die Actionbar bleibt unverändert. Die Top drei
   werden alle 30 Sekunden aus der Datenbank neu gelesen (nicht auf dem Tick-Thread); ein neuer Rekord
   steht sofort darin, bevor die Datenbank ihn hat. Die Sidebar endet mit dem Lauf.
+- **Höhenband:** Ein Lauf bleibt innerhalb von `spawn.minHeight`/`spawn.maxHeight` (Standard
+  −64/310), damit ein Absturz immer am Startpunkt des Laufs endet und nie den Spawn-Teleport der
+  Spawn-Column auslöst. jumprun liest die Grenzen über die Bean `LobbyHeightBounds` der Spawn-Column
+  (bei jeder Prüfung frisch), die Column wird also vorausgesetzt; ohne sie bricht der Start ab.
+  Nach unten muss die Blockoberkante mehr als 3 + 5 Blöcke über `minHeight` liegen (3 Blöcke
+  Absturzschwelle, 5 Blöcke Fallstrecke eines Ticks als Puffer); nach oben muss die Oberkante plus
+  Sprunghöhe (≈ 1,25) plus 1 Block höchstens `maxHeight` sein.
+- **Sprungfreiheit:** Über jedem Block ist so viel Luft, dass man dort springen kann: Körperhöhe
+  1,8 plus Sprunghöhe ≈ 1,25. Die Flugbahn zwischen zwei Blöcken ist bis zum Scheitel frei, auch in
+  der Nähe von Portalen. Blöcke, die diese Freiheit verletzen, werden nicht erzeugt.
+- **Enges Band:** Liegen `spawn.minHeight` und `spawn.maxHeight` so dicht beieinander, dass kein Block
+  die beiden Abstände einhält, startet kein Lauf, und der Spieler sieht die Meldung „kein Platz“
+  (`titan.jumprun.start.no_space`).
 - **Eigene Übersetzungen:** Texte (`titan.jumprun.*`, de/en, Englisch als Fallback) kommen aus einem
   eigenen Bundle und werden pro Spieler gerendert. Minestoms globales Flag für automatische
   Übersetzung bleibt aus.
