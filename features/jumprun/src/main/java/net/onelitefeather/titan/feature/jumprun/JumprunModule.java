@@ -67,6 +67,7 @@ import net.minestom.server.timer.Task;
 import net.minestom.server.timer.TaskSchedule;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.module.LobbyHeightBounds;
+import net.onelitefeather.titan.core.module.LobbyReturnToSpawnEvent;
 import net.onelitefeather.titan.core.module.LobbySpawn;
 import net.onelitefeather.titan.core.module.item.LobbyItems;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
@@ -166,6 +167,7 @@ final class JumprunModule {
         this.node.on(PlayerPacketEvent.class, this::onPacket);
         this.node.on(PlayerDisconnectEvent.class, this::onDisconnect);
         this.node.on(RemoveEntityFromInstanceEvent.class, this::onLeaveInstance);
+        this.node.on(LobbyReturnToSpawnEvent.class, this::onReturnToSpawn);
         this.leaderboard.ifPresent(board -> scheduleRefreshes());
     }
 
@@ -389,6 +391,14 @@ final class JumprunModule {
             case STARTED_DIGGING, CANCELLED_DIGGING, FINISHED_DIGGING -> true;
             default -> false;
         };
+    }
+
+    /**
+     * Fires before the spawn teleport, so the score is counted where the runner stood, not at the
+     * start point.
+     */
+    private void onReturnToSpawn(LobbyReturnToSpawnEvent event) {
+        endRunOf(event.player(), EndReason.SPAWN_RETURN);
     }
 
     private void endRunOf(Player player, EndReason reason) {
