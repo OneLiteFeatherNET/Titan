@@ -7,4 +7,8 @@ dependencies {
     // not pull this in for every column. titan.column's mergeTestDefaults task gives its tests
     // this column's own defaults.
     implementation(libs.avaje.config)
+    implementation(libs.slf4j.api)
+
+    // ListAppender, for capturing the teleport-failure warning in a test.
+    testImplementation(libs.logback.classic)
 }

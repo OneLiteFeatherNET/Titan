@@ -32,6 +32,11 @@ deployment must switch to `apps/cloudnet`'s `titan-cloudnet.jar` and retrain its
 it (see "Running the Server" below) - the old single-jar build is no longer produced or
 published.
 
+### Player commands
+
+- `/spawn`: return to the lobby spawn at once (everyone, no permission); also available as the
+  compass in navigator slot 2. `/lobby` and `/hub` are left to the proxy.
+
 ## Permissions
 
 Player and console permission checks go through a `PermissionService` a permission platform

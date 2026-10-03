@@ -58,10 +58,11 @@ class NavigatorBuildDestinationTest {
 
     private static void assertPublicMenu(AbstractInventory inventory, boolean slenderVisible) {
         Assertions.assertEquals(Material.ELYTRA, inventory.getItemStack(0).material());
+        Assertions.assertEquals(Material.COMPASS, inventory.getItemStack(2).material(), "slot 2 must show Spawn");
         Assertions.assertEquals(Material.GRASS_BLOCK, inventory.getItemStack(4).material());
         Assertions.assertEquals(slenderVisible ? Material.ENDERMAN_SPAWN_EGG : Material.GRAY_STAINED_GLASS_PANE, inventory.getItemStack(5).material(), "slot 5 has the wrong material");
         Assertions.assertEquals(Material.WOODEN_AXE, inventory.getItemStack(8).material());
-        for (int slot : List.of(1, 2, 3, 6, BUILD_SLOT)) {
+        for (int slot : List.of(1, 3, 6, BUILD_SLOT)) {
             Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, inventory.getItemStack(slot).material(), "slot " + slot + " should be a blank glass pane");
         }
     }
@@ -79,10 +80,11 @@ class NavigatorBuildDestinationTest {
 
             Assertions.assertEquals(Material.SCAFFOLDING, inventory.getItemStack(BUILD_SLOT).material(), "slot 7 must show Build");
             Assertions.assertEquals(Material.ELYTRA, inventory.getItemStack(0).material());
+            Assertions.assertEquals(Material.COMPASS, inventory.getItemStack(2).material(), "slot 2 must show Spawn");
             Assertions.assertEquals(Material.GRASS_BLOCK, inventory.getItemStack(4).material());
             Assertions.assertEquals(Material.ENDERMAN_SPAWN_EGG, inventory.getItemStack(5).material());
             Assertions.assertEquals(Material.WOODEN_AXE, inventory.getItemStack(8).material());
-            for (int slot : List.of(1, 2, 3, 6)) {
+            for (int slot : List.of(1, 3, 6)) {
                 Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, inventory.getItemStack(slot).material(), "slot " + slot + " should be a blank glass pane");
             }
         }

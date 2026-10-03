@@ -261,6 +261,11 @@ package-privaten `enum Destination` (s. `openspec/changes/navigator-entries-in-c
 Nur `Destination.SLENDER` bleibt hinter der Feature-Flag `NAVIGATOR_SLENDER` versteckt, ausgewertet
 über `FeatureFlags`, dem `NavigatorModule` per Konstruktor übergeben.
 
+Auf Platz 2 beider Inventare liegt der feste Eintrag „Spawn“ (Kompass), kein `Destination`: Der
+Klick schickt den Spieler über `SpawnReturn#sendToSpawnAndTell` zurück an den Spawn und leitet nicht
+weiter. Das Modul holt `SpawnReturn` über einen `Provider`, damit zwischen den Columns `spawn` und
+`navigator` kein Zyklus entsteht.
+
 Der Navigator besitzt zwei geteilte Aves-Inventare: das öffentliche (unverändert) und das
 Team-Inventar (öffentlich plus `Destination.BUILD`). Das Recht `titan.navigator.buildserver`
 entscheidet beim Öffnen, welches sich öffnet: `PermissionService#check` liefert `ALLOWED` ->
@@ -688,6 +693,27 @@ noch `@Named`, für sie reicht die `requires`-Form allein. `LobbyItems` steht be
 `respawn`, weil ihre Module `LobbyItems` direkt injizieren; `elytra` injiziert es stattdessen als
 `Provider<LobbyItems>` (siehe oben) und lässt es deshalb aus `requires` weg, obwohl es
 `LobbyItem` liefert.
+
+## spawn
+
+Die Column `spawn` stellt `/spawn` bereit, den Weg zurück zum Lobby-Spawn: für alle Spieler, ohne
+Recht, sofort (kein Countdown). Der Befehl beendet auch einen Gleitflug und bestätigt in der
+Sprache des Spielers (`titan/spawn/messages_de|en.properties`). Hat die aktive Karte keinen
+Spawn-Punkt, gibt es eine Meldung und keinen Teleport. Die Konsole bekommt einen Hinweis für
+Operatoren, dass der Befehl nur für Spieler gilt. `/lobby` und `/hub` sind bewusst keine Aliase: Der
+Proxy belegt sie für den Wechsel in die Lobby.
+
+Command und Navigator-Eintrag (Platz 2) nutzen dieselbe `core`-Schnittstelle `SpawnReturn`
+(`sendToSpawn` ohne, `sendToSpawnAndTell` mit Rückmeldung); implementiert ist sie von
+`LobbySpawnReturn`.
+
+### Andockpunkt: `LobbyReturnToSpawnEvent`
+
+Vor dem Teleport feuert `SpawnReturn` synchron `LobbyReturnToSpawnEvent(player)` (`core`), nur wenn
+die Karte einen Spawn-Punkt hat. Features mit Spielerzustand räumen dort auf: Sie hängen einen
+Listener an den Titan-Event-Node, der beim Teleport schon fertig ist. Die Listener laufen auf dem
+Thread des Aufrufers, müssen schnell sein und sollen nicht werfen: Minestom gibt eine Exception an seinen Exception-Handler weiter, sie verzögert und verrauscht die Rückkehr nur.
+Beispiel: `jumprun` beendet einen laufenden Lauf mit `EndReason.SPAWN_RETURN`, der Score zählt.
 
 ## jumprun
 

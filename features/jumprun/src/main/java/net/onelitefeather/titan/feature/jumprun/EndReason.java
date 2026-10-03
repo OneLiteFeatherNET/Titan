@@ -18,6 +18,10 @@ package net.onelitefeather.titan.feature.jumprun;
 /** Why a run ended, and what the player is owed for it. */
 enum EndReason {
     ABORT(Owed.everything()), FALL(Owed.everything()), EXHAUSTED(Owed.everything()), DEATH(Owed.everything()),
+    /**
+     * Back to the lobby spawn: owed like an abort, but a reason of its own keeps the logs clear.
+     */
+    SPAWN_RETURN(Owed.everything()),
     /** The player is gone: nothing to show or tell, but the score stands. */
     DISCONNECT(Owed.scoreOnly()),
     /**
