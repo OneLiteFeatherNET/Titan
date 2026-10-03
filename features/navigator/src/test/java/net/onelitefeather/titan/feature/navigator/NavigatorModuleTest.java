@@ -197,6 +197,7 @@ class NavigatorModuleTest {
 
             Assertions.assertTrue(clickEvent.isCancelled(), "the click must be cancelled so the icon stays in the navigator");
             Assertions.assertEquals(1, spawnReturn.tellCalls(), "the player must be sent to spawn exactly once");
+            Assertions.assertEquals(0, spawnReturn.sendCalls(), "the click must use sendToSpawnAndTell, not sendToSpawn directly");
             Assertions.assertTrue(deliver.deliveries().isEmpty(), "Spawn must not trigger a Deliver redirect");
             Assertions.assertNotSame(openInventory, player.getOpenInventory(), "the navigator must close after the click");
             Assertions.assertEquals(Material.COMPASS, openInventory.getItemStack(2).material(), "the icon must stay in the navigator");
@@ -204,19 +205,31 @@ class NavigatorModuleTest {
         }
     }
 
-    @DisplayName("Starting fails clearly when the spawn column's SpawnReturn cannot be resolved")
+    @DisplayName("Starting fails clearly when the SpawnReturn provider throws")
     @Test
-    void startFailsClearlyWithoutSpawnReturn(Env env) {
+    void startFailsClearlyWhenTheProviderThrows(Env env) {
         TestTitanNode titan = TestTitanNode.attach(env);
         try {
-            NavigatorModule missing = new NavigatorModule(titan.node(), new RecordingDeliver(), slenderActive(), new FakePermissionService(), () -> {
+            NavigatorModule module = new NavigatorModule(titan.node(), new RecordingDeliver(), slenderActive(), new FakePermissionService(), () -> {
                 throw new NoSuchElementException("no bean");
             });
-            NavigatorModule absent = new NavigatorModule(titan.node(), new RecordingDeliver(), slenderActive(), new FakePermissionService(), () -> null);
 
-            IllegalStateException thrown = Assertions.assertThrows(IllegalStateException.class, missing::start, "an unresolvable provider must fail the start");
+            IllegalStateException thrown = Assertions.assertThrows(IllegalStateException.class, module::start, "an unresolvable provider must fail the start");
             Assertions.assertTrue(thrown.getMessage().contains("SpawnReturn") && thrown.getMessage().contains("spawn column"), "the message must name SpawnReturn and the spawn column, was: " + thrown.getMessage());
-            Assertions.assertThrows(IllegalStateException.class, absent::start, "a provider yielding null must fail the start too");
+        } finally {
+            titan.close();
+        }
+    }
+
+    @DisplayName("Starting fails clearly when the SpawnReturn provider yields null")
+    @Test
+    void startFailsClearlyWhenTheProviderYieldsNull(Env env) {
+        TestTitanNode titan = TestTitanNode.attach(env);
+        try {
+            NavigatorModule module = new NavigatorModule(titan.node(), new RecordingDeliver(), slenderActive(), new FakePermissionService(), () -> null);
+
+            IllegalStateException thrown = Assertions.assertThrows(IllegalStateException.class, module::start, "a provider yielding null must fail the start");
+            Assertions.assertTrue(thrown.getMessage().contains("SpawnReturn") && thrown.getMessage().contains("spawn column"), "the message must name SpawnReturn and the spawn column, was: " + thrown.getMessage());
         } finally {
             titan.close();
         }

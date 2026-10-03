@@ -41,7 +41,11 @@ class ColumnArchitectureTest {
     static final ArchRule featureModulesDoNotUseBeanScope = ColumnArchitectureRules.FEATURE_MODULES_DO_NOT_USE_BEAN_SCOPE;
 
     @ArchTest
-    static final ArchRule navigatorDoesNotDependOnAvajeConfig = noClasses().should().dependOnClassesThat().resideInAPackage("io.avaje.config..").because("the navigator's destinations are fixed in code, not read from configuration");
+    static final ArchRule navigatorDoesNotDependOnAvajeConfig = noClasses().should().dependOnClassesThat().resideInAPackage("io.avaje.config..").because("spawn-return scenario 'Navigator-Werte in der Konfiguration werden ignoriert': the navigator's destinations are fixed in code, not read from configuration");
+
+    // FeatureFlags (core) is the navigator's one legitimate switch and is not a config reader itself.
+    @ArchTest
+    static final ArchRule navigatorDoesNotReadEnvironmentOrSystemProperties = noClasses().should().callMethod(System.class, "getenv").orShould().callMethod(System.class, "getenv", String.class).orShould().callMethod(System.class, "getProperty", String.class).orShould().callMethod(System.class, "getProperty", String.class, String.class).because("spawn-return scenario 'Navigator-Wert per Env-Variable wird ignoriert': the navigator reads neither environment variables nor system properties");
 
     ColumnArchitectureTest() {
     }

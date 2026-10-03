@@ -21,16 +21,22 @@ import net.onelitefeather.titan.core.module.SpawnReturn;
 /** A test-only {@link SpawnReturn} that counts how often the navigator asked to return a player. */
 final class FakeSpawnReturn implements SpawnReturn {
 
+    private int sendCalls;
     private int tellCalls;
 
     @Override
     public Result sendToSpawn(Player player) {
+        this.sendCalls++;
         return Result.RETURNED;
     }
 
     @Override
     public void sendToSpawnAndTell(Player player) {
         this.tellCalls++;
+    }
+
+    int sendCalls() {
+        return this.sendCalls;
     }
 
     int tellCalls() {
