@@ -41,12 +41,14 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.sql.DataSource;
 import org.hibernate.SessionFactory;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.junit.jupiter.Container;
@@ -134,15 +136,17 @@ class DatabaseFactoryIntegrationTest {
         assertEquals(List.of("1"), history("widgets"), "version 1 is recorded exactly once");
     }
 
-    @Test
-    void twoStartsAtTheSameTime_applyEveryVersionExactlyOnce() throws Exception {
+    // Soak check, repeated on a fresh database each time. The window it covers is too narrow to hit
+    // reliably; migration_waitsWhileAnotherStartHoldsTheStartupLock pins the guarantee deterministically.
+    @RepeatedTest(5)
+    void fourStartsAtTheSameTime_applyEveryVersionExactlyOnce() throws Exception {
         CountDownLatch go = new CountDownLatch(1);
         List<CompletableFuture<Void>> starts = new ArrayList<>();
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 4; i++) {
             Configuration config = configuration();
             starts.add(CompletableFuture.runAsync(() -> {
                 try {
-                    go.await();
+                    assertTrue(go.await(30, TimeUnit.SECONDS), "the start gate opens");
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     throw new IllegalStateException(e);
@@ -154,10 +158,84 @@ class DatabaseFactoryIntegrationTest {
         }
         go.countDown();
         for (CompletableFuture<Void> start : starts) {
-            start.get();
+            start.get(60, TimeUnit.SECONDS);
         }
 
-        assertEquals(List.of("1"), history("widgets"), "the migration ran once although two starts raced");
+        assertEquals(List.of("1"), history("widgets"), "the migration ran once although four starts raced");
+    }
+
+    @Test
+    void migration_waitsWhileAnotherStartHoldsTheStartupLock() throws Exception {
+        try (Connection holder = DriverManager.getConnection(url(), POSTGRES.getUsername(), POSTGRES.getPassword()); Statement statement = holder.createStatement(); HikariDataSource pool = new HikariDataSource(HikariSettings.apply(DatabaseSettings.from(configuration())))) {
+            statement.execute("select pg_advisory_lock(" + StartupLock.KEY + ")");
+            CompletableFuture<SchemaMigrations> migration = CompletableFuture.supplyAsync(() -> SchemaMigrations.migrate(pool, List.of(WIDGETS), 60));
+            try {
+                long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+                while (!advisoryLockWaiterExists(statement)) {
+                    assertTrue(System.nanoTime() < deadline && !migration.isDone(), "the migration must queue on the startup lock instead of running past it");
+                    Thread.onSpinWait();
+                }
+                assertFalse(migration.isDone(), "no migration step runs while the lock is held");
+
+                statement.execute("select pg_advisory_unlock(" + StartupLock.KEY + ")");
+                assertEquals(1, migration.get(30, TimeUnit.SECONDS).applied(), "the queued migration runs once the lock is free");
+            } finally {
+                // A failed assertion must not leave the migration waiting on the pool we close next.
+                statement.execute("select pg_advisory_unlock(" + StartupLock.KEY + ")");
+                migration.handle((result, failure) -> null).get(30, TimeUnit.SECONDS);
+            }
+        }
+        assertEquals(List.of("1"), history("widgets"));
+    }
+
+    @Test
+    void migration_givesUpNamingTheTimeoutWhenTheStartupLockStaysHeld() throws Exception {
+        try (Connection holder = DriverManager.getConnection(url(), POSTGRES.getUsername(), POSTGRES.getPassword()); Statement statement = holder.createStatement(); HikariDataSource pool = new HikariDataSource(HikariSettings.apply(DatabaseSettings.from(configuration())))) {
+            statement.execute("select pg_advisory_lock(" + StartupLock.KEY + ")");
+            CompletableFuture<SchemaMigrations> migration = CompletableFuture.supplyAsync(() -> SchemaMigrations.migrate(pool, List.of(WIDGETS), 1));
+            try {
+                ExecutionException failure = assertThrows(ExecutionException.class, () -> migration.get(30, TimeUnit.SECONDS), "lock_timeout must end the wait on an advisory lock");
+
+                assertEquals(IllegalStateException.class, failure.getCause().getClass());
+                assertEquals("another lobby has held the schema migration lock for more than 1 s", failure.getCause().getMessage());
+            } finally {
+                migration.handle((result, failure) -> null).get(30, TimeUnit.SECONDS);
+            }
+            assertEquals(0, pool.getHikariPoolMXBean().getActiveConnections(), "no pooled connection stays checked out after the failure");
+        }
+    }
+
+    private static boolean advisoryLockWaiterExists(Statement statement) throws SQLException {
+        try (ResultSet rows = statement.executeQuery("select count(*) from pg_locks where locktype = 'advisory' and not granted")) {
+            rows.next();
+            return rows.getInt(1) > 0;
+        }
+    }
+
+    @Test
+    void poolOfThreeConnections_stillMigratesBecauseFlywayTakesTwoAndTheLockOne() throws SQLException {
+        Configuration config = configuration();
+        config.setProperty("titan.database.hikari.maximumPoolSize", "3");
+
+        try (BeanScope scope = start(config, WIDGETS)) {
+            assertTrue(scope.getOptional(SessionFactory.class).isPresent(), "three connections are enough for Flyway plus the lock");
+        }
+        assertEquals(List.of("1"), history("widgets"));
+    }
+
+    @Test
+    void poolOfTwoConnections_abortsTheStartNamingTheKey() {
+        Configuration config = configuration();
+        config.setProperty("titan.database.hikari.maximumPoolSize", "2");
+
+        RuntimeException failure = assertThrows(RuntimeException.class, () -> start(config, WIDGETS).close(), "Flyway needs two connections and the lock one");
+
+        Throwable root = failure;
+        while (root.getCause() != null) {
+            root = root.getCause();
+        }
+        assertEquals(IllegalStateException.class, root.getClass());
+        assertEquals("titan.database.hikari.maximumPoolSize must be at least 3 because Flyway needs two connections and the startup lock one", root.getMessage());
     }
 
     @Test

@@ -46,8 +46,8 @@ final class DatabaseFactory {
     }
 
     @Bean
-    SchemaMigrations schemaMigrations(HikariDataSource dataSource, List<PersistenceUnit> units) {
-        return SchemaMigrations.migrate(dataSource, units);
+    SchemaMigrations schemaMigrations(DatabaseSettings settings, HikariDataSource dataSource, List<PersistenceUnit> units) {
+        return SchemaMigrations.migrate(dataSource, units, settings.migrationLockTimeoutSeconds());
     }
 
     @Bean(destroyMethod = "close")
