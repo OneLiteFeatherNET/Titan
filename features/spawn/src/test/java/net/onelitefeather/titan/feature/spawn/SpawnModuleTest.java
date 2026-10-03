@@ -65,7 +65,7 @@ class SpawnModuleTest {
         LobbyItems lobbyItems = Mockito.mock(LobbyItems.class);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            SpawnModule module = new SpawnModule(targetInstance, () -> spawnPos, titan.node(), lobbyItems);
+            SpawnModule module = new SpawnModule(targetInstance, () -> spawnPos, new SpawnHeightBoundsFactory().lobbyHeightBounds(), titan.node(), lobbyItems);
             module.start();
             try {
                 Player player = env.createPlayer(targetInstance);
@@ -92,7 +92,7 @@ class SpawnModuleTest {
         LobbyItems lobbyItems = Mockito.mock(LobbyItems.class);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            SpawnModule module = new SpawnModule(instance, () -> spawnPos, titan.node(), lobbyItems);
+            SpawnModule module = new SpawnModule(instance, () -> spawnPos, new SpawnHeightBoundsFactory().lobbyHeightBounds(), titan.node(), lobbyItems);
             module.start();
             try {
                 TestConnection connection = env.createConnection();
@@ -121,7 +121,7 @@ class SpawnModuleTest {
         LobbyItems lobbyItems = Mockito.mock(LobbyItems.class);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            SpawnModule module = new SpawnModule(instance, () -> spawnPos, titan.node(), lobbyItems);
+            SpawnModule module = new SpawnModule(instance, () -> spawnPos, new SpawnHeightBoundsFactory().lobbyHeightBounds(), titan.node(), lobbyItems);
             module.start();
             try {
                 Player player = env.createPlayer(instance);
@@ -145,7 +145,7 @@ class SpawnModuleTest {
         LobbyItems lobbyItems = Mockito.mock(LobbyItems.class);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            SpawnModule module = new SpawnModule(instance, () -> spawnPos, titan.node(), lobbyItems);
+            SpawnModule module = new SpawnModule(instance, () -> spawnPos, new SpawnHeightBoundsFactory().lobbyHeightBounds(), titan.node(), lobbyItems);
             module.start();
             try {
                 Player player = env.createPlayer(instance);
@@ -169,7 +169,7 @@ class SpawnModuleTest {
         LobbyItems lobbyItems = Mockito.mock(LobbyItems.class);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            SpawnModule module = new SpawnModule(instance, () -> spawnPos, titan.node(), lobbyItems);
+            SpawnModule module = new SpawnModule(instance, () -> spawnPos, new SpawnHeightBoundsFactory().lobbyHeightBounds(), titan.node(), lobbyItems);
             module.start();
             try {
                 Player player = env.createPlayer(instance);
@@ -193,7 +193,7 @@ class SpawnModuleTest {
         LobbyItems lobbyItems = Mockito.mock(LobbyItems.class);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            SpawnModule module = new SpawnModule(instance, () -> spawnPos, titan.node(), lobbyItems);
+            SpawnModule module = new SpawnModule(instance, () -> spawnPos, new SpawnHeightBoundsFactory().lobbyHeightBounds(), titan.node(), lobbyItems);
             module.start();
             module.stop();
 
