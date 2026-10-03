@@ -32,6 +32,7 @@ import net.minestom.server.event.EventNode;
 import net.minestom.server.timer.Scheduler;
 import net.minestom.testing.RegistriesTest;
 import net.onelitefeather.titan.core.module.FeatureNode;
+import net.onelitefeather.titan.core.module.LobbyHeightBounds;
 import net.onelitefeather.titan.core.module.LobbySpawn;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
 import net.onelitefeather.titan.persistence.ConfigurationProperties;
@@ -91,7 +92,7 @@ abstract class JumprunDatabaseTest {
     private BeanScope start(Configuration config) {
         EventNode<Event> titan = EventNode.all(FeatureNode.TITAN_NODE);
         this.scope = ConfigurationProperties.scopeBuilder(config).bean(FeatureNode.TITAN_NODE, new GenericType<EventNode<Event>>() {
-        }.type(), titan).bean(LobbySpawn.class, unused(LobbySpawn.class)).bean(LobbyPortals.class, unused(LobbyPortals.class)).bean(Clock.class, Clock.fixed(Instant.parse("2026-10-03T12:00:00Z"), ZoneOffset.UTC)).bean(Scheduler.class, Scheduler.newScheduler()).build();
+        }.type(), titan).bean(LobbySpawn.class, unused(LobbySpawn.class)).bean(LobbyPortals.class, unused(LobbyPortals.class)).bean(LobbyHeightBounds.class, unused(LobbyHeightBounds.class)).bean(Clock.class, Clock.fixed(Instant.parse("2026-10-03T12:00:00Z"), ZoneOffset.UTC)).bean(Scheduler.class, Scheduler.newScheduler()).build();
         return this.scope;
     }
 

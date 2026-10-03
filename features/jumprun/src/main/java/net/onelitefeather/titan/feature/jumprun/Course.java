@@ -42,7 +42,11 @@ final class Course {
     /** Block 0 is a real block of the world and never faked, so its material is never shown. */
     private static final Block START_MATERIAL = Block.STONE;
 
-    private static final int FALL_DEPTH = 3;
+    /**
+     * Blocks under the lowest block ahead at which a run ends; the height band keeps this much
+     * clear.
+     */
+    static final int FALL_DISTANCE = 3;
 
     /**
      * A landing reported by the client is a hair off the exact top; this much is still "standing on
@@ -73,26 +77,30 @@ final class Course {
      * in the open and away from the spawn, and one more block up front. Returns empty when that
      * does not fit, so nothing is shown for a run that cannot work.
      */
-    static Optional<Course> start(Pos startPoint, BlockPos startBlock, Heading heading, SpawnZone spawn, SpaceProbe probe, RandomGenerator random, Palettes palettes) {
-        return start(startPoint, startBlock, heading, spawn, probe, random, palettes, PortalClearance.NONE);
+    static Optional<Course> start(Pos startPoint, BlockPos startBlock, Heading heading, SpawnZone spawn, SpaceProbe probe, HeightBand band, RandomGenerator random, Palettes palettes) {
+        return start(startPoint, startBlock, heading, spawn, probe, band, random, palettes, PortalClearance.NONE);
     }
 
     /** As above, and no block or flight path comes near a portal. */
-    static Optional<Course> start(Pos startPoint, BlockPos startBlock, Heading heading, SpawnZone spawn, SpaceProbe probe, RandomGenerator random, Palettes palettes, PortalClearance portals) {
-        return start(startPoint, startBlock, heading, spawn, probe, random, palettes, portals, Steering.none(), Mode.MEDIUM);
+    static Optional<Course> start(Pos startPoint, BlockPos startBlock, Heading heading, SpawnZone spawn, SpaceProbe probe, HeightBand band, RandomGenerator random, Palettes palettes, PortalClearance portals) {
+        return start(startPoint, startBlock, heading, spawn, probe, band, random, palettes, portals, Steering.none(), Mode.MEDIUM);
     }
 
     /**
      * As above, and the scored part snakes around the spawn. The sense and phase of the snake are
      * drawn from {@code random} first, before anything else uses it.
      */
-    static Optional<Course> startSteered(Pos startPoint, BlockPos startBlock, Heading heading, SpawnZone spawn, SpaceProbe probe, RandomGenerator random, Palettes palettes, PortalClearance portals, Mode mode) {
-        return start(startPoint, startBlock, heading, spawn, probe, random, palettes, portals, Steering.around(spawn, random), mode);
+    static Optional<Course> startSteered(Pos startPoint, BlockPos startBlock, Heading heading, SpawnZone spawn, SpaceProbe probe, HeightBand band, RandomGenerator random, Palettes palettes, PortalClearance portals, Mode mode) {
+        return start(startPoint, startBlock, heading, spawn, probe, band, random, palettes, portals, Steering.around(spawn, random), mode);
     }
 
-    private static Optional<Course> start(Pos startPoint, BlockPos startBlock, Heading heading, SpawnZone spawn, SpaceProbe probe, RandomGenerator random, Palettes palettes, PortalClearance portals, Steering steering, Mode mode) {
-        CourseGenerator generator = new CourseGenerator(probe, spawn, random, palettes, portals, steering);
-        List<CourseBlock> blocks = new ArrayList<>(List.of(new CourseBlock(startBlock, Surface.FULL, START_MATERIAL)));
+    private static Optional<Course> start(Pos startPoint, BlockPos startBlock, Heading heading, SpawnZone spawn, SpaceProbe probe, HeightBand band, RandomGenerator random, Palettes palettes, PortalClearance portals, Steering steering, Mode mode) {
+        CourseGenerator generator = new CourseGenerator(probe, band, spawn, random, palettes, portals, steering);
+        CourseBlock first = new CourseBlock(startBlock, Surface.FULL, START_MATERIAL);
+        if (!band.allows(first)) {
+            return Optional.empty();
+        }
+        List<CourseBlock> blocks = new ArrayList<>(List.of(first));
         Course course = new Course(startPoint, generator, blocks, new ArrayList<>(List.of(Phase.start(heading, mode))));
         boolean fits = course.generateAscent() && course.generateThrough(course.blocks.size());
         return fits ? Optional.of(course) : Optional.empty();
@@ -156,7 +164,7 @@ final class Course {
      */
     double fallThreshold() {
         double lowest = blocks.subList(current, blocks.size()).stream().mapToDouble(CourseBlock::topY).min().orElseThrow();
-        return lowest - FALL_DEPTH;
+        return lowest - FALL_DISTANCE;
     }
 
     boolean hasFallen(double y) {

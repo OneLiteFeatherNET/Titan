@@ -66,6 +66,7 @@ import net.minestom.server.timer.Scheduler;
 import net.minestom.server.timer.Task;
 import net.minestom.server.timer.TaskSchedule;
 import net.onelitefeather.titan.core.module.FeatureNode;
+import net.onelitefeather.titan.core.module.LobbyHeightBounds;
 import net.onelitefeather.titan.core.module.LobbySpawn;
 import net.onelitefeather.titan.core.module.item.LobbyItems;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
@@ -109,6 +110,8 @@ final class JumprunModule {
     private final RunSidebarContent sidebarContent;
     private final LongSupplier seeds;
     private final JumprunConfig config;
+    private final Provider<LobbyHeightBounds> heightBounds;
+    private HeightBand heightBand;
     private final Clock clock;
     private final RunRegistry runs = new RunRegistry();
     private final FakeBlocks fakeBlocks = new FakeBlocks();
@@ -122,16 +125,16 @@ final class JumprunModule {
 
     // The writer is persistence's, resolved on first use like in StoredRunRecords, and only a lobby with a database ever asks for it.
     @Inject
-    JumprunModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records, Optional<Leaderboard> leaderboard, Provider<LobbyItems> lobbyItems, Clock clock, Scheduler scheduler, @External Provider<DatabaseWriter> writer) {
-        this(titan, spawn, portals, records, leaderboard, task -> writer.get().execute(task), scheduler, lobbyItems, new RunMessages(), () -> ThreadLocalRandom.current().nextLong(), new JumprunConfig(Config.asConfiguration()), clock);
+    JumprunModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records, Optional<Leaderboard> leaderboard, Provider<LobbyItems> lobbyItems, Clock clock, Scheduler scheduler, @External Provider<DatabaseWriter> writer, Provider<LobbyHeightBounds> heightBounds) {
+        this(titan, spawn, portals, records, leaderboard, task -> writer.get().execute(task), scheduler, lobbyItems, new RunMessages(), () -> ThreadLocalRandom.current().nextLong(), new JumprunConfig(Config.asConfiguration()), heightBounds, clock);
     }
 
     /** Without a leaderboard, so nothing is scheduled and nothing refreshed. */
-    JumprunModule(EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records, Provider<LobbyItems> lobbyItems, RunMessages messages, LongSupplier seeds, JumprunConfig config, Clock clock) {
-        this(titan, spawn, portals, records, Optional.empty(), Runnable::run, Scheduler.newScheduler(), lobbyItems, messages, seeds, config, clock);
+    JumprunModule(EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records, Provider<LobbyItems> lobbyItems, RunMessages messages, LongSupplier seeds, JumprunConfig config, LobbyHeightBounds heightBounds, Clock clock) {
+        this(titan, spawn, portals, records, Optional.empty(), Runnable::run, Scheduler.newScheduler(), lobbyItems, messages, seeds, config, () -> heightBounds, clock);
     }
 
-    JumprunModule(EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records, Optional<Leaderboard> leaderboard, Executor refreshes, Scheduler scheduler, Provider<LobbyItems> lobbyItems, RunMessages messages, LongSupplier seeds, JumprunConfig config, Clock clock) {
+    JumprunModule(EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records, Optional<Leaderboard> leaderboard, Executor refreshes, Scheduler scheduler, Provider<LobbyItems> lobbyItems, RunMessages messages, LongSupplier seeds, JumprunConfig config, Provider<LobbyHeightBounds> heightBounds, Clock clock) {
         this.leaderboard = leaderboard;
         this.refreshes = refreshes;
         this.scheduler = scheduler;
@@ -144,6 +147,7 @@ final class JumprunModule {
         this.messages = messages;
         this.seeds = seeds;
         this.config = config;
+        this.heightBounds = heightBounds;
         this.clock = clock;
     }
 
@@ -151,6 +155,8 @@ final class JumprunModule {
     void start() {
         // Strict once, so an invalid palette or reroll interval aborts the start; runs read it again live.
         this.config.readAtStartup();
+        // Resolved once, here, so a lobby without the spawn column fails at start and not on the first run.
+        this.heightBand = new HeightBand(resolveBounds());
         this.messages.register();
         this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY);
         this.node.on(AsyncPlayerConfigurationEvent.class, this::onConfiguration);
@@ -161,6 +167,14 @@ final class JumprunModule {
         this.node.on(PlayerDisconnectEvent.class, this::onDisconnect);
         this.node.on(RemoveEntityFromInstanceEvent.class, this::onLeaveInstance);
         this.leaderboard.ifPresent(board -> scheduleRefreshes());
+    }
+
+    private LobbyHeightBounds resolveBounds() {
+        try {
+            return this.heightBounds.get();
+        } catch (RuntimeException e) {
+            throw new IllegalStateException("jumprun needs LobbyHeightBounds from the spawn column", e);
+        }
     }
 
     /**
@@ -293,7 +307,7 @@ final class JumprunModule {
         Pos spawnPoint = Optional.ofNullable(spawn.position()).orElse(feet);
         Heading heading = Heading.away(feet.x(), feet.z(), spawnPoint.x(), spawnPoint.z(), feet.direction().x(), feet.direction().z());
         RandomGenerator random = RandomGeneratorFactory.of(RANDOM_ALGORITHM).create(seeds.getAsLong());
-        return Course.startSteered(feet, startBlock, heading, new SpawnZone(spawnPoint.x(), spawnPoint.z()), new InstanceSpaceProbe(player.getInstance()), random, config.palettes(), PortalClearance.ofPortals(portals.portals()), mode).map(course -> new Run(player, course, startBlock, mode, records.best(player.getUuid(), mode), config.rerollTicks(mode), sidebarContent));
+        return Course.startSteered(feet, startBlock, heading, new SpawnZone(spawnPoint.x(), spawnPoint.z()), new InstanceSpaceProbe(player.getInstance()), heightBand, random, config.palettes(), PortalClearance.ofPortals(portals.portals()), mode).map(course -> new Run(player, course, startBlock, mode, records.best(player.getUuid(), mode), config.rerollTicks(mode), sidebarContent));
     }
 
     /**

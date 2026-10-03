@@ -45,7 +45,7 @@ class JumprunShutdownTest {
     @Test
     void stoppingDetachesTheColumnsListeners(Env env) {
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            JumprunModule module = new JumprunModule(titan.node(), () -> null, List::of, new InMemoryRunRecords(), RecordingLobbyItems::new, new RunMessages(), () -> JumprunFixture.SEED, TestBlocks.shippedReader(), JumprunFixture.CLOCK);
+            JumprunModule module = new JumprunModule(titan.node(), () -> null, List::of, new InMemoryRunRecords(), RecordingLobbyItems::new, new RunMessages(), () -> JumprunFixture.SEED, TestBlocks.shippedReader(), TestBlocks.BOUNDS, JumprunFixture.CLOCK);
             module.start();
             EventNode<Event> featureNode = titan.node().getChildren().iterator().next();
             assertTrue(EventListenerCounter.countListeners(featureNode) > 0, "the column listens while it runs");
@@ -110,7 +110,7 @@ class JumprunShutdownTest {
     @Test
     void stoppingAColumnThatNeverStartedDoesNotFail(Env env) {
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            JumprunModule module = new JumprunModule(titan.node(), () -> null, List::of, new InMemoryRunRecords(), RecordingLobbyItems::new, new RunMessages(), () -> JumprunFixture.SEED, TestBlocks.shippedReader(), JumprunFixture.CLOCK);
+            JumprunModule module = new JumprunModule(titan.node(), () -> null, List::of, new InMemoryRunRecords(), RecordingLobbyItems::new, new RunMessages(), () -> JumprunFixture.SEED, TestBlocks.shippedReader(), TestBlocks.BOUNDS, JumprunFixture.CLOCK);
 
             assertDoesNotThrow(module::stop);
         }

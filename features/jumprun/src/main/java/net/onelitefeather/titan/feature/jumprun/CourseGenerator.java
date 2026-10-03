@@ -56,14 +56,16 @@ final class CourseGenerator {
     private static final int MAX_AIR_BELOW = Math.max(Openness.SCORED_AIR_BELOW, Openness.ASCENT_AIR_BELOW);
 
     private final SpaceProbe probe;
+    private final HeightBand band;
     private final SpawnZone spawn;
     private final RandomGenerator random;
     private final Palettes palettes;
     private final PortalClearance portals;
     private final Steering steering;
 
-    CourseGenerator(SpaceProbe probe, SpawnZone spawn, RandomGenerator random, Palettes palettes, PortalClearance portals, Steering steering) {
+    CourseGenerator(SpaceProbe probe, HeightBand band, SpawnZone spawn, RandomGenerator random, Palettes palettes, PortalClearance portals, Steering steering) {
         this.probe = probe;
+        this.band = band;
         this.spawn = spawn;
         this.random = random;
         this.palettes = palettes;
@@ -228,7 +230,7 @@ final class CourseGenerator {
 
         private JumpRules rules() {
             if (rules == null) {
-                rules = new JumpRules(seen());
+                rules = new JumpRules(seen(), band);
             }
             return rules;
         }
@@ -243,12 +245,12 @@ final class CourseGenerator {
 
     /**
      * What the visible blocks take up: the blocks themselves and the room a player standing on
-     * each needs, so a new block cannot land inside someone's headroom.
+     * each needs to jump, so a new block cannot land inside someone's jump room.
      */
     private static Set<BlockPos> occupiedBy(List<? extends Placement> visible) {
         Set<BlockPos> occupied = new HashSet<>();
         for (Placement block : visible) {
-            for (int y = block.pos().y(); y <= block.headroomTopY(); y++) {
+            for (int y = block.pos().y(); y <= block.jumpRoomTopY(); y++) {
                 occupied.add(new BlockPos(block.pos().x(), y, block.pos().z()));
             }
         }

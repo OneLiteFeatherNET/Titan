@@ -167,7 +167,7 @@ class CourseGeneratorTest {
                 world.carveColumn(x, 3, 0, 12);
             }
             for (int x = -34; x <= -1; x++) {
-                world.carveColumn(x, 11, 0, 2);
+                world.carveColumn(x, 11, 0, 4);
             }
             CourseGenerator generator = TestBlocks.generator(world, TestBlocks.FAR_SPAWN, withNoise(0.0, seed));
 
@@ -267,8 +267,8 @@ class CourseGeneratorTest {
     }
 
     @Test
-    void neverPlacesABlockIntoTheHeadroomOfAnEarlierBlock() {
-        CourseBlock earlier = TestBlocks.at(new BlockPos(0, 10, 0), Surface.FULL);
+    void neverPlacesABlockIntoTheJumpRoomOfAnEarlierBlock() {
+        CourseBlock earlier = TestBlocks.at(new BlockPos(0, 7, 0), Surface.FULL);
         CourseBlock last = TestBlocks.at(new BlockPos(2, 10, 0), Surface.FULL);
         Phase towardsTheEarlierBlock = new Phase.Ascent(Phase.MIN_ASCENT_JUMPS, new Heading(-1.0, 0.0));
 
@@ -277,8 +277,126 @@ class CourseGeneratorTest {
 
             BlockPos chosen = generator.next(List.of(earlier, last), towardsTheEarlierBlock).orElseThrow().pos();
 
-            boolean inItsColumn = chosen.x() == 0 && chosen.z() == 0 && chosen.y() <= earlier.headroomTopY();
-            assertFalse(inItsColumn, "inside the earlier block or its headroom: " + chosen + " (seed " + seed + ")");
+            boolean inItsColumn = chosen.x() == 0 && chosen.z() == 0 && chosen.y() <= earlier.jumpRoomTopY();
+            assertFalse(inItsColumn, "inside the earlier block or its jump room: " + chosen + " (seed " + seed + ")");
+        }
+    }
+
+    @Test
+    void everyGeneratedBlockHasRoomToJumpAndAFreeApexOnTheWay() {
+        FakeSpaceProbe world = worldWithOverhangs();
+        BlockedAnswers blocked = new BlockedAnswers(world);
+        int blocksUnderAnOverhang = 0;
+        for (long seed = 0; seed < 200; seed++) {
+            CourseGenerator generator = TestBlocks.generator(blocked, TestBlocks.FAR_SPAWN, seeded(seed));
+
+            List<CourseBlock> course = walk(generator, SOURCE, new Phase.Scored(0, heading(seed)), 25);
+
+            assertTrue(course.size() > MIN_COURSE_BLOCKS, "the course is long enough to prove something (seed " + seed + "), got " + course.size());
+            for (int i = 1; i < course.size(); i++) {
+                assertJumpRoomFree(world, course.get(i), seed);
+                assertApexFree(world, course.get(i - 1), course.get(i), seed);
+                if (hasCeilingAbove(world, course.get(i))) {
+                    blocksUnderAnOverhang++;
+                }
+            }
+        }
+
+        assertTrue(blocked.count() > 0, "the generator never met an overhang, the world proves nothing");
+        assertTrue(blocksUnderAnOverhang > 0, "no course ever passed under an overhang that leaves room to jump");
+    }
+
+    private static final int MIN_COURSE_BLOCKS = 5;
+
+    /**
+     * Counts the questions the world answered with "occupied": the overhangs the generator ran
+     * into.
+     */
+    private static final class BlockedAnswers implements SpaceProbe {
+
+        private final SpaceProbe delegate;
+        private long count;
+
+        BlockedAnswers(SpaceProbe delegate) {
+            this.delegate = delegate;
+        }
+
+        long count() {
+            return count;
+        }
+
+        @Override
+        public boolean isAir(BlockPos pos) {
+            boolean air = delegate.isAir(pos);
+            if (!air) {
+                count++;
+            }
+            return air;
+        }
+
+        @Override
+        public boolean inBounds(BlockPos pos) {
+            return delegate.inBounds(pos);
+        }
+    }
+
+    /**
+     * Something solid above the room the jump needs, so the block sits under an overhang that just
+     * fits.
+     */
+    private static boolean hasCeilingAbove(SpaceProbe world, CourseBlock block) {
+        for (int y = expectedRoomTop(block) + 1; y <= expectedRoomTop(block) + 3; y++) {
+            if (!world.isAir(new BlockPos(block.pos().x(), y, block.pos().z()))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Walkable top above the block position, written down here so the expectation does not reuse
+     * the production table.
+     */
+    private static double expectedTop(Surface surface) {
+        return switch (surface) {
+            case FULL, PANE, POST -> 1.0;
+            case TRAPDOOR -> 0.1875;
+            case SLAB -> 0.5;
+            case FENCE -> 1.5;
+        };
+    }
+
+    /**
+     * Highest y the head reaches into at the apex: feet at the top plus 1.2522 of jump, 1.8 of
+     * body.
+     */
+    private static int expectedRoomTop(Placement block) {
+        return block.pos().y() + (int) Math.ceil(expectedTop(block.surface()) + 1.2522 + 1.8) - 1;
+    }
+
+    /** Open ground with ceilings at several heights, so many places allow standing but no jump. */
+    private static FakeSpaceProbe worldWithOverhangs() {
+        return new FakeSpaceProbe().occupyBox(-50, 13, -50, -30, 14, 50).occupyBox(-20, 14, -50, -10, 15, 50).occupyBox(5, 12, -50, 12, 13, 50).occupyBox(20, 14, -50, 30, 14, 50).occupyBox(-50, 13, 20, 50, 13, 30).occupyBox(-50, 15, -30, 50, 16, -20);
+    }
+
+    private static Heading heading(long seed) {
+        double angle = Math.toRadians(seed * 37 % 360);
+        return new Heading(Math.cos(angle), Math.sin(angle));
+    }
+
+    private static void assertJumpRoomFree(SpaceProbe world, CourseBlock block, long seed) {
+        for (int y = block.pos().y() + 1; y <= expectedRoomTop(block); y++) {
+            assertTrue(world.isAir(new BlockPos(block.pos().x(), y, block.pos().z())), "no room to jump above " + block + " at y=" + y + " (seed " + seed + ")");
+        }
+    }
+
+    private static void assertApexFree(SpaceProbe world, CourseBlock from, CourseBlock to, long seed) {
+        int lowest = (int) Math.floor(Math.min(from.topY(), to.topY()));
+        int apex = from.pos().y() + (int) Math.ceil(expectedTop(from.surface()) + 1.2522 + 1.8) - 1;
+        for (FlightPath.Cell cell : FlightPath.cellsBetween(from.pos(), to.pos())) {
+            for (int y = lowest; y <= apex; y++) {
+                assertTrue(world.isAir(new BlockPos(cell.x(), y, cell.z())), "apex blocked at " + cell + " y=" + y + " between " + from + " and " + to + " (seed " + seed + ")");
+            }
         }
     }
 
@@ -606,7 +724,7 @@ class CourseGeneratorTest {
 
     @Test
     void generatedJumpsAreFreeInTheWorld() {
-        assertForEvery(jumps, jump -> new JumpRules(world).isValid(jump, Mode.MEDIUM), "rules");
+        assertForEvery(jumps, jump -> new JumpRules(world, TestBlocks.BAND).isValid(jump, Mode.MEDIUM), "rules");
     }
 
     @Test
@@ -615,8 +733,8 @@ class CourseGeneratorTest {
     }
 
     @Test
-    void generatedBlocksKeepTheMarginToTheTop() {
-        assertForEvery(jumps, jump -> jump.to().pos().y() + JumpRules.MAX_Y_MARGIN <= 100, "top margin");
+    void generatedBlocksStayInsideTheHeightBand() {
+        assertForEvery(jumps, jump -> TestBlocks.BAND.allows(jump.to()), "height band");
     }
 
     @Test

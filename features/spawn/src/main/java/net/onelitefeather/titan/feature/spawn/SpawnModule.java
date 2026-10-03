@@ -28,6 +28,7 @@ import net.minestom.server.event.player.PlayerMoveEvent;
 import net.minestom.server.event.player.PlayerSpawnEvent;
 import net.minestom.server.instance.Instance;
 import net.onelitefeather.titan.core.module.FeatureNode;
+import net.onelitefeather.titan.core.module.LobbyHeightBounds;
 import net.onelitefeather.titan.core.module.LobbySpawn;
 import net.onelitefeather.titan.core.module.item.LobbyItems;
 
@@ -51,13 +52,15 @@ public final class SpawnModule {
 
     private final Instance instance;
     private final LobbySpawn spawnPosition;
+    private final LobbyHeightBounds heightBounds;
     private final EventNode<Event> titan;
     private final LobbyItems lobbyItems;
     private FeatureNode node;
 
-    public SpawnModule(Instance instance, LobbySpawn spawnPosition, @Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbyItems lobbyItems) {
+    public SpawnModule(Instance instance, LobbySpawn spawnPosition, LobbyHeightBounds heightBounds, @Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbyItems lobbyItems) {
         this.instance = Objects.requireNonNull(instance, "instance");
         this.spawnPosition = Objects.requireNonNull(spawnPosition, "spawnPosition");
+        this.heightBounds = Objects.requireNonNull(heightBounds, "heightBounds");
         this.titan = Objects.requireNonNull(titan, "titan");
         this.lobbyItems = Objects.requireNonNull(lobbyItems, "lobbyItems");
     }
@@ -66,11 +69,10 @@ public final class SpawnModule {
     void start() {
         // Abort startup on an invalid value; neither result is kept - the listeners below read
         // the live values again on every join/move.
-        int maxHeightAtStartup = Config.getAs(SpawnSettings.MAX_HEIGHT_KEY, Integer::parseInt);
-        SpawnSettings.minHeight(Config.getAs(SpawnSettings.MIN_HEIGHT_KEY, Integer::parseInt), maxHeightAtStartup);
+        SpawnSettings.minHeight(this.heightBounds.minHeight(), this.heightBounds.maxHeight());
         Config.getAs(SpawnSettings.SIMULATION_DISTANCE_KEY, SpawnSettings::simulationDistance);
 
-        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY).on(AsyncPlayerConfigurationEvent.class, new SpawnConfigurationListener(this.instance, this.spawnPosition::position)).on(PlayerSpawnEvent.class, new SpawnJoinListener(this.spawnPosition::position, this.lobbyItems)).on(PlayerMoveEvent.class, new SpawnBoundsListener(this.spawnPosition::position));
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY).on(AsyncPlayerConfigurationEvent.class, new SpawnConfigurationListener(this.instance, this.spawnPosition::position)).on(PlayerSpawnEvent.class, new SpawnJoinListener(this.spawnPosition::position, this.lobbyItems)).on(PlayerMoveEvent.class, new SpawnBoundsListener(this.spawnPosition::position, this.heightBounds));
     }
 
     @PreDestroy

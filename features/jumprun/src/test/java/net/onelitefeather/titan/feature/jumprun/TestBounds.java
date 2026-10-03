@@ -15,20 +15,23 @@
  */
 package net.onelitefeather.titan.feature.jumprun;
 
-/** Where a block of a course sits and what shape it has; what the jump rules need to know. */
-sealed interface Placement permits Spot, CourseBlock {
+import java.util.function.IntSupplier;
+import net.onelitefeather.titan.core.module.LobbyHeightBounds;
 
-    BlockPos pos();
+/** Lobby height limits for tests; suppliers make them live, {@link #fixed} makes them constant. */
+record TestBounds(IntSupplier min, IntSupplier max) implements LobbyHeightBounds {
 
-    Surface surface();
-
-    /** Absolute y of the walkable top. */
-    default double topY() {
-        return pos().y() + surface().top();
+    static TestBounds fixed(int min, int max) {
+        return new TestBounds(() -> min, () -> max);
     }
 
-    /** The highest y a player reaches into at the apex of a jump from this block. */
-    default int jumpRoomTopY() {
-        return pos().y() + surface().jumpRoomTop();
+    @Override
+    public int minHeight() {
+        return min.getAsInt();
+    }
+
+    @Override
+    public int maxHeight() {
+        return max.getAsInt();
     }
 }

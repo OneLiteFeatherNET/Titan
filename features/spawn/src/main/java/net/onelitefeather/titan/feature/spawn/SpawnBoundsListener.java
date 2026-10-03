@@ -15,26 +15,28 @@
  */
 package net.onelitefeather.titan.feature.spawn;
 
-import io.avaje.config.Config;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.player.PlayerMoveEvent;
+import net.onelitefeather.titan.core.module.LobbyHeightBounds;
 
 /**
  * Teleports a player back to the lobby spawn once they leave the configured height bounds via
- * {@link HeightBounds}. Reads {@link SpawnSettings#MIN_HEIGHT_KEY}/{@code MAX_HEIGHT_KEY} live on
+ * {@link HeightBounds}. Reads the {@link LobbyHeightBounds} bean live on
  * every move instead of once at construction, so a changed bound applies immediately without a
  * module restart; the startup check in {@link SpawnModule#start()} never re-validates it.
  */
 final class SpawnBoundsListener implements Consumer<PlayerMoveEvent> {
 
     private final Supplier<Pos> spawnPosition;
+    private final LobbyHeightBounds lobbyHeightBounds;
 
-    SpawnBoundsListener(Supplier<Pos> spawnPosition) {
+    SpawnBoundsListener(Supplier<Pos> spawnPosition, LobbyHeightBounds lobbyHeightBounds) {
         this.spawnPosition = spawnPosition;
+        this.lobbyHeightBounds = lobbyHeightBounds;
     }
 
     @Override
@@ -43,7 +45,7 @@ final class SpawnBoundsListener implements Consumer<PlayerMoveEvent> {
         if (player.getInstance() == null) {
             return;
         }
-        HeightBounds heightBounds = new HeightBounds(Config.getInt(SpawnSettings.MIN_HEIGHT_KEY), Config.getInt(SpawnSettings.MAX_HEIGHT_KEY));
+        HeightBounds heightBounds = new HeightBounds(this.lobbyHeightBounds.minHeight(), this.lobbyHeightBounds.maxHeight());
         if (heightBounds.isOutOfBounds(player.getPosition().y())) {
             Optional.ofNullable(this.spawnPosition.get()).ifPresent(player::teleport);
         }

@@ -114,6 +114,16 @@ class PortalClearanceTest {
         assertFalse(kept(discAt(5.5, 11.0, 0.5, 2.0, new Vec(1, 0, 0)), block(0, 10, 0), block(12, 10, 0)), "the jump flies through the ring");
     }
 
+    @Test
+    void aDiscAtTheApexOfTheJumpIsNotKeptThoughAStandingPlayerClearsIt() {
+        assertFalse(kept(discAt(0.5, 17.5, 0.5, 1.0, new Vec(0, 1, 0)), block(0, 10, 0), block(3, 10, 0)), "the head reaches y=14 at the apex, two blocks short of the ring");
+    }
+
+    @Test
+    void aDiscHighAboveTheApexOfTheJumpIsKept() {
+        assertTrue(kept(discAt(0.5, 22.5, 0.5, 1.0, new Vec(0, 1, 0)), block(0, 10, 0), block(3, 10, 0)), "eight blocks above the apex is no obstacle");
+    }
+
     // --- no portals ---------------------------------------------------------------------------------
 
     @Test

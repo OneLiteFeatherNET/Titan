@@ -24,9 +24,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.random.RandomGenerator;
 import java.util.random.RandomGeneratorFactory;
+import java.util.stream.Collectors;
+import net.minestom.server.coordinate.Pos;
 import org.junit.jupiter.api.Test;
 
 class AscentPhaseTest {
@@ -345,5 +346,42 @@ class AscentPhaseTest {
         assertEquals(-1.0, EAST.dot(Direction.WEST), 1e-9, "opposite");
         assertEquals(0.0, EAST.dot(Direction.SOUTH), 1e-9, "sideways");
         assertEquals(Math.sqrt(0.5), EAST.dot(Direction.SOUTH_EAST), 1e-9, "diagonal is normalized");
+    }
+
+    // --- the height band ----------------------------------------------------------------------------
+
+    private static Optional<Course> startIn(int minHeight, int maxHeight, long seed) {
+        Pos startPoint = new Pos(0.5, 11.0, 0.5);
+        return TestBlocks.course(startPoint, new BlockPos(0, 10, 0), EAST, TestBlocks.FAR_SPAWN, new FakeSpaceProbe(), new HeightBand(TestBlocks.bounds(minHeight, maxHeight)), seeded(seed));
+    }
+
+    @Test
+    void startsWhenTheWholeAscentFitsUnderTheUpperLimit() {
+        assertTrue(startIn(-64, 19, 1L).isPresent(), "the fifth ascent block has top 16 and its jump peaks at 18.26, under 19");
+    }
+
+    @Test
+    void startsNoRunWhenTheAscentWouldPassTheUpperLimit() {
+        assertTrue(startIn(-64, 18, 1L).isEmpty(), "the fifth ascent block's jump peaks at 18.26, over 18");
+    }
+
+    @Test
+    void startsNoRunSixBlocksUnderTheUpperLimit() {
+        assertTrue(startIn(-64, 16, 1L).isEmpty(), "the ascent climbs five blocks, so the band is left");
+    }
+
+    @Test
+    void startsNoRunJustAboveTheLowerLimit() {
+        assertTrue(startIn(3, 310, 1L).isEmpty(), "top 11 - 3 - 5 = 3 does not stay above 3");
+    }
+
+    @Test
+    void startsWhenTheStartBlockKeepsTheFallAllowanceAboveTheLowerLimit() {
+        assertTrue(startIn(2, 310, 1L).isPresent(), "top 11 - 3 - 5 = 3 stays above 2");
+    }
+
+    @Test
+    void startsAsBeforeInsideTheShippedBand() {
+        assertTrue(startIn(-64, 310, 1L).isPresent(), "a normal start is unchanged");
     }
 }
