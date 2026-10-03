@@ -33,9 +33,9 @@ import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
 import net.onelitefeather.deliver.DeliverComponent;
 import net.onelitefeather.titan.api.deliver.Deliver;
+import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.module.SpawnReturn;
-import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.core.permission.PermissionResult;
 import net.onelitefeather.titan.core.permission.PermissionService;
 import net.theevilreaper.aves.inventory.click.ClickHolder;
@@ -59,6 +59,7 @@ public final class NavigatorModule {
     private static final String ID = "navigator";
     private static final int SLOT_COUNT = 9;
     private static final int SPAWN_SLOT = 2;
+    private static final ItemStack SPAWN_ITEM = ItemStack.builder(Material.COMPASS).customName(MiniMessage.miniMessage().deserialize("<!i><aqua>Spawn</aqua>")).build();
     private static final ItemStack BLANK = ItemStack.builder(Material.GRAY_STAINED_GLASS_PANE).customName(Component.empty()).build();
 
     private final EventNode<Event> titan;
@@ -157,8 +158,7 @@ public final class NavigatorModule {
 
     // Spawn is a fixed entry, not a Destination: it returns the player instead of redirecting them.
     private void addSpawnEntry(InventoryLayout layout) {
-        ItemStack compass = ItemStack.builder(Material.COMPASS).customName(MiniMessage.miniMessage().deserialize("<!i><aqua>Spawn</aqua>")).build();
-        layout.setItem(SPAWN_SLOT, compass, (player, clickedSlot, click, stack, result) -> {
+        layout.setItem(SPAWN_SLOT, SPAWN_ITEM, (player, clickedSlot, click, stack, result) -> {
             result.accept(ClickHolder.cancelClick());
             this.spawnReturn.sendToSpawnAndTell(player);
             player.closeInventory();
