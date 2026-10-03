@@ -27,11 +27,6 @@ sealed interface Placement permits Spot, CourseBlock {
         return pos().y() + surface().top();
     }
 
-    /** The highest y a standing player reaches into above this block. */
-    default int headroomTopY() {
-        return pos().y() + surface().headroomTop();
-    }
-
     /** The highest y a player reaches into at the apex of a jump from this block. */
     default int jumpRoomTopY() {
         return pos().y() + surface().jumpRoomTop();

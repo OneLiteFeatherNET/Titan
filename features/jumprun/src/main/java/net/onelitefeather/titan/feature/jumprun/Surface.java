@@ -75,13 +75,6 @@ enum Surface {
     }
 
     /**
-     * Highest block offset above the block position a standing player reaches into (fence: y+3).
-     */
-    int headroomTop() {
-        return highestBlockReached(top);
-    }
-
-    /**
      * Highest block offset above the block position the head reaches at the apex of a jump from
      * here: a ceiling any lower lets the player stand but not jump.
      */

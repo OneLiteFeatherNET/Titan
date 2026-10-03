@@ -51,15 +51,15 @@ final class PortalClearance {
     }
 
     /**
-     * Whether the target and every cell of the flight path, over the height the jump and a
-     * standing player reach, stay {@link #MARGIN} blocks from each portal.
+     * Whether the target and every cell of the flight path, over the height the head
+     * reaches at the apex of the jump, stay {@link #MARGIN} blocks from each portal.
      */
     boolean isKept(Jump jump) {
         if (shapes.isEmpty()) {
             return true;
         }
         int low = Math.min(jump.from().pos().y(), jump.to().pos().y());
-        int high = Math.max(jump.from().headroomTopY(), jump.to().headroomTopY());
+        int high = Math.max(jump.from().jumpRoomTopY(), jump.to().jumpRoomTopY());
         return FlightPath.cellsUpTo(jump.from().pos(), jump.to().pos()).stream().noneMatch(cell -> isNearAnywhere(cell, low, high));
     }
 

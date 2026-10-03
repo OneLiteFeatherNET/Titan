@@ -47,14 +47,6 @@ class SurfaceTest {
     }
 
     @Test
-    void headroomReachesTwoBlocksAboveAFlatTopAndThreeAboveAFence() {
-        assertEquals(2, Surface.FULL.headroomTop(), "full block");
-        assertEquals(2, Surface.SLAB.headroomTop(), "slab");
-        assertEquals(3, Surface.FENCE.headroomTop(), "fence");
-        assertEquals(2, Surface.PANE.headroomTop(), "pane");
-    }
-
-    @Test
     void jumpRoomReachesFourBlocksAboveAFullTopAndOnlyThreeAboveAHalfBlock() {
         assertEquals(4, Surface.FULL.jumpRoomTop(), "full block");
         assertEquals(3, Surface.SLAB.jumpRoomTop(), "slab");
@@ -72,12 +64,6 @@ class SurfaceTest {
     void postHasTopOfOneAndTheHighestTypeCost() {
         assertEquals(1.0, Surface.POST.top(), "post top");
         assertEquals(4, Surface.POST.typeCost(), "post type cost");
-    }
-
-    @Test
-    void headroomOfTheNewShapes() {
-        assertEquals(1, Surface.TRAPDOOR.headroomTop(), "trapdoor");
-        assertEquals(2, Surface.POST.headroomTop(), "post");
     }
 
     @Test
