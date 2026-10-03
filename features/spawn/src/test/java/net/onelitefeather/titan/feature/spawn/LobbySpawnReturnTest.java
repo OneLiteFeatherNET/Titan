@@ -20,10 +20,14 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import net.minestom.server.coordinate.Pos;
+import net.minestom.server.coordinate.Vec;
+import net.minestom.server.entity.EquipmentSlot;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.instance.Instance;
+import net.minestom.server.item.ItemStack;
+import net.minestom.server.item.Material;
 import net.minestom.testing.Env;
 import org.mockito.Mockito;
 import net.minestom.testing.extension.MicrotusExtension;
@@ -85,7 +89,7 @@ class LobbySpawnReturnTest {
         IllegalStateException failure = new IllegalStateException("chunk could not load");
         Player player = Mockito.mock(Player.class);
         Mockito.when(player.getUuid()).thenReturn(uuid);
-        Mockito.when(player.teleport(SPAWN)).thenReturn(CompletableFuture.failedFuture(failure));
+        Mockito.when(player.teleport(SPAWN, Vec.ZERO)).thenReturn(CompletableFuture.failedFuture(failure));
         try (CapturedLog log = new CapturedLog(LobbySpawnReturn.class)) {
             SpawnReturn.Result result = new LobbySpawnReturn(() -> SPAWN, new SpawnMessages()).sendToSpawn(player);
 
@@ -96,6 +100,26 @@ class LobbySpawnReturnTest {
             Assertions.assertEquals(uuid, CapturedLog.valueOf(line, "player"), "the warning must name the player");
             Assertions.assertSame(failure, CapturedLog.causeOf(line), "the failure must be the logged cause");
         }
+    }
+
+    @DisplayName("A gliding player loses the glide momentum and stays at the spawn point")
+    @Test
+    void glidingPlayerLosesMomentum(Env env) {
+        Player player = playerOnRoof(env);
+        player.setEquipment(EquipmentSlot.CHESTPLATE, ItemStack.of(Material.ELYTRA));
+        player.setFlyingWithElytra(true);
+        player.setVelocity(new Vec(400, -200, 400));
+
+        new LobbySpawnReturn(() -> SPAWN, new SpawnMessages()).sendToSpawn(player);
+        env.tick();
+        env.tick();
+        env.tick();
+
+        // Gravity still pulls the player down from the spawn height; only the glide must be gone.
+        Assertions.assertEquals(0, player.getVelocity().x(), "the horizontal glide momentum must be gone");
+        Assertions.assertEquals(0, player.getVelocity().z(), "the horizontal glide momentum must be gone");
+        Assertions.assertEquals(SPAWN.x(), player.getPosition().x(), 0.01, "the player must not drift away from the spawn point");
+        Assertions.assertEquals(SPAWN.z(), player.getPosition().z(), 0.01, "the player must not drift away from the spawn point");
     }
 
     private static Player playerOnRoof(Env env) {

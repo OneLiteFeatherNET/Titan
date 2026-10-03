@@ -18,6 +18,7 @@ package net.onelitefeather.titan.feature.spawn;
 import jakarta.inject.Singleton;
 import java.util.Objects;
 import net.minestom.server.coordinate.Pos;
+import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.EventDispatcher;
 import net.onelitefeather.titan.core.module.LobbyReturnToSpawnEvent;
@@ -53,9 +54,16 @@ final class LobbySpawnReturn implements SpawnReturn {
         EventDispatcher.call(new LobbyReturnToSpawnEvent(player));
         // Teleporting alone does not end a glide; without this the player keeps gliding from spawn.
         player.setFlyingWithElytra(false);
-        player.teleport(position).exceptionally(cause -> {
-            LOGGER.atWarn().addKeyValue("player", player.getUuid()).setCause(cause).log("Could not teleport player to spawn");
-            return null;
+        // Teleporting keeps the velocity: a glider would fly on from spawn. The delta tells the client
+        // to drop its momentum, the server-side reset is repeated once the (possibly chunk-loading)
+        // teleport is done, so nothing set in between survives.
+        player.setVelocity(Vec.ZERO);
+        player.teleport(position, Vec.ZERO).whenComplete((done, cause) -> {
+            if (cause == null) {
+                player.setVelocity(Vec.ZERO);
+            } else {
+                LOGGER.atWarn().addKeyValue("player", player.getUuid()).setCause(cause).log("Could not teleport player to spawn");
+            }
         });
         LOGGER.atDebug().addKeyValue("player", player.getUuid()).log("player returned to spawn");
         return Result.RETURNED;
