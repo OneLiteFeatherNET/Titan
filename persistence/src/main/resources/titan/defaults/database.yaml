@@ -24,6 +24,10 @@
 # settings to application.yaml. url, user and password work from env vars without a YAML entry.
 titan:
   database:
+    # Seconds a starting lobby waits for another lobby that is migrating the schema (a lock held in
+    # PostgreSQL) before it aborts its start. Needs a direct PostgreSQL session, not PgBouncer in
+    # transaction pooling mode.
+    migrationLockTimeoutSeconds: 60
     hikari:
       # A lobby needs few parallel queries; reads happen on join, writes on a virtual thread.
       maximumPoolSize: 4

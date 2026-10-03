@@ -31,10 +31,12 @@ import java.util.TreeSet;
  * {@code toString} shows no values either.
  */
 record DatabaseSettings(String url, String user, String password, Properties hikari,
-                        Map<String, String> hibernateProperties) {
+                        Map<String, String> hibernateProperties, int migrationLockTimeoutSeconds) {
 
     private static final String HIKARI = "titan.database.hikari";
     private static final String HIBERNATE = "titan.database.hibernate";
+    private static final String MIGRATION_LOCK_TIMEOUT = "titan.database.migrationLockTimeoutSeconds";
+    private static final int DEFAULT_MIGRATION_LOCK_TIMEOUT_SECONDS = 60;
     private static final String HBM2DDL = "hibernate.hbm2ddl.auto";
     private static final String JPA_SCHEMA_ACTION = "jakarta.persistence.schema-generation.database.action";
     // The lobby sets hbm2ddl.auto=validate last, so none there is overridden. The JPA key outranks
@@ -61,7 +63,15 @@ record DatabaseSettings(String url, String user, String password, Properties hik
         if (url.isBlank()) {
             throw new IllegalStateException(DatabaseProperties.URL + " is set but empty; unset it to run without a database");
         }
-        return new DatabaseSettings(url, config.getOptional("titan.database.user").orElse(null), config.getOptional("titan.database.password").orElse(null), config.forPath(HIKARI).asProperties(), hibernateProperties(config.forPath(HIBERNATE).asProperties()));
+        return new DatabaseSettings(url, config.getOptional("titan.database.user").orElse(null), config.getOptional("titan.database.password").orElse(null), config.forPath(HIKARI).asProperties(), hibernateProperties(config.forPath(HIBERNATE).asProperties()), migrationLockTimeoutSeconds(config));
+    }
+
+    private static int migrationLockTimeoutSeconds(Configuration config) {
+        int seconds = config.getInt(MIGRATION_LOCK_TIMEOUT, DEFAULT_MIGRATION_LOCK_TIMEOUT_SECONDS);
+        if (seconds < 1) {
+            throw new IllegalStateException(MIGRATION_LOCK_TIMEOUT + " must be at least 1");
+        }
+        return seconds;
     }
 
     @Override
