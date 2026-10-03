@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Instant;
 import java.util.OptionalInt;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,19 @@ class InMemoryRunRecordsTest {
     private final RunRecords records = new InMemoryRunRecords();
     private final UUID player = UUID.randomUUID();
 
+    private static FinishedRun run(UUID player, Mode mode, int score) {
+        return new FinishedRun(player, "Alex", mode, score, EndReason.FALL, Instant.parse("2026-10-03T12:00:00Z"));
+    }
+
+    @Test
+    void loadingChangesNothingInMemory() {
+        records.submit(run(player, Mode.MEDIUM, 12));
+
+        records.load(player);
+
+        assertEquals(OptionalInt.of(12), records.best(player, Mode.MEDIUM), "load is a no-op without a store");
+    }
+
     @Test
     void playerWithoutRunHasNoBest() {
         assertTrue(records.best(player, Mode.MEDIUM).isEmpty(), "no best before the first run");
@@ -35,54 +49,54 @@ class InMemoryRunRecordsTest {
 
     @Test
     void firstRunIsARecord() {
-        assertTrue(records.submit(player, Mode.MEDIUM, 12), "first run is a record");
+        assertTrue(records.submit(run(player, Mode.MEDIUM, 12)), "first run is a record");
         assertEquals(OptionalInt.of(12), records.best(player, Mode.MEDIUM));
     }
 
     @Test
     void higherScoreIsANewRecord() {
-        records.submit(player, Mode.MEDIUM, 12);
-        assertTrue(records.submit(player, Mode.MEDIUM, 15), "15 beats 12");
+        records.submit(run(player, Mode.MEDIUM, 12));
+        assertTrue(records.submit(run(player, Mode.MEDIUM, 15)), "15 beats 12");
         assertEquals(OptionalInt.of(15), records.best(player, Mode.MEDIUM));
     }
 
     @Test
     void lowerScoreIsNoRecordAndKeepsTheBest() {
-        records.submit(player, Mode.MEDIUM, 15);
-        assertFalse(records.submit(player, Mode.MEDIUM, 9), "9 does not beat 15");
+        records.submit(run(player, Mode.MEDIUM, 15));
+        assertFalse(records.submit(run(player, Mode.MEDIUM, 9)), "9 does not beat 15");
         assertEquals(OptionalInt.of(15), records.best(player, Mode.MEDIUM));
     }
 
     @Test
     void equalScoreIsNoRecord() {
-        records.submit(player, Mode.MEDIUM, 15);
-        assertFalse(records.submit(player, Mode.MEDIUM, 15), "a tie is not a record");
+        records.submit(run(player, Mode.MEDIUM, 15));
+        assertFalse(records.submit(run(player, Mode.MEDIUM, 15)), "a tie is not a record");
     }
 
     @Test
     void playersAreIndependent() {
         UUID other = UUID.randomUUID();
-        records.submit(player, Mode.MEDIUM, 15);
-        assertTrue(records.submit(other, Mode.MEDIUM, 3), "other player's first run is a record");
+        records.submit(run(player, Mode.MEDIUM, 15));
+        assertTrue(records.submit(run(other, Mode.MEDIUM, 3)), "other player's first run is a record");
         assertEquals(OptionalInt.of(15), records.best(player, Mode.MEDIUM));
         assertEquals(OptionalInt.of(3), records.best(other, Mode.MEDIUM));
     }
 
     @Test
     void forgettingRemovesTheBestSoTheNextScoreIsARecord() {
-        records.submit(player, Mode.MEDIUM, 15);
+        records.submit(run(player, Mode.MEDIUM, 15));
 
         records.forget(player);
 
         assertTrue(records.best(player, Mode.MEDIUM).isEmpty(), "the best is gone");
-        assertTrue(records.submit(player, Mode.MEDIUM, 1), "any score is a record again");
+        assertTrue(records.submit(run(player, Mode.MEDIUM, 1)), "any score is a record again");
     }
 
     @Test
     void forgettingOnePlayerKeepsTheOthers() {
         UUID other = UUID.randomUUID();
-        records.submit(player, Mode.MEDIUM, 15);
-        records.submit(other, Mode.MEDIUM, 3);
+        records.submit(run(player, Mode.MEDIUM, 15));
+        records.submit(run(other, Mode.MEDIUM, 3));
 
         records.forget(player);
 
@@ -91,18 +105,18 @@ class InMemoryRunRecordsTest {
 
     @Test
     void recordsOfDifferentModesAreIndependent() {
-        records.submit(player, Mode.EASY, 30);
+        records.submit(run(player, Mode.EASY, 30));
 
         assertTrue(records.best(player, Mode.HARD).isEmpty(), "hard has no best yet");
-        assertTrue(records.submit(player, Mode.HARD, 2), "a low hard score is still the first hard record");
+        assertTrue(records.submit(run(player, Mode.HARD, 2)), "a low hard score is still the first hard record");
         assertEquals(OptionalInt.of(30), records.best(player, Mode.EASY));
         assertEquals(OptionalInt.of(2), records.best(player, Mode.HARD));
     }
 
     @Test
     void forgettingAPlayerDropsEveryMode() {
-        records.submit(player, Mode.EASY, 30);
-        records.submit(player, Mode.HARD, 2);
+        records.submit(run(player, Mode.EASY, 30));
+        records.submit(run(player, Mode.HARD, 2));
 
         records.forget(player);
 

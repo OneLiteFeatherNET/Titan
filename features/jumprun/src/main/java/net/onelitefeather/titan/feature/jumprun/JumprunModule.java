@@ -16,18 +16,24 @@
 package net.onelitefeather.titan.feature.jumprun;
 
 import io.avaje.config.Config;
+import io.avaje.inject.External;
 import io.avaje.inject.PostConstruct;
 import io.avaje.inject.PreDestroy;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.LongSupplier;
 import java.util.function.UnaryOperator;
@@ -35,6 +41,7 @@ import java.util.random.RandomGenerator;
 import java.util.random.RandomGeneratorFactory;
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
+import net.minestom.server.ServerFlag;
 import net.minestom.server.coordinate.Point;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.EquipmentSlot;
@@ -42,6 +49,7 @@ import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.event.instance.RemoveEntityFromInstanceEvent;
+import net.minestom.server.event.player.AsyncPlayerConfigurationEvent;
 import net.minestom.server.event.player.PlayerChunkLoadEvent;
 import net.minestom.server.event.player.PlayerDeathEvent;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
@@ -54,10 +62,14 @@ import net.minestom.server.network.packet.client.play.ClientPlayerBlockPlacement
 import net.minestom.server.network.packet.client.play.ClientPlayerPositionStatusPacket;
 import net.minestom.server.network.packet.client.play.ClientPlayerRotationPacket;
 import net.minestom.server.sound.SoundEvent;
+import net.minestom.server.timer.Scheduler;
+import net.minestom.server.timer.Task;
+import net.minestom.server.timer.TaskSchedule;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.module.LobbySpawn;
 import net.onelitefeather.titan.core.module.item.LobbyItems;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
+import net.onelitefeather.titan.persistence.DatabaseWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.spi.LoggingEventBuilder;
@@ -81,6 +93,7 @@ final class JumprunModule {
     static final String ID = "jumprun";
     static final Mode DEFAULT_MODE = Mode.MEDIUM;
     private static final int USE_SUPPRESSION_TICKS = 2;
+    private static final int LEADERBOARD_REFRESH_SECONDS = 30;
     private static final String RANDOM_ALGORITHM = "L64X128MixRandom";
     private static final Logger LOGGER = LoggerFactory.getLogger(JumprunModule.class);
 
@@ -89,9 +102,14 @@ final class JumprunModule {
     private final LobbyPortals portals;
     private final Provider<LobbyItems> lobbyItems;
     private final RunRecords records;
+    private final Optional<Leaderboard> leaderboard;
+    private final Executor refreshes;
+    private final Scheduler scheduler;
     private final RunMessages messages;
+    private final RunSidebarContent sidebarContent;
     private final LongSupplier seeds;
     private final JumprunConfig config;
+    private final Clock clock;
     private final RunRegistry runs = new RunRegistry();
     private final FakeBlocks fakeBlocks = new FakeBlocks();
     /** Player tick until which the item is ignored after a click on a run block. */
@@ -100,13 +118,24 @@ final class JumprunModule {
     private final Map<UUID, Mode> modes = new ConcurrentHashMap<>();
     private final Set<UUID> resendPending = ConcurrentHashMap.newKeySet();
     private FeatureNode node;
+    private Task refreshTask;
 
+    // The writer is persistence's, resolved on first use like in StoredRunRecords, and only a lobby with a database ever asks for it.
     @Inject
-    JumprunModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records, Provider<LobbyItems> lobbyItems) {
-        this(titan, spawn, portals, records, lobbyItems, new RunMessages(), () -> ThreadLocalRandom.current().nextLong(), new JumprunConfig(Config.asConfiguration()));
+    JumprunModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records, Optional<Leaderboard> leaderboard, Provider<LobbyItems> lobbyItems, Clock clock, Scheduler scheduler, @External Provider<DatabaseWriter> writer) {
+        this(titan, spawn, portals, records, leaderboard, task -> writer.get().execute(task), scheduler, lobbyItems, new RunMessages(), () -> ThreadLocalRandom.current().nextLong(), new JumprunConfig(Config.asConfiguration()), clock);
     }
 
-    JumprunModule(EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records, Provider<LobbyItems> lobbyItems, RunMessages messages, LongSupplier seeds, JumprunConfig config) {
+    /** Without a leaderboard, so nothing is scheduled and nothing refreshed. */
+    JumprunModule(EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records, Provider<LobbyItems> lobbyItems, RunMessages messages, LongSupplier seeds, JumprunConfig config, Clock clock) {
+        this(titan, spawn, portals, records, Optional.empty(), Runnable::run, Scheduler.newScheduler(), lobbyItems, messages, seeds, config, clock);
+    }
+
+    JumprunModule(EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records, Optional<Leaderboard> leaderboard, Executor refreshes, Scheduler scheduler, Provider<LobbyItems> lobbyItems, RunMessages messages, LongSupplier seeds, JumprunConfig config, Clock clock) {
+        this.leaderboard = leaderboard;
+        this.refreshes = refreshes;
+        this.scheduler = scheduler;
+        this.sidebarContent = new RunSidebarContent(messages);
         this.titan = titan;
         this.spawn = spawn;
         this.portals = portals;
@@ -115,6 +144,7 @@ final class JumprunModule {
         this.messages = messages;
         this.seeds = seeds;
         this.config = config;
+        this.clock = clock;
     }
 
     @PostConstruct
@@ -123,16 +153,59 @@ final class JumprunModule {
         this.config.readAtStartup();
         this.messages.register();
         this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY);
+        this.node.on(AsyncPlayerConfigurationEvent.class, this::onConfiguration);
         this.node.on(PlayerMoveEvent.class, this::onMove);
         this.node.on(PlayerDeathEvent.class, this::onDeath);
         this.node.on(PlayerChunkLoadEvent.class, this::onChunkLoad);
         this.node.on(PlayerPacketEvent.class, this::onPacket);
         this.node.on(PlayerDisconnectEvent.class, this::onDisconnect);
         this.node.on(RemoveEntityFromInstanceEvent.class, this::onLeaveInstance);
+        this.leaderboard.ifPresent(board -> scheduleRefreshes());
+    }
+
+    /**
+     * The first refresh on the next tick, then one per period. The task only hands the refresh
+     * over:
+     * Minestom runs it on the TickSchedulerThread, which must not wait for a database. Not at once
+     * in {@link #start()}, because the database writer is wired after this column.
+     */
+    private void scheduleRefreshes() {
+        // Ticks, not TaskSchedule.seconds: a duration schedule runs on the wall clock, out of reach of env.tick().
+        TaskSchedule period = TaskSchedule.tick(LEADERBOARD_REFRESH_SECONDS * ServerFlag.SERVER_TICKS_PER_SECOND);
+        this.refreshTask = scheduler.buildTask(this::refreshLeaderboard).delay(TaskSchedule.nextTick()).repeat(period).schedule();
+    }
+
+    /** Hands a refresh to the executor; afterwards the running sidebars show what it found. */
+    void refreshLeaderboard() {
+        this.leaderboard.ifPresent(board -> {
+            try {
+                refreshes.execute(() -> {
+                    board.refresh();
+                    runs.all().forEach(this::showSidebarSafely);
+                });
+            } catch (RejectedExecutionException closed) {
+                LOGGER.debug("Skipping a leaderboard refresh, the executor is closed");
+            } catch (RuntimeException failure) {
+                // The scheduler would drop a throwing task for good, so the refresh would stop for the rest of the uptime.
+                LOGGER.atWarn().setCause(failure).log("Could not hand over a leaderboard refresh");
+            }
+        });
+    }
+
+    /** One failing run, a disconnecting player say, must not keep the other sidebars stale. */
+    private void showSidebarSafely(Run run) {
+        try {
+            showSidebar(run);
+        } catch (RuntimeException failure) {
+            LOGGER.atWarn().addKeyValue("player", run.player().getUuid()).setCause(failure).log("Could not update a jump and run sidebar");
+        }
     }
 
     @PreDestroy
     void stop() {
+        if (this.refreshTask != null) {
+            this.refreshTask.cancel();
+        }
         // Detach first, so no event can start or move a run while they are ended.
         if (this.node != null) {
             this.node.close();
@@ -207,6 +280,7 @@ final class JumprunModule {
             run.spectators().show(run.fakeWindow());
             run.outlineNext();
             run.label().show(run.score());
+            showSidebar(run);
         }
         LOGGER.atDebug().addKeyValue("player", player.getUuid()).log("jumprun started");
     }
@@ -219,7 +293,15 @@ final class JumprunModule {
         Pos spawnPoint = Optional.ofNullable(spawn.position()).orElse(feet);
         Heading heading = Heading.away(feet.x(), feet.z(), spawnPoint.x(), spawnPoint.z(), feet.direction().x(), feet.direction().z());
         RandomGenerator random = RandomGeneratorFactory.of(RANDOM_ALGORITHM).create(seeds.getAsLong());
-        return Course.startSteered(feet, startBlock, heading, new SpawnZone(spawnPoint.x(), spawnPoint.z()), new InstanceSpaceProbe(player.getInstance()), random, config.palettes(), PortalClearance.ofPortals(portals.portals()), mode).map(course -> new Run(player, course, startBlock, mode, records.best(player.getUuid(), mode), config.rerollTicks(mode)));
+        return Course.startSteered(feet, startBlock, heading, new SpawnZone(spawnPoint.x(), spawnPoint.z()), new InstanceSpaceProbe(player.getInstance()), random, config.palettes(), PortalClearance.ofPortals(portals.portals()), mode).map(course -> new Run(player, course, startBlock, mode, records.best(player.getUuid(), mode), config.rerollTicks(mode), sidebarContent));
+    }
+
+    /**
+     * Runs on a configuration thread, not a tick, so the store may block; the player has not
+     * spawned yet.
+     */
+    private void onConfiguration(AsyncPlayerConfigurationEvent event) {
+        records.load(event.getPlayer().getUuid());
     }
 
     private void onDeath(PlayerDeathEvent event) {
@@ -280,11 +362,7 @@ final class JumprunModule {
         if (run == null) {
             return;
         }
-        synchronized (run) {
-            if (runs.get(run.player().getUuid()) == run) {
-                advance(run, run.advanceTo(player.getPosition()));
-            }
-        }
+        whileRegistered(run, () -> advance(run, run.advanceTo(player.getPosition())));
     }
 
     private void forgetClicks(Player player) {
@@ -340,9 +418,14 @@ final class JumprunModule {
      * reset.
      */
     private void showIfRegistered(Run run, UnaryOperator<List<CourseBlock>> part) {
+        whileRegistered(run, () -> fakeBlocks.show(run.player(), part.apply(run.solidWindow())));
+    }
+
+    /** Keeps "still registered" and the action together, so nothing acts on a run that ended. */
+    private void whileRegistered(Run run, Runnable action) {
         synchronized (run) {
             if (runs.get(run.player().getUuid()) == run) {
-                fakeBlocks.show(run.player(), part.apply(run.solidWindow()));
+                action.run();
             }
         }
     }
@@ -353,16 +436,13 @@ final class JumprunModule {
             return;
         }
         Pos to = event.getNewPosition();
-        synchronized (run) {
-            if (runs.get(run.player().getUuid()) != run) {
-                return;
-            }
+        whileRegistered(run, () -> {
             if (run.hasFallen(to.y())) {
                 end(run, EndReason.FALL, log -> log.addKeyValue("y", to.y()).addKeyValue("threshold", run.fallThreshold()).addKeyValue("currentIndex", run.currentIndex()));
             } else if (event.isOnGround()) {
                 advance(run, run.advanceTo(to));
             }
-        }
+        });
     }
 
     private void advance(Run run, Course.Advance advance) {
@@ -377,6 +457,8 @@ final class JumprunModule {
         run.spectators().show(added);
         run.outlineNext();
         run.label().show(run.score());
+        offerToLeaderboard(run);
+        showSidebar(run);
         if (advance.scored() > 0) {
             RunSounds.play(player, run.score());
             if (run.passesPreviousBest()) {
@@ -389,6 +471,30 @@ final class JumprunModule {
         if (advance.exhausted()) {
             end(run, EndReason.EXHAUSTED);
         }
+    }
+
+    /**
+     * A score above the player's own best moves up the board at once, not only when the run ends.
+     * The end does not offer again: the board keeps the time of the first offer of that score, and
+     * the next refresh takes the stored one, so a tie order could only differ for a few seconds.
+     */
+    private void offerToLeaderboard(Run run) {
+        if (run.isRecordSoFar()) {
+            Player player = run.player();
+            leaderboard.ifPresent(board -> board.offer(player.getUuid(), player.getUsername(), run.mode(), run.score(), now()));
+        }
+    }
+
+    /**
+     * Under the lock of the run, and only while it is registered, so no sidebar outlives its run.
+     */
+    private void showSidebar(Run run) {
+        whileRegistered(run, () -> run.sidebar().show(run.score(), run.previousBest(), leaderboard.map(board -> board.top(run.mode()))));
+    }
+
+    // Truncated to what timestamptz keeps, so a tie is the same tie after the database.
+    private Instant now() {
+        return clock.instant().truncatedTo(ChronoUnit.MICROS);
     }
 
     private void end(Run run, EndReason reason) {
@@ -411,11 +517,12 @@ final class JumprunModule {
                 run.spectators().clear();
             }
             run.label().remove();
+            run.sidebar().remove();
             if (reason.restoresBlocks()) {
                 fakeBlocks.reset(player, run.fakeWindow());
             }
         }
-        boolean isRecord = reason.submitsScore() && records.submit(player.getUuid(), run.mode(), score);
+        boolean isRecord = reason.submitsScore() && records.submit(new FinishedRun(player.getUuid(), player.getUsername(), run.mode(), score, reason, now()));
         if (reason.announcesScore()) {
             // A run that never scored is not worth calling a record, even when it is the first.
             Component message = isRecord && score > 0 ? messages.endRecord(player.getLocale(), run.mode(), score) : messages.endScore(player.getLocale(), run.mode(), score);

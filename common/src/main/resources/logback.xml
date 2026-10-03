@@ -37,6 +37,12 @@
          needs during normal operation. -->
     <logger name="io.netty" level="WARN"/>
 
+    <!-- Hibernate, Flyway and Hikari log the JDBC url and statements at INFO and below; the
+         persistence module logs its own one-line "Database ready" without credentials. -->
+    <logger name="org.hibernate" level="WARN"/>
+    <logger name="org.flywaydb" level="WARN"/>
+    <logger name="com.zaxxer.hikari" level="WARN"/>
+
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="SENTRY"/>

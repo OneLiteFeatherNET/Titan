@@ -16,15 +16,19 @@
 /**
  * The {@code jumprun} column. Like {@code elytra}, it takes {@code LobbyItems} as a {@code
  * Provider} to avoid a build-order cycle with {@code hotbarColumn}, so only {@code EventNode},
- * {@code LobbySpawn} and {@code LobbyPortals} are declared as required.
+ * {@code LobbySpawn}, {@code LobbyPortals}, the platform's {@code Clock} and its {@code Scheduler}
+ * are declared as required.
  */
 @InjectModule(
-        name = "jumprunColumn", requires = {EventNode.class, LobbySpawn.class, LobbyPortals.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"}, provides = {LobbyItem.class}
+        name = "jumprunColumn", requires = {EventNode.class, LobbySpawn.class, LobbyPortals.class, Clock.class, Scheduler.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"}, provides = {LobbyItem.class, PersistenceUnit.class}
 )
 package net.onelitefeather.titan.feature.jumprun;
 
 import io.avaje.inject.InjectModule;
+import java.time.Clock;
 import net.minestom.server.event.EventNode;
+import net.minestom.server.timer.Scheduler;
 import net.onelitefeather.titan.core.module.LobbySpawn;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
+import net.onelitefeather.titan.persistence.PersistenceUnit;

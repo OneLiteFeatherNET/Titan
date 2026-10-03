@@ -48,7 +48,7 @@ record StartedRun(JumprunFixture fixture, TestConnection connection, Player play
 
     /** Starts a run for a player whose best score was already stored before it began. */
     static StartedRun startWithBest(Env env, JumprunFixture fixture, Instance instance, int best) {
-        return start(env, fixture, instance, STAND, player -> fixture.records().submit(player.getUuid(), Mode.MEDIUM, best));
+        return start(env, fixture, instance, STAND, player -> fixture.records().submit(JumprunFixture.finished(player.getUuid(), Mode.MEDIUM, best)));
     }
 
     /** Starts a run for a player who was set up by {@code beforeStart} while already online. */

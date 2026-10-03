@@ -38,8 +38,19 @@ final class RunMessages implements AutoCloseable {
     private static final String END_RECORD = "titan.jumprun.end.record";
     private static final String MODE_CHANGED = "titan.jumprun.mode.changed";
 
+    private static final String SIDEBAR_SCORE = "titan.jumprun.sidebar.score";
+    private static final String SIDEBAR_SCORE_VALUE = "titan.jumprun.sidebar.score.value";
+    private static final String SIDEBAR_RECORD = "titan.jumprun.sidebar.record";
+    private static final String SIDEBAR_RECORD_VALUE = "titan.jumprun.sidebar.record.value";
+    private static final String SIDEBAR_NO_RECORD = "titan.jumprun.sidebar.record.none";
+    private static final String SIDEBAR_TOP_HEADER = "titan.jumprun.sidebar.top.header";
+    private static final String SIDEBAR_TOP_ENTRY = "titan.jumprun.sidebar.top.entry";
+    private static final String SIDEBAR_SELF_MARKER = "titan.jumprun.sidebar.self.marker";
+    private static final String SIDEBAR_PLACE_VALUE = "titan.jumprun.sidebar.place.";
+    private static final int PLACES = 3;
+
     /** Every key this class renders; the bundle test checks them against the property files. */
-    static final List<String> KEYS = List.of(NO_SPACE, SCORE_ACTIONBAR, END_SCORE, END_RECORD, MODE_CHANGED);
+    static final List<String> KEYS = List.of(NO_SPACE, SCORE_ACTIONBAR, END_SCORE, END_RECORD, MODE_CHANGED, SIDEBAR_SCORE, SIDEBAR_SCORE_VALUE, SIDEBAR_RECORD, SIDEBAR_RECORD_VALUE, SIDEBAR_NO_RECORD, SIDEBAR_TOP_HEADER, SIDEBAR_TOP_ENTRY, SIDEBAR_SELF_MARKER, placeValueKey(1), placeValueKey(2), placeValueKey(3));
 
     private final MiniMessageTranslationStore store = MiniMessageTranslationStore.create(Key.key("titan", "jumprun"));
     private boolean registered;
@@ -84,6 +95,55 @@ final class RunMessages implements AutoCloseable {
 
     Component modeChanged(Locale locale, Mode mode) {
         return render(Component.translatable(MODE_CHANGED, modeArgument(mode)), locale);
+    }
+
+    Component sidebarScoreLabel(Locale locale) {
+        return render(Component.translatable(SIDEBAR_SCORE), locale);
+    }
+
+    Component sidebarScoreValue(Locale locale, int score) {
+        return render(scored(SIDEBAR_SCORE_VALUE, score), locale);
+    }
+
+    Component sidebarRecordLabel(Locale locale) {
+        return render(Component.translatable(SIDEBAR_RECORD), locale);
+    }
+
+    Component sidebarRecordValue(Locale locale, int record) {
+        return render(Component.translatable(SIDEBAR_RECORD_VALUE, Argument.numeric("record", record)), locale);
+    }
+
+    Component sidebarNoRecord(Locale locale) {
+        return render(Component.translatable(SIDEBAR_NO_RECORD), locale);
+    }
+
+    Component sidebarTopHeader(Locale locale) {
+        return render(Component.translatable(SIDEBAR_TOP_HEADER), locale);
+    }
+
+    Component sidebarSelfMarker(Locale locale) {
+        return render(Component.translatable(SIDEBAR_SELF_MARKER), locale);
+    }
+
+    /**
+     * @param marker the own-line marker, or any filler of the same width for the others
+     * @param head   the player head object
+     * @param name   inserted as given, never parsed as markup, so the caller decides its style
+     */
+    Component sidebarTopEntry(Locale locale, Component marker, Component head, Component name) {
+        return render(Component.translatable(SIDEBAR_TOP_ENTRY, Argument.component("marker", marker), Argument.component("head", head), Argument.component("name", name)), locale);
+    }
+
+    /** @param place 1 to 3; each has its own medal colour in the bundle */
+    Component sidebarPlaceValue(Locale locale, int place, int score) {
+        return render(scored(placeValueKey(place), score), locale);
+    }
+
+    private static String placeValueKey(int place) {
+        if (place < 1 || place > PLACES) {
+            throw new IllegalArgumentException("place must be 1 to " + PLACES + " but was " + place);
+        }
+        return SIDEBAR_PLACE_VALUE + place + ".value";
     }
 
     private static ComponentLike modeArgument(Mode mode) {

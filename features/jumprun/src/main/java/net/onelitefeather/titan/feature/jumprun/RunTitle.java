@@ -18,6 +18,9 @@ package net.onelitefeather.titan.feature.jumprun;
 /** The "Jump & Run" title in MiniMessage, shared by the item name and the score label. */
 final class RunTitle {
 
+    /** The slime block the title and the score label start with. */
+    static final String SPRITE = "<sprite:blocks:block/slime_block>";
+
     static final String MARKUP = "<gradient:#7CFC00:#00C853><b>Jump & Run</b></gradient>";
 
     private RunTitle() {

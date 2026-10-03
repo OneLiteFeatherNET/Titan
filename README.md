@@ -7,7 +7,7 @@ Titan is a complete Minestom-based Minecraft lobby server that provides various 
 - **Sitting System**: Allows players to sit on specific blocks like stairs
 - **Tickle Mechanic**: Players can tickle each other using feathers, with cooldown periods
 - **Elytra Boost**: Provides boost functionality for players using elytra
-- **Jump & Run**: A random single-player jump and run in hotbar slot 0 with client-side blocks (2 behind, 2 ahead of the player); the difficulty rises with the score and records are kept in memory only
+- **Jump & Run**: A random single-player jump and run in hotbar slot 0 with client-side blocks (2 behind, 2 ahead of the player); the difficulty rises with the score and records persist in the database when one is configured (otherwise in memory), and a sidebar shows score, record and the top three of the mode during a run; see [Database](docs/lobby-modules.md#datenbank-persistence)
 - **Height Teleportation**: Automatically teleports players when they exceed certain height limits
 
 ## Requirements
@@ -116,6 +116,17 @@ and key with its default also ships in the distribution, next to the jar - copy 
 `application.yaml` and edit only the values that should differ. A missing file, a missing section
 or a missing key falls back to the shipped default, listed below. The lobby never creates or writes
 a configuration file itself.
+
+### Database
+
+The lobby runs without a database. Setting `titan.database.url` (`TITAN_DATABASE_URL`, plus
+`TITAN_DATABASE_USER` and `TITAN_DATABASE_PASSWORD`) enables PostgreSQL persistence, currently for
+Jump & Run records; an unreachable or invalid database aborts the start. Pool and Hibernate
+settings (`titan.database.hikari.*`, `titan.database.hibernate.*`) belong in a YAML file such as
+`application.yaml`: `-D` properties and environment variables only override keys already present
+there, so a new key given only that way is ignored (the url, user and password work from the
+environment alone). Migrations and a local test setup are described in
+[docs/lobby-modules.md](docs/lobby-modules.md#datenbank-persistence).
 
 ### Profiles and overrides
 

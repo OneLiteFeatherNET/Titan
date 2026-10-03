@@ -1,0 +1,39 @@
+# The shared database (module "persistence"). Off unless titan.database.url is set, and then
+# a failing start (database unreachable, migration failed, schema differs from the mappings)
+# aborts the lobby instead of silently running without it.
+#
+# The three connection keys are deliberately NOT given here. Set them in a profile file or, without
+# touching the jar, as environment variables (an empty value aborts the start, so unset it instead):
+#   titan.database.url       TITAN_DATABASE_URL       jdbc:postgresql://host:5432/database
+#   titan.database.user      TITAN_DATABASE_USER
+#   titan.database.password  TITAN_DATABASE_PASSWORD
+# They win over jdbcUrl, username and password under hikari.
+#
+# hikari: any HikariCP property, named as in HikariConfig; "dataSource." keys go to the JDBC driver.
+# An unknown name aborts the start. hibernate: any Hibernate property without the "hibernate."
+# prefix. The lobby sets hbm2ddl.auto=validate itself because Flyway owns the schema; that key may
+# only be validate or none (the lobby's validate wins), the JPA schema-generation action only
+# validate, and settings that open a connection past the pool (connection.url,
+# connection.username, jakarta.persistence.jdbc.*, a JTA/non-JTA data source, ...) are rejected.
+# The hikari keys dataSourceClassName, dataSourceJNDI and dataSource are rejected too.
+#
+# Set hikari.* and hibernate.* in a YAML file: these defaults, application.yaml, a profile file
+# application-<profile>.yaml or a file via CONFIG_FILE. -D system properties and environment
+# variables only override keys that already exist in a YAML file (e.g. maximumPoolSize below); a key
+# given only as -D/env (e.g. -Dtitan.database.hikari.minimumIdle=2) is ignored. Add new pool or ORM
+# settings to application.yaml. url, user and password work from env vars without a YAML entry.
+titan:
+  database:
+    hikari:
+      # A lobby needs few parallel queries; reads happen on join, writes on a virtual thread.
+      maximumPoolSize: 4
+      # Milliseconds a caller waits for a connection from the pool once it is running.
+      connectionTimeout: 5000
+      # Milliseconds the start waits for the first connection. Small, so a lobby that cannot reach
+      # its database fails its start in seconds, not minutes.
+      initializationFailTimeout: 5000
+      poolName: titan
+      # dataSource.reWriteBatchedInserts: true
+    hibernate:
+      # jdbc.batch_size: 20
+      # generate_statistics: false

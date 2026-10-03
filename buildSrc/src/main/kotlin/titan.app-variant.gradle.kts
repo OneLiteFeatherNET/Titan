@@ -94,12 +94,15 @@ afterEvaluate {
     // never advertises a setting the variant cannot act on.
     val titanDefaultsFiles = files(
         fileTree(project(":runtime").file("src/main/resources/titan/defaults")) { include("*.yaml") },
+        // persistence is no column, so the features/* scan never reaches it; a column that needs the
+        // database depends on it, and its defaults (pool size, documented keys) must ship with it.
+        fileTree(project(":persistence").file("src/main/resources/titan/defaults")) { include("*.yaml") },
         *includedFeaturePaths.map { path -> fileTree(project(path).file("src/main/resources/titan/defaults")) { include("*.yaml") } }.toTypedArray()
     )
 
     val mergeApplicationDefaults = tasks.register<MergeApplicationDefaultsTask>("mergeApplicationDefaults") {
         group = "build"
-        description = "Concatenates runtime's and every included column's titan/defaults/*.yaml into the classpath application.yaml."
+        description = "Concatenates runtime's, persistence's and every included column's titan/defaults/*.yaml into the classpath application.yaml."
         defaultFiles.from(titanDefaultsFiles)
         outputDir.set(layout.buildDirectory.dir("generated/titanDefaults"))
     }

@@ -34,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
  */
 final class ScoreLabel {
 
-    private static final String TEMPLATE = "<sprite:blocks:block/slime_block> " + RunTitle.MARKUP + " <gray>·</gray> <mode> <gray>·</gray> <white><score></white>";
+    private static final String TEMPLATE = RunTitle.SPRITE + " " + RunTitle.MARKUP + " <gray>·</gray> <mode> <gray>·</gray> <white><score></white>";
 
     /** A passenger sits at the top of the head; this lifts the text over the name tag. */
     private static final Vec ABOVE_NAME_TAG = new Vec(0.0, 0.5, 0.0);
