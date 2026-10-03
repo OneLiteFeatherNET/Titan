@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.3.0](https://github.com/OneLiteFeatherNET/Titan/compare/v2.2.0...v2.3.0) (2026-10-03)
+
+
+### Features
+
+* **jumprun:** persist run scores per mode and show a sidebar with the top 3 ([#350](https://github.com/OneLiteFeatherNET/Titan/issues/350)) ([ffd6f66](https://github.com/OneLiteFeatherNET/Titan/commit/ffd6f66bf6d4e6bafe8933b751e81ed3e4c0a394))
+* **spawn:** let players return to spawn with /spawn and the navigator ([#354](https://github.com/OneLiteFeatherNET/Titan/issues/354)) ([16b3635](https://github.com/OneLiteFeatherNET/Titan/commit/16b3635cdd472fe73199da551a228e65f003e5d2))
+
+
+### Bug Fixes
+
+* **jumprun:** apply schema migrations exactly once when lobbies start together ([#353](https://github.com/OneLiteFeatherNET/Titan/issues/353)) ([f174d5d](https://github.com/OneLiteFeatherNET/Titan/commit/f174d5d64cd9a6eab62bc8b214f8aa53038ca675))
+* **jumprun:** keep runs inside the lobby height and leave room to jump ([#352](https://github.com/OneLiteFeatherNET/Titan/issues/352)) ([9833c30](https://github.com/OneLiteFeatherNET/Titan/commit/9833c3011d1ca012861013de882bff6e22f30e5d))
+
 ## [2.2.0](https://github.com/OneLiteFeatherNET/Titan/compare/v2.1.1...v2.2.0) (2026-10-02)
 
 
