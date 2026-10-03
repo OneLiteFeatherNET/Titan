@@ -170,7 +170,7 @@ class JumprunEndTest {
     void aScoreBelowTheRecordIsReportedWithoutRecordAndKeepsTheRecord(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             StartedRun run = StartedRun.start(env, fixture);
-            fixture.records().submit(run.player().getUuid(), Mode.MEDIUM, 5);
+            fixture.records().submit(JumprunFixture.finished(run.player().getUuid(), Mode.MEDIUM, 5));
             run.landOnNext(JumprunFixture.ASCENT_JUMPS + 1);
             Collector<SystemChatPacket> chat = run.connection().trackIncoming(SystemChatPacket.class);
 

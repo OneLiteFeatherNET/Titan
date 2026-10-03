@@ -16,9 +16,14 @@
 package net.onelitefeather.titan.feature.jumprun;
 
 import io.avaje.config.Configuration;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.Executor;
 import net.minestom.server.coordinate.Point;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Entity;
@@ -44,6 +49,8 @@ import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
  */
 final class JumprunFixture implements AutoCloseable {
 
+    static final Instant NOW = Instant.parse("2026-10-03T12:00:00Z");
+    static final Clock CLOCK = Clock.fixed(NOW, ZoneOffset.UTC);
     static final long SEED = 42L;
 
     /** The flat instance is stone up to y 39, so a player stands at y 40. */
@@ -76,6 +83,10 @@ final class JumprunFixture implements AutoCloseable {
         this.lobbyItems = lobbyItems;
     }
 
+    static FinishedRun finished(UUID player, Mode mode, int score) {
+        return new FinishedRun(player, "Alex", mode, score, EndReason.FALL, NOW);
+    }
+
     /** The spawn lies west of the usual start spots, so runs head east. */
     static JumprunFixture start(Env env) {
         return start(env, new InMemoryRunRecords());
@@ -90,11 +101,20 @@ final class JumprunFixture implements AutoCloseable {
         return start(env, new InMemoryRunRecords(), config);
     }
 
+    /** With a leaderboard, whose refreshes go to {@code refreshes} instead of a database writer. */
+    static JumprunFixture start(Env env, RunRecords records, Leaderboard leaderboard, Executor refreshes) {
+        return start(env, records, TestBlocks.shippedConfiguration(), Optional.of(leaderboard), refreshes);
+    }
+
     private static JumprunFixture start(Env env, RunRecords records, Configuration config) {
+        return start(env, records, config, Optional.empty(), Runnable::run);
+    }
+
+    private static JumprunFixture start(Env env, RunRecords records, Configuration config, Optional<Leaderboard> leaderboard, Executor refreshes) {
         TestTitanNode titan = TestTitanNode.attach(env);
         RunMessages messages = new RunMessages();
         RecordingLobbyItems lobbyItems = new RecordingLobbyItems();
-        JumprunModule module = new JumprunModule(titan.node(), () -> new Pos(-40.5, GROUND_Y, 0.5), List::of, records, () -> lobbyItems, messages, () -> SEED, new JumprunConfig(config));
+        JumprunModule module = new JumprunModule(titan.node(), () -> new Pos(-40.5, GROUND_Y, 0.5), List::of, records, leaderboard, refreshes, env.process().scheduler(), () -> lobbyItems, messages, () -> SEED, new JumprunConfig(config), CLOCK);
         module.start();
         LobbyItem item = new JumprunItems().jumprun(module);
         // What the hotbar column does with the use packet, without depending on it.

@@ -53,9 +53,14 @@ class JumprunPlayersTest {
         }
 
         @Override
-        public boolean submit(UUID player, Mode mode, int score) {
-            submitted.add(score);
-            return delegate.submit(player, mode, score);
+        public boolean submit(FinishedRun run) {
+            submitted.add(run.score());
+            return delegate.submit(run);
+        }
+
+        @Override
+        public void load(UUID player) {
+            delegate.load(player);
         }
 
         @Override

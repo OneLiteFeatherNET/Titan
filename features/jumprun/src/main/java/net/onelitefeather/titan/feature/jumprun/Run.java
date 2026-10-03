@@ -37,6 +37,7 @@ final class Run {
     private final BlockPos startBlock;
     private final Spectators spectators;
     private final ScoreLabel label;
+    private final RunSidebar sidebar;
     private final Mode mode;
     private final OptionalInt previousBest;
     private final FakeBlocks fakeBlocks = new FakeBlocks();
@@ -46,7 +47,7 @@ final class Run {
     /**
      * @param rerollTicks standing ticks between two rerolls, which only a mode that rerolls uses
      */
-    Run(Player player, Course course, BlockPos startBlock, Mode mode, OptionalInt previousBest, int rerollTicks) {
+    Run(Player player, Course course, BlockPos startBlock, Mode mode, OptionalInt previousBest, int rerollTicks, RunSidebarContent sidebarContent) {
         this.mode = mode;
         this.reroller = new Reroller(this, rerollTicks, this::standingBlock, this::reroll);
         this.previousBest = previousBest;
@@ -55,6 +56,7 @@ final class Run {
         this.startBlock = startBlock;
         this.spectators = new Spectators(player, this, fakeBlocks);
         this.label = new ScoreLabel(player, mode);
+        this.sidebar = new RunSidebar(player, mode, sidebarContent);
     }
 
     Player player() {
@@ -91,7 +93,7 @@ final class Run {
      * Without a previous best the end of the run announces the record instead.
      */
     synchronized boolean passesPreviousBest() {
-        if (recordSounded || previousBest.isEmpty() || course.score() <= previousBest.getAsInt()) {
+        if (recordSounded || previousBest.isEmpty() || !isRecordSoFar()) {
             return false;
         }
         recordSounded = true;
@@ -112,6 +114,24 @@ final class Run {
      */
     ScoreLabel label() {
         return label;
+    }
+
+    /** The runner's own sidebar; touch it only while holding the lock of the run. */
+    RunSidebar sidebar() {
+        return sidebar;
+    }
+
+    /** The best of the player before this run began. */
+    OptionalInt previousBest() {
+        return previousBest;
+    }
+
+    /**
+     * Whether the score is a record so far: above the best from before the run, or any score
+     * without one.
+     */
+    synchronized boolean isRecordSoFar() {
+        return course.score() > previousBest.orElse(0);
     }
 
     Pos startPoint() {

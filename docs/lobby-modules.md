@@ -713,8 +713,17 @@ Höhenunterschied, Blockart) steigt mit dem Punktestand. `EVENT_PRIORITY` ist 10
 - **Töne:** Alle Lauftöne (Punkt, Aufstiegssignal, Absturz, Rekord, Modus-Klick) spielen am Läufer
   gebunden (`Sound.Emitter.self()`, `EntitySoundEffectPacket`) und nur für ihn. Das Level-up beim
   ersten Rekord bleibt so hörbar, obwohl der Absturz im selben Tick zum Startpunkt teleportiert.
-- **Einschränkung Rekorde:** Bestwerte liegen je Modus nur im Speicher (`InMemoryRunRecords`) und
-  gehen beim Neustart verloren, bis es einen Stats-Dienst gibt.
+- **Rekorde:** Mit konfigurierter Datenbank (siehe [Datenbank](#datenbank-persistence)) bleiben die
+  Bestwerte je Modus über Neustarts erhalten: jeder beendete Lauf wird als Zeile in `jumprun_run`
+  angehängt (auf einem virtuellen Thread, nie auf dem Tick-Thread), die Bestwerte eines Spielers
+  werden beim Beitritt geladen (`StoredRunRecords`). Ohne Datenbank liegen sie je Modus nur im
+  Speicher (`InMemoryRunRecords`) und gehen beim Neustart verloren.
+- **Sidebar:** Nur während eines Laufs sieht der Läufer eine Sidebar, und nur für den Modus des
+  Laufs: Score, Rekord und (mit Datenbank) die Top drei des Modus (`Leaderboard`). Die eigene Zeile
+  in den Top drei ist fett, die Beschriftungen (`titan.jumprun.sidebar.*`) werden pro Spieler
+  übersetzt. Ohne Datenbank entfallen die Top-drei-Zeilen. Die Actionbar bleibt unverändert. Die Top drei
+  werden alle 30 Sekunden aus der Datenbank neu gelesen (nicht auf dem Tick-Thread); ein neuer Rekord
+  steht sofort darin, bevor die Datenbank ihn hat. Die Sidebar endet mit dem Lauf.
 - **Eigene Übersetzungen:** Texte (`titan.jumprun.*`, de/en, Englisch als Fallback) kommen aus einem
   eigenen Bundle und werden pro Spieler gerendert. Minestoms globales Flag für automatische
   Übersetzung bleibt aus.
@@ -733,6 +742,84 @@ Höhenunterschied, Blockart) steigt mit dem Punktestand. `EVENT_PRIORITY` ist 10
 - **Zur Laufzeit:** Die Paletten werden beim Start jedes Laufs neu gelesen. Ein ungültiger Wert
   erzeugt eine WARN-Zeile mit dem Schlüssel (einmal je Fehler), und es bleiben die zuletzt
   gültigen Paletten.
+
+## Datenbank (`persistence`)
+
+Das Modul `persistence` stellt eine gemeinsame PostgreSQL-Anbindung bereit (HikariCP, Hibernate,
+Flyway). Sie ist aus, solange `titan.database.url` nicht gesetzt ist; dann läuft die Lobby wie
+zuvor ohne Datenbank.
+
+| Schlüssel | Umgebungsvariable |
+| --- | --- |
+| `titan.database.url` (`jdbc:postgresql://host:5432/db`) | `TITAN_DATABASE_URL` |
+| `titan.database.user` | `TITAN_DATABASE_USER` |
+| `titan.database.password` | `TITAN_DATABASE_PASSWORD` |
+
+Rangfolge wie bei jedem Schlüssel (niedrig nach hoch): Datei im Jar < Profil < `CONFIG_FILE` <
+Umgebungsvariable < Systemproperty. Die drei Schlüssel stehen bewusst nicht in den Standardwerten
+(`persistence/src/main/resources/titan/defaults/database.yaml`).
+
+- **Start:** Eine leere URL bricht den Start ab (zum Abschalten den Schlüssel entfernen). Ist die
+  Datenbank nicht erreichbar, bricht der Start nach etwa 5 s ab, ebenso bei fehlgeschlagener
+  Migration oder wenn das Schema nicht zu den Mappings passt (`validate`).
+- **Laufzeit:** Fällt die Datenbank später aus, bleibt die Lobby spielbar; Lesen und Schreiben
+  melden dann eine WARN-Zeile, die Bestwerte bleiben im Speicher.
+- **Hikari:** `titan.database.hikari.*` nimmt jede HikariCP-Eigenschaft unter ihrem
+  `HikariConfig`-Namen, `dataSource.*` geht an den JDBC-Treiber. Ein unbekannter oder ungültiger
+  Schlüssel bricht den Start ab; die Meldung nennt den Schlüssel, nie den Wert. `dataSourceClassName`,
+  `dataSourceJNDI` und `dataSource` sind gesperrt, die URL kommt immer aus `titan.database.url`;
+  `titan.database.user`/`password` gewinnen gegen `username`/`password` unter `hikari`.
+- **Hibernate:** `titan.database.hibernate.*` nimmt jede Hibernate-Eigenschaft ohne das Präfix
+  `hibernate.` (`jakarta.*`-Schlüssel unverändert). Gesperrt, weil Flyway das Schema besitzt:
+  `hbm2ddl.auto` darf nur `validate` oder `none` sein (die Lobby setzt am Ende immer `validate`), die
+  JPA-Schema-Aktion nur `validate`; Schlüssel, die an der Pool-Verbindung vorbei verbinden
+  (`connection.url`, `connection.username`, `connection.password`, `connection.driver_class`,
+  `connection.provider_class`, `connection.datasource`, `jakarta.persistence.jdbc.*`, JTA-/Non-JTA-DataSource),
+  werden abgelehnt.
+- **Wo die Pool- und ORM-Werte stehen:** `titan.database.hikari.*` und `titan.database.hibernate.*`
+  gehören in eine YAML-Datei (mitgelieferte Standardwerte, `application.yaml`, `application-<profil>.yaml`
+  oder eine Datei über `CONFIG_FILE`). Systemproperties (`-D`) und Umgebungsvariablen überschreiben
+  dort nur Schlüssel, die in einer YAML-Datei schon vorkommen (etwa `maximumPoolSize`, das die
+  Standardwerte mitbringen); ein Schlüssel, der nur als `-D`/Umgebungsvariable existiert
+  (z. B. `-Dtitan.database.hikari.minimumIdle=2`), wird ignoriert. Neue Pool- und ORM-Einstellungen
+  also in `application.yaml` eintragen. `url`, `user` und `password` funktionieren dagegen auch
+  allein als Umgebungsvariable (`TITAN_DATABASE_URL` usw.), ohne YAML-Eintrag.
+
+```yaml
+titan:
+  database:
+    hikari:
+      maximumPoolSize: 4          # Standard
+      connectionTimeout: 5000     # Standard, ms
+      initializationFailTimeout: 5000  # Standard, ms
+      dataSource.reWriteBatchedInserts: true
+    hibernate:
+      jdbc.batch_size: 20
+```
+
+- **Migrationen:** Jede Column bringt ihre Flyway-Skripte unter `db/migration/<column>/` mit (Name
+  `[a-z][a-z0-9_]*`), die Historie liegt je Column in `flyway_<column>_history`. Das Schema ist
+  gemeinsam: der erste Lauf einer Column findet fremde Tabellen ohne eigene Historie und
+  baselined bei Version 0, deshalb darf keine Column ein `V0` ausliefern. jumprun:
+  `db/migration/jumprun/V1__create_jumprun_run.sql`.
+- **Tabelle `jumprun_run`** (nur angehängt, nie geändert): `id` (bigint, identity), `player_uuid`,
+  `player_name` (varchar 32), `mode` und `end_reason` (Namen der Enum-Konstanten, nie Ordinale),
+  `score` (>= 0), `finished_at` (timestamptz).
+- **Logging:** Hibernate, Flyway und Hikari loggen ab WARN (`common/src/main/resources/logback.xml`);
+  ein INFO `Database ready` (Anzahl Units und angewandter Migrationen, nie URL oder Zugangsdaten)
+  zeigt den erfolgreichen Start.
+- **Lokal testen:**
+
+  ```sh
+  docker run --rm -p 5432:5432 -e POSTGRES_PASSWORD=titan -e POSTGRES_DB=titan postgres:17
+  TITAN_DATABASE_URL=jdbc:postgresql://localhost:5432/titan TITAN_DATABASE_USER=postgres \
+    TITAN_DATABASE_PASSWORD=titan java -jar titan-local.jar
+  ```
+
+- **AOT-Training:** Den Trainingslauf (`-XX:AOTCacheOutput=...`) mit konfigurierter Datenbank
+  fahren, sonst fehlen die Datenbank-Klassen im Cache.
+- **Zurückrollen:** `titan.database.url` entfernen und neu starten; die Tabelle bleibt bestehen,
+  die Rekorde liegen dann wieder nur im Speicher.
 
 ## Checkliste: neues Feature = neues Modul unter `features/`
 

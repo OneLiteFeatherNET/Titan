@@ -42,7 +42,12 @@ final class InMemoryRunRecords implements RunRecords {
     }
 
     @Override
-    public boolean submit(UUID player, Mode mode, int score) {
+    public boolean submit(FinishedRun run) {
+        return record(run.player(), run.mode(), run.score());
+    }
+
+    /** Counts a score the way {@link #submit} does, for callers that have no finished run. */
+    boolean record(UUID player, Mode mode, int score) {
         AtomicBoolean isRecord = new AtomicBoolean();
         best.compute(player, (_, modes) -> {
             Map<Mode, Integer> updated = modes == null ? new EnumMap<>(Mode.class) : modes;
@@ -54,6 +59,11 @@ final class InMemoryRunRecords implements RunRecords {
             return updated;
         });
         return isRecord.get();
+    }
+
+    @Override
+    public void load(UUID player) {
+        // Nothing to load: this implementation has no store behind it.
     }
 
     @Override

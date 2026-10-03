@@ -52,6 +52,12 @@ dependencyResolutionManagement {
             version("logback", "1.6.5")
             version("sentry", "8.58.0")
 
+            version("hibernate", "7.4.11.Final")
+            version("hikaricp", "7.1.0")
+            version("postgresql", "42.7.13")
+            version("flyway", "13.9.0")
+            version("testcontainers", "2.0.5")
+
             // Minestom
             library("aonyx-bom", "net.onelitefeather", "aonyx-bom").versionRef("aonyx-bom")
             library("minestom","net.minestom", "minestom").withoutVersion()
@@ -111,12 +117,23 @@ dependencyResolutionManagement {
             library("sentry-bom", "io.sentry", "sentry-bom").versionRef("sentry")
             library("sentry", "io.sentry", "sentry").withoutVersion()
             library("sentry-logback", "io.sentry", "sentry-logback").withoutVersion()
+
+            // Persistence: one pool and one SessionFactory per process, see the :persistence module.
+            // Flyway (not Liquibase) because Liquibase Core is no longer Apache-2.0 licensed.
+            library("hibernate-core", "org.hibernate.orm", "hibernate-core").versionRef("hibernate")
+            library("hikaricp", "com.zaxxer", "HikariCP").versionRef("hikaricp")
+            library("postgresql", "org.postgresql", "postgresql").versionRef("postgresql")
+            library("flyway-core", "org.flywaydb", "flyway-core").versionRef("flyway")
+            library("flyway-postgresql", "org.flywaydb", "flyway-database-postgresql").versionRef("flyway")
+            library("testcontainers-postgresql", "org.testcontainers", "testcontainers-postgresql").versionRef("testcontainers")
+            library("testcontainers-junit", "org.testcontainers", "testcontainers-junit-jupiter").versionRef("testcontainers")
         }
     }
 }
 
 include("runtime")
 include("core")
+include("persistence")
 include("common")
 include("setup")
 include("bridge")
