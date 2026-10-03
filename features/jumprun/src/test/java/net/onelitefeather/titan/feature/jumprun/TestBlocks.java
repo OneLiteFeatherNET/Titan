@@ -58,17 +58,7 @@ final class TestBlocks {
 
     /** A lobby whose height limits are the given ones. */
     static LobbyHeightBounds bounds(int min, int max) {
-        return new LobbyHeightBounds() {
-            @Override
-            public int minHeight() {
-                return min;
-            }
-
-            @Override
-            public int maxHeight() {
-                return max;
-            }
-        };
+        return TestBounds.fixed(min, max);
     }
 
     /** The shipped lobby limits (-64 to 310). */

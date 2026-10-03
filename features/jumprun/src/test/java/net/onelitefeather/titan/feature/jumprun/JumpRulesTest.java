@@ -263,7 +263,7 @@ class JumpRulesTest {
     void targetBelowTheBandIsInvalidWhileTheDimensionStillHasRoom() {
         FakeSpaceProbe world = new FakeSpaceProbe(new BlockPos(-50, -64, -50), new BlockPos(50, 100, 50));
         HeightBand band = new HeightBand(TestBlocks.bounds(0, 310));
-        assertTrue(validIn(world, band, block(0, 8, 0, Surface.FULL), block(2, 7, 0, Surface.FULL)), "top 8 keeps the fall allowance above 0");
-        assertFalse(validIn(world, band, block(0, 7, 0, Surface.FULL), block(2, 6, 0, Surface.FULL)), "top 7 lets the fall reach 0");
+        assertTrue(validIn(world, band, block(0, 9, 0, Surface.FULL), block(2, 8, 0, Surface.FULL)), "target top 9 keeps the fall allowance above 0");
+        assertFalse(validIn(world, band, block(0, 8, 0, Surface.FULL), block(2, 7, 0, Surface.FULL)), "target top 8 lets the fall reach 0");
     }
 }

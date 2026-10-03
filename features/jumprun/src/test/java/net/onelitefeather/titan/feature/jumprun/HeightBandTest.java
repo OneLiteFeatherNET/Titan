@@ -15,12 +15,10 @@
  */
 package net.onelitefeather.titan.feature.jumprun;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import net.onelitefeather.titan.core.module.LobbyHeightBounds;
 import org.junit.jupiter.api.Test;
 
 class HeightBandTest {
@@ -33,38 +31,49 @@ class HeightBandTest {
         return band.allows(TestBlocks.at(new BlockPos(0, y, 0), surface));
     }
 
-    // --- lower limit: top - 3 - 4 must stay above minHeight --------------------------------------
+    // --- lower limit: top - FALL_DISTANCE - FALL_ALLOWANCE must stay above minHeight ---------------
+
+    /**
+     * One move packet after lag may report this much fall, a bit more than one tick at terminal
+     * velocity.
+     */
+    private static final int FALL_ALLOWANCE = 5;
+
+    /** The lowest y of a full block (top = y + 1) whose fall room stays above {@code min}. */
+    private static int lowestFullY(int min) {
+        return min + Course.FALL_DISTANCE + FALL_ALLOWANCE;
+    }
 
     @Test
     void fullBlockAtTheLowestAllowedYAboveMinus64IsInside() {
-        assertTrue(allows(band(-64, 310), Surface.FULL, -57), "top -56, a fall to -63 is still above -64");
+        assertTrue(allows(band(-64, 310), Surface.FULL, lowestFullY(-64)), "the whole fall room stays above the limit");
     }
 
     @Test
     void fullBlockOneBelowTheLowestAllowedYAboveMinus64IsOutside() {
-        assertFalse(allows(band(-64, 310), Surface.FULL, -58), "top -57, the fall reaches -64");
+        assertFalse(allows(band(-64, 310), Surface.FULL, lowestFullY(-64) - 1), "the fall room reaches the limit");
     }
 
     @Test
     void fullBlockAtTheLowestAllowedYAboveZeroIsInside() {
-        assertTrue(allows(band(0, 310), Surface.FULL, 7), "top 8, 8 - 7 = 1 > 0");
+        assertTrue(allows(band(0, 310), Surface.FULL, lowestFullY(0)), "the whole fall room stays above the limit");
     }
 
     @Test
     void fullBlockOneBelowTheLowestAllowedYAboveZeroIsOutside() {
-        assertFalse(allows(band(0, 310), Surface.FULL, 6), "top 7, 7 - 7 = 0 is not above 0");
+        assertFalse(allows(band(0, 310), Surface.FULL, lowestFullY(0) - 1), "the fall room reaches the limit");
     }
 
     @Test
     void slabNeedsTheSameYAsAFullBlockAtTheLowerLimit() {
-        assertTrue(allows(band(0, 310), Surface.SLAB, 7), "top 7.5 > 7");
-        assertFalse(allows(band(0, 310), Surface.SLAB, 6), "top 6.5 is below 7");
+        assertTrue(allows(band(0, 310), Surface.SLAB, lowestFullY(0)), "top is half a block above the limit's reach");
+        assertFalse(allows(band(0, 310), Surface.SLAB, lowestFullY(0) - 1), "top is half a block too low");
     }
 
     @Test
     void fenceMayStandOneLowerBecauseItsTopIsHigher() {
-        assertTrue(allows(band(0, 310), Surface.FENCE, 6), "top 7.5 > 7");
-        assertFalse(allows(band(0, 310), Surface.FENCE, 5), "top 6.5 is below 7");
+        assertTrue(allows(band(0, 310), Surface.FENCE, lowestFullY(0) - 1), "top is a half block higher than a full block's");
+        assertFalse(allows(band(0, 310), Surface.FENCE, lowestFullY(0) - 2), "top is one block too low");
     }
 
     // --- upper limit: top + JUMP_HEIGHT + 1 must not exceed maxHeight -----------------------------
@@ -106,27 +115,11 @@ class HeightBandTest {
     @Test
     void theBoundsAreReadOnEveryCheckNotCachedAtCreation() {
         AtomicInteger max = new AtomicInteger(310);
-        HeightBand band = new HeightBand(new LobbyHeightBounds() {
-            @Override
-            public int minHeight() {
-                return -64;
-            }
-
-            @Override
-            public int maxHeight() {
-                return max.get();
-            }
-        });
+        HeightBand band = new HeightBand(new TestBounds(() -> -64, max::get));
         assertTrue(allows(band, Surface.FULL, 100), "inside while the limit is 310");
 
         max.set(100);
 
         assertFalse(allows(band, Surface.FULL, 100), "outside once the operator lowers the limit");
-    }
-
-    @Test
-    void theFallAllowanceSharesTheCourseFallDistance() {
-        assertEquals(3, Course.FALL_DISTANCE, "a fall of three ends the run");
-        assertEquals(4, HeightBand.MAX_FALL_PER_TICK, "terminal velocity is about 3.92 blocks per tick");
     }
 }

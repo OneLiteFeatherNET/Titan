@@ -24,10 +24,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
-import net.minestom.server.coordinate.Pos;
 import java.util.random.RandomGenerator;
 import java.util.random.RandomGeneratorFactory;
+import java.util.stream.Collectors;
+import net.minestom.server.coordinate.Pos;
 import org.junit.jupiter.api.Test;
 
 class AscentPhaseTest {
@@ -372,12 +372,12 @@ class AscentPhaseTest {
 
     @Test
     void startsNoRunJustAboveTheLowerLimit() {
-        assertTrue(startIn(4, 310, 1L).isEmpty(), "a fall from the start block would reach the lower limit within one tick");
+        assertTrue(startIn(3, 310, 1L).isEmpty(), "top 11 - 3 - 5 = 3 does not stay above 3");
     }
 
     @Test
     void startsWhenTheStartBlockKeepsTheFallAllowanceAboveTheLowerLimit() {
-        assertTrue(startIn(3, 310, 1L).isPresent(), "top 11 - 3 - 4 = 4 stays above 3");
+        assertTrue(startIn(2, 310, 1L).isPresent(), "top 11 - 3 - 5 = 3 stays above 2");
     }
 
     @Test

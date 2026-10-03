@@ -110,7 +110,8 @@ final class JumprunModule {
     private final RunSidebarContent sidebarContent;
     private final LongSupplier seeds;
     private final JumprunConfig config;
-    private final HeightBand heightBand;
+    private final Provider<LobbyHeightBounds> heightBounds;
+    private HeightBand heightBand;
     private final Clock clock;
     private final RunRegistry runs = new RunRegistry();
     private final FakeBlocks fakeBlocks = new FakeBlocks();
@@ -125,32 +126,15 @@ final class JumprunModule {
     // The writer is persistence's, resolved on first use like in StoredRunRecords, and only a lobby with a database ever asks for it.
     @Inject
     JumprunModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records, Optional<Leaderboard> leaderboard, Provider<LobbyItems> lobbyItems, Clock clock, Scheduler scheduler, @External Provider<DatabaseWriter> writer, Provider<LobbyHeightBounds> heightBounds) {
-        this(titan, spawn, portals, records, leaderboard, task -> writer.get().execute(task), scheduler, lobbyItems, new RunMessages(), () -> ThreadLocalRandom.current().nextLong(), new JumprunConfig(Config.asConfiguration()), liveBounds(heightBounds), clock);
-    }
-
-    /**
-     * A provider is read on every call, which also keeps the bounds live and the build order free.
-     */
-    private static LobbyHeightBounds liveBounds(Provider<LobbyHeightBounds> bounds) {
-        return new LobbyHeightBounds() {
-            @Override
-            public int minHeight() {
-                return bounds.get().minHeight();
-            }
-
-            @Override
-            public int maxHeight() {
-                return bounds.get().maxHeight();
-            }
-        };
+        this(titan, spawn, portals, records, leaderboard, task -> writer.get().execute(task), scheduler, lobbyItems, new RunMessages(), () -> ThreadLocalRandom.current().nextLong(), new JumprunConfig(Config.asConfiguration()), heightBounds, clock);
     }
 
     /** Without a leaderboard, so nothing is scheduled and nothing refreshed. */
     JumprunModule(EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records, Provider<LobbyItems> lobbyItems, RunMessages messages, LongSupplier seeds, JumprunConfig config, LobbyHeightBounds heightBounds, Clock clock) {
-        this(titan, spawn, portals, records, Optional.empty(), Runnable::run, Scheduler.newScheduler(), lobbyItems, messages, seeds, config, heightBounds, clock);
+        this(titan, spawn, portals, records, Optional.empty(), Runnable::run, Scheduler.newScheduler(), lobbyItems, messages, seeds, config, () -> heightBounds, clock);
     }
 
-    JumprunModule(EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records, Optional<Leaderboard> leaderboard, Executor refreshes, Scheduler scheduler, Provider<LobbyItems> lobbyItems, RunMessages messages, LongSupplier seeds, JumprunConfig config, LobbyHeightBounds heightBounds, Clock clock) {
+    JumprunModule(EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records, Optional<Leaderboard> leaderboard, Executor refreshes, Scheduler scheduler, Provider<LobbyItems> lobbyItems, RunMessages messages, LongSupplier seeds, JumprunConfig config, Provider<LobbyHeightBounds> heightBounds, Clock clock) {
         this.leaderboard = leaderboard;
         this.refreshes = refreshes;
         this.scheduler = scheduler;
@@ -163,7 +147,7 @@ final class JumprunModule {
         this.messages = messages;
         this.seeds = seeds;
         this.config = config;
-        this.heightBand = new HeightBand(heightBounds);
+        this.heightBounds = heightBounds;
         this.clock = clock;
     }
 
@@ -171,6 +155,8 @@ final class JumprunModule {
     void start() {
         // Strict once, so an invalid palette or reroll interval aborts the start; runs read it again live.
         this.config.readAtStartup();
+        // Resolved once, here, so a lobby without the spawn column fails at start and not on the first run.
+        this.heightBand = new HeightBand(resolveBounds());
         this.messages.register();
         this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY);
         this.node.on(AsyncPlayerConfigurationEvent.class, this::onConfiguration);
@@ -181,6 +167,14 @@ final class JumprunModule {
         this.node.on(PlayerDisconnectEvent.class, this::onDisconnect);
         this.node.on(RemoveEntityFromInstanceEvent.class, this::onLeaveInstance);
         this.leaderboard.ifPresent(board -> scheduleRefreshes());
+    }
+
+    private LobbyHeightBounds resolveBounds() {
+        try {
+            return this.heightBounds.get();
+        } catch (RuntimeException e) {
+            throw new IllegalStateException("jumprun needs LobbyHeightBounds from the spawn column", e);
+        }
     }
 
     /**

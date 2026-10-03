@@ -21,14 +21,22 @@ import net.onelitefeather.titan.core.module.LobbyHeightBounds;
  * The part of the lobby's height limits a run may use. The bounds are read on every check, so a
  * changed limit applies to the next new block.
  */
-record HeightBand(LobbyHeightBounds bounds) {
+final class HeightBand {
+
+    private final LobbyHeightBounds bounds;
+
+    HeightBand(LobbyHeightBounds bounds) {
+        this.bounds = bounds;
+    }
 
     /**
-     * The most a player falls in one tick (terminal velocity is about 3.92). The spawn column
-     * handles the same move event before jumprun, so a fall that crosses the fall threshold and
-     * the lower limit in one tick would end in a spawn teleport instead of a reset.
+     * The most a move packet may report as fall. Terminal velocity is about 3.92 per tick, but
+     * after
+     * lag a client reports more than one tick at once. The spawn column handles the same move event
+     * before jumprun, so a fall that crosses the fall threshold and the lower limit in one move
+     * would end in a spawn teleport instead of a reset.
      */
-    static final int MAX_FALL_PER_TICK = 4;
+    private static final int MAX_FALL_PER_TICK = 5;
 
     /** One block of slack under the upper limit, on top of the jump apex. */
     private static final int HEAD_ROOM = 1;
