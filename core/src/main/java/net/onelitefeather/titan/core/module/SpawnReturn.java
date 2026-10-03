@@ -28,7 +28,10 @@ public interface SpawnReturn {
 
     /** Outcome of a return attempt. */
     enum Result {
-        /** The event was fired and the player teleported. */
+        /**
+         * The event was fired and the teleport was requested; the teleport completes
+         * asynchronously and a failure is logged, not reported here.
+         */
         RETURNED,
         /** The active map has no spawn point; no event, no teleport. */
         NO_SPAWN

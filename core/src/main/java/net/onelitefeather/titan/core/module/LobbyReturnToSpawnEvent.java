@@ -22,6 +22,9 @@ import net.minestom.server.event.trait.PlayerEvent;
  * Hook for features that hold per-player state (e.g. a running jump and run) to clean up before
  * the player is moved to spawn. Fired synchronously via {@code EventDispatcher} by {@link
  * SpawnReturn}, so all listeners have finished when the teleport happens.
+ *
+ * <p>Listeners run on the caller's thread before the teleport: keep them quick and never throw,
+ * an exception would abort the return.
  */
 public record LobbyReturnToSpawnEvent(Player player) implements PlayerEvent {
 

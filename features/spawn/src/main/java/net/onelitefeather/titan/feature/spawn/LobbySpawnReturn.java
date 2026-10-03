@@ -53,7 +53,10 @@ final class LobbySpawnReturn implements SpawnReturn {
         EventDispatcher.call(new LobbyReturnToSpawnEvent(player));
         // Teleporting alone does not end a glide; without this the player keeps gliding from spawn.
         player.setFlyingWithElytra(false);
-        player.teleport(position);
+        player.teleport(position).exceptionally(cause -> {
+            LOGGER.atWarn().addKeyValue("player", player.getUuid()).setCause(cause).log("Could not teleport player to spawn");
+            return null;
+        });
         LOGGER.atDebug().addKeyValue("player", player.getUuid()).log("player returned to spawn");
         return Result.RETURNED;
     }

@@ -8,4 +8,7 @@ dependencies {
     // this column's own defaults.
     implementation(libs.avaje.config)
     implementation(libs.slf4j.api)
+
+    // ListAppender, for capturing the teleport-failure warning in a test.
+    testImplementation(libs.logback.classic)
 }

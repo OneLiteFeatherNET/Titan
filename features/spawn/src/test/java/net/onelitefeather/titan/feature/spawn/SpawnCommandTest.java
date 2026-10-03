@@ -15,18 +15,26 @@
  */
 package net.onelitefeather.titan.feature.spawn;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.function.Supplier;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.command.CommandManager;
+import net.minestom.server.command.ConsoleSender;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
+import net.minestom.server.event.EventNode;
 import net.minestom.server.instance.Instance;
+import net.minestom.server.item.ItemStack;
+import net.minestom.server.item.Material;
 import net.minestom.server.network.packet.server.play.SystemChatPacket;
 import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.TestConnection;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.core.module.LobbyReturnToSpawnEvent;
+import net.onelitefeather.titan.core.module.SpawnReturn;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -123,11 +131,55 @@ class SpawnCommandTest {
     @Test
     void glidingPlayerStopsGliding(Env env) {
         try (Scene scene = Scene.start(env, () -> SPAWN, Locale.ENGLISH)) {
+            scene.player().setEquipment(net.minestom.server.entity.EquipmentSlot.CHESTPLATE, ItemStack.of(Material.ELYTRA));
             scene.player().setFlyingWithElytra(true);
+            Assertions.assertTrue(scene.player().isFlyingWithElytra(), "precondition: the player glides before /spawn");
 
             scene.run();
 
             Assertions.assertFalse(scene.player().isFlyingWithElytra(), "the player must not glide on from spawn");
+        }
+    }
+
+    @DisplayName("The console gets the operator message; nobody is returned and no event fires")
+    @Test
+    void consoleIsToldAndNobodyIsReturned(Env env) {
+        List<String> received = new ArrayList<>();
+        ConsoleSender console = new ConsoleSender() {
+            @Override
+            public void sendMessage(String message) {
+                received.add(message);
+            }
+        };
+        int[] returns = {0};
+        SpawnReturn fake = new SpawnReturn() {
+            @Override
+            public Result sendToSpawn(Player player) {
+                returns[0]++;
+                return Result.RETURNED;
+            }
+
+            @Override
+            public void sendToSpawnAndTell(Player player) {
+                returns[0]++;
+            }
+        };
+        List<LobbyReturnToSpawnEvent> events = new ArrayList<>();
+        EventNode<net.minestom.server.event.Event> node = EventNode.all("spawn-command-test");
+        node.addListener(LobbyReturnToSpawnEvent.class, events::add);
+        env.process().eventHandler().addChild(node);
+        CommandManager commandManager = env.process().command();
+        SpawnCommands commands = new SpawnCommands(commandManager, fake);
+        commands.start();
+        try {
+            commandManager.execute(console, "spawn");
+
+            Assertions.assertEquals(List.of(SpawnCommand.CONSOLE_MESSAGE), received, "the console must get the operator message");
+            Assertions.assertEquals(0, returns[0], "SpawnReturn must never be called for the console");
+            Assertions.assertTrue(events.isEmpty(), "no return event may fire for the console");
+        } finally {
+            commands.stop();
+            env.process().eventHandler().removeChild(node);
         }
     }
 
