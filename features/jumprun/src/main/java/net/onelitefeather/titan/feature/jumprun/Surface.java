@@ -30,6 +30,12 @@ enum Surface {
     /** The player stands 1.8 blocks tall; clear space above the top is measured with this. */
     private static final double PLAYER_HEIGHT = 1.8;
 
+    /**
+     * How high a standing jump lifts the feet (vanilla, no jump boost). Minestom does not simulate
+     * jumps, the client collides, so the course needs its own value.
+     */
+    static final double JUMP_HEIGHT = 1.2522;
+
     private final double top;
     private final int typeCost;
     private final Map<String, String> states;
@@ -73,6 +79,14 @@ enum Surface {
      */
     int headroomTop() {
         return highestBlockReached(top);
+    }
+
+    /**
+     * Highest block offset above the block position the head reaches at the apex of a jump from
+     * here: a ceiling any lower lets the player stand but not jump.
+     */
+    int jumpRoomTop() {
+        return highestBlockReached(top + JUMP_HEIGHT);
     }
 
     /** The y of the highest block a player standing at the given walkable top reaches into. */

@@ -243,12 +243,12 @@ final class CourseGenerator {
 
     /**
      * What the visible blocks take up: the blocks themselves and the room a player standing on
-     * each needs, so a new block cannot land inside someone's headroom.
+     * each needs to jump, so a new block cannot land inside someone's jump room.
      */
     private static Set<BlockPos> occupiedBy(List<? extends Placement> visible) {
         Set<BlockPos> occupied = new HashSet<>();
         for (Placement block : visible) {
-            for (int y = block.pos().y(); y <= block.headroomTopY(); y++) {
+            for (int y = block.pos().y(); y <= block.jumpRoomTopY(); y++) {
                 occupied.add(new BlockPos(block.pos().x(), y, block.pos().z()));
             }
         }

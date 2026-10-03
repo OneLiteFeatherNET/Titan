@@ -54,17 +54,17 @@ final class JumpRules {
     private boolean hasRoomAtTarget(Jump jump) {
         BlockPos target = jump.to().pos();
         boolean inBounds = probe.inBounds(target) && probe.inBounds(target.above(MAX_Y_MARGIN));
-        return inBounds && probe.isAir(target) && isColumnFree(target.x(), target.z(), target.y() + 1, jump.to().headroomTopY());
+        return inBounds && probe.isAir(target) && isColumnFree(target.x(), target.z(), target.y() + 1, jump.to().jumpRoomTopY());
     }
 
     /**
      * The straight line between the blocks, with both side cells at each diagonal step, must be
-     * free.
+     * free up to the apex of the jump. An ascent lands at most 1 above the take-off, so below the
+     * apex.
      */
     private boolean isFlightPathFree(Jump jump) {
-        double higherTop = Math.max(jump.from().topY(), jump.to().topY());
-        int lowest = (int) Math.floor(higherTop);
-        int highest = Surface.highestBlockReached(higherTop);
+        int lowest = (int) Math.floor(Math.min(jump.from().topY(), jump.to().topY()));
+        int highest = Surface.highestBlockReached(jump.from().topY() + Surface.JUMP_HEIGHT);
         List<FlightPath.Cell> path = FlightPath.cellsBetween(jump.from().pos(), jump.to().pos());
         return path.stream().allMatch(cell -> isColumnFree(cell.x(), cell.z(), lowest, highest));
     }

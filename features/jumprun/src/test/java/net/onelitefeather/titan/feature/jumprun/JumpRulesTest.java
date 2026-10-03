@@ -140,13 +140,32 @@ class JumpRulesTest {
     }
 
     @Test
-    void blockThreeAboveAFullTargetDoesNotMatter() {
-        assertTrue(validIn(new FakeSpaceProbe().occupy(2, 13, 0), ORIGIN, block(2, 10, 0, Surface.FULL)), "y+3");
+    void ceilingThreeBlocksAboveAFullTopLeavesNoRoomToJump() {
+        assertFalse(validIn(new FakeSpaceProbe().occupy(2, 14, 0), ORIGIN, block(2, 10, 0, Surface.FULL)), "a player can stand under y=14 but not jump");
+    }
+
+    @Test
+    void fourBlocksFreeAboveAFullTopLeaveRoomToJump() {
+        assertTrue(validIn(new FakeSpaceProbe().occupy(2, 15, 0), ORIGIN, block(2, 10, 0, Surface.FULL)), "ceiling at y=15 is above the apex");
+    }
+
+    @Test
+    void jumpRoomOfASlabNeedsOnlyItsOwnTop() {
+        CourseBlock slab = block(2, 10, 0, Surface.SLAB);
+        assertFalse(validIn(new FakeSpaceProbe().occupy(2, 13, 0), ORIGIN, slab), "slab top 10.5, apex head reaches y=13");
+        assertTrue(validIn(new FakeSpaceProbe().occupy(2, 14, 0), ORIGIN, slab), "y=14 is above a slab's jump room");
     }
 
     @Test
     void blockThreeAboveAFenceTargetBlocksTheHeadroom() {
         assertFalse(validIn(new FakeSpaceProbe().occupy(2, 13, 0), ORIGIN, block(2, 10, 0, Surface.FENCE)), "fence y+3");
+    }
+
+    @Test
+    void fenceTargetNeedsItsOwnJumpRoom() {
+        CourseBlock fence = block(2, 10, 0, Surface.FENCE);
+        assertFalse(validIn(new FakeSpaceProbe().occupy(2, 14, 0), ORIGIN, fence), "fence top 11.5, apex head reaches y=14");
+        assertTrue(validIn(new FakeSpaceProbe().occupy(2, 15, 0), ORIGIN, fence), "y=15 is above the fence's jump room");
     }
 
     // --- flight path ----------------------------------------------------------------------------
@@ -159,6 +178,16 @@ class JumpRulesTest {
     @Test
     void wallTwoAboveTheTopInTheGapBlocksTheFlight() {
         assertFalse(validIn(new FakeSpaceProbe().occupy(1, 12, 0), ORIGIN, block(2, 10, 0, Surface.FULL)), "ceiling at y+2");
+    }
+
+    @Test
+    void overhangCuttingTheApexOverTheGapBlocksTheFlight() {
+        assertFalse(validIn(new FakeSpaceProbe().occupy(1, 14, 0), ORIGIN, block(3, 10, 0, Surface.FULL)), "ceiling at y=14 over the gap cuts the apex");
+    }
+
+    @Test
+    void overhangAboveTheApexOverTheGapLeavesTheFlightFree() {
+        assertTrue(validIn(new FakeSpaceProbe().occupy(1, 15, 0), ORIGIN, block(3, 10, 0, Surface.FULL)), "ceiling at y=15 is above the apex");
     }
 
     @Test

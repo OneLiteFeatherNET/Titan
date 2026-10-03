@@ -55,6 +55,14 @@ class SurfaceTest {
     }
 
     @Test
+    void jumpRoomReachesFourBlocksAboveAFullTopAndOnlyThreeAboveAHalfBlock() {
+        assertEquals(4, Surface.FULL.jumpRoomTop(), "full block");
+        assertEquals(3, Surface.SLAB.jumpRoomTop(), "slab");
+        assertEquals(4, Surface.FENCE.jumpRoomTop(), "fence");
+        assertEquals(3, Surface.TRAPDOOR.jumpRoomTop(), "trapdoor");
+    }
+
+    @Test
     void trapdoorHasTopOfOneSixteenthTimesThreeAndCostOfOne() {
         assertEquals(0.1875, Surface.TRAPDOOR.top(), "trapdoor top");
         assertEquals(1, Surface.TRAPDOOR.typeCost(), "trapdoor type cost");
