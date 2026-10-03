@@ -283,18 +283,95 @@ class CourseGeneratorTest {
     }
 
     @Test
-    void everyGeneratedBlockHasRoomToJumpAndAFreeApexOnTheWayThere() {
+    void everyGeneratedBlockHasRoomToJumpAndAFreeApexOnTheWay() {
         FakeSpaceProbe world = worldWithOverhangs();
+        BlockedAnswers blocked = new BlockedAnswers(world);
+        int blocksUnderAnOverhang = 0;
         for (long seed = 0; seed < 200; seed++) {
-            CourseGenerator generator = TestBlocks.generator(world, TestBlocks.FAR_SPAWN, seeded(seed));
+            CourseGenerator generator = TestBlocks.generator(blocked, TestBlocks.FAR_SPAWN, seeded(seed));
 
             List<CourseBlock> course = walk(generator, SOURCE, new Phase.Scored(0, heading(seed)), 25);
 
+            assertTrue(course.size() > MIN_COURSE_BLOCKS, "the course is long enough to prove something (seed " + seed + "), got " + course.size());
             for (int i = 1; i < course.size(); i++) {
                 assertJumpRoomFree(world, course.get(i), seed);
                 assertApexFree(world, course.get(i - 1), course.get(i), seed);
+                if (hasCeilingAbove(world, course.get(i))) {
+                    blocksUnderAnOverhang++;
+                }
             }
         }
+
+        assertTrue(blocked.count() > 0, "the generator never met an overhang, the world proves nothing");
+        assertTrue(blocksUnderAnOverhang > 0, "no course ever passed under an overhang that leaves room to jump");
+    }
+
+    private static final int MIN_COURSE_BLOCKS = 5;
+
+    /**
+     * Counts the questions the world answered with "occupied": the overhangs the generator ran
+     * into.
+     */
+    private static final class BlockedAnswers implements SpaceProbe {
+
+        private final SpaceProbe delegate;
+        private long count;
+
+        BlockedAnswers(SpaceProbe delegate) {
+            this.delegate = delegate;
+        }
+
+        long count() {
+            return count;
+        }
+
+        @Override
+        public boolean isAir(BlockPos pos) {
+            boolean air = delegate.isAir(pos);
+            if (!air) {
+                count++;
+            }
+            return air;
+        }
+
+        @Override
+        public boolean inBounds(BlockPos pos) {
+            return delegate.inBounds(pos);
+        }
+    }
+
+    /**
+     * Something solid above the room the jump needs, so the block sits under an overhang that just
+     * fits.
+     */
+    private static boolean hasCeilingAbove(SpaceProbe world, CourseBlock block) {
+        for (int y = expectedRoomTop(block) + 1; y <= expectedRoomTop(block) + 3; y++) {
+            if (!world.isAir(new BlockPos(block.pos().x(), y, block.pos().z()))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Walkable top above the block position, written down here so the expectation does not reuse
+     * the production table.
+     */
+    private static double expectedTop(Surface surface) {
+        return switch (surface) {
+            case FULL, PANE, POST -> 1.0;
+            case TRAPDOOR -> 0.1875;
+            case SLAB -> 0.5;
+            case FENCE -> 1.5;
+        };
+    }
+
+    /**
+     * Highest y the head reaches into at the apex: feet at the top plus 1.2522 of jump, 1.8 of
+     * body.
+     */
+    private static int expectedRoomTop(Placement block) {
+        return block.pos().y() + (int) Math.ceil(expectedTop(block.surface()) + 1.2522 + 1.8) - 1;
     }
 
     /** Open ground with ceilings at several heights, so many places allow standing but no jump. */
@@ -308,14 +385,14 @@ class CourseGeneratorTest {
     }
 
     private static void assertJumpRoomFree(SpaceProbe world, CourseBlock block, long seed) {
-        for (int y = block.pos().y() + 1; y <= block.jumpRoomTopY(); y++) {
+        for (int y = block.pos().y() + 1; y <= expectedRoomTop(block); y++) {
             assertTrue(world.isAir(new BlockPos(block.pos().x(), y, block.pos().z())), "no room to jump above " + block + " at y=" + y + " (seed " + seed + ")");
         }
     }
 
     private static void assertApexFree(SpaceProbe world, CourseBlock from, CourseBlock to, long seed) {
         int lowest = (int) Math.floor(Math.min(from.topY(), to.topY()));
-        int apex = Surface.highestBlockReached(from.topY() + Surface.JUMP_HEIGHT);
+        int apex = from.pos().y() + (int) Math.ceil(expectedTop(from.surface()) + 1.2522 + 1.8) - 1;
         for (FlightPath.Cell cell : FlightPath.cellsBetween(from.pos(), to.pos())) {
             for (int y = lowest; y <= apex; y++) {
                 assertTrue(world.isAir(new BlockPos(cell.x(), y, cell.z())), "apex blocked at " + cell + " y=" + y + " between " + from + " and " + to + " (seed " + seed + ")");
