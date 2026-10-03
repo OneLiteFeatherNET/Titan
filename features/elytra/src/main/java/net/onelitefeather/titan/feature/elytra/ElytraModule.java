@@ -21,6 +21,7 @@ import io.avaje.inject.PreDestroy;
 import jakarta.inject.Named;
 import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
+import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
@@ -31,6 +32,7 @@ import net.minestom.server.timer.Scheduler;
 import net.minestom.server.timer.Task;
 import net.minestom.server.timer.TaskSchedule;
 import net.onelitefeather.titan.core.module.FeatureNode;
+import net.onelitefeather.titan.core.module.LobbyReturnToSpawnEvent;
 import net.onelitefeather.titan.core.module.item.LobbyItems;
 
 /**
@@ -77,10 +79,9 @@ public final class ElytraModule {
         int burnDurationTicksAtStartup = Config.getAs(ElytraSettings.BURN_DURATION_TICKS_KEY, ElytraSettings::burnDurationTicks);
         ElytraSettings.cooldownTicks(Config.getAs(ElytraSettings.COOLDOWN_TICKS_KEY, Integer::parseInt), burnDurationTicksAtStartup);
 
-        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY).on(PlayerStartFlyingWithElytraEvent.class, event -> event.getPlayer().setItemInOffHand(this.lobbyItems.get().stack(ElytraLobbyItems.FIREWORK_KEY.asString()))).on(PlayerStopFlyingWithElytraEvent.class, event -> {
-            event.getPlayer().setItemInOffHand(ItemStack.AIR);
-            this.boosts.forget(event.getPlayer().getUuid());
-        }).on(PlayerDisconnectEvent.class, event -> this.boosts.forget(event.getPlayer().getUuid()));
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY).on(PlayerStartFlyingWithElytraEvent.class, event -> event.getPlayer().setItemInOffHand(this.lobbyItems.get().stack(ElytraLobbyItems.FIREWORK_KEY.asString()))).on(PlayerStopFlyingWithElytraEvent.class, event -> takeRocketAway(event.getPlayer()))
+                // The server ends the glide itself on the way to spawn, which fires no stop-flying event.
+                .on(LobbyReturnToSpawnEvent.class, event -> takeRocketAway(event.getPlayer())).on(PlayerDisconnectEvent.class, event -> this.boosts.forget(event.getPlayer().getUuid()));
 
         this.task = this.scheduler.scheduleTask(this.boosts::advance, TaskSchedule.tick(1), TaskSchedule.tick(1));
 
@@ -88,6 +89,11 @@ public final class ElytraModule {
         // startup like every other feature's dependency - not only on the first elytra flight.
         // The event handlers above still go through the Provider, keeping the module cycle broken.
         this.lobbyItems.get();
+    }
+
+    private void takeRocketAway(Player player) {
+        player.setItemInOffHand(ItemStack.AIR);
+        this.boosts.forget(player.getUuid());
     }
 
     @PreDestroy

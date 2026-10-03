@@ -33,6 +33,7 @@ import net.minestom.server.item.Material;
 import net.minestom.server.utils.Unit;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.core.module.LobbyReturnToSpawnEvent;
 import net.onelitefeather.titan.core.module.item.ItemSlot;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
 import net.onelitefeather.titan.core.module.item.LobbyItems;
@@ -110,6 +111,34 @@ class ElytraModuleTest {
             env.process().eventHandler().call(new PlayerStopFlyingWithElytraEvent(player));
 
             Assertions.assertEquals(ItemStack.AIR, player.getItemInOffHand());
+        }
+    }
+
+    @DisplayName("Returning to spawn while gliding takes the rocket away and forgets the boost")
+    @Test
+    void returningToSpawnTakesTheRocketAndForgetsTheBoost(Env env) {
+        try (ElytraFixture fixture = ElytraFixture.start(env)) {
+            Player player = env.createPlayer(env.createFlatInstance());
+            player.setFlyingWithElytra(true);
+            env.process().eventHandler().call(new PlayerStartFlyingWithElytraEvent(player));
+            fixture.useFirework(player);
+
+            env.process().eventHandler().call(new LobbyReturnToSpawnEvent(player));
+
+            Assertions.assertEquals(ItemStack.AIR, player.getItemInOffHand(), "the rocket must be gone, the stop-flying event does not fire for a server-side end of the glide");
+            Assertions.assertEquals(0, fixture.boosts().cooldownTicksRemaining(player.getUuid()), "the boost counter must be forgotten");
+        }
+    }
+
+    @DisplayName("Returning to spawn without gliding changes nothing and does not fail")
+    @Test
+    void returningToSpawnWithoutGlidingIsHarmless(Env env) {
+        try (ElytraFixture fixture = ElytraFixture.start(env)) {
+            Player player = env.createPlayer(env.createFlatInstance());
+
+            Assertions.assertDoesNotThrow(() -> env.process().eventHandler().call(new LobbyReturnToSpawnEvent(player)));
+
+            Assertions.assertEquals(ItemStack.AIR, player.getItemInOffHand(), "the off hand stays empty");
         }
     }
 
