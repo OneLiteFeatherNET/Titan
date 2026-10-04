@@ -16,6 +16,8 @@
 package net.onelitefeather.titan.feature.jumprun;
 
 import io.avaje.config.Configuration;
+import java.util.List;
+import java.util.UUID;
 
 /** The live settings of the module: what a run reads when it starts. */
 final class JumprunConfig {
@@ -23,11 +25,20 @@ final class JumprunConfig {
     private final LiveSetting<Palettes> palettes;
     private final LiveSetting<Integer> rainbowRerollTicks;
     private final LiveSetting<Integer> ultraRerollTicks;
+    private final LiveSetting<List<UUID>> headProfiles;
+    private final TeamHeads teamHeads;
 
+    /** Without team heads: every head is a plain one of the palette. */
     JumprunConfig(Configuration config) {
+        this(config, new TeamHeads(HeadSkins.NONE, Runnable::run));
+    }
+
+    JumprunConfig(Configuration config, TeamHeads teamHeads) {
+        this.teamHeads = teamHeads;
         this.palettes = new LiveSetting<>("palettes", () -> JumprunSettings.palettes(config));
         this.rainbowRerollTicks = new LiveSetting<>("rainbow.rerollTicks", () -> JumprunSettings.rerollTicks(config, JumprunSettings.RAINBOW_REROLL_TICKS_KEY));
         this.ultraRerollTicks = new LiveSetting<>("ultra.rerollTicks", () -> JumprunSettings.rerollTicks(config, JumprunSettings.ULTRA_REROLL_TICKS_KEY));
+        this.headProfiles = new LiveSetting<>("heads.profiles", () -> JumprunSettings.headProfiles(config), List.of());
     }
 
     /**
@@ -38,10 +49,13 @@ final class JumprunConfig {
         this.palettes.readAtStartup();
         this.rainbowRerollTicks.readAtStartup();
         this.ultraRerollTicks.readAtStartup();
+        // Never aborts: a wrong entry only means plain heads until it is fixed. Reading starts the lookups early.
+        this.teamHeads.of(this.headProfiles.current());
     }
 
+    /** The palettes of the run to come, with the team heads whose skins are known by now. */
     Palettes palettes() {
-        return this.palettes.current();
+        return this.palettes.current().withHeads(this.teamHeads.of(this.headProfiles.current()));
     }
 
     /**

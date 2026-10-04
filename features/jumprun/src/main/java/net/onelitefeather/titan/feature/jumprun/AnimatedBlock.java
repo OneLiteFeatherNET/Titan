@@ -19,9 +19,8 @@ import java.util.List;
 import java.util.function.Consumer;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
-import net.minestom.server.entity.EntityType;
 import net.minestom.server.entity.Player;
-import net.minestom.server.entity.metadata.display.BlockDisplayMeta;
+import net.minestom.server.entity.metadata.display.AbstractDisplayMeta;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.timer.TaskSchedule;
 
@@ -60,9 +59,9 @@ final class AnimatedBlock {
         this.block = block;
         this.onLanded = onLanded;
         BlockPos pos = block.pos();
-        this.display = HiddenDisplay.spawn(runner, EntityType.BLOCK_DISPLAY, BlockDisplayMeta.class, meta -> {
-            meta.setBlockState(block.material());
-            meta.setTranslation(HEIGHT);
+        this.display = HiddenDisplay.spawn(runner, BlockLook.entityType(block), AbstractDisplayMeta.class, meta -> {
+            BlockLook.show(meta, block);
+            meta.setTranslation(BlockLook.origin(block).add(HEIGHT));
             meta.setTransformationInterpolationStartDelta(NO_START_DELAY);
         }, instance, new Pos(pos.x(), pos.y(), pos.z()), true);
     }
@@ -93,7 +92,7 @@ final class AnimatedBlock {
         }
         state = State.RISING;
         display.showToRunner(true);
-        display.entity().editEntityMeta(BlockDisplayMeta.class, meta -> animateTo(meta, HEIGHT));
+        display.entity().editEntityMeta(AbstractDisplayMeta.class, meta -> animateTo(meta, BlockLook.origin(block).add(HEIGHT)));
         after(ANIMATION_TICKS, this::remove);
     }
 
@@ -107,7 +106,7 @@ final class AnimatedBlock {
             return;
         }
         block = recolored;
-        display.entity().editEntityMeta(BlockDisplayMeta.class, meta -> meta.setBlockState(recolored.material()));
+        display.entity().editEntityMeta(AbstractDisplayMeta.class, meta -> BlockLook.show(meta, recolored));
         fakeBlocks.show(runner, List.of(recolored));
     }
 
@@ -121,7 +120,7 @@ final class AnimatedBlock {
         if (state != State.FALLING) {
             return;
         }
-        display.entity().editEntityMeta(BlockDisplayMeta.class, meta -> animateTo(meta, Vec.ZERO));
+        display.entity().editEntityMeta(AbstractDisplayMeta.class, meta -> animateTo(meta, BlockLook.origin(block)));
         after(ANIMATION_TICKS, this::land);
     }
 
@@ -136,7 +135,7 @@ final class AnimatedBlock {
     }
 
     /** Fall and rise share this move, so the rise is the fall backwards; the size never changes. */
-    private static void animateTo(BlockDisplayMeta meta, Vec translation) {
+    private static void animateTo(AbstractDisplayMeta meta, Vec translation) {
         meta.setTransformationInterpolationDuration(ANIMATION_TICKS);
         meta.setTransformationInterpolationStartDelta(NO_START_DELAY);
         meta.setTranslation(translation);

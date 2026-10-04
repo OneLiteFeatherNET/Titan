@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -120,8 +121,8 @@ class CourseGeneratorTest {
 
         CourseBlock chosen = jumpFromSource(generator, 10);
 
-        assertEquals(2.0, new Jump(SOURCE, chosen).cost(Mode.MEDIUM), "target 2.0 is met exactly by a slab or a trapdoor");
-        assertTrue(Set.of(Surface.SLAB, Surface.TRAPDOOR).contains(chosen.surface()), "only these cost 2.0 without a gap or a rise, got " + chosen.surface());
+        assertEquals(2.0, new Jump(SOURCE, chosen).cost(Mode.MEDIUM), "target 2.0 is met exactly by a shape of cost class 1");
+        assertTrue(Set.of(Surface.SLAB, Surface.TRAPDOOR, Surface.STAIRS, Surface.CARPET, Surface.SNOW).contains(chosen.surface()), "only these cost 2.0 without a gap or a rise, got " + chosen.surface());
     }
 
     @Test
@@ -359,10 +360,13 @@ class CourseGeneratorTest {
      */
     private static double expectedTop(Surface surface) {
         return switch (surface) {
-            case FULL, PANE, POST -> 1.0;
+            case FULL, PANE, POST, STAIRS -> 1.0;
             case TRAPDOOR -> 0.1875;
-            case SLAB -> 0.5;
+            case SLAB, HEAD -> 0.5;
             case FENCE -> 1.5;
+            case CARPET -> 0.0625;
+            case SNOW -> 0.25;
+            case FLOWER_POT, CANDLE -> 0.375;
         };
     }
 
@@ -555,7 +559,7 @@ class CourseGeneratorTest {
         List<CourseBlock> course = walk(TestBlocks.generator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(9L)), SOURCE, new Phase.Scored(80, EAST), 200);
 
         for (CourseBlock block : course.subList(1, course.size())) {
-            assertTrue(TestBlocks.shipped().of(block.surface()).blocks().contains(block.material()), block.material() + " is not a material of " + block.surface());
+            assertTrue(TestBlocks.shipped().of(block.surface()).blocks().stream().anyMatch(material -> material.id() == block.material().id()), block.material() + " is not a material of " + block.surface());
         }
     }
 
@@ -782,6 +786,54 @@ class CourseGeneratorTest {
                 Surface surface = course.get(score).jump().to().surface();
                 assertTrue(Mode.MEDIUM.minScore(surface) <= score, surface + " appeared at score " + score);
             }
+        }
+    }
+
+    // --- look of stairs and heads ---------------------------------------------------------------
+
+    private static List<CourseBlock> blocksOf(Surface surface, int seeds) {
+        List<CourseBlock> found = new ArrayList<>();
+        for (long seed = 1; seed <= seeds; seed++) {
+            CourseGenerator generator = TestBlocks.generator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(seed));
+            walk(generator, SOURCE, new Phase.Scored(0, EAST), 300).stream().filter(block -> block.surface() == surface).forEach(found::add);
+        }
+        return found;
+    }
+
+    @Test
+    void stairsFaceInAllFourDirectionsOverManySeeds() {
+        Set<String> facings = new HashSet<>();
+        blocksOf(Surface.STAIRS, 10).forEach(block -> facings.add(block.material().getProperty("facing")));
+
+        assertEquals(Set.of("north", "south", "east", "west"), facings, "every facing is drawn");
+    }
+
+    @Test
+    void redrawnStairsKeepTheirFacingAndTheirPlace() {
+        CourseGenerator generator = TestBlocks.generator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(4L));
+        List<CourseBlock> stairs = blocksOf(Surface.STAIRS, 6);
+        assertFalse(stairs.isEmpty(), "the walks made stairs");
+
+        for (CourseBlock block : stairs) {
+            CourseBlock redrawn = generator.redrawn(block);
+
+            assertEquals(block.material().getProperty("facing"), redrawn.material().getProperty("facing"), "facing");
+            assertEquals(block.pos(), redrawn.pos(), "place");
+            assertEquals(block.steps(), redrawn.steps(), "steps");
+            assertNotEquals(block.material().id(), redrawn.material().id(), "another material");
+        }
+    }
+
+    @Test
+    void headsTurnBetweenZeroAndFifteenAndRedrawnHeadsKeepTheirTurn() {
+        CourseGenerator generator = TestBlocks.generator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(4L));
+        List<CourseBlock> heads = blocksOf(Surface.HEAD, 6);
+        assertFalse(heads.isEmpty(), "the walks made heads");
+
+        for (CourseBlock head : heads) {
+            int turn = Integer.parseInt(head.material().getProperty("rotation"));
+            assertTrue(turn >= 0 && turn <= 15, "turn " + turn);
+            assertEquals(head.material().getProperty("rotation"), generator.redrawn(head).material().getProperty("rotation"), "redrawn keeps the turn");
         }
     }
 }

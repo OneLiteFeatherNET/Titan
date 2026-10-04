@@ -21,7 +21,10 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.UUID;
+import java.util.regex.Pattern;
 import net.kyori.adventure.key.InvalidKeyException;
+import net.minestom.server.coordinate.Point;
 import net.minestom.server.instance.block.Block;
 
 /**
@@ -35,6 +38,9 @@ final class JumprunSettings {
     static final String PALETTES_KEY = "jumprun.palettes";
     static final String RAINBOW_REROLL_TICKS_KEY = "jumprun.rainbow.rerollTicks";
     static final String ULTRA_REROLL_TICKS_KEY = "jumprun.ultra.rerollTicks";
+    static final String HEAD_PROFILES_KEY = "jumprun.heads.profiles";
+
+    private static final Pattern UUID_FORMAT = Pattern.compile("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
 
     /** Tolerance for comparing collision heights, which are multiples of 1/16. */
     private static final double TOP_TOLERANCE = 1e-9;
@@ -62,6 +68,27 @@ final class JumprunSettings {
             byShape.put(surface, palette(surface, weights));
         }
         return new Palettes(byShape);
+    }
+
+    /**
+     * The player UUIDs of {@code jumprun.heads.profiles}, a comma separated list; empty when it is
+     * empty or missing.
+     *
+     * @throws IllegalArgumentException naming the key and the entry that is no UUID
+     */
+    static List<UUID> headProfiles(Configuration config) {
+        List<UUID> profiles = new ArrayList<>();
+        for (String entry : config.getOptional(HEAD_PROFILES_KEY).orElse("").split(",")) {
+            String trimmed = entry.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            if (!UUID_FORMAT.matcher(trimmed).matches()) {
+                throw new IllegalArgumentException(HEAD_PROFILES_KEY + ": '" + trimmed + "' is not a UUID");
+            }
+            profiles.add(UUID.fromString(trimmed));
+        }
+        return List.copyOf(profiles);
     }
 
     /**
@@ -117,7 +144,25 @@ final class JumprunSettings {
         if (Math.abs(top - surface.top()) > TOP_TOLERANCE) {
             throw new IllegalArgumentException(key + ": collides up to " + top + " but the " + surface.configKey() + " shape needs " + surface.top());
         }
+        if (surface.hasNarrowFootprint()) {
+            requireFootprint(surface, key, shaped);
+        }
         return shaped;
+    }
+
+    /** The landing check trusts the footprint of the shape, so a material must collide over it. */
+    private static void requireFootprint(Surface surface, String key, Block shaped) {
+        Point start = shaped.collisionShape().relativeStart();
+        Point end = shaped.collisionShape().relativeEnd();
+        Step wanted = surface.footprint();
+        boolean matches = within(start.x(), wanted.minX()) && within(end.x(), wanted.maxX()) && within(start.z(), wanted.minZ()) && within(end.z(), wanted.maxZ());
+        if (!matches) {
+            throw new IllegalArgumentException(key + ": collides over x " + start.x() + ".." + end.x() + ", z " + start.z() + ".." + end.z() + " but the " + surface.configKey() + " shape needs x " + wanted.minX() + ".." + wanted.maxX() + ", z " + wanted.minZ() + ".." + wanted.maxZ());
+        }
+    }
+
+    private static boolean within(double actual, double expected) {
+        return Math.abs(actual - expected) <= TOP_TOLERANCE;
     }
 
     private static int weight(Surface surface, String name, String raw) {

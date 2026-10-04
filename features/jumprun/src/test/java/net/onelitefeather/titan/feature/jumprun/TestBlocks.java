@@ -83,6 +83,11 @@ final class TestBlocks {
         return generator(probe, BAND, spawn, random, steering);
     }
 
+    /** A generator over the given palettes, e.g. the shipped ones with team heads. */
+    static CourseGenerator generator(Palettes palettes, SpaceProbe probe, SpawnZone spawn, RandomGenerator random) {
+        return new CourseGenerator(probe, BAND, spawn, random, palettes, PortalClearance.NONE, Steering.none());
+    }
+
     static CourseGenerator generator(SpaceProbe probe, HeightBand band, SpawnZone spawn, RandomGenerator random, Steering steering) {
         return new CourseGenerator(probe, band, spawn, random, shipped(), PortalClearance.NONE, steering);
     }

@@ -130,7 +130,7 @@ final class JumprunModule {
     // The writer is persistence's, resolved on first use like in StoredRunRecords, and only a lobby with a database ever asks for it.
     @Inject
     JumprunModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records, Optional<Leaderboard> leaderboard, Provider<LobbyItems> lobbyItems, Clock clock, Scheduler scheduler, @External Provider<DatabaseWriter> writer, Provider<LobbyHeightBounds> heightBounds, Telemetry telemetry) {
-        this(titan, spawn, portals, records, leaderboard, task -> writer.get().execute(task), scheduler, lobbyItems, new RunMessages(), () -> ThreadLocalRandom.current().nextLong(), new JumprunConfig(Config.asConfiguration()), heightBounds, clock, telemetry);
+        this(titan, spawn, portals, records, leaderboard, task -> writer.get().execute(task), scheduler, lobbyItems, new RunMessages(), () -> ThreadLocalRandom.current().nextLong(), new JumprunConfig(Config.asConfiguration(), new TeamHeads(new MojangHeadSkins(), Thread::startVirtualThread)), heightBounds, clock, telemetry);
     }
 
     /** Without a leaderboard, so nothing is scheduled and nothing refreshed. */

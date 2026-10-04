@@ -42,8 +42,13 @@ enum Mode {
                           Map<Surface, Integer> unlocks) {
 
         static final Params EASY = new Params(160.0, 2, 2, 3.0, Map.of(Surface.FULL, 0, Surface.SLAB, 10));
-        static final Params MEDIUM = new Params(80.0, Jump.MAX_GAP, Jump.MAX_GAP_ASCENT, 1.0, Map.of(Surface.FULL, 0, Surface.TRAPDOOR, 10, Surface.SLAB, 10, Surface.FENCE, 25, Surface.PANE, 25, Surface.POST, 40));
-        static final Params HARD = new Params(40.0, Jump.MAX_GAP, Jump.MAX_GAP_ASCENT, 1.0, Map.of(Surface.FULL, 0, Surface.TRAPDOOR, 5, Surface.SLAB, 5, Surface.FENCE, 10, Surface.PANE, 10, Surface.POST, 20));
+        static final Params MEDIUM = new Params(80.0, Jump.MAX_GAP, Jump.MAX_GAP_ASCENT, 1.0, unlocks(10, 25, 40));
+        static final Params HARD = new Params(40.0, Jump.MAX_GAP, Jump.MAX_GAP_ASCENT, 1.0, unlocks(5, 10, 20));
+
+        /** The shapes of the cost classes 1, 2 and 3 to 4 from the given scores on. */
+        private static Map<Surface, Integer> unlocks(int gentle, int narrow, int narrowest) {
+            return Map.ofEntries(Map.entry(Surface.FULL, 0), Map.entry(Surface.TRAPDOOR, gentle), Map.entry(Surface.SLAB, gentle), Map.entry(Surface.STAIRS, gentle), Map.entry(Surface.CARPET, gentle), Map.entry(Surface.SNOW, gentle), Map.entry(Surface.FENCE, narrow), Map.entry(Surface.PANE, narrow), Map.entry(Surface.HEAD, narrow), Map.entry(Surface.FLOWER_POT, narrow), Map.entry(Surface.CANDLE, narrowest), Map.entry(Surface.POST, narrowest));
+        }
     }
 
     private final Component label;

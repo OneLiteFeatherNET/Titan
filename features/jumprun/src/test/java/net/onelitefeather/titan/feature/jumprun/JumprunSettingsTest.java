@@ -144,6 +144,94 @@ class JumprunSettingsTest {
         assertTrue(refusal.getMessage().contains("must not be empty"), "reason: " + refusal.getMessage());
     }
 
+    // --- the new shapes -------------------------------------------------------------------------
+
+    @Test
+    void aSlabInTheStairsListIsRefusedForItsHeight() {
+        IllegalArgumentException refusal = refusal(Surface.STAIRS, Map.of("oak_slab", "1"));
+
+        assertNamesKey("jumprun.palettes.stairs.oak_slab", refusal);
+        assertTrue(refusal.getMessage().contains("collides up to 0.5 but the stairs shape needs 1.0"), "reason: " + refusal.getMessage());
+    }
+
+    @Test
+    void aCarpetInTheSnowListIsRefusedForItsHeight() {
+        IllegalArgumentException refusal = refusal(Surface.SNOW, Map.of("white_carpet", "1"));
+
+        assertNamesKey("jumprun.palettes.snow.white_carpet", refusal);
+        assertTrue(refusal.getMessage().contains("collides up to 0.0625 but the snow shape needs 0.25"), "reason: " + refusal.getMessage());
+    }
+
+    @Test
+    void aHeadWithAnotherFootprintIsRefusedWithFoundAndExpectedFootprint() {
+        IllegalArgumentException refusal = refusal(Surface.HEAD, Map.of("piglin_head", "1"));
+
+        assertNamesKey("jumprun.palettes.head.piglin_head", refusal);
+        assertTrue(refusal.getMessage().contains("collides over x 0.1875..0.8125, z 0.1875..0.8125 but the head shape needs x 0.25..0.75, z 0.25..0.75"), "found and expected footprint: " + refusal.getMessage());
+    }
+
+    @Test
+    void aCandleInTheFlowerPotListIsRefusedForItsFootprintOrHeight() {
+        IllegalArgumentException refusal = refusal(Surface.FLOWER_POT, Map.of("candle", "1"));
+
+        assertNamesKey("jumprun.palettes.flower_pot.candle", refusal);
+        assertTrue(refusal.getMessage().contains("collides over"), "the footprint differs: " + refusal.getMessage());
+    }
+
+    @Test
+    void theNewShapesAreShownWithTheStatesThatFixTheirCollision() {
+        Palettes palettes = JumprunSettings.palettes(TestBlocks.shippedConfiguration());
+
+        assertEquals(List.of(Block.SNOW.withProperty("layers", "3")), palettes.of(Surface.SNOW).blocks(), "three layers");
+        assertTrue(palettes.of(Surface.CANDLE).blocks().stream().allMatch(candle -> "1".equals(candle.getProperty("candles")) && "false".equals(candle.getProperty("lit"))), "one candle, not lit");
+        assertTrue(palettes.of(Surface.STAIRS).blocks().stream().allMatch(stairs -> "bottom".equals(stairs.getProperty("half")) && "straight".equals(stairs.getProperty("shape"))), "lower half, straight");
+    }
+
+    @Test
+    void aSnowListWithOneLayerIsStillShownWithThree() {
+        Palettes palettes = JumprunSettings.palettes(TestBlocks.shippedWith(Surface.SNOW, Map.of("snow", "1")));
+
+        assertEquals("3", palettes.of(Surface.SNOW).blocks().getFirst().getProperty("layers"), "the shape forces the layers");
+    }
+
+    @Test
+    void anOperatorOverrideThatSwitchesOneStairsOffLeavesTheOthers() {
+        Configuration config = TestBlocks.shippedConfiguration();
+        config.setProperty("jumprun.palettes.stairs.oak_stairs", "0");
+
+        Palettes palettes = JumprunSettings.palettes(config);
+
+        assertFalse(palettes.of(Surface.STAIRS).blocks().stream().anyMatch(stairs -> stairs.id() == Block.OAK_STAIRS.id()), "oak stairs are off");
+        assertEquals(TestBlocks.shipped().of(Surface.STAIRS).blocks().size() - 1, palettes.of(Surface.STAIRS).blocks().size(), "the others stay");
+    }
+
+    @Test
+    void anOverrideWithOneMaterialPerNewShapeGivesExactlyThatPalette() {
+        for (Surface surface : List.of(Surface.STAIRS, Surface.CARPET, Surface.SNOW, Surface.HEAD, Surface.FLOWER_POT, Surface.CANDLE)) {
+            String block = TestBlocks.shipped().of(surface).blocks().getFirst().key().value();
+
+            Palettes palettes = JumprunSettings.palettes(TestBlocks.shippedWith(surface, Map.of(block, "2")));
+
+            assertEquals(List.of(TestBlocks.shipped().of(surface).blocks().getFirst()), palettes.of(surface).blocks(), surface + " has only " + block);
+        }
+    }
+
+    @Test
+    void aNegativeWeightInANewShapeNamesItsKey() {
+        assertNamesKey("jumprun.palettes.candle.candle", refusal(Surface.CANDLE, Map.of("candle", "-1")));
+    }
+
+    @Test
+    void anEmptyNewShapeAndOneWithOnlyZeroWeightsNameTheShape() {
+        assertNamesKey("jumprun.palettes.carpet", refusal(Surface.CARPET, Map.of()));
+        assertNamesKey("jumprun.palettes.carpet", refusal(Surface.CARPET, Map.of("white_carpet", "0")));
+    }
+
+    @Test
+    void anUnknownBlockInANewShapeNamesItsKey() {
+        assertNamesKey("jumprun.palettes.stairs.oak_stair", refusal(Surface.STAIRS, Map.of("oak_stair", "1")));
+    }
+
     private static final List<String> REROLL_KEYS = List.of(JumprunSettings.RAINBOW_REROLL_TICKS_KEY, JumprunSettings.ULTRA_REROLL_TICKS_KEY);
 
     private static IllegalArgumentException rerollRefusal(String key, String value) {

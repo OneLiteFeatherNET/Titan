@@ -39,8 +39,17 @@ final class LiveSetting<T> {
      *               naming the key and the reason
      */
     LiveSetting(String name, Supplier<T> parser) {
+        this(name, parser, null);
+    }
+
+    /**
+     * @param initial what holds while the config has never been valid, so an invalid value at the
+     *                start is warned about instead of aborting it
+     */
+    LiveSetting(String name, Supplier<T> parser, T initial) {
         this.name = name;
         this.parser = parser;
+        this.lastValid = initial;
     }
 
     /**

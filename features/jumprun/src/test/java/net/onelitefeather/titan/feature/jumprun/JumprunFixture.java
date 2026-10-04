@@ -34,6 +34,7 @@ import net.minestom.server.entity.metadata.display.BlockDisplayMeta;
 import net.minestom.server.event.player.PlayerMoveEvent;
 import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.server.instance.Instance;
+import net.minestom.server.instance.block.Block;
 import net.minestom.server.network.packet.client.ClientPacket;
 import net.minestom.server.network.packet.client.play.ClientPlayerPositionPacket;
 import net.minestom.server.network.packet.client.play.ClientPlayerPositionStatusPacket;
@@ -244,7 +245,9 @@ final class JumprunFixture implements AutoCloseable {
     }
 
     private static Optional<Surface> surfaceOf(BlockChangePacket block) {
-        return Arrays.stream(Surface.values()).filter(surface -> TestBlocks.shipped().of(surface).blocks().stream().anyMatch(material -> material.stateId() == block.blockStateId())).findFirst();
+        Block shown = Block.fromStateId(block.blockStateId());
+        // The look of a material (facing, turn) differs per block, so the type decides.
+        return Arrays.stream(Surface.values()).filter(surface -> shown != null && TestBlocks.shipped().of(surface).blocks().stream().anyMatch(material -> material.id() == shown.id())).findFirst();
     }
 
     /** The block displays of the run's blocks; the runner's glowing outline is not one of them. */

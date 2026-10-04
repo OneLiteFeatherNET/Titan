@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.ToDoubleFunction;
 import java.util.random.RandomGenerator;
+import net.minestom.server.instance.block.Block;
 
 /** Picks the next block of a course: the valid jump that best fits the wanted difficulty. */
 final class CourseGenerator {
@@ -54,6 +55,9 @@ final class CourseGenerator {
 
     /** The deepest air column anything asks for, so one read per position serves every check. */
     private static final int MAX_AIR_BELOW = Math.max(Openness.SCORED_AIR_BELOW, Openness.ASCENT_AIR_BELOW);
+
+    /** The block of every team head; the skin comes with the course block. */
+    private static final Block TEAM_HEAD = Block.PLAYER_HEAD;
 
     private final SpaceProbe probe;
     private final HeightBand band;
@@ -98,14 +102,31 @@ final class CourseGenerator {
         return new Search().after(course.get(course.size() - 2), course.getLast(), phase);
     }
 
-    /** The block at the same place with the same shape and another material of the palette. */
+    /**
+     * The block at the same place with the same shape and look and another material of the
+     * palette; a team head keeps its block and shows another skin.
+     */
     CourseBlock redrawn(CourseBlock block) {
-        return new CourseBlock(block.pos(), block.surface(), palettes.of(block.surface()).drawOther(block.material(), random));
+        if (block.skin().isPresent()) {
+            return new CourseBlock(block.pos(), block.surface(), block.material(), palettes.drawHead(block.skin(), random));
+        }
+        Block drawn = palettes.of(block.surface()).drawOther(block.material(), random);
+        return new CourseBlock(block.pos(), block.surface(), block.surface().withLookOf(block.material(), drawn));
     }
 
-    /** The material is drawn once the position is settled, so it cannot steer the choice. */
-    private CourseBlock withDrawnMaterial(Spot spot) {
-        return spot.withMaterial(palettes.draw(spot.surface(), random));
+    /**
+     * The material, its look and the team skin are drawn once the position is settled, so they
+     * cannot steer the choice. Another skin than the last head shown comes first.
+     */
+    private CourseBlock withDrawnMaterial(Spot spot, List<CourseBlock> course) {
+        Surface surface = spot.surface();
+        Optional<HeadSkin> skin = surface == Surface.HEAD ? palettes.drawHead(lastSkin(course), random) : Optional.empty();
+        Block material = skin.isPresent() ? TEAM_HEAD : palettes.draw(surface, random);
+        return spot.withMaterial(surface.varied(material, random), skin);
+    }
+
+    private static Optional<HeadSkin> lastSkin(List<CourseBlock> course) {
+        return course.reversed().stream().flatMap(block -> block.skin().stream()).findFirst();
     }
 
     /**
@@ -122,7 +143,7 @@ final class CourseGenerator {
             CourseBlock from = course.getLast();
             Space space = new Space(visibleTail(course));
             List<Spot> free = candidatesFor(from, phase, false).stream().filter(candidate -> space.isFree(from, candidate)).toList();
-            return ranked(free, phase, from, space).stream().filter(candidate -> hasFollowUp(course, candidate, phase)).findFirst().map(CourseGenerator.this::withDrawnMaterial);
+            return ranked(free, phase, from, space).stream().filter(candidate -> hasFollowUp(course, candidate, phase)).findFirst().map(candidate -> withDrawnMaterial(candidate, course));
         }
 
         Phase after(Placement from, Placement placed, Phase phase) {

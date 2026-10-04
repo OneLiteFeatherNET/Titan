@@ -83,10 +83,14 @@ class SurfaceTest {
     }
 
     @Test
-    void slabAndTrapdoorUnlockAtTenAndFenceAndPaneAtTwentyFive() {
-        assertEquals(List.of(Surface.FULL, Surface.TRAPDOOR, Surface.SLAB), Mode.MEDIUM.unlockedAt(10), "score 10");
-        assertEquals(List.of(Surface.FULL, Surface.TRAPDOOR, Surface.SLAB), Mode.MEDIUM.unlockedAt(24), "score 24");
-        assertEquals(List.of(Surface.FULL, Surface.TRAPDOOR, Surface.SLAB, Surface.FENCE, Surface.PANE), Mode.MEDIUM.unlockedAt(25), "score 25");
+    void theGentleShapesUnlockAtTenTheNarrowOnesAtTwentyFiveAndTheNarrowestAtForty() {
+        List<Surface> atTen = List.of(Surface.FULL, Surface.TRAPDOOR, Surface.SLAB, Surface.STAIRS, Surface.CARPET, Surface.SNOW);
+        List<Surface> atTwentyFive = List.of(Surface.FULL, Surface.TRAPDOOR, Surface.SLAB, Surface.STAIRS, Surface.CARPET, Surface.SNOW, Surface.FENCE, Surface.PANE, Surface.HEAD, Surface.FLOWER_POT);
+
+        assertEquals(atTen, Mode.MEDIUM.unlockedAt(10), "score 10");
+        assertEquals(atTen, Mode.MEDIUM.unlockedAt(24), "score 24");
+        assertEquals(atTwentyFive, Mode.MEDIUM.unlockedAt(25), "score 25");
+        assertEquals(atTwentyFive, Mode.MEDIUM.unlockedAt(39), "score 39");
     }
 
     @Test

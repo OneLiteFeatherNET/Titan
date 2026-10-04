@@ -27,6 +27,11 @@ sealed interface Placement permits Spot, CourseBlock {
         return pos().y() + surface().top();
     }
 
+    /** Absolute y of the lowest step: where a runner may take off from or fall past. */
+    default double lowTopY() {
+        return pos().y() + surface().lowTop();
+    }
+
     /** The highest y a player reaches into at the apex of a jump from this block. */
     default int jumpRoomTopY() {
         return pos().y() + surface().jumpRoomTop();
