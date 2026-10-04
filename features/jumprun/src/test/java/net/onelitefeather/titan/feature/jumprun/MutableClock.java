@@ -15,13 +15,33 @@
  */
 package net.onelitefeather.titan.feature.jumprun;
 
-import java.util.Optional;
-import net.minestom.server.instance.block.Block;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 
-/** A place a course block could go: position and shape, before a material is drawn for it. */
-record Spot(BlockPos pos, Surface surface) implements Placement {
+/** A clock that only moves when a test says so. */
+final class MutableClock extends Clock {
 
-    CourseBlock withMaterial(Block material, Optional<HeadSkin> skin) {
-        return new CourseBlock(pos, surface, material, skin);
+    private Instant now = Instant.parse("2026-01-01T00:00:00Z");
+
+    void advance(Duration by) {
+        now = now.plus(by);
+    }
+
+    @Override
+    public ZoneId getZone() {
+        return ZoneOffset.UTC;
+    }
+
+    @Override
+    public Clock withZone(ZoneId zone) {
+        return this;
+    }
+
+    @Override
+    public Instant instant() {
+        return now;
     }
 }

@@ -16,12 +16,14 @@
 package net.onelitefeather.titan.feature.jumprun;
 
 import java.util.Optional;
-import net.minestom.server.instance.block.Block;
+import java.util.UUID;
+import net.minestom.server.entity.PlayerSkin;
 
-/** A place a course block could go: position and shape, before a material is drawn for it. */
-record Spot(BlockPos pos, Surface surface) implements Placement {
+/** Asks Mojang for the signed skin; blocks on the network, so it never runs on a tick thread. */
+final class MojangHeadSkins implements HeadSkins {
 
-    CourseBlock withMaterial(Block material, Optional<HeadSkin> skin) {
-        return new CourseBlock(pos, surface, material, skin);
+    @Override
+    public Optional<PlayerSkin> skinOf(UUID id) {
+        return Optional.ofNullable(PlayerSkin.fromUuid(id.toString()));
     }
 }

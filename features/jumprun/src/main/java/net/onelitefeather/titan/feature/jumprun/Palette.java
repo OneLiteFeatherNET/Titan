@@ -68,10 +68,11 @@ final class Palette {
 
     /**
      * A material other than {@code excluded}, weighted like {@link #draw}; the only one a
-     * single-entry palette has is returned as it is.
+     * single-entry palette has is returned as it is. A drawn look (facing, turn) does not make a
+     * material a different one.
      */
     Block drawOther(Block excluded, RandomGenerator random) {
-        int skipped = blocks.indexOf(excluded);
+        int skipped = indexOfType(excluded);
         if (skipped < 0 || blocks.size() == 1) {
             return draw(random);
         }
@@ -86,6 +87,15 @@ final class Palette {
             }
         }
         throw new IllegalStateException("pick " + pick + " is beyond the weights");
+    }
+
+    private int indexOfType(Block material) {
+        for (int i = 0; i < blocks.size(); i++) {
+            if (blocks.get(i).id() == material.id()) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     private long weightAt(int index) {

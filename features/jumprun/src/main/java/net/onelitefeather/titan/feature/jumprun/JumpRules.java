@@ -60,7 +60,7 @@ final class JumpRules {
      * apex.
      */
     private boolean isFlightPathFree(Jump jump) {
-        int lowest = (int) Math.floor(Math.min(jump.from().topY(), jump.to().topY()));
+        int lowest = (int) Math.floor(Math.min(jump.from().lowTopY(), jump.to().lowTopY()));
         int highest = Surface.highestBlockReached(jump.from().topY() + Surface.JUMP_HEIGHT);
         List<FlightPath.Cell> path = FlightPath.cellsBetween(jump.from().pos(), jump.to().pos());
         return path.stream().allMatch(cell -> isColumnFree(cell.x(), cell.z(), lowest, highest));

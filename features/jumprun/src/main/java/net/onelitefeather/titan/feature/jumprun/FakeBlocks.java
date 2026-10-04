@@ -16,11 +16,16 @@
 package net.onelitefeather.titan.feature.jumprun;
 
 import java.util.Collection;
+import net.kyori.adventure.nbt.CompoundBinaryTag;
+import net.minestom.server.codec.Transcoder;
 import net.minestom.server.coordinate.BlockVec;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.block.Block;
+import net.minestom.server.instance.block.BlockEntityType;
 import net.minestom.server.network.packet.server.play.BlockChangePacket;
+import net.minestom.server.network.packet.server.play.BlockEntityDataPacket;
+import net.minestom.server.network.player.ResolvableProfile;
 
 /** Shows blocks to one player only; the instance itself is never changed. */
 final class FakeBlocks {
@@ -28,7 +33,13 @@ final class FakeBlocks {
     void show(Player player, Collection<CourseBlock> blocks) {
         for (CourseBlock block : blocks) {
             player.sendPacket(new BlockChangePacket(toPoint(block.pos()), block.material()));
+            block.skin().ifPresent(skin -> player.sendPacket(new BlockEntityDataPacket(toPoint(block.pos()), BlockEntityType.SKULL, skullData(skin))));
         }
+    }
+
+    /** The profile is the whole data of a skull the client has to show with a skin. */
+    private static CompoundBinaryTag skullData(HeadSkin skin) {
+        return CompoundBinaryTag.builder().put("profile", ResolvableProfile.CODEC.encode(Transcoder.NBT, skin.profile()).orElseThrow()).build();
     }
 
     /** Sends the real block of the instance back, so the player sees the world again. */

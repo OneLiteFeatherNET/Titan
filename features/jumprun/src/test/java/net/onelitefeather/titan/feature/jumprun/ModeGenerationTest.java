@@ -19,8 +19,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.random.RandomGenerator;
 import java.util.random.RandomGeneratorFactory;
 import org.junit.jupiter.api.Test;
@@ -126,6 +128,58 @@ class ModeGenerationTest {
         double hard = meanCostFrom(Mode.HARD, 40);
 
         assertTrue(hard > easy, "hard " + hard + " must cost more than easy " + easy);
+    }
+
+    private static final List<Surface> NEW_SHAPES = List.of(Surface.STAIRS, Surface.CARPET, Surface.SNOW, Surface.HEAD, Surface.FLOWER_POT, Surface.CANDLE);
+    private static final int SEEDS = 12;
+
+    @Test
+    void mediumMakesEveryNewShapeWithinTheWalk() {
+        Set<Surface> seen = new HashSet<>();
+        for (long seed = 1; seed <= SEEDS; seed++) {
+            walk(Mode.MEDIUM, seed).forEach(move -> seen.add(move.jump().to().surface()));
+        }
+
+        assertTrue(seen.containsAll(NEW_SHAPES), "medium made only " + seen);
+    }
+
+    @Test
+    void easyMakesNoNewShape() {
+        for (long seed = 1; seed <= SEEDS; seed++) {
+            for (Move move : walk(Mode.EASY, seed)) {
+                assertTrue(!NEW_SHAPES.contains(move.jump().to().surface()), "seed " + seed + " made " + move.jump().to().surface() + " in easy");
+            }
+        }
+    }
+
+    @Test
+    void noJumpOverstepsTheLimitsOfGapAndRiseWhateverTheShape() {
+        for (Mode mode : Mode.values()) {
+            for (long seed = 1; seed <= SEEDS; seed++) {
+                for (Move move : walk(mode, seed)) {
+                    assertTrue(JumpRules.isReachable(move.jump(), mode), mode + " seed " + seed + " score " + move.score() + ": " + move.jump());
+                }
+            }
+        }
+    }
+
+    @Test
+    void theHardestPossibleJumpStaysTheSameWithTheNewShapes() {
+        assertEquals(2.0 * 4 + 1.5 * 3, Jump.MAX_COST, "post over the widest flat gap");
+    }
+
+    @Test
+    void everyStairsBlockOfAWalkHasAFacingAndEveryHeadATurn() {
+        for (Move move : walk(Mode.MEDIUM, 3L)) {
+            CourseBlock block = (CourseBlock) move.jump().to();
+            if (block.surface() == Surface.STAIRS) {
+                assertTrue(List.of("north", "south", "east", "west").contains(block.material().getProperty("facing")), "stairs facing at score " + move.score());
+            }
+            if (block.surface() == Surface.HEAD) {
+                int turn = Integer.parseInt(block.material().getProperty("rotation"));
+                assertTrue(turn >= 0 && turn <= 15, "head turn " + turn);
+            }
+        }
     }
 
     private static double meanCostFrom(Mode mode, int fromScore) {

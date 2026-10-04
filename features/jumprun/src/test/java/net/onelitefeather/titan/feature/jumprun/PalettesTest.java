@@ -70,6 +70,27 @@ class PalettesTest {
     }
 
     @Test
+    void theNewShapesShipTheirMaterials() {
+        assertEquals(19, shipped(Surface.STAIRS).size(), "12 woods and 7 stone kinds");
+        assertEquals(17, shipped(Surface.CARPET).size(), "16 colours and moss");
+        assertEquals(1, shipped(Surface.SNOW).size(), "snow");
+        assertEquals(5, shipped(Surface.HEAD).size(), "five floor heads");
+        assertEquals(7, shipped(Surface.FLOWER_POT).size(), "empty and six planted");
+        assertEquals(17, shipped(Surface.CANDLE).size(), "plain and 16 colours");
+    }
+
+    @Test
+    void aMaterialOtherThanTheDrawnOneIsFoundEvenWithAnotherFacing() {
+        Palette stairs = SHIPPED.of(Surface.STAIRS);
+        Block east = stairs.blocks().getFirst().withProperty("facing", "east");
+        RandomGenerator random = seeded(5L);
+
+        for (int i = 0; i < 200; i++) {
+            assertTrue(stairs.drawOther(east, random).id() != east.id(), "another type than the east facing one");
+        }
+    }
+
+    @Test
     void trapdoorsAreClosedAndInTheLowerHalf() {
         assertEquals(13, shipped(Surface.TRAPDOOR).size(), "12 woods and iron");
         for (Block material : shipped(Surface.TRAPDOOR)) {

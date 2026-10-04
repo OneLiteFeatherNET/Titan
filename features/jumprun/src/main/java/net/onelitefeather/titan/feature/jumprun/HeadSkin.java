@@ -15,13 +15,16 @@
  */
 package net.onelitefeather.titan.feature.jumprun;
 
-import java.util.Optional;
-import net.minestom.server.instance.block.Block;
+import java.util.List;
+import java.util.UUID;
+import net.minestom.server.network.player.GameProfile;
+import net.minestom.server.network.player.ResolvableProfile;
 
-/** A place a course block could go: position and shape, before a material is drawn for it. */
-record Spot(BlockPos pos, Surface surface) implements Placement {
+/** The skin of a team member, resolved once: who it belongs to and the textures to show. */
+record HeadSkin(UUID id, String textures, String signature) {
 
-    CourseBlock withMaterial(Block material, Optional<HeadSkin> skin) {
-        return new CourseBlock(pos, surface, material, skin);
+    /** The profile a head shows: the textures travel with it, so no client has to look them up. */
+    ResolvableProfile profile() {
+        return new ResolvableProfile(new ResolvableProfile.Partial(null, id, List.of(new GameProfile.Property("textures", textures, signature))));
     }
 }

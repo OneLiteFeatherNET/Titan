@@ -99,17 +99,39 @@ class ModeTest {
     }
 
     @Test
-    void mediumKeepsTheShapeThresholdsOfTheStandardRun() {
+    void mediumKeepsTheOldShapeThresholdsAndUnlocksTheNewOnesWithTheirCostClass() {
         List<Surface> shapes = List.of(Surface.FULL, Surface.TRAPDOOR, Surface.SLAB, Surface.FENCE, Surface.PANE, Surface.POST);
 
-        assertEquals(List.of(0, 10, 10, 25, 25, 40), shapes.stream().map(Mode.MEDIUM::minScore).toList());
+        assertEquals(List.of(0, 10, 10, 25, 25, 40), shapes.stream().map(Mode.MEDIUM::minScore).toList(), "old shapes");
+        assertEquals(List.of(10, 10, 10, 25, 25, 40), List.of(Surface.STAIRS, Surface.CARPET, Surface.SNOW, Surface.HEAD, Surface.FLOWER_POT, Surface.CANDLE).stream().map(Mode.MEDIUM::minScore).toList(), "new shapes");
+    }
+
+    @Test
+    void hardUnlocksTheNewShapesAtFiveTenAndTwenty() {
+        assertEquals(List.of(5, 5, 5, 10, 10, 20), List.of(Surface.STAIRS, Surface.CARPET, Surface.SNOW, Surface.HEAD, Surface.FLOWER_POT, Surface.CANDLE).stream().map(Mode.HARD::minScore).toList());
+    }
+
+    @Test
+    void easyUnlocksNoNewShape() {
+        for (Surface surface : List.of(Surface.STAIRS, Surface.CARPET, Surface.SNOW, Surface.HEAD, Surface.FLOWER_POT, Surface.CANDLE)) {
+            assertEquals(Integer.MAX_VALUE, Mode.EASY.minScore(surface), surface + " never comes in easy");
+        }
+    }
+
+    @Test
+    void noNewShapeComesBelowTheFirstThresholdOfItsMode() {
+        List<Surface> old = List.of(Surface.FULL, Surface.TRAPDOOR, Surface.SLAB, Surface.FENCE, Surface.PANE, Surface.POST);
+
+        assertEquals(List.of(Surface.FULL), Mode.MEDIUM.unlockedAt(9), "medium below 10");
+        assertEquals(List.of(Surface.FULL), Mode.HARD.unlockedAt(4), "hard below 5");
+        assertTrue(Mode.MEDIUM.unlockedAt(10_000).containsAll(old), "medium keeps the old ones");
     }
 
     @Test
     void hardUnlocksTheShapesAtFiveTenAndTwenty() {
         assertEquals(List.of(Surface.FULL), Mode.HARD.unlockedAt(4));
-        assertEquals(List.of(Surface.FULL, Surface.TRAPDOOR, Surface.SLAB), Mode.HARD.unlockedAt(5));
-        assertEquals(List.of(Surface.FULL, Surface.TRAPDOOR, Surface.SLAB, Surface.FENCE, Surface.PANE), Mode.HARD.unlockedAt(10));
+        assertEquals(List.of(Surface.FULL, Surface.TRAPDOOR, Surface.SLAB, Surface.STAIRS, Surface.CARPET, Surface.SNOW), Mode.HARD.unlockedAt(5));
+        assertEquals(List.of(Surface.FULL, Surface.TRAPDOOR, Surface.SLAB, Surface.STAIRS, Surface.CARPET, Surface.SNOW, Surface.FENCE, Surface.PANE, Surface.HEAD, Surface.FLOWER_POT), Mode.HARD.unlockedAt(10));
         assertEquals(List.of(Surface.values()), Mode.HARD.unlockedAt(20));
     }
 

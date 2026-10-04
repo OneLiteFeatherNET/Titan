@@ -61,9 +61,12 @@ record Jump(Placement from, Placement to) {
         return to.pos().x() != from.pos().x() && to.pos().z() != from.pos().z();
     }
 
-    /** How far the target's walkable top lies above the source's (negative when lower). */
+    /**
+     * How far the target's highest step lies above the source's lowest (negative when lower): the
+     * worst case for stairs, whose facing is not known when the position is chosen.
+     */
     double rise() {
-        return to.topY() - from.topY();
+        return to.topY() - from.lowTopY();
     }
 
     boolean isAscent() {

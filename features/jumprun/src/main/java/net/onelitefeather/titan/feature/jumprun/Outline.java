@@ -16,10 +16,8 @@
 package net.onelitefeather.titan.feature.jumprun;
 
 import net.minestom.server.coordinate.Pos;
-import net.minestom.server.coordinate.Vec;
-import net.minestom.server.entity.EntityType;
 import net.minestom.server.entity.Player;
-import net.minestom.server.entity.metadata.display.BlockDisplayMeta;
+import net.minestom.server.entity.metadata.display.AbstractDisplayMeta;
 import net.minestom.server.instance.Instance;
 
 /**
@@ -35,13 +33,6 @@ final class Outline {
     private static final int GLOW_COLOR = 0x7CFC00;
 
     private static final int FULL_LIGHT = 15;
-
-    /**
-     * Just larger than the block and shifted back by half the excess, so it wraps the block evenly.
-     */
-    private static final Vec SCALE = new Vec(1.02, 1.02, 1.02);
-
-    private static final Vec TRANSLATION = new Vec(-0.01, -0.01, -0.01);
 
     private final Player runner;
     private CourseBlock target;
@@ -83,10 +74,10 @@ final class Outline {
         }
         CourseBlock block = target;
         BlockPos pos = block.pos();
-        display = HiddenDisplay.spawnForRunnerOnly(runner, EntityType.BLOCK_DISPLAY, BlockDisplayMeta.class, meta -> {
-            meta.setBlockState(block.material());
-            meta.setScale(SCALE);
-            meta.setTranslation(TRANSLATION);
+        display = HiddenDisplay.spawnForRunnerOnly(runner, BlockLook.entityType(block), AbstractDisplayMeta.class, meta -> {
+            BlockLook.show(meta, block);
+            meta.setScale(BlockLook.outlineScale(block));
+            meta.setTranslation(BlockLook.outlineTranslation(block));
             meta.setHasGlowingEffect(true);
             meta.setGlowColorOverride(GLOW_COLOR);
             // The display sits inside the opaque course block, where the sampled light is 0 and it renders black.

@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.feature.jumprun;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -169,6 +170,23 @@ class JumpRulesTest {
         CourseBlock fence = block(2, 10, 0, Surface.FENCE);
         assertFalse(validIn(new FakeSpaceProbe().occupy(2, 14, 0), ORIGIN, fence), "fence top 11.5, apex head reaches y=14");
         assertTrue(validIn(new FakeSpaceProbe().occupy(2, 15, 0), ORIGIN, fence), "y=15 is above the fence's jump room");
+    }
+
+    @Test
+    void jumpRoomOverStairsIsThatOfAFullBlock() {
+        CourseBlock stairs = block(2, 10, 0, Surface.STAIRS);
+
+        assertFalse(validIn(new FakeSpaceProbe().occupy(2, 14, 0), ORIGIN, stairs), "stairs top 11, apex head reaches y=14");
+        assertTrue(validIn(new FakeSpaceProbe().occupy(2, 15, 0), ORIGIN, stairs), "y=15 is above a full top's jump room");
+    }
+
+    @Test
+    void jumpRoomOverTheLowShapesFollowsTheirTop() {
+        assertEquals(Surface.highestBlockReached(0.0625 + Surface.JUMP_HEIGHT), Surface.CARPET.jumpRoomTop(), "carpet");
+        assertEquals(Surface.highestBlockReached(0.25 + Surface.JUMP_HEIGHT), Surface.SNOW.jumpRoomTop(), "snow");
+        assertEquals(Surface.highestBlockReached(0.5 + Surface.JUMP_HEIGHT), Surface.HEAD.jumpRoomTop(), "head");
+        assertEquals(Surface.highestBlockReached(0.375 + Surface.JUMP_HEIGHT), Surface.FLOWER_POT.jumpRoomTop(), "flower pot");
+        assertEquals(Surface.highestBlockReached(0.375 + Surface.JUMP_HEIGHT), Surface.CANDLE.jumpRoomTop(), "candle");
     }
 
     // --- flight path ----------------------------------------------------------------------------

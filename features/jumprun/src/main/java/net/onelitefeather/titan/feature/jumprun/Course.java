@@ -48,15 +48,6 @@ final class Course {
      */
     static final int FALL_DISTANCE = 3;
 
-    /**
-     * A landing reported by the client is a hair off the exact top; this much is still "standing on
-     * it".
-     */
-    private static final double LANDING_TOLERANCE = 0.05;
-
-    /** A player standing on an edge still has the block under part of the hitbox. */
-    private static final double PLAYER_HALF_WIDTH = 0.3;
-
     private final Pos startPoint;
     private final CourseGenerator generator;
     private final List<CourseBlock> blocks;
@@ -163,7 +154,7 @@ final class Course {
      * block ahead into a fallen one.
      */
     double fallThreshold() {
-        double lowest = blocks.subList(current, blocks.size()).stream().mapToDouble(CourseBlock::topY).min().orElseThrow();
+        double lowest = blocks.subList(current, blocks.size()).stream().mapToDouble(CourseBlock::lowTopY).min().orElseThrow();
         return lowest - FALL_DISTANCE;
     }
 
@@ -234,7 +225,7 @@ final class Course {
         for (CourseBlock block : chosen) {
             int index = blocks.indexOf(block);
             if (index > 0) {
-                CourseBlock redrawn = generator.redrawn(block);
+                CourseBlock redrawn = generator.redrawn(block, CourseGenerator.lastSkin(blocks.subList(0, index)), CourseGenerator.firstSkin(blocks.subList(index + 1, blocks.size())));
                 blocks.set(index, redrawn);
                 recolored.add(redrawn);
             }
@@ -244,31 +235,17 @@ final class Course {
 
     /** Whether the feet stand on the current block, edge included. */
     boolean standsOnCurrent(Point feet) {
-        return isStandingOn(current(), feet);
+        return current().supports(feet);
     }
 
     /** The furthest of the blocks ahead the feet stand on, or -1. */
     private int landedIndex(Point feet) {
         for (int index = blocks.size() - 1; index > current; index--) {
-            if (isStandingOn(blocks.get(index), feet)) {
+            if (blocks.get(index).supports(feet)) {
                 return index;
             }
         }
         return -1;
-    }
-
-    private static boolean isStandingOn(CourseBlock block, Point feet) {
-        boolean atHeight = Math.abs(feet.y() - block.topY()) <= LANDING_TOLERANCE;
-        return atHeight && overlapsBlock(feet.x(), block.pos().x()) && overlapsBlock(feet.z(), block.pos().z());
-    }
-
-    /**
-     * Whether a hitbox centred on {@code center} reaches over the block cell at {@code cell}. The
-     * same half width serves every shape: the height check gates it, and being lenient on thin
-     * posts and panes is intended.
-     */
-    private static boolean overlapsBlock(double center, int cell) {
-        return center >= cell - PLAYER_HALF_WIDTH && center <= cell + 1 + PLAYER_HALF_WIDTH;
     }
 
     private int windowStart() {

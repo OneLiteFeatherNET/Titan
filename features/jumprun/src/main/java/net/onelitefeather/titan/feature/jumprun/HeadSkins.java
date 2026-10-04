@@ -16,12 +16,23 @@
 package net.onelitefeather.titan.feature.jumprun;
 
 import java.util.Optional;
-import net.minestom.server.instance.block.Block;
+import java.util.UUID;
+import net.minestom.server.entity.PlayerSkin;
 
-/** A place a course block could go: position and shape, before a material is drawn for it. */
-record Spot(BlockPos pos, Surface surface) implements Placement {
+/**
+ * Where the skin of a player comes from; swapped for a fake in tests, so none needs the network.
+ */
+@FunctionalInterface
+interface HeadSkins {
 
-    CourseBlock withMaterial(Block material, Optional<HeadSkin> skin) {
-        return new CourseBlock(pos, surface, material, skin);
-    }
+    /** No skin for anybody. */
+    HeadSkins NONE = id -> Optional.empty();
+
+    /**
+     * The skin of the player, empty when there is none. May block on the network, so callers keep
+     * it off the tick threads.
+     *
+     * @throws RuntimeException when the lookup itself fails
+     */
+    Optional<PlayerSkin> skinOf(UUID id);
 }

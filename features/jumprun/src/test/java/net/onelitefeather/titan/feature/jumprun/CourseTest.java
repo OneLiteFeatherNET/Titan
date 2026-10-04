@@ -64,6 +64,24 @@ class CourseTest {
         }
     }
 
+    @Test
+    void theFallThresholdOfACourseWithStairsAheadFollowsTheLowStep() {
+        boolean metStairs = false;
+        for (long seed = 1; seed <= 12; seed++) {
+            Course course = startIn(new FakeSpaceProbe(), seed);
+            for (int landing = 0; landing < 80; landing++) {
+                CourseBlock stairs = course.window().stream().skip(course.window().indexOf(course.current()) + 1).filter(block -> block.surface() == Surface.STAIRS).findFirst().orElse(null);
+                if (stairs != null) {
+                    metStairs = true;
+                    assertTrue(course.fallThreshold() <= stairs.pos().y() + Surface.STAIRS.lowTop() - Course.FALL_DISTANCE, "seed " + seed + ": three below the low step at the latest");
+                    assertTrue(course.fallThreshold() < stairs.topY() - Course.FALL_DISTANCE, "seed " + seed + ": lower than three below the high step");
+                }
+                landOn(course, ahead(course, 1));
+            }
+        }
+        assertTrue(metStairs, "the walks met stairs ahead");
+    }
+
     // --- start ------------------------------------------------------------------------------------
 
     @Test

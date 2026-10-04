@@ -106,4 +106,25 @@ class JumpTest {
         assertEquals(Direction.EAST, jump(block(0, 0, 0, Surface.FULL), block(3, 1, 0, Surface.FULL)).direction(), "east");
         assertEquals(Direction.NORTH_WEST, jump(block(0, 0, 0, Surface.FULL), block(-2, 0, -2, Surface.FULL)).direction(), "north west");
     }
+
+    @Test
+    void aFullBlockOnStairsOfTheSameHeightIsNoRise() {
+        assertEquals(0.0, jump(block(0, 0, 0, Surface.FULL), block(2, 0, 0, Surface.STAIRS)).rise(), "the high step is level with the full top");
+    }
+
+    @Test
+    void stairsBeforeAFullBlockOfTheSameHeightAreAHalfBlockAscent() {
+        Jump fromStairs = jump(block(0, 0, 0, Surface.STAIRS), block(2, 0, 0, Surface.FULL));
+
+        assertEquals(0.5, fromStairs.rise(), "the runner may take off from the low step");
+        assertTrue(fromStairs.isAscent(), "so it counts as an ascent");
+    }
+
+    @Test
+    void stairsBeforeAFullBlockOneHigherAreOutOfReach() {
+        Jump jump = jump(block(0, 0, 0, Surface.STAIRS), block(2, 1, 0, Surface.FULL));
+
+        assertEquals(1.5, jump.rise(), "low step to the next top");
+        assertFalse(JumpRules.isReachable(jump, Mode.MEDIUM), "more than a block up");
+    }
 }

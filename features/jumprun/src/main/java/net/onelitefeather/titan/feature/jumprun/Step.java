@@ -15,13 +15,14 @@
  */
 package net.onelitefeather.titan.feature.jumprun;
 
-import java.util.Optional;
-import net.minestom.server.instance.block.Block;
+/**
+ * One level a player can stand on: its top above the block position and the rectangle it covers
+ * in the cell, all in cell units (0 to 1).
+ */
+record Step(double top, double minX, double maxX, double minZ, double maxZ) {
 
-/** A place a course block could go: position and shape, before a material is drawn for it. */
-record Spot(BlockPos pos, Surface surface) implements Placement {
-
-    CourseBlock withMaterial(Block material, Optional<HeadSkin> skin) {
-        return new CourseBlock(pos, surface, material, skin);
+    /** The same step after the cell is turned a quarter clockwise seen from above. */
+    Step turnedClockwise() {
+        return new Step(top, 1 - maxZ, 1 - minZ, minX, maxX);
     }
 }
