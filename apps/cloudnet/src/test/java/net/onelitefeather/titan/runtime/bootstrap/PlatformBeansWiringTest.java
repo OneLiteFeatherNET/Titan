@@ -16,6 +16,7 @@
 package net.onelitefeather.titan.runtime.bootstrap;
 
 import io.avaje.inject.BeanScope;
+import io.opentelemetry.api.OpenTelemetry;
 import java.util.List;
 import net.minestom.server.timer.Scheduler;
 import net.minestom.testing.Env;
@@ -30,6 +31,7 @@ import net.onelitefeather.titan.common.map.MapProvider;
 import net.onelitefeather.titan.core.portal.PlayerCount;
 import net.onelitefeather.titan.core.portal.PlayerCounts;
 import net.onelitefeather.titan.core.portal.SourceType;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -62,6 +64,20 @@ class PlatformBeansWiringTest {
             Assertions.assertNotNull(lobbyItems, "LobbyItems must build from the features' item beans");
         } finally {
             Assertions.assertDoesNotThrow(scope::close, "closing a fully built scope must not throw");
+        }
+    }
+
+    @DisplayName("Without an agent the scope provides OpenTelemetry and Telemetry as no-ops")
+    @Test
+    void scopeProvidesNoopTelemetryWithoutAnAgent(Env env) {
+        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class, ActiveLobby.empty()).mock(FeatureFlags.class).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).build();
+
+        try {
+            Assertions.assertNotNull(scope.get(OpenTelemetry.class), "OpenTelemetry must resolve");
+            Telemetry telemetry = scope.get(Telemetry.class);
+            Assertions.assertFalse(telemetry.tracer().spanBuilder("test.op").startSpan().getSpanContext().isValid(), "without an agent a span has no valid context");
+        } finally {
+            scope.close();
         }
     }
 

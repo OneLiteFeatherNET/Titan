@@ -24,6 +24,7 @@ import com.tngtech.archunit.core.domain.JavaMethodCall;
 import com.tngtech.archunit.lang.ArchRule;
 import io.avaje.inject.BeanScope;
 import io.avaje.inject.PostConstruct;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import jakarta.inject.Singleton;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.event.EventNode;
@@ -67,6 +68,17 @@ public final class ColumnArchitectureRules {
 
     /** A feature is built through constructor injection only, never via {@link BeanScope}. */
     public static final ArchRule FEATURE_MODULES_DO_NOT_USE_BEAN_SCOPE = noClasses().should().dependOnClassesThat().areAssignableTo(BeanScope.class).because("a feature must get its dependencies through its constructor, never via BeanScope");
+
+    /**
+     * Only {@code runtime} reads the global OpenTelemetry instance (for the {@code Telemetry}
+     * bean); everything else gets a {@code Telemetry} through its constructor. Applies to whatever
+     * the test imports, so a test importing all of {@code net.onelitefeather.titan} covers every
+     * module.
+     */
+    public static final ArchRule ONLY_RUNTIME_CALLS_GLOBAL_OPEN_TELEMETRY = noClasses().that().resideOutsideOfPackages("net.onelitefeather.titan.runtime..", "net.onelitefeather.titan.core.testfixtures..").should().dependOnClassesThat().areAssignableTo(GlobalOpenTelemetry.class).because("only runtime may touch GlobalOpenTelemetry; everyone else takes the Telemetry bean through the constructor");
+
+    /** A feature compiles against the OpenTelemetry API only; the agent provides the SDK. */
+    public static final ArchRule FEATURES_DO_NOT_USE_THE_OPEN_TELEMETRY_SDK = noClasses().that().resideInAPackage("net.onelitefeather.titan.feature..").should().dependOnClassesThat().resideInAPackage("io.opentelemetry.sdk..").because("a feature uses the OpenTelemetry API only, the agent brings the SDK");
 
     private ColumnArchitectureRules() {
         throw new UnsupportedOperationException("This class cannot be instantiated");

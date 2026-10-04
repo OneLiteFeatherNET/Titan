@@ -13,6 +13,11 @@ dependencies {
     implementation(libs.flyway.postgresql)
     runtimeOnly(libs.postgresql)
 
+    // Context only: DatabaseWriter hands the caller's span to its worker thread. The agent
+    // provides the implementation at runtime.
+    implementation(platform(libs.opentelemetry.bom))
+    implementation(libs.opentelemetry.api)
+
     implementation(libs.avaje.inject)
     implementation(libs.avaje.config)
     implementation(libs.slf4j.api)

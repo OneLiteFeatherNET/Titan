@@ -18,6 +18,8 @@ package net.onelitefeather.titan.runtime;
 import io.avaje.config.Config;
 import io.avaje.inject.BeanScope;
 import io.avaje.inject.spi.GenericType;
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import java.util.List;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
@@ -28,6 +30,10 @@ import net.onelitefeather.titan.runtime.bootstrap.FeatureStartupLog;
 import net.onelitefeather.titan.runtime.bootstrap.PermissionStartupLog;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.permission.PermissionService;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
+import net.onelitefeather.titan.runtime.lifecycle.TitanLifecycle;
+import net.onelitefeather.titan.runtime.variant.LoadedModules;
+import net.onelitefeather.titan.runtime.variant.VariantDescriptor;
 import net.onelitefeather.titan.runtime.player.TitanPlayer;
 import net.onelitefeather.titan.runtime.variant.VariantStartupCheck;
 import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
@@ -40,6 +46,7 @@ import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
 public final class Titan {
 
     private final BeanScope beanScope;
+    private final TitanLifecycle lifecycle;
 
     /**
      * @throws ExceptionInInitializerError if {@code application.yaml} cannot be parsed
@@ -55,11 +62,12 @@ public final class Titan {
         // surfaces here as ExceptionInInitializerError.
         ConfigurationStartupLog.activeProfiles();
 
-        // Runs every feature's @PostConstruct, attaching it to the titan event node before any
-        // player can connect.
-        this.beanScope = BeanScope.builder().profiles(BeanProfiles.active(Config.asConfiguration().list().of(ConfigurationStartupLog.ACTIVE_PROFILES_KEY), CloudNetEnvironment.isPresent())).build();
-
-        VariantStartupCheck.verify(Titan.class.getClassLoader());
+        // The startup span has to exist before the BeanScope that provides Telemetry does.
+        this.lifecycle = new TitanLifecycle(Telemetry.of(GlobalOpenTelemetry.get()));
+        ClassLoader loader = Titan.class.getClassLoader();
+        String variant = VariantDescriptor.fromClasspath(loader).map(VariantDescriptor::name).orElse("unknown");
+        String[] profiles = BeanProfiles.active(Config.asConfiguration().list().of(ConfigurationStartupLog.ACTIVE_PROFILES_KEY), CloudNetEnvironment.isPresent());
+        this.beanScope = this.lifecycle.startup(variant, List.of(profiles), LoadedModules.discover(loader).size(), () -> start(loader, profiles));
 
         // Players can only connect once bootstrap.start() runs, well after this point, so the
         // provider can safely use the PermissionService resolved from the scope.
@@ -67,9 +75,22 @@ public final class Titan {
         MinecraftServer.getConnectionManager().setPlayerProvider((connection, gameProfile) -> new TitanPlayer(connection, gameProfile, permissionService));
         PermissionStartupLog.activeService(permissionService);
 
-        EventNode<Event> titan = this.beanScope.get(new GenericType<EventNode<Event>>() {
+        FeatureStartupLog.startedInEventOrder(titanNode(this.beanScope));
+    }
+
+    /**
+     * Runs every feature's {@code @PostConstruct}, attaching it to the titan event node before any
+     * player can connect.
+     */
+    private static BeanScope start(ClassLoader loader, String[] profiles) {
+        BeanScope scope = BeanScope.builder().profiles(profiles).build();
+        VariantStartupCheck.verify(loader);
+        return scope;
+    }
+
+    private static EventNode<Event> titanNode(BeanScope scope) {
+        return scope.get(new GenericType<EventNode<Event>>() {
         }.type(), FeatureNode.TITAN_NODE);
-        FeatureStartupLog.startedInEventOrder(titan);
     }
 
     /**
@@ -77,7 +98,7 @@ public final class Titan {
      * shutdown.
      */
     public void initialize() {
-        MinecraftServer.getSchedulerManager().buildShutdownTask(this.beanScope::close);
+        MinecraftServer.getSchedulerManager().buildShutdownTask(() -> this.lifecycle.shutdown(this.beanScope::close));
     }
 
     public static Titan instance() {

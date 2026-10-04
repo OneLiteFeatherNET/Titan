@@ -51,6 +51,8 @@ dependencyResolutionManagement {
             version("slf4j", "2.0.20")
             version("logback", "1.6.5")
             version("sentry", "8.58.0")
+            // The API the OpenTelemetry Java agent 2.16.0 bundles (SDK/API 1.50.0); keep both in step.
+            version("opentelemetry", "1.50.0")
 
             version("hibernate", "7.4.11.Final")
             version("hikaricp", "7.1.0")
@@ -117,6 +119,12 @@ dependencyResolutionManagement {
             library("sentry-bom", "io.sentry", "sentry-bom").versionRef("sentry")
             library("sentry", "io.sentry", "sentry").withoutVersion()
             library("sentry-logback", "io.sentry", "sentry-logback").withoutVersion()
+
+            // Only the API is compiled against: the agent provides the SDK at runtime, without it
+            // every span and counter is a no-op. The SDK is for tests only (TestTelemetry).
+            library("opentelemetry-bom", "io.opentelemetry", "opentelemetry-bom").versionRef("opentelemetry")
+            library("opentelemetry-api", "io.opentelemetry", "opentelemetry-api").withoutVersion()
+            library("opentelemetry-sdk-testing", "io.opentelemetry", "opentelemetry-sdk-testing").withoutVersion()
 
             // Persistence: one pool and one SessionFactory per process, see the :persistence module.
             // Flyway (not Liquibase) because Liquibase Core is no longer Apache-2.0 licensed.
