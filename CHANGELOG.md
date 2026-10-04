@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.4.0](https://github.com/OneLiteFeatherNET/Titan/compare/v2.3.1...v2.4.0) (2026-10-04)
+
+
+### Features
+
+* **telemetry:** add tracing and metrics foundation with lifecycle spans ([#362](https://github.com/OneLiteFeatherNET/Titan/issues/362)) ([b937361](https://github.com/OneLiteFeatherNET/Titan/commit/b937361f56299c45accb7acb677a1cc6626d57f7))
+* **telemetry:** trace jump and run starts, ends and leaderboard refreshes ([#363](https://github.com/OneLiteFeatherNET/Titan/issues/363)) ([b2f7d28](https://github.com/OneLiteFeatherNET/Titan/commit/b2f7d28a6143db9ffb368578b0605988b63ee818))
+
+
+### Bug Fixes
+
+* **deps:** update dependency io.opentelemetry:opentelemetry-bom to v1.51.0 ([#365](https://github.com/OneLiteFeatherNET/Titan/issues/365)) ([64da95a](https://github.com/OneLiteFeatherNET/Titan/commit/64da95a3838a4f88e9d22021f02556021b7a72a3))
+* **deps:** update dependency io.sentry:sentry-bom to v8.59.0 ([#340](https://github.com/OneLiteFeatherNET/Titan/issues/340)) ([68526d2](https://github.com/OneLiteFeatherNET/Titan/commit/68526d2776f6ceb1aabcc12b1a4d7ad803719ecd))
+
 ## [2.3.1](https://github.com/OneLiteFeatherNET/Titan/compare/v2.3.0...v2.3.1) (2026-10-04)
 
 
