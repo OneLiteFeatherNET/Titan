@@ -39,6 +39,13 @@ tasks.withType<Test>().configureEach {
     }
 }
 
+// Parallelism comes from forked JVMs only: Minestom keeps its server in static state, so Env tests
+// must never share a JVM concurrently. Half the cores, capped at 4, keeps forks x 512 MiB default
+// heap well inside a 7 GB runner. Docker-backed integrationTest tasks keep one fork (one container).
+tasks.named<Test>("test") {
+    maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).coerceIn(1, 4)
+}
+
 tasks.withType<JacocoReport>().configureEach {
     dependsOn(tasks.matching { it.name == "test" })
     reports {
