@@ -113,11 +113,40 @@ class HeadDrawTest {
         assertFalse(heads.isEmpty(), "the walk made heads");
 
         for (CourseBlock head : heads) {
-            CourseBlock redrawn = generator.redrawn(head);
+            CourseBlock redrawn = generator.redrawn(head, Optional.empty(), Optional.empty());
 
             assertNotEquals(head.skin(), redrawn.skin(), "another profile");
             assertEquals(head.pos(), redrawn.pos(), "same place");
             assertEquals(head.material(), redrawn.material(), "same block, same turn");
+        }
+    }
+
+    @Test
+    void aRedrawnHeadNeverShowsTheProfileOfTheHeadBeforeOrAfterIt() {
+        HeadSkin carol = new HeadSkin(UUID.fromString("00000000-0000-0000-0000-0000000000c1"), "textures-carol", "signature-carol");
+        for (long seed = 1; seed <= 20; seed++) {
+            CourseGenerator generator = generator(List.of(ALEX, BOB, carol), seed);
+            CourseBlock middle = headsOfAWalk(generator(List.of(ALEX), 1L)).getFirst();
+            CourseBlock bobHead = new CourseBlock(middle.pos(), middle.surface(), middle.material(), Optional.of(BOB));
+
+            CourseBlock redrawn = generator.redrawn(bobHead, Optional.of(ALEX), Optional.of(carol));
+
+            assertEquals(Optional.of(BOB), redrawn.skin(), "seed " + seed + ": only the own profile is left, which is no neighbour");
+        }
+    }
+
+    @Test
+    void aRedrawnHeadWithAFreeProfileLeavesItsOwnAndBothNeighbours() {
+        HeadSkin carol = new HeadSkin(UUID.fromString("00000000-0000-0000-0000-0000000000c1"), "textures-carol", "signature-carol");
+        HeadSkin dave = new HeadSkin(UUID.fromString("00000000-0000-0000-0000-0000000000d1"), "textures-dave", "signature-dave");
+        CourseBlock sample = headsOfAWalk(generator(List.of(ALEX), 1L)).getFirst();
+        CourseBlock bobHead = new CourseBlock(sample.pos(), sample.surface(), sample.material(), Optional.of(BOB));
+        for (long seed = 1; seed <= 20; seed++) {
+            CourseGenerator generator = generator(List.of(ALEX, BOB, carol, dave), seed);
+
+            CourseBlock redrawn = generator.redrawn(bobHead, Optional.of(ALEX), Optional.of(carol));
+
+            assertEquals(Optional.of(dave), redrawn.skin(), "seed " + seed + ": the only profile that is neither neighbour nor itself");
         }
     }
 

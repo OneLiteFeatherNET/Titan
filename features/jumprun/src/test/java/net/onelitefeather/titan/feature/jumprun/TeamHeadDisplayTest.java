@@ -25,6 +25,7 @@ import net.kyori.adventure.nbt.BinaryTag;
 import net.minestom.server.codec.Transcoder;
 import net.minestom.server.component.DataComponents;
 import net.minestom.server.coordinate.Pos;
+import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.Entity;
 import net.minestom.server.entity.EntityType;
 import net.minestom.server.entity.Player;
@@ -172,6 +173,55 @@ class TeamHeadDisplayTest {
         animated.recolor(teamHead(BOB));
 
         assertEquals(BOB.profile(), profileOf(displays(instance, EntityType.ITEM_DISPLAY).getFirst()), "the display follows the new skin");
+    }
+
+    // --- the baseline the smoke test confirms --------------------------------------------------------
+
+    @Test
+    void aTeamHeadDisplayIsShiftedToTheCellCentreAtFullSizeAndStartsHighUp(Env env) {
+        Instance instance = JumprunFixture.loadedInstance(env);
+        Player runner = env.createConnection().connect(instance, RUNNER_STAND);
+        AnimatedBlock.fallIn(runner, new Object(), fakeBlocks, teamHead(ALEX), instance, landed -> {
+        });
+        ItemDisplayMeta meta = (ItemDisplayMeta) displays(instance, EntityType.ITEM_DISPLAY).getFirst().getEntityMeta();
+
+        assertEquals(new Vec(0.5, 6.5, 0.5), meta.getTranslation(), "centre of the cell, 6 above while it still falls");
+        assertEquals(new Vec(1, 1, 1), meta.getScale(), "the head is not scaled");
+        for (int tick = 0; tick <= AnimatedBlock.ANIMATION_TICKS + 2; tick++) {
+            env.tick();
+        }
+        assertEquals(new Vec(0.5, 0.5, 0.5), meta.getTranslation(), "centre of the cell once landed");
+    }
+
+    @Test
+    void theOutlineOfATeamHeadIsScaledByFourPercentAroundTheCellCentre(Env env) {
+        Instance instance = JumprunFixture.loadedInstance(env);
+        Player runner = env.createConnection().connect(instance, RUNNER_STAND);
+
+        new Outline(runner).moveTo(teamHead(BOB), true);
+
+        ItemDisplayMeta meta = (ItemDisplayMeta) displays(instance, EntityType.ITEM_DISPLAY).getFirst().getEntityMeta();
+        assertEquals(new Vec(1.04, 1.04, 1.04), meta.getScale(), "a hair larger than the head");
+        assertEquals(new Vec(0.5, 0.5, 0.5), meta.getTranslation(), "around the cell centre");
+    }
+
+    @Test
+    void aRecoloredTeamHeadSendsItsNewSkinInSkullData(Env env) {
+        Instance instance = JumprunFixture.loadedInstance(env);
+        TestConnection connection = env.createConnection();
+        Player runner = connection.connect(instance, RUNNER_STAND);
+        AnimatedBlock animated = AnimatedBlock.fallIn(runner, new Object(), fakeBlocks, teamHead(ALEX), instance, landed -> {
+        });
+        for (int tick = 0; tick <= AnimatedBlock.ANIMATION_TICKS + 2; tick++) {
+            env.tick();
+        }
+        Collector<BlockEntityDataPacket> sent = connection.trackIncoming(BlockEntityDataPacket.class);
+
+        animated.recolor(teamHead(BOB));
+
+        List<BlockEntityDataPacket> packets = sent.collect();
+        assertEquals(1, packets.size(), "one skull data packet");
+        assertEquals(BOB.profile(), profileInSkullData(packets.getFirst()), "with the new skin");
     }
 
     // --- the outline ---------------------------------------------------------------------------------

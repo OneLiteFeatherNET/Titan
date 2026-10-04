@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -47,7 +48,7 @@ class HeadProfilesSettingsTest {
     }
 
     private static JumprunConfig config(Configuration source, FakeHeadSkins skins) {
-        return new JumprunConfig(source, new TeamHeads(skins, Runnable::run));
+        return new JumprunConfig(source, new TeamHeads(skins, Runnable::run, new MutableClock()));
     }
 
     private static Configuration with(String profiles) {
@@ -84,6 +85,20 @@ class HeadProfilesSettingsTest {
         Configuration source = Configuration.builder().load(file.toFile()).build();
 
         assertEquals(List.of(ALEX, BOB), JumprunSettings.headProfiles(source), "a block list as an operator writes it");
+    }
+
+    @Test
+    void duplicateEntriesCountOnceAndKeepTheOrderOfTheFirst() {
+        List<UUID> read = JumprunSettings.headProfiles(with(BOB + "," + ALEX + "," + BOB));
+
+        assertEquals(List.of(BOB, ALEX), read, "each profile once, first occurrence order");
+    }
+
+    @Test
+    void theSameUuidInAnotherLetterCaseIsADuplicate() {
+        List<UUID> read = JumprunSettings.headProfiles(with(ALEX + "," + ALEX.toString().toUpperCase()));
+
+        assertEquals(List.of(ALEX), read, "case does not make another profile");
     }
 
     @Test
@@ -158,14 +173,48 @@ class HeadProfilesSettingsTest {
     }
 
     @Test
-    void aSkinThatCouldNotBeResolvedIsTriedAgainOnTheNextRead() {
+    void anUnresolvedSkinIsNotAskedAgainBeforeTheRetryDelay() {
         FakeHeadSkins skins = new FakeHeadSkins(skins());
-        JumprunConfig config = config(with(NOBODY.toString()), skins);
+        MutableClock clock = new MutableClock();
+        JumprunConfig config = new JumprunConfig(with(NOBODY.toString()), new TeamHeads(skins, Runnable::run, clock));
         config.readAtStartup();
 
+        clock.advance(TeamHeads.RETRY_AFTER.minusSeconds(1));
+        config.palettes();
         config.palettes();
 
-        assertEquals(List.of(NOBODY, NOBODY), skins.asked(), "asked at start and again on the next read");
+        assertEquals(List.of(NOBODY), skins.asked(), "one lookup, however many runs start meanwhile");
+    }
+
+    @Test
+    void anUnresolvedSkinIsAskedAgainOnceTheRetryDelayHasPassed() {
+        FakeHeadSkins skins = new FakeHeadSkins(skins());
+        MutableClock clock = new MutableClock();
+        JumprunConfig config = new JumprunConfig(with(NOBODY.toString()), new TeamHeads(skins, Runnable::run, clock));
+        config.readAtStartup();
+
+        clock.advance(TeamHeads.RETRY_AFTER);
+        config.palettes();
+
+        assertEquals(List.of(NOBODY, NOBODY), skins.asked(), "tried again after the delay");
+    }
+
+    @Test
+    void aLookupThatRunsOutOfTimeReleasesItsUuidAndIsRetriedAfterTheDelay() {
+        FakeHeadSkins skins = new FakeHeadSkins(skins());
+        MutableClock clock = new MutableClock();
+        List<Runnable> neverRun = new ArrayList<>();
+        TeamHeads heads = new TeamHeads(skins, neverRun::add, clock, lookup -> {
+            lookup.completeExceptionally(new TimeoutException("hung"));
+            return lookup;
+        });
+
+        heads.of(List.of(ALEX));
+        heads.of(List.of(ALEX));
+        clock.advance(TeamHeads.RETRY_AFTER);
+        heads.of(List.of(ALEX));
+
+        assertEquals(2, neverRun.size(), "the hung lookup no longer blocks the uuid: one try now, one after the delay, none in between");
     }
 
     @Test
@@ -173,7 +222,7 @@ class HeadProfilesSettingsTest {
         FakeHeadSkins skins = new FakeHeadSkins(skins());
         List<Runnable> queued = new ArrayList<>();
         Executor offThread = queued::add;
-        JumprunConfig config = new JumprunConfig(with(ALEX.toString()), new TeamHeads(skins, offThread));
+        JumprunConfig config = new JumprunConfig(with(ALEX.toString()), new TeamHeads(skins, offThread, new MutableClock()));
 
         config.readAtStartup();
 

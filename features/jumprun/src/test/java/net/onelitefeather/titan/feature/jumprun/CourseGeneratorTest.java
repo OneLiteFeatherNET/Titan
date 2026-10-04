@@ -815,7 +815,7 @@ class CourseGeneratorTest {
         assertFalse(stairs.isEmpty(), "the walks made stairs");
 
         for (CourseBlock block : stairs) {
-            CourseBlock redrawn = generator.redrawn(block);
+            CourseBlock redrawn = generator.redrawn(block, Optional.empty(), Optional.empty());
 
             assertEquals(block.material().getProperty("facing"), redrawn.material().getProperty("facing"), "facing");
             assertEquals(block.pos(), redrawn.pos(), "place");
@@ -833,7 +833,7 @@ class CourseGeneratorTest {
         for (CourseBlock head : heads) {
             int turn = Integer.parseInt(head.material().getProperty("rotation"));
             assertTrue(turn >= 0 && turn <= 15, "turn " + turn);
-            assertEquals(head.material().getProperty("rotation"), generator.redrawn(head).material().getProperty("rotation"), "redrawn keeps the turn");
+            assertEquals(head.material().getProperty("rotation"), generator.redrawn(head, Optional.empty(), Optional.empty()).material().getProperty("rotation"), "redrawn keeps the turn");
         }
     }
 }

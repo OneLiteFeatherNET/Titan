@@ -16,6 +16,7 @@
 package net.onelitefeather.titan.feature.jumprun;
 
 import io.avaje.config.Configuration;
+import java.time.Clock;
 import java.util.List;
 import java.util.UUID;
 
@@ -30,7 +31,7 @@ final class JumprunConfig {
 
     /** Without team heads: every head is a plain one of the palette. */
     JumprunConfig(Configuration config) {
-        this(config, new TeamHeads(HeadSkins.NONE, Runnable::run));
+        this(config, new TeamHeads(HeadSkins.NONE, Runnable::run, Clock.systemUTC()));
     }
 
     JumprunConfig(Configuration config, TeamHeads teamHeads) {

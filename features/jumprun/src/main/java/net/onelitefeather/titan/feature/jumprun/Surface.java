@@ -27,7 +27,30 @@ import net.minestom.server.instance.block.Block;
  * like that.
  */
 enum Surface {
-    FULL(0, Map.of(), cell(1.0)), TRAPDOOR(1, Map.of("half", "bottom", "open", "false"), cell(0.1875)), SLAB(1, Map.of("type", "bottom"), cell(0.5)), STAIRS(1, Map.of("half", "bottom", "shape", "straight", "waterlogged", "false"), new Step(1.0, 0, 1, 0, 0.5), new Step(0.5, 0, 1, 0.5, 1)), CARPET(1, Map.of(), cell(0.0625)), SNOW(1, Map.of("layers", "3"), cell(0.25)), FENCE(2, Map.of(), cell(1.5)), PANE(3, Map.of(), cell(1.0)), HEAD(2, Map.of(), new Step(0.5, 0.25, 0.75, 0.25, 0.75)), FLOWER_POT(2, Map.of(), new Step(0.375, 0.3125, 0.6875, 0.3125, 0.6875)), CANDLE(3, Map.of("candles", "1", "lit", "false", "waterlogged", "false"), new Step(0.375, 0.4375, 0.5625, 0.4375, 0.5625)), POST(4, Map.of("facing", "up", "axis", "y"), cell(1.0));
+    /** A whole block. */
+    FULL(0, Map.of(), cell(1.0)),
+    /** A closed trapdoor in the lower half. */
+    TRAPDOOR(1, Map.of("half", "bottom", "open", "false"), cell(0.1875)),
+    /** A slab in the lower half. */
+    SLAB(1, Map.of("type", "bottom"), cell(0.5)),
+    /** Straight stairs in the lower half: the high step first, then the low one. */
+    STAIRS(1, Map.of("half", "bottom", "shape", "straight", "waterlogged", "false"), new Step(1.0, 0, 1, 0, 0.5), new Step(0.5, 0, 1, 0.5, 1)),
+    /** A carpet, 1/16 high. */
+    CARPET(1, Map.of(), cell(0.0625)),
+    /** Three layers of snow, which collide up to a quarter. */
+    SNOW(1, Map.of("layers", "3"), cell(0.25)),
+    /** A fence or wall, which collides up to 1.5. */
+    FENCE(2, Map.of(), cell(1.5)),
+    /** A glass pane or iron bars, lenient like the whole cell. */
+    PANE(3, Map.of(), cell(1.0)),
+    /** A head on the floor. */
+    HEAD(2, Map.of(), new Step(0.5, 0.25, 0.75, 0.25, 0.75)),
+    /** A flower pot, empty or planted. */
+    FLOWER_POT(2, Map.of(), new Step(0.375, 0.3125, 0.6875, 0.3125, 0.6875)),
+    /** One candle that is not lit. */
+    CANDLE(3, Map.of("candles", "1", "lit", "false", "waterlogged", "false"), new Step(0.375, 0.4375, 0.5625, 0.4375, 0.5625)),
+    /** An upright rod or chain. */
+    POST(4, Map.of("facing", "up", "axis", "y"), cell(1.0));
 
     /** The player stands 1.8 blocks tall; clear space above the top is measured with this. */
     private static final double PLAYER_HEIGHT = 1.8;

@@ -16,6 +16,7 @@
 package net.onelitefeather.titan.feature.jumprun;
 
 import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import net.kyori.adventure.text.Component;
@@ -47,7 +48,17 @@ enum Mode {
 
         /** The shapes of the cost classes 1, 2 and 3 to 4 from the given scores on. */
         private static Map<Surface, Integer> unlocks(int gentle, int narrow, int narrowest) {
-            return Map.ofEntries(Map.entry(Surface.FULL, 0), Map.entry(Surface.TRAPDOOR, gentle), Map.entry(Surface.SLAB, gentle), Map.entry(Surface.STAIRS, gentle), Map.entry(Surface.CARPET, gentle), Map.entry(Surface.SNOW, gentle), Map.entry(Surface.FENCE, narrow), Map.entry(Surface.PANE, narrow), Map.entry(Surface.HEAD, narrow), Map.entry(Surface.FLOWER_POT, narrow), Map.entry(Surface.CANDLE, narrowest), Map.entry(Surface.POST, narrowest));
+            Map<Surface, Integer> unlocks = new EnumMap<>(Surface.class);
+            unlocks.put(Surface.FULL, 0);
+            for (Surface surface : List.of(Surface.TRAPDOOR, Surface.SLAB, Surface.STAIRS, Surface.CARPET, Surface.SNOW)) {
+                unlocks.put(surface, gentle);
+            }
+            for (Surface surface : List.of(Surface.FENCE, Surface.PANE, Surface.HEAD, Surface.FLOWER_POT)) {
+                unlocks.put(surface, narrow);
+            }
+            unlocks.put(Surface.CANDLE, narrowest);
+            unlocks.put(Surface.POST, narrowest);
+            return unlocks;
         }
     }
 

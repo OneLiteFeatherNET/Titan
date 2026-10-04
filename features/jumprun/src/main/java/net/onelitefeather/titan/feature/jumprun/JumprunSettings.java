@@ -18,8 +18,10 @@ package net.onelitefeather.titan.feature.jumprun;
 import io.avaje.config.Configuration;
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -71,13 +73,14 @@ final class JumprunSettings {
     }
 
     /**
-     * The player UUIDs of {@code jumprun.heads.profiles}, a comma separated list; empty when it is
-     * empty or missing.
+     * The player UUIDs of {@code jumprun.heads.profiles}, a comma separated list without
+     * duplicates,
+     * in the order of first appearance; empty when it is empty or missing.
      *
      * @throws IllegalArgumentException naming the key and the entry that is no UUID
      */
     static List<UUID> headProfiles(Configuration config) {
-        List<UUID> profiles = new ArrayList<>();
+        Set<UUID> profiles = new LinkedHashSet<>();
         for (String entry : config.getOptional(HEAD_PROFILES_KEY).orElse("").split(",")) {
             String trimmed = entry.trim();
             if (trimmed.isEmpty()) {

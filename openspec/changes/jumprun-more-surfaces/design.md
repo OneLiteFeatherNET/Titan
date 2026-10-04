@@ -214,3 +214,6 @@ Antworten auf die offenen Fragen:
 - UUID-only-`Partial`: ungeprüft und nicht nötig, weil die Texturen mitgeschickt werden.
 - Itemdisplay-Skalierung und -Versatz: Startwerte (Zellmitte `(0,5, 0,5, 0,5)`, Umrandung 1,04), die der Smoke-Test bestätigen muss.
 - Thread: `LiveSetting` liest auf dem aufrufenden Thread (Tick), deshalb läuft die Auflösung über den `Executor` von `TeamHeads`.
+- `TeamHeads` lässt jeden Skin-Abruf unter einem Timeout (5 s) laufen, damit `pending` immer frei wird, und fragt eine nicht aufgelöste UUID erst nach `RETRY_AFTER` (5 Minuten, eingespritzte `Clock`) erneut. Die Warnung ist neutral formuliert.
+- Der Rainbow-Wechsel (`CourseGenerator.redrawn`) meidet das Profil des Kopfes davor und danach im Kurs und, solange ein anderes übrig ist, das eigene; die Liste `jumprun.heads.profiles` wird ohne Duplikate gelesen (UUID normalisiert, Reihenfolge des ersten Vorkommens).
+- Itemdisplay eines Kopfes: Das Modell wird um die Entität gezeichnet (Blockraum um -0,5 verschoben), der Kopf füllt nur die untere Hälfte. Darum Translation `(0,5, 0,5, 0,5)`, Skalierung 1 (Umrandung 1,04). Ein Test hält diese Werte fest; der Smoke-Test bestätigt sie.

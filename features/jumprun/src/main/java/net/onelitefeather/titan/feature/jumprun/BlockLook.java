@@ -32,7 +32,10 @@ import net.minestom.server.item.Material;
 final class BlockLook {
 
     /**
-     * The centre of the cell; the head model is centred on the entity and lies on the floor of it.
+     * An item model is drawn around the entity, as the block space [0,1] moved by -0.5. A head
+     * fills only the lower half of that space (y 0 to 0.5, x and z 0.25 to 0.75), so moving the
+     * display by half a cell on every axis puts the head on the floor of the cell. Taken from the
+     * vanilla skull model and confirmed by the smoke test.
      */
     private static final Vec ITEM_CENTRE = new Vec(0.5, 0.5, 0.5);
 

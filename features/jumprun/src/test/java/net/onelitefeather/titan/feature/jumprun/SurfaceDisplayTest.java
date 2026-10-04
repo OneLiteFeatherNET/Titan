@@ -18,6 +18,7 @@ package net.onelitefeather.titan.feature.jumprun;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.random.RandomGeneratorFactory;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.EntityType;
@@ -114,7 +115,7 @@ class SurfaceDisplayTest {
         for (int tick = 0; tick <= AnimatedBlock.ANIMATION_TICKS + 2; tick++) {
             env.tick();
         }
-        CourseBlock redrawn = generator.redrawn(eastStairs());
+        CourseBlock redrawn = generator.redrawn(eastStairs(), Optional.empty(), Optional.empty());
 
         animated.recolor(redrawn);
 

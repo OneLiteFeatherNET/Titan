@@ -225,7 +225,7 @@ final class Course {
         for (CourseBlock block : chosen) {
             int index = blocks.indexOf(block);
             if (index > 0) {
-                CourseBlock redrawn = generator.redrawn(block);
+                CourseBlock redrawn = generator.redrawn(block, CourseGenerator.lastSkin(blocks.subList(0, index)), CourseGenerator.firstSkin(blocks.subList(index + 1, blocks.size())));
                 blocks.set(index, redrawn);
                 recolored.add(redrawn);
             }

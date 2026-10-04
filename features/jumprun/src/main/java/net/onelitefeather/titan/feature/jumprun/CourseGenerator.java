@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.ToDoubleFunction;
 import java.util.random.RandomGenerator;
+import java.util.stream.Stream;
 import net.minestom.server.instance.block.Block;
 
 /** Picks the next block of a course: the valid jump that best fits the wanted difficulty. */
@@ -104,11 +105,13 @@ final class CourseGenerator {
 
     /**
      * The block at the same place with the same shape and look and another material of the
-     * palette; a team head keeps its block and shows another skin.
+     * palette; a team head keeps its block and shows another skin, never that of the head before
+     * or after it in the course.
      */
-    CourseBlock redrawn(CourseBlock block) {
+    CourseBlock redrawn(CourseBlock block, Optional<HeadSkin> before, Optional<HeadSkin> after) {
         if (block.skin().isPresent()) {
-            return new CourseBlock(block.pos(), block.surface(), block.material(), palettes.drawHead(block.skin(), random));
+            List<HeadSkin> neighbours = Stream.concat(before.stream(), after.stream()).toList();
+            return new CourseBlock(block.pos(), block.surface(), block.material(), palettes.drawHead(neighbours, block.skin().stream().toList(), random));
         }
         Block drawn = palettes.of(block.surface()).drawOther(block.material(), random);
         return new CourseBlock(block.pos(), block.surface(), block.surface().withLookOf(block.material(), drawn));
@@ -120,13 +123,17 @@ final class CourseGenerator {
      */
     private CourseBlock withDrawnMaterial(Spot spot, List<CourseBlock> course) {
         Surface surface = spot.surface();
-        Optional<HeadSkin> skin = surface == Surface.HEAD ? palettes.drawHead(lastSkin(course), random) : Optional.empty();
+        Optional<HeadSkin> skin = surface == Surface.HEAD ? palettes.drawHead(lastSkin(course).stream().toList(), List.of(), random) : Optional.empty();
         Block material = skin.isPresent() ? TEAM_HEAD : palettes.draw(surface, random);
         return spot.withMaterial(surface.varied(material, random), skin);
     }
 
-    private static Optional<HeadSkin> lastSkin(List<CourseBlock> course) {
+    static Optional<HeadSkin> lastSkin(List<CourseBlock> course) {
         return course.reversed().stream().flatMap(block -> block.skin().stream()).findFirst();
+    }
+
+    static Optional<HeadSkin> firstSkin(List<CourseBlock> course) {
+        return course.stream().flatMap(block -> block.skin().stream()).findFirst();
     }
 
     /**
