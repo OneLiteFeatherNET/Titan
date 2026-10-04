@@ -25,6 +25,7 @@ import net.minestom.server.entity.EntityType;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.metadata.EntityMeta;
 import net.minestom.server.instance.Instance;
+import net.minestom.server.network.packet.server.play.SetPassengersPacket;
 
 /**
  * A display entity that everyone but the runner sees (until told otherwise), without gravity and
@@ -66,7 +67,7 @@ final class HiddenDisplay {
     }
 
     private static <M extends EntityMeta> HiddenDisplay place(EntityType type, Class<M> metaType, Consumer<M> meta, Instance instance, Pos position, Predicate<Player> viewable, AtomicBoolean runnerSees) {
-        Entity display = new Entity(type);
+        Entity display = new Display(type);
         display.editEntityMeta(metaType, meta);
         display.setNoGravity(true);
         display.setHasPhysics(false);
@@ -79,6 +80,32 @@ final class HiddenDisplay {
     void showToRunner(boolean visible) {
         visibleToRunner.set(visible);
         entity.updateViewableRule();
+    }
+
+    /**
+     * A display that may ride on a vehicle. Minestom moves a passenger before its vehicle, so a
+     * player coming into range gets the display before the vehicle, with no link between them. The
+     * link is sent once the vehicle is there. This waits a tick because looking at the vehicle's
+     * viewers while Minestom holds the locks of this display could deadlock.
+     */
+    private static final class Display extends Entity {
+
+        Display(EntityType type) {
+            super(type);
+        }
+
+        @Override
+        public void updateNewViewer(Player player) {
+            super.updateNewViewer(player);
+            scheduler().scheduleNextTick(() -> linkToVehicle(player));
+        }
+
+        private void linkToVehicle(Player player) {
+            Entity vehicle = getVehicle();
+            if (vehicle != null && isViewer(player) && vehicle.isViewer(player)) {
+                player.sendPacket(new SetPassengersPacket(vehicle.getEntityId(), vehicle.getPassengers().stream().map(Entity::getEntityId).toList()));
+            }
+        }
     }
 
     Entity entity() {
