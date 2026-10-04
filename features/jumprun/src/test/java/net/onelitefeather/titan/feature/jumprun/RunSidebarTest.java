@@ -16,6 +16,7 @@
 package net.onelitefeather.titan.feature.jumprun;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Instant;
 import java.util.List;
@@ -25,6 +26,8 @@ import java.util.UUID;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.minestom.server.network.packet.server.ServerPacket;
+import net.minestom.server.network.packet.server.play.ResetScorePacket;
+import net.minestom.server.network.packet.server.play.ScoreboardObjectivePacket;
 import net.minestom.server.network.packet.server.play.TeamsPacket;
 import net.minestom.server.network.packet.server.play.UpdateScorePacket;
 import net.minestom.server.network.player.GameProfile;
@@ -136,5 +139,23 @@ class RunSidebarTest {
         assertEquals(List.of(), shrunk.stream().filter(kind -> !REMOVE.equals(kind)).toList(), "nothing else is sent for the two lines that stay");
         assertEquals(RunSidebarContent.MAX_LINES - 2, grown.stream().filter(CREATE::equals).count(), "they come back as new lines");
         assertEquals(List.of(), grown.stream().filter(TEXT::equals).toList(), "no update of a line that did not exist");
+    }
+
+    @Test
+    void removingTheSidebarResetsNoScoreOfAnObjectiveTheClientAlreadyLost() {
+        sidebar.show(3, OptionalInt.of(5), FULL);
+        Collector<ServerPacket> sent = connection.trackIncoming();
+
+        sidebar.remove();
+
+        List<ServerPacket> packets = sent.collect();
+        int destroyed = -1;
+        for (int index = 0; index < packets.size(); index++) {
+            if (packets.get(index) instanceof ScoreboardObjectivePacket objective && objective.mode() == 1) {
+                destroyed = index;
+            }
+        }
+        assertTrue(destroyed >= 0, "the objective is destroyed");
+        assertEquals(List.of(), packets.subList(destroyed + 1, packets.size()).stream().filter(ResetScorePacket.class::isInstance).toList(), "no score reset after the objective is gone");
     }
 }
