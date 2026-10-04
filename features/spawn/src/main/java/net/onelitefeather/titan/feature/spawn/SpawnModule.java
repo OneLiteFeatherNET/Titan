@@ -34,7 +34,8 @@ import net.onelitefeather.titan.core.module.item.LobbyItems;
 
 /**
  * Puts a joining player into the lobby and keeps them inside its height bounds: sets the spawning
- * instance and respawn point while a player configures, teleports and equips them with the
+ * instance and respawn point while a player configures (and clears any resource pack a game
+ * server left applied, see {@link ResourcePackClearListener}), teleports and equips them with the
  * standard loadout on spawn, and teleports them back to spawn if they fall below or rise above
  * the configured height.
  *
@@ -72,7 +73,7 @@ public final class SpawnModule {
         SpawnSettings.minHeight(this.heightBounds.minHeight(), this.heightBounds.maxHeight());
         Config.getAs(SpawnSettings.SIMULATION_DISTANCE_KEY, SpawnSettings::simulationDistance);
 
-        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY).on(AsyncPlayerConfigurationEvent.class, new SpawnConfigurationListener(this.instance, this.spawnPosition::position)).on(PlayerSpawnEvent.class, new SpawnJoinListener(this.spawnPosition::position, this.lobbyItems)).on(PlayerMoveEvent.class, new SpawnBoundsListener(this.spawnPosition::position, this.heightBounds));
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY).on(AsyncPlayerConfigurationEvent.class, new ResourcePackClearListener()).on(AsyncPlayerConfigurationEvent.class, new SpawnConfigurationListener(this.instance, this.spawnPosition::position)).on(PlayerSpawnEvent.class, new SpawnJoinListener(this.spawnPosition::position, this.lobbyItems)).on(PlayerMoveEvent.class, new SpawnBoundsListener(this.spawnPosition::position, this.heightBounds));
     }
 
     @PreDestroy
