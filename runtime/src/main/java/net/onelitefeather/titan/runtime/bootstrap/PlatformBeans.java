@@ -16,6 +16,8 @@
 package net.onelitefeather.titan.runtime.bootstrap;
 
 import io.avaje.inject.Bean;
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.OpenTelemetry;
 import io.avaje.inject.Factory;
 import io.avaje.inject.Profile;
 import jakarta.inject.Named;
@@ -38,6 +40,7 @@ import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.module.LobbySpawn;
 import net.onelitefeather.titan.core.module.LobbyWorldChoice;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.onelitefeather.titan.common.deliver.DeliverProvider;
 import net.onelitefeather.titan.common.deliver.HolderPlayerCounts;
 import net.onelitefeather.titan.core.portal.PlayerCounts;
@@ -140,6 +143,21 @@ public final class PlatformBeans {
     @Bean
     public Clock clock() {
         return Clock.systemUTC();
+    }
+
+    /**
+     * The OpenTelemetry Java agent sets the global instance before the first bean is built; with
+     * no agent this is a no-op. Beans and features take it from here; only {@code runtime} may
+     * touch {@link GlobalOpenTelemetry}.
+     */
+    @Bean
+    public OpenTelemetry openTelemetry() {
+        return GlobalOpenTelemetry.get();
+    }
+
+    @Bean
+    public Telemetry telemetry(OpenTelemetry openTelemetry) {
+        return Telemetry.of(openTelemetry);
     }
 
     @Bean

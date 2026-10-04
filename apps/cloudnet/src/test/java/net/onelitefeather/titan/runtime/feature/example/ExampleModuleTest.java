@@ -33,6 +33,7 @@ import net.minestom.testing.TestConnection;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.module.item.ItemSlot;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.onelitefeather.titan.feature.hotbar.HotbarLobbyItems;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 import org.junit.jupiter.api.Assertions;
@@ -58,7 +59,7 @@ class ExampleModuleTest {
 
     private static HotbarLobbyItems itemsFor(TestTitanNode titan, ExampleModule module) {
         LobbyItem token = new ExampleGreetingItems().greetingToken(module);
-        return new HotbarLobbyItems(List.of(token), titan.node());
+        return new HotbarLobbyItems(List.of(token), titan.node(), Telemetry.noop());
     }
 
     @DisplayName("Using the greeting token sends the configured greeting")

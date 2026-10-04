@@ -7,6 +7,8 @@ plugins {
 dependencies {
     implementation(platform(libs.aonyx.bom))
     api(libs.minestom)
+    api(platform(libs.opentelemetry.bom))
+    api(libs.opentelemetry.api)
 
     // FeatureNode wraps every listener in ListenerGuard, which reports a failure via SLF4J/MDC.
     implementation(libs.slf4j.api)
@@ -16,6 +18,8 @@ dependencies {
 
     testImplementation(platform(libs.aonyx.bom))
     testImplementation(libs.minestom)
+    testImplementation(testFixtures(project()))
+    testImplementation(platform(libs.opentelemetry.bom))
     testImplementation(libs.cyano)
     testImplementation(libs.junit.api)
     testImplementation(libs.junit.params)
@@ -27,6 +31,8 @@ dependencies {
 
     testFixturesImplementation(platform(libs.aonyx.bom))
     testFixturesImplementation(libs.minestom)
+    testFixturesImplementation(platform(libs.opentelemetry.bom))
+    testFixturesApi(libs.opentelemetry.sdk.testing)
     testFixturesImplementation(libs.cyano)
     testFixturesImplementation(libs.archunit)
     // ColumnArchitectureRules references BeanScope/PostConstruct/Singleton, not to depend on them.

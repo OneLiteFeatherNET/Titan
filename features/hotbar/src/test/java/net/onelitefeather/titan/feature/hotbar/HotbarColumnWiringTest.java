@@ -22,6 +22,7 @@ import net.minestom.server.event.EventNode;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.module.FeatureNode;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -45,7 +46,7 @@ class HotbarColumnWiringTest {
         env.process().eventHandler().addChild(titan);
 
         BeanScope scope = BeanScope.builder().forTesting().bean(FeatureNode.TITAN_NODE, new GenericType<EventNode<Event>>() {
-        }.type(), titan).build();
+        }.type(), titan).bean(Telemetry.class, Telemetry.noop()).build();
 
         try {
             HotbarLobbyItems lobbyItems = scope.get(HotbarLobbyItems.class);

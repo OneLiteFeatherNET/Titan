@@ -15,10 +15,16 @@
  */
 package net.onelitefeather.titan.runtime.bootstrap;
 
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
+import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.module.LobbySpawn;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.onelitefeather.titan.common.map.LobbyMap;
 import net.onelitefeather.titan.common.map.MapProvider;
 import org.junit.jupiter.api.Assertions;
@@ -76,5 +82,19 @@ class PlatformBeansTest {
     @Test
     void commandManagerBeanIsTheServerProcesssCommandManager(Env env) {
         Assertions.assertSame(env.process().command(), this.platformBeans.commandManager(), "the bean must not wrap or replace the server's CommandManager");
+    }
+
+    @DisplayName("The telemetry bean reports under the net.onelitefeather.titan scope of the given OpenTelemetry")
+    @Test
+    void telemetryBeanUsesTheTitanScope() {
+        InMemorySpanExporter exporter = InMemorySpanExporter.create();
+        try (SdkTracerProvider tracerProvider = SdkTracerProvider.builder().addSpanProcessor(SimpleSpanProcessor.create(exporter)).build()) {
+            Telemetry telemetry = this.platformBeans.telemetry(OpenTelemetrySdk.builder().setTracerProvider(tracerProvider).build());
+
+            telemetry.inSpan("test.op", Attributes.empty(), () -> {
+            });
+
+            Assertions.assertEquals(Telemetry.SCOPE, exporter.getFinishedSpanItems().getFirst().getInstrumentationScopeInfo().getName());
+        }
     }
 }

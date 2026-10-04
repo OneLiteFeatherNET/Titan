@@ -28,6 +28,7 @@ import net.minestom.server.event.trait.CancellableEvent;
 import net.minestom.server.event.trait.PlayerEvent;
 import net.minestom.server.instance.Instance;
 import net.minestom.testing.Env;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.minestom.testing.extension.MicrotusExtension;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -189,7 +190,7 @@ class FeatureNodeTest {
         ListAppender<ILoggingEvent> appender = new ListAppender<>();
         appender.start();
         logger.addAppender(appender);
-        Consumer<PlayerTestEvent> guarded = FeatureNode.guard("tickle", event -> {
+        Consumer<PlayerTestEvent> guarded = FeatureNode.guard("tickle", Telemetry.noop(), event -> {
             throw new IllegalStateException("boom for " + event.getPlayer().getUsername());
         });
         PlayerTestEvent event = new PlayerTestEvent(player);

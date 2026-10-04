@@ -868,6 +868,83 @@ titan:
 - **Zurückrollen:** `titan.database.url` entfernen und neu starten; die Tabelle bleibt bestehen,
   die Rekorde liegen dann wieder nur im Speicher.
 
+## Traces und Metriken
+
+Die Lobby kompiliert nur gegen die OpenTelemetry-**API**; das SDK und die Exporter liefert der
+OpenTelemetry-Java-Agent (live 2.16.0, API/BOM 1.50.0 - beide ziehen gemeinsam an). Ohne Agent sind
+alle Spans und Zähler No-ops, die Lobby verhält sich unverändert.
+
+- **`Telemetry`** (`core.telemetry`) ist ein Record aus `Tracer` und `Meter` und eine Bean aus
+  `runtime`. Ein Feature bekommt sie über den Konstruktor, nie über `GlobalOpenTelemetry` (nur
+  `runtime` darf das, ArchUnit prüft es). `telemetry.inSpan(name, attributes, body)` startet den
+  Span, macht ihn current, zeichnet eine Ausnahme mit Status ERROR auf, wirft sie weiter und beendet
+  den Span immer.
+- **`FeatureNode.attach(parent, id, priority, telemetry)`** hält die `Telemetry` je Instanz. Der
+  alte Aufruf ohne `telemetry` nutzt `Telemetry.noop()`. `attach` und `close` hängen die Span-Events
+  `feature.started` und `feature.stopped` (`titan.feature`, `titan.feature.priority`) an den
+  aktuellen Span, das ist die Startreihenfolge in `titan.startup` und `titan.shutdown`.
+- **`on(...)`** bleibt wie es war; der `ListenerGuard` zählt jeden gefangenen Fehler als
+  `titan.listener.failures{titan.feature}`.
+- **`onTraced(Typ, spanName, listener)`** und `onTracedIncludingCancelled(...)` führen den Listener
+  in einem Span aus (`titan.feature`, bei einem `PlayerEvent` `user.id`). Wirft er, trägt der Span
+  die Ausnahme, danach erreicht sie den Guard wie sonst.
+- **Sperrliste:** `onTraced` wirft beim Registrieren `IllegalArgumentException` für
+  `PlayerMoveEvent`, `PlayerPacketEvent`, `PlayerPacketOutEvent`, `PlayerChunkLoadEvent`,
+  `PlayerChunkUnloadEvent`, `PlayerTickEvent`, `PlayerTickEndEvent`, `EntityTickEvent`,
+  `InstanceTickEvent`, `ServerTickMonitorEvent` und Unterklassen. Ein neuer hochfrequenter
+  Event-Typ gehört in `FeatureNode.HIGH_FREQUENCY_EVENTS`.
+
+### Span, Span-Event oder Zähler
+
+| Operation | Mittel |
+| --- | --- |
+| selten (höchstens ein paar je Spieler und Minute), hat Ergebnis oder Dauer, Fehler möglich | Span, Name `<modul>.<operation>` |
+| häufig, nur das Zählen zählt (Bewegung, Schaden, Rechteprüfung) | Zähler `<modul>.<größe>{ergebnis}` |
+| häufig, aber im Lauf eines schon bestehenden Spans | Span-Event am aktuellen Span (`Span.current().addEvent`) |
+| Verteilung (Score, Dauer) | Histogramm |
+
+### Datenschutz und Attribute
+
+- `user.id` ist die Spieler-UUID. Kein Spielername, keine IP, keine Locale, kein Chat.
+- Spannamen sind feste Strings; Ergebnis-Attribute sind kleine Aufzählungen (`ok`, `denied`, ...).
+- Metriken tragen **nie** `user.id` oder Namen (Kardinalität). Attribute dort haben eine kleine,
+  feste Wertemenge.
+- Eigene Schlüssel liegen unter `<modul>.*`; gemeinsam sind `titan.feature` und `user.id`
+  (`Telemetry.FEATURE`, `Telemetry.USER_ID`).
+
+### Was `runtime` schon liefert
+
+`titan.startup` (mit `titan.variant`, `titan.profiles`, `titan.modules.loaded`), `titan.shutdown`,
+`player.configure`, `player.join`, `player.disconnect` (je mit `user.id`), die Zähler
+`titan.player.joins` und `titan.player.disconnects`, das Gauge `titan.players.online` und
+`titan.listener.failures`. Datenbankarbeit über den `DatabaseWriter` nimmt den Kontext des
+Auftraggebers mit, Hibernate-Spans hängen so am auslösenden Span.
+
+### Testen mit `TestTelemetry`
+
+`TestTelemetry.create()` (`core/testFixtures`) baut je Aufruf einen eigenen In-Memory-Exporter und
+-Metric-Reader, ohne `GlobalOpenTelemetry`; `SimpleSpanProcessor` und Reader sind synchron, es gibt
+kein Warten. Mit `spans()`, `span(name)`, `attribute(span, key)`, `counter(name, attributes)` und
+`gauge(name)` liest ein Test zurück, was sein Code erzeugt hat. Ein Test legt sich seine eigene
+Instanz an und schließt sie (`try`-with-resources oder `@AfterEach`). Wirft ein Test-Listener
+absichtlich, fängt der Test die Server-Ausnahme über `env.process().exception().setExceptionHandler`
+ab, sonst bricht Cyano den Test ab.
+
+### Lokal sichtbar machen
+
+Ohne Agent passiert nichts. Zum Ansehen den Agent laden und auf die Konsole exportieren:
+
+```
+JAVA_TOOL_OPTIONS="-javaagent:opentelemetry-javaagent.jar \
+  -Dotel.traces.exporter=logging -Dotel.metrics.exporter=logging \
+  -Dotel.logs.exporter=none -Dotel.service.name=Lobby-local" \
+  ./gradlew :apps:local:run
+```
+
+Dann erscheinen `titan.startup` mit den `feature.started`-Events beim Start und `player.*`-Spans
+beim Beitreten. Live exportiert der Agent per OTLP nach Tempo und Mimir; dort `{ name =
+"titan.startup" }` bzw. `titan_players_online` abfragen.
+
 ## Checkliste: neues Feature = neues Modul unter `features/`
 
 Ein neues Feature ist ein neues Gradle-Modul unter `features/<name>/` - weder eine andere Column

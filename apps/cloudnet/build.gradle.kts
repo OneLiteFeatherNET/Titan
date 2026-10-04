@@ -18,6 +18,7 @@ dependencies {
     testImplementation(libs.minestom)
     testImplementation(libs.cyano)
     testImplementation(libs.mockito)
+    testImplementation(libs.archunit)
     testImplementation(libs.avaje.inject)
     testImplementation(libs.avaje.config)
     // The season wiring test asserts on captured log lines.

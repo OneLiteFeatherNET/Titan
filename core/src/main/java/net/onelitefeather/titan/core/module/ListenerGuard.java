@@ -15,11 +15,14 @@
  */
 package net.onelitefeather.titan.core.module;
 
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.LongCounter;
 import java.util.Objects;
 import java.util.function.Consumer;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.trait.PlayerEvent;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -39,6 +42,7 @@ final class ListenerGuard {
     static final String PLAYER_UUID_KEY = "player.uuid";
     static final String PLAYER_NAME_KEY = "player.name";
     static final String MODULE_KEY = "module";
+    static final String FAILURES_METRIC = "titan.listener.failures";
 
     // guard sets these on failure, handleException reads and clears them - same thread, same dispatch.
     private static final ThreadLocal<PlayerIdentity> FAILING_PLAYER = new ThreadLocal<>();
@@ -64,14 +68,23 @@ final class ListenerGuard {
      * Like {@link #guard(Consumer)}, but also records the module id and puts it in the SLF4J MDC
      * for the whole call, so the module's own logging carries it too.
      */
-    static <T extends Event> Consumer<T> guard(String moduleId, Consumer<T> listener) {
+    /**
+     * Like {@link #guard(Consumer)}, but also records the module id, puts it in the SLF4J MDC for
+     * the whole call, and counts every failure as
+     * {@code titan.listener.failures{titan.feature}}. The meter comes from the caller, so this
+     * class keeps no global telemetry state.
+     */
+    static <T extends Event> Consumer<T> guard(String moduleId, Telemetry telemetry, Consumer<T> listener) {
         Objects.requireNonNull(moduleId, "moduleId");
         Consumer<T> guarded = guard(listener);
+        LongCounter failures = telemetry.meter().counterBuilder(FAILURES_METRIC).setDescription("Exceptions thrown by feature listeners").build();
+        Attributes feature = Attributes.of(Telemetry.FEATURE, moduleId);
         return event -> {
             try (MDC.MDCCloseable ignoredModule = MDC.putCloseable(MODULE_KEY, moduleId)) {
                 guarded.accept(event);
             } catch (Throwable throwable) {
                 FAILING_MODULE.set(moduleId);
+                failures.add(1, feature);
                 throw throwable;
             }
         };

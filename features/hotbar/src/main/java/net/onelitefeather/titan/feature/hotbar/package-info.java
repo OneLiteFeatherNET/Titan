@@ -18,9 +18,10 @@
  * Plattform-Beans bekommt" - {@code provides = {LobbyItems.class}}, collecting every
  * {@code LobbyItem} bean via {@code List<LobbyItem>} injection.
  */
-@InjectModule(name = "hotbarColumn", provides = {LobbyItems.class}, requires = {EventNode.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"})
+@InjectModule(name = "hotbarColumn", provides = {LobbyItems.class}, requires = {EventNode.class, Telemetry.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"})
 package net.onelitefeather.titan.feature.hotbar;
 
 import io.avaje.inject.InjectModule;
 import net.minestom.server.event.EventNode;
 import net.onelitefeather.titan.core.module.item.LobbyItems;
+import net.onelitefeather.titan.core.telemetry.Telemetry;

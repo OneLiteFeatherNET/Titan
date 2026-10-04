@@ -15,14 +15,21 @@
  */
 package net.onelitefeather.titan.persistence;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanContext;
+import io.opentelemetry.api.trace.TraceFlags;
+import io.opentelemetry.api.trace.TraceState;
+import io.opentelemetry.context.Scope;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
 class DatabaseWriterTest {
@@ -74,5 +81,19 @@ class DatabaseWriterTest {
 
         assertThrows(RejectedExecutionException.class, () -> writer.execute(() -> {
         }), "a closed writer refuses new tasks");
+    }
+
+    @Test
+    void aTaskSeesTheSpanThatWasCurrentWhenItWasSubmitted() {
+        DatabaseWriter writer = new DatabaseWriter();
+        SpanContext caller = SpanContext.create("0123456789abcdef0123456789abcdef", "0123456789abcdef", TraceFlags.getSampled(), TraceState.getDefault());
+        AtomicReference<SpanContext> seenInTask = new AtomicReference<>();
+
+        try (Scope ignored = Span.wrap(caller).makeCurrent()) {
+            writer.execute(() -> seenInTask.set(Span.current().getSpanContext()));
+        }
+        writer.close();
+
+        assertEquals(caller, seenInTask.get(), "the task must run under the span that submitted it, so database spans become its children");
     }
 }

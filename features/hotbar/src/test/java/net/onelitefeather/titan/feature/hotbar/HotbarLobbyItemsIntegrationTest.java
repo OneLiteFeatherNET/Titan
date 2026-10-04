@@ -32,6 +32,7 @@ import net.minestom.server.instance.Instance;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
 import net.minestom.testing.Env;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.module.item.ItemSlot;
@@ -66,7 +67,7 @@ class HotbarLobbyItemsIntegrationTest {
         });
         LobbyItem firework = item("elytra", "titan:firework", Material.FIREWORK_ROCKET, ItemSlot.unplaced(), (player, event) -> {
         });
-        HotbarLobbyItems lobbyItems = new HotbarLobbyItems(List.of(navigator, elytra, firework), titan);
+        HotbarLobbyItems lobbyItems = new HotbarLobbyItems(List.of(navigator, elytra, firework), titan, Telemetry.noop());
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
 
@@ -90,7 +91,7 @@ class HotbarLobbyItemsIntegrationTest {
         EventNode<Event> titan = EventNode.all("test-lobby-items-dispatch");
         List<Player> handledFor = new ArrayList<>();
         LobbyItem navigator = item("navigator", "titan:navigator", Material.FEATHER, ItemSlot.hotbar(4), (player, event) -> handledFor.add(player));
-        HotbarLobbyItems lobbyItems = new HotbarLobbyItems(List.of(navigator), titan);
+        HotbarLobbyItems lobbyItems = new HotbarLobbyItems(List.of(navigator), titan, Telemetry.noop());
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
         ItemStack stamped = lobbyItems.stack("titan:navigator");
@@ -106,7 +107,7 @@ class HotbarLobbyItemsIntegrationTest {
         EventNode<Event> titan = EventNode.all("test-lobby-items-dispatch-no-tag");
         List<Player> handledFor = new ArrayList<>();
         LobbyItem navigator = item("navigator", "titan:navigator", Material.FEATHER, ItemSlot.hotbar(4), (player, event) -> handledFor.add(player));
-        new HotbarLobbyItems(List.of(navigator), titan);
+        new HotbarLobbyItems(List.of(navigator), titan, Telemetry.noop());
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
 
@@ -124,7 +125,7 @@ class HotbarLobbyItemsIntegrationTest {
         LobbyItem friends = item("friends", "titan:friends", Material.COMPASS, ItemSlot.hotbar(4), (player, event) -> {
         });
 
-        Assertions.assertThrows(IllegalStateException.class, () -> new HotbarLobbyItems(List.of(navigator, friends), titan), "two items claiming the same hotbar slot must abort construction");
+        Assertions.assertThrows(IllegalStateException.class, () -> new HotbarLobbyItems(List.of(navigator, friends), titan, Telemetry.noop()), "two items claiming the same hotbar slot must abort construction");
     }
 
     @DisplayName("stack(String) throws for a key no item was registered under")
@@ -133,7 +134,7 @@ class HotbarLobbyItemsIntegrationTest {
         EventNode<Event> titan = EventNode.all("test-lobby-items-unknown-key");
         LobbyItem navigator = item("navigator", "titan:navigator", Material.FEATHER, ItemSlot.hotbar(4), (player, event) -> {
         });
-        HotbarLobbyItems lobbyItems = new HotbarLobbyItems(List.of(navigator), titan);
+        HotbarLobbyItems lobbyItems = new HotbarLobbyItems(List.of(navigator), titan, Telemetry.noop());
 
         IllegalArgumentException thrown = Assertions.assertThrows(IllegalArgumentException.class, () -> lobbyItems.stack("titan:unknown"));
 
@@ -148,7 +149,7 @@ class HotbarLobbyItemsIntegrationTest {
         LobbyItem navigator = item("navigator", "titan:navigator-feather", Material.FEATHER, ItemSlot.hotbar(4), (player, event) -> {
             throw new IllegalStateException("boom for " + player.getUsername());
         });
-        HotbarLobbyItems lobbyItems = new HotbarLobbyItems(List.of(navigator), titan);
+        HotbarLobbyItems lobbyItems = new HotbarLobbyItems(List.of(navigator), titan, Telemetry.noop());
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
         ItemStack stamped = lobbyItems.stack("titan:navigator-feather");

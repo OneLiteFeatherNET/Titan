@@ -29,10 +29,11 @@
  * ({@code spawn}/{@code respawn}/{@code elytra}) has moved out to {@code features/*}, and
  * {@code runtime}'s own main code no longer injects it anywhere.
  */
-@InjectModule(provides = {EventNode.class, Instance.class, LobbySpawn.class, LobbyPortals.class, Deliver.class, FeatureFlags.class, Clock.class, Scheduler.class, CommandManager.class, PermissionService.class})
+@InjectModule(provides = {EventNode.class, Instance.class, LobbySpawn.class, LobbyPortals.class, Deliver.class, FeatureFlags.class, Clock.class, Scheduler.class, CommandManager.class, PermissionService.class, OpenTelemetry.class, Telemetry.class})
 package net.onelitefeather.titan.runtime;
 
 import io.avaje.inject.InjectModule;
+import io.opentelemetry.api.OpenTelemetry;
 import java.time.Clock;
 import net.minestom.server.command.CommandManager;
 import net.minestom.server.event.EventNode;
@@ -44,3 +45,4 @@ import net.onelitefeather.titan.core.module.LobbySpawn;
 import net.onelitefeather.titan.core.module.item.LobbyItems;
 import net.onelitefeather.titan.core.permission.PermissionService;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
+import net.onelitefeather.titan.core.telemetry.Telemetry;

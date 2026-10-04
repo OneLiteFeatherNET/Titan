@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.persistence;
 
+import io.opentelemetry.context.Context;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -36,7 +37,8 @@ public final class DatabaseWriter implements AutoCloseable {
 
     /** @throws java.util.concurrent.RejectedExecutionException once the writer is closed */
     public void execute(Runnable task) {
-        this.tasks.execute(task);
+        // The agent does not carry the context over an Executor, so database spans would be roots.
+        this.tasks.execute(Context.current().wrap(task));
     }
 
     /** Waits for the tasks still pending, then refuses new ones. */
