@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.3.1](https://github.com/OneLiteFeatherNET/Titan/compare/v2.3.0...v2.3.1) (2026-10-04)
+
+
+### Bug Fixes
+
+* **jumprun:** keep new blocks out of the way of jumps still ahead ([#360](https://github.com/OneLiteFeatherNET/Titan/issues/360)) ([b7203d2](https://github.com/OneLiteFeatherNET/Titan/commit/b7203d29dbb0259b7ae6a852ba05e0c49107a54f))
+* **jumprun:** keep the score label on the runner for players who see the runner later ([#358](https://github.com/OneLiteFeatherNET/Titan/issues/358)) ([503a584](https://github.com/OneLiteFeatherNET/Titan/commit/503a5842125f6780b7de9c433fcd06e6cd5cad43))
+* **jumprun:** light the outline of the next block instead of rendering it black ([#359](https://github.com/OneLiteFeatherNET/Titan/issues/359)) ([0a99b59](https://github.com/OneLiteFeatherNET/Titan/commit/0a99b592e75afeb8d4869aadba77bd61df21d733))
+* **jumprun:** stop scoreboard warnings when a run's sidebar is removed ([#356](https://github.com/OneLiteFeatherNET/Titan/issues/356)) ([45274df](https://github.com/OneLiteFeatherNET/Titan/commit/45274dfc4f827a9b872ff52f246dea087adea04f))
+
 ## [2.3.0](https://github.com/OneLiteFeatherNET/Titan/compare/v2.2.0...v2.3.0) (2026-10-03)
 
 
