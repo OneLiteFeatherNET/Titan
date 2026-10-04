@@ -87,6 +87,11 @@ final class RunSidebar {
     void remove() {
         if (attached) {
             attached = false;
+            // Minestom's removeViewer resets the scores after destroying the objective; the client warns about that.
+            for (int index = 0; index < shown.size(); index++) {
+                sidebar.removeLine(lineId(index));
+            }
+            shown = List.of();
             sidebar.removeViewer(runner);
         }
     }
