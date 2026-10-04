@@ -52,7 +52,7 @@ dependencyResolutionManagement {
             version("logback", "1.6.5")
             version("sentry", "8.58.0")
 
-            version("hibernate", "7.4.11.Final")
+            version("hibernate", "7.4.12.Final")
             version("hikaricp", "7.1.0")
             version("postgresql", "42.7.13")
             version("flyway", "13.9.0")
