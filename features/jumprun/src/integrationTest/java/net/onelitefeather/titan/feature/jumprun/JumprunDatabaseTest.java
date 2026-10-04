@@ -35,6 +35,7 @@ import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.module.LobbyHeightBounds;
 import net.onelitefeather.titan.core.module.LobbySpawn;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.onelitefeather.titan.persistence.ConfigurationProperties;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -92,7 +93,7 @@ abstract class JumprunDatabaseTest {
     private BeanScope start(Configuration config) {
         EventNode<Event> titan = EventNode.all(FeatureNode.TITAN_NODE);
         this.scope = ConfigurationProperties.scopeBuilder(config).bean(FeatureNode.TITAN_NODE, new GenericType<EventNode<Event>>() {
-        }.type(), titan).bean(LobbySpawn.class, unused(LobbySpawn.class)).bean(LobbyPortals.class, unused(LobbyPortals.class)).bean(LobbyHeightBounds.class, unused(LobbyHeightBounds.class)).bean(Clock.class, Clock.fixed(Instant.parse("2026-10-03T12:00:00Z"), ZoneOffset.UTC)).bean(Scheduler.class, Scheduler.newScheduler()).build();
+        }.type(), titan).bean(LobbySpawn.class, unused(LobbySpawn.class)).bean(LobbyPortals.class, unused(LobbyPortals.class)).bean(LobbyHeightBounds.class, unused(LobbyHeightBounds.class)).bean(Clock.class, Clock.fixed(Instant.parse("2026-10-03T12:00:00Z"), ZoneOffset.UTC)).bean(Scheduler.class, Scheduler.newScheduler()).bean(Telemetry.class, Telemetry.noop()).build();
         return this.scope;
     }
 

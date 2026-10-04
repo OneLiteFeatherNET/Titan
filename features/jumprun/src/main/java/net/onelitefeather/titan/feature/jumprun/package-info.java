@@ -19,11 +19,11 @@
  * to avoid a build-order cycle with {@code hotbarColumn}, and {@code LobbyHeightBounds} the same
  * way,
  * because {@code spawnColumn}, which provides it, needs the hotbar too. So only {@code EventNode},
- * {@code LobbySpawn}, {@code LobbyPortals}, the platform's {@code Clock} and its {@code Scheduler}
- * are declared as required.
+ * {@code LobbySpawn}, {@code LobbyPortals}, the platform's {@code Clock} and its {@code Scheduler},
+ * and the {@code Telemetry} are declared as required.
  */
 @InjectModule(
-        name = "jumprunColumn", requires = {EventNode.class, LobbySpawn.class, LobbyPortals.class, Clock.class, Scheduler.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"}, provides = {LobbyItem.class, PersistenceUnit.class}
+        name = "jumprunColumn", requires = {EventNode.class, LobbySpawn.class, LobbyPortals.class, Clock.class, Scheduler.class, Telemetry.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"}, provides = {LobbyItem.class, PersistenceUnit.class}
 )
 package net.onelitefeather.titan.feature.jumprun;
 
@@ -34,4 +34,5 @@ import net.minestom.server.timer.Scheduler;
 import net.onelitefeather.titan.core.module.LobbySpawn;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.onelitefeather.titan.persistence.PersistenceUnit;

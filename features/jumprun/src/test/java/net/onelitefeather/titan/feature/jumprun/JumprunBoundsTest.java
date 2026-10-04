@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Optional;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.timer.Scheduler;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import org.junit.jupiter.api.Test;
 
 class JumprunBoundsTest {
@@ -30,7 +31,7 @@ class JumprunBoundsTest {
     void startingWithoutTheLobbyHeightBoundsFailsClearly() {
         JumprunModule module = new JumprunModule(EventNode.all("unused"), () -> null, List::of, new InMemoryRunRecords(), Optional.empty(), Runnable::run, Scheduler.newScheduler(), RecordingLobbyItems::new, new RunMessages(), () -> JumprunFixture.SEED, TestBlocks.shippedReader(), () -> {
             throw new IllegalStateException("no spawn column");
-        }, JumprunFixture.CLOCK);
+        }, JumprunFixture.CLOCK, Telemetry.noop());
 
         IllegalStateException failure = assertThrows(IllegalStateException.class, module::start, "the missing bounds abort the start");
 
