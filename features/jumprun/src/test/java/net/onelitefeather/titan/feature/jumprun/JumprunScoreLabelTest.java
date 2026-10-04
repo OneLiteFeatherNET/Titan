@@ -30,6 +30,7 @@ import net.minestom.server.entity.metadata.display.TextDisplayMeta;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.network.packet.server.play.EntityMetaDataPacket;
+import net.minestom.server.network.packet.server.play.SetPassengersPacket;
 import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.TestConnection;
@@ -153,6 +154,27 @@ class JumprunScoreLabelTest {
             scene.run().landOnNext();
 
             assertTrue(metadata.collect().stream().anyMatch(packet -> packet.entityId() == labelId), "the first scored jump updates the label");
+        }
+    }
+
+    @Test
+    void aBystanderWhoSeesTheRunnerOnlyAfterHeMovesGetsTheLabelOnTheRunner(Env env) {
+        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+            Instance instance = JumprunFixture.loadedInstance(env);
+            TestConnection connection = env.createConnection();
+            Pos bystanderStand = StartedRun.STAND.add(0, 0, 400);
+            Player bystander = connection.connect(instance, bystanderStand);
+            StartedRun run = StartedRun.start(env, fixture, instance, StartedRun.STAND);
+            Entity label = instance.getEntities().stream().filter(entity -> entity.getEntityType() == EntityType.TEXT_DISPLAY).findFirst().orElseThrow();
+            assertFalse(label.getViewers().contains(bystander), "out of view at first");
+            Collector<SetPassengersPacket> passengers = connection.trackIncoming(SetPassengersPacket.class);
+
+            run.player().teleport(bystanderStand.sub(0, 0, 8)).join();
+            env.tick();
+
+            assertTrue(run.player().getViewers().contains(bystander), "the bystander sees the runner now");
+            assertTrue(label.getViewers().contains(bystander), "and the label");
+            assertTrue(passengers.collect().stream().anyMatch(packet -> packet.vehicleEntityId() == run.player().getEntityId() && packet.passengersId().contains(label.getEntityId())), "the bystander was told that the label rides on the runner");
         }
     }
 
