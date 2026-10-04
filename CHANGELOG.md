@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.0](https://github.com/OneLiteFeatherNET/Titan/compare/v2.4.0...v2.5.0) (2026-10-04)
+
+
+### Features
+
+* **jumprun:** add stairs, carpet, snow, heads, flower pots and candles as landing shapes ([#367](https://github.com/OneLiteFeatherNET/Titan/issues/367)) ([babad3f](https://github.com/OneLiteFeatherNET/Titan/commit/babad3fd05f61b869c5c7eda223414a20df5f079))
+
 ## [2.4.0](https://github.com/OneLiteFeatherNET/Titan/compare/v2.3.1...v2.4.0) (2026-10-04)
 
 
