@@ -17,6 +17,7 @@ package net.onelitefeather.titan.runtime.lifecycle;
 
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.trace.Span;
 import java.util.List;
 import java.util.function.Supplier;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
@@ -42,9 +43,16 @@ public final class TitanLifecycle {
     /**
      * Runs {@code body} in {@code titan.startup}; a failure is recorded on the span and rethrown.
      */
-    public <T> T startup(String variant, List<String> profiles, int modulesLoaded, Supplier<T> body) {
-        Attributes attributes = Attributes.builder().put(VARIANT, variant).put(PROFILES, profiles).put(MODULES_LOADED, (long) modulesLoaded).build();
-        return this.telemetry.inSpan("titan.startup", attributes, body);
+    public <T> T startup(Supplier<T> body) {
+        return this.telemetry.inSpan("titan.startup", Attributes.empty(), body);
+    }
+
+    /**
+     * Puts the variant, profiles and module count on the running {@code titan.startup} span. They
+     * are only known inside the span, since finding them can fail too.
+     */
+    public static void describeStartup(String variant, List<String> profiles, int modulesLoaded) {
+        Span.current().setAllAttributes(Attributes.builder().put(VARIANT, variant).put(PROFILES, profiles).put(MODULES_LOADED, (long) modulesLoaded).build());
     }
 
     /** Runs {@code body} in {@code titan.shutdown}. */

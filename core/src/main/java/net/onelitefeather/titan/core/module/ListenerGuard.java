@@ -68,12 +68,9 @@ final class ListenerGuard {
      * Like {@link #guard(Consumer)}, but also records the module id and puts it in the SLF4J MDC
      * for the whole call, so the module's own logging carries it too.
      */
-    static <T extends Event> Consumer<T> guard(String moduleId, Consumer<T> listener) {
-        return guard(moduleId, Telemetry.noop(), listener);
-    }
-
     /**
-     * Like {@link #guard(String, Consumer)}, and counts every failure as
+     * Like {@link #guard(Consumer)}, but also records the module id, puts it in the SLF4J MDC for
+     * the whole call, and counts every failure as
      * {@code titan.listener.failures{titan.feature}}. The meter comes from the caller, so this
      * class keeps no global telemetry state.
      */

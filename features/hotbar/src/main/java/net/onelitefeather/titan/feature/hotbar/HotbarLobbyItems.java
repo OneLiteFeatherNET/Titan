@@ -35,6 +35,7 @@ import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.module.item.ItemSlot;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
 import net.onelitefeather.titan.core.module.item.LobbyItems;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 
 /**
  * Platform-wide home for {@link LobbyItem} beans: every feature that has one contributes it
@@ -56,12 +57,14 @@ public final class HotbarLobbyItems implements LobbyItems {
     private final Map<Integer, ItemStack> hotbar;
     private final Map<EquipmentSlot, ItemStack> equipment;
     private final EventNode<Event> titan;
+    private final Telemetry telemetry;
     private final EventListener<PlayerUseItemEvent> dispatcher;
 
     /** @throws IllegalStateException if two items conflict */
-    public HotbarLobbyItems(List<LobbyItem> items, @Named(FeatureNode.TITAN_NODE) EventNode<Event> titan) {
+    public HotbarLobbyItems(List<LobbyItem> items, @Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Telemetry telemetry) {
         ItemConflicts.check(items);
         this.titan = titan;
+        this.telemetry = telemetry;
         this.itemsByKey = stampAll(items);
         Placements placements = placementsOf(this.itemsByKey.values());
         this.hotbar = placements.hotbar();
@@ -133,7 +136,7 @@ public final class HotbarLobbyItems implements LobbyItems {
         if (item == null) {
             return;
         }
-        Consumer<PlayerUseItemEvent> handler = FeatureNode.guard(item.featureId(), (PlayerUseItemEvent guardedEvent) -> item.onUse().handle(guardedEvent.getPlayer(), guardedEvent));
+        Consumer<PlayerUseItemEvent> handler = FeatureNode.guard(item.featureId(), this.telemetry, (PlayerUseItemEvent guardedEvent) -> item.onUse().handle(guardedEvent.getPlayer(), guardedEvent));
         handler.accept(event);
     }
 }

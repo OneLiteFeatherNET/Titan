@@ -21,6 +21,7 @@ import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.trait.PlayerEvent;
 import net.minestom.server.instance.Instance;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import org.junit.jupiter.api.AfterEach;
@@ -125,7 +126,7 @@ class ListenerGuardTest {
     @Test
     void guardWithModuleIdDelegatesOnTheHealthyPath() {
         AtomicInteger calls = new AtomicInteger();
-        Consumer<PlainEvent> guarded = ListenerGuard.guard("sit", event -> calls.incrementAndGet());
+        Consumer<PlainEvent> guarded = ListenerGuard.guard("sit", Telemetry.noop(), event -> calls.incrementAndGet());
 
         guarded.accept(new PlainEvent());
 
@@ -138,7 +139,7 @@ class ListenerGuardTest {
     void guardWithModuleIdRecordsModuleAndPlayerOnFailure(Env env) {
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
-        Consumer<PlayerBoundEvent> guarded = ListenerGuard.guard("sit", event -> {
+        Consumer<PlayerBoundEvent> guarded = ListenerGuard.guard("sit", Telemetry.noop(), event -> {
             throw new IllegalStateException("listener broke");
         });
 
@@ -153,7 +154,7 @@ class ListenerGuardTest {
     @DisplayName("A failure in guard(moduleId, listener) on an event without a player records the module but no player")
     @Test
     void guardWithModuleIdRecordsModuleWithoutAPlayer() {
-        Consumer<PlainEvent> guarded = ListenerGuard.guard("sit", event -> {
+        Consumer<PlainEvent> guarded = ListenerGuard.guard("sit", Telemetry.noop(), event -> {
             throw new IllegalStateException("listener broke");
         });
 
@@ -167,7 +168,7 @@ class ListenerGuardTest {
     @Test
     void guardWithModuleIdRethrowsTheOriginalThrowable() {
         IllegalStateException failure = new IllegalStateException("listener broke");
-        Consumer<PlainEvent> guarded = ListenerGuard.guard("sit", event -> {
+        Consumer<PlainEvent> guarded = ListenerGuard.guard("sit", Telemetry.noop(), event -> {
             throw failure;
         });
 
@@ -181,7 +182,7 @@ class ListenerGuardTest {
     void handleExceptionConsumesModuleAndPlayerWithoutRethrowing(Env env) {
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
-        Consumer<PlayerBoundEvent> guarded = ListenerGuard.guard("sit", event -> {
+        Consumer<PlayerBoundEvent> guarded = ListenerGuard.guard("sit", Telemetry.noop(), event -> {
             throw new IllegalStateException("listener broke");
         });
         Assertions.assertThrows(IllegalStateException.class, () -> guarded.accept(new PlayerBoundEvent(player)));

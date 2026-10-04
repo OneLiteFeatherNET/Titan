@@ -20,6 +20,7 @@ import io.avaje.inject.BeanScope;
 import io.avaje.inject.spi.GenericType;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import java.util.List;
+import java.util.Optional;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
@@ -65,9 +66,8 @@ public final class Titan {
         // The startup span has to exist before the BeanScope that provides Telemetry does.
         this.lifecycle = new TitanLifecycle(Telemetry.of(GlobalOpenTelemetry.get()));
         ClassLoader loader = Titan.class.getClassLoader();
-        String variant = VariantDescriptor.fromClasspath(loader).map(VariantDescriptor::name).orElse("unknown");
         String[] profiles = BeanProfiles.active(Config.asConfiguration().list().of(ConfigurationStartupLog.ACTIVE_PROFILES_KEY), CloudNetEnvironment.isPresent());
-        this.beanScope = this.lifecycle.startup(variant, List.of(profiles), LoadedModules.discover(loader).size(), () -> start(loader, profiles));
+        this.beanScope = this.lifecycle.startup(() -> start(loader, profiles));
 
         // Players can only connect once bootstrap.start() runs, well after this point, so the
         // provider can safely use the PermissionService resolved from the scope.
@@ -83,8 +83,11 @@ public final class Titan {
      * player can connect.
      */
     private static BeanScope start(ClassLoader loader, String[] profiles) {
+        Optional<VariantDescriptor> variant = VariantDescriptor.fromClasspath(loader);
+        List<String> loadedModules = LoadedModules.discover(loader);
+        TitanLifecycle.describeStartup(variant.map(VariantDescriptor::name).orElse("unknown"), List.of(profiles), loadedModules.size());
         BeanScope scope = BeanScope.builder().profiles(profiles).build();
-        VariantStartupCheck.verify(loader);
+        variant.ifPresent(descriptor -> VariantStartupCheck.verify(descriptor, loadedModules));
         return scope;
     }
 

@@ -21,6 +21,9 @@ import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.ObservableLongGauge;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntSupplier;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.event.Event;
@@ -46,6 +49,8 @@ public final class PlayerLifecycle {
     private final Telemetry telemetry;
     private final EventNode<Event> titan;
     private final IntSupplier onlinePlayerCount;
+    // Players counted as joined, so a disconnect without a counted join is not counted either.
+    private final Set<UUID> joined = ConcurrentHashMap.newKeySet();
     private FeatureNode node;
     private ObservableLongGauge onlinePlayers;
 
@@ -61,16 +66,21 @@ public final class PlayerLifecycle {
 
     @PostConstruct
     void start() {
-        LongCounter joins = this.telemetry.meter().counterBuilder("player.joins").setUnit("{player}").build();
-        LongCounter disconnects = this.telemetry.meter().counterBuilder("player.disconnects").setUnit("{player}").build();
+        LongCounter joins = this.telemetry.meter().counterBuilder("titan.player.joins").setUnit("{player}").build();
+        LongCounter disconnects = this.telemetry.meter().counterBuilder("titan.player.disconnects").setUnit("{player}").build();
         this.onlinePlayers = this.telemetry.meter().gaugeBuilder("titan.players.online").ofLongs().setUnit("{player}").buildWithCallback(measurement -> measurement.record(this.onlinePlayerCount.getAsInt()));
         this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry).onTraced(AsyncPlayerConfigurationEvent.class, "player.configure", event -> {
+            // Nothing to do: the span around this listener is the point.
         }).onTraced(PlayerSpawnEvent.class, "player.join", event -> {
             // PlayerSpawnEvent also fires on every instance change; only the first one is a join.
-            if (event.isFirstSpawn()) {
+            if (event.isFirstSpawn() && this.joined.add(event.getPlayer().getUuid())) {
                 joins.add(1);
             }
-        }).onTraced(PlayerDisconnectEvent.class, "player.disconnect", event -> disconnects.add(1));
+        }).onTraced(PlayerDisconnectEvent.class, "player.disconnect", event -> {
+            if (this.joined.remove(event.getPlayer().getUuid())) {
+                disconnects.add(1);
+            }
+        });
     }
 
     @PreDestroy

@@ -85,14 +85,14 @@ class PlayerLifecycleTest {
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
         env.tick();
-        Assertions.assertEquals(1, this.test.counter("player.joins", Attributes.empty()), "one join so far");
-        Assertions.assertEquals(0, this.test.counter("player.disconnects", Attributes.empty()), "nobody left yet");
+        Assertions.assertEquals(1, this.test.counter("titan.player.joins", Attributes.empty()), "one join so far");
+        Assertions.assertEquals(0, this.test.counter("titan.player.disconnects", Attributes.empty()), "nobody left yet");
 
         player.remove();
         env.tick();
 
-        Assertions.assertEquals(1, this.test.counter("player.joins", Attributes.empty()));
-        Assertions.assertEquals(1, this.test.counter("player.disconnects", Attributes.empty()));
+        Assertions.assertEquals(1, this.test.counter("titan.player.joins", Attributes.empty()));
+        Assertions.assertEquals(1, this.test.counter("titan.player.disconnects", Attributes.empty()));
     }
 
     @DisplayName("A spawn that is not the first one does not count as a join")
@@ -105,7 +105,7 @@ class PlayerLifecycleTest {
         player.setInstance(env.createFlatInstance()).join();
         env.tick();
 
-        Assertions.assertEquals(1, this.test.counter("player.joins", Attributes.empty()), "moving between instances must not count as another join");
+        Assertions.assertEquals(1, this.test.counter("titan.player.joins", Attributes.empty()), "moving between instances must not count as another join");
     }
 
     @DisplayName("titan.players.online follows the number of connected players")
@@ -138,11 +138,27 @@ class PlayerLifecycleTest {
     @Test
     void joinAndLeaveWorkWithNoopTelemetry(Env env) {
         attach(env, Telemetry.noop());
+        Player player = env.createPlayer(env.createFlatInstance());
+        env.tick();
+
         Assertions.assertDoesNotThrow(() -> {
-            Player player = env.createPlayer(env.createFlatInstance());
-            env.tick();
             player.remove();
             env.tick();
         });
+        Assertions.assertTrue(player.isRemoved(), "the player must be gone after the leave");
+    }
+
+    @DisplayName("A player who was never counted as joined is not counted as disconnected")
+    @Test
+    void aDisconnectWithoutACountedJoinIsNotCounted(Env env) {
+        Player earlyPlayer = env.createPlayer(env.createFlatInstance());
+        env.tick();
+        attach(env, this.test.telemetry());
+
+        earlyPlayer.remove();
+        env.tick();
+
+        Assertions.assertEquals(0, this.test.counter("titan.player.disconnects", Attributes.empty()), "this player joined before the lifecycle was attached");
+        Assertions.assertEquals(1, this.test.spans().stream().filter(span -> span.getName().equals("player.disconnect")).count(), "the span is still recorded");
     }
 }

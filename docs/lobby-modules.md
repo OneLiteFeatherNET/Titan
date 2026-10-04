@@ -916,7 +916,7 @@ alle Spans und Zähler No-ops, die Lobby verhält sich unverändert.
 
 `titan.startup` (mit `titan.variant`, `titan.profiles`, `titan.modules.loaded`), `titan.shutdown`,
 `player.configure`, `player.join`, `player.disconnect` (je mit `user.id`), die Zähler
-`player.joins` und `player.disconnects`, das Gauge `titan.players.online` und
+`titan.player.joins` und `titan.player.disconnects`, das Gauge `titan.players.online` und
 `titan.listener.failures`. Datenbankarbeit über den `DatabaseWriter` nimmt den Kontext des
 Auftraggebers mit, Hibernate-Spans hängen so am auslösenden Span.
 

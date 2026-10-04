@@ -47,7 +47,10 @@ class TitanLifecycleTest {
     @DisplayName("titan.startup carries the variant, the profiles and the number of loaded modules")
     @Test
     void startupSpanCarriesVariantProfilesAndModuleCount() {
-        this.lifecycle.startup("cloudnet", List.of("dev", "cloudnet"), 14, () -> "scope");
+        this.lifecycle.startup(() -> {
+            TitanLifecycle.describeStartup("cloudnet", List.of("dev", "cloudnet"), 14);
+            return "scope";
+        });
 
         SpanData span = this.test.span("titan.startup");
         Assertions.assertEquals("cloudnet", this.test.attribute(span, AttributeKey.stringKey("titan.variant")));
@@ -58,7 +61,7 @@ class TitanLifecycleTest {
     @DisplayName("startup returns what the body built")
     @Test
     void startupReturnsTheBodysResult() {
-        String result = this.lifecycle.startup("local", List.of(), 1, () -> "scope");
+        String result = this.lifecycle.startup(() -> "scope");
 
         Assertions.assertEquals("scope", result);
     }
@@ -68,7 +71,7 @@ class TitanLifecycleTest {
     void startupRecordsFeaturesInStartOrder() {
         EventNode<Event> titan = EventNode.all("titan");
 
-        this.lifecycle.startup("local", List.of(), 2, () -> {
+        this.lifecycle.startup(() -> {
             FeatureNode.attach(titan, "sit", 500, this.test.telemetry());
             FeatureNode.attach(titan, "protection", 100, this.test.telemetry());
             return "scope";
@@ -82,7 +85,7 @@ class TitanLifecycleTest {
     void failingStartupMarksTheSpanAndRethrows() {
         IllegalStateException failure = new IllegalStateException("feature broke");
 
-        IllegalStateException thrown = Assertions.assertThrows(IllegalStateException.class, () -> this.lifecycle.startup("local", List.of(), 1, () -> {
+        IllegalStateException thrown = Assertions.assertThrows(IllegalStateException.class, () -> this.lifecycle.startup(() -> {
             throw failure;
         }));
 
@@ -105,5 +108,18 @@ class TitanLifecycleTest {
         });
 
         Assertions.assertEquals(List.of("protection", "sit"), featureIds(this.test.span("titan.shutdown"), "feature.stopped"));
+    }
+
+    @DisplayName("A failing shutdown leaves the exception and status ERROR on titan.shutdown and is rethrown")
+    @Test
+    void failingShutdownMarksTheSpanAndRethrows() {
+        IllegalStateException failure = new IllegalStateException("close broke");
+
+        IllegalStateException thrown = Assertions.assertThrows(IllegalStateException.class, () -> this.lifecycle.shutdown(() -> {
+            throw failure;
+        }));
+
+        Assertions.assertSame(failure, thrown);
+        Assertions.assertEquals(StatusCode.ERROR, this.test.span("titan.shutdown").getStatus().getStatusCode());
     }
 }

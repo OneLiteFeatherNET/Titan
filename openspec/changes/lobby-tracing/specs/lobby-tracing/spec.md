@@ -54,7 +54,7 @@ Die Lobby MUSS beim Start einen Span `titan.startup` erzeugen, mit Variante, Pro
 - **THEN** trägt `titan.startup` die Ausnahme und den Fehlerstatus, und die Ausnahme geht weiter
 
 ### Requirement: Spieler-Lebenszyklus ist sichtbar
-Die Lobby MUSS für jede Konfiguration, jeden Beitritt und jeden Disconnect eines Spielers einen kurzen Span (`player.configure`, `player.join`, `player.disconnect`) mit der UUID erzeugen, die Zähler `player.joins` und `player.disconnects` erhöhen und die Spielerzahl als Gauge `titan.players.online` bereitstellen.
+Die Lobby MUSS für jede Konfiguration, jeden Beitritt und jeden Disconnect eines Spielers einen kurzen Span (`player.configure`, `player.join`, `player.disconnect`) mit der UUID erzeugen, die Zähler `titan.player.joins` und `titan.player.disconnects` erhöhen und die Spielerzahl als Gauge `titan.players.online` bereitstellen.
 
 #### Scenario: Beitritt und Verlassen
 - **WHEN** ein Spieler beitritt und danach die Verbindung trennt

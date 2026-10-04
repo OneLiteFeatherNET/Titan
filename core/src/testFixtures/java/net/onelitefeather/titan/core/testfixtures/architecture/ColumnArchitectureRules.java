@@ -70,10 +70,8 @@ public final class ColumnArchitectureRules {
     public static final ArchRule FEATURE_MODULES_DO_NOT_USE_BEAN_SCOPE = noClasses().should().dependOnClassesThat().areAssignableTo(BeanScope.class).because("a feature must get its dependencies through its constructor, never via BeanScope");
 
     /**
-     * Only {@code runtime} reads the global OpenTelemetry instance (for the {@code Telemetry}
-     * bean); everything else gets a {@code Telemetry} through its constructor. Applies to whatever
-     * the test imports, so a test importing all of {@code net.onelitefeather.titan} covers every
-     * module.
+     * Only {@code runtime} reads the global instance; everyone else gets {@code Telemetry}
+     * injected.
      */
     public static final ArchRule ONLY_RUNTIME_CALLS_GLOBAL_OPEN_TELEMETRY = noClasses().that().resideOutsideOfPackages("net.onelitefeather.titan.runtime..", "net.onelitefeather.titan.core.testfixtures..").should().dependOnClassesThat().areAssignableTo(GlobalOpenTelemetry.class).because("only runtime may touch GlobalOpenTelemetry; everyone else takes the Telemetry bean through the constructor");
 

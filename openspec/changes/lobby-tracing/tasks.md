@@ -48,14 +48,14 @@ Jeder Agent-Prompt nennt die Regeln:
 
 - [x] 4.1 Test zuerst (Unit, runtime): `titan.startup` umspannt den Aufbau, trägt `titan.variant`, `titan.profiles`, `titan.modules.loaded` und die `feature.started`-Events in Startreihenfolge; bei einer Ausnahme im Aufbau Ausnahme und ERROR, und sie geht weiter. Rot, dann `Titan()` auf `Telemetry.inSpan` umstellen. Grün.
 - [x] 4.2 Test zuerst (Unit): `titan.shutdown` umspannt `beanScope.close()` mit `feature.stopped`-Events. Rot, dann grün.
-- [x] 4.3 Test zuerst (Integration, Cyano-`Env`, `env.tick()`): Konfiguration, Beitritt und Disconnect eines Test-Spielers erzeugen `player.configure`, `player.join`, `player.disconnect` mit `user.id`; `player.joins` und `player.disconnects` stehen auf eins; das Gauge `titan.players.online` zeigt die aktuelle Zahl; kein Attributwert enthält den Spielernamen. Rot. Dann die Lifecycle-Klasse in `runtime` (ein `FeatureNode` mit `onTraced`, Gauge über den `ConnectionManager`). Grün.
+- [x] 4.3 Test zuerst (Integration, Cyano-`Env`, `env.tick()`): Konfiguration, Beitritt und Disconnect eines Test-Spielers erzeugen `player.configure`, `player.join`, `player.disconnect` mit `user.id`; `titan.player.joins` und `titan.player.disconnects` stehen auf eins; das Gauge `titan.players.online` zeigt die aktuelle Zahl; kein Attributwert enthält den Spielernamen. Rot. Dann die Lifecycle-Klasse in `runtime` (ein `FeatureNode` mit `onTraced`, Gauge über den `ConnectionManager`). Grün.
 - [x] 4.4 Nachweis: Ohne Agent läuft der Test aus 4.3 mit `Telemetry.noop()` ohne Ausnahme; `./gradlew :runtime:build`.
 
 ## 5. Regeln, Doku, Abnahme (Welle 3–4)
 
 - [x] 5.1 Test zuerst (ArchUnit in `ColumnArchitectureRules`/runtime): Nur `runtime` darf `GlobalOpenTelemetry` aufrufen, und `features/**` dürfen `io.opentelemetry.sdk` nicht verwenden. Rot (mit einer verletzenden Fixture), dann Regel. Grün.
 - [x] 5.2 `docs/lobby-modules.md`: Abschnitt „Traces und Metriken“: `Telemetry` als Bean, `FeatureNode.attach(…, telemetry)`, `onTraced` und die Sperrliste, die Leitlinie Span / Span-Event / Zähler (D4), Datenschutz, Attributnamen, Testen mit `TestTelemetry`, lokal sichtbar machen mit `-javaagent` und dem `logging`-Exporter. Nachweis: Doku nennt alle genannten Punkte.
-- [ ] 5.3 Smoke-Test mit dem Shaded-Jar: ohne Agent starten, beitreten, gehen (keine Fehler). Mit Agent und `logging`-Exporter: `titan.startup` mit den Feature-Events, `player.*`-Spans, Zähler `player.joins`. Nachweis: Konsolenauszug im PR-Text. Nach dem Deploy (Mensch): in Tempo `{ name = "titan.startup" }`, in Mimir `titan_players_online`.
+- [ ] 5.3 Smoke-Test mit dem Shaded-Jar: ohne Agent starten, beitreten, gehen (keine Fehler). Mit Agent und `logging`-Exporter: `titan.startup` mit den Feature-Events, `player.*`-Spans, Zähler `titan.player.joins`. Nachweis: Konsolenauszug im PR-Text. Nach dem Deploy (Mensch): in Tempo `{ name = "titan.startup" }`, in Mimir `titan_players_online`.
 - [x] 5.4 Verifikation (read-only): Jedes Szenario des Spec-Deltas ist einem Test oder Smoke-Punkt zugeordnet, Tests erfüllen F.I.R.S.T. (kein globaler OTel-Zustand, keine Sleeps). Nachweis: Zuordnungstabelle im PR-Text.
 
 ## 6. Pull Request

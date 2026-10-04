@@ -147,7 +147,8 @@ public final class PlatformBeans {
 
     /**
      * The OpenTelemetry Java agent sets the global instance before the first bean is built; with
-     * no agent this is a no-op. The only place that touches {@link GlobalOpenTelemetry}.
+     * no agent this is a no-op. Beans and features take it from here; only {@code runtime} may
+     * touch {@link GlobalOpenTelemetry}.
      */
     @Bean
     public OpenTelemetry openTelemetry() {

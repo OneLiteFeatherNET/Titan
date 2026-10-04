@@ -37,15 +37,12 @@ import net.minestom.server.event.trait.PlayerEvent;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
 
 /**
- * A feature's own event node, attached under the shared {@code titan} node: a feature calls
- * {@link #attach(EventNode, String, int)} in its own {@code @PostConstruct}, registers through
- * {@link #on(Class, Consumer)} or {@link #onIncludingCancelled(Class, Consumer)}, and disconnects
- * with {@link #close()} in its {@code @PreDestroy}. Each instance wraps its own node and holds no
- * shared or static state, so no synchronization is needed.
+ * A feature's own event node under the shared {@code titan} node: {@link #attach} in
+ * {@code @PostConstruct}, register through {@link #on} or {@link #onTraced}, {@link #close()} in
+ * {@code @PreDestroy}. Holds no shared or static state.
  *
- * <p>Every listener registered here is wrapped in {@link ListenerGuard#guard(String, Consumer)}
- * with {@code featureId}, so a failure keeps the lobby running and the report names the feature
- * and, if the event carries one, the player.
+ * <p>Every listener is guarded, so a failure keeps the lobby running, is counted per feature, and
+ * the report names the feature and, if the event carries one, the player.
  */
 public final class FeatureNode implements AutoCloseable {
 
@@ -187,7 +184,7 @@ public final class FeatureNode implements AutoCloseable {
      * dispatches outside a node this class manages (e.g. an item-use handler keyed by identity
      * tag, not by an event type registered on a feature's own node).
      */
-    public static <E extends Event> Consumer<E> guard(String featureId, Consumer<E> listener) {
-        return ListenerGuard.guard(featureId, listener);
+    public static <E extends Event> Consumer<E> guard(String featureId, Telemetry telemetry, Consumer<E> listener) {
+        return ListenerGuard.guard(featureId, telemetry, listener);
     }
 }

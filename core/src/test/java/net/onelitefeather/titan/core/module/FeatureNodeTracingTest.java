@@ -22,6 +22,7 @@ import io.opentelemetry.sdk.trace.data.EventData;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
@@ -157,7 +158,7 @@ class FeatureNodeTracingTest {
     @DisplayName("A throwing onTraced listener increments titan.listener.failures for its feature")
     @Test
     void aThrowingTracedListenerCountsAsAFailure(Env env) {
-        List<Throwable> serverExceptions = captureServerExceptions(env);
+        captureServerExceptions(env);
         EventNode<Event> parent = EventNode.all("test-traced-count");
 
         try (FeatureNode node = FeatureNode.attach(parent, "sit", 500, this.test.telemetry())) {
@@ -173,7 +174,7 @@ class FeatureNodeTracingTest {
     @DisplayName("A throwing onTraced listener still reaches the guard, which records the feature for the log")
     @Test
     void aThrowingTracedListenerReachesTheGuard(Env env) {
-        List<Throwable> serverExceptions = captureServerExceptions(env);
+        captureServerExceptions(env);
         EventNode<Event> parent = EventNode.all("test-traced-guard");
 
         try (FeatureNode node = FeatureNode.attach(parent, "sit", 500, this.test.telemetry())) {
@@ -189,7 +190,7 @@ class FeatureNodeTracingTest {
     @DisplayName("A throwing on() listener increments titan.listener.failures and creates no span")
     @Test
     void aThrowingPlainListenerCountsWithoutASpan(Env env) {
-        List<Throwable> serverExceptions = captureServerExceptions(env);
+        captureServerExceptions(env);
         EventNode<Event> parent = EventNode.all("test-plain-count");
 
         try (FeatureNode node = FeatureNode.attach(parent, "sit", 500, this.test.telemetry())) {
@@ -207,13 +208,14 @@ class FeatureNodeTracingTest {
     @Test
     void aHealthyListenerIsNotCounted() {
         EventNode<Event> parent = EventNode.all("test-healthy");
+        List<TestEvent> received = new ArrayList<>();
 
         try (FeatureNode node = FeatureNode.attach(parent, "sit", 500, this.test.telemetry())) {
-            node.on(TestEvent.class, event -> {
-            });
+            node.on(TestEvent.class, received::add);
             parent.call(new TestEvent());
         }
 
+        Assertions.assertEquals(1, received.size(), "the listener must have run for the zero below to mean anything");
         Assertions.assertEquals(0, this.test.counter("titan.listener.failures", feature("sit")));
     }
 
@@ -247,10 +249,33 @@ class FeatureNodeTracingTest {
         try (FeatureNode node = FeatureNode.attach(parent, "sit", 500, this.test.telemetry())) {
             Assertions.assertThrows(IllegalArgumentException.class, () -> node.onTraced(type, "sit.op", event -> {
             }), type.getSimpleName() + " must be refused");
-            Assertions.assertThrows(IllegalArgumentException.class, () -> node.onTracedIncludingCancelled(type, "sit.op", event -> {
-            }), type.getSimpleName() + " must be refused by the including-cancelled variant too");
             Assertions.assertTrue(parent.getChildren().iterator().next().getChildren().isEmpty(), "no listener may have been registered");
         }
+    }
+
+    @DisplayName("onTracedIncludingCancelled refuses a high-frequency event type at registration")
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("highFrequencyEvents")
+    void onTracedIncludingCancelledRefusesHighFrequencyEvents(Class<? extends Event> type) {
+        EventNode<Event> parent = EventNode.all("test-traced-cancelled-refuse");
+
+        try (FeatureNode node = FeatureNode.attach(parent, "sit", 500, this.test.telemetry())) {
+            Assertions.assertThrows(IllegalArgumentException.class, () -> node.onTracedIncludingCancelled(type, "sit.op", event -> {
+            }), type.getSimpleName() + " must be refused");
+            Assertions.assertTrue(parent.getChildren().iterator().next().getChildren().isEmpty(), "no listener may have been registered");
+        }
+    }
+
+    @DisplayName("A failure in a listener wrapped with the public guard counts as titan.listener.failures")
+    @Test
+    void aFailureThroughThePublicGuardIsCounted() {
+        Consumer<TestEvent> guarded = FeatureNode.guard("hotbar", this.test.telemetry(), event -> {
+            throw new IllegalStateException("boom");
+        });
+
+        Assertions.assertThrows(IllegalStateException.class, () -> guarded.accept(new TestEvent()));
+
+        Assertions.assertEquals(1, this.test.counter("titan.listener.failures", feature("hotbar")));
     }
 
     @DisplayName("The three-argument attach keeps working and records nothing")
