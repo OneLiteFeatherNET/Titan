@@ -57,6 +57,22 @@ class ModeGenerationTest {
     }
 
     @Test
+    void aNewBlockNeverLandsNearTheJumpThatIsStillToBeMade() {
+        for (Mode mode : Mode.values()) {
+            List<Move> moves = walk(mode, 7L);
+            for (int i = 1; i < moves.size(); i++) {
+                Jump pending = moves.get(i - 1).jump();
+                BlockPos target = moves.get(i).jump().to().pos();
+                int low = Math.min(pending.from().pos().y(), pending.to().pos().y()) - Clearance.HEIGHT_MARGIN;
+                int high = Math.max(pending.from().pos().y(), pending.to().pos().y()) + Clearance.HEIGHT_MARGIN;
+                boolean inSpan = target.y() >= low && target.y() <= high;
+                boolean near = FlightPath.cellsBetween(pending.from().pos(), pending.to().pos()).stream().anyMatch(cell -> Math.max(Math.abs(cell.x() - target.x()), Math.abs(cell.z() - target.z())) < Clearance.MIN_DISTANCE);
+                assertTrue(!(inSpan && near), mode + " put " + target + " next to the pending jump " + pending.from().pos() + " to " + pending.to().pos());
+            }
+        }
+    }
+
+    @Test
     void easyOnlyEverMakesFullBlocksAndSlabsBeyondSixtyPoints() {
         List<Move> moves = walk(Mode.EASY, 1L);
 

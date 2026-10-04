@@ -78,6 +78,33 @@ class ClearanceTest {
         assertTrue(kept(block(2, 10, 0), SOURCE, block(3, 7, 0)), "three below");
     }
 
+    private static boolean keptAfter(CourseBlock before, CourseBlock target) {
+        return Clearance.isKept(new Jump(SOURCE, target), List.of(before, SOURCE));
+    }
+
+    @Test
+    void aTargetBesideThePendingJumpIntoTheSourceIsTooClose() {
+        assertFalse(keptAfter(block(-5, 10, 0), block(-2, 10, 1)), "one cell beside the cells the runner still flies over");
+    }
+
+    @Test
+    void aTargetTwoCellsFromThePendingJumpIsFarEnough() {
+        assertTrue(keptAfter(block(-5, 10, 0), block(0, 10, 2)), "two cells from the pending path");
+    }
+
+    @Test
+    void aTargetOnThePathOfTheJumpTwoBeforeTheSourceIsTooClose() {
+        CourseBlock first = block(3, 10, -6);
+        CourseBlock second = block(3, 10, 0);
+        CourseBlock target = block(2, 10, -3);
+        assertFalse(Clearance.isKept(new Jump(SOURCE, target), List.of(first, second, SOURCE)), "two from both ends of the first jump, but beside the middle of its path");
+    }
+
+    @Test
+    void aTargetFarAboveThePendingJumpIsNotInTheWay() {
+        assertTrue(keptAfter(block(-5, 10, 0), block(-2, 14, 1)), "above the pending jump's height span");
+    }
+
     @Test
     void theHeightSpanCoversBothEndsOfTheJump() {
         assertFalse(kept(block(2, 12, 0), SOURCE, block(3, 14, 0)), "two above the higher end");
