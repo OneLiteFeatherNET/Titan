@@ -42,6 +42,7 @@ import net.minestom.server.network.packet.server.play.BlockChangePacket;
 import net.minestom.testing.Env;
 import net.onelitefeather.titan.core.module.LobbyHeightBounds;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 
 /**
@@ -120,11 +121,20 @@ final class JumprunFixture implements AutoCloseable {
         return start(env, records, config, leaderboard, refreshes, TestBlocks.BOUNDS);
     }
 
+    /** With the module reporting to {@code telemetry}, and a leaderboard if given. */
+    static JumprunFixture start(Env env, RunRecords records, Optional<Leaderboard> leaderboard, Executor refreshes, Telemetry telemetry) {
+        return start(env, records, TestBlocks.shippedConfiguration(), leaderboard, refreshes, TestBlocks.BOUNDS, telemetry);
+    }
+
     private static JumprunFixture start(Env env, RunRecords records, Configuration config, Optional<Leaderboard> leaderboard, Executor refreshes, LobbyHeightBounds bounds) {
+        return start(env, records, config, leaderboard, refreshes, bounds, Telemetry.noop());
+    }
+
+    private static JumprunFixture start(Env env, RunRecords records, Configuration config, Optional<Leaderboard> leaderboard, Executor refreshes, LobbyHeightBounds bounds, Telemetry telemetry) {
         TestTitanNode titan = TestTitanNode.attach(env);
         RunMessages messages = new RunMessages();
         RecordingLobbyItems lobbyItems = new RecordingLobbyItems();
-        JumprunModule module = new JumprunModule(titan.node(), () -> new Pos(-40.5, GROUND_Y, 0.5), List::of, records, leaderboard, refreshes, env.process().scheduler(), () -> lobbyItems, messages, () -> SEED, new JumprunConfig(config), () -> bounds, CLOCK);
+        JumprunModule module = new JumprunModule(titan.node(), () -> new Pos(-40.5, GROUND_Y, 0.5), List::of, records, leaderboard, refreshes, env.process().scheduler(), () -> lobbyItems, messages, () -> SEED, new JumprunConfig(config), () -> bounds, CLOCK, telemetry);
         module.start();
         LobbyItem item = new JumprunItems().jumprun(module);
         // What the hotbar column does with the use packet, without depending on it.

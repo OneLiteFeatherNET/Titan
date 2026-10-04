@@ -71,6 +71,7 @@ import net.onelitefeather.titan.core.module.LobbyReturnToSpawnEvent;
 import net.onelitefeather.titan.core.module.LobbySpawn;
 import net.onelitefeather.titan.core.module.item.LobbyItems;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.onelitefeather.titan.persistence.DatabaseWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,6 +115,8 @@ final class JumprunModule {
     private final Provider<LobbyHeightBounds> heightBounds;
     private HeightBand heightBand;
     private final Clock clock;
+    private final Telemetry telemetry;
+    private final RunTelemetry runTelemetry;
     private final RunRegistry runs = new RunRegistry();
     private final FakeBlocks fakeBlocks = new FakeBlocks();
     /** Player tick until which the item is ignored after a click on a run block. */
@@ -126,16 +129,16 @@ final class JumprunModule {
 
     // The writer is persistence's, resolved on first use like in StoredRunRecords, and only a lobby with a database ever asks for it.
     @Inject
-    JumprunModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records, Optional<Leaderboard> leaderboard, Provider<LobbyItems> lobbyItems, Clock clock, Scheduler scheduler, @External Provider<DatabaseWriter> writer, Provider<LobbyHeightBounds> heightBounds) {
-        this(titan, spawn, portals, records, leaderboard, task -> writer.get().execute(task), scheduler, lobbyItems, new RunMessages(), () -> ThreadLocalRandom.current().nextLong(), new JumprunConfig(Config.asConfiguration()), heightBounds, clock);
+    JumprunModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records, Optional<Leaderboard> leaderboard, Provider<LobbyItems> lobbyItems, Clock clock, Scheduler scheduler, @External Provider<DatabaseWriter> writer, Provider<LobbyHeightBounds> heightBounds, Telemetry telemetry) {
+        this(titan, spawn, portals, records, leaderboard, task -> writer.get().execute(task), scheduler, lobbyItems, new RunMessages(), () -> ThreadLocalRandom.current().nextLong(), new JumprunConfig(Config.asConfiguration()), heightBounds, clock, telemetry);
     }
 
     /** Without a leaderboard, so nothing is scheduled and nothing refreshed. */
     JumprunModule(EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records, Provider<LobbyItems> lobbyItems, RunMessages messages, LongSupplier seeds, JumprunConfig config, LobbyHeightBounds heightBounds, Clock clock) {
-        this(titan, spawn, portals, records, Optional.empty(), Runnable::run, Scheduler.newScheduler(), lobbyItems, messages, seeds, config, () -> heightBounds, clock);
+        this(titan, spawn, portals, records, Optional.empty(), Runnable::run, Scheduler.newScheduler(), lobbyItems, messages, seeds, config, () -> heightBounds, clock, Telemetry.noop());
     }
 
-    JumprunModule(EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records, Optional<Leaderboard> leaderboard, Executor refreshes, Scheduler scheduler, Provider<LobbyItems> lobbyItems, RunMessages messages, LongSupplier seeds, JumprunConfig config, Provider<LobbyHeightBounds> heightBounds, Clock clock) {
+    JumprunModule(EventNode<Event> titan, LobbySpawn spawn, LobbyPortals portals, RunRecords records, Optional<Leaderboard> leaderboard, Executor refreshes, Scheduler scheduler, Provider<LobbyItems> lobbyItems, RunMessages messages, LongSupplier seeds, JumprunConfig config, Provider<LobbyHeightBounds> heightBounds, Clock clock, Telemetry telemetry) {
         this.leaderboard = leaderboard;
         this.refreshes = refreshes;
         this.scheduler = scheduler;
@@ -150,6 +153,8 @@ final class JumprunModule {
         this.config = config;
         this.heightBounds = heightBounds;
         this.clock = clock;
+        this.telemetry = telemetry;
+        this.runTelemetry = new RunTelemetry(telemetry);
     }
 
     @PostConstruct
@@ -159,7 +164,7 @@ final class JumprunModule {
         // Resolved once, here, so a lobby without the spawn column fails at start and not on the first run.
         this.heightBand = new HeightBand(resolveBounds());
         this.messages.register();
-        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY);
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry);
         this.node.on(AsyncPlayerConfigurationEvent.class, this::onConfiguration);
         this.node.on(PlayerMoveEvent.class, this::onMove);
         this.node.on(PlayerDeathEvent.class, this::onDeath);
@@ -195,10 +200,12 @@ final class JumprunModule {
     void refreshLeaderboard() {
         this.leaderboard.ifPresent(board -> {
             try {
-                refreshes.execute(() -> {
+                refreshes.execute(() -> runTelemetry.refreshLeaderboard(() -> {
                     board.refresh();
-                    runs.all().forEach(this::showSidebarSafely);
-                });
+                    List<Run> running = runs.all();
+                    running.forEach(this::showSidebarSafely);
+                    return running.size();
+                }));
             } catch (RejectedExecutionException closed) {
                 LOGGER.debug("Skipping a leaderboard refresh, the executor is closed");
             } catch (RuntimeException failure) {
@@ -281,11 +288,16 @@ final class JumprunModule {
     }
 
     private void begin(Player player) {
+        runTelemetry.start(player.getUuid(), modeOf(player), () -> tryBegin(player));
+    }
+
+    /** @return whether there was room to start */
+    private boolean tryBegin(Player player) {
         Optional<Run> planned = player.isOnGround() ? plan(player) : Optional.empty();
         if (planned.isEmpty()) {
             player.sendMessage(messages.noSpace(player.getLocale()));
             LOGGER.atDebug().addKeyValue("player", player.getUuid()).log("jumprun has no room to start");
-            return;
+            return false;
         }
         Run run = planned.get();
         synchronized (run) {
@@ -299,6 +311,7 @@ final class JumprunModule {
             showSidebar(run);
         }
         LOGGER.atDebug().addKeyValue("player", player.getUuid()).log("jumprun started");
+        return true;
     }
 
     private Optional<Run> plan(Player player) {
@@ -462,7 +475,7 @@ final class JumprunModule {
         Pos to = event.getNewPosition();
         whileRegistered(run, () -> {
             if (run.hasFallen(to.y())) {
-                end(run, EndReason.FALL, log -> log.addKeyValue("y", to.y()).addKeyValue("threshold", run.fallThreshold()).addKeyValue("currentIndex", run.currentIndex()));
+                end(run, EndReason.FALL, Optional.of(new RunTelemetry.Fall(to.y(), run.fallThreshold(), run.currentIndex())));
             } else if (event.isOnGround()) {
                 advance(run, run.advanceTo(to));
             }
@@ -522,11 +535,11 @@ final class JumprunModule {
     }
 
     private void end(Run run, EndReason reason) {
-        end(run, reason, log -> log);
+        end(run, reason, Optional.empty());
     }
 
-    /** {@code details} adds key-values to the debug line, which only ever reads, never decides. */
-    private void end(Run run, EndReason reason, UnaryOperator<LoggingEventBuilder> details) {
+    /** {@code fall} is where a fall happened; it only ever reads, never decides. */
+    private void end(Run run, EndReason reason, Optional<RunTelemetry.Fall> fall) {
         Player player = run.player();
         int score;
         synchronized (run) {
@@ -546,7 +559,7 @@ final class JumprunModule {
                 fakeBlocks.reset(player, run.fakeWindow());
             }
         }
-        boolean isRecord = reason.submitsScore() && records.submit(new FinishedRun(player.getUuid(), player.getUsername(), run.mode(), score, reason, now()));
+        boolean isRecord = runTelemetry.end(new RunTelemetry.Ending(player.getUuid(), run.mode(), reason, score, fall), () -> reason.submitsScore() && records.submit(new FinishedRun(player.getUuid(), player.getUsername(), run.mode(), score, reason, now())));
         if (reason.announcesScore()) {
             // A run that never scored is not worth calling a record, even when it is the first.
             Component message = isRecord && score > 0 ? messages.endRecord(player.getLocale(), run.mode(), score) : messages.endScore(player.getLocale(), run.mode(), score);
@@ -565,6 +578,8 @@ final class JumprunModule {
         if (reason == EndReason.FALL) {
             player.teleport(run.startPoint());
         }
-        details.apply(LOGGER.atDebug().addKeyValue("player", player.getUuid()).addKeyValue("reason", reason).addKeyValue("score", score)).log("jumprun ended");
+        LoggingEventBuilder log = LOGGER.atDebug().addKeyValue("player", player.getUuid()).addKeyValue("reason", reason).addKeyValue("score", score);
+        fall.ifPresent(f -> log.addKeyValue("y", f.y()).addKeyValue("threshold", f.threshold()).addKeyValue("currentIndex", f.courseIndex()));
+        log.log("jumprun ended");
     }
 }

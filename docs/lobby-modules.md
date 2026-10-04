@@ -781,6 +781,17 @@ Höhenunterschied, Blockart) steigt mit dem Punktestand. `EVENT_PRIORITY` ist 10
 - **Zur Laufzeit:** Die Paletten werden beim Start jedes Laufs neu gelesen. Ein ungültiger Wert
   erzeugt eine WARN-Zeile mit dem Schlüssel (einmal je Fehler), und es bleiben die zuletzt
   gültigen Paletten.
+- **Traces und Metriken:** `RunTelemetry` kapselt Namen und Attribute (Konzept s. "Traces und
+  Metriken" unten). Spans: `jumprun.start` (je Startversuch; `jumprun.mode`,
+  `jumprun.start.outcome` = `started`/`no_room`, `user.id`), `jumprun.end` (je beendetem Lauf;
+  `jumprun.end.reason` = `EndReason`, `jumprun.mode`, `jumprun.score`, `jumprun.record`, `user.id`,
+  bei FALL `jumprun.fall.y`, `jumprun.fall.threshold`, `jumprun.fall.course_index`) und
+  `jumprun.leaderboard.refresh` (im Executor-Task; `jumprun.leaderboard.runs_shown`). Die
+  Speicherung des Laufs (`records.submit`) läuft im Span `jumprun.end`, die Hibernate-Spans hängen
+  über den `DatabaseWriter` darunter. Es gibt keinen Span über einen ganzen Lauf und keinen je Tick
+  oder Bewegung. Zähler `titan.jumprun.runs.ended{reason,mode}` und
+  `titan.jumprun.runs.started{mode,outcome}`, Histogramm `titan.jumprun.run.score{mode}`, ohne
+  `user.id`. Abfrage in Tempo: `{ name = "jumprun.end" && span.jumprun.end.reason = "FALL" }`.
 
 ## Datenbank (`persistence`)
 
