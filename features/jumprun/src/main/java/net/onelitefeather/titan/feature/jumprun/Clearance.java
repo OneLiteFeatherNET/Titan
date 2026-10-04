@@ -42,12 +42,34 @@ final class Clearance {
     static boolean isKept(Jump jump, Collection<? extends Placement> visible) {
         int low = Math.min(jump.from().pos().y(), jump.to().pos().y()) - HEIGHT_MARGIN;
         int high = Math.max(jump.from().pos().y(), jump.to().pos().y()) + HEIGHT_MARGIN;
+        if (!staysOutOfPendingJumps(jump, visible)) {
+            return false;
+        }
         List<BlockPos> others = visible.stream().map(Placement::pos).filter(pos -> !pos.equals(jump.from().pos())).filter(pos -> pos.y() >= low && pos.y() <= high).toList();
         if (others.isEmpty()) {
             return true;
         }
         List<FlightPath.Cell> cells = FlightPath.cellsUpTo(jump.from().pos(), jump.to().pos());
         return others.stream().noneMatch(pos -> cells.stream().anyMatch(cell -> isTooClose(cell, pos)));
+    }
+
+    /**
+     * The jumps up to the source are still to be made when the new one is drawn, so its target must
+     * keep {@link #MIN_DISTANCE} to the cells each of them flies over, within its own height span.
+     * {@code visible} is in course order.
+     */
+    private static boolean staysOutOfPendingJumps(Jump jump, Collection<? extends Placement> visible) {
+        List<BlockPos> positions = visible.stream().map(Placement::pos).toList();
+        BlockPos target = jump.to().pos();
+        for (int i = 1; i <= positions.indexOf(jump.from().pos()); i++) {
+            BlockPos start = positions.get(i - 1);
+            BlockPos end = positions.get(i);
+            boolean inSpan = target.y() >= Math.min(start.y(), end.y()) - HEIGHT_MARGIN && target.y() <= Math.max(start.y(), end.y()) + HEIGHT_MARGIN;
+            if (inSpan && FlightPath.cellsBetween(start, end).stream().anyMatch(cell -> isTooClose(cell, target))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static boolean isTooClose(FlightPath.Cell cell, BlockPos pos) {
