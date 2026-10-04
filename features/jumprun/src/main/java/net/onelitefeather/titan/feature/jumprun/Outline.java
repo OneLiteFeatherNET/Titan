@@ -34,6 +34,8 @@ final class Outline {
     /** Matches the green of the title. */
     private static final int GLOW_COLOR = 0x7CFC00;
 
+    private static final int FULL_LIGHT = 15;
+
     /**
      * Just larger than the block and shifted back by half the excess, so it wraps the block evenly.
      */
@@ -87,6 +89,8 @@ final class Outline {
             meta.setTranslation(TRANSLATION);
             meta.setHasGlowingEffect(true);
             meta.setGlowColorOverride(GLOW_COLOR);
+            // The display sits inside the opaque course block, where the sampled light is 0 and it renders black.
+            meta.setBrightness(FULL_LIGHT, FULL_LIGHT);
         }, instance, new Pos(pos.x(), pos.y(), pos.z()));
     }
 }

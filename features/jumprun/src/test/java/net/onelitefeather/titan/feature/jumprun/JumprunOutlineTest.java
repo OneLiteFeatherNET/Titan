@@ -17,6 +17,7 @@ package net.onelitefeather.titan.feature.jumprun;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -78,6 +79,17 @@ class JumprunOutlineTest {
             assertEquals(GREEN, meta.getGlowColorOverride(), "glows green");
             assertTrue(meta.isHasGlowingEffect(), "glows");
             assertTrue(JumprunFixture.isCourseBlock(run.ahead().peekFirst()) && meta.getBlockStateId().equals(net.minestom.server.instance.block.Block.fromStateId(run.ahead().peekFirst().blockStateId())), "shows the material of the block");
+        }
+    }
+
+    @Test
+    void theOutlineIsLitOnItsOwnNotByTheLightInsideTheBlockItWraps(Env env) {
+        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+            StartedRun run = StartedRun.start(env, fixture);
+
+            BlockDisplayMeta meta = (BlockDisplayMeta) theOutline(run.instance()).getEntityMeta();
+
+            assertNotEquals(-1, meta.getBrightnessOverride(), "the light is set, not sampled inside the block");
         }
     }
 
