@@ -1,0 +1,128 @@
+/**
+ * Copyright 2025 OneLiteFeather Network
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package net.onelitefeather.titan.feature.jumprun.display;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import net.minestom.server.coordinate.Pos;
+import net.minestom.server.entity.Entity;
+import net.minestom.server.entity.EntityType;
+import net.minestom.server.entity.Player;
+import net.minestom.server.entity.metadata.EntityMeta;
+import net.minestom.server.instance.Instance;
+import net.minestom.server.network.packet.server.play.SetPassengersPacket;
+
+/**
+ * A display entity that everyone but the runner sees (until told otherwise), without gravity and
+ * physics so it stays
+ * where it is put.
+ *
+ * <p>Minestom may still be loading the chunk when {@link #remove()} is called, and an entity
+ * removed by then is registered in the instance once the chunk arrives, with nobody left to remove
+ * it. So the removal waits for the placement.
+ *
+ * <p>Entity calls from the thread of the runner are fine for displays in chunks of other tick
+ * threads: Minestom's tracker uses concurrent collections, the viewers are guarded by the
+ * entity's own mutex and the dispatcher takes removals through a queue.
+ */
+public final class HiddenDisplay {
+
+    private final Entity entity;
+    private final CompletableFuture<Void> placed;
+    private final AtomicBoolean visibleToRunner;
+
+    private HiddenDisplay(Entity entity, CompletableFuture<Void> placed, AtomicBoolean visibleToRunner) {
+        this.entity = entity;
+        this.placed = placed;
+        this.visibleToRunner = visibleToRunner;
+    }
+
+    public static <M extends EntityMeta> HiddenDisplay spawn(Player runner, EntityType type, Class<M> metaType, Consumer<M> meta, Instance instance, Pos position) {
+        return spawn(runner, type, metaType, meta, instance, position, false);
+    }
+
+    public static <M extends EntityMeta> HiddenDisplay spawn(Player runner, EntityType type, Class<M> metaType, Consumer<M> meta, Instance instance, Pos position, boolean visibleToRunner) {
+        AtomicBoolean runnerSees = new AtomicBoolean(visibleToRunner);
+        return place(type, metaType, meta, instance, position, viewer -> viewer != runner || runnerSees.get(), runnerSees);
+    }
+
+    /** A display that only the runner sees; the mirror image of the others-only rule above. */
+    public static <M extends EntityMeta> HiddenDisplay spawnForRunnerOnly(Player runner, EntityType type, Class<M> metaType, Consumer<M> meta, Instance instance, Pos position) {
+        return place(type, metaType, meta, instance, position, viewer -> viewer == runner, new AtomicBoolean(true));
+    }
+
+    private static <M extends EntityMeta> HiddenDisplay place(EntityType type, Class<M> metaType, Consumer<M> meta, Instance instance, Pos position, Predicate<Player> viewable, AtomicBoolean runnerSees) {
+        Entity display = new Display(type);
+        display.editEntityMeta(metaType, meta);
+        display.setNoGravity(true);
+        display.setHasPhysics(false);
+        display.updateViewableRule(viewable);
+        CompletableFuture<Void> placed = display.setInstance(instance, position);
+        return new HiddenDisplay(display, placed, runnerSees);
+    }
+
+    /** Lets the runner see the display too, or not; takes effect for the viewers right away. */
+    void showToRunner(boolean visible) {
+        visibleToRunner.set(visible);
+        entity.updateViewableRule();
+    }
+
+    /**
+     * A display that may ride on a vehicle. Minestom moves a passenger before its vehicle, so a
+     * player coming into range gets the display before the vehicle, with no link between them. The
+     * link is sent once the vehicle is there. This waits a tick because looking at the vehicle's
+     * viewers while Minestom holds the locks of this display could deadlock.
+     */
+    private static final class Display extends Entity {
+
+        Display(EntityType type) {
+            super(type);
+        }
+
+        @Override
+        public void updateNewViewer(Player player) {
+            super.updateNewViewer(player);
+            scheduler().scheduleNextTick(() -> linkToVehicle(player));
+        }
+
+        private void linkToVehicle(Player player) {
+            Entity vehicle = getVehicle();
+            if (vehicle != null && isViewer(player) && vehicle.isViewer(player)) {
+                player.sendPacket(new SetPassengersPacket(vehicle.getEntityId(), vehicle.getPassengers().stream().map(Entity::getEntityId).toList()));
+            }
+        }
+    }
+
+    public Entity entity() {
+        return entity;
+    }
+
+    /** Runs the action once the display is in the instance, unless it was removed by then. */
+    public void whenPlaced(Runnable action) {
+        placed.thenRun(() -> {
+            if (!entity.isRemoved()) {
+                action.run();
+            }
+        });
+    }
+
+    /** Removes the display once it is placed; completes when it is gone. */
+    public CompletableFuture<Void> remove() {
+        return placed.thenRun(entity::remove);
+    }
+}

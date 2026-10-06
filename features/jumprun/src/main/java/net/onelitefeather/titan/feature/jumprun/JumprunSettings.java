@@ -28,6 +28,10 @@ import java.util.regex.Pattern;
 import net.kyori.adventure.key.InvalidKeyException;
 import net.minestom.server.coordinate.Point;
 import net.minestom.server.instance.block.Block;
+import net.onelitefeather.titan.feature.jumprun.course.Palette;
+import net.onelitefeather.titan.feature.jumprun.course.Palettes;
+import net.onelitefeather.titan.feature.jumprun.course.Step;
+import net.onelitefeather.titan.feature.jumprun.course.Surface;
 
 /**
  * Parsing and validation of {@code jumprun.palettes.<shape>.<block>: <weight>} (weight 0 switches a
@@ -35,7 +39,7 @@ import net.minestom.server.instance.block.Block;
  * jumprun.<mode>.rerollTicks}. Every failure names the full key, so the operator finds the line to
  * fix.
  */
-final class JumprunSettings {
+public final class JumprunSettings {
 
     static final String PALETTES_KEY = "jumprun.palettes";
     static final String RAINBOW_REROLL_TICKS_KEY = "jumprun.rainbow.rerollTicks";
@@ -50,18 +54,18 @@ final class JumprunSettings {
     private JumprunSettings() {
     }
 
-    static String key(Surface surface) {
+    public static String key(Surface surface) {
         return PALETTES_KEY + "." + surface.configKey();
     }
 
-    static String key(Surface surface, String block) {
+    public static String key(Surface surface, String block) {
         return key(surface) + "." + block;
     }
 
     /**
      * @throws IllegalArgumentException naming the first invalid key and the reason
      */
-    static Palettes palettes(Configuration config) {
+    public static Palettes palettes(Configuration config) {
         Map<Surface, Palette> byShape = new EnumMap<>(Surface.class);
         for (Surface surface : Surface.values()) {
             Configuration section = config.forPath(key(surface));

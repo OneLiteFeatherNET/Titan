@@ -36,6 +36,9 @@ import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.testfixtures.EventListenerCounter;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
+import net.onelitefeather.titan.feature.jumprun.course.Mode;
+import net.onelitefeather.titan.feature.jumprun.course.TestBlocks;
+import net.onelitefeather.titan.feature.jumprun.persistence.InMemoryRunRecords;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 

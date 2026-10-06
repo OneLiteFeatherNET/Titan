@@ -28,6 +28,9 @@ import java.util.Set;
 import java.util.random.RandomGenerator;
 import java.util.random.RandomGeneratorFactory;
 import net.minestom.server.instance.block.Block;
+import net.onelitefeather.titan.feature.jumprun.course.Palettes;
+import net.onelitefeather.titan.feature.jumprun.course.Surface;
+import net.onelitefeather.titan.feature.jumprun.course.TestBlocks;
 import org.junit.jupiter.api.Test;
 
 /** What a start accepts of {@code jumprun.palettes}, and that every refusal names its key. */

@@ -25,6 +25,7 @@ import net.minestom.server.network.player.GameProfile;
 import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.TestConnection;
+import net.onelitefeather.titan.feature.jumprun.course.Mode;
 
 /**
  * A named player who starts a run in a given mode, with every packet since the start of the run

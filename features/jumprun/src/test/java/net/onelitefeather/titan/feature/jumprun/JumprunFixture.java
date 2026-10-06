@@ -45,12 +45,20 @@ import net.onelitefeather.titan.core.module.LobbyHeightBounds;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
+import net.onelitefeather.titan.feature.jumprun.course.Mode;
+import net.onelitefeather.titan.feature.jumprun.course.Surface;
+import net.onelitefeather.titan.feature.jumprun.course.TestBlocks;
+import net.onelitefeather.titan.feature.jumprun.display.AnimatedBlock;
+import net.onelitefeather.titan.feature.jumprun.persistence.EndReason;
+import net.onelitefeather.titan.feature.jumprun.persistence.FinishedRun;
+import net.onelitefeather.titan.feature.jumprun.persistence.InMemoryRunRecords;
+import net.onelitefeather.titan.feature.jumprun.persistence.RunRecords;
 
 /**
  * A started {@link JumprunModule} on a fresh {@code titan} node with a fixed seed, in-memory
  * records and its own message store, torn down again by {@link #close()}.
  */
-final class JumprunFixture implements AutoCloseable {
+public final class JumprunFixture implements AutoCloseable {
 
     static final Instant NOW = Instant.parse("2026-10-03T12:00:00Z");
     static final Clock CLOCK = Clock.fixed(NOW, ZoneOffset.UTC);
@@ -144,7 +152,7 @@ final class JumprunFixture implements AutoCloseable {
     }
 
     /** A flat instance whose chunks around the origin are loaded, so the course has room. */
-    static Instance loadedInstance(Env env) {
+    public static Instance loadedInstance(Env env) {
         Instance instance = env.createFlatInstance();
         for (int x = -PRELOADED_CHUNK_RADIUS; x <= PRELOADED_CHUNK_RADIUS; x++) {
             for (int z = -PRELOADED_CHUNK_RADIUS; z <= PRELOADED_CHUNK_RADIUS; z++) {

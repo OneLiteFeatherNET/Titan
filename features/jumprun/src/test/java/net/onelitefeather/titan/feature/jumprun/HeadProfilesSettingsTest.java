@@ -29,6 +29,10 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
+import net.onelitefeather.titan.feature.jumprun.course.TestBlocks;
+import net.onelitefeather.titan.feature.jumprun.head.FakeHeadSkins;
+import net.onelitefeather.titan.feature.jumprun.head.HeadSkin;
+import net.onelitefeather.titan.feature.jumprun.head.TeamHeads;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 

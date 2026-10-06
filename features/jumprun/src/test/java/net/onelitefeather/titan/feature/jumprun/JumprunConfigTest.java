@@ -20,6 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.avaje.config.Configuration;
+import net.onelitefeather.titan.feature.jumprun.course.Mode;
+import net.onelitefeather.titan.feature.jumprun.course.TestBlocks;
 import org.junit.jupiter.api.Test;
 
 /** The reroll interval a run reads: the key of its mode, strictly at start and live per run. */

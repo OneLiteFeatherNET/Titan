@@ -19,9 +19,13 @@ import io.avaje.config.Configuration;
 import java.time.Clock;
 import java.util.List;
 import java.util.UUID;
+import net.onelitefeather.titan.feature.jumprun.course.Mode;
+import net.onelitefeather.titan.feature.jumprun.course.Palettes;
+import net.onelitefeather.titan.feature.jumprun.head.HeadSkins;
+import net.onelitefeather.titan.feature.jumprun.head.TeamHeads;
 
 /** The live settings of the module: what a run reads when it starts. */
-final class JumprunConfig {
+public final class JumprunConfig {
 
     private final LiveSetting<Palettes> palettes;
     private final LiveSetting<Integer> rainbowRerollTicks;
@@ -30,11 +34,11 @@ final class JumprunConfig {
     private final TeamHeads teamHeads;
 
     /** Without team heads: every head is a plain one of the palette. */
-    JumprunConfig(Configuration config) {
+    public JumprunConfig(Configuration config) {
         this(config, new TeamHeads(HeadSkins.NONE, Runnable::run, Clock.systemUTC()));
     }
 
-    JumprunConfig(Configuration config, TeamHeads teamHeads) {
+    public JumprunConfig(Configuration config, TeamHeads teamHeads) {
         this.teamHeads = teamHeads;
         this.palettes = new LiveSetting<>("palettes", () -> JumprunSettings.palettes(config));
         this.rainbowRerollTicks = new LiveSetting<>("rainbow.rerollTicks", () -> JumprunSettings.rerollTicks(config, JumprunSettings.RAINBOW_REROLL_TICKS_KEY));

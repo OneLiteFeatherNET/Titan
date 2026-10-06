@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.feature.jumprun;
 
+
 /** The "Jump & Run" title in MiniMessage, shared by the item name and the score label. */
 final class RunTitle {
 
