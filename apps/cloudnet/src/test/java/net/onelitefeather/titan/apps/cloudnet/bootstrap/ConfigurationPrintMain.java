@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.runtime.bootstrap;
+package net.onelitefeather.titan.apps.cloudnet.bootstrap;
 
 import io.avaje.config.Config;
 import io.avaje.config.Configuration;
+import net.onelitefeather.titan.runtime.bootstrap.ConfigurationStartupLog;
 
 /**
  * The child process entry point {@link ConfigurationPrecedenceTest} launches: touches the

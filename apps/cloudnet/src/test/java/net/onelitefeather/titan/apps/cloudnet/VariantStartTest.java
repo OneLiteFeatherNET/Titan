@@ -45,7 +45,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * startet nur mit allen erwarteten Columns"): the full scope builds with every column
  * {@code META-INF/titan/variant.properties} names, and an additionally expected but missing
  * column aborts, naming it -
- * {@link net.onelitefeather.titan.runtime.bootstrap.WiringTest WiringTest} already covers the
+ * {@link net.onelitefeather.titan.apps.cloudnet.bootstrap.WiringTest WiringTest} already covers the
  * exact feature/bean count, so this only exercises the variant-level check itself.
  */
 @ExtendWith(MicrotusExtension.class)

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.runtime.feature.example;
+package net.onelitefeather.titan.apps.cloudnet.feature.example;
 
 /**
  * Pure validation for the {@code example} module's two config values. A real module pairs a
