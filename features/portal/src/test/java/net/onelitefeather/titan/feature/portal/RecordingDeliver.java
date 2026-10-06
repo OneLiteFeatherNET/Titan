@@ -18,7 +18,7 @@ package net.onelitefeather.titan.feature.portal;
 import java.util.ArrayList;
 import java.util.List;
 import net.minestom.server.entity.Player;
-import net.onelitefeather.deliver.DeliverComponent;
+import net.onelitefeather.titan.api.deliver.DeliverComponent;
 import net.onelitefeather.titan.api.deliver.Deliver;
 
 /**
