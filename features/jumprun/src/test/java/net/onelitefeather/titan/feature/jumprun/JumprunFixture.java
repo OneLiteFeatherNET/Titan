@@ -104,7 +104,7 @@ public final class JumprunFixture implements AutoCloseable {
     }
 
     static JumprunFixture start(Env env, RunRecords records) {
-        return start(env, records, TestBlocks.shippedConfiguration());
+        return start(env, records, TestSettings.shippedConfiguration());
     }
 
     /** As above, with the palettes read from {@code config} instead of the shipped defaults. */
@@ -114,12 +114,12 @@ public final class JumprunFixture implements AutoCloseable {
 
     /** With a leaderboard, whose refreshes go to {@code refreshes} instead of a database writer. */
     static JumprunFixture start(Env env, RunRecords records, Leaderboard leaderboard, Executor refreshes) {
-        return start(env, records, TestBlocks.shippedConfiguration(), Optional.of(leaderboard), refreshes);
+        return start(env, records, TestSettings.shippedConfiguration(), Optional.of(leaderboard), refreshes);
     }
 
     /** As above, in a lobby whose height limits are {@code bounds}. */
     static JumprunFixture start(Env env, LobbyHeightBounds bounds) {
-        return start(env, new InMemoryRunRecords(), TestBlocks.shippedConfiguration(), Optional.empty(), Runnable::run, bounds);
+        return start(env, new InMemoryRunRecords(), TestSettings.shippedConfiguration(), Optional.empty(), Runnable::run, bounds);
     }
 
     private static JumprunFixture start(Env env, RunRecords records, Configuration config) {
@@ -132,7 +132,7 @@ public final class JumprunFixture implements AutoCloseable {
 
     /** With the module reporting to {@code telemetry}, and a leaderboard if given. */
     static JumprunFixture start(Env env, RunRecords records, Optional<Leaderboard> leaderboard, Executor refreshes, Telemetry telemetry) {
-        return start(env, records, TestBlocks.shippedConfiguration(), leaderboard, refreshes, TestBlocks.BOUNDS, telemetry);
+        return start(env, records, TestSettings.shippedConfiguration(), leaderboard, refreshes, TestBlocks.BOUNDS, telemetry);
     }
 
     private static JumprunFixture start(Env env, RunRecords records, Configuration config, Optional<Leaderboard> leaderboard, Executor refreshes, LobbyHeightBounds bounds) {

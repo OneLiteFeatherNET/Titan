@@ -39,7 +39,7 @@ import net.onelitefeather.titan.feature.jumprun.course.Surface;
  * jumprun.<mode>.rerollTicks}. Every failure names the full key, so the operator finds the line to
  * fix.
  */
-public final class JumprunSettings {
+final class JumprunSettings {
 
     static final String PALETTES_KEY = "jumprun.palettes";
     static final String RAINBOW_REROLL_TICKS_KEY = "jumprun.rainbow.rerollTicks";
@@ -54,18 +54,18 @@ public final class JumprunSettings {
     private JumprunSettings() {
     }
 
-    public static String key(Surface surface) {
+    static String key(Surface surface) {
         return PALETTES_KEY + "." + surface.configKey();
     }
 
-    public static String key(Surface surface, String block) {
+    static String key(Surface surface, String block) {
         return key(surface) + "." + block;
     }
 
     /**
      * @throws IllegalArgumentException naming the first invalid key and the reason
      */
-    public static Palettes palettes(Configuration config) {
+    static Palettes palettes(Configuration config) {
         Map<Surface, Palette> byShape = new EnumMap<>(Surface.class);
         for (Surface surface : Surface.values()) {
             Configuration section = config.forPath(key(surface));

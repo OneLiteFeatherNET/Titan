@@ -25,7 +25,7 @@ import net.onelitefeather.titan.feature.jumprun.head.HeadSkins;
 import net.onelitefeather.titan.feature.jumprun.head.TeamHeads;
 
 /** The live settings of the module: what a run reads when it starts. */
-public final class JumprunConfig {
+final class JumprunConfig {
 
     private final LiveSetting<Palettes> palettes;
     private final LiveSetting<Integer> rainbowRerollTicks;
@@ -34,11 +34,11 @@ public final class JumprunConfig {
     private final TeamHeads teamHeads;
 
     /** Without team heads: every head is a plain one of the palette. */
-    public JumprunConfig(Configuration config) {
+    JumprunConfig(Configuration config) {
         this(config, new TeamHeads(HeadSkins.NONE, Runnable::run, Clock.systemUTC()));
     }
 
-    public JumprunConfig(Configuration config, TeamHeads teamHeads) {
+    JumprunConfig(Configuration config, TeamHeads teamHeads) {
         this.teamHeads = teamHeads;
         this.palettes = new LiveSetting<>("palettes", () -> JumprunSettings.palettes(config));
         this.rainbowRerollTicks = new LiveSetting<>("rainbow.rerollTicks", () -> JumprunSettings.rerollTicks(config, JumprunSettings.RAINBOW_REROLL_TICKS_KEY));

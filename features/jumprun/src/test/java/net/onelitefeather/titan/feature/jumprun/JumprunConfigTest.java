@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.avaje.config.Configuration;
 import net.onelitefeather.titan.feature.jumprun.course.Mode;
-import net.onelitefeather.titan.feature.jumprun.course.TestBlocks;
 import org.junit.jupiter.api.Test;
 
 /** The reroll interval a run reads: the key of its mode, strictly at start and live per run. */
@@ -29,7 +28,7 @@ class JumprunConfigTest {
 
     @Test
     void theShippedDefaultsAreTenForRainbowAndFortyForUltra() {
-        JumprunConfig config = TestBlocks.shippedReader();
+        JumprunConfig config = TestSettings.shippedReader();
 
         assertEquals(10, config.rerollTicks(Mode.RAINBOW));
         assertEquals(40, config.rerollTicks(Mode.ULTRA));
@@ -37,7 +36,7 @@ class JumprunConfigTest {
 
     @Test
     void aModeThatNeverRerollsHasNoInterval() {
-        JumprunConfig config = TestBlocks.shippedReader();
+        JumprunConfig config = TestSettings.shippedReader();
 
         for (Mode mode : new Mode[]{Mode.EASY, Mode.MEDIUM, Mode.HARD}) {
             assertEquals(0, config.rerollTicks(mode), mode + " does not reroll");
@@ -46,7 +45,7 @@ class JumprunConfigTest {
 
     @Test
     void eachModeReadsItsOwnKeyLive() {
-        Configuration source = TestBlocks.shippedConfiguration();
+        Configuration source = TestSettings.shippedConfiguration();
         JumprunConfig config = new JumprunConfig(source);
         config.readAtStartup();
 
@@ -59,7 +58,7 @@ class JumprunConfigTest {
     @Test
     void startAbortsNamingTheInvalidKeyOfEitherMode() {
         for (String key : new String[]{JumprunSettings.RAINBOW_REROLL_TICKS_KEY, JumprunSettings.ULTRA_REROLL_TICKS_KEY}) {
-            Configuration source = TestBlocks.shippedConfiguration();
+            Configuration source = TestSettings.shippedConfiguration();
             source.setProperty(key, "0");
             JumprunConfig config = new JumprunConfig(source);
 

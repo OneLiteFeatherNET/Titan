@@ -16,13 +16,15 @@
 package net.onelitefeather.titan.feature.jumprun.course;
 
 import io.avaje.config.Configuration;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.random.RandomGenerator;
 import net.minestom.server.coordinate.Pos;
+import net.minestom.server.instance.block.Block;
 import net.onelitefeather.titan.core.module.LobbyHeightBounds;
-import net.onelitefeather.titan.feature.jumprun.JumprunConfig;
-import net.onelitefeather.titan.feature.jumprun.JumprunSettings;
 import net.onelitefeather.titan.feature.jumprun.space.BlockPos;
 import net.onelitefeather.titan.feature.jumprun.space.Heading;
 import net.onelitefeather.titan.feature.jumprun.space.SpaceProbe;
@@ -37,30 +39,32 @@ public final class TestBlocks {
 
     private static final String SHIPPED_DEFAULTS = "titan/defaults/jumprun.yaml";
 
-    private static final Palettes SHIPPED = JumprunSettings.palettes(shippedConfiguration());
+    private static final Palettes SHIPPED = shippedPalettes();
 
     private TestBlocks() {
     }
 
-    /**
-     * A configuration holding only the shipped defaults, independent of the global one and of
-     * what other tests set there. Each call returns a fresh, mutable one.
-     */
-    public static Configuration shippedConfiguration() {
-        return Configuration.builder().load(SHIPPED_DEFAULTS).build();
+    /** The shipped defaults read without validation: fixtures need the blocks, not the checks. */
+    private static Palettes shippedPalettes() {
+        Configuration config = Configuration.builder().load(SHIPPED_DEFAULTS).build();
+        Map<Surface, Palette> byShape = new EnumMap<>(Surface.class);
+        for (Surface surface : Surface.values()) {
+            Configuration section = config.forPath("jumprun.palettes." + surface.configKey());
+            List<Palette.Weighted> entries = new ArrayList<>();
+            section.keys().stream().sorted().forEach(name -> {
+                int weight = Integer.parseInt(section.get(name).trim());
+                if (weight > 0) {
+                    entries.add(new Palette.Weighted(surface.shape(Block.fromKey("minecraft:" + name)), weight));
+                }
+            });
+            byShape.put(surface, Palette.of(entries));
+        }
+        return new Palettes(byShape);
     }
 
     /** The shipped palettes; {@link Palettes} is immutable, so tests may share it. */
     public static Palettes shipped() {
         return SHIPPED;
-    }
-
-    /** The shipped defaults with the palette of {@code surface} replaced by {@code weights}. */
-    public static Configuration shippedWith(Surface surface, Map<String, String> weights) {
-        Configuration config = shippedConfiguration();
-        config.forPath(JumprunSettings.key(surface)).keys().forEach(block -> config.clearProperty(JumprunSettings.key(surface, block)));
-        weights.forEach((block, weight) -> config.setProperty(JumprunSettings.key(surface, block), weight));
-        return config;
     }
 
     /** A lobby whose height limits are the given ones. */
@@ -72,10 +76,6 @@ public final class TestBlocks {
     public static final LobbyHeightBounds BOUNDS = bounds(-64, 310);
 
     static final HeightBand BAND = new HeightBand(BOUNDS);
-
-    public static JumprunConfig shippedReader() {
-        return new JumprunConfig(shippedConfiguration());
-    }
 
     /** A block with the first material of its shape. */
     public static CourseBlock at(BlockPos pos, Surface surface) {

@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
-import net.onelitefeather.titan.feature.jumprun.course.TestBlocks;
 import net.onelitefeather.titan.feature.jumprun.head.FakeHeadSkins;
 import net.onelitefeather.titan.feature.jumprun.head.HeadSkin;
 import net.onelitefeather.titan.feature.jumprun.head.TeamHeads;
@@ -56,7 +55,7 @@ class HeadProfilesSettingsTest {
     }
 
     private static Configuration with(String profiles) {
-        Configuration source = TestBlocks.shippedConfiguration();
+        Configuration source = TestSettings.shippedConfiguration();
         source.setProperty(KEY, profiles);
         return source;
     }
@@ -67,7 +66,7 @@ class HeadProfilesSettingsTest {
 
     @Test
     void theShippedDefaultIsNoTeamHead() {
-        JumprunConfig config = config(TestBlocks.shippedConfiguration(), new FakeHeadSkins(skins()));
+        JumprunConfig config = config(TestSettings.shippedConfiguration(), new FakeHeadSkins(skins()));
         config.readAtStartup();
 
         assertEquals(List.of(), ids(config), "an empty list shows the plain heads");

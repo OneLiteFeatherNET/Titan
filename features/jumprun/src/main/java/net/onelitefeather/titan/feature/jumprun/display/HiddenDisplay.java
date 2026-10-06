@@ -62,7 +62,7 @@ public final class HiddenDisplay {
     }
 
     /** A display that only the runner sees; the mirror image of the others-only rule above. */
-    public static <M extends EntityMeta> HiddenDisplay spawnForRunnerOnly(Player runner, EntityType type, Class<M> metaType, Consumer<M> meta, Instance instance, Pos position) {
+    static <M extends EntityMeta> HiddenDisplay spawnForRunnerOnly(Player runner, EntityType type, Class<M> metaType, Consumer<M> meta, Instance instance, Pos position) {
         return place(type, metaType, meta, instance, position, viewer -> viewer == runner, new AtomicBoolean(true));
     }
 

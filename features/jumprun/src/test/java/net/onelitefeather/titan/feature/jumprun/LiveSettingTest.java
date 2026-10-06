@@ -29,7 +29,6 @@ import java.util.List;
 import net.minestom.server.instance.block.Block;
 import net.onelitefeather.titan.feature.jumprun.course.Palettes;
 import net.onelitefeather.titan.feature.jumprun.course.Surface;
-import net.onelitefeather.titan.feature.jumprun.course.TestBlocks;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,7 +47,7 @@ class LiveSettingTest {
 
     @BeforeEach
     void setUp() {
-        this.config = TestBlocks.shippedConfiguration();
+        this.config = TestSettings.shippedConfiguration();
         this.reader = new LiveSetting<>("palettes", () -> JumprunSettings.palettes(this.config));
         this.lines.start();
         this.readerLogger.addAppender(this.lines);

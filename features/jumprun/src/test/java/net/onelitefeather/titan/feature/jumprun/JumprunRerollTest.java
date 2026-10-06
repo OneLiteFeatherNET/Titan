@@ -35,7 +35,6 @@ import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.feature.jumprun.course.Mode;
-import net.onelitefeather.titan.feature.jumprun.course.TestBlocks;
 import net.onelitefeather.titan.feature.jumprun.display.AnimatedBlock;
 import net.onelitefeather.titan.feature.jumprun.space.BlockPos;
 import org.junit.jupiter.api.Test;
@@ -58,7 +57,7 @@ class JumprunRerollTest {
     private static final int PAST_REROLL = INTERVAL + 5;
 
     private static JumprunFixture fixture(Env env, int rainbowTicks, int ultraTicks) {
-        Configuration config = TestBlocks.shippedConfiguration();
+        Configuration config = TestSettings.shippedConfiguration();
         config.setProperty(JumprunSettings.RAINBOW_REROLL_TICKS_KEY, Integer.toString(rainbowTicks));
         config.setProperty(JumprunSettings.ULTRA_REROLL_TICKS_KEY, Integer.toString(ultraTicks));
         return JumprunFixture.start(env, config);
