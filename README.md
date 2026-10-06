@@ -535,7 +535,7 @@ central feature list to edit:
   requires = {...})` for the platform types the column needs (e.g. the shared event node) - see
   [`docs/lobby-modules.md`](docs/lobby-modules.md) for the exact pattern. Copy an existing column
   (e.g. `features/tickle/`) or the template feature at
-  `apps/cloudnet/src/test/java/net/onelitefeather/titan/runtime/feature/example/` (`ExampleModule`
+  `apps/cloudnet/src/test/java/net/onelitefeather/titan/apps/cloudnet/feature/example/` (`ExampleModule`
   and friends) as a starting point.
 - The `<Name>Module` class is a plain `@jakarta.inject.Singleton` bean with a unique
   `static final int EVENT_PRIORITY` - it decides the order in which two features process the same

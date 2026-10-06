@@ -5,7 +5,7 @@ eigenen **Column** - einem eigenen Gradle-Modul unter `features/`. Dieses Dokume
 Modul- und Varianten-Architektur, den Aufbau eines Features, die Regeln für den Tick-Thread, den
 Testaufbau ohne Harness und die Checkliste für ein neues Feature. Alle Codebeispiele stammen, wo
 nicht anders vermerkt, aus dem lauffähigen Vorlagefeature
-`apps/cloudnet/src/test/java/net/onelitefeather/titan/runtime/feature/example/` (`ExampleModule`,
+`apps/cloudnet/src/test/java/net/onelitefeather/titan/apps/cloudnet/feature/example/` (`ExampleModule`,
 `ExampleGreetingItems`, `ExampleGreetingRule`, `ExampleGreetingSettings`, `ExampleGreetingTracker`)
 - kopierbar als Ausgangspunkt für ein echtes Feature. Es ist bewusst test-only, damit es nie als
 echtes Feature mitläuft: Avaje Inject prozessiert Annotationen nur für `src/main` (kein
@@ -507,7 +507,7 @@ Feature (s. `SpawnModuleTest#stopLeavesNoListenerBehind` u. Ä.).
 
 Ein Test, der die reale Verdrahtung mehrerer Features zusammen prüft (z. B. dass ein
 Navigator-Klick trotz `ProtectionModule`s Abbruch weiterleitet), baut den echten `BeanScope` -
-`apps/cloudnet/src/test/java/net/onelitefeather/titan/runtime/bootstrap/WiringTest.java`,
+`apps/cloudnet/src/test/java/net/onelitefeather/titan/apps/cloudnet/bootstrap/WiringTest.java`,
 `NavigatorProtectionOrderingTest`, `StandardLoadoutTest` (alle Querschnitts-Tests einer Variante,
 nicht in einem einzelnen Feature-Paket):
 
