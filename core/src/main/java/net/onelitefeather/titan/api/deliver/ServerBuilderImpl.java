@@ -13,35 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.deliver;
+package net.onelitefeather.titan.api.deliver;
 
 import java.util.UUID;
 
-final class TaskBuilderImpl implements DeliverComponent.TaskBuilder {
+final class ServerBuilderImpl implements DeliverComponent.ServerBuilder {
 
+    private String serverName;
     private UUID playerId;
-    private String taskName;
 
     @Override
-    public TaskBuilderImpl taskName(String taskName) {
-        this.taskName = taskName;
+    public DeliverComponent.ServerBuilder serverName(String serverName) {
+        this.serverName = serverName;
         return this;
     }
 
     @Override
-    public TaskBuilderImpl playerId(UUID playerId) {
+    public DeliverComponent.ServerBuilder playerId(UUID playerId) {
         this.playerId = playerId;
         return this;
     }
 
     @Override
     public DeliverComponent build() {
+        if (serverName == null) {
+            throw new IllegalArgumentException("Server cannot be null");
+        }
         if (playerId == null) {
-            throw new IllegalStateException("Player ID not set");
+            throw new IllegalArgumentException("playerId cannot be null");
         }
-        if (taskName == null) {
-            throw new IllegalStateException("Task name not set");
-        }
-        return new TaskComponentImpl(DeliverType.TASK, taskName, playerId);
+        return new ServerDeliverComponentImpl(DeliverType.SERVER, serverName, playerId);
     }
 }

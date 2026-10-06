@@ -13,11 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.deliver;
+package net.onelitefeather.titan.api.deliver;
 
-import java.io.Serializable;
-import java.util.UUID;
-
-record ServerDeliverComponentImpl(DeliverType type, String gameServer,
-                                  UUID playerId) implements DeliverComponent, DeliverComponent.ServerDeliverComponent, Serializable {
+public enum DeliverType {
+    TASK, SERVER
 }

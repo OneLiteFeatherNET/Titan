@@ -16,7 +16,7 @@
 package net.onelitefeather.titan.core.testfixtures;
 
 import net.minestom.server.entity.Player;
-import net.onelitefeather.deliver.DeliverComponent;
+import net.onelitefeather.titan.api.deliver.DeliverComponent;
 import net.onelitefeather.titan.api.deliver.Deliver;
 
 public final class DummyDeliver implements Deliver {

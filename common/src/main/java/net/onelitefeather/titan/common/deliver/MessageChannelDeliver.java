@@ -16,7 +16,7 @@
 package net.onelitefeather.titan.common.deliver;
 
 import net.minestom.server.entity.Player;
-import net.onelitefeather.deliver.DeliverComponent;
+import net.onelitefeather.titan.api.deliver.DeliverComponent;
 import net.onelitefeather.titan.api.deliver.Deliver;
 
 /**

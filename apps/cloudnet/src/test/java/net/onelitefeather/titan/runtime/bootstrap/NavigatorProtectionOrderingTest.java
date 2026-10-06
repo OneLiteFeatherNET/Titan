@@ -30,7 +30,7 @@ import net.minestom.server.inventory.click.Click;
 import net.minestom.server.item.ItemStack;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.deliver.DeliverComponent;
+import net.onelitefeather.titan.api.deliver.DeliverComponent;
 import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.feature.navigator.NavigatorModule;
 import net.onelitefeather.titan.feature.protection.ProtectionModule;
