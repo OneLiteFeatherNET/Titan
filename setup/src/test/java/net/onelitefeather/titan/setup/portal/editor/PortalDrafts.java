@@ -55,8 +55,4 @@ public final class PortalDrafts {
         draft.labelPosition(position);
         return draft;
     }
-
-    public static void moveLabel(PortalDraft draft, Vec position) {
-        draft.labelPosition(position);
-    }
 }

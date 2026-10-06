@@ -89,10 +89,10 @@ class LabelAnchorPreviewTest {
         Pos player = new Pos(3.5, 65, 2.5);
         List<Vec> withoutAnchor = DraftPoints.of(draft, player, 1.62);
 
-        PortalDrafts.moveLabel(draft, ANCHOR);
+        PortalDrafts.withLabelAt(draft, ANCHOR);
         List<Vec> first = DraftPoints.of(draft, player, 1.62);
         Vec moved = new Vec(9, 70, 9);
-        PortalDrafts.moveLabel(draft, moved);
+        PortalDrafts.withLabelAt(draft, moved);
         List<Vec> second = DraftPoints.of(draft, player, 1.62);
 
         assertEquals(withoutAnchor.size() + PortalOutline.ANCHOR_POINTS, first.size(), "cross added once an anchor is set");
