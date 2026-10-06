@@ -23,6 +23,8 @@ import net.minestom.server.entity.EntityType;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.metadata.display.AbstractDisplayMeta.BillboardConstraints;
 import net.minestom.server.entity.metadata.display.TextDisplayMeta;
+import net.onelitefeather.titan.feature.jumprun.course.Mode;
+import net.onelitefeather.titan.feature.jumprun.display.HiddenDisplay;
 import org.jetbrains.annotations.Nullable;
 
 /**

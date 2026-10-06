@@ -19,6 +19,10 @@ import io.avaje.config.Configuration;
 import java.time.Clock;
 import java.util.List;
 import java.util.UUID;
+import net.onelitefeather.titan.feature.jumprun.course.Mode;
+import net.onelitefeather.titan.feature.jumprun.course.Palettes;
+import net.onelitefeather.titan.feature.jumprun.head.HeadSkins;
+import net.onelitefeather.titan.feature.jumprun.head.TeamHeads;
 
 /** The live settings of the module: what a run reads when it starts. */
 final class JumprunConfig {

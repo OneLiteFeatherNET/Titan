@@ -28,13 +28,16 @@ import java.util.Set;
 import java.util.random.RandomGenerator;
 import java.util.random.RandomGeneratorFactory;
 import net.minestom.server.instance.block.Block;
+import net.onelitefeather.titan.feature.jumprun.course.Palettes;
+import net.onelitefeather.titan.feature.jumprun.course.Surface;
+import net.onelitefeather.titan.feature.jumprun.course.TestBlocks;
 import org.junit.jupiter.api.Test;
 
 /** What a start accepts of {@code jumprun.palettes}, and that every refusal names its key. */
 class JumprunSettingsTest {
 
     private static IllegalArgumentException refusal(Surface surface, Map<String, String> weights) {
-        return assertThrows(IllegalArgumentException.class, () -> JumprunSettings.palettes(TestBlocks.shippedWith(surface, weights)));
+        return assertThrows(IllegalArgumentException.class, () -> JumprunSettings.palettes(TestSettings.shippedWith(surface, weights)));
     }
 
     private static void assertNamesKey(String key, IllegalArgumentException refusal) {
@@ -43,7 +46,7 @@ class JumprunSettingsTest {
 
     @Test
     void theShippedDefaultsAreValid() {
-        Palettes palettes = JumprunSettings.palettes(TestBlocks.shippedConfiguration());
+        Palettes palettes = JumprunSettings.palettes(TestSettings.shippedConfiguration());
 
         for (Surface surface : Surface.values()) {
             assertTrue(palettes.of(surface).blocks().size() > 0, surface + " has materials");
@@ -52,7 +55,7 @@ class JumprunSettingsTest {
 
     @Test
     void aShapeIsShownWithTheStatesItNeeds() {
-        Palettes palettes = JumprunSettings.palettes(TestBlocks.shippedWith(Surface.SLAB, Map.of("quartz_slab", "1")));
+        Palettes palettes = JumprunSettings.palettes(TestSettings.shippedWith(Surface.SLAB, Map.of("quartz_slab", "1")));
 
         assertEquals(List.of(Block.QUARTZ_SLAB.withProperty("type", "bottom")), palettes.of(Surface.SLAB).blocks(), "the operator names the block, the shape sets the half");
     }
@@ -77,7 +80,7 @@ class JumprunSettingsTest {
 
     @Test
     void aWeightOfZeroSwitchesTheMaterialOff() {
-        Configuration config = TestBlocks.shippedConfiguration();
+        Configuration config = TestSettings.shippedConfiguration();
         config.setProperty("jumprun.palettes.full.white_concrete", "0");
 
         Palettes palettes = JumprunSettings.palettes(config);
@@ -88,7 +91,7 @@ class JumprunSettingsTest {
 
     @Test
     void aSwitchedOffMaterialIsNeverDrawnWhileTheOthersAre() {
-        Configuration config = TestBlocks.shippedConfiguration();
+        Configuration config = TestSettings.shippedConfiguration();
         config.setProperty("jumprun.palettes.full.white_concrete", "0");
         Palettes palettes = JumprunSettings.palettes(config);
         RandomGenerator random = RandomGeneratorFactory.of("L64X128MixRandom").create(11L);
@@ -180,7 +183,7 @@ class JumprunSettingsTest {
 
     @Test
     void theNewShapesAreShownWithTheStatesThatFixTheirCollision() {
-        Palettes palettes = JumprunSettings.palettes(TestBlocks.shippedConfiguration());
+        Palettes palettes = JumprunSettings.palettes(TestSettings.shippedConfiguration());
 
         assertEquals(List.of(Block.SNOW.withProperty("layers", "3")), palettes.of(Surface.SNOW).blocks(), "three layers");
         assertTrue(palettes.of(Surface.CANDLE).blocks().stream().allMatch(candle -> "1".equals(candle.getProperty("candles")) && "false".equals(candle.getProperty("lit"))), "one candle, not lit");
@@ -189,14 +192,14 @@ class JumprunSettingsTest {
 
     @Test
     void aSnowListWithOneLayerIsStillShownWithThree() {
-        Palettes palettes = JumprunSettings.palettes(TestBlocks.shippedWith(Surface.SNOW, Map.of("snow", "1")));
+        Palettes palettes = JumprunSettings.palettes(TestSettings.shippedWith(Surface.SNOW, Map.of("snow", "1")));
 
         assertEquals("3", palettes.of(Surface.SNOW).blocks().getFirst().getProperty("layers"), "the shape forces the layers");
     }
 
     @Test
     void anOperatorOverrideThatSwitchesOneStairsOffLeavesTheOthers() {
-        Configuration config = TestBlocks.shippedConfiguration();
+        Configuration config = TestSettings.shippedConfiguration();
         config.setProperty("jumprun.palettes.stairs.oak_stairs", "0");
 
         Palettes palettes = JumprunSettings.palettes(config);
@@ -210,7 +213,7 @@ class JumprunSettingsTest {
         for (Surface surface : List.of(Surface.STAIRS, Surface.CARPET, Surface.SNOW, Surface.HEAD, Surface.FLOWER_POT, Surface.CANDLE)) {
             String block = TestBlocks.shipped().of(surface).blocks().getFirst().key().value();
 
-            Palettes palettes = JumprunSettings.palettes(TestBlocks.shippedWith(surface, Map.of(block, "2")));
+            Palettes palettes = JumprunSettings.palettes(TestSettings.shippedWith(surface, Map.of(block, "2")));
 
             assertEquals(List.of(TestBlocks.shipped().of(surface).blocks().getFirst()), palettes.of(surface).blocks(), surface + " has only " + block);
         }
@@ -235,14 +238,14 @@ class JumprunSettingsTest {
     private static final List<String> REROLL_KEYS = List.of(JumprunSettings.RAINBOW_REROLL_TICKS_KEY, JumprunSettings.ULTRA_REROLL_TICKS_KEY);
 
     private static IllegalArgumentException rerollRefusal(String key, String value) {
-        Configuration config = TestBlocks.shippedConfiguration();
+        Configuration config = TestSettings.shippedConfiguration();
         config.setProperty(key, value);
         return assertThrows(IllegalArgumentException.class, () -> JumprunSettings.rerollTicks(config, key));
     }
 
     @Test
     void theShippedRerollIntervalsAreTenForRainbowAndFortyForUltra() {
-        Configuration config = TestBlocks.shippedConfiguration();
+        Configuration config = TestSettings.shippedConfiguration();
 
         assertEquals(10, JumprunSettings.rerollTicks(config, JumprunSettings.RAINBOW_REROLL_TICKS_KEY));
         assertEquals(40, JumprunSettings.rerollTicks(config, JumprunSettings.ULTRA_REROLL_TICKS_KEY));
@@ -282,7 +285,7 @@ class JumprunSettingsTest {
     @Test
     void aMissingRerollIntervalNamesItsKey() {
         for (String key : REROLL_KEYS) {
-            Configuration config = TestBlocks.shippedConfiguration();
+            Configuration config = TestSettings.shippedConfiguration();
             config.clearProperty(key);
 
             assertNamesKey(key, assertThrows(IllegalArgumentException.class, () -> JumprunSettings.rerollTicks(config, key)));

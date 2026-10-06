@@ -26,6 +26,8 @@ import java.util.UUID;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
+import net.onelitefeather.titan.feature.jumprun.course.Mode;
+import net.onelitefeather.titan.feature.jumprun.persistence.EndReason;
 
 /**
  * Names and attributes of the spans and metrics a jump and run produces. Only rare operations get

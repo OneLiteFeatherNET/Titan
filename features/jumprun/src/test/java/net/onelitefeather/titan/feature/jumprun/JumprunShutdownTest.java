@@ -36,6 +36,9 @@ import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.testfixtures.EventListenerCounter;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
+import net.onelitefeather.titan.feature.jumprun.course.Mode;
+import net.onelitefeather.titan.feature.jumprun.course.TestBlocks;
+import net.onelitefeather.titan.feature.jumprun.persistence.InMemoryRunRecords;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -45,7 +48,7 @@ class JumprunShutdownTest {
     @Test
     void stoppingDetachesTheColumnsListeners(Env env) {
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            JumprunModule module = new JumprunModule(titan.node(), () -> null, List::of, new InMemoryRunRecords(), RecordingLobbyItems::new, new RunMessages(), () -> JumprunFixture.SEED, TestBlocks.shippedReader(), TestBlocks.BOUNDS, JumprunFixture.CLOCK);
+            JumprunModule module = new JumprunModule(titan.node(), () -> null, List::of, new InMemoryRunRecords(), RecordingLobbyItems::new, new RunMessages(), () -> JumprunFixture.SEED, TestSettings.shippedReader(), TestBlocks.BOUNDS, JumprunFixture.CLOCK);
             module.start();
             EventNode<Event> featureNode = titan.node().getChildren().iterator().next();
             assertTrue(EventListenerCounter.countListeners(featureNode) > 0, "the column listens while it runs");
@@ -110,7 +113,7 @@ class JumprunShutdownTest {
     @Test
     void stoppingAColumnThatNeverStartedDoesNotFail(Env env) {
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            JumprunModule module = new JumprunModule(titan.node(), () -> null, List::of, new InMemoryRunRecords(), RecordingLobbyItems::new, new RunMessages(), () -> JumprunFixture.SEED, TestBlocks.shippedReader(), TestBlocks.BOUNDS, JumprunFixture.CLOCK);
+            JumprunModule module = new JumprunModule(titan.node(), () -> null, List::of, new InMemoryRunRecords(), RecordingLobbyItems::new, new RunMessages(), () -> JumprunFixture.SEED, TestSettings.shippedReader(), TestBlocks.BOUNDS, JumprunFixture.CLOCK);
 
             assertDoesNotThrow(module::stop);
         }

@@ -36,6 +36,9 @@ import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
+import net.onelitefeather.titan.feature.jumprun.course.Surface;
+import net.onelitefeather.titan.feature.jumprun.course.TestBlocks;
+import net.onelitefeather.titan.feature.jumprun.persistence.InMemoryRunRecords;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -108,7 +111,7 @@ class JumprunMaterialTest {
 
     @Test
     void anOverriddenPaletteChangesTheMaterialsSent(Env env) {
-        Configuration config = TestBlocks.shippedWith(Surface.FULL, Map.of("lime_wool", "1"));
+        Configuration config = TestSettings.shippedWith(Surface.FULL, Map.of("lime_wool", "1"));
         try (JumprunFixture fixture = JumprunFixture.start(env, config)) {
             StartedRun run = StartedRun.start(env, fixture);
             Set<Integer> states = new HashSet<>();
@@ -124,7 +127,7 @@ class JumprunMaterialTest {
 
     @Test
     void anInvalidPaletteAbortsTheStartWithItsKey(Env env) {
-        Configuration config = TestBlocks.shippedWith(Surface.FULL, Map.of("lime_wool", "-1"));
+        Configuration config = TestSettings.shippedWith(Surface.FULL, Map.of("lime_wool", "-1"));
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
             JumprunModule module = new JumprunModule(titan.node(), () -> null, List::of, new InMemoryRunRecords(), RecordingLobbyItems::new, new RunMessages(), () -> JumprunFixture.SEED, new JumprunConfig(config), TestBlocks.BOUNDS, JumprunFixture.CLOCK);
 
@@ -145,7 +148,7 @@ class JumprunMaterialTest {
     }
 
     private static void assertInvalidRerollAborts(Env env, String key) {
-        Configuration config = TestBlocks.shippedConfiguration();
+        Configuration config = TestSettings.shippedConfiguration();
         config.setProperty(key, "0");
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
             JumprunModule module = new JumprunModule(titan.node(), () -> null, List::of, new InMemoryRunRecords(), RecordingLobbyItems::new, new RunMessages(), () -> JumprunFixture.SEED, new JumprunConfig(config), TestBlocks.BOUNDS, JumprunFixture.CLOCK);

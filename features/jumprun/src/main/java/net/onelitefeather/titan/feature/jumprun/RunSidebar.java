@@ -22,6 +22,8 @@ import net.minestom.server.entity.Player;
 import net.minestom.server.scoreboard.Sidebar;
 import net.minestom.server.scoreboard.Sidebar.NumberFormat;
 import net.minestom.server.scoreboard.Sidebar.ScoreboardLine;
+import net.onelitefeather.titan.feature.jumprun.course.Mode;
+import net.onelitefeather.titan.feature.jumprun.persistence.TopThree;
 
 /**
  * The sidebar of the runner: score, record and the top three of the mode. Presentation only; what

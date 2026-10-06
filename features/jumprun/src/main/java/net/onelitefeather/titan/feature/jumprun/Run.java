@@ -20,6 +20,13 @@ import java.util.List;
 import java.util.OptionalInt;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
+import net.onelitefeather.titan.feature.jumprun.course.Course;
+import net.onelitefeather.titan.feature.jumprun.course.CourseBlock;
+import net.onelitefeather.titan.feature.jumprun.course.Mode;
+import net.onelitefeather.titan.feature.jumprun.course.Reroller;
+import net.onelitefeather.titan.feature.jumprun.display.FakeBlocks;
+import net.onelitefeather.titan.feature.jumprun.display.Spectators;
+import net.onelitefeather.titan.feature.jumprun.space.BlockPos;
 
 /**
  * One player's running course. The start block is a real block of the world, so it is never part

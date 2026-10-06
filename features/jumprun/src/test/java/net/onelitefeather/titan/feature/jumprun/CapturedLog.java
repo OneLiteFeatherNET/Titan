@@ -26,28 +26,28 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.event.KeyValuePair;
 
 /** The lines one class logs while it is open; each test owns its own, so none sees another's. */
-final class CapturedLog implements AutoCloseable {
+public final class CapturedLog implements AutoCloseable {
 
     private final Logger logger;
     private final ListAppender<ILoggingEvent> lines = new ListAppender<>();
 
-    CapturedLog(Class<?> source) {
+    public CapturedLog(Class<?> source) {
         this.logger = (Logger) LoggerFactory.getLogger(source);
         this.lines.start();
         this.logger.addAppender(this.lines);
     }
 
-    List<ILoggingEvent> warnings() {
+    public List<ILoggingEvent> warnings() {
         return this.lines.list.stream().filter(line -> line.getLevel() == Level.WARN).toList();
     }
 
     /** The value of the key-value pair {@code key} on {@code line}, or {@code null}. */
-    static Object valueOf(ILoggingEvent line, String key) {
+    public static Object valueOf(ILoggingEvent line, String key) {
         return line.getKeyValuePairs() == null ? null : line.getKeyValuePairs().stream().filter(pair -> pair.key.equals(key)).map((KeyValuePair pair) -> pair.value).findFirst().orElse(null);
     }
 
     /** The exception {@code line} carries. */
-    static Throwable causeOf(ILoggingEvent line) {
+    public static Throwable causeOf(ILoggingEvent line) {
         IThrowableProxy proxy = line.getThrowableProxy();
         if (!(proxy instanceof ThrowableProxy thrown)) {
             throw new AssertionError("the line carries no exception: " + line.getFormattedMessage());

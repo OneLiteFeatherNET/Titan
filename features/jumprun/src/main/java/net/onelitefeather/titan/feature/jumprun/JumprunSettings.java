@@ -28,6 +28,10 @@ import java.util.regex.Pattern;
 import net.kyori.adventure.key.InvalidKeyException;
 import net.minestom.server.coordinate.Point;
 import net.minestom.server.instance.block.Block;
+import net.onelitefeather.titan.feature.jumprun.course.Palette;
+import net.onelitefeather.titan.feature.jumprun.course.Palettes;
+import net.onelitefeather.titan.feature.jumprun.course.Step;
+import net.onelitefeather.titan.feature.jumprun.course.Surface;
 
 /**
  * Parsing and validation of {@code jumprun.palettes.<shape>.<block>: <weight>} (weight 0 switches a

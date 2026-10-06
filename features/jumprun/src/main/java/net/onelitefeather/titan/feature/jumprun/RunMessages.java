@@ -24,6 +24,7 @@ import net.kyori.adventure.text.ComponentLike;
 import net.kyori.adventure.text.minimessage.translation.Argument;
 import net.kyori.adventure.text.minimessage.translation.MiniMessageTranslationStore;
 import net.kyori.adventure.translation.GlobalTranslator;
+import net.onelitefeather.titan.feature.jumprun.course.Mode;
 
 /**
  * Translated texts of the Jump &amp; Run. Rendering is explicit via {@link GlobalTranslator}, so it

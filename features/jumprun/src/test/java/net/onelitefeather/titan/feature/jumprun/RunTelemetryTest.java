@@ -32,6 +32,8 @@ import java.util.Optional;
 import java.util.UUID;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.onelitefeather.titan.core.testfixtures.TestTelemetry;
+import net.onelitefeather.titan.feature.jumprun.course.Mode;
+import net.onelitefeather.titan.feature.jumprun.persistence.EndReason;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 

@@ -23,13 +23,14 @@ import java.util.Optional;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.timer.Scheduler;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
+import net.onelitefeather.titan.feature.jumprun.persistence.InMemoryRunRecords;
 import org.junit.jupiter.api.Test;
 
 class JumprunBoundsTest {
 
     @Test
     void startingWithoutTheLobbyHeightBoundsFailsClearly() {
-        JumprunModule module = new JumprunModule(EventNode.all("unused"), () -> null, List::of, new InMemoryRunRecords(), Optional.empty(), Runnable::run, Scheduler.newScheduler(), RecordingLobbyItems::new, new RunMessages(), () -> JumprunFixture.SEED, TestBlocks.shippedReader(), () -> {
+        JumprunModule module = new JumprunModule(EventNode.all("unused"), () -> null, List::of, new InMemoryRunRecords(), Optional.empty(), Runnable::run, Scheduler.newScheduler(), RecordingLobbyItems::new, new RunMessages(), () -> JumprunFixture.SEED, TestSettings.shippedReader(), () -> {
             throw new IllegalStateException("no spawn column");
         }, JumprunFixture.CLOCK, Telemetry.noop());
 

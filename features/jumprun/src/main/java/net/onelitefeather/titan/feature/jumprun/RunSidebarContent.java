@@ -27,6 +27,9 @@ import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.object.ObjectContents;
+import net.onelitefeather.titan.feature.jumprun.course.Mode;
+import net.onelitefeather.titan.feature.jumprun.persistence.TopEntry;
+import net.onelitefeather.titan.feature.jumprun.persistence.TopThree;
 
 /** What the sidebar of a run shows, as lines from top to bottom; a pure function of its inputs. */
 final class RunSidebarContent {

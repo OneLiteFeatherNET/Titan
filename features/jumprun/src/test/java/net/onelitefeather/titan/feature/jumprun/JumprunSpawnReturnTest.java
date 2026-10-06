@@ -37,6 +37,8 @@ import net.minestom.testing.Env;
 import net.minestom.testing.TestConnection;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.module.LobbyReturnToSpawnEvent;
+import net.onelitefeather.titan.feature.jumprun.course.Mode;
+import net.onelitefeather.titan.feature.jumprun.persistence.EndReason;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 

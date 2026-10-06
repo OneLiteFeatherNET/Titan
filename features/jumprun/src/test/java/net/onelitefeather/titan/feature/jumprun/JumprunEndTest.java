@@ -33,6 +33,7 @@ import net.minestom.server.network.packet.server.play.SystemChatPacket;
 import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.feature.jumprun.course.Mode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 

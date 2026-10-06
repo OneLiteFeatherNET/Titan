@@ -22,6 +22,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.ObjectComponent;
 import net.kyori.adventure.text.object.SpriteObjectContents;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import net.onelitefeather.titan.feature.jumprun.course.Mode;
 import org.junit.jupiter.api.Test;
 
 class ScoreLabelTest {

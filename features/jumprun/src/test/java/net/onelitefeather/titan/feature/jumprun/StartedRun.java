@@ -30,6 +30,8 @@ import net.minestom.server.network.packet.server.play.SpawnEntityPacket;
 import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.TestConnection;
+import net.onelitefeather.titan.feature.jumprun.course.Mode;
+import net.onelitefeather.titan.feature.jumprun.space.BlockPos;
 
 /** A started run of one player, with the blocks it was shown at the start. */
 record StartedRun(JumprunFixture fixture, TestConnection connection, Player player,

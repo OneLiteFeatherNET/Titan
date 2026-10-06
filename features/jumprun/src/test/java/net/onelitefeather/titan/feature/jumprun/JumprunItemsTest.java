@@ -28,12 +28,14 @@ import net.minestom.server.item.Material;
 import net.minestom.testing.RegistriesTest;
 import net.onelitefeather.titan.core.module.item.ItemSlot;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
+import net.onelitefeather.titan.feature.jumprun.course.TestBlocks;
+import net.onelitefeather.titan.feature.jumprun.persistence.InMemoryRunRecords;
 import org.junit.jupiter.api.Test;
 
 @RegistriesTest
 class JumprunItemsTest {
 
-    private final LobbyItem item = new JumprunItems().jumprun(new JumprunModule(EventNode.all("unused"), () -> null, List::of, new InMemoryRunRecords(), RecordingLobbyItems::new, new RunMessages(), () -> 1L, TestBlocks.shippedReader(), TestBlocks.BOUNDS, JumprunFixture.CLOCK));
+    private final LobbyItem item = new JumprunItems().jumprun(new JumprunModule(EventNode.all("unused"), () -> null, List::of, new InMemoryRunRecords(), RecordingLobbyItems::new, new RunMessages(), () -> 1L, TestSettings.shippedReader(), TestBlocks.BOUNDS, JumprunFixture.CLOCK));
 
     @Test
     void theItemHasTheJumprunKeyAndBelongsToTheFeature() {
