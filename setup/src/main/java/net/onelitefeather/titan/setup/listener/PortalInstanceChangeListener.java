@@ -17,7 +17,7 @@ package net.onelitefeather.titan.setup.listener;
 
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.instance.RemoveEntityFromInstanceEvent;
-import net.onelitefeather.titan.setup.portal.LabelPreview;
+import net.onelitefeather.titan.setup.portal.preview.LabelPreview;
 
 import java.util.function.Consumer;
 
