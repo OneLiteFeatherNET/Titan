@@ -16,10 +16,10 @@
 package net.onelitefeather.titan.setup.listener;
 
 import net.minestom.server.event.player.PlayerDisconnectEvent;
-import net.onelitefeather.titan.setup.portal.DraftPreview;
-import net.onelitefeather.titan.setup.portal.LabelPreview;
-import net.onelitefeather.titan.setup.portal.PortalEditor;
-import net.onelitefeather.titan.setup.portal.PortalShow;
+import net.onelitefeather.titan.setup.portal.editor.PortalEditor;
+import net.onelitefeather.titan.setup.portal.preview.DraftPreview;
+import net.onelitefeather.titan.setup.portal.preview.LabelPreview;
+import net.onelitefeather.titan.setup.portal.preview.PortalShow;
 
 import java.util.UUID;
 import java.util.function.Consumer;
