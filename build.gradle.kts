@@ -1,7 +1,7 @@
 import com.diffplug.gradle.spotless.SpotlessExtension
 
 plugins {
-    id("com.diffplug.spotless") version "8.10.3" apply false
+    id("com.diffplug.spotless") version "8.10.4" apply false
     // No "id(\"com.gradleup.shadow\") ... apply false" here: buildSrc's own
     // "implementation(\"com.gradleup.shadow:shadow-gradle-plugin:...\")" (needed so the
     // titan.app-variant convention plugin can apply Shadow) already puts the plugin on every
