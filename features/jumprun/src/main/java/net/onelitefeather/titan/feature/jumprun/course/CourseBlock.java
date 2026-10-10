@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.feature.jumprun.course;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import net.minestom.server.coordinate.Point;
@@ -27,7 +28,7 @@ import net.onelitefeather.titan.feature.jumprun.space.BlockPos;
  * the skin of a team member, which is not part of the block state.
  */
 public record CourseBlock(BlockPos pos, Surface surface, Block material,
-                          Optional<HeadSkin> skin) implements Placement {
+                          Optional<HeadSkin> skin, Optional<Tower> tower) implements Placement {
 
     /**
      * A landing reported by the client is a hair off the exact top; this much is still "standing on
@@ -38,8 +39,31 @@ public record CourseBlock(BlockPos pos, Surface surface, Block material,
     /** A player standing on an edge still has the step under part of the hitbox. */
     private static final double PLAYER_HALF_WIDTH = 0.3;
 
+    public CourseBlock(BlockPos pos, Surface surface, Block material, Optional<HeadSkin> skin) {
+        this(pos, surface, material, skin, Optional.empty());
+    }
+
     public CourseBlock(BlockPos pos, Surface surface, Block material) {
-        this(pos, surface, material, Optional.empty());
+        this(pos, surface, material, Optional.empty(), Optional.empty());
+    }
+
+    @Override
+    public Optional<Climb> climb() {
+        return tower.map(Tower::climb);
+    }
+
+    /** The pillar and the ladder or vine of a tower, built from the material of this block. */
+    @Override
+    public List<Cell> attachments() {
+        return tower.map(built -> built.climb().cells(pos, material, built.climbing())).orElse(List.of());
+    }
+
+    /** Everything the runner sees of this block: the block itself and its attachments. */
+    public List<Cell> cells() {
+        List<Cell> cells = new ArrayList<>();
+        cells.add(new Cell(pos, material));
+        cells.addAll(attachments());
+        return cells;
     }
 
     List<Step> steps() {

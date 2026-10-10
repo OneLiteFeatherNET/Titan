@@ -52,7 +52,7 @@ final class Clearance {
         if (others.isEmpty()) {
             return true;
         }
-        List<FlightPath.Cell> cells = FlightPath.cellsUpTo(jump.from().pos(), jump.to().pos());
+        List<FlightPath.Cell> cells = crossedCells(jump);
         return others.stream().noneMatch(pos -> cells.stream().anyMatch(cell -> isTooClose(cell, pos)));
     }
 
@@ -62,17 +62,42 @@ final class Clearance {
      * {@code visible} is in course order.
      */
     private static boolean staysOutOfPendingJumps(Jump jump, Collection<? extends Placement> visible) {
-        List<BlockPos> positions = visible.stream().map(Placement::pos).toList();
+        List<Placement> placed = List.copyOf(visible);
         BlockPos target = jump.to().pos();
-        for (int i = 1; i <= positions.indexOf(jump.from().pos()); i++) {
-            BlockPos start = positions.get(i - 1);
-            BlockPos end = positions.get(i);
+        for (int i = 1; i <= placed.indexOf(jump.from()); i++) {
+            Jump pending = new Jump(placed.get(i - 1), placed.get(i));
+            BlockPos start = pending.from().pos();
+            BlockPos end = pending.to().pos();
             boolean inSpan = target.y() >= Math.min(start.y(), end.y()) - HEIGHT_MARGIN && target.y() <= Math.max(start.y(), end.y()) + HEIGHT_MARGIN;
-            if (inSpan && FlightPath.cellsBetween(start, end).stream().anyMatch(cell -> isTooClose(cell, target))) {
+            if (inSpan && flownOver(pending).stream().anyMatch(cell -> isTooClose(cell, target))) {
                 return false;
             }
         }
         return true;
+    }
+
+    /**
+     * The XZ cells a jump takes up up to its target: its flight path, or the columns of a tower.
+     */
+    private static List<FlightPath.Cell> crossedCells(Jump jump) {
+        if (jump.to().climb().isPresent()) {
+            return List.of(column(jump.from().pos()), column(jump.to().pos()));
+        }
+        return FlightPath.cellsUpTo(jump.from().pos(), jump.to().pos());
+    }
+
+    /**
+     * The XZ cells a jump flies over, without its ends: the flight path, or nothing for a tower.
+     */
+    private static List<FlightPath.Cell> flownOver(Jump jump) {
+        if (jump.to().climb().isPresent()) {
+            return List.of();
+        }
+        return FlightPath.cellsBetween(jump.from().pos(), jump.to().pos());
+    }
+
+    private static FlightPath.Cell column(BlockPos pos) {
+        return new FlightPath.Cell(pos.x(), pos.z());
     }
 
     private static boolean isTooClose(FlightPath.Cell cell, BlockPos pos) {

@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.random.RandomGenerator;
 import java.util.random.RandomGeneratorFactory;
 import net.minestom.server.instance.block.Block;
+import net.onelitefeather.titan.feature.jumprun.course.Climb;
 import net.onelitefeather.titan.feature.jumprun.course.Palettes;
 import net.onelitefeather.titan.feature.jumprun.course.Surface;
 import net.onelitefeather.titan.feature.jumprun.course.TestBlocks;
@@ -290,5 +291,94 @@ class JumprunSettingsTest {
 
             assertNamesKey(key, assertThrows(IllegalArgumentException.class, () -> JumprunSettings.rerollTicks(config, key)));
         }
+    }
+
+    private static IllegalArgumentException climbRefusal(Configuration config) {
+        return assertThrows(IllegalArgumentException.class, () -> JumprunSettings.palettes(config));
+    }
+
+    @Test
+    void theShippedClimbingBlocksAreALadderAndAVine() {
+        Palettes palettes = JumprunSettings.palettes(TestSettings.shippedConfiguration());
+
+        assertEquals(List.of(Block.LADDER), palettes.climbing(Climb.Kind.LADDER).blocks(), "ladder");
+        assertEquals(List.of(Block.VINE), palettes.climbing(Climb.Kind.VINE).blocks(), "vine");
+    }
+
+    @Test
+    void theShippedClimbHeightsAreThreeToFive() {
+        Palettes palettes = JumprunSettings.palettes(TestSettings.shippedConfiguration());
+
+        assertEquals(3, palettes.minClimbHeight(), "jumprun.climb.minHeight");
+        assertEquals(5, palettes.maxClimbHeight(), "jumprun.climb.maxHeight");
+    }
+
+    @Test
+    void aBlockThatIsNotClimbableNamesItsLadderKey() {
+        Configuration config = TestSettings.shippedConfiguration();
+        config.setProperty("jumprun.palettes.ladder.ladder", "0");
+        config.setProperty("jumprun.palettes.ladder.stone", "1");
+
+        IllegalArgumentException refusal = climbRefusal(config);
+
+        assertNamesKey("jumprun.palettes.ladder.stone", refusal);
+        assertTrue(refusal.getMessage().contains("climb"), "the reason says it cannot be climbed: " + refusal.getMessage());
+    }
+
+    @Test
+    void aBlockThatIsNotClimbableNamesItsVineKey() {
+        Configuration config = TestSettings.shippedConfiguration();
+        config.setProperty("jumprun.palettes.vine.vine", "0");
+        config.setProperty("jumprun.palettes.vine.stone", "1");
+
+        assertNamesKey("jumprun.palettes.vine.stone", climbRefusal(config));
+    }
+
+    @Test
+    void aClimbingPaletteWithOnlyZeroWeightsNamesTheKey() {
+        Configuration config = TestSettings.shippedConfiguration();
+        config.setProperty("jumprun.palettes.ladder.ladder", "0");
+
+        assertNamesKey("jumprun.palettes.ladder", climbRefusal(config));
+    }
+
+    @Test
+    void aNegativeClimbingWeightNamesItsKey() {
+        Configuration config = TestSettings.shippedConfiguration();
+        config.setProperty("jumprun.palettes.ladder.ladder", "-1");
+
+        assertNamesKey("jumprun.palettes.ladder.ladder", climbRefusal(config));
+    }
+
+    @Test
+    void aMinHeightBelowTwoNamesItsKey() {
+        Configuration config = TestSettings.shippedConfiguration();
+        config.setProperty("jumprun.climb.minHeight", "1");
+
+        assertNamesKey("jumprun.climb.minHeight", climbRefusal(config));
+    }
+
+    @Test
+    void aMaxHeightBelowTheMinHeightNamesItsKey() {
+        Configuration config = TestSettings.shippedConfiguration();
+        config.setProperty("jumprun.climb.maxHeight", "2");
+
+        assertNamesKey("jumprun.climb.maxHeight", climbRefusal(config));
+    }
+
+    @Test
+    void aMaxHeightAboveEightNamesItsKey() {
+        Configuration config = TestSettings.shippedConfiguration();
+        config.setProperty("jumprun.climb.maxHeight", "9");
+
+        assertNamesKey("jumprun.climb.maxHeight", climbRefusal(config));
+    }
+
+    @Test
+    void aNonNumericClimbHeightNamesItsKey() {
+        Configuration config = TestSettings.shippedConfiguration();
+        config.setProperty("jumprun.climb.minHeight", "three");
+
+        assertNamesKey("jumprun.climb.minHeight", climbRefusal(config));
     }
 }

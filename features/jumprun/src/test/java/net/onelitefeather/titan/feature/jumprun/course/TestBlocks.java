@@ -26,6 +26,7 @@ import net.minestom.server.coordinate.Pos;
 import net.minestom.server.instance.block.Block;
 import net.onelitefeather.titan.core.module.LobbyHeightBounds;
 import net.onelitefeather.titan.feature.jumprun.space.BlockPos;
+import net.onelitefeather.titan.feature.jumprun.space.Direction;
 import net.onelitefeather.titan.feature.jumprun.space.Heading;
 import net.onelitefeather.titan.feature.jumprun.space.SpaceProbe;
 import net.onelitefeather.titan.feature.jumprun.space.SpawnZone;
@@ -59,7 +60,14 @@ public final class TestBlocks {
             });
             byShape.put(surface, Palette.of(entries));
         }
-        return new Palettes(byShape);
+        Map<Climb.Kind, Palette> climbing = new EnumMap<>(Climb.Kind.class);
+        for (Climb.Kind kind : Climb.Kind.values()) {
+            Configuration section = config.forPath("jumprun.palettes." + kind.configKey());
+            List<Palette.Weighted> entries = new ArrayList<>();
+            section.keys().stream().sorted().forEach(name -> entries.add(new Palette.Weighted(Block.fromKey("minecraft:" + name), Integer.parseInt(section.get(name).trim()))));
+            climbing.put(kind, Palette.of(entries));
+        }
+        return new Palettes(byShape, climbing);
     }
 
     /** The shipped palettes; {@link Palettes} is immutable, so tests may share it. */
@@ -80,6 +88,11 @@ public final class TestBlocks {
     /** A block with the first material of its shape. */
     public static CourseBlock at(BlockPos pos, Surface surface) {
         return new CourseBlock(pos, surface, shipped().of(surface).blocks().getFirst());
+    }
+
+    /** A ladder tower of the given height, facing east, whose target block is at {@code pos}. */
+    public static CourseBlock tower(BlockPos pos, int height) {
+        return new Spot(pos, Surface.FULL, Optional.of(new Climb(Direction.EAST, height, Climb.Kind.LADDER))).withMaterial(Block.STONE, Optional.empty(), Block.LADDER);
     }
 
     public static CourseGenerator generator(SpaceProbe probe, SpawnZone spawn, RandomGenerator random) {

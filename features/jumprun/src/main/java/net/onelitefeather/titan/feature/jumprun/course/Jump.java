@@ -33,11 +33,22 @@ public record Jump(Placement from, Placement to) {
     private static final double TYPE_WEIGHT = 2.0;
     private static final double GAP_WEIGHT = 1.5;
 
+    /** Cost of the lowest tower, and what each block above it adds. */
+    private static final double CLIMB_COST = 2.0;
+    private static final double CLIMB_HEIGHT_WEIGHT = 0.5;
+    private static final int CLIMB_LOWEST = 3;
+
+
     /**
      * Cost of the hardest allowed jump of the medium mode with any shape: the hardest surface over
-     * the widest flat gap.
+     * the widest flat gap, or the highest tower when that is harder.
      */
-    static final double MAX_COST = maxCost(Mode.MEDIUM, List.of(Surface.values()));
+    static final double MAX_COST = Math.max(maxCost(Mode.MEDIUM, List.of(Surface.values())), climbCost(Climb.MAX_LIMIT));
+
+    /** Cost of a tower of the given height: a fixed part plus the blocks above the lowest tower. */
+    static double climbCost(int height) {
+        return CLIMB_COST + CLIMB_HEIGHT_WEIGHT * (height - CLIMB_LOWEST);
+    }
 
     /** Cost of the hardest jump onto one of the {@code surfaces} over the widest flat gap. */
     static double maxCost(Mode mode, Collection<Surface> surfaces) {
@@ -74,8 +85,11 @@ public record Jump(Placement from, Placement to) {
         return rise() > 0;
     }
 
-    /** A diagonal jump is as hard as an axis jump one gap level wider. */
+    /** A diagonal jump is as hard as an axis jump one gap level wider; a tower costs its height. */
     double cost(Mode mode) {
+        if (to.climb().isPresent()) {
+            return climbCost(to.climb().get().height());
+        }
         int gapLevel = gap() - MIN_GAP + (isDiagonal() ? 1 : 0);
         return TYPE_WEIGHT * to.surface().typeCost() + GAP_WEIGHT * gapLevel + (isAscent() ? mode.ascentWeight() : 0.0);
     }

@@ -15,20 +15,9 @@
  */
 package net.onelitefeather.titan.feature.jumprun.course;
 
-import java.util.Optional;
 import net.minestom.server.instance.block.Block;
-import net.onelitefeather.titan.feature.jumprun.head.HeadSkin;
 import net.onelitefeather.titan.feature.jumprun.space.BlockPos;
 
-/** A place a course block could go: position and shape, before a material is drawn for it. */
-record Spot(BlockPos pos, Surface surface, Optional<Climb> climb) implements Placement {
-
-    Spot(BlockPos pos, Surface surface) {
-        this(pos, surface, Optional.empty());
-    }
-
-    /** The block with its material; a tower gets the climbing block it is built with. */
-    CourseBlock withMaterial(Block material, Optional<HeadSkin> skin, Block climbing) {
-        return new CourseBlock(pos, surface, material, skin, climb.map(tower -> new Tower(tower, climbing)));
-    }
+/** A block the runner sees next to a course block, which is not a block of the course itself. */
+public record Cell(BlockPos pos, Block block) {
 }

@@ -26,6 +26,7 @@ import net.minestom.server.instance.block.BlockEntityType;
 import net.minestom.server.network.packet.server.play.BlockChangePacket;
 import net.minestom.server.network.packet.server.play.BlockEntityDataPacket;
 import net.minestom.server.network.player.ResolvableProfile;
+import net.onelitefeather.titan.feature.jumprun.course.Cell;
 import net.onelitefeather.titan.feature.jumprun.course.CourseBlock;
 import net.onelitefeather.titan.feature.jumprun.head.HeadSkin;
 import net.onelitefeather.titan.feature.jumprun.space.BlockPos;
@@ -35,7 +36,9 @@ public final class FakeBlocks {
 
     public void show(Player player, Collection<CourseBlock> blocks) {
         for (CourseBlock block : blocks) {
-            player.sendPacket(new BlockChangePacket(toPoint(block.pos()), block.material()));
+            for (Cell cell : block.cells()) {
+                player.sendPacket(new BlockChangePacket(toPoint(cell.pos()), cell.block()));
+            }
             block.skin().ifPresent(skin -> player.sendPacket(new BlockEntityDataPacket(toPoint(block.pos()), BlockEntityType.SKULL, skullData(skin))));
         }
     }
@@ -52,9 +55,11 @@ public final class FakeBlocks {
             return;
         }
         for (CourseBlock block : blocks) {
-            BlockPos pos = block.pos();
-            if (instance.isChunkLoaded(pos.x() >> 4, pos.z() >> 4)) {
-                player.sendPacket(new BlockChangePacket(toPoint(pos), realBlock(instance, pos)));
+            for (Cell cell : block.cells()) {
+                BlockPos pos = cell.pos();
+                if (instance.isChunkLoaded(pos.x() >> 4, pos.z() >> 4)) {
+                    player.sendPacket(new BlockChangePacket(toPoint(pos), realBlock(instance, pos)));
+                }
             }
         }
     }

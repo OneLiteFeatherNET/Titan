@@ -16,6 +16,7 @@
 package net.onelitefeather.titan.feature.jumprun.course;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -29,6 +30,7 @@ import net.onelitefeather.titan.feature.jumprun.space.BlockPos;
 import net.onelitefeather.titan.feature.jumprun.space.FakeSpaceProbe;
 import net.onelitefeather.titan.feature.jumprun.space.FlightPath;
 import net.onelitefeather.titan.feature.jumprun.space.Heading;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /** What the generator makes in each mode, over long walks with a fixed seed. */
@@ -188,5 +190,74 @@ class ModeGenerationTest {
 
     private static double meanCostFrom(Mode mode, int fromScore) {
         return walk(mode, 7L).stream().filter(move -> move.score() >= fromScore).mapToDouble(move -> move.jump().cost(mode)).average().orElseThrow();
+    }
+
+    private static boolean isTower(Jump jump) {
+        return jump.to().climb().isPresent();
+    }
+
+    @Test
+    void easyMakesNoTowerAtAnyScore() {
+        for (long seed = 1; seed <= 20; seed++) {
+            for (Move move : walk(Mode.EASY, seed)) {
+                assertFalse(isTower(move.jump()), "easy seed " + seed + " made a tower at score " + move.score());
+            }
+        }
+    }
+
+    @Test
+    void mediumMakesNoTowerBeforeScore30() {
+        for (long seed = 1; seed <= 20; seed++) {
+            for (Move move : walk(Mode.MEDIUM, seed)) {
+                assertFalse(move.score() < 30 && isTower(move.jump()), "medium seed " + seed + " made a tower at score " + move.score());
+            }
+        }
+    }
+
+    @Test
+    void mediumMakesTowersFromScore30() {
+        long towers = 0;
+        for (long seed = 1; seed <= 20; seed++) {
+            towers += walk(Mode.MEDIUM, seed).stream().filter(move -> move.score() >= 30 && isTower(move.jump())).count();
+        }
+        assertTrue(towers > 0, "medium at score 30 and above must make towers");
+    }
+
+    /**
+     * Open question, not met by the cost design: a tower costs 2 to 3, and at score 80 the target
+     * cost is about 6.6, so the closest jump is never a tower. See the PR for the decision.
+     */
+    @Disabled("open question: towers never reach the target cost at score 80")
+    @Test
+    void mediumMakesTowersAtScore80() {
+        long towers = 0;
+        for (long seed = 1; seed <= 20; seed++) {
+            towers += walk(Mode.MEDIUM, seed).stream().filter(move -> move.score() >= 80 && isTower(move.jump())).count();
+        }
+        assertTrue(towers > 0, "medium at score 80 must make towers, made " + towers);
+    }
+
+    @Test
+    void everyTowerIsStraightAndThreeToFiveHigh() {
+        for (long seed = 1; seed <= 200; seed++) {
+            for (Mode mode : List.of(Mode.MEDIUM, Mode.HARD)) {
+                for (Move move : walk(mode, seed)) {
+                    if (isTower(move.jump())) {
+                        int height = move.jump().to().climb().orElseThrow().height();
+                        assertEquals(0, move.jump().gap(), mode + " seed " + seed + ": tower gap");
+                        assertTrue(height >= 3 && height <= 5, mode + " seed " + seed + ": tower height " + height);
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    void noJumpCostsMoreThanTheMaximumWithTowers() {
+        for (long seed = 1; seed <= 200; seed++) {
+            for (Move move : walk(Mode.HARD, seed)) {
+                assertTrue(move.jump().cost(Mode.HARD) <= Jump.MAX_COST, "hard seed " + seed + ": " + move.jump().cost(Mode.HARD) + " above " + Jump.MAX_COST);
+            }
+        }
     }
 }

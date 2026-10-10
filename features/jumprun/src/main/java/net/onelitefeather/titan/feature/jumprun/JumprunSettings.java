@@ -28,6 +28,7 @@ import java.util.regex.Pattern;
 import net.kyori.adventure.key.InvalidKeyException;
 import net.minestom.server.coordinate.Point;
 import net.minestom.server.instance.block.Block;
+import net.onelitefeather.titan.feature.jumprun.course.Climb;
 import net.onelitefeather.titan.feature.jumprun.course.Palette;
 import net.onelitefeather.titan.feature.jumprun.course.Palettes;
 import net.onelitefeather.titan.feature.jumprun.course.Step;
@@ -45,6 +46,11 @@ final class JumprunSettings {
     static final String RAINBOW_REROLL_TICKS_KEY = "jumprun.rainbow.rerollTicks";
     static final String ULTRA_REROLL_TICKS_KEY = "jumprun.ultra.rerollTicks";
     static final String HEAD_PROFILES_KEY = "jumprun.heads.profiles";
+    static final String CLIMB_MIN_HEIGHT_KEY = "jumprun.climb.minHeight";
+    static final String CLIMB_MAX_HEIGHT_KEY = "jumprun.climb.maxHeight";
+
+    /** The blocks a tower may climb with: the ones the client treats as climbable. */
+    private static final Set<String> CLIMBABLE = Set.of("ladder", "vine", "scaffolding", "weeping_vines", "weeping_vines_plant", "twisting_vines", "twisting_vines_plant", "cave_vines", "cave_vines_plant");
 
     private static final Pattern UUID_FORMAT = Pattern.compile("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
 
@@ -73,7 +79,62 @@ final class JumprunSettings {
             section.keys().forEach(block -> weights.put(block, section.get(block)));
             byShape.put(surface, palette(surface, weights));
         }
-        return new Palettes(byShape);
+        Map<Climb.Kind, Palette> climbing = new EnumMap<>(Climb.Kind.class);
+        for (Climb.Kind kind : Climb.Kind.values()) {
+            climbing.put(kind, climbPalette(kind, config.forPath(PALETTES_KEY + "." + kind.configKey())));
+        }
+        int min = climbHeight(config, CLIMB_MIN_HEIGHT_KEY);
+        int max = climbHeight(config, CLIMB_MAX_HEIGHT_KEY);
+        if (max < min) {
+            throw new IllegalArgumentException(CLIMB_MAX_HEIGHT_KEY + ": must not be below " + CLIMB_MIN_HEIGHT_KEY + " (" + min + "), got " + max);
+        }
+        return new Palettes(byShape, climbing).withClimbHeights(min, max);
+    }
+
+    /**
+     * The ladder or vine materials of a tower; each one must be climbable, whatever its weight.
+     */
+    private static Palette climbPalette(Climb.Kind kind, Configuration section) {
+        String sectionKey = PALETTES_KEY + "." + kind.configKey();
+        Map<String, String> weights = new TreeMap<>();
+        section.keys().forEach(block -> weights.put(block, section.get(block)));
+        if (weights.isEmpty()) {
+            throw new IllegalArgumentException(sectionKey + " must not be empty - the tower could never be climbed otherwise");
+        }
+        List<Palette.Weighted> entries = new ArrayList<>();
+        new TreeMap<>(weights).forEach((name, raw) -> {
+            String key = sectionKey + "." + name;
+            Block block = named(key, name);
+            if (!CLIMBABLE.contains(name)) {
+                throw new IllegalArgumentException(key + ": " + name + " cannot be climbed");
+            }
+            int weight = weight(key, raw);
+            if (weight > 0) {
+                entries.add(new Palette.Weighted(block, weight));
+            }
+        });
+        if (entries.isEmpty()) {
+            throw new IllegalArgumentException(sectionKey + " needs a material with a weight above 0 - the tower could never be climbed otherwise");
+        }
+        return Palette.of(entries);
+    }
+
+    /**
+     * @throws IllegalArgumentException naming {@code key} when it is missing, not a whole number
+     *                                  or outside the range of towers
+     */
+    static int climbHeight(Configuration config, String key) {
+        String raw = config.getOptional(key).orElseThrow(() -> new IllegalArgumentException(key + ": missing, it needs a whole number from " + Climb.MIN_LIMIT + " to " + Climb.MAX_LIMIT));
+        int height;
+        try {
+            height = Integer.parseInt(raw.trim());
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(key + ": must be a whole number, got '" + raw + "'");
+        }
+        if (height < Climb.MIN_LIMIT || height > Climb.MAX_LIMIT) {
+            throw new IllegalArgumentException(key + ": must be from " + Climb.MIN_LIMIT + " to " + Climb.MAX_LIMIT + ", got " + height);
+        }
+        return height;
     }
 
     /**
@@ -135,8 +196,8 @@ final class JumprunSettings {
         return Palette.of(entries);
     }
 
-    private static Block block(Surface surface, String name) {
-        String key = key(surface, name);
+    /** The block of the given name, or a refusal naming {@code key}. */
+    private static Block named(String key, String name) {
         Block block;
         try {
             block = Block.fromKey("minecraft:" + name);
@@ -146,6 +207,12 @@ final class JumprunSettings {
         if (block == null) {
             throw new IllegalArgumentException(key + ": unknown block '" + name + "'");
         }
+        return block;
+    }
+
+    private static Block block(Surface surface, String name) {
+        String key = key(surface, name);
+        Block block = named(key, name);
         Block shaped = surface.shape(block);
         double top = shaped.collisionShape().relativeEnd().y();
         if (Math.abs(top - surface.top()) > TOP_TOLERANCE) {
@@ -173,7 +240,10 @@ final class JumprunSettings {
     }
 
     private static int weight(Surface surface, String name, String raw) {
-        String key = key(surface, name);
+        return weight(key(surface, name), raw);
+    }
+
+    private static int weight(String key, String raw) {
         int weight;
         try {
             weight = Integer.parseInt(raw.trim());

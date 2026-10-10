@@ -717,7 +717,7 @@ class CourseGeneratorTest {
 
     @Test
     void generatedGapsStayWithinTheLimits() {
-        assertForEvery(jumps, jump -> jump.gap() >= Jump.MIN_GAP && jump.gap() <= Jump.MAX_GAP, "gap");
+        assertForEvery(jumps, jump -> jump.to().climb().isPresent() || jump.gap() >= Jump.MIN_GAP && jump.gap() <= Jump.MAX_GAP, "gap");
     }
 
     @Test
@@ -732,7 +732,7 @@ class CourseGeneratorTest {
 
     @Test
     void generatedRisesStayWithinTheLimit() {
-        assertForEvery(jumps, jump -> jump.rise() <= Jump.MAX_RISE, "rise");
+        assertForEvery(jumps, jump -> jump.to().climb().isPresent() || jump.rise() <= Jump.MAX_RISE, "rise");
     }
 
     @Test
@@ -843,6 +843,55 @@ class CourseGeneratorTest {
             int turn = Integer.parseInt(head.material().getProperty("rotation"));
             assertTrue(turn >= 0 && turn <= 15, "turn " + turn);
             assertEquals(head.material().getProperty("rotation"), generator.redrawn(head, Optional.empty(), Optional.empty()).material().getProperty("rotation"), "redrawn keeps the turn");
+        }
+    }
+
+    private static List<BlockPos> attachmentPositions(List<CourseBlock> blocks) {
+        return blocks.stream().flatMap(block -> block.attachments().stream()).map(Cell::pos).toList();
+    }
+
+    @Test
+    void aNewBlockNeverTakesACellOfAVisibleTower() {
+        int towers = 0;
+        for (long seed = 1; seed <= 20; seed++) {
+            CourseGenerator generator = TestBlocks.generator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(seed));
+            List<CourseBlock> course = new ArrayList<>(List.of(SOURCE));
+            Phase phase = new Phase.Scored(30, EAST, Mode.MEDIUM);
+            for (int jump = 0; jump < 60; jump++) {
+                Optional<CourseBlock> next = generator.next(course, phase);
+                if (next.isEmpty()) {
+                    break;
+                }
+                List<CourseBlock> visible = course.subList(Math.max(0, course.size() - Course.VISIBLE_BEFORE_NEW), course.size());
+                assertFalse(attachmentPositions(visible).contains(next.get().pos()), "seed " + seed + ": block " + jump + " in a tower cell");
+                towers += next.get().climb().isPresent() ? 1 : 0;
+                course.add(next.get());
+                phase = generator.after(course, phase);
+            }
+        }
+        assertTrue(towers > 0, "the walks must make towers, or the check proves nothing");
+    }
+
+    @Test
+    void towersAreNotMadeInTheAscent() {
+        for (long seed = 1; seed <= 50; seed++) {
+            CourseGenerator generator = TestBlocks.generator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(seed));
+            Optional<CourseBlock> next = generator.next(List.of(SOURCE), Phase.start(EAST, Mode.MEDIUM));
+
+            assertTrue(next.isPresent() && next.get().climb().isEmpty(), "seed " + seed + ": the ascent makes no tower");
+        }
+    }
+
+    @Test
+    void aTowerLeadsAlongTheMainHeading() {
+        for (long seed = 1; seed <= 20; seed++) {
+            List<CourseBlock> course = walk(TestBlocks.generator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(seed)), SOURCE, new Phase.Scored(30, EAST, Mode.MEDIUM), 60);
+            for (CourseBlock block : course) {
+                if (block.climb().isPresent()) {
+                    Direction direction = block.climb().get().direction();
+                    assertTrue(EAST.dot(direction) >= 0.0, "seed " + seed + ": tower " + direction + " against the heading");
+                }
+            }
         }
     }
 }

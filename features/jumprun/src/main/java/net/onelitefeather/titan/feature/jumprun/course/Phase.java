@@ -53,6 +53,9 @@ public sealed interface Phase {
     /** The surfaces a block of this phase may have. */
     List<Surface> surfaces();
 
+    /** The climbing blocks a tower of this phase may be built from; none in the ascent. */
+    List<Climb.Kind> climbs();
+
     /**
      * Easy jumps upward and away from the spawn, until a block stands in the open and far from the
      * spawn; they do not count towards the score. {@code jumps} is how many were made so far.
@@ -94,6 +97,11 @@ public sealed interface Phase {
         public List<Surface> surfaces() {
             return List.of(Surface.FULL);
         }
+
+        @Override
+        public List<Climb.Kind> climbs() {
+            return List.of();
+        }
     }
 
     /**
@@ -128,6 +136,11 @@ public sealed interface Phase {
         @Override
         public List<Surface> surfaces() {
             return mode.unlockedAt(score);
+        }
+
+        @Override
+        public List<Climb.Kind> climbs() {
+            return mode.climbsUnlockedAt(score);
         }
     }
 }

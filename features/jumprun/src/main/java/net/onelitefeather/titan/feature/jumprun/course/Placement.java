@@ -15,6 +15,8 @@
  */
 package net.onelitefeather.titan.feature.jumprun.course;
 
+import java.util.List;
+import java.util.Optional;
 import net.onelitefeather.titan.feature.jumprun.space.BlockPos;
 
 /** Where a block of a course sits and what shape it has; what the jump rules need to know. */
@@ -23,6 +25,14 @@ sealed interface Placement permits Spot, CourseBlock {
     BlockPos pos();
 
     Surface surface();
+
+    /** The climbing tower this block is the top of, if any. */
+    Optional<Climb> climb();
+
+    /** The blocks of a tower beside this one: its pillar and its ladder or vine. */
+    default List<Cell> attachments() {
+        return List.of();
+    }
 
     /** Absolute y of the walkable top. */
     default double topY() {

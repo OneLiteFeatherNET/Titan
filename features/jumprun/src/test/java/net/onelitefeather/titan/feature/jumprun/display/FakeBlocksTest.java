@@ -19,8 +19,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
-import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.BlockVec;
+import net.minestom.server.coordinate.Point;
+import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.block.Block;
@@ -98,5 +99,38 @@ class FakeBlocksTest {
         fakeBlocks.reset(target, ONE_STONE);
 
         assertEquals(Block.AIR.stateId(), sent.collect().getFirst().blockStateId());
+    }
+
+    private static final List<CourseBlock> ONE_TOWER = List.of(TestBlocks.tower(AT, 3));
+
+    @Test
+    void showSendsOnePacketPerCellOfATower(Env env) {
+        Instance instance = env.createFlatInstance();
+        TestConnection targetConnection = env.createConnection();
+        Player target = targetConnection.connect(instance, new Pos(0, 40, 0));
+        Collector<BlockChangePacket> forTarget = targetConnection.trackIncoming(BlockChangePacket.class);
+
+        fakeBlocks.show(target, ONE_TOWER);
+
+        List<BlockChangePacket> sent = forTarget.collect();
+        assertEquals(6, sent.size(), "the block plus its pillar and ladder cells, 2H cells in all");
+        assertTrue(sent.stream().anyMatch(packet -> Block.fromStateId(packet.blockStateId()).id() == Block.LADDER.id()), "one packet carries the ladder");
+    }
+
+    @Test
+    void resetSendsTheRealWorldForEveryCellOfATower(Env env) {
+        Instance instance = env.createFlatInstance();
+        TestConnection targetConnection = env.createConnection();
+        Player target = targetConnection.connect(instance, new Pos(0, 40, 0));
+        Collector<BlockChangePacket> afterReset = targetConnection.trackIncoming(BlockChangePacket.class);
+
+        fakeBlocks.reset(target, ONE_TOWER);
+
+        List<BlockChangePacket> sent = afterReset.collect();
+        assertEquals(6, sent.size(), "every cell of the tower is sent back to the real world");
+        for (BlockChangePacket packet : sent) {
+            Point at = packet.blockPosition();
+            assertEquals(instance.getBlock(at.blockX(), at.blockY(), at.blockZ()).stateId(), packet.blockStateId(), "the real block at " + at);
+        }
     }
 }

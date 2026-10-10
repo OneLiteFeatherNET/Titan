@@ -120,10 +120,10 @@ public final class CourseGenerator {
     public CourseBlock redrawn(CourseBlock block, Optional<HeadSkin> before, Optional<HeadSkin> after) {
         if (block.skin().isPresent()) {
             List<HeadSkin> neighbours = Stream.concat(before.stream(), after.stream()).toList();
-            return new CourseBlock(block.pos(), block.surface(), block.material(), palettes.drawHead(neighbours, block.skin().stream().toList(), random));
+            return new CourseBlock(block.pos(), block.surface(), block.material(), palettes.drawHead(neighbours, block.skin().stream().toList(), random), block.tower());
         }
         Block drawn = palettes.of(block.surface()).drawOther(block.material(), random);
-        return new CourseBlock(block.pos(), block.surface(), block.surface().withLookOf(block.material(), drawn));
+        return new CourseBlock(block.pos(), block.surface(), block.surface().withLookOf(block.material(), drawn), Optional.empty(), block.tower());
     }
 
     /**
@@ -134,7 +134,8 @@ public final class CourseGenerator {
         Surface surface = spot.surface();
         Optional<HeadSkin> skin = surface == Surface.HEAD ? palettes.drawHead(lastSkin(course).stream().toList(), List.of(), random) : Optional.empty();
         Block material = skin.isPresent() ? TEAM_HEAD : palettes.draw(surface, random);
-        return spot.withMaterial(surface.varied(material, random), skin);
+        Block climbing = spot.climb().map(climb -> palettes.drawClimb(climb.kind(), random)).orElse(Block.AIR);
+        return spot.withMaterial(surface.varied(material, random), skin, climbing);
     }
 
     static Optional<HeadSkin> lastSkin(List<CourseBlock> course) {
@@ -190,7 +191,7 @@ public final class CourseGenerator {
             }
             boolean needsAirBelow = phase instanceof Phase.Scored;
             List<Surface> surfaces = fullOnly ? List.of(Surface.FULL) : phase.surfaces();
-            return candidates(from, phase, surfaces).stream().filter(candidate -> phase.heading().dot(new Jump(from, candidate).direction()) >= 0.0).filter(candidate -> !needsAirBelow || isInTheOpen(candidate.pos(), Openness.SCORED_AIR_BELOW)).toList();
+            return candidates(from, phase, surfaces, !fullOnly).stream().filter(candidate -> phase.heading().dot(new Jump(from, candidate).direction()) >= 0.0).filter(candidate -> !needsAirBelow || isInTheOpen(candidate.pos(), Openness.SCORED_AIR_BELOW)).toList();
         }
 
         /**
@@ -247,9 +248,11 @@ public final class CourseGenerator {
      */
     private final class Space {
 
+        /** The visible blocks in course order; the last one is the block every jump leaves from. */
         private final List<Placement> visible;
         private SpaceProbe seen;
         private JumpRules rules;
+        private JumpRules climbRules;
 
         Space(List<Placement> visible) {
             this.visible = visible;
@@ -258,14 +261,24 @@ public final class CourseGenerator {
         /** Geometry first, then the world: the cheap check decides most candidates. */
         boolean isFree(Placement from, Placement to) {
             Jump jump = new Jump(from, to);
-            return Clearance.isKept(jump, visible) && portals.isKept(jump) && rules().isFree(jump);
+            return Clearance.isKept(jump, visible) && portals.isKept(jump) && rulesFor(jump).isFree(jump);
         }
 
         Openness openness() {
             return new Openness(seen());
         }
 
-        private JumpRules rules() {
+        /**
+         * A tower climbs in the room of the block it leaves from, which that block keeps free for
+         * its own jump, so the tower is checked without that room.
+         */
+        private JumpRules rulesFor(Jump jump) {
+            if (jump.to().climb().isPresent()) {
+                if (climbRules == null) {
+                    climbRules = new JumpRules(new OccupiedProbe(probe, occupiedBy(visible.subList(0, visible.size() - 1))), band);
+                }
+                return climbRules;
+            }
             if (rules == null) {
                 rules = new JumpRules(seen(), band);
             }
@@ -290,12 +303,13 @@ public final class CourseGenerator {
             for (int y = block.pos().y(); y <= block.jumpRoomTopY(); y++) {
                 occupied.add(new BlockPos(block.pos().x(), y, block.pos().z()));
             }
+            block.attachments().forEach(cell -> occupied.add(cell.pos()));
         }
         return occupied;
     }
 
     /** Every reachable jump the phase allows from the block, before looking at the world. */
-    private static List<Spot> candidates(Placement from, Phase phase, List<Surface> surfaces) {
+    private List<Spot> candidates(Placement from, Phase phase, List<Surface> surfaces, boolean withTowers) {
         int[] gaps = phase.gaps().toArray();
         int[] rises = phase.rises().toArray();
         List<Spot> candidates = new ArrayList<>();
@@ -307,7 +321,24 @@ public final class CourseGenerator {
                 }
             }
         }
+        if (withTowers && surfaces.contains(Surface.FULL)) {
+            candidates.addAll(towers(from, phase));
+        }
         return candidates.stream().filter(candidate -> JumpRules.isReachable(new Jump(from, candidate), phase.mode())).toList();
+    }
+
+    /** A tower on each axis and height of the config, for each climbing block the phase unlocks. */
+    private List<Spot> towers(Placement from, Phase phase) {
+        List<Spot> towers = new ArrayList<>();
+        for (Climb.Kind kind : phase.climbs()) {
+            for (Direction direction : Climb.DIRECTIONS) {
+                for (int height = palettes.minClimbHeight(); height <= palettes.maxClimbHeight(); height++) {
+                    BlockPos target = from.pos().offset(direction.dx(), height, direction.dz());
+                    towers.add(new Spot(target, Surface.FULL, Optional.of(new Climb(direction, height, kind))));
+                }
+            }
+        }
+        return towers;
     }
 
     /** Best candidate first. */
