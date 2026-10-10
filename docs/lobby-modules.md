@@ -958,6 +958,22 @@ Die Ticks eines Elytra-Flugs und die Raketenbrenndauer haben keinen Span. Ein Fl
 Span bei der Landung; die Lobby merkt sich den Startzeitpunkt je Spieler und vergisst ihn beim
 Disconnect.
 
+### Was Admin, Hotbar und Rechteprüfung liefern
+
+- **admin:** Span `admin.command` je Ausführung von `stop` oder `end`, auch bei Ablehnung
+  (`admin.command`, `admin.sender` = `console`/`player`, `admin.result` = `executed`/`denied`,
+  bei Spielern `user.id`). Zähler `admin.commands{command,result}`. Der Span endet, bevor das
+  Herunterfahren startet, `titan.shutdown` liegt nicht darunter.
+- **hotbar:** Span `hotbar.equip` (`hotbar.items`, `user.id`) und `hotbar.item.use`
+  (`titan.feature`, `hotbar.item`, `user.id`) je Klick auf ein Lobby-Item; ein Klick ohne Lobby-Item
+  erzeugt nichts. Zähler `hotbar.item.uses{item}`. Ein Item-Konflikt hängt das Span-Event
+  `hotbar.item_conflict` (`hotbar.conflict` = `key`/`slot`, `hotbar.item`) an `titan.startup`.
+- **luckperms:** Rechteprüfungen (`PermissionService.check`) sind hochfrequent und bekommen
+  **keinen eigenen Span**: Zähler `permission.checks{result}` (`allowed`/`denied`/`not_set`) plus
+  Span-Event `permission.check` (`permission`, `result`) am gerade aktiven Span, falls einer läuft.
+  Der Start hat den Span `permission.platform.start` (`permission.platform`,
+  `luckperms.extension.loaded`); ein doppelt geladenes LuckPerms markiert ihn als ERROR.
+
 ### Testen mit `TestTelemetry`
 
 `TestTelemetry.create()` (`core/testFixtures`) baut je Aufruf einen eigenen In-Memory-Exporter und

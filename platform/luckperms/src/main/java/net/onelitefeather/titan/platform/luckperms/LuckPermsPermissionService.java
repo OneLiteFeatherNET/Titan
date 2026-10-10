@@ -32,6 +32,7 @@ import net.minestom.server.extensions.Extension;
 import net.minestom.server.extensions.ExtensionManager;
 import net.onelitefeather.titan.core.permission.PermissionResult;
 import net.onelitefeather.titan.core.permission.PermissionService;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 
 /**
  * Resolves player permissions through LuckPerms, started here in the loader's bootstrap so it is
@@ -44,10 +45,15 @@ public final class LuckPermsPermissionService implements PermissionService {
     /** The Avaje qualifier tests use to mock this bean without starting real LuckPerms. */
     public static final String QUALIFIER = "luckperms";
 
+    private final LuckPermsTelemetry telemetry;
+
+    public LuckPermsPermissionService(Telemetry telemetry) {
+        this.telemetry = new LuckPermsTelemetry(telemetry);
+    }
+
     @PostConstruct
     void start() {
-        LuckPermsExtensionCheck.ensureNotLoadedTwice(loadedExtensionNames());
-        MinestomLoader.get().load().registerShutdownHook().start();
+        this.telemetry.started(loadedExtensionNames(), () -> MinestomLoader.get().load().registerShutdownHook().start());
     }
 
     private static List<String> loadedExtensionNames() {
@@ -60,6 +66,10 @@ public final class LuckPermsPermissionService implements PermissionService {
 
     @Override
     public PermissionResult check(UUID playerId, String permission) {
+        return this.telemetry.checked(permission, lookUp(playerId, permission));
+    }
+
+    private static PermissionResult lookUp(UUID playerId, String permission) {
         User user = LuckPermsProvider.get().getUserManager().getUser(playerId);
         if (user == null) {
             return PermissionResult.NOT_SET;

@@ -17,8 +17,9 @@
  * The LuckPerms permission platform module. See {@code docs/lobby-modules.md}, "Wie eine Column
  * Plattform-Beans bekommt", for how a module declares what it provides.
  */
-@InjectModule(name = "luckpermsPlatform", provides = PermissionService.class)
+@InjectModule(name = "luckpermsPlatform", provides = PermissionService.class, requires = {Telemetry.class})
 package net.onelitefeather.titan.platform.luckperms;
 
 import io.avaje.inject.InjectModule;
 import net.onelitefeather.titan.core.permission.PermissionService;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
