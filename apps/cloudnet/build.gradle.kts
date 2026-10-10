@@ -21,6 +21,8 @@ dependencies {
     testImplementation(libs.archunit)
     testImplementation(libs.avaje.inject)
     testImplementation(libs.avaje.config)
+    // ApplicationYamlParityTest reads the merged application.yaml raw, with the production parser.
+    testImplementation(libs.snakeyaml)
     // The season wiring test asserts on captured log lines.
     testImplementation(libs.slf4j.api)
     testImplementation(libs.logback.classic)
