@@ -178,6 +178,17 @@ Die Bridge bleibt der einzige Ort, der CloudNet-Typen kennt. `core` bekommt nur 
 - **Q9 Fehlerzähler.** Entschieden: kein eigener Lookup-Zähler. Fehler sind über `titan.lobbyswitcher.selections{result=error}` und den Span-Status sichtbar.
 - **Q10 Materialwahl und Icon.** Entschieden: `CLOCK` in Slot 8.
 
+## Abweichungen bei der Umsetzung
+
+- Das Inventar hat immer sechs Zeilen, weil ein Aves-Builder eine feste Größe hat; ungenutzte Slots tragen eine Glasscheibe (D4 sah Zeilen nach Eintragsanzahl vor).
+- Die eigene Lobby ist ein `NETHER_STAR`, kein verzaubertes Item, weil Aves `TranslatedItem` den Glint verwirft (D6 sah markiert/Glint vor).
+- Klick- und Schließ-Events leitet der `FeatureNode` des Moduls an `SwitcherInventory` weiter, weil Aves-Listener bei Inventaren je Locale nie feuern (der Spike nahm das Gegenteil an); die Liste aktualisiert sich dadurch einen Tick später.
+- Die Telemetrie liegt beim Klick- und Refresh-Code, nicht in einem eigenen Commit.
+- Die Identitäts-Bean gibt es nur im Profil CLOUDNET; ein Unit-Test für den Profil-Guard fehlt, die Container-Wiring-Tests decken ihn ab.
+- `ServerFlag.SERVER_TICKS_PER_SECOND` ist veraltet, `ViewerCounter` nutzt eine benannte Konstante 20.
+- Der Navigator-Guard-Test (`DefaultNavigatorFeatureFlagsTest`) liest `features.yaml` aus `runtime` über eine `testRuntimeOnly`-Abhängigkeit auf `:runtime`.
+- Hotbar: Nach `@PreDestroy` bleibt die Uhr in der Hotbar-Map (die Hotbar baut sie einmal), tut aber nichts.
+
 ## Spike-Ergebnis
 
 Stand: Task 1.1, ohne laufenden CloudNet-Knoten (nur Quellen gelesen, Spike-Code verworfen).
