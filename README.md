@@ -382,6 +382,12 @@ consist of lower-case letters, digits, `-` and `_`; `list`, `show` and `create` 
   (default `online`)
 - `/setup portal <id> label remove`: drop the label
 - `/setup portal <id> save|cancel|remove`
+- `/setup portal save-all`: saves every open draft of yours that is complete and valid, one answer
+  per id; a draft with a problem stays open and does not hold back the others
+- `/setup portal copy <world>`: opens a draft for each portal of another world under `worlds/`
+  (same ids and coordinates) and shows them once for you; the copied ids that replace a saved
+  portal are named separately. The source is only read, and nothing is written until `save` or
+  `save-all`. Check the positions in the loaded world before saving: the coordinates are not moved.
 
 Every edit only changes your draft and answers with what is still missing, or "complete" with a
 `[save]` button. Nothing is written until `/setup portal <id> save`, which validates the portal;

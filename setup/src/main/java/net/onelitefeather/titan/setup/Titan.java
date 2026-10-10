@@ -35,7 +35,10 @@ import net.onelitefeather.titan.setup.listener.PlayerConfigurationListener;
 import net.onelitefeather.titan.setup.listener.PlayerSpawnListener;
 import net.onelitefeather.titan.setup.listener.PortalDisconnectListener;
 import net.onelitefeather.titan.setup.listener.PortalInstanceChangeListener;
+import net.onelitefeather.titan.setup.portal.MapProviderPortalSources;
 import net.onelitefeather.titan.setup.portal.MapProviderPortalStore;
+import net.onelitefeather.titan.setup.portal.PortalSources;
+import net.onelitefeather.titan.setup.portal.editor.PortalCopier;
 import net.onelitefeather.titan.setup.portal.editor.PortalEditor;
 import net.onelitefeather.titan.setup.portal.preview.DraftPreview;
 import net.onelitefeather.titan.setup.portal.preview.LabelPreview;
@@ -72,7 +75,9 @@ public final class Titan {
         this.draftPreview = new DraftPreview(this.portalEditor);
         this.portalShow = new PortalShow();
         this.labelPreview = new LabelPreview();
-        this.portalCommand = new PortalCommand(this.portalEditor, portalStore, this.draftPreview, this.portalShow, this.labelPreview);
+        PortalSources portalSources = new MapProviderPortalSources(this.mapProvider);
+        PortalCopier portalCopier = new PortalCopier(this.portalEditor, portalSources, portalStore);
+        this.portalCommand = new PortalCommand(this.portalEditor, portalStore, this.draftPreview, this.portalShow, this.labelPreview, portalCopier, portalSources);
 
         initCommands();
         initListeners();

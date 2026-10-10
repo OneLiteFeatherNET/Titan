@@ -32,6 +32,7 @@ import net.minestom.server.entity.metadata.display.TextDisplayMeta;
 import net.minestom.server.event.instance.RemoveEntityFromInstanceEvent;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.instance.Instance;
+import net.minestom.server.network.packet.server.play.ParticlePacket;
 import net.minestom.server.network.packet.server.play.SystemChatPacket;
 import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
@@ -45,10 +46,14 @@ import net.onelitefeather.titan.core.portal.Portal;
 import net.onelitefeather.titan.core.portal.PortalLabel;
 import net.onelitefeather.titan.setup.listener.PortalDisconnectListener;
 import net.onelitefeather.titan.setup.listener.PortalInstanceChangeListener;
+import net.onelitefeather.titan.setup.portal.MapProviderPortalSources;
 import net.onelitefeather.titan.setup.portal.MapProviderPortalStore;
+import net.onelitefeather.titan.setup.portal.PortalSources;
 import net.onelitefeather.titan.setup.portal.editor.DiscPlacement;
+import net.onelitefeather.titan.setup.portal.editor.PortalCopier;
 import net.onelitefeather.titan.setup.portal.editor.PortalDraft;
 import net.onelitefeather.titan.setup.portal.editor.PortalEditor;
+import net.onelitefeather.titan.setup.portal.editor.PortalOutline;
 import net.onelitefeather.titan.setup.portal.preview.DraftPreview;
 import net.onelitefeather.titan.setup.portal.preview.LabelPreview;
 import net.onelitefeather.titan.setup.portal.preview.PortalShow;
@@ -93,12 +98,20 @@ class PortalCommandTest {
     private Player player;
     private Instance world;
 
+    private static final Portal SURVIVAL = new Portal("survival", new Box(new Vec(10, 64, 10), new Vec(14, 68, 11)), "Survival", null);
+    private static final Portal CREATIVE = new Portal("creative", new Box(new Vec(20, 64, 20), new Vec(24, 68, 21)), "Creative", null);
+
     @BeforeEach
     void setUp(Env env) throws IOException {
         Path directory = Files.createDirectories(base.resolve("worlds").resolve("world"));
         Files.writeString(directory.resolve(MapEntry.MAP_FILE_NAME), """
                 {"name":"world","spawn":{"x":1.5,"y":65,"z":2.5,"yaw":90,"pitch":0},"builders":["alice"],
                  "portals":[{"id":"old","task":"Old task","shape":{"type":"box","min":{"x":0,"y":0,"z":0},"max":{"x":1,"y":1,"z":1}}}]}""");
+        Path lobby = Files.createDirectories(base.resolve("worlds").resolve("lobby"));
+        Files.writeString(lobby.resolve(MapEntry.MAP_FILE_NAME), """
+                {"name":"lobby","portals":[{"id":"survival","task":"Survival","shape":{"type":"box","min":{"x":10,"y":64,"z":10},"max":{"x":14,"y":68,"z":11}}},
+                 {"id":"creative","task":"Creative","shape":{"type":"box","min":{"x":20,"y":64,"z":20},"max":{"x":24,"y":68,"z":21}}}]}""");
+        Files.createDirectories(base.resolve("worlds").resolve("empty"));
         provider = MapProvider.create(base, env.process().instance().createInstanceContainer(), Optional.of("world"));
         store = new MapProviderPortalStore(provider);
         editor = new PortalEditor(store);
@@ -106,7 +119,9 @@ class PortalCommandTest {
         show = new PortalShow();
         labelPreview = new LabelPreview();
         commands = env.process().command();
-        commands.register(new SetupCommand(provider, new PortalCommand(editor, store, preview, show, labelPreview)));
+        PortalSources sources = new MapProviderPortalSources(provider);
+        PortalCopier copier = new PortalCopier(editor, sources, store);
+        commands.register(new SetupCommand(provider, new PortalCommand(editor, store, preview, show, labelPreview, copier, sources)));
         env.process().eventHandler().addListener(PlayerDisconnectEvent.class, new PortalDisconnectListener(editor, preview, show, labelPreview));
         env.process().eventHandler().addListener(RemoveEntityFromInstanceEvent.class, new PortalInstanceChangeListener(labelPreview));
         connection = env.createConnection();
@@ -612,6 +627,110 @@ class PortalCommandTest {
         assertTrue(display.isRemoved(), "display removed with the world change");
     }
 
+    @DisplayName("The console cannot copy portals either")
+    @Test
+    void consoleCannotCopy() {
+        CommandResult result = commands.execute(commands.getConsoleSender(), "setup portal copy lobby");
+
+        assertNotEquals(CommandResult.Type.SUCCESS, result.getType(), "playerOnly stops the console");
+        assertTrue(editor.drafts(player.getUuid()).isEmpty(), "no draft appeared");
+    }
+
+    @DisplayName("Copy shows the copied portals once, for the player only")
+    @Test
+    void copyShowsTheCopiedPortalsOnce(Env env) {
+        Collector<ParticlePacket> particles = connection.trackIncoming(ParticlePacket.class);
+
+        run("setup portal copy lobby");
+
+        assertEquals(2, editor.drafts(player.getUuid()).size(), "one draft per copied portal");
+        assertEquals(1, show.running(), "exactly one show task for the player");
+        tick(env, 200);
+        int expected = 32 * (PortalOutline.points(SURVIVAL).size() + PortalOutline.points(CREATIVE).size());
+        assertEquals(expected, particles.collect().size(), "the outline of every copied portal is shown once");
+    }
+
+    @DisplayName("Copy starts no live preview task for the copied drafts")
+    @Test
+    void copyStartsNoPreviewPerDraft() {
+        run("setup portal copy lobby");
+
+        assertEquals(0, preview.running(), "copied drafts get no preview task");
+    }
+
+    @DisplayName("Copy does not change the map file of the loaded world")
+    @Test
+    void copyDoesNotWriteTheLoadedWorld() throws IOException {
+        String before = mapFile();
+
+        run("setup portal copy lobby");
+
+        assertEquals(before, mapFile(), "nothing is written before save");
+    }
+
+    @DisplayName("Save all writes the copied portals to the loaded world in draft order")
+    @Test
+    void saveAllWritesTheCopiedPortals() throws IOException {
+        run("setup portal copy lobby");
+
+        run("setup portal save-all");
+
+        assertEquals(List.of("old", "survival", "creative"), store.portals().stream().map(Portal::id).toList(), "the copies are appended in draft order");
+        assertTrue(mapFile().contains("\"survival\""), "the file holds the copied portal");
+    }
+
+    @DisplayName("Save all ends the preview of a draft it saved")
+    @Test
+    void saveAllEndsThePreviewOfASavedDraft() {
+        run("setup portal p pos1");
+        run("setup portal p pos2");
+        run("setup portal p task Somewhere");
+        assertEquals(1, preview.running(), "the complete draft has its preview");
+
+        run("setup portal save-all");
+
+        assertEquals(0, preview.running(), "the saved draft's preview ends with the save");
+    }
+
+    @DisplayName("Save all keeps the preview of an open draft that it did not save")
+    @Test
+    void saveAllKeepsThePreviewOfAnOpenDraft() {
+        run("setup portal p pos1");
+        run("setup portal copy lobby");
+
+        run("setup portal save-all");
+
+        assertEquals(1, preview.running(), "only the incomplete draft p still has its preview");
+    }
+
+    @DisplayName("Copying an unknown world names the worlds that can be chosen")
+    @Test
+    void copyUnknownWorldIsAnswered() {
+        String reply = PlainTextComponentSerializer.plainText().serialize(send("setup portal copy nirgendwo"));
+
+        assertTrue(reply.contains("nirgendwo") && reply.contains("lobby"), "the name and the choices are in the reply: " + reply);
+    }
+
+    @DisplayName("Copying the loaded world is answered as the same world")
+    @Test
+    void copyLoadedWorldIsAnswered() {
+        String reply = PlainTextComponentSerializer.plainText().serialize(send("setup portal copy world"));
+
+        assertTrue(reply.contains("loaded world"), "the reply says it is the loaded world: " + reply);
+    }
+
+    @DisplayName("Tab completion offers the other worlds with a map file after copy")
+    @Test
+    void completesWorldsWithAMapFile() {
+        assertEquals(List.of("lobby"), suggestions("setup portal copy "), "the loaded world and the folder without a map file are not offered");
+    }
+
+    @DisplayName("Tab completion offers copy and save-all where the id is expected")
+    @Test
+    void completesCopyAndSaveAll() {
+        assertTrue(suggestions("setup portal ").containsAll(List.of("copy", "save-all")), "both verbs are offered");
+    }
+
     @DisplayName("Leaving ends the text preview")
     @Test
     void leavingEndsTheTextPreview(Env env) {
@@ -675,6 +794,12 @@ class PortalCommandTest {
         PortalDraft found = editor.drafts(player.getUuid()).stream().filter(draft -> draft.id().equals(id)).findFirst().orElse(null);
         assertNotNull(found, "draft " + id + " exists");
         return found;
+    }
+
+    private static void tick(Env env, int ticks) {
+        for (int tick = 0; tick < ticks; tick++) {
+            env.tick();
+        }
     }
 
     private static List<String> plain(Collector<SystemChatPacket> chat) {

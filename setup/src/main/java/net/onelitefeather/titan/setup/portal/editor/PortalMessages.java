@@ -94,6 +94,46 @@ public final class PortalMessages {
         return Component.join(JoinConfiguration.newlines(), lines);
     }
 
+    /** The answer to {@code save-all}: one line per draft, in draft order. */
+    public static Component saveAll(SaveAllResult result) {
+        if (result.results().isEmpty()) {
+            return MINI.deserialize("<prefix> <yellow>There are no open drafts to save.");
+        }
+        return Component.join(JoinConfiguration.newlines(), result.results().stream().map(PortalMessages::render).toList());
+    }
+
+    public static Component copy(CopyResult result) {
+        return switch (result) {
+            case CopyResult.Copied copied -> copied(copied);
+            case CopyResult.UnknownWorld unknown ->
+                MINI.deserialize("<prefix> <red>There is no world <world> with a map file. Choose one of: <available>.", Placeholder.unparsed("world", unknown.name()), Placeholder.unparsed("available", unknown.available().isEmpty() ? "none" : String.join(", ", unknown.available())));
+            case CopyResult.SameWorld same ->
+                MINI.deserialize("<prefix> <red><world> is the loaded world; copy from another world.", Placeholder.unparsed("world", same.name()));
+            case CopyResult.NothingToCopy nothing ->
+                MINI.deserialize("<prefix> <yellow>World <world> has no portals to copy.", Placeholder.unparsed("world", nothing.source()));
+            case CopyResult.Unreadable unreadable ->
+                MINI.deserialize("<prefix> <red>Cannot read the portals of <world>: <reason>. Nothing was copied.", Placeholder.unparsed("world", unreadable.source()), Placeholder.unparsed("reason", unreadable.reason()));
+        };
+    }
+
+    private static Component copied(CopyResult.Copied copied) {
+        List<Component> lines = new ArrayList<>();
+        lines.add(MINI.deserialize("<prefix> <green>Copied <count> portal(s) from <world> into drafts.", Placeholder.unparsed("count", String.valueOf(copied.portals().size())), Placeholder.unparsed("world", copied.source())));
+        if (!copied.added().isEmpty()) {
+            lines.add(MINI.deserialize("<gray>Added: <ids>", Placeholder.unparsed("ids", String.join(", ", copied.added()))));
+        }
+        if (!copied.replacing().isEmpty()) {
+            lines.add(MINI.deserialize("<yellow>Replaced on save: <ids>", Placeholder.unparsed("ids", String.join(", ", copied.replacing()))));
+        }
+        copied.skipped().forEach(skip -> lines.add(MINI.deserialize("<red>Skipped <id>: <reason>", Placeholder.unparsed("id", skip.id()), Placeholder.unparsed("reason", skip.reason()))));
+        if (!copied.portals().isEmpty()) {
+            // Built with the API rather than a <click> tag, as in complete().
+            Component button = Component.text("[save all]", NamedTextColor.AQUA).clickEvent(ClickEvent.runCommand("/setup portal save-all"));
+            lines.add(MINI.deserialize("<green>Check the positions shown, then save: ").append(button));
+        }
+        return Component.join(JoinConfiguration.newlines(), lines);
+    }
+
     public static Component nothingToShow() {
         return MINI.deserialize("<prefix> <yellow>There are no saved portals to show.");
     }
@@ -107,7 +147,7 @@ public final class PortalMessages {
     }
 
     public static Component usage() {
-        return MINI.deserialize("<prefix> <red>Usage: <usage>", Placeholder.unparsed("usage", "/setup portal list | show | create <id> | <id> pos1 | pos2 | shape box|ring | centre | radius <r> | disc <r> | task <task> | permission <perm|none> | save | cancel | remove | label here|text <mm>|offline <mm>|source <type> [name]|remove"));
+        return MINI.deserialize("<prefix> <red>Usage: <usage>", Placeholder.unparsed("usage", "/setup portal list | show | copy <world> | save-all | create <id> | <id> pos1 | pos2 | shape box|ring | centre | radius <r> | disc <r> | task <task> | permission <perm|none> | save | cancel | remove | label here|text <mm>|offline <mm>|source <type> [name]|remove"));
     }
 
     /** {@code portal 'id': reason}, the validator's wording for one problem. */
