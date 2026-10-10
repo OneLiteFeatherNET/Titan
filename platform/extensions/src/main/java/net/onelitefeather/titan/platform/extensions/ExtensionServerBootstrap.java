@@ -47,10 +47,11 @@ public final class ExtensionServerBootstrap implements ServerBootstrap {
 
     @Override
     public List<String> loadedExtensions() {
-        ExtensionManager manager = ExtensionBootstrap.getExtensionManager();
-        if (manager == null) {
+        // The extension manager only exists after init; asking earlier would throw instead of reporting none.
+        if (this.bootstrap == null) {
             return List.of();
         }
+        ExtensionManager manager = ExtensionBootstrap.getExtensionManager();
         return ExtensionNames.sorted(manager.getExtensions().stream().map(extension -> extension.getOrigin().getName()).toList());
     }
 }
