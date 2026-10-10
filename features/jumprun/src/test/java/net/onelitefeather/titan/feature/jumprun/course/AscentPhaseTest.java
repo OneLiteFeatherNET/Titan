@@ -117,8 +117,8 @@ class AscentPhaseTest {
 
     @Test
     void scoredJumpsMayHaveAnyGapRiseAndSurfaceOnceAllShapesAreUnlocked() {
-        // The narrow shapes unlock one by one (D15); score 40 is the first with all of them.
-        Phase scored = new Phase.Scored(40, EAST);
+        // The narrow shapes unlock one by one (D15); HARD at score 40 has all of them.
+        Phase scored = new Phase.Scored(40, EAST, Mode.HARD);
 
         assertEquals(List.of(1, 2, 3, 4), scored.gaps().boxed().toList(), "gaps");
         assertEquals(List.of(-1, 0, 1), scored.rises().boxed().toList(), "rises");

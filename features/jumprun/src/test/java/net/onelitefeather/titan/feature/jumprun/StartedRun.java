@@ -53,6 +53,17 @@ record StartedRun(JumprunFixture fixture, TestConnection connection, Player play
         return start(env, fixture, instance, STAND, player -> fixture.records().submit(JumprunFixture.finished(player.getUuid(), Mode.MEDIUM, best)));
     }
 
+    /** Starts a run in the given mode, cycling the player's mode before the run starts. */
+    static StartedRun startIn(Env env, JumprunFixture fixture, Mode mode) {
+        return startAfter(env, fixture, player -> {
+            while (fixture.module().modeOf(player) != mode) {
+                player.setSneaking(true);
+                fixture.useItem(player);
+                player.setSneaking(false);
+            }
+        });
+    }
+
     /** Starts a run for a player who was set up by {@code beforeStart} while already online. */
     static StartedRun startAfter(Env env, JumprunFixture fixture, Consumer<Player> beforeStart) {
         return start(env, fixture, JumprunFixture.loadedInstance(env), STAND, beforeStart);

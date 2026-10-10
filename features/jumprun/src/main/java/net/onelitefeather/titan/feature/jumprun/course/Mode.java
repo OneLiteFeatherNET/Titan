@@ -42,8 +42,11 @@ public enum Mode {
     private record Params(double scale, int maxGap, int maxGapAscent, double ascentWeight,
                           Map<Surface, Integer> unlocks, Map<Climb.Kind, Integer> climbs) {
 
+        /** No score unlocks a shape: the narrow tiers are left out of a mode with this. */
+        private static final int NEVER = Integer.MAX_VALUE;
+
         static final Params EASY = new Params(160.0, 2, 2, 3.0, Map.of(Surface.FULL, 0, Surface.SLAB, 10), Map.of());
-        static final Params MEDIUM = new Params(80.0, Jump.MAX_GAP, Jump.MAX_GAP_ASCENT, 1.0, unlocks(10, 25, 40), climbs(30, 40));
+        static final Params MEDIUM = new Params(80.0, Jump.MAX_GAP, Jump.MAX_GAP_ASCENT, 1.0, unlocks(10, NEVER, NEVER), climbs(30, 40));
         static final Params HARD = new Params(40.0, Jump.MAX_GAP, Jump.MAX_GAP_ASCENT, 1.0, unlocks(5, 10, 20), climbs(15, 25));
 
         /** The score from which a ladder and a vine tower may appear. */

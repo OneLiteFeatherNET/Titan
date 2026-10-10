@@ -25,6 +25,7 @@ import net.minestom.server.network.packet.server.ServerPacket;
 import net.minestom.server.network.packet.server.play.BlockChangePacket;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.feature.jumprun.course.Mode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -56,7 +57,7 @@ class JumprunLandingTest {
     @Test
     void severalLandingsReportedOnlyByStatusPacketsNeverEndTheRunOnTheWayDown(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            StartedRun run = StartedRun.start(env, fixture);
+            StartedRun run = StartedRun.startIn(env, fixture, Mode.EASY);
 
             for (int landing = 1; landing <= DESCENT_LANDINGS; landing++) {
                 List<ServerPacket> packets = run.settleOnNext();

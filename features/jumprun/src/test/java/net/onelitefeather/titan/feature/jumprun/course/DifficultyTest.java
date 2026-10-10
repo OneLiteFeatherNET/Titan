@@ -85,8 +85,8 @@ class DifficultyTest {
     void theHardestJumpGrowsWithTheUnlockedShapes() {
         assertEquals(4.5, Jump.maxCost(Mode.MEDIUM, Mode.MEDIUM.unlockedAt(0)), "full blocks over the widest gap");
         assertEquals(6.5, Jump.maxCost(Mode.MEDIUM, Mode.MEDIUM.unlockedAt(10)), "slabs and trapdoors");
-        assertEquals(10.5, Jump.maxCost(Mode.MEDIUM, Mode.MEDIUM.unlockedAt(25)), "panes");
-        assertEquals(Jump.MAX_COST, Jump.maxCost(Mode.MEDIUM, Mode.MEDIUM.unlockedAt(40)), "posts");
+        assertEquals(6.5, Jump.maxCost(Mode.MEDIUM, Mode.MEDIUM.unlockedAt(25)), "no narrow shape in medium at 25");
+        assertEquals(6.5, Jump.maxCost(Mode.MEDIUM, Mode.MEDIUM.unlockedAt(40)), "no post in medium at 40");
     }
 
     @Test
@@ -108,7 +108,7 @@ class DifficultyTest {
         for (int i = 0; i < samples; i++) {
             sum += Difficulty.targetCost(Mode.MEDIUM, 10_000, random);
         }
-        assertEquals(Jump.MAX_COST, sum / samples, 1.0, "mean target at a huge score approaches the max cost");
+        assertEquals(Jump.maxCost(Mode.MEDIUM, Mode.MEDIUM.unlockedAt(10_000)), sum / samples, 1.0, "mean target at a huge score approaches the hardest medium jump");
     }
 
     @Test

@@ -343,7 +343,7 @@ class CourseTest {
     }
 
     private static void assertLandsOnItsOwnTop(Surface surface) {
-        Course course = start();
+        Course course = Course.startSteered(START_POINT, START_BLOCK, EAST, TestBlocks.FAR_SPAWN, new FakeSpaceProbe(), TestBlocks.BAND, seeded(1L), TestBlocks.shipped(), PortalClearance.NONE, Mode.HARD).orElseThrow();
         for (int i = 0; i < 2000 && ahead(course, 1).surface() != surface; i++) {
             landOnNext(course, 1);
         }

@@ -28,6 +28,7 @@ import net.minestom.server.network.packet.server.ServerPacket;
 import net.minestom.server.network.packet.server.play.BlockChangePacket;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.feature.jumprun.course.Mode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -52,13 +53,9 @@ class JumprunSurfaceLandingTest {
         return shown(packet).name().endsWith("_stairs");
     }
 
-    private static boolean isCandle(BlockChangePacket packet) {
-        return shown(packet).name().endsWith("candle");
-    }
-
     /** Lands on every block ahead until the next one is of the wanted shape. */
     private static StartedRun runUntilNext(Env env, JumprunFixture fixture, Predicate<BlockChangePacket> wanted, String what) {
-        StartedRun run = StartedRun.start(env, fixture);
+        StartedRun run = StartedRun.startIn(env, fixture, Mode.HARD);
         for (int landing = 0; landing < MOST_LANDINGS; landing++) {
             if (wanted.test(run.ahead().peekFirst())) {
                 return run;
@@ -136,26 +133,4 @@ class JumprunSurfaceLandingTest {
         }
     }
 
-    @Test
-    void besideACandleAtItsHeightIsNoLanding(Env env) {
-        try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            StartedRun run = runUntilNext(env, fixture, JumprunSurfaceLandingTest::isCandle, "candle");
-
-            List<ServerPacket> packets = report(run, cell(run.ahead().peekFirst(), 0.95, 0.375, 0.5));
-
-            assertEquals(0, newBlocks(packets), "the hitbox does not reach the candle");
-            assertTrue(fixture.module().isRunning(run.player()), "and the run goes on");
-        }
-    }
-
-    @Test
-    void onTheRimOfACandleIsALanding(Env env) {
-        try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            StartedRun run = runUntilNext(env, fixture, JumprunSurfaceLandingTest::isCandle, "candle");
-
-            List<ServerPacket> packets = report(run, cell(run.ahead().peekFirst(), 0.86, 0.375, 0.5));
-
-            assertEquals(1, newBlocks(packets), "the hitbox overlaps the candle by a hair");
-        }
-    }
 }

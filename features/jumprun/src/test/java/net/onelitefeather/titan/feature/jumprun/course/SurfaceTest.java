@@ -71,9 +71,9 @@ class SurfaceTest {
         assertEquals(0, Mode.MEDIUM.minScore(Surface.FULL), "full block");
         assertEquals(10, Mode.MEDIUM.minScore(Surface.SLAB), "slab");
         assertEquals(10, Mode.MEDIUM.minScore(Surface.TRAPDOOR), "trapdoor");
-        assertEquals(25, Mode.MEDIUM.minScore(Surface.FENCE), "fence");
-        assertEquals(25, Mode.MEDIUM.minScore(Surface.PANE), "pane");
-        assertEquals(40, Mode.MEDIUM.minScore(Surface.POST), "post");
+        assertEquals(Integer.MAX_VALUE, Mode.MEDIUM.minScore(Surface.FENCE), "fence");
+        assertEquals(Integer.MAX_VALUE, Mode.MEDIUM.minScore(Surface.PANE), "pane");
+        assertEquals(Integer.MAX_VALUE, Mode.MEDIUM.minScore(Surface.POST), "post");
     }
 
     @Test
@@ -83,18 +83,16 @@ class SurfaceTest {
     }
 
     @Test
-    void theGentleShapesUnlockAtTenTheNarrowOnesAtTwentyFiveAndTheNarrowestAtForty() {
+    void mediumUnlocksOnlyTheWideShapesAtTen() {
         List<Surface> atTen = List.of(Surface.FULL, Surface.TRAPDOOR, Surface.SLAB, Surface.STAIRS, Surface.CARPET, Surface.SNOW);
-        List<Surface> atTwentyFive = List.of(Surface.FULL, Surface.TRAPDOOR, Surface.SLAB, Surface.STAIRS, Surface.CARPET, Surface.SNOW, Surface.FENCE, Surface.PANE, Surface.HEAD, Surface.FLOWER_POT);
 
         assertEquals(atTen, Mode.MEDIUM.unlockedAt(10), "score 10");
-        assertEquals(atTen, Mode.MEDIUM.unlockedAt(24), "score 24");
-        assertEquals(atTwentyFive, Mode.MEDIUM.unlockedAt(25), "score 25");
-        assertEquals(atTwentyFive, Mode.MEDIUM.unlockedAt(39), "score 39");
+        assertEquals(atTen, Mode.MEDIUM.unlockedAt(40), "score 40");
+        assertEquals(atTen, Mode.MEDIUM.unlockedAt(10_000), "no narrow shape at any score");
     }
 
     @Test
-    void everyShapeIsUnlockedFromScoreForty() {
-        assertEquals(List.of(Surface.values()), Mode.MEDIUM.unlockedAt(40), "score 40");
+    void hardUnlocksEveryShapeFromScoreTwenty() {
+        assertEquals(List.of(Surface.values()), Mode.HARD.unlockedAt(20), "score 20");
     }
 }
