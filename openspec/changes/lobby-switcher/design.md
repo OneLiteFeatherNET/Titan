@@ -180,4 +180,13 @@ Die Bridge bleibt der einzige Ort, der CloudNet-Typen kennt. `core` bekommt nur 
 
 ## Spike-Ergebnis
 
-Ausstehend (Task 1.1).
+Stand: Task 1.1, ohne laufenden CloudNet-Knoten (nur Quellen gelesen, Spike-Code verworfen).
+
+- **Q2 Eigene Identität: erreichbar (Quellenlage, Smoke-Test in 12.1 bestätigt es).**
+  - `ServiceInfoSnapshot.name()` und `serviceId().taskName()` existieren in `driver-api` 4.0.0-RC18-SNAPSHOT (dem Katalog-Stand) und liefern Dienstname bzw. Task.
+  - `ServiceInfoHolder.serviceInfo()` und `WrapperConfiguration.serviceInfoSnapshot()` sind in `wrapper-jvm-api` RC18 Schnittstellen. Laut DeepWiki zu `CloudNetService/CloudNet` werden `ServiceInfoHolder` (`WrapperServiceInfoHolder`, `@Provides`/`@Singleton`) und `WrapperConfiguration` (`DocumentWrapperConfiguration`, `@Factory`) im Boot-Layer gebunden. `InjectionLayer.ext()` enthält laut Javadoc alle Bindungen des Boot-Layers.
+  - Nicht im Quelltext nachgeprüft (die Wrapper-Implementierung liegt nicht im Gradle-Cache). Die Bridge nutzt `InjectionLayer.ext().instance(ServiceInfoHolder.class)`, Fehler oder `null` ergeben `Optional.empty()` (Ausschlussfall: kein Item, Warnung im Start-Log).
+  - Rückfall (Konfigurationsschlüssel `lobbyswitcher.task`/`lobbyswitcher.service`) wird nur umgesetzt, wenn der Smoke-Test 12.1 zeigt, dass die Bindung fehlt.
+- **Q7 Aves und Locale: ja.** `GlobalTranslatedInventoryBuilder` (Aves 1.16.6) hält je Locale ein eigenes `CustomInventory`. Der Titel wird je Locale mit `GlobalTranslator.render` gerendert. Die Datenschicht (`DataLayoutFunction.applyLayout(contents, locale)`) bekommt die Locale des Viewers. Damit sind übersetzte Itemnamen je Viewer möglich.
+- **Aktualisierung (D4):** `invalidateDataLayout()` ruft bei offenen Inventaren `retrieveDataLayout()` auf; `updateInventory` zieht offene Viewer nach (`updateViewer` -> `inventory.update()`). Ein geöffnetes Inventar wird also aktualisiert. Geschlossene Inventare werden erst beim nächsten Öffnen neu aufgebaut.
+- **Nebenbefund:** `unregister()` schließt alle offenen Viewer (relevant für 7.6).

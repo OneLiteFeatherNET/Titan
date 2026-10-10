@@ -25,7 +25,7 @@ Regeln:
 
 ## 1. Spike: offene Fragen klären (vor Abschnitt 3)
 
-- [ ] 1.1 Spike, Ergebnis in `design.md` unter „Spike-Ergebnis“ festhalten (Q2, Q7), Spike-Code verwerfen:
+- [x] 1.1 Spike, Ergebnis in `design.md` unter „Spike-Ergebnis“ festhalten (Q2, Q7), Spike-Code verwerfen (erledigt: Identität über `InjectionLayer.ext()` erreichbar, Quellenlage, Smoke-Test bestätigt; Aves übersetzt je Viewer):
   - Im Bridge-Extension-Kontext (`InjectionLayer.ext()`) prüfen, ob die eigene Dienst-Info erreichbar ist (`WrapperConfiguration.serviceInfoSnapshot()` bzw. `ServiceInfoHolder.serviceInfo()` aus `wrapper-jvm-api` 4.0.0-RC16). Liefert `serviceId().taskName()` den Task und `name()` den Dienstnamen? Falls nicht: Konfigurationsrückfall aus D3 festlegen.
   - In einer Aves-Testumgebung prüfen, ob `GlobalTranslatedInventoryBuilder.getInventory(Locale)` übersetzte Itemnamen je Locale rendert, und ob `setDataLayoutFunction` mit `invalidateDataLayout()` den Inhalt eines geöffneten Inventars aktualisiert. Falls nicht: D4 anpassen.
 
