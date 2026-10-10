@@ -21,7 +21,7 @@ import java.util.UUID;
  * Cross-classloader bridge for connecting players to other CloudNet services. The bridge extension
  * (with its {@code PlayerManager}) runs in its own classloader, unreachable from the application,
  * so this holder lives on the shared application classloader and exchanges only JDK types; until
- * the bridge installs a {@link ServerConnector}, calls are no-ops.
+ * the bridge installs a {@link ServerConnector}, calls report {@code false} and do nothing.
  */
 public final class TitanServerConnector {
 
@@ -34,17 +34,25 @@ public final class TitanServerConnector {
         connector = serverConnector;
     }
 
-    public static void connectToTask(UUID playerId, String taskName) {
-        ServerConnector current = connector;
-        if (current != null) {
-            current.connectToTask(playerId, taskName);
-        }
+    public static boolean isInstalled() {
+        return connector != null;
     }
 
-    public static void connectToServer(UUID playerId, String serviceName) {
+    public static boolean connectToTask(UUID playerId, String taskName) {
         ServerConnector current = connector;
-        if (current != null) {
-            current.connectToServer(playerId, serviceName);
+        if (current == null) {
+            return false;
         }
+        current.connectToTask(playerId, taskName);
+        return true;
+    }
+
+    public static boolean connectToServer(UUID playerId, String serviceName) {
+        ServerConnector current = connector;
+        if (current == null) {
+            return false;
+        }
+        current.connectToServer(playerId, serviceName);
+        return true;
     }
 }
