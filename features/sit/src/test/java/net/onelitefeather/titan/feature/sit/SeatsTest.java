@@ -108,4 +108,81 @@ class SeatsTest {
         Assertions.assertNotEquals(firstSeat.getUuid(), secondSeat.getUuid());
         Assertions.assertNull(instance.getEntityByUuid(firstSeat.getUuid()), "the old seat must be removed");
     }
+
+    @DisplayName("Standing up a player without an instance who is not sitting does not throw")
+    @Test
+    void standUpOnANonSittingPlayerWithoutInstanceDoesNotThrow(Env env) {
+        Player player = playerWithoutInstance(env);
+        Seats seats = new Seats();
+
+        Assertions.assertDoesNotThrow(() -> seats.standUp(player));
+        Assertions.assertFalse(seats.isSitting(player));
+    }
+
+    @DisplayName("Standing up a sitting player who has no instance does not throw")
+    @Test
+    void standUpOnASittingPlayerWithoutInstanceDoesNotThrow(Env env) {
+        Instance instance = env.createFlatInstance();
+        Player player = env.createPlayer(instance);
+        player.teleport(new Pos(0, 64, 0));
+        Seats seats = new Seats();
+        seats.sit(player, new Pos(0, 64, 0), OFFSET);
+        player.remove();
+
+        Assertions.assertDoesNotThrow(() -> seats.standUp(player));
+    }
+
+    @DisplayName("Standing up a sitting player who has no instance ends the sitting state")
+    @Test
+    void standUpOnASittingPlayerWithoutInstanceEndsTheSittingState(Env env) {
+        Instance instance = env.createFlatInstance();
+        Player player = env.createPlayer(instance);
+        player.teleport(new Pos(0, 64, 0));
+        Seats seats = new Seats();
+        seats.sit(player, new Pos(0, 64, 0), OFFSET);
+        player.remove();
+
+        seats.standUp(player);
+
+        Assertions.assertFalse(seats.isSitting(player), "the sitting tag must be cleared even without an instance");
+    }
+
+    @DisplayName("Standing up after the seat has already removed itself does not throw")
+    @Test
+    void standUpAfterTheSeatRemovedItselfDoesNotThrow(Env env) {
+        Instance instance = env.createFlatInstance();
+        Player player = env.createPlayer(instance);
+        player.teleport(new Pos(0, 64, 0));
+        Seats seats = new Seats();
+        seats.sit(player, new Pos(0, 64, 0), OFFSET);
+        var seat = player.getVehicle();
+        seat.removePassenger(player);
+        env.tick();
+        Assertions.assertNull(instance.getEntityByUuid(seat.getUuid()), "precondition: the tick removed the empty seat");
+
+        Assertions.assertDoesNotThrow(() -> seats.standUp(player));
+        Assertions.assertFalse(seats.isSitting(player));
+    }
+
+    @DisplayName("Ticking after standing up leaves no seat behind and does not throw")
+    @Test
+    void tickingAfterStandingUpLeavesNoSeat(Env env) {
+        Instance instance = env.createFlatInstance();
+        Player player = env.createPlayer(instance);
+        player.teleport(new Pos(0, 64, 0));
+        Seats seats = new Seats();
+        seats.sit(player, new Pos(0, 64, 0), OFFSET);
+        var seat = player.getVehicle();
+        seats.standUp(player);
+
+        Assertions.assertDoesNotThrow(env::tick);
+        Assertions.assertNull(instance.getEntityByUuid(seat.getUuid()), "the seat must be gone after the tick");
+    }
+
+    private static Player playerWithoutInstance(Env env) {
+        Player player = env.createPlayer(env.createFlatInstance());
+        player.remove();
+        Assertions.assertNull(player.getInstance(), "precondition: the player has no instance");
+        return player;
+    }
 }

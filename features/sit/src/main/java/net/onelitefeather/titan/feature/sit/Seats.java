@@ -61,14 +61,23 @@ final class Seats {
     }
 
     void standUp(Player player) {
-        Optional.ofNullable(player.getTag(ARROW)).map(player.getInstance()::getEntityByUuid).ifPresent(arrow -> {
-            player.removeTag(ARROW);
-            Optional.ofNullable(player.getTag(ORIGIN)).ifPresent(player::teleport);
-            arrow.removePassenger(player);
-            if (arrow.getPassengers().isEmpty()) {
-                arrow.remove();
-            }
-        });
+        UUID arrowId = player.getTag(ARROW);
+        if (arrowId == null) {
+            return;
+        }
+        // Read once: the tick thread can remove the instance between a check and its use.
+        Instance instance = player.getInstance();
+        player.removeTag(ARROW);
+        Entity arrow = instance == null ? null : instance.getEntityByUuid(arrowId);
+        if (arrow == null) {
+            player.removeTag(ORIGIN);
+            return;
+        }
+        Optional.ofNullable(player.getTag(ORIGIN)).ifPresent(player::teleport);
+        arrow.removePassenger(player);
+        if (arrow.getPassengers().isEmpty()) {
+            arrow.remove();
+        }
     }
 
     boolean isSitting(Player player) {
