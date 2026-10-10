@@ -41,6 +41,7 @@ class PortalTriggerTest {
 
     private final AdjustableClock clock = new AdjustableClock(START, ZoneOffset.UTC);
     private final List<String> delivered = new ArrayList<>();
+    private final List<String> denied = new ArrayList<>();
     private final FakePermissionService permissions = new FakePermissionService();
 
     private static Portal box(String id, Vec min, Vec max, String task, String permission) {
@@ -60,7 +61,7 @@ class PortalTriggerTest {
     }
 
     private PortalTrigger trigger(Portal... portals) {
-        return new PortalTrigger(new PortalIndex(List.of(portals)), this.permissions, this.clock);
+        return new PortalTrigger(new PortalIndex(List.of(portals)), this.permissions, this.clock, portal -> this.denied.add(portal.id()));
     }
 
     @DisplayName("Walking into a box delivers the player to the portal's task exactly once")
@@ -210,7 +211,7 @@ class PortalTriggerTest {
             FakePermissionService localPermissions = new FakePermissionService();
             Portal restricted = box("vip", new Vec(0, 64, 0), new Vec(1, 65, 1), "Vip", "titan.portal.vip");
             Portal open = box("survival", new Vec(20, 64, 0), new Vec(21, 65, 1), "Survival", null);
-            PortalTrigger trigger = new PortalTrigger(new PortalIndex(List.of(restricted, open)), localPermissions, this.clock);
+            PortalTrigger trigger = new PortalTrigger(new PortalIndex(List.of(restricted, open)), localPermissions, this.clock, portal -> this.denied.add(portal.id()));
             UUID player = player();
             localPermissions.set(player, "titan.portal.vip", missing);
 
@@ -219,6 +220,37 @@ class PortalTriggerTest {
 
             Assertions.assertEquals(List.of("Survival"), this.delivered, "with " + missing + " 'vip' must do nothing and leave the open portal usable at once");
         }
+    }
+
+    @DisplayName("A denied entry is reported once, with the portal it was refused for")
+    @Test
+    void deniedEntryIsReported() {
+        Portal restricted = box("vip", new Vec(0, 64, 0), new Vec(1, 65, 1), "Vip", "titan.portal.vip");
+        PortalTrigger trigger = trigger(restricted);
+        UUID player = player();
+
+        move(trigger, player, OUTSIDE, INSIDE);
+        move(trigger, player, INSIDE, new Pos(1.2, 64.5, 0.5));
+
+        Assertions.assertEquals(List.of("vip"), this.denied, "one refused entry is reported once, staying inside does not report it again");
+        Assertions.assertTrue(this.delivered.isEmpty(), "a refused entry delivers nothing");
+    }
+
+    @DisplayName("A refused entry during the cooldown of another delivery is not reported as denied")
+    @Test
+    void deniedEntryDuringCooldownIsNotReported() {
+        Portal open = box("survival", new Vec(20, 64, 0), new Vec(21, 65, 1), "Survival", null);
+        Portal restricted = box("vip", new Vec(0, 64, 0), new Vec(1, 65, 1), "Vip", "titan.portal.vip");
+        PortalTrigger trigger = trigger(open, restricted);
+        UUID player = player();
+        move(trigger, player, new Pos(25.5, 64.5, 0.5), new Pos(20.5, 64.5, 0.5));
+        move(trigger, player, new Pos(20.5, 64.5, 0.5), new Pos(10.5, 64.5, 0.5));
+        this.clock.advance(Duration.ofSeconds(2));
+
+        move(trigger, player, new Pos(10.5, 64.5, 0.5), INSIDE);
+
+        Assertions.assertEquals(List.of("Survival"), this.delivered, "the first entry delivered");
+        Assertions.assertTrue(this.denied.isEmpty(), "the refused entry falls into the cooldown, which is not a denial");
     }
 
     @DisplayName("A player with the portal's permission is delivered")

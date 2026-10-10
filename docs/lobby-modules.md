@@ -423,6 +423,19 @@ Portale ändern: Task in CloudNet anlegen, `map.json` bearbeiten, die Lobby neu 
 wird nur beim Start gelesen. Im Setup-Server bearbeitet `/setup portal` die Portale, siehe
 [README](../README.md#portals).
 
+### Telemetrie (`portal`)
+
+- `portal.transfer` (Span, nur für eine tatsächlich ausgelieferte Weiterleitung): `portal.id`,
+  `portal.task`, `user.id` (UUID) und `portal.result` (`delivered`, `error`). Darunter liegt
+  `deliver.send_player` aus `runtime` mit `titan.deliver.target_type`, `titan.deliver.target` und
+  `titan.deliver.result`. Die Portalprüfung bei der Bewegung hat keinen Span.
+- Zähler `titan.portal.transfers{result}` je Weiterleitung, `titan.portal.denied{portal.id}` je
+  verweigertem Betreten (während einer Abklingzeit nicht gezählt) und
+  `titan.portal.player_count.lookups{result}` (`ok`, `error` bei werfendem Provider) je
+  Spielerzahl-Abfrage.
+- `portal.labels.refresh` (Span je Label-Zyklus, nicht je Portal): `portal.labels.count` und
+  `portal.labels.failed`.
+
 ## Erwartete Columns einer Variante
 
 `titan.app-variant` schreibt beim Bauen die Avaje-Modulnamen aller in eine Variante eingebundenen

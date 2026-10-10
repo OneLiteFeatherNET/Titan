@@ -37,6 +37,7 @@ import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.permission.PermissionService;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
 import net.onelitefeather.titan.core.portal.Portal;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,11 +66,13 @@ public final class PortalModule {
     private final Executor reads;
     private final LabelReadings readings;
     private final PortalSettings settings;
+    private final Telemetry telemetry;
+    private final PortalTelemetry portalTelemetry;
     private final List<LabelDisplay> displays = new ArrayList<>();
     private FeatureNode node;
     private LabelRefresh refresh;
 
-    PortalModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbyPortals portals, Deliver deliver, PermissionService permissions, Clock clock, Instance lobby, Scheduler scheduler, @Named(PortalBeans.LABEL_READS) Executor reads, LabelReadings readings, PortalSettings settings) {
+    PortalModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbyPortals portals, Deliver deliver, PermissionService permissions, Clock clock, Instance lobby, Scheduler scheduler, @Named(PortalBeans.LABEL_READS) Executor reads, LabelReadings readings, PortalSettings settings, Telemetry telemetry) {
         this.titan = Objects.requireNonNull(titan, "titan");
         this.portals = Objects.requireNonNull(portals, "portals");
         this.deliver = Objects.requireNonNull(deliver, "deliver");
@@ -80,16 +83,18 @@ public final class PortalModule {
         this.reads = Objects.requireNonNull(reads, "reads");
         this.readings = Objects.requireNonNull(readings, "readings");
         this.settings = Objects.requireNonNull(settings, "settings");
+        this.telemetry = Objects.requireNonNull(telemetry, "telemetry");
+        this.portalTelemetry = new PortalTelemetry(telemetry);
     }
 
     @PostConstruct
     void start() {
         List<Portal> all = this.portals.portals();
         LOGGER.info("Portal column started with {} portal(s)", all.size());
-        PortalTrigger trigger = new PortalTrigger(new PortalIndex(all), this.permissions, this.clock);
+        PortalTrigger trigger = new PortalTrigger(new PortalIndex(all), this.permissions, this.clock, this.portalTelemetry::denied);
         // The player's current position is still the old one while PlayerMoveEvent runs, so
         // (position, newPosition) is the segment the player is about to travel.
-        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY).on(PlayerMoveEvent.class, event -> {
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry).on(PlayerMoveEvent.class, event -> {
             Player player = event.getPlayer();
             trigger.onMove(player.getUuid(), player.getPosition(), event.getNewPosition()).ifPresent(portal -> deliver(player, portal));
         }).on(PlayerDisconnectEvent.class, event -> trigger.forget(event.getPlayer().getUuid()));
@@ -113,14 +118,14 @@ public final class PortalModule {
         }
         LOGGER.info("Portal labels started with {} label(s)", entries.size());
         if (!entries.isEmpty()) {
-            this.refresh = new LabelRefresh(this.scheduler, this.reads, this.readings, entries);
+            this.refresh = new LabelRefresh(this.scheduler, this.reads, this.readings, entries, this.portalTelemetry);
             this.refresh.start(this.settings.labelRefreshSeconds());
         }
     }
 
     private void deliver(Player player, Portal portal) {
         LOGGER.debug("Player {} entered portal '{}', delivering to task '{}'", player.getUuid(), portal.id(), portal.task());
-        this.deliver.sendPlayer(player, DeliverComponent.taskBuilder().taskName(portal.task()).player(player).build());
+        this.portalTelemetry.transfer(player.getUuid(), portal, () -> this.deliver.sendPlayer(player, DeliverComponent.taskBuilder().taskName(portal.task()).player(player).build()));
     }
 
     @PreDestroy

@@ -87,7 +87,7 @@ final class LabelReader implements LabelReadings {
             LOGGER.warn("Reading portal label source {} '{}' of portal '{}' failed: {}", type, name, portal.id(), e.toString());
         }
         LOGGER.debug("Reading portal label source {} '{}' of portal '{}' failed", type, name, portal.id(), e);
-        return new LabelReading.Remote(PlayerCount.NOT_RUNNING);
+        return new LabelReading.Failed();
     }
 
     private LabelReading unavailable(Portal portal, String type, String name) {

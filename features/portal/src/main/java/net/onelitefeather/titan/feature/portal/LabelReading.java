@@ -18,7 +18,7 @@ package net.onelitefeather.titan.feature.portal;
 import net.onelitefeather.titan.core.portal.PlayerCount;
 
 /** What a label shows: a count read from the provider, or the players of this lobby only. */
-sealed interface LabelReading permits LabelReading.Remote, LabelReading.Local {
+sealed interface LabelReading permits LabelReading.Remote, LabelReading.Local, LabelReading.Failed {
 
     /** Count of a task, group or service; the maximum is known. */
     record Remote(PlayerCount count) implements LabelReading {
@@ -26,5 +26,9 @@ sealed interface LabelReading permits LabelReading.Remote, LabelReading.Local {
 
     /** Players connected to this lobby; there is no maximum. */
     record Local(int online) implements LabelReading {
+    }
+
+    /** The provider threw; shows as not running, and is counted as a failed lookup. */
+    record Failed() implements LabelReading {
     }
 }

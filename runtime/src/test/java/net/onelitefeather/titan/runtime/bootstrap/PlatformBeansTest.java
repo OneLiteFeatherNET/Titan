@@ -25,6 +25,7 @@ import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.module.LobbySpawn;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
+import net.onelitefeather.titan.runtime.deliver.TracedDeliver;
 import net.onelitefeather.titan.common.map.LobbyMap;
 import net.onelitefeather.titan.common.map.MapProvider;
 import org.junit.jupiter.api.Assertions;
@@ -82,6 +83,12 @@ class PlatformBeansTest {
     @Test
     void commandManagerBeanIsTheServerProcesssCommandManager(Env env) {
         Assertions.assertSame(env.process().command(), this.platformBeans.commandManager(), "the bean must not wrap or replace the server's CommandManager");
+    }
+
+    @DisplayName("The deliver bean wraps the platform deliver, so every transfer is traced")
+    @Test
+    void deliverBeanIsTraced() {
+        Assertions.assertInstanceOf(TracedDeliver.class, this.platformBeans.deliver(Telemetry.noop()), "portals and the navigator must both get the traced deliver");
     }
 
     @DisplayName("The telemetry bean reports under the net.onelitefeather.titan scope of the given OpenTelemetry")
