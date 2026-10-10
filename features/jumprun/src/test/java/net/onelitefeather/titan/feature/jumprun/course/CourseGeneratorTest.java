@@ -162,7 +162,14 @@ class CourseGeneratorTest {
 
         CourseBlock chosen = jumpFromSource(generator, 10_000);
 
-        assertEquals(Jump.maxCost(Mode.MEDIUM, Mode.MEDIUM.unlockedAt(10_000)), new Jump(SOURCE, chosen).cost(Mode.MEDIUM), "hardest allowed medium jump");
+        // A tower is a candidate with its own cost: when the ranking's openness tie-break puts it
+        // ahead of the hardest jump, the expected choice is the tower the target asks for.
+        if (chosen.climb().isPresent()) {
+            int height = Difficulty.towerHeight(Mode.MEDIUM, 10_000, 3, 5);
+            assertEquals(Jump.climbCost(height), new Jump(SOURCE, chosen).cost(Mode.MEDIUM), "the tower the target asks for");
+        } else {
+            assertEquals(Jump.maxCost(Mode.MEDIUM, Mode.MEDIUM.unlockedAt(10_000)), new Jump(SOURCE, chosen).cost(Mode.MEDIUM), "hardest allowed medium jump");
+        }
     }
 
     // --- space ----------------------------------------------------------------------------------

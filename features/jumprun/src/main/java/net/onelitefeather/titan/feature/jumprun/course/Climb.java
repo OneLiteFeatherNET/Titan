@@ -31,7 +31,7 @@ public record Climb(Direction direction, int height, Kind kind) {
 
     /** The heights a tower may have when the config says nothing else. */
     public static final int MIN_HEIGHT = 3;
-    public static final int MAX_HEIGHT = 5;
+    public static final int MAX_HEIGHT = 7;
 
     /** The lowest and highest height the config may set for a tower, in blocks. */
     public static final int MIN_LIMIT = 2;

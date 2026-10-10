@@ -310,7 +310,7 @@ class JumprunSettingsTest {
         Palettes palettes = JumprunSettings.palettes(TestSettings.shippedConfiguration());
 
         assertEquals(3, palettes.minClimbHeight(), "jumprun.climb.minHeight");
-        assertEquals(5, palettes.maxClimbHeight(), "jumprun.climb.maxHeight");
+        assertEquals(7, palettes.maxClimbHeight(), "jumprun.climb.maxHeight");
     }
 
     @Test

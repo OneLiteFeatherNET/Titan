@@ -29,7 +29,7 @@ Motivation steht in `proposal.md` (Why). Ausgangslage im Code (`origin/main`):
 
 ### D1 Aufbau: Turm aus Pfeiler, Leiter und Zielblock
 
-Ein Kletterabschnitt vom Block `A` (Vollblock oder andere Form, aktuell oder nächster) zum Zielblock `B` in Achsenrichtung `d` (Nord, Süd, Ost, West) mit Höhe `H` (Rise von `A.topY` zu `B.topY`, Bereich 3 bis 5, Konfiguration `jumprun.climb.minHeight`/`maxHeight`):
+Ein Kletterabschnitt vom Block `A` (Vollblock oder andere Form, aktuell oder nächster) zum Zielblock `B` in Achsenrichtung `d` (Nord, Süd, Ost, West) mit Höhe `H` (Rise von `A.topY` zu `B.topY`, Bereich 3 bis 7, Konfiguration `jumprun.climb.minHeight`/`maxHeight`):
 
 ```
 Seitenansicht, Richtung d nach rechts, H = 3 (y wächst nach oben)
@@ -81,9 +81,9 @@ Der Fortschritt ergibt sich aus `Course.advanceTo(feet)` wie bisher: Der Läufer
 
 ### D5 Generator: Kletterkandidaten, Erreichbarkeit, Kosten, Freischaltung
 
-- **Kandidaten:** In `Phase.Scored` (nicht in der Aufstiegsphase) zusätzlich zu den Sprüngen für jede der vier Achsenrichtungen und jede Höhe `H` im Bereich ein `Spot` mit `Climb` bei `A.pos + d + (0, H, 0)`.
+- **Kandidaten:** In `Phase.Scored` (nicht in der Aufstiegsphase) zusätzlich zu den Sprüngen für jede der vier Achsenrichtungen genau eine Höhe `H`, die D10 aus dem Score bestimmt, als `Spot` mit `Climb` bei `A.pos + d + (0, H, 0)`.
 - **Erreichbarkeit:** `Jump.isReachable` bekommt einen Zweig: Für einen Kletter-Zielblock gilt Lücke 0 (Betragsabstand 1 in genau einer Achse), `H` im Bereich und `H > Jump.MAX_RISE`. Die normale Rise-/Lückenregel gilt für Türme nicht. Das Ziel ist von `A` aus auch ohne Hilfsmittel erreichbar, weil die Höhe nur zu Fuß über die Leiter gewonnen wird.
-- **Kosten:** `Jump.cost` = `CLIMB_COST (2,0) + CLIMB_HEIGHT_WEIGHT (0,5) · (H − 3)`; Leiter und Ranke ohne Unterschied (`typeCost(Ziel)` ist 0, Vollblock). Ein Turm ist damit etwa so schwer wie ein Zaun-Sprung, höhere Türme etwas mehr. `Jump.MAX_COST` wird um den schwersten Turm erweitert, sodass das Ziel der Schwierigkeit weiter eine echte Obergrenze hat.
+- **Kosten:** `Jump.cost` = `CLIMB_COST (2,0) + CLIMB_HEIGHT_WEIGHT (2,1) · (H − 3)`; Leiter und Ranke ohne Unterschied (`typeCost(Ziel)` ist 0, Vollblock). Die Steigung ist so gewählt, dass der höchste Turm, den die Konfiguration zulässt (`Climb.MAX_LIMIT` = 8), genau die Kosten des schwersten Sprungs im Modus Medium hat: H 3 kostet 2,0, H 4 4,1, H 5 6,2, H 8 12,5. `Jump.MAX_COST` bleibt damit 12,5 und ist weiter eine echte Obergrenze. Mit 0,5 je Block (Stand vor D10) erreichte kein Turm die Zielkosten ab Score 80 (Ziel etwa 7,9).
 - **Freischaltung (`Mode`):** Easy nie. Medium ab Score 30, Hard ab Score 15; Leiter ab diesen Werten, Ranke 10 Punkte später (Medium 40, Hard 25). Die Ranke ist schwerer zu erkennen (keine Kollision, nur Sicht), daher später.
 - **Heading:** Der Turm führt in Achsenrichtung `d`. Zeigt `d` gegen das Heading des Kurses, fällt der Kandidat wie jeder andere Sprung weg.
 - **Test:** Unit (`JumpTest`, `ModeTest`, `ModeGenerationTest`, feste Seeds): Erreichbarkeit nur für Lücke 0 und `H` 3 bis 5; Kosten für H = 3, 4, 5; Freischaltung je Modus und Score; Easy erzeugt nie Türme; in Medium bei Score 80 kommen Türme vor; jede erzeugte Strecke hat bei jedem Turm Lücke 0 und `H` im Bereich.
@@ -107,7 +107,7 @@ jumprun:
   climb:
     # Height of a tower in blocks (rise of the target block's top over the block it starts from).
     minHeight: 3
-    maxHeight: 5
+    maxHeight: 7
   palettes:
     ladder:
       ladder: 1
@@ -125,6 +125,20 @@ jumprun:
 - **Falleffekt:** `AnimatedBlock` zeigt für alle ein Blockdisplay je Zelle, die gemeinsam fallen und aufsteigen. Je Turm sind das bis zu `2H` Displays (H = 5: zehn). Die Zahl ist durch das Fenster begrenzt (höchstens zwei Türme gleichzeitig voraus).
 - **Umrandung:** Wie bisher umrandet sie nur den Zielblock `B`, nicht die Leiter. Der Läufer sieht das Ziel, den Weg hinauf zeigt die Leiter.
 - **Test:** Integration (`Env`, `env.tick()`): `FakeBlocks`-Pakete, Anzahl der Displays je Turm (`2H`), Umrandung nur an `B`, Abräumen (kein Display bleibt zurück nach Ende und Shutdown).
+
+### D10 Turmhöhe wächst mit dem Score
+
+Die Höhe eines Turms folgt dem Score, damit seine Kosten der Zielschwierigkeit folgen und Türme bei jedem Score ab ihrer Freischaltung zur Wahl stehen. Ein fester Anteil für Türme wurde verworfen, weil er die Schwierigkeit ignoriert.
+
+- **Höhe:** Aus den Zielkosten ohne Rauschen, `level(Score) · maxCost(Modus, freigeschaltete Formen)`, folgt `H = round(3 + (Zielkosten − 2,0) / 2,1)`. Das Ergebnis wird auf `[jumprun.climb.minHeight, jumprun.climb.maxHeight]` geklemmt und, wenn der Zielblock nicht in das Höhenband der Lobby passt, um je eine Stufe verkürzt, bis er passt (`HeightBand.allows`).
+- **Funktion:** rein und deterministisch, eine kleine Methode in `Difficulty`. Sie nimmt Modus, Score und die Grenzen der Konfiguration. Das Rauschen der Zielkosten wählt weiterhin unter den Kandidaten; es verschiebt die Höhe nicht.
+- **Monoton:** Das Ziel steigt mit dem Score nicht fallend, weil Formen nur freigeschaltet werden. Also steigt auch die Höhe nicht fallend.
+- **Standardgrenzen 3 bis 7 (Entscheidung nach dem Rebase auf `main` mit #409):** `Climb.MAX_HEIGHT` und `jumprun.climb.maxHeight` sind 7, ein einziger Wert. Medium bleibt von selbst unter der Obergrenze: Das Ziel bei Score 80 ist etwa 4,1 (Schwierigkeit 6,5), also Höhe 4. Hard erreicht bei Score 80 die Obergrenze 7 (Ziel etwa 10,8, Kosten 10,4). Die Höhe folgt dem Ziel je Modus, die Grenze klemmt nur.
+- **Höhenband:** Eine Höhe 7 passt nur, wenn der Zielblock in das Höhenband passt; sonst verkürzt die Schleife in `CourseGenerator.towers` die Höhe, bis sie passt (Test: `HardMakesTheTallestTower...`, Walk mit Band-Prüfung).
+- **Alternative: fester Anteil für Türme je Score.** Verworfen (Entscheidung der Nutzer): ignoriert die Schwierigkeit.
+- **Alternative: Höhe würfeln.** Verworfen: Höhe und Ziel würden sich gegenseitig verschieben, und Tests wären nicht deterministisch.
+- **Test:** Unit (`DifficultyTest`): Höhe monoton im Score; geklemmt auf die Grenzen; Kosten bei Score 0, 40 und 80 innerhalb einer halben Höhenstufe (1,05) der Zielkosten, sofern die Höhe im Bereich 3 bis 8 liegt; bei Score 0 die Mindesthöhe. Unit (`ModeGenerationTest`, feste Seeds): In Medium kommen bei Score 80 Türme vor, mit den Standardgrenzen.
+- **SOLID:** SRP (Höhe in `Difficulty`, Erzeugung in `CourseGenerator`), OCP (Grenzen kommen von außen).
 
 ### D9 Rainbow und Ultra
 

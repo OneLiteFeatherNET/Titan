@@ -33,9 +33,12 @@ public record Jump(Placement from, Placement to) {
     private static final double TYPE_WEIGHT = 2.0;
     private static final double GAP_WEIGHT = 1.5;
 
-    /** Cost of the lowest tower, and what each block above it adds. */
+    /**
+     * Cost of the lowest tower, and what each block above it adds: steep enough that the tallest
+     * tower the config allows costs as much as the hardest medium jump.
+     */
     private static final double CLIMB_COST = 2.0;
-    private static final double CLIMB_HEIGHT_WEIGHT = 0.5;
+    private static final double CLIMB_HEIGHT_WEIGHT = 2.1;
     private static final int CLIMB_LOWEST = 3;
 
 
@@ -48,6 +51,11 @@ public record Jump(Placement from, Placement to) {
     /** Cost of a tower of the given height: a fixed part plus the blocks above the lowest tower. */
     static double climbCost(int height) {
         return CLIMB_COST + CLIMB_HEIGHT_WEIGHT * (height - CLIMB_LOWEST);
+    }
+
+    /** The tower height, unrounded, that costs {@code cost}: the inverse of {@link #climbCost}. */
+    static double climbHeightFor(double cost) {
+        return CLIMB_LOWEST + (cost - CLIMB_COST) / CLIMB_HEIGHT_WEIGHT;
     }
 
     /** Cost of the hardest jump onto one of the {@code surfaces} over the widest flat gap. */

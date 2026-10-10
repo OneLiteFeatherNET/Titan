@@ -73,7 +73,10 @@ class HeadDrawTest {
 
     @Test
     void withTwoProfilesBothAppear() {
-        List<CourseBlock> heads = headsOfAWalk(generator(List.of(ALEX, BOB), 1L));
+        List<CourseBlock> heads = new ArrayList<>();
+        for (long seed = 1; seed <= 5; seed++) {
+            heads.addAll(headsOfAWalk(generator(List.of(ALEX, BOB), seed)));
+        }
 
         Set<HeadSkin> seen = new HashSet<>();
         heads.forEach(head -> seen.add(head.skin().orElseThrow()));
@@ -96,9 +99,13 @@ class HeadDrawTest {
 
     @Test
     void aSingleProfileRepeats() {
-        List<CourseBlock> heads = headsOfAWalk(generator(List.of(ALEX), 1L));
+        // Heads are sparse at the high scores a 300 jump walk reaches, so several seeds make the sample.
+        List<CourseBlock> heads = new ArrayList<>();
+        for (long seed = 1; seed <= 5; seed++) {
+            heads.addAll(headsOfAWalk(generator(List.of(ALEX), seed)));
+        }
 
-        assertTrue(heads.size() > 3, "the walk made heads");
+        assertTrue(heads.size() > 3, "the walks made heads: " + heads.size());
         assertTrue(heads.stream().allMatch(head -> head.skin().equals(Optional.of(ALEX))), "every head shows the only profile");
     }
 

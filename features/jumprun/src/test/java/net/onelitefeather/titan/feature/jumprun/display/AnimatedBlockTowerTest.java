@@ -16,6 +16,7 @@
 package net.onelitefeather.titan.feature.jumprun.display;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import net.minestom.server.coordinate.Pos;
@@ -80,6 +81,24 @@ class AnimatedBlockTowerTest {
 
         assertEquals(1, heights.size(), "all cells are at one height, but were " + heights);
         assertEquals(0.0, heights.getFirst(), 1e-9, "they all fall to the cell of the block, the client interpolates the move");
+    }
+
+    @Test
+    void theDisplaysOfATowerRiseTogether(Env env) {
+        Instance instance = env.createFlatInstance();
+        Player runner = env.createPlayer(instance, new Pos(0, 40, 0));
+        AnimatedBlock animated = AnimatedBlock.fallIn(runner, lock, fakeBlocks, TestBlocks.tower(AT, HEIGHT_OF_TOWER), instance, block -> {
+        });
+        tick(env, 2 + AnimatedBlock.ANIMATION_TICKS);
+        synchronized (lock) {
+            animated.riseAway();
+        }
+
+        tick(env, 1 + AnimatedBlock.ANIMATION_TICKS / 2);
+
+        List<Double> heights = blockDisplays(instance).stream().map(AnimatedBlockTowerTest::heightOf).distinct().toList();
+        assertEquals(1, heights.size(), "all cells are at one height while rising, but were " + heights);
+        assertTrue(heights.getFirst() > 0.0, "the tower rises above its cell, but is at " + heights.getFirst());
     }
 
     @Test

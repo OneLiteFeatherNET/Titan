@@ -24,7 +24,7 @@ jumprun:
   # edit is logged and the last valid values stay.
   climb:
     minHeight: 3
-    maxHeight: 5
+    maxHeight: 7
   # The materials each shape of the course is shown as. Key: the block name without namespace;
   # value: its weight, a whole number of 0 or more (a weight of 3 is drawn three times as often as
   # 1; 0 switches the material off, e.g. to drop a shipped one in an override).
