@@ -39,7 +39,7 @@ class NavigatorFeatureFlagTest {
     @DisplayName("Slender's flag off: slot 5 is a blank glass pane, the other destinations are unchanged")
     @Test
     void slenderHiddenWhenFlagIsOff(Env env) {
-        FakeFeatureFlags flags = new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", false);
+        FakeFeatureFlags flags = new FakeFeatureFlags().declare(Destination.SLENDER_FLAG, false);
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), flags, new FakePermissionService())) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
@@ -59,7 +59,7 @@ class NavigatorFeatureFlagTest {
     @DisplayName("Slender's flag on: slot 5 shows Slender, and a click on it forwards to cygnus")
     @Test
     void slenderShownAndForwardsWhenFlagIsOn(Env env) {
-        FakeFeatureFlags flags = new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", true);
+        FakeFeatureFlags flags = new FakeFeatureFlags().declare(Destination.SLENDER_FLAG, true);
         RecordingDeliver deliver = new RecordingDeliver();
         try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, flags, new FakePermissionService())) {
             Instance instance = env.createFlatInstance();
@@ -82,7 +82,7 @@ class NavigatorFeatureFlagTest {
     @DisplayName("Toggling the flag on between two opens shows Slender on the second open, without a restart")
     @Test
     void togglingTheFlagBetweenTwoOpensShowsSlenderOnTheSecondOpen(Env env) {
-        FakeFeatureFlags flags = new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", false);
+        FakeFeatureFlags flags = new FakeFeatureFlags().declare(Destination.SLENDER_FLAG, false);
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), flags, new FakePermissionService())) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
@@ -92,10 +92,28 @@ class NavigatorFeatureFlagTest {
             Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, player.getOpenInventory().getItemStack(5).material(), "slot 5 must be blank on the first open, flag off");
             player.closeInventory();
 
-            flags.set("NAVIGATOR_SLENDER", true);
+            flags.set(Destination.SLENDER_FLAG, true);
             fixture.useFeather(player);
 
             Assertions.assertEquals(Material.ENDERMAN_SPAWN_EGG, player.getOpenInventory().getItemStack(5).material(), "slot 5 must show Slender on the second open, after the flag flipped, with no restart");
+        }
+    }
+
+    @DisplayName("A retired flag left in the operator config leaves the menu unchanged")
+    @Test
+    void retiredFlagLeavesTheMenuUnchanged(Env env) {
+        FakeFeatureFlags flags = new FakeFeatureFlags().declare(Destination.SLENDER_FLAG, false).declare("NAVIGATOR_CREATIVE", true);
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), flags, new FakePermissionService())) {
+            Instance instance = env.createFlatInstance();
+            Player player = env.createPlayer(instance);
+            fixture.equip(player);
+
+            fixture.useFeather(player);
+
+            AbstractInventory openInventory = player.getOpenInventory();
+            Assertions.assertNotNull(openInventory);
+            Assertions.assertEquals(Material.GRASS_BLOCK, openInventory.getItemStack(4).material(), "Survival must stay on slot 4");
+            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, openInventory.getItemStack(5).material(), "slot 5 must stay blank, the retired flag gates nothing");
         }
     }
 }

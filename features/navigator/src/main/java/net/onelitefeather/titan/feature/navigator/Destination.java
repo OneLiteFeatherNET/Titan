@@ -30,7 +30,10 @@ import org.jetbrains.annotations.Nullable;
  */
 enum Destination {
 
-    ELYTRA_RACE(0, Material.ELYTRA, "<!i><gradient:#fcba03:#03fc8c>ElytraRace</gradient>", "ElytraRace", null, null), SURVIVAL(4, Material.GRASS_BLOCK, "<!i><green>Survival", "Survival", null, null), SLENDER(5, Material.ENDERMAN_SPAWN_EGG, "<!i><gradient:#616161:#e80000c>Slender</gradient>", "cygnus", "NAVIGATOR_SLENDER", null), BUILD(7, Material.SCAFFOLDING, "<!i><gold>Build", "Build", null, "titan.navigator.buildserver"), CREATIVE(8, Material.WOODEN_AXE, "<!i><rainbow>Creative</rainbow>", "MemberBuild", null, null);
+    ELYTRA_RACE(0, Material.ELYTRA, "<!i><gradient:#fcba03:#03fc8c>ElytraRace</gradient>", "ElytraRace", null, null), SURVIVAL(4, Material.GRASS_BLOCK, "<!i><green>Survival", "Survival", null, null), SLENDER(5, Material.ENDERMAN_SPAWN_EGG, "<!i><gradient:#616161:#e80000>Slender</gradient>", "cygnus", Destination.SLENDER_FLAG, null), BUILD(7, Material.SCAFFOLDING, "<!i><gold>Build", "Build", null, "titan.navigator.buildserver"), CREATIVE(8, Material.WOODEN_AXE, "<!i><rainbow>Creative</rainbow>", "MemberBuild", null, null);
+
+    // The only feature flag the navigator knows; navigator.yaml lists it and nothing else.
+    static final String SLENDER_FLAG = "NAVIGATOR_SLENDER";
 
     private final int slot;
     private final Material icon;

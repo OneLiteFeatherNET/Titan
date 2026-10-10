@@ -61,7 +61,7 @@ class NavigatorTelemetryTest {
     }
 
     private static FakeFeatureFlags slenderActive() {
-        return new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", true);
+        return new FakeFeatureFlags().declare(Destination.SLENDER_FLAG, true);
     }
 
     private NavigatorFixture start(Env env, RecordingDeliver deliver, FakePermissionService permissions) {

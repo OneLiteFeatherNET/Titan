@@ -15,22 +15,32 @@
  */
 package net.onelitefeather.titan.feature.navigator;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.format.TextColor;
+import net.minestom.server.component.DataComponents;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
+import net.minestom.testing.Env;
+import net.minestom.testing.extension.MicrotusExtension;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Plain unit coverage for {@link Destination}: no {@code Env}, no Aves, no configuration - just the
- * enum's fixed slots and the pure {@code Destination.visible} function.
+ * Plain unit coverage for {@link Destination}: no Aves, no configuration - just the enum's fixed
+ * slots and the pure {@code Destination.visible} function. Building an item needs Minestom's
+ * registries, which is why the name test takes an {@code Env}.
  *
  * <p>Pairwise-distinct slots are checked here rather than at start-up: a duplicate slot is a
  * programming error caught by this test.
  */
+@ExtendWith(MicrotusExtension.class)
 class NavigatorDestinationTest {
 
     @DisplayName("Every destination occupies the slot the lobby-navigator spec fixes for it")
@@ -72,7 +82,7 @@ class NavigatorDestinationTest {
     @DisplayName("visible() lists every destination except Slender while NAVIGATOR_SLENDER is off")
     @Test
     void visibleExcludesSlenderWhileItsFlagIsOff() {
-        FakeFeatureFlags flags = new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", false);
+        FakeFeatureFlags flags = new FakeFeatureFlags().declare(Destination.SLENDER_FLAG, false);
 
         List<Destination> visible = Destination.visible(flags, false);
 
@@ -83,7 +93,7 @@ class NavigatorDestinationTest {
     @DisplayName("visible() without permissioned destinations never lists Build")
     @Test
     void visibleWithoutPermissionedNeverListsBuild() {
-        FakeFeatureFlags flags = new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", true);
+        FakeFeatureFlags flags = new FakeFeatureFlags().declare(Destination.SLENDER_FLAG, true);
 
         Assertions.assertFalse(Destination.visible(flags, false).contains(Destination.BUILD), "the public menu must never contain Build");
     }
@@ -91,7 +101,7 @@ class NavigatorDestinationTest {
     @DisplayName("visible() with permissioned destinations lists Build")
     @Test
     void visibleWithPermissionedListsBuild() {
-        FakeFeatureFlags flags = new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", false);
+        FakeFeatureFlags flags = new FakeFeatureFlags().declare(Destination.SLENDER_FLAG, false);
 
         Assertions.assertTrue(Destination.visible(flags, true).contains(Destination.BUILD), "the team menu must contain Build");
     }
@@ -99,10 +109,28 @@ class NavigatorDestinationTest {
     @DisplayName("visible() lists every destination, including Slender, while NAVIGATOR_SLENDER is on")
     @Test
     void visibleIncludesSlenderWhileItsFlagIsOn() {
-        FakeFeatureFlags flags = new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", true);
+        FakeFeatureFlags flags = new FakeFeatureFlags().declare(Destination.SLENDER_FLAG, true);
 
         List<Destination> visible = Destination.visible(flags, true);
 
         Assertions.assertEquals(Set.copyOf(Arrays.asList(Destination.values())), Set.copyOf(visible), "every destination must be visible while NAVIGATOR_SLENDER is on, was: " + visible.stream().map(Enum::name).collect(Collectors.joining(", ")));
+    }
+
+    @DisplayName("Slender's name fades from #616161 to #e80000 across its letters")
+    @Test
+    void slenderNameFadesFromGrayToDeepRed(Env env) {
+        List<TextColor> letterColors = new ArrayList<>();
+        collectLetterColors(Destination.SLENDER.item().get(DataComponents.CUSTOM_NAME), null, letterColors);
+
+        Assertions.assertEquals(TextColor.color(0x616161), letterColors.getFirst(), "the first letter of Slender must be #616161");
+        Assertions.assertEquals(TextColor.color(0xe80000), letterColors.getLast(), "the last letter of Slender must be #e80000, not a value cut off from an invalid hex literal");
+    }
+
+    private static void collectLetterColors(Component component, TextColor inherited, List<TextColor> sink) {
+        TextColor color = component.color() != null ? component.color() : inherited;
+        if (component instanceof TextComponent text) {
+            text.content().chars().forEach(letter -> sink.add(color));
+        }
+        component.children().forEach(child -> collectLetterColors(child, color, sink));
     }
 }

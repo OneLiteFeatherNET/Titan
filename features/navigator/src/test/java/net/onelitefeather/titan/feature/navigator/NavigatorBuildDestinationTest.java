@@ -42,7 +42,7 @@ class NavigatorBuildDestinationTest {
     private static final String BUILD_PERMISSION = "titan.navigator.buildserver";
 
     private static FakeFeatureFlags slenderActive() {
-        return new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", true);
+        return new FakeFeatureFlags().declare(Destination.SLENDER_FLAG, true);
     }
 
     private static AbstractInventory openNavigator(NavigatorFixture fixture, Player player) {
@@ -177,14 +177,14 @@ class NavigatorBuildDestinationTest {
     @DisplayName("A flag change shows in the public menu on the next open")
     @Test
     void flagChangeReachesThePublicMenu(Env env) {
-        FakeFeatureFlags flags = new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", false);
+        FakeFeatureFlags flags = new FakeFeatureFlags().declare(Destination.SLENDER_FLAG, false);
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), flags, new FakePermissionService())) {
             Player player = env.createPlayer(env.createFlatInstance());
             fixture.equip(player);
             assertPublicMenu(openNavigator(fixture, player), false);
             player.closeInventory();
 
-            flags.set("NAVIGATOR_SLENDER", true);
+            flags.set(Destination.SLENDER_FLAG, true);
 
             assertPublicMenu(openNavigator(fixture, player), true);
         }
@@ -193,7 +193,7 @@ class NavigatorBuildDestinationTest {
     @DisplayName("A flag change shows in the team menu on the next open")
     @Test
     void flagChangeReachesTheTeamMenu(Env env) {
-        FakeFeatureFlags flags = new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", false);
+        FakeFeatureFlags flags = new FakeFeatureFlags().declare(Destination.SLENDER_FLAG, false);
         Player player = env.createPlayer(env.createFlatInstance());
         FakePermissionService permissions = new FakePermissionService().set(player.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED);
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), flags, permissions)) {
@@ -203,7 +203,7 @@ class NavigatorBuildDestinationTest {
             Assertions.assertEquals(Material.SCAFFOLDING, first.getItemStack(BUILD_SLOT).material());
             player.closeInventory();
 
-            flags.set("NAVIGATOR_SLENDER", true);
+            flags.set(Destination.SLENDER_FLAG, true);
 
             AbstractInventory second = openNavigator(fixture, player);
             Assertions.assertEquals(Material.ENDERMAN_SPAWN_EGG, second.getItemStack(5).material(), "slot 5 must show Slender after the flag flipped");
