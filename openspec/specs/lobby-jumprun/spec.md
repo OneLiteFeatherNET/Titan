@@ -171,7 +171,16 @@ Nach der Aufstiegsphase MUSS die Schwierigkeit jedes neuen Sprungs aus einer fes
 - **THEN** überschreitet kein Sprung die Grenzen für Lücke und Aufstieg, auch nicht von einem Zaun oder einer Stufe aus
 
 ### Requirement: Sprünge nur, wo Platz ist
-Ein neuer Block nach der Aufstiegsphase DARF NUR an einer Stelle entstehen, die waagrecht mindestens 16 Blöcke vom Lobby-Spawn entfernt ist, unter der in der echten Welt mindestens 6 Blöcke Luft sind und an der in der echten Welt Luft ist, über deren Oberkante zwei Blöcke Kopffreiheit sind, deren Flugbahn vom vorigen Block aus frei ist, die keinen sichtbaren Block des eigenen Laufs überschneidet und die innerhalb der Grenzen der Lobby-Welt liegt. Ein neuer Block und die Flugbahn dorthin DÜRFEN NICHT in einem Lobby-Portal oder näher als 3 Blöcke an einem liegen, damit ein Läufer nie versehentlich auf einen anderen Server geschickt wird. Ein neuer Block DARF NUR gewählt werden, wenn von ihm aus mindestens ein weiterer gültiger Sprung möglich ist. Unter den gültigen Stellen MUSS die Lobby solche mit mehr Luft darunter, vor allem in der Senkrechten, und drumherum bevorzugen, ohne dass dadurch die Schwierigkeit nach dem Score verloren geht. Findet die Lobby trotzdem keinen gültigen nächsten Block, MUSS der Lauf mit dem erreichten Score enden.
+Ein neuer Block nach der Aufstiegsphase DARF NUR an einer Stelle entstehen, die all diese Bedingungen erfüllt:
+- Sie ist waagrecht mindestens 16 Blöcke vom Lobby-Spawn entfernt.
+- Unter ihr sind in der echten Welt mindestens 6 Blöcke Luft.
+- An ihr ist in der echten Welt Luft.
+- Über ihrer Oberkante ist so viel freier Raum, dass der Spieler dort stehen und von dort aus springen kann. Das sind seine Körperhöhe plus die Höhe eines Sprungs.
+- Ihre Flugbahn vom vorigen Block aus ist bis zur Scheitelhöhe des Sprungs frei.
+- Sie überschneidet keinen sichtbaren Block des eigenen Laufs.
+- Sie liegt innerhalb der Höhengrenzen der Lobby, mit dem Abstand aus der Anforderung „Kein Teleport durch die Höhengrenzen“.
+
+Ein neuer Block und die Flugbahn dorthin DÜRFEN NICHT in einem Lobby-Portal oder näher als 3 Blöcke an einem liegen, damit ein Läufer nie versehentlich auf einen anderen Server geschickt wird. Ein neuer Block DARF NUR gewählt werden, wenn von ihm aus mindestens ein weiterer gültiger Sprung möglich ist. Unter den gültigen Stellen MUSS die Lobby solche mit mehr Luft darunter, vor allem in der Senkrechten, und drumherum bevorzugen, ohne dass dadurch die Schwierigkeit nach dem Score verloren geht. Findet die Lobby trotzdem keinen gültigen nächsten Block, MUSS der Lauf mit dem erreichten Score enden.
 
 #### Scenario: Nicht über Wegen
 - **WHEN** eine Stelle direkt über einem Weg liegt, sodass unter ihr weniger als 6 Blöcke Luft sind
@@ -200,6 +209,18 @@ Ein neuer Block nach der Aufstiegsphase DARF NUR an einer Stelle entstehen, die 
 #### Scenario: Gar kein Platz mehr
 - **WHEN** von der aktuellen Stelle aus kein gültiger Block mehr möglich ist
 - **THEN** endet der Lauf mit dem erreichten Score
+
+#### Scenario: Nicht unter eine Decke
+- **WHEN** eine sonst gültige Stelle 2 Blöcke unter der Unterseite einer Insel oder eines Überhangs liegt, sodass der Spieler dort stehen, aber nicht springen könnte
+- **THEN** entsteht dort kein Block
+
+#### Scenario: Flugbahn unter einem Überhang
+- **WHEN** zwischen zwei Blöcken ein Überhang so tief hängt, dass er die Scheitelhöhe des Sprungs schneidet
+- **THEN** wird dieser Sprung nicht erzeugt
+
+#### Scenario: Jeder Block ist ein Absprung
+- **WHEN** ein Spieler auf einem beliebigen Block eines Laufs steht
+- **THEN** ist über ihm bis zur Scheitelhöhe eines Sprungs nur Luft
 
 ### Requirement: Zielgerichteter Verlauf
 Der Parcours MUSS eine Hauptrichtung verfolgen, die sich nur allmählich ändert. Nach der Aufstiegsphase MUSS die Hauptrichtung schlangenförmig hin und her pendeln und den Parcours mit der Zeit um den Spawn herumführen, statt nur vom Spawn weg: Der Parcours MUSS sich in einem Ring von 20 bis 60 Blöcken waagrechtem Abstand zum Spawn halten, soweit Platz ist. Ein neuer Block DARF NICHT entgegen der aktuellen Hauptrichtung liegen. Ein neuer Block und die Flugbahn dorthin DÜRFEN waagrecht keinem früheren sichtbaren Block des Laufs außer dem Absprungblock näher als 2 Blöcke kommen, damit frühere Blöcke beim Springen nie im Weg sind. Unter den gültigen Stellen MUSS die Lobby solche bevorzugen, die der Hauptrichtung am besten folgen.
@@ -277,7 +298,7 @@ Jeder Block eines Laufs MUSS sein Material zufällig aus einer Auswahl passend z
 - **THEN** gelten für beide dieselbe Oberkante und dieselben Kosten
 
 ### Requirement: Laufende
-Ein Lauf MUSS enden, wenn der Spieler mehr als drei Blöcke unter den Block fällt, auf dem er zuletzt gelandet ist, wenn er das Jump-and-Run-Item erneut benutzt, wenn er stirbt oder wenn er die Lobby verlässt. Bei einem Absturz MUSS die Lobby ihn an den Startpunkt seines Laufs zurücksetzen. Während eines Laufs DARF der Läufer KEINE Elytra tragen, damit ein Leertastendruck in der Luft kein Gleiten auslöst; mit dem Laufende MUSS er seine normale Lobby-Ausstattung zurückerhalten. Nach dem Ende DÜRFEN keine Blöcke des Laufs für ihn sichtbar bleiben, und an ihren Stellen MUSS er wieder die echte Welt sehen.
+Ein Lauf MUSS enden, wenn der Spieler mehr als drei Blöcke unter den Block fällt, auf dem er zuletzt gelandet ist, wenn er das Jump-and-Run-Item erneut benutzt, wenn er stirbt, wenn er zum Lobby-Spawn zurückkehrt (per Befehl oder Navigator, siehe `lobby-spawn-return`) oder wenn er die Lobby verlässt. Bei einem Absturz MUSS die Lobby ihn an den Startpunkt seines Laufs zurücksetzen. Eine Rückkehr zum Spawn MUSS den Lauf beenden wie ein Abbruch über das Item, also mit gewertetem Score, bevor der Spieler versetzt wird; der Spieler landet am Spawn, nicht am Startpunkt des Laufs. Während eines Laufs DARF der Läufer KEINE Elytra tragen, damit ein Leertastendruck in der Luft kein Gleiten auslöst; mit dem Laufende MUSS er seine normale Lobby-Ausstattung zurückerhalten. Nach dem Ende DÜRFEN keine Blöcke des Laufs für ihn sichtbar bleiben, und an ihren Stellen MUSS er wieder die echte Welt sehen.
 
 #### Scenario: Absturz
 - **WHEN** der Spieler mehr als drei Blöcke unter seinen letzten Block fällt
@@ -299,8 +320,20 @@ Ein Lauf MUSS enden, wenn der Spieler mehr als drei Blöcke unter den Block fäl
 - **WHEN** der Spieler während eines Laufs die Verbindung trennt
 - **THEN** endet der Lauf, und die Lobby hält keinen Zustand dieses Laufs mehr
 
+#### Scenario: Rückkehr zum Spawn im Lauf
+- **WHEN** ein Läufer mit Score 12 im Lauf `/spawn` eingibt
+- **THEN** endet der Lauf mit Score 12 und der Endmeldung wie bei einem Abbruch, alle Blöcke verschwinden, er hat seine Ausstattung zurück und steht am Lobby-Spawn
+
 ### Requirement: Score und Rekord
-Während eines Laufs MUSS der Spieler seinen aktuellen Score in der Action Bar sehen. Am Ende eines Laufs MUSS er eine Meldung mit dem erreichten Score erhalten. Die Lobby MUSS pro Spieler den höchsten Score im Speicher halten, solange der Spieler in der Lobby ist. Verlässt er die Lobby, MUSS sein Rekord gelöscht werden. Übertrifft ein Lauf diesen Rekord, MUSS die Meldung das als neuen Rekord kennzeichnen. Über einen Neustart der Lobby hinweg DARF der Rekord verloren gehen.
+Während eines Laufs MUSS der Spieler seinen aktuellen Score in der Action Bar sehen. Am Ende eines Laufs MUSS er eine Meldung mit dem erreichten Score erhalten. Übertrifft ein Lauf den Rekord des Spielers in diesem Modus, MUSS die Meldung das als neuen Rekord kennzeichnen.
+
+Ist eine Datenbank konfiguriert, gilt Folgendes:
+- Jeder Lauf, dessen Ende den Score wertet, MUSS mit Spieler, aktuellem Spielernamen, Modus, Score, Endgrund und Zeitpunkt dauerhaft gespeichert werden, auch bei Score 0.
+- Der Rekord eines Spielers in einem Modus MUSS der höchste gespeicherte Score dieses Spielers in diesem Modus sein. Er gilt in jeder Lobby und über Verlassen und Neustart hinweg.
+- Die Rekorde eines Spielers MÜSSEN geladen sein, bevor er die Lobby betritt.
+- Ein gerade beendeter Lauf MUSS sofort für den nächsten Lauf in derselben Lobby zählen, auch wenn er noch nicht gespeichert ist.
+
+Ohne Datenbank MUSS die Lobby den Rekord pro Spieler und Modus im Speicher halten, solange der Spieler in der Lobby ist, und ihn beim Verlassen löschen.
 
 #### Scenario: Neuer Rekord
 - **WHEN** ein Spieler mit bisherigem Rekord 12 einen Lauf mit Score 15 beendet
@@ -310,9 +343,21 @@ Während eines Laufs MUSS der Spieler seinen aktuellen Score in der Action Bar s
 - **WHEN** derselbe Spieler danach einen Lauf mit Score 9 beendet
 - **THEN** meldet die Lobby Score 9 ohne Rekord-Hinweis, und sein Rekord bleibt 15
 
+#### Scenario: Rekord überdauert das Verlassen
+- **WHEN** bei konfigurierter Datenbank ein Spieler mit Hard-Rekord 15 die Lobby verlässt und später eine andere Lobby betritt
+- **THEN** ist sein Hard-Rekord dort 15, und ein Lauf mit Score 15 ist kein neuer Rekord
+
+#### Scenario: Jeder gewertete Lauf wird gespeichert
+- **WHEN** bei konfigurierter Datenbank ein Spieler einen Lauf mit Score 0 durch Absturz beendet
+- **THEN** steht dieser Lauf mit Score 0, Modus und Endgrund in der Historie
+
 #### Scenario: Rekord endet mit dem Verlassen
-- **WHEN** ein Spieler die Lobby verlässt und später wiederkommt
+- **WHEN** ohne Datenbank ein Spieler die Lobby verlässt und später wiederkommt
 - **THEN** hat er keinen Rekord mehr, und sein nächster Lauf mit Score > 0 ist ein neuer Rekord
+
+#### Scenario: Speichern schlägt fehl
+- **WHEN** bei konfigurierter Datenbank das Speichern eines Laufs fehlschlägt
+- **THEN** bekommt der Spieler trotzdem seine Endmeldung, und der Rekord gilt in dieser Lobby bis zum Verlassen
 
 ### Requirement: Ton bei neuem Rekord
 Übertrifft der Score eines Läufers während des Laufs zum ersten Mal seinen bisherigen Rekord, MUSS der Läufer sofort das Levelaufstiegs-Geräusch hören, höchstens einmal pro Lauf. Hat der Spieler noch keinen Rekord, MUSS das Geräusch mit der Meldung über den neuen Rekord am Laufende erklingen. Alle Töne des Laufs MÜSSEN dem Läufer folgen und DÜRFEN NICHT abbrechen, wenn er dabei versetzt wird (z. B. beim Zurücksetzen nach einem Absturz). Andere Spieler DÜRFEN es NICHT hören.
@@ -339,3 +384,67 @@ Alle Texte des Jump and Run (Score in der Action Bar, Meldungen zu Start, Ende u
 #### Scenario: Unbekannte Sprache
 - **WHEN** ein Spieler mit einer Client-Sprache ohne Übersetzung einen Lauf beendet
 - **THEN** ist die Meldung zum Laufende englisch
+
+### Requirement: Kein Teleport durch die Höhengrenzen
+Ein Lauf DARF einen Läufer NIE so hoch oder so tief führen, dass die Lobby ihn wegen ihrer Höhengrenzen zum Spawn teleportiert. Jeder Block eines Laufs, auch in der Aufstiegsphase, MUSS so weit über der unteren Höhengrenze liegen, dass ein Absturz von ihm den Lauf beendet und den Spieler an den Startpunkt zurücksetzt, bevor er die Grenze erreicht. Jeder Block MUSS so weit unter der oberen Höhengrenze liegen, dass der Spieler auch im Scheitelpunkt eines Sprungs darunter bleibt. Kann ein Lauf an der Stelle des Spielers nicht so beginnen, MUSS der Start mit der Meldung „kein Platz zum Starten“ ausbleiben. Die Höhengrenzen sind die der Lobby; ändert der Betreiber sie, MUSS der nächste neue Block die neuen Grenzen beachten.
+
+#### Scenario: Absturz knapp über der Untergrenze
+- **WHEN** ein Läufer vom tiefsten erlaubten Block senkrecht abstürzt
+- **THEN** endet der Lauf, und er steht am Startpunkt des Laufs, nicht am Lobby-Spawn
+
+#### Scenario: Kein Block nahe der Untergrenze
+- **WHEN** eine sonst gültige Stelle so tief liegt, dass ein Absturz von ihr die untere Höhengrenze erreichen würde, bevor der Lauf endet
+- **THEN** entsteht dort kein Block
+
+#### Scenario: Kein Block nahe der Obergrenze
+- **WHEN** eine sonst gültige Stelle so hoch liegt, dass der Spieler im Scheitelpunkt eines Sprungs von ihr die obere Höhengrenze überschreiten würde
+- **THEN** entsteht dort kein Block
+
+#### Scenario: Start zu nah an einer Grenze
+- **WHEN** ein Spieler einen Lauf an einer Stelle starten will, an der die Aufstiegsphase das erlaubte Höhenband verlassen würde
+- **THEN** startet kein Lauf, und er erhält die Meldung „kein Platz zum Starten“ in seiner Sprache
+
+### Requirement: Sidebar während des Laufs
+Während eines Laufs MUSS der Läufer rechts eine Sidebar sehen. Sie MUSS den Spielnamen mit dem Modus des Laufs als Titel tragen und den aktuellen Score sowie seinen Rekord in diesem Modus zeigen. Score und Rekord MÜSSEN als Werte in einer eigenen, rechtsbündigen Spalte stehen. Ist eine Datenbank konfiguriert und gibt es in diesem Modus mindestens einen Rekord, MUSS sie zusätzlich unter einer Überschrift die bis zu drei Spieler mit den höchsten Rekorden in diesem Modus zeigen, in absteigender Reihenfolge, je mit Spielerkopf, Spielername und Rekord, wobei der Rekord den Platz durch seine Farbe (Gold, Silber, Bronze) kenntlich macht. Jeder Spieler darf dabei nur einmal vorkommen. Bei gleichem Rekord steht vorn, wer ihn früher erreicht hat. Ist der Läufer selbst unter den drei, MUSS seine Zeile hervorgehoben (Markierung, fetter Name) erscheinen.
+
+Die Sidebar MUSS sich bei jeder Score-Änderung aktualisieren. Rekorde aus anderen Lobbys DÜRFEN mit einer Verzögerung von höchstens einer Minute erscheinen, ein eigener neuer Rekord MUSS sofort einsortiert werden. Außerhalb eines Laufs DARF der Spieler KEINE Jump-and-Run-Sidebar sehen, und er DARF NIE Werte eines anderen Modus als des laufenden sehen. Andere Spieler DÜRFEN die Sidebar des Läufers NICHT sehen. Die Beschriftungen „Score“, „Rekord“ und die Überschrift der Bestenliste MÜSSEN in der Sprache des Spielers erscheinen, mit Englisch als Fallback. Titel, Modusname und Spielernamen sind sprachneutral. Die Action Bar mit dem Score bleibt zusätzlich bestehen.
+
+#### Scenario: Sidebar beim Start
+- **WHEN** ein Spieler mit Hard-Rekord 42 einen Lauf in Hard startet
+- **THEN** sieht er rechts eine Sidebar mit Titel „Jump & Run · Hard“, Score 0 und Rekord 42 in der Wertespalte
+
+#### Scenario: Score steigt
+- **WHEN** der Läufer Score 7 erreicht
+- **THEN** zeigt die Sidebar Score 7, und die Action Bar zeigt ebenfalls 7
+
+#### Scenario: Top 3 des Modus
+- **WHEN** in Hard die Rekorde Alex 88, Steve 61, Notch 42 und Jeb 30 gespeichert sind und Jeb einen Lauf in Hard startet
+- **THEN** zeigt seine Sidebar in dieser Reihenfolge Alex 88 (gold), Steve 61 (silber), Notch 42 (bronze), je mit Kopf, und keine dieser Zeilen ist hervorgehoben
+
+#### Scenario: Eigener Platz fett
+- **WHEN** Steve mit Hard-Rekord 61 einen Lauf in Hard startet
+- **THEN** ist seine Zeile (Steve 61, silber) hervorgehoben, die anderen nicht
+
+#### Scenario: Neuer Rekord rückt sofort auf
+- **WHEN** Jeb im laufenden Hard-Lauf Score 50 erreicht
+- **THEN** zeigt seine Sidebar sofort Jeb 50 auf dem dritten Platz (bronze) hervorgehoben, und Notch ist nicht mehr unter den drei
+
+#### Scenario: Nur der eigene Modus
+- **WHEN** ein Spieler mit Easy-Rekord 30 und Hard-Rekord 8 einen Lauf in Hard startet
+- **THEN** zeigt die Sidebar Rekord 8 und die Top 3 von Hard, nichts aus Easy
+
+#### Scenario: Sidebar verschwindet
+- **WHEN** der Lauf endet, egal aus welchem Grund
+- **THEN** sieht der Spieler keine Jump-and-Run-Sidebar mehr
+
+#### Scenario: Nicht für andere
+- **WHEN** A einen Lauf spielt und B ihm zusieht
+- **THEN** sieht B keine Jump-and-Run-Sidebar
+
+#### Scenario: Ohne Datenbank
+- **WHEN** ohne Datenbank ein Spieler einen Lauf startet
+- **THEN** zeigt die Sidebar Titel, Score und Rekord, aber keine Überschrift und keine Top 3
+
+#### Scenario: Deutscher Client
+- **WHEN** ein Spieler mit deutscher Client-Sprache einen Lauf startet
+- **THEN** zeigt die Sidebar die deutschen Beschriftungen, Spielernamen und Modus bleiben unverändert
