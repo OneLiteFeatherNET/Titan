@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Test;
 class DefaultNavigatorFeatureFlagsTest {
 
     private static final String FEATURES_SECTION = "features";
+    private static final String NAVIGATOR_PREFIX = "NAVIGATOR_";
     private static final String DEFAULTS_RESOURCE = "titan/defaults/features.yaml";
 
     @DisplayName("Every destination's feature flag is listed in the shipped features section")
@@ -51,13 +52,13 @@ class DefaultNavigatorFeatureFlagsTest {
         }
     }
 
-    @DisplayName("The shipped features section lists exactly the flags that a destination uses")
+    @DisplayName("The shipped features section lists exactly the navigator flags that a destination uses")
     @Test
-    void shippedFeaturesAreExactlyTheDestinationFlags() {
+    void shippedNavigatorFlagsAreExactlyTheDestinationFlags() {
         Configuration classpathOnly = Configuration.builder().resourceLoader(getClass().getClassLoader()::getResourceAsStream).load(DEFAULTS_RESOURCE).build();
-        Set<String> knownFlags = classpathOnly.forPath(FEATURES_SECTION).keys();
+        Set<String> navigatorFlags = classpathOnly.forPath(FEATURES_SECTION).keys().stream().filter(flag -> flag.startsWith(NAVIGATOR_PREFIX)).collect(Collectors.toSet());
         Set<String> destinationFlags = Arrays.stream(Destination.values()).map(Destination::feature).filter(feature -> feature != null).collect(Collectors.toSet());
 
-        Assertions.assertEquals(destinationFlags, knownFlags, "the 'features' section of " + DEFAULTS_RESOURCE + " must list exactly the flags a destination is gated by");
+        Assertions.assertEquals(destinationFlags, navigatorFlags, "the " + NAVIGATOR_PREFIX + "* flags in the 'features' section of " + DEFAULTS_RESOURCE + " must be exactly the flags a destination is gated by; other flags are allowed");
     }
 }
