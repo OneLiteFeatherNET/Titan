@@ -18,6 +18,8 @@ package net.onelitefeather.titan.common.deliver;
 import net.minestom.server.entity.Player;
 import net.onelitefeather.titan.api.deliver.DeliverComponent;
 import net.onelitefeather.titan.api.deliver.Deliver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Sends a player to another CloudNet service. The actual switch runs in the CloudNet bridge
@@ -25,6 +27,8 @@ import net.onelitefeather.titan.api.deliver.Deliver;
  * class only forwards the request through {@link TitanServerConnector} using JDK types.
  */
 public final class MessageChannelDeliver implements Deliver {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(MessageChannelDeliver.class);
 
     @Override
     public void sendPlayer(Player player, DeliverComponent component) {
@@ -34,12 +38,23 @@ public final class MessageChannelDeliver implements Deliver {
             return;
 
         switch (component) {
-            case DeliverComponent.TaskComponent taskComponent ->
-                TitanServerConnector.connectToTask(player.getUuid(), taskComponent.taskName());
-            case DeliverComponent.ServerDeliverComponent serverDeliverComponent ->
-                TitanServerConnector.connectToServer(player.getUuid(), serverDeliverComponent.gameServer());
+            case DeliverComponent.TaskComponent taskComponent -> {
+                if (!TitanServerConnector.connectToTask(player.getUuid(), taskComponent.taskName())) {
+                    warnMissingConnector(player, "task", taskComponent.taskName());
+                }
+            }
+            case DeliverComponent.ServerDeliverComponent serverDeliverComponent -> {
+                if (!TitanServerConnector.connectToServer(player.getUuid(), serverDeliverComponent.gameServer())) {
+                    warnMissingConnector(player, "server", serverDeliverComponent.gameServer());
+                }
+            }
             case null, default ->
                 throw new IllegalStateException("Unexpected value: " + component.type());
         }
+    }
+
+    // Without a connector the click silently strands the player; the log is the only trace of it.
+    private static void warnMissingConnector(Player player, String kind, String target) {
+        LOGGER.warn("Server connector missing: cannot send {} ({}) to {} {}", player.getUsername(), player.getUuid(), kind, target);
     }
 }

@@ -19,6 +19,7 @@ import net.hollowcube.minestom.extensions.ExtensionBootstrap;
 import net.minestom.server.Auth;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.command.CommandManager;
+import net.onelitefeather.titan.common.deliver.ConnectorStartupCheck;
 import net.onelitefeather.titan.common.observability.TitanObservability;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,6 +70,8 @@ public class TitanApplication {
         String bindHost = System.getProperty("service.bind.host", "localhost");
         int bindPort = Integer.getInteger("service.bind.port", 25565);
         bootstrap.start(bindHost, bindPort);
+        // Extensions install their connector only in start(); checking earlier would always see none.
+        ConnectorStartupCheck.verify();
 
         // Reads console input so locally typed commands and CloudNet's "stop" (written to stdin)
         // reach the server; without this CloudNet can only kill the process after a timeout.
