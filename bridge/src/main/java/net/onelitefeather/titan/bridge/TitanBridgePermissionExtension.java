@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.UUID;
 import net.minestom.server.extensions.Extension;
 import net.onelitefeather.minestom.extensions.processor.ExtensionInfo;
-import net.onelitefeather.titan.bridge.ServiceTotals.ServiceReading;
 import net.onelitefeather.titan.common.deliver.PlayerCountLookup;
 import net.onelitefeather.titan.common.deliver.ServerConnector;
 import net.onelitefeather.titan.common.deliver.TitanLobbyIdentity;
@@ -61,8 +60,8 @@ import net.onelitefeather.titan.common.permission.TitanPermissionBridge;
  * {@link PlayerManager} / {@link PlayerExecutor}.
  * <li><b>Player counts:</b> installs a {@link PlayerCountLookup} (used by
  * {@code HolderPlayerCounts})
- * that sums the bridge's player counts of the running services of a task or group, or reads one
- * service by name, and lists the running services one by one.
+ * that lists the bridge's player counts of the running services of a task or group, or of one
+ * service by name, one by one; the application sums them.
  * <li><b>Identity:</b> publishes this service's task and name through {@link TitanLobbyIdentity}.
  * </ul>
  *
@@ -103,11 +102,6 @@ public final class TitanBridgePermissionExtension extends Extension {
             @Override
             public boolean supports(String type) {
                 return type.equals("task") || type.equals("group") || type.equals("service");
-            }
-
-            @Override
-            public int[] lookup(String type, String name) {
-                return ServiceTotals.total(readings.read(type, name));
             }
 
             @Override

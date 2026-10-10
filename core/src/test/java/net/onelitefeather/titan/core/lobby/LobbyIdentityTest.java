@@ -20,15 +20,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LobbyIdentityTest {
-
-    @DisplayName("The default identities know no own lobby")
-    @Test
-    void unknownWithoutBridge() {
-        assertTrue(LobbyIdentities.none().self().isEmpty(), "no bridge, no identity");
-    }
 
     @DisplayName("A blank task is rejected")
     @Test

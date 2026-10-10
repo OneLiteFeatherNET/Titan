@@ -40,11 +40,6 @@ public final class TitanPlayerCountLookup {
         return current == null || current.supports(type);
     }
 
-    public static int[] lookup(String type, String name) {
-        PlayerCountLookup current = lookup;
-        return current == null ? null : current.lookup(type, name);
-    }
-
     /** Rows as documented on {@link PlayerCountLookup}; empty while no bridge is installed. */
     public static List<Map<String, Object>> running(String type, String name) {
         PlayerCountLookup current = lookup;

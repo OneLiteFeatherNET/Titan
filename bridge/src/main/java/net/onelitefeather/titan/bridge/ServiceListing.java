@@ -18,11 +18,10 @@ package net.onelitefeather.titan.bridge;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import net.onelitefeather.titan.bridge.ServiceTotals.ServiceReading;
 import net.onelitefeather.titan.common.deliver.PlayerCountLookup;
 
 /**
- * Lists the running services of a source one by one, where {@link ServiceTotals} sums them. Kept
+ * Lists the running services of a source one by one; the application sums them. Kept
  * free of CloudNet types so it is testable on its own.
  */
 final class ServiceListing {

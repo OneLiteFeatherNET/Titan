@@ -234,6 +234,8 @@ final class SwitcherInventory {
                 row(Material.YELLOW_CONCRETE, entry, new TextData(LobbySwitcherMessages.STATE_NOT_READY));
             case JOINABLE ->
                 row(Material.LIME_CONCRETE, entry, new TextData(LobbySwitcherMessages.ENTRY_COUNT, online, max));
+            case GONE, ERROR ->
+                throw new IllegalStateException("a listed lobby cannot be " + entry.state());
         };
     }
 

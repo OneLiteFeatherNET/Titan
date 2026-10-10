@@ -42,7 +42,7 @@ class LobbySwitcherModuleTest {
             player.setLocale(locale);
             Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);
 
-            fixture.module().tell(player, SwitcherClickDecision.FULL, "Lobby-3");
+            fixture.module().tell(player, SwitcherState.FULL, "Lobby-3");
 
             return PlainTextComponentSerializer.plainText().serialize(chat.collect().getFirst().message());
         }

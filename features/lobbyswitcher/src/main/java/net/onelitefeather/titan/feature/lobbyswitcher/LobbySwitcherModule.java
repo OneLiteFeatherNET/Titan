@@ -93,7 +93,7 @@ final class LobbySwitcherModule {
     }
 
     /** Tells the player what their click did, in their own language. */
-    void tell(Player player, SwitcherClickDecision decision, String target) {
+    void tell(Player player, SwitcherState decision, String target) {
         player.sendMessage(this.messages.click(player.getLocale(), decision, target));
     }
 }

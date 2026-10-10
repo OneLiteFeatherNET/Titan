@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 /**
  * {@link PlayerCounts} backed by the CloudNet bridge. It translates the JDK-typed
  * {@link TitanPlayerCountLookup} into the provider-neutral contract; with no bridge installed
- * every source reads as not running.
+ * every source reads as not running. The count of a source is the sum over its running services.
  *
  * <p>A {@link LinkageError} from the bridge's classloader is not a {@code RuntimeException}, so
  * the callers' fallbacks would miss it. It is logged (first of its kind as a warning, later ones
@@ -50,8 +50,11 @@ public final class HolderPlayerCounts implements PlayerCounts {
 
     @Override
     public PlayerCount count(SourceType type, String name) {
-        int[] counts = guarded(type, name, () -> TitanPlayerCountLookup.lookup(type.id(), name));
-        return counts == null ? PlayerCount.NOT_RUNNING : new PlayerCount(counts[0], counts[1], true);
+        List<ServiceCount> services = running(type, name);
+        if (services.isEmpty()) {
+            return PlayerCount.NOT_RUNNING;
+        }
+        return new PlayerCount(services.stream().mapToInt(ServiceCount::online).sum(), services.stream().mapToInt(ServiceCount::max).sum(), true);
     }
 
     @Override

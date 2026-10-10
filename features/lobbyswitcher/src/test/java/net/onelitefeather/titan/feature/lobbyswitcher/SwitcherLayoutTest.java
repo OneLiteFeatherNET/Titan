@@ -51,44 +51,6 @@ class SwitcherLayoutTest {
         return IntStream.range(0, count).mapToObj(i -> new SwitcherEntry("Lobby-%03d".formatted(i), 1, 50, SwitcherState.JOINABLE)).toList();
     }
 
-    @DisplayName("One to nine entries take one row")
-    @Test
-    void upToNineIsOneRow() {
-        Assertions.assertEquals(1, SwitcherLayout.rows(1), "one entry");
-        Assertions.assertEquals(1, SwitcherLayout.rows(9), "nine entries");
-    }
-
-    @DisplayName("No entries still take one row")
-    @Test
-    void emptyIsOneRow() {
-        Assertions.assertEquals(1, SwitcherLayout.rows(0));
-    }
-
-    @DisplayName("Ten entries take two rows")
-    @Test
-    void tenIsTwoRows() {
-        Assertions.assertEquals(2, SwitcherLayout.rows(10));
-    }
-
-    @DisplayName("The row count grows by one per nine entries")
-    @Test
-    void growsByNine() {
-        Assertions.assertEquals(2, SwitcherLayout.rows(18), "eighteen entries");
-        Assertions.assertEquals(3, SwitcherLayout.rows(19), "nineteen entries");
-    }
-
-    @DisplayName("54 entries take the maximum of six rows")
-    @Test
-    void fiftyFourIsSixRows() {
-        Assertions.assertEquals(6, SwitcherLayout.rows(54));
-    }
-
-    @DisplayName("More than 54 entries still take six rows")
-    @Test
-    void moreThanFiftyFourStaysSixRows() {
-        Assertions.assertEquals(6, SwitcherLayout.rows(100));
-    }
-
     @DisplayName("Up to 54 entries are kept and nothing is logged")
     @Test
     void fittingEntriesAreKeptSilently() {

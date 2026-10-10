@@ -20,7 +20,6 @@ import java.lang.System.Logger.Level;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
-import net.onelitefeather.titan.bridge.ServiceTotals.ServiceReading;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** How many inventory rows a lobby list needs, and which entries still fit. */
+/** Which entries of a lobby list still fit into the six rows of the inventory. */
 final class SwitcherLayout {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SwitcherLayout.class);
@@ -34,12 +34,6 @@ final class SwitcherLayout {
     private final AtomicBoolean cutReported = new AtomicBoolean();
 
     SwitcherLayout() {
-    }
-
-    /** One row for up to nine entries, one more per further nine, at most six. */
-    static int rows(int entries) {
-        int needed = (entries + SLOTS_PER_ROW - 1) / SLOTS_PER_ROW;
-        return Math.clamp(needed, 1, MAX_ROWS);
     }
 
     /**

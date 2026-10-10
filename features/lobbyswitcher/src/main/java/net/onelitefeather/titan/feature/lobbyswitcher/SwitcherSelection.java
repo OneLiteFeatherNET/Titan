@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * What happens when a player clicks a lobby: the target is checked against a fresh reading off the
- * tick, and the verdict is applied on the next tick. Only {@link SwitcherClickDecision#SEND} moves
+ * tick, and the verdict is applied on the next tick. Only {@link SwitcherState#JOINABLE} moves
  * the player; every other verdict tells them why and has the list read again.
  */
 final class SwitcherSelection {
@@ -76,17 +76,17 @@ final class SwitcherSelection {
     }
 
     private void check(Player player, LobbyIdentity own, String target) {
-        SwitcherClickDecision decision = SwitcherClickDecision.decide(target, own, () -> this.counts.running(SourceType.TASK, own.task()));
+        SwitcherState decision = SwitcherState.ofClick(target, own, () -> this.counts.running(SourceType.TASK, own.task()));
         this.scheduler.scheduleNextTick(() -> conclude(player, target, decision));
     }
 
-    private void conclude(Player player, String target, SwitcherClickDecision decision) {
+    private void conclude(Player player, String target, SwitcherState decision) {
         this.pending.remove(player.getUuid());
         if (!player.isOnline()) {
             return;
         }
         this.telemetry.select(player.getUuid(), target, decision, () -> {
-            if (decision == SwitcherClickDecision.SEND) {
+            if (decision == SwitcherState.JOINABLE) {
                 this.deliver.sendPlayer(player, DeliverComponent.serverBuilder().serverName(target).player(player).build());
                 player.closeInventory();
             } else {

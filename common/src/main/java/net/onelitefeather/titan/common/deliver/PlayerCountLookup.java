@@ -40,11 +40,6 @@ public interface PlayerCountLookup {
 
     boolean supports(String type);
 
-    /** {@code {online, max}}, or {@code null} when nothing of that name runs. */
-    int[] lookup(String type, String name);
-
     /** The running services of that source, one row each (see above); empty when none runs. */
-    default List<Map<String, Object>> running(String type, String name) {
-        return List.of();
-    }
+    List<Map<String, Object>> running(String type, String name);
 }

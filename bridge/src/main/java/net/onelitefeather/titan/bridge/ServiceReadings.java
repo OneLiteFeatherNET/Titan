@@ -19,7 +19,6 @@ import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.util.List;
 import java.util.function.Supplier;
-import net.onelitefeather.titan.bridge.ServiceTotals.ServiceReading;
 
 /**
  * Reads services through a CloudNet provider that is resolved on first use. Kept free of CloudNet

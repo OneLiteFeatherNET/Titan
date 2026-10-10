@@ -55,10 +55,10 @@ final class LobbySwitcherTelemetry {
     }
 
     /** Spans what a click led to; a failed check marks the span as an error. */
-    void select(UUID player, String target, SwitcherClickDecision decision, Runnable body) {
+    void select(UUID player, String target, SwitcherState decision, Runnable body) {
         Attributes attributes = Attributes.builder().put(Telemetry.USER_ID, player.toString()).put(TARGET, target).put(RESULT, decision.result()).build();
         this.telemetry.inSpan(SELECT_SPAN, attributes, () -> {
-            if (decision == SwitcherClickDecision.ERROR) {
+            if (decision == SwitcherState.ERROR) {
                 Span.current().setStatus(StatusCode.ERROR);
             }
             body.run();

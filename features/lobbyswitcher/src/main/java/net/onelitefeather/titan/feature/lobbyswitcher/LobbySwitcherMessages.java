@@ -87,9 +87,9 @@ final class LobbySwitcherMessages implements AutoCloseable {
     }
 
     /** What the player is told about a click; a failed check reads as "unavailable". */
-    Component click(Locale locale, SwitcherClickDecision decision, String target) {
+    Component click(Locale locale, SwitcherState decision, String target) {
         Component message = switch (decision) {
-            case SEND -> Component.translatable(MESSAGE_SENT, Component.text(target));
+            case JOINABLE -> Component.translatable(MESSAGE_SENT, Component.text(target));
             case CURRENT -> Component.translatable(MESSAGE_CURRENT);
             case FULL -> Component.translatable(MESSAGE_FULL);
             case NOT_READY -> Component.translatable(MESSAGE_NOT_READY);

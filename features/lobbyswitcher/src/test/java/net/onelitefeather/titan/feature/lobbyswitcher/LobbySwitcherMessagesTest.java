@@ -35,7 +35,7 @@ class LobbySwitcherMessagesTest {
         try (LobbySwitcherMessages messages = new LobbySwitcherMessages()) {
             messages.register();
 
-            String text = plain(messages.click(Locale.of("de", "DE"), SwitcherClickDecision.FULL, "Lobby-2"));
+            String text = plain(messages.click(Locale.of("de", "DE"), SwitcherState.FULL, "Lobby-2"));
 
             Assertions.assertTrue(text.contains("voll"), "expected the German text, was: " + text);
         }
@@ -47,7 +47,7 @@ class LobbySwitcherMessagesTest {
         try (LobbySwitcherMessages messages = new LobbySwitcherMessages()) {
             messages.register();
 
-            String text = plain(messages.click(Locale.of("ja", "JP"), SwitcherClickDecision.FULL, "Lobby-2"));
+            String text = plain(messages.click(Locale.of("ja", "JP"), SwitcherState.FULL, "Lobby-2"));
 
             Assertions.assertTrue(text.contains("full"), "expected the English text, was: " + text);
         }
@@ -59,7 +59,7 @@ class LobbySwitcherMessagesTest {
         try (LobbySwitcherMessages messages = new LobbySwitcherMessages()) {
             messages.register();
 
-            String text = plain(messages.click(Locale.ENGLISH, SwitcherClickDecision.SEND, "Lobby-2"));
+            String text = plain(messages.click(Locale.ENGLISH, SwitcherState.JOINABLE, "Lobby-2"));
 
             Assertions.assertTrue(text.contains("Lobby-2"), "the message must name the target, was: " + text);
         }
@@ -71,7 +71,7 @@ class LobbySwitcherMessagesTest {
         try (LobbySwitcherMessages messages = new LobbySwitcherMessages()) {
             messages.register();
 
-            Component error = messages.click(Locale.ENGLISH, SwitcherClickDecision.ERROR, "Lobby-2");
+            Component error = messages.click(Locale.ENGLISH, SwitcherState.ERROR, "Lobby-2");
 
             Assertions.assertEquals(plain(messages.render(Component.translatable(LobbySwitcherMessages.MESSAGE_UNAVAILABLE), Locale.ENGLISH)), plain(error), "an error must read as the unavailable message");
         }

@@ -15,20 +15,40 @@
  */
 package net.onelitefeather.titan.feature.lobbyswitcher;
 
+import java.util.List;
+import java.util.function.Supplier;
 import net.onelitefeather.titan.core.lobby.LobbyIdentity;
 import net.onelitefeather.titan.core.portal.ServiceCount;
 
 /**
- * What a listed lobby offers the viewer. A service that no longer runs is not listed, so it has no
- * state.
+ * What a lobby offers the viewer: the state of a listed row, and the verdict of the fresh check
+ * taken when a row is clicked. A service that no longer runs is not listed, so {@link #GONE} and
+ * {@link #ERROR} only exist as click verdicts.
  */
 enum SwitcherState {
     /** This lobby; wins over every other state. */
-    CURRENT,
+    CURRENT("current"),
     /** Has a player limit and has reached it. */
-    FULL,
+    FULL("full"),
     /** Runs but has not announced a player limit yet. */
-    NOT_READY, JOINABLE;
+    NOT_READY("not_ready"),
+    /** Can be joined; as a click verdict, the player is sent. */
+    JOINABLE("sent"),
+    /** Click verdict: the target no longer runs. */
+    GONE("gone"),
+    /** Click verdict: the check itself failed, so nobody is sent. */
+    ERROR("error");
+
+    private final String result;
+
+    SwitcherState(String result) {
+        this.result = result;
+    }
+
+    /** The value of the {@code lobbyswitcher.result} attribute and of the selection counter. */
+    String result() {
+        return this.result;
+    }
 
     static SwitcherState of(ServiceCount service, LobbyIdentity own) {
         if (service.name().equals(own.serviceName())) {
@@ -38,5 +58,21 @@ enum SwitcherState {
             return NOT_READY;
         }
         return service.online() >= service.max() ? FULL : JOINABLE;
+    }
+
+    /**
+     * What clicking {@code target} does, from a fresh reading; a failing reading is {@link #ERROR}.
+     */
+    static SwitcherState ofClick(String target, LobbyIdentity own, Supplier<List<ServiceCount>> check) {
+        List<ServiceCount> fresh;
+        try {
+            fresh = check.get();
+        } catch (RuntimeException e) {
+            return ERROR;
+        }
+        if (target.equals(own.serviceName())) {
+            return CURRENT;
+        }
+        return fresh.stream().filter(service -> service.name().equals(target)).findFirst().map(service -> of(service, own)).orElse(GONE);
     }
 }

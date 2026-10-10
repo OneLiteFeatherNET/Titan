@@ -13,14 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.core.lobby;
+package net.onelitefeather.titan.bridge;
 
-import java.util.Optional;
-import org.jetbrains.annotations.NotNull;
-
-/** Tells a lobby who it is; empty when no CloudNet bridge provides that. */
-public interface LobbyIdentities {
-
-    @NotNull
-    Optional<LobbyIdentity> self();
+/**
+ * One service as the bridge reports it: its name, whether it runs, and its players. Kept free of
+ * CloudNet types so the mapping and listing are testable on their own.
+ */
+record ServiceReading(String name, boolean running, int online, int max) {
 }

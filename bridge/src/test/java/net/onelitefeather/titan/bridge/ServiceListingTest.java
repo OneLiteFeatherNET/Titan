@@ -17,7 +17,6 @@ package net.onelitefeather.titan.bridge;
 
 import java.util.List;
 import java.util.Map;
-import net.onelitefeather.titan.bridge.ServiceTotals.ServiceReading;
 import net.onelitefeather.titan.common.deliver.PlayerCountLookup;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

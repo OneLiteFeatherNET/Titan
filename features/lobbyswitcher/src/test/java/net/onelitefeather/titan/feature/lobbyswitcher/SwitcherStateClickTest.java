@@ -22,82 +22,82 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-class SwitcherClickDecisionTest {
+class SwitcherStateClickTest {
 
     private static final LobbyIdentity OWN = new LobbyIdentity("Lobby", "Lobby-1");
 
-    private static SwitcherClickDecision decide(String target, ServiceCount... fresh) {
-        return SwitcherClickDecision.decide(target, OWN, List.of(fresh));
+    private static SwitcherState decide(String target, ServiceCount... fresh) {
+        return SwitcherState.ofClick(target, OWN, () -> List.of(fresh));
     }
 
     @DisplayName("A joinable target is sent")
     @Test
     void joinableIsSent() {
-        Assertions.assertEquals(SwitcherClickDecision.SEND, decide("Lobby-2", new ServiceCount("Lobby-2", 3, 50)));
+        Assertions.assertEquals(SwitcherState.JOINABLE, decide("Lobby-2", new ServiceCount("Lobby-2", 3, 50)));
     }
 
     @DisplayName("A target that filled up since the list was drawn is full")
     @Test
     void filledUpIsFull() {
-        Assertions.assertEquals(SwitcherClickDecision.FULL, decide("Lobby-2", new ServiceCount("Lobby-2", 50, 50)));
+        Assertions.assertEquals(SwitcherState.FULL, decide("Lobby-2", new ServiceCount("Lobby-2", 50, 50)));
     }
 
     @DisplayName("A target without a player limit is not ready")
     @Test
     void noLimitIsNotReady() {
-        Assertions.assertEquals(SwitcherClickDecision.NOT_READY, decide("Lobby-2", new ServiceCount("Lobby-2", 0, 0)));
+        Assertions.assertEquals(SwitcherState.NOT_READY, decide("Lobby-2", new ServiceCount("Lobby-2", 0, 0)));
     }
 
     @DisplayName("A target that is no longer listed is gone")
     @Test
     void unlistedIsGone() {
-        Assertions.assertEquals(SwitcherClickDecision.GONE, decide("Lobby-2", new ServiceCount("Lobby-3", 3, 50)));
+        Assertions.assertEquals(SwitcherState.GONE, decide("Lobby-2", new ServiceCount("Lobby-3", 3, 50)));
     }
 
     @DisplayName("A target with no running service at all is gone")
     @Test
     void emptyListIsGone() {
-        Assertions.assertEquals(SwitcherClickDecision.GONE, decide("Lobby-2"));
+        Assertions.assertEquals(SwitcherState.GONE, decide("Lobby-2"));
     }
 
     @DisplayName("The own lobby is current, even when it is full")
     @Test
     void ownLobbyIsCurrent() {
-        Assertions.assertEquals(SwitcherClickDecision.CURRENT, decide("Lobby-1", new ServiceCount("Lobby-1", 50, 50)));
+        Assertions.assertEquals(SwitcherState.CURRENT, decide("Lobby-1", new ServiceCount("Lobby-1", 50, 50)));
     }
 
     @DisplayName("The own lobby is current, even when the list does not show it")
     @Test
     void ownLobbyIsCurrentWhenUnlisted() {
-        Assertions.assertEquals(SwitcherClickDecision.CURRENT, decide("Lobby-1"));
+        Assertions.assertEquals(SwitcherState.CURRENT, decide("Lobby-1"));
     }
 
     @DisplayName("A check that threw decides error")
     @Test
     void thrownCheckIsError() {
-        SwitcherClickDecision decision = SwitcherClickDecision.decide("Lobby-2", OWN, () -> {
+        SwitcherState decision = SwitcherState.ofClick("Lobby-2", OWN, () -> {
             throw new IllegalStateException("bridge down");
         });
 
-        Assertions.assertEquals(SwitcherClickDecision.ERROR, decision);
+        Assertions.assertEquals(SwitcherState.ERROR, decision);
     }
 
     @DisplayName("A check that returned decides from its result")
     @Test
     void returnedCheckDecides() {
-        SwitcherClickDecision decision = SwitcherClickDecision.decide("Lobby-2", OWN, () -> List.of(new ServiceCount("Lobby-2", 1, 50)));
+        SwitcherState decision = SwitcherState.ofClick("Lobby-2", OWN, () -> List.of(new ServiceCount("Lobby-2", 1, 50)));
 
-        Assertions.assertEquals(SwitcherClickDecision.SEND, decision);
+        Assertions.assertEquals(SwitcherState.JOINABLE, decision);
     }
 
     @DisplayName("The result keys are the telemetry values")
     @Test
     void resultKeys() {
-        Assertions.assertEquals("sent", SwitcherClickDecision.SEND.result());
-        Assertions.assertEquals("current", SwitcherClickDecision.CURRENT.result());
-        Assertions.assertEquals("full", SwitcherClickDecision.FULL.result());
-        Assertions.assertEquals("not_ready", SwitcherClickDecision.NOT_READY.result());
-        Assertions.assertEquals("gone", SwitcherClickDecision.GONE.result());
-        Assertions.assertEquals("error", SwitcherClickDecision.ERROR.result());
+        Assertions.assertEquals("sent", SwitcherState.JOINABLE.result());
+        Assertions.assertEquals("current", SwitcherState.CURRENT.result());
+        Assertions.assertEquals("full", SwitcherState.FULL.result());
+        Assertions.assertEquals("not_ready", SwitcherState.NOT_READY.result());
+        Assertions.assertEquals("gone", SwitcherState.GONE.result());
+        Assertions.assertEquals("error", SwitcherState.ERROR.result());
     }
 }
