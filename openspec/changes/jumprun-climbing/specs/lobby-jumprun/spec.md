@@ -3,7 +3,7 @@
 ## ADDED Requirements
 
 ### Requirement: Klettern als Sprungtyp
-Ab einem Mindestscore je Modus MUSS die Lobby Kletterabschnitte erzeugen können: einen Turm aus einem tragenden Pfeiler, einer Leiter oder Ranke und einem Zielblock obenauf. Der Turm MUSS an einen Block des Laufs in einer der vier Achsenrichtungen anschließen, der Zielblock MUSS 3 bis 5 Blöcke höher liegen (Oberkante gegen Oberkante, Standard, einstellbar mit `jumprun.climb.minHeight`/`maxHeight`), und die Leiter oder Ranke MUSS in der Spalte über dem Ausgangsblock stehen, sodass der Läufer vom Ausgangsblock aus klettert. Pfeiler, Leiter oder Ranke und Zielblock sind für den Läufer sichtbar und tragend und für alle anderen eine nicht begehbare Darstellung, und sie kommen und gehen mit dem Zielblock des Sichtfensters. Die Auswahl der Leitern und Ranken MUSS je Art im Abschnitt `jumprun.palettes.ladder` bzw. `jumprun.palettes.vine` stehen (Block-Schlüssel und ganzzahliges Gewicht ≥ 0); ein Block, der nicht kletterbar ist, MUSS beim Start den Start abbrechen, mit vollständigem Schlüssel und Grund. Im Modus Easy DÜRFEN keine Türme vorkommen. Leitern DÜRFEN in Medium erst ab Score 30 und in Hard ab Score 15, Ranken in Medium erst ab Score 40 und in Hard ab Score 25 vorkommen. In der Aufstiegsphase DÜRFEN keine Türme vorkommen. Ein Turm MUSS die Schwierigkeit des Sprungs erhöhen und zählt bei der Schwierigkeit wie ein Sprung mit eigenen Kosten, die mit der Höhe steigen; die Obergrenze der Schwierigkeit MUSS weiter gelten.
+Ab einem Mindestscore je Modus MUSS die Lobby Kletterabschnitte erzeugen können: einen Turm aus einem tragenden Pfeiler, einer Leiter oder Ranke und einem Zielblock obenauf. Der Turm MUSS an einen Block des Laufs in einer der vier Achsenrichtungen anschließen, der Zielblock MUSS 3 bis 5 Blöcke höher liegen (Oberkante gegen Oberkante, Standard, einstellbar mit `jumprun.climb.minHeight`/`maxHeight`), und die Leiter oder Ranke MUSS in der Spalte über dem Ausgangsblock stehen, sodass der Läufer vom Ausgangsblock aus klettert. Pfeiler, Leiter oder Ranke und Zielblock sind für den Läufer sichtbar und tragend und für alle anderen eine nicht begehbare Darstellung, und sie kommen und gehen mit dem Zielblock des Sichtfensters. Die Auswahl der Leitern und Ranken MUSS je Art im Abschnitt `jumprun.palettes.ladder` bzw. `jumprun.palettes.vine` stehen (Block-Schlüssel und ganzzahliges Gewicht ≥ 0); ein Block, der nicht kletterbar ist, MUSS beim Start den Start abbrechen, mit vollständigem Schlüssel und Grund. Im Modus Easy DÜRFEN keine Türme vorkommen. Leitern DÜRFEN in Medium erst ab Score 30 und in Hard ab Score 15, Ranken in Medium erst ab Score 40 und in Hard ab Score 25 vorkommen. In der Aufstiegsphase DÜRFEN keine Türme vorkommen. Ein Turm MUSS die Schwierigkeit des Sprungs erhöhen und zählt bei der Schwierigkeit wie ein Sprung mit eigenen Kosten, die mit der Höhe steigen; die Obergrenze der Schwierigkeit MUSS weiter gelten. Die Höhe eines Turms MUSS mit dem Score wachsen, sodass seine Kosten der Zielschwierigkeit des Modus folgen und Türme bei jedem Score ab ihrer Freischaltung zur Wahl stehen; die Höhe bleibt im Bereich `jumprun.climb.minHeight` bis `maxHeight` und im Höhenband der Lobby.
 
 #### Scenario: Turm ab Freischaltung
 - **WHEN** in Medium der Score 29 ist
@@ -16,6 +16,22 @@ Ab einem Mindestscore je Modus MUSS die Lobby Kletterabschnitte erzeugen können
 #### Scenario: Höhe des Turms
 - **WHEN** ein Turm erzeugt wird
 - **THEN** liegt die Oberkante seines Zielblocks 3 bis 5 Blöcke über der Oberkante des Blocks, an den er anschließt, und die Leiter steht in der Spalte über diesem Block
+
+#### Scenario: Bei Score 80 können Kletterstrecken gewählt werden
+- **WHEN** ein Lauf im Modus Medium mit festen Seeds Score 80 erreicht
+- **THEN** kommt mindestens ein Turm vor
+
+#### Scenario: Turmhöhe wächst monoton mit dem Score
+- **WHEN** der Score in Medium oder Hard steigt
+- **THEN** ist die Höhe eines Turms nie kleiner als bei einem niedrigeren Score
+
+#### Scenario: Kosten folgen dem Ziel
+- **WHEN** ein Turm bei Score 40 oder 80 erzeugt wird und die Höhe im Bereich 3 bis 8 liegt
+- **THEN** weicht seine Kosten um höchstens eine halbe Höhenstufe (1,05) von der Zielschwierigkeit ab
+
+#### Scenario: Höhe bleibt im erlaubten Band
+- **WHEN** die Zielschwierigkeit eine Höhe über `jumprun.climb.maxHeight` verlangt oder der Zielblock sonst nicht in das Höhenband passt
+- **THEN** wird die Höhe auf die Grenze oder um Stufen verkürzt, bis der Zielblock passt, und nie unter `jumprun.climb.minHeight`
 
 #### Scenario: Kein Turm in der Aufstiegsphase
 - **WHEN** die Aufstiegsphase noch läuft
