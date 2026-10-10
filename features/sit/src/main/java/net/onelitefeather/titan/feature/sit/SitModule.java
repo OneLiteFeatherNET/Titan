@@ -24,13 +24,16 @@ import java.util.List;
 import java.util.Objects;
 import net.kyori.adventure.key.Key;
 import net.minestom.server.coordinate.Vec;
+import net.minestom.server.entity.Entity;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
+import net.minestom.server.event.EventDispatcher;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.event.player.PlayerBlockInteractEvent;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.event.player.PlayerPacketEvent;
 import net.minestom.server.network.packet.client.play.ClientInputPacket;
+import net.minestom.server.tag.Tag;
 import net.onelitefeather.titan.core.event.EntityDismountEvent;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
@@ -45,6 +48,10 @@ public final class SitModule {
     static final int EVENT_PRIORITY = 500;
 
     static final String ID = "sit";
+
+    // Set only while a sneak dispatches its EntityDismountEvent, so the listener can tell a sneak
+    // from a real dismount; removed in the same call, so it never outlives the sneak.
+    private static final Tag<Boolean> STOPPING_BY_SNEAK = Tag.Boolean("titan:sit/stopping-by-sneak");
 
     private final EventNode<Event> titan;
     private final Telemetry telemetry;
@@ -87,13 +94,23 @@ public final class SitModule {
         // sneak packet, and only a seat actually left opens a span.
         this.node.on(PlayerPacketEvent.class, event -> {
             if (event.getPacket() instanceof ClientInputPacket input && input.shift()) {
-                standUp(event.getPlayer(), SitTelemetry.StopReason.SNEAK);
+                Player player = event.getPlayer();
+                Entity vehicle = player.getVehicle();
+                if (vehicle != null) {
+                    player.setTag(STOPPING_BY_SNEAK, true);
+                    try {
+                        EventDispatcher.call(new EntityDismountEvent(player, vehicle));
+                    } finally {
+                        player.removeTag(STOPPING_BY_SNEAK);
+                    }
+                }
             }
         });
 
         this.node.on(EntityDismountEvent.class, event -> {
             if (event.rider() instanceof Player player) {
-                standUp(player, SitTelemetry.StopReason.DISMOUNT);
+                SitTelemetry.StopReason reason = player.hasTag(STOPPING_BY_SNEAK) ? SitTelemetry.StopReason.SNEAK : SitTelemetry.StopReason.DISMOUNT;
+                standUp(player, reason);
             }
         });
 

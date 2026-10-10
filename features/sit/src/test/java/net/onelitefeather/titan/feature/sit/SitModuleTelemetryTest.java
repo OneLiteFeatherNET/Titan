@@ -17,10 +17,13 @@ package net.onelitefeather.titan.feature.sit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
+import java.util.ArrayList;
+import java.util.List;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import net.minestom.server.coordinate.BlockVec;
 import net.minestom.server.coordinate.Pos;
@@ -98,6 +101,28 @@ class SitModuleTelemetryTest {
                 assertEquals("sneak", telemetry.attribute(span, STOP_REASON), "the reason the seat was left");
                 assertEquals(player.getUuid().toString(), telemetry.attribute(span, Telemetry.USER_ID), "the player's UUID");
                 assertEquals(1, telemetry.counter("sit.sessions", Attributes.of(EVENT, "stopped")), "one stopped session");
+            } finally {
+                module.stop();
+            }
+        }
+    }
+
+    @DisplayName("Sneaking while seated fires exactly one EntityDismountEvent and stops the sit with reason sneak")
+    @Test
+    void sneakingWhileSeatedFiresOneDismountEventAndStopsWithReasonSneak(Env env) {
+        Player player = env.createPlayer(env.createFlatInstance());
+        List<EntityDismountEvent> dismounts = new ArrayList<>();
+        env.process().eventHandler().addListener(EntityDismountEvent.class, dismounts::add);
+        try (TestTelemetry telemetry = TestTelemetry.create(); TestTitanNode titan = TestTitanNode.attach(env)) {
+            SitModule module = startedModule(titan, telemetry);
+            try {
+                sitOnSpruceStairs(env, player);
+
+                env.process().eventHandler().call(SitTestEvents.sneak(player));
+
+                assertEquals(1, dismounts.size(), "sneaking while seated must fire exactly one EntityDismountEvent");
+                assertSame(player, dismounts.get(0).rider(), "the dismount event's rider must be the sneaking player");
+                assertEquals("sneak", telemetry.attribute(telemetry.span("sit.stop"), STOP_REASON), "a sneak must stop the sit with reason sneak, not dismount");
             } finally {
                 module.stop();
             }
