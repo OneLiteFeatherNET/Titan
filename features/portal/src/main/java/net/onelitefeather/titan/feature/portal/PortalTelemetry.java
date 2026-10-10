@@ -55,9 +55,9 @@ final class PortalTelemetry {
 
     PortalTelemetry(Telemetry telemetry) {
         this.telemetry = Objects.requireNonNull(telemetry, "telemetry");
-        this.transfers = telemetry.meter().counterBuilder("portal.transfers").setUnit("{transfer}").build();
-        this.denied = telemetry.meter().counterBuilder("portal.denied").setUnit("{entry}").build();
-        this.lookups = telemetry.meter().counterBuilder("portal.player_count.lookups").setUnit("{lookup}").build();
+        this.transfers = telemetry.meter().counterBuilder("titan.portal.transfers").setUnit("{transfer}").build();
+        this.denied = telemetry.meter().counterBuilder("titan.portal.denied").setUnit("{entry}").build();
+        this.lookups = telemetry.meter().counterBuilder("titan.portal.player_count.lookups").setUnit("{lookup}").build();
     }
 
     /**

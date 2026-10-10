@@ -429,9 +429,10 @@ wird nur beim Start gelesen. Im Setup-Server bearbeitet `/setup portal` die Port
   `portal.task`, `user.id` (UUID) und `portal.result` (`delivered`, `error`). Darunter liegt
   `deliver.send_player` aus `runtime` mit `titan.deliver.target_type`, `titan.deliver.target` und
   `titan.deliver.result`. Die Portalprüfung bei der Bewegung hat keinen Span.
-- Zähler `portal.transfers{result}` je Weiterleitung, `portal.denied{portal.id}` je verweigertem
-  Betreten (während einer Abklingzeit nicht gezählt) und `portal.player_count.lookups{result}`
-  (`ok`, `error`) je Spielerzahl-Abfrage.
+- Zähler `titan.portal.transfers{result}` je Weiterleitung, `titan.portal.denied{portal.id}` je
+  verweigertem Betreten (während einer Abklingzeit nicht gezählt) und
+  `titan.portal.player_count.lookups{result}` (`ok`, `error` bei werfendem Provider) je
+  Spielerzahl-Abfrage.
 - `portal.labels.refresh` (Span je Label-Zyklus, nicht je Portal): `portal.labels.count` und
   `portal.labels.failed`.
 

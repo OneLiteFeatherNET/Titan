@@ -11,7 +11,7 @@ Teil der Aufteilung aus `lobby-tracing` (Fundament): Dieser Change nutzt `Teleme
 - `portal.transfer` (Span je Portal-Betreten, das ausgeliefert wird): `portal.id`, `portal.task`, `user.id`, `portal.result`.
 - `deliver.send_player` (Span, Kind davon und auch für den Navigator): `Deliver` wird in `runtime` von einem `TracedDeliver` umhüllt. Attribute `titan.deliver.target_type` (`task`/`server`), `titan.deliver.target`, `titan.deliver.result` (`ok`/`error`).
 - `portal.labels.refresh` (Span je Label-Zyklus, nicht je Portal): Anzahl Labels, Anzahl fehlgeschlagener Abfragen. Damit ist die Abfrage über die Brücke umspannt.
-- Zähler: `portal.transfers{result}`, `portal.denied{portal.id}` (Rechte verweigert, aus dem Move-Pfad, daher nur Zähler), `portal.player_count.lookups{result}`.
+- Zähler: `titan.portal.transfers{result}`, `titan.portal.denied{portal.id}` (Rechte verweigert, aus dem Move-Pfad, daher nur Zähler), `titan.portal.player_count.lookups{result}`.
 - `FeatureNode.attach(…, telemetry)`; das Rechte-Span-Event kommt aus `lobby-tracing-admin-permissions`.
 
 ## Capabilities

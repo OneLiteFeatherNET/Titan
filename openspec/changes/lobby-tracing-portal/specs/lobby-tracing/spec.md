@@ -11,22 +11,22 @@ Die Lobby MUSS für jedes Portal, das einen Spieler ausliefert, einen kurzen Spa
 
 #### Scenario: Auslieferung scheitert
 - **WHEN** `Deliver.sendPlayer` eine Ausnahme wirft
-- **THEN** tragen `deliver.send_player` und `portal.transfer` die Ausnahme und den Fehlerstatus, `portal.transfers{result=error}` steigt, und die Ausnahme geht weiter
+- **THEN** tragen `deliver.send_player` und `portal.transfer` die Ausnahme und den Fehlerstatus, `titan.portal.transfers{result=error}` steigt, und die Ausnahme geht weiter
 
 #### Scenario: Keine Spans bei Bewegung ohne Portal
 - **WHEN** ein Spieler sich bewegt, ohne ein Portal zu berühren
 - **THEN** entsteht kein Span
 
 ### Requirement: Portal-Zähler
-Die Lobby MUSS `portal.transfers{result}` bei jedem Transfer und `portal.denied{portal.id}` bei jedem verweigerten Betreten erhöhen. Der Zähler DARF KEIN `user.id` tragen.
+Die Lobby MUSS `titan.portal.transfers{result}` bei jedem Transfer und `titan.portal.denied{portal.id}` bei jedem verweigerten Betreten erhöhen. Der Zähler DARF KEIN `user.id` tragen.
 
 #### Scenario: Rechte verweigert
 - **WHEN** ein Spieler ein Portal betritt, für das er kein Recht hat
-- **THEN** steigt `portal.denied{portal.id}` um eins und es entsteht kein Span `portal.transfer`
+- **THEN** steigt `titan.portal.denied{portal.id}` um eins und es entsteht kein Span `portal.transfer`
 
 ### Requirement: Spielerzahl-Abfragen sind sichtbar
-Die Lobby MUSS je Label-Aktualisierungszyklus einen Span `portal.labels.refresh` mit der Zahl der Labels und der Zahl fehlgeschlagener Abfragen erzeugen, und `portal.player_count.lookups{result}` je Abfrage erhöhen.
+Die Lobby MUSS je Label-Aktualisierungszyklus einen Span `portal.labels.refresh` mit der Zahl der Labels und der Zahl fehlgeschlagener Abfragen erzeugen, und `titan.portal.player_count.lookups{result}` je Abfrage erhöhen.
 
 #### Scenario: Eine Abfrage scheitert
 - **WHEN** die Spielerzahl-Abfrage für ein Label eine Ausnahme wirft
-- **THEN** zeigt der Span `portal.labels.refresh` eine fehlgeschlagene Abfrage, `portal.player_count.lookups{result=error}` steigt, und die übrigen Labels werden weiter aktualisiert
+- **THEN** zeigt der Span `portal.labels.refresh` eine fehlgeschlagene Abfrage, `titan.portal.player_count.lookups{result=error}` steigt, und die übrigen Labels werden weiter aktualisiert

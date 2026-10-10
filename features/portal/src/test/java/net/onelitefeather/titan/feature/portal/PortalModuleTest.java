@@ -263,7 +263,7 @@ class PortalModuleTest {
 
             move(env, player, INSIDE);
 
-            assertEquals(1, this.testTelemetry.counter("portal.transfers", Attributes.of(RESULT, "delivered")), "one delivered transfer");
+            assertEquals(1, this.testTelemetry.counter("titan.portal.transfers", Attributes.of(RESULT, "delivered")), "one delivered transfer");
             module.stop();
         }
     }
@@ -278,7 +278,7 @@ class PortalModuleTest {
             move(env, player, INSIDE);
 
             Attributes withPlayer = Attributes.of(RESULT, "delivered", AttributeKey.stringKey("user.id"), player.getUuid().toString());
-            assertEquals(0, this.testTelemetry.counter("portal.transfers", withPlayer), "a counter point with the player's uuid must not exist");
+            assertEquals(0, this.testTelemetry.counter("titan.portal.transfers", withPlayer), "a counter point with the player's uuid must not exist");
             module.stop();
         }
     }
@@ -300,7 +300,7 @@ class PortalModuleTest {
             SpanData span = this.testTelemetry.span("portal.transfer");
             assertEquals(StatusCode.ERROR, span.getStatus().getStatusCode(), "the transfer span carries the error");
             assertEquals("error", this.testTelemetry.attribute(span, PORTAL_RESULT), "the result");
-            assertEquals(1, this.testTelemetry.counter("portal.transfers", Attributes.of(RESULT, "error")), "one failed transfer");
+            assertEquals(1, this.testTelemetry.counter("titan.portal.transfers", Attributes.of(RESULT, "error")), "one failed transfer");
             assertTrue(serverExceptions.stream().anyMatch(failure -> failure instanceof IllegalStateException), "the exception goes on, it is not swallowed");
             module.stop();
         }
@@ -331,7 +331,7 @@ class PortalModuleTest {
 
             move(env, player, INSIDE);
 
-            assertEquals(1, this.testTelemetry.counter("portal.denied", Attributes.of(AttributeKey.stringKey("portal.id"), "vip")), "one refusal for 'vip'");
+            assertEquals(1, this.testTelemetry.counter("titan.portal.denied", Attributes.of(AttributeKey.stringKey("portal.id"), "vip")), "one refusal for 'vip'");
             assertTrue(this.testTelemetry.spans().stream().noneMatch(span -> span.getName().equals("portal.transfer")), "a refused entry is no transfer");
             module.stop();
         }

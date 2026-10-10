@@ -200,8 +200,8 @@ class LabelRefreshTest {
         tick(2);
         refresh.stop();
 
-        assertEquals(1, this.testTelemetry.counter("portal.player_count.lookups", Attributes.of(AttributeKey.stringKey("result"), "error")), "the throwing lookup");
-        assertEquals(1, this.testTelemetry.counter("portal.player_count.lookups", Attributes.of(AttributeKey.stringKey("result"), "ok")), "the healthy lookup");
+        assertEquals(1, this.testTelemetry.counter("titan.portal.player_count.lookups", Attributes.of(AttributeKey.stringKey("result"), "error")), "the throwing lookup");
+        assertEquals(1, this.testTelemetry.counter("titan.portal.player_count.lookups", Attributes.of(AttributeKey.stringKey("result"), "ok")), "the healthy lookup");
     }
 
     @DisplayName("A provider that throws shows the label as not running and counts the failed lookup and the span")
@@ -228,7 +228,7 @@ class LabelRefreshTest {
 
         String notRunning = PlainTextComponentSerializer.plainText().serialize(LabelRenderer.render(entry.portal(), entry.label(), new LabelReading.Remote(PlayerCount.NOT_RUNNING)));
         assertEquals(List.of(notRunning), shown, "the label shows the not running state, as before");
-        assertEquals(1, this.testTelemetry.counter("portal.player_count.lookups", Attributes.of(AttributeKey.stringKey("result"), "error")), "the failed provider call is an error lookup");
+        assertEquals(1, this.testTelemetry.counter("titan.portal.player_count.lookups", Attributes.of(AttributeKey.stringKey("result"), "error")), "the failed provider call is an error lookup");
         assertEquals(1L, this.testTelemetry.attribute(this.testTelemetry.span("portal.labels.refresh"), AttributeKey.longKey("portal.labels.failed")), "the refresh span counts the failed read");
     }
 
