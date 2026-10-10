@@ -61,8 +61,8 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten:
   - Mehrere Läufer gleichzeitig, Displays und Pakete bleiben ruhig.
 
   Nachweis: Checkliste im PR-Text.
-- [ ] 5.4 Verifikation (read-only): Jedes Szenario des Spec-Deltas ist einem Test oder Smoke-Punkt zugeordnet, und die Tests erfüllen F.I.R.S.T. Nachweis: Zuordnungstabelle im PR-Text.
+- [x] 5.4 Verifikation (read-only): Jedes Szenario des Spec-Deltas ist einem Test oder Smoke-Punkt zugeordnet, und die Tests erfüllen F.I.R.S.T. Nachweis: Zuordnungstabelle im PR-Text.
 
 ## 6. Pull Request
 
-- [ ] 6.1 Pull Request vom Integrationszweig `feat/jumprun-climbing` auf `main` unter dem Titel `feat(jumprun): add climbing segments with ladders and vines` öffnen (Titel und Beschreibung Englisch), mit Smoke-Checkliste, Szenario-Zuordnung und den offenen Fragen aus `design.md`. Nachweis: PR-URL, CI grün.
+- [x] 6.1 Pull Request vom Integrationszweig `feat/jumprun-climbing` auf `main` unter dem Titel `feat(jumprun): add climbing segments with ladders and vines` öffnen (Titel und Beschreibung Englisch), mit Smoke-Checkliste, Szenario-Zuordnung und den offenen Fragen aus `design.md`. Nachweis: PR-URL, CI grün.

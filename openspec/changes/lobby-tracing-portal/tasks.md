@@ -36,4 +36,4 @@ Regeln für jeden Agent-Prompt:
 
 ## 4. Pull Request
 
-- [ ] 4.1 Pull Request vom Zweig `feat/lobby-tracing-portal` auf `main` unter dem Titel `feat(telemetry): trace portal transfers and player count lookups` öffnen (Titel und Beschreibung Englisch), mit Checkliste und Zuordnung. Nachweis: PR-URL, CI grün.
+- [x] 4.1 Pull Request vom Zweig `feat/lobby-tracing-portal` auf `main` unter dem Titel `feat(telemetry): trace portal transfers and player count lookups` öffnen (Titel und Beschreibung Englisch), mit Checkliste und Zuordnung. Nachweis: PR-URL, CI grün.
