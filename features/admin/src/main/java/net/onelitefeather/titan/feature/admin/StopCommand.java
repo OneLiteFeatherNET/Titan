@@ -15,9 +15,9 @@
  */
 package net.onelitefeather.titan.feature.admin;
 
+import java.util.concurrent.Executor;
 import net.kyori.adventure.permission.PermissionChecker;
 import net.kyori.adventure.util.TriState;
-import net.minestom.server.MinecraftServer;
 import net.minestom.server.command.CommandSender;
 import net.minestom.server.command.builder.Command;
 import net.minestom.server.entity.Player;
@@ -25,23 +25,29 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Stops the service cleanly via {@link MinecraftServer#stopCleanly()}, which CloudNet triggers by
- * writing {@code stop} to console. The console may always stop it; a player needs
- * {@code titan.command.stop}.
+ * Stops the service cleanly via {@link net.minestom.server.MinecraftServer#stopCleanly()}, which
+ * CloudNet triggers by writing {@code stop} to console. The console may always stop it; a player
+ * needs {@code titan.command.stop}.
  */
 final class StopCommand extends Command {
 
+    private static final String NAME = "stop";
     private static final String PERMISSION = "titan.command.stop";
 
-    StopCommand() {
-        super("stop");
-        setCondition(this::canStop);
+    /**
+     * @param stopThread the executor that runs {@code shutdown}; the span ends once it has
+     *                   accepted the task, before the shutdown runs
+     * @param shutdown   what stops the service
+     */
+    StopCommand(AdminTelemetry telemetry, Executor stopThread, Runnable shutdown) {
+        super(NAME);
+        setCondition(telemetry.guard(NAME, this::canStop));
         // Runs on a separate thread: stopCleanly() shuts down the console thread that
         // triggered this, so it must not run there.
-        setDefaultExecutor((sender, context) -> Thread.ofPlatform().name("titan-stop").start(() -> {
-            MinecraftServer.stopCleanly();
-            System.exit(0);
-        }));
+        setDefaultExecutor((sender, context) -> {
+            telemetry.executed(NAME, sender);
+            stopThread.execute(shutdown);
+        });
     }
 
     private boolean canStop(@NotNull CommandSender sender, @Nullable String commandString) {

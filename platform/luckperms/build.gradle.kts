@@ -38,6 +38,8 @@ dependencies {
         exclude(group = "net.kyori.adventure")
     }
 
+    // TestTelemetry: an in-memory span exporter and metric reader for LuckPermsTelemetryTest.
+    testImplementation(testFixtures(project(":core")))
     testImplementation(libs.junit.api)
     testImplementation(libs.junit.platform.launcher)
     testRuntimeOnly(libs.junit.engine)

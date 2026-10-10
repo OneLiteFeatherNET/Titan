@@ -26,9 +26,12 @@ final class LuckPermsExtensionCheck {
     }
 
     static void ensureNotLoadedTwice(Collection<String> loadedExtensionNames) {
-        boolean alreadyLoadedAsExtension = loadedExtensionNames.stream().anyMatch(LUCKPERMS_EXTENSION_NAME::equalsIgnoreCase);
-        if (alreadyLoadedAsExtension) {
+        if (isLoadedAsExtension(loadedExtensionNames)) {
             throw new IllegalStateException("LuckPerms is loaded twice: remove the LuckPerms extension from extensions/");
         }
+    }
+
+    static boolean isLoadedAsExtension(Collection<String> loadedExtensionNames) {
+        return loadedExtensionNames.stream().anyMatch(LUCKPERMS_EXTENSION_NAME::equalsIgnoreCase);
     }
 }

@@ -17,8 +17,9 @@
  * The {@code admin} column. See {@code docs/lobby-modules.md}, "Wie eine Column
  * Plattform-Beans bekommt", for how a column declares its platform dependencies.
  */
-@InjectModule(name = "adminColumn", requires = {CommandManager.class})
+@InjectModule(name = "adminColumn", requires = {CommandManager.class, Telemetry.class})
 package net.onelitefeather.titan.feature.admin;
 
 import io.avaje.inject.InjectModule;
 import net.minestom.server.command.CommandManager;
+import net.onelitefeather.titan.core.telemetry.Telemetry;

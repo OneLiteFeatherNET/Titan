@@ -19,7 +19,9 @@ import io.avaje.inject.PostConstruct;
 import io.avaje.inject.PreDestroy;
 import jakarta.inject.Singleton;
 import java.util.Objects;
+import net.minestom.server.MinecraftServer;
 import net.minestom.server.command.CommandManager;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 
 /**
  * Registers {@code stop} and {@code end} with the platform's {@link CommandManager} on startup
@@ -30,11 +32,19 @@ import net.minestom.server.command.CommandManager;
 public final class AdminCommands {
 
     private final CommandManager commandManager;
-    private final StopCommand stopCommand = new StopCommand();
-    private final EndCommand endCommand = new EndCommand();
+    private final StopCommand stopCommand;
+    private final EndCommand endCommand;
 
-    public AdminCommands(CommandManager commandManager) {
+    public AdminCommands(CommandManager commandManager, Telemetry telemetry) {
         this.commandManager = Objects.requireNonNull(commandManager, "commandManager must not be null");
+        AdminTelemetry adminTelemetry = new AdminTelemetry(telemetry);
+        this.stopCommand = new StopCommand(adminTelemetry, task -> Thread.ofPlatform().name("titan-stop").start(task), AdminCommands::shutDown);
+        this.endCommand = new EndCommand(adminTelemetry, AdminCommands::shutDown);
+    }
+
+    private static void shutDown() {
+        MinecraftServer.stopCleanly();
+        System.exit(0);
     }
 
     @PostConstruct

@@ -23,10 +23,12 @@ import net.minestom.server.command.builder.condition.CommandCondition;
 import net.minestom.server.entity.Player;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
+import java.util.UUID;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import org.mockito.Mockito;
 
 /**
@@ -38,6 +40,7 @@ class AdminCommandsTest {
 
     private static Player playerWithStopPermission(TriState state) {
         Player player = Mockito.mock(Player.class);
+        Mockito.when(player.getUuid()).thenReturn(UUID.randomUUID());
         Mockito.when(player.getOrDefault(Mockito.eq(PermissionChecker.POINTER), Mockito.any())).thenReturn(PermissionChecker.always(state));
         return player;
     }
@@ -46,7 +49,7 @@ class AdminCommandsTest {
     @Test
     void startRegistersStopAndEnd(Env env) {
         CommandManager commandManager = env.process().command();
-        AdminCommands adminCommands = new AdminCommands(commandManager);
+        AdminCommands adminCommands = new AdminCommands(commandManager, Telemetry.noop());
 
         adminCommands.start();
 
@@ -58,7 +61,7 @@ class AdminCommandsTest {
     @Test
     void stopConditionAlwaysAllowsTheConsole(Env env) {
         CommandManager commandManager = env.process().command();
-        AdminCommands adminCommands = new AdminCommands(commandManager);
+        AdminCommands adminCommands = new AdminCommands(commandManager, Telemetry.noop());
         adminCommands.start();
         CommandCondition stopCondition = commandManager.getCommand("stop").getCondition();
         ConsoleSender console = commandManager.getConsoleSender();
@@ -70,7 +73,7 @@ class AdminCommandsTest {
     @Test
     void stopConditionAllowsAPlayerWithThePermission(Env env) {
         CommandManager commandManager = env.process().command();
-        AdminCommands adminCommands = new AdminCommands(commandManager);
+        AdminCommands adminCommands = new AdminCommands(commandManager, Telemetry.noop());
         adminCommands.start();
         CommandCondition stopCondition = commandManager.getCommand("stop").getCondition();
 
@@ -81,7 +84,7 @@ class AdminCommandsTest {
     @Test
     void stopConditionDeniesAPlayerWithoutThePermission(Env env) {
         CommandManager commandManager = env.process().command();
-        AdminCommands adminCommands = new AdminCommands(commandManager);
+        AdminCommands adminCommands = new AdminCommands(commandManager, Telemetry.noop());
         adminCommands.start();
         CommandCondition stopCondition = commandManager.getCommand("stop").getCondition();
 
@@ -92,7 +95,7 @@ class AdminCommandsTest {
     @Test
     void endConditionStaysDisabled(Env env) {
         CommandManager commandManager = env.process().command();
-        AdminCommands adminCommands = new AdminCommands(commandManager);
+        AdminCommands adminCommands = new AdminCommands(commandManager, Telemetry.noop());
         adminCommands.start();
         CommandCondition endCondition = commandManager.getCommand("end").getCondition();
         ConsoleSender console = commandManager.getConsoleSender();
@@ -104,7 +107,7 @@ class AdminCommandsTest {
     @Test
     void preDestroyUnregistersBothCommands(Env env) {
         CommandManager commandManager = env.process().command();
-        AdminCommands adminCommands = new AdminCommands(commandManager);
+        AdminCommands adminCommands = new AdminCommands(commandManager, Telemetry.noop());
         adminCommands.start();
 
         adminCommands.stop();
