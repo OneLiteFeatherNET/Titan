@@ -100,11 +100,27 @@ class ModeTest {
     }
 
     @Test
-    void mediumKeepsTheOldShapeThresholdsAndUnlocksTheNewOnesWithTheirCostClass() {
-        List<Surface> shapes = List.of(Surface.FULL, Surface.TRAPDOOR, Surface.SLAB, Surface.FENCE, Surface.PANE, Surface.POST);
+    void mediumUnlocksTheWideShapesAtTen() {
+        assertEquals(List.of(0, 10, 10, 10, 10, 10), List.of(Surface.FULL, Surface.TRAPDOOR, Surface.SLAB, Surface.STAIRS, Surface.CARPET, Surface.SNOW).stream().map(Mode.MEDIUM::minScore).toList());
+    }
 
-        assertEquals(List.of(0, 10, 10, 25, 25, 40), shapes.stream().map(Mode.MEDIUM::minScore).toList(), "old shapes");
-        assertEquals(List.of(10, 10, 10, 25, 25, 40), List.of(Surface.STAIRS, Surface.CARPET, Surface.SNOW, Surface.HEAD, Surface.FLOWER_POT, Surface.CANDLE).stream().map(Mode.MEDIUM::minScore).toList(), "new shapes");
+    @Test
+    void mediumNeverUnlocksANarrowShape() {
+        for (Surface surface : List.of(Surface.FENCE, Surface.PANE, Surface.POST, Surface.HEAD, Surface.FLOWER_POT, Surface.CANDLE)) {
+            assertEquals(Integer.MAX_VALUE, Mode.MEDIUM.minScore(surface), surface + " never comes in medium");
+            assertFalse(Mode.MEDIUM.unlockedAt(10_000).contains(surface), surface + " stays out of medium at any score");
+        }
+    }
+
+    @Test
+    void theHardestMediumJumpScalesDownWithoutTheNarrowShapes() {
+        assertEquals(2.0 * Surface.STAIRS.typeCost() + 1.5 * (Mode.MEDIUM.maxGap() - 1), Jump.maxCost(Mode.MEDIUM, Mode.MEDIUM.unlockedAt(10_000)));
+    }
+
+    @Test
+    void hardAndUltraStillUnlockTheNarrowShapes() {
+        assertEquals(List.of(10, 10, 20, 10, 10, 20), List.of(Surface.FENCE, Surface.PANE, Surface.POST, Surface.HEAD, Surface.FLOWER_POT, Surface.CANDLE).stream().map(Mode.HARD::minScore).toList());
+        assertEquals(Mode.HARD.unlockedAt(10_000), Mode.ULTRA.unlockedAt(10_000));
     }
 
     @Test
@@ -121,11 +137,11 @@ class ModeTest {
 
     @Test
     void noNewShapeComesBelowTheFirstThresholdOfItsMode() {
-        List<Surface> old = List.of(Surface.FULL, Surface.TRAPDOOR, Surface.SLAB, Surface.FENCE, Surface.PANE, Surface.POST);
+        List<Surface> wide = List.of(Surface.FULL, Surface.TRAPDOOR, Surface.SLAB, Surface.STAIRS, Surface.CARPET, Surface.SNOW);
 
         assertEquals(List.of(Surface.FULL), Mode.MEDIUM.unlockedAt(9), "medium below 10");
         assertEquals(List.of(Surface.FULL), Mode.HARD.unlockedAt(4), "hard below 5");
-        assertTrue(Mode.MEDIUM.unlockedAt(10_000).containsAll(old), "medium keeps the old ones");
+        assertEquals(wide, Mode.MEDIUM.unlockedAt(10_000), "medium keeps only the wide shapes");
     }
 
     @Test

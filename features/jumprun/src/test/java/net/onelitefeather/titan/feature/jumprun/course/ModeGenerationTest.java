@@ -117,10 +117,32 @@ class ModeGenerationTest {
     }
 
     @Test
-    void mediumDoesNotMakeAPostBeforeFortyPoints() {
-        for (Move move : walk(Mode.MEDIUM, 3L)) {
-            assertTrue(move.jump().to().surface() != Surface.POST || move.score() >= 40, "post at score " + move.score());
+    void mediumNeverMakesANarrowSurface() {
+        for (long seed = 1; seed <= SEEDS; seed++) {
+            for (Move move : walk(Mode.MEDIUM, seed)) {
+                assertFalse(NARROW.contains(move.jump().to().surface()), "seed " + seed + " made " + move.jump().to().surface() + " in medium at score " + move.score());
+            }
         }
+    }
+
+    @Test
+    void hardMakesNarrowSurfacesWithinTheWalk() {
+        Set<Surface> seen = new HashSet<>();
+        for (long seed = 1; seed <= SEEDS; seed++) {
+            walk(Mode.HARD, seed).forEach(move -> seen.add(move.jump().to().surface()));
+        }
+
+        assertTrue(seen.containsAll(NARROW), "hard made only " + seen);
+    }
+
+    @Test
+    void mediumReachesTheShapesWithAWideTopFaceWithinTheWalk() {
+        Set<Surface> seen = new HashSet<>();
+        for (long seed = 1; seed <= SEEDS; seed++) {
+            walk(Mode.MEDIUM, seed).forEach(move -> seen.add(move.jump().to().surface()));
+        }
+
+        assertTrue(seen.containsAll(List.of(Surface.STAIRS, Surface.CARPET, Surface.SNOW)), "medium made only " + seen);
     }
 
     @Test
@@ -137,17 +159,12 @@ class ModeGenerationTest {
     }
 
     private static final List<Surface> NEW_SHAPES = List.of(Surface.STAIRS, Surface.CARPET, Surface.SNOW, Surface.HEAD, Surface.FLOWER_POT, Surface.CANDLE);
+    /**
+     * The shapes with a top face narrower than a full block, or a thin post with a whole-cell
+     * collision.
+     */
+    private static final List<Surface> NARROW = List.of(Surface.FENCE, Surface.PANE, Surface.POST, Surface.HEAD, Surface.FLOWER_POT, Surface.CANDLE);
     private static final int SEEDS = 12;
-
-    @Test
-    void mediumMakesEveryNewShapeWithinTheWalk() {
-        Set<Surface> seen = new HashSet<>();
-        for (long seed = 1; seed <= SEEDS; seed++) {
-            walk(Mode.MEDIUM, seed).forEach(move -> seen.add(move.jump().to().surface()));
-        }
-
-        assertTrue(seen.containsAll(NEW_SHAPES), "medium made only " + seen);
-    }
 
     @Test
     void easyMakesNoNewShape() {

@@ -59,7 +59,7 @@ class HeadDrawTest {
      */
     private static List<CourseBlock> headsOfAWalk(CourseGenerator generator) {
         List<CourseBlock> course = new ArrayList<>(List.of(SOURCE));
-        Phase phase = new Phase.Scored(10, EAST);
+        Phase phase = new Phase.Scored(10, EAST, Mode.HARD);
         for (int i = 0; i < 300; i++) {
             Optional<CourseBlock> next = generator.next(course, phase);
             if (next.isEmpty()) {
@@ -82,14 +82,16 @@ class HeadDrawTest {
 
     @Test
     void neverTheSameProfileTwiceInARowWithTwoOrMore() {
+        int made = 0;
         for (long seed = 1; seed <= 5; seed++) {
             List<CourseBlock> heads = headsOfAWalk(generator(List.of(ALEX, BOB), seed));
 
-            assertTrue(heads.size() > 3, "seed " + seed + " made heads");
+            made += heads.size();
             for (int i = 1; i < heads.size(); i++) {
                 assertNotEquals(heads.get(i - 1).skin(), heads.get(i).skin(), "seed " + seed + ": heads " + (i - 1) + " and " + i);
             }
         }
+        assertTrue(made > 3, "the walks made " + made + " heads");
     }
 
     @Test

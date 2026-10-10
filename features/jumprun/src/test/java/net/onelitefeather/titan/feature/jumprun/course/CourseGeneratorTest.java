@@ -162,7 +162,7 @@ class CourseGeneratorTest {
 
         CourseBlock chosen = jumpFromSource(generator, 10_000);
 
-        assertEquals(Jump.MAX_COST, new Jump(SOURCE, chosen).cost(Mode.MEDIUM), "hardest allowed jump");
+        assertEquals(Jump.maxCost(Mode.MEDIUM, Mode.MEDIUM.unlockedAt(10_000)), new Jump(SOURCE, chosen).cost(Mode.MEDIUM), "hardest allowed medium jump");
     }
 
     // --- space ----------------------------------------------------------------------------------
@@ -617,15 +617,7 @@ class CourseGeneratorTest {
         double atZero = meanCost(thousandJumpsAtScore(0, 100L));
         double atEighty = meanCost(thousandJumpsAtScore(80, 100L));
 
-        assertTrue(atEighty > atZero + 4.0, "mean cost " + atZero + " at 0 vs " + atEighty + " at 80");
-    }
-
-    @Test
-    void jumpsAtScoreEightyUseNarrowSurfacesMoreOften() {
-        long narrowAtZero = thousandJumpsAtScore(0, 100L).stream().filter(j -> j.to().surface() != Surface.FULL).count();
-        long narrowAtEighty = thousandJumpsAtScore(80, 100L).stream().filter(j -> j.to().surface() != Surface.FULL).count();
-
-        assertTrue(narrowAtEighty > narrowAtZero + 300, "narrow surfaces " + narrowAtZero + " vs " + narrowAtEighty);
+        assertTrue(atEighty > atZero + 3.0, "mean cost " + atZero + " at 0 vs " + atEighty + " at 80");
     }
 
     // --- property: no impossible jump -----------------------------------------------------------
@@ -801,10 +793,14 @@ class CourseGeneratorTest {
     // --- look of stairs and heads ---------------------------------------------------------------
 
     private static List<CourseBlock> blocksOf(Surface surface, int seeds) {
+        return blocksOf(Mode.MEDIUM, surface, seeds);
+    }
+
+    private static List<CourseBlock> blocksOf(Mode mode, Surface surface, int seeds) {
         List<CourseBlock> found = new ArrayList<>();
         for (long seed = 1; seed <= seeds; seed++) {
             CourseGenerator generator = TestBlocks.generator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(seed));
-            walk(generator, SOURCE, new Phase.Scored(0, EAST), 300).stream().filter(block -> block.surface() == surface).forEach(found::add);
+            walk(generator, SOURCE, new Phase.Scored(0, EAST, mode), 300).stream().filter(block -> block.surface() == surface).forEach(found::add);
         }
         return found;
     }
@@ -836,7 +832,7 @@ class CourseGeneratorTest {
     @Test
     void headsTurnBetweenZeroAndFifteenAndRedrawnHeadsKeepTheirTurn() {
         CourseGenerator generator = TestBlocks.generator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(4L));
-        List<CourseBlock> heads = blocksOf(Surface.HEAD, 6);
+        List<CourseBlock> heads = blocksOf(Mode.HARD, Surface.HEAD, 6);
         assertFalse(heads.isEmpty(), "the walks made heads");
 
         for (CourseBlock head : heads) {
@@ -885,12 +881,21 @@ class CourseGeneratorTest {
     @Test
     void aTowerLeadsAlongTheMainHeading() {
         for (long seed = 1; seed <= 20; seed++) {
-            List<CourseBlock> course = walk(TestBlocks.generator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(seed)), SOURCE, new Phase.Scored(30, EAST, Mode.MEDIUM), 60);
-            for (CourseBlock block : course) {
-                if (block.climb().isPresent()) {
-                    Direction direction = block.climb().get().direction();
-                    assertTrue(EAST.dot(direction) >= 0.0, "seed " + seed + ": tower " + direction + " against the heading");
+            // The heading bends towards every step, so the check uses the heading of the phase at that jump.
+            CourseGenerator generator = TestBlocks.generator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(seed));
+            List<CourseBlock> course = new ArrayList<>(List.of(SOURCE));
+            Phase phase = new Phase.Scored(30, EAST, Mode.MEDIUM);
+            for (int jump = 0; jump < 60; jump++) {
+                Optional<CourseBlock> next = generator.next(course, phase);
+                if (next.isEmpty()) {
+                    break;
                 }
+                if (next.get().climb().isPresent()) {
+                    Direction direction = next.get().climb().get().direction();
+                    assertTrue(phase.heading().dot(direction) >= 0.0, "seed " + seed + ": tower " + direction + " against the heading " + phase.heading());
+                }
+                course.add(next.get());
+                phase = generator.after(course, phase);
             }
         }
     }

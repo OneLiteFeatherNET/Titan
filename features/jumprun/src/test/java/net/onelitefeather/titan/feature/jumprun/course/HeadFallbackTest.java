@@ -47,7 +47,7 @@ class HeadFallbackTest {
     private static List<CourseBlock> heads(Palettes palettes) {
         CourseGenerator generator = TestBlocks.generator(palettes, new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(1L));
         List<CourseBlock> course = new ArrayList<>(List.of(SOURCE));
-        Phase phase = new Phase.Scored(10, EAST);
+        Phase phase = new Phase.Scored(10, EAST, Mode.HARD);
         for (int i = 0; i < 300; i++) {
             Optional<CourseBlock> next = generator.next(course, phase);
             if (next.isEmpty()) {
