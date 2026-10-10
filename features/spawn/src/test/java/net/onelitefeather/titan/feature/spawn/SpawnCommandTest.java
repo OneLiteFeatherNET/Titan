@@ -35,6 +35,7 @@ import net.minestom.testing.TestConnection;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.module.LobbyReturnToSpawnEvent;
 import net.onelitefeather.titan.core.module.SpawnReturn;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -59,7 +60,7 @@ class SpawnCommandTest {
             SpawnMessages messages = new SpawnMessages();
             messages.register();
             CommandManager commandManager = env.process().command();
-            SpawnCommands commands = new SpawnCommands(commandManager, new LobbySpawnReturn(spawn::get, messages));
+            SpawnCommands commands = new SpawnCommands(commandManager, new LobbySpawnReturn(spawn::get, messages, Telemetry.noop()));
             commands.start();
             Instance instance = env.createFlatInstance();
             TestConnection connection = env.createConnection();
@@ -154,13 +155,13 @@ class SpawnCommandTest {
         int[] returns = {0};
         SpawnReturn fake = new SpawnReturn() {
             @Override
-            public Result sendToSpawn(Player player) {
+            public Result sendToSpawn(Player player, Source source) {
                 returns[0]++;
                 return Result.RETURNED;
             }
 
             @Override
-            public void sendToSpawnAndTell(Player player) {
+            public void sendToSpawnAndTell(Player player, Source source) {
                 returns[0]++;
             }
         };
@@ -187,7 +188,7 @@ class SpawnCommandTest {
     @Test
     void stopUnregistersTheCommand(Env env) {
         CommandManager commandManager = env.process().command();
-        SpawnCommands commands = new SpawnCommands(commandManager, new LobbySpawnReturn(() -> SPAWN, new SpawnMessages()));
+        SpawnCommands commands = new SpawnCommands(commandManager, new LobbySpawnReturn(() -> SPAWN, new SpawnMessages(), Telemetry.noop()));
         commands.start();
         Assertions.assertTrue(commandManager.commandExists("spawn"), "spawn must be registered after start()");
 

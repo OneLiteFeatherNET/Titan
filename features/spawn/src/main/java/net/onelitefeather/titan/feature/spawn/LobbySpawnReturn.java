@@ -24,6 +24,7 @@ import net.minestom.server.event.EventDispatcher;
 import net.onelitefeather.titan.core.module.LobbyReturnToSpawnEvent;
 import net.onelitefeather.titan.core.module.LobbySpawn;
 import net.onelitefeather.titan.core.module.SpawnReturn;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,14 +39,20 @@ final class LobbySpawnReturn implements SpawnReturn {
 
     private final LobbySpawn spawn;
     private final SpawnMessages messages;
+    private final SpawnTelemetry telemetry;
 
-    LobbySpawnReturn(LobbySpawn spawn, SpawnMessages messages) {
+    LobbySpawnReturn(LobbySpawn spawn, SpawnMessages messages, Telemetry telemetry) {
         this.spawn = Objects.requireNonNull(spawn, "spawn");
         this.messages = Objects.requireNonNull(messages, "messages");
+        this.telemetry = new SpawnTelemetry(Objects.requireNonNull(telemetry, "telemetry"));
     }
 
     @Override
-    public Result sendToSpawn(Player player) {
+    public Result sendToSpawn(Player player, Source source) {
+        return this.telemetry.inReturn(player.getUuid(), source, () -> returnTo(player));
+    }
+
+    private Result returnTo(Player player) {
         Pos position = this.spawn.position();
         if (position == null) {
             LOGGER.atDebug().addKeyValue("player", player.getUuid()).log("no spawn point on the active map, player stays");
@@ -70,8 +77,8 @@ final class LobbySpawnReturn implements SpawnReturn {
     }
 
     @Override
-    public void sendToSpawnAndTell(Player player) {
-        Result result = sendToSpawn(player);
+    public void sendToSpawnAndTell(Player player, Source source) {
+        Result result = sendToSpawn(player, source);
         player.sendMessage(switch (result) {
             case RETURNED -> this.messages.returned(player.getLocale());
             case NO_SPAWN -> this.messages.noSpawn(player.getLocale());

@@ -26,6 +26,11 @@ import net.minestom.server.entity.Player;
  */
 public interface SpawnReturn {
 
+    /** Who asked for the return, so telemetry can tell the callers apart. */
+    enum Source {
+        COMMAND, NAVIGATOR, EVENT
+    }
+
     /** Outcome of a return attempt. */
     enum Result {
         /**
@@ -38,10 +43,10 @@ public interface SpawnReturn {
     }
 
     /** Returns the player to spawn without sending any message. */
-    Result sendToSpawn(Player player);
+    Result sendToSpawn(Player player, Source source);
 
     /**
      * Like {@link #sendToSpawn}, then tells the player the confirmation or the no-spawn message.
      */
-    void sendToSpawnAndTell(Player player);
+    void sendToSpawnAndTell(Player player, Source source);
 }
