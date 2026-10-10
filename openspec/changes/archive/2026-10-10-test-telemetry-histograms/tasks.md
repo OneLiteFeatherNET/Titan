@@ -29,4 +29,4 @@ Wave 2 wartet auf Wave 1 (das Fixture muss stehen). Regeln: Test zuerst; F.I.R.S
 
 ## 4. Pull Request
 
-- [ ] 4.1 Pull Request vom Branch `test/test-telemetry-histograms` auf `main` unter dem Titel `test(core): let TestTelemetry read histograms` öffnen (Titel und Beschreibung Englisch), mit Hinweis, dass der jumprun-Test aus #363 migriert wird. Nachweis: PR-URL, CI grün.
+- [x] 4.1 Pull Request vom Branch `test/test-telemetry-histograms` auf `main` unter dem Titel `test(core): let TestTelemetry read histograms` öffnen (Titel und Beschreibung Englisch), mit Hinweis, dass der jumprun-Test aus #363 migriert wird. Nachweis: PR-URL, CI grün.
