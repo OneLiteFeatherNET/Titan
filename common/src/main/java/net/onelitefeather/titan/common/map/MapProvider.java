@@ -96,22 +96,32 @@ public final class MapProvider {
 
     }
 
-    /**
-     * Aves' handler lets a parse error of the portal adapter escape (pinned by
-     * GsonFileHandlerLoadTest), so an unreadable or invalid portal aborts the start here instead of
-     * silently loading a map without portals.
-     */
     private Optional<LobbyMap> readLobbyData() {
-        Path worldDirectory = this.mapPool.getMapEntry().path();
+        return readMap(activeMap());
+    }
+
+    /**
+     * Reads the map file of any world without touching the loaded instance, its chunk loader or the
+     * active lobby. Aves' handler lets a parse error of the portal adapter escape (pinned by
+     * GsonFileHandlerLoadTest), so an unreadable or invalid portal aborts here instead of silently
+     * reading a map without portals.
+     */
+    public Optional<LobbyMap> readMap(@NotNull MapEntry entry) {
+        Path worldDirectory = entry.path();
         String world = worldDirectory.getFileName().toString();
         Optional<LobbyMap> lobbyData;
         try {
-            lobbyData = this.fileHandler.load(worldDirectory.resolve(MapEntry.MAP_FILE_NAME), LobbyMap.class);
+            lobbyData = this.fileHandler.load(entry.getMapFile(), LobbyMap.class);
         } catch (JsonParseException exception) {
             throw new IllegalStateException("Invalid portals in world '" + world + "': " + exception.getMessage(), exception);
         }
         lobbyData.ifPresent(map -> PortalValidator.requireValid(world, map.portals()));
         return lobbyData;
+    }
+
+    /** The map entry of the world this provider loaded. */
+    public @NotNull MapEntry activeMap() {
+        return this.mapPool.getMapEntry();
     }
 
     private <T extends Point> void loadChunk(@NotNull InstanceContainer instance, @NotNull T pos) {

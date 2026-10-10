@@ -18,10 +18,12 @@ package net.onelitefeather.titan.setup.portal.editor;
 import net.minestom.server.coordinate.Vec;
 import net.onelitefeather.titan.core.portal.Box;
 import net.onelitefeather.titan.core.portal.Portal;
+import net.onelitefeather.titan.setup.portal.PortalSources;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -67,5 +69,34 @@ class PortalCompletionsTest {
     @DisplayName("Label source types are task, group, service and local")
     void sourceTypes() {
         assertEquals(List.of("task", "group", "service", "local"), PortalCompletions.sourceTypes());
+    }
+
+    @Test
+    @DisplayName("copy and save-all are offered where an id is expected")
+    void verbsForTheIdPosition() {
+        assertEquals(List.of("copy", "save-all"), PortalCompletions.verbs());
+    }
+
+    @Test
+    @DisplayName("World suggestions never include the loaded world")
+    void worldsExcludeTheLoadedWorld() {
+        PortalSources sources = new PortalSources() {
+            @Override
+            public String active() {
+                return "winter";
+            }
+
+            @Override
+            public List<String> worlds() {
+                return List.of("lobby", "winter");
+            }
+
+            @Override
+            public Optional<List<Portal>> portalsOf(String world) {
+                return Optional.empty();
+            }
+        };
+
+        assertEquals(List.of("lobby"), PortalCompletions.worlds(sources), "only the other world is suggested");
     }
 }

@@ -18,6 +18,7 @@ package net.onelitefeather.titan.setup.portal.editor;
 
 import net.onelitefeather.titan.core.portal.LabelSource;
 import net.onelitefeather.titan.core.portal.Portal;
+import net.onelitefeather.titan.setup.portal.PortalSources;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -41,6 +42,13 @@ public final class PortalCompletions {
         return List.copyOf(ids);
     }
 
+    /**
+     * Words offered in the id position next to the ids; Minestom does not complete literals itself.
+     */
+    public static List<String> verbs() {
+        return List.of("copy", "save-all");
+    }
+
     /** Tasks in use, each once, in list order. */
     public static List<String> tasks(List<Portal> portals) {
         return portals.stream().map(Portal::task).distinct().toList();
@@ -53,6 +61,11 @@ public final class PortalCompletions {
     /** The label source types; the same vocabulary the map file uses. */
     public static List<String> sourceTypes() {
         return LabelSource.TYPES;
+    }
+
+    /** The other worlds that have a map file: what {@code copy <world>} offers. */
+    public static List<String> worlds(PortalSources sources) {
+        return sources.worlds().stream().filter(world -> !world.equals(sources.active())).toList();
     }
 
     public static List<String> permissions() {

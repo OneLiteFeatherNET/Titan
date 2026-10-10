@@ -19,10 +19,10 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
-import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
 import net.onelitefeather.titan.core.portal.Box;
 import net.onelitefeather.titan.core.portal.Portal;
+import net.onelitefeather.titan.setup.portal.InMemoryPortalSources;
 import net.onelitefeather.titan.setup.portal.InMemoryPortalStore;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,23 +30,25 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 
-
 import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class PortalEditorLoggingTest {
+class PortalCopierLoggingTest {
 
     private static final UUID PLAYER = new UUID(0xCAFEL, 0xBABEL);
+    private static final Portal SURVIVAL = new Portal("survival", new Box(new Vec(0, 0, 0), new Vec(1, 1, 1)), "Survival", null);
+    private static final Portal CREATIVE = new Portal("creative", new Box(new Vec(2, 2, 2), new Vec(3, 3, 3)), "Creative", null);
 
     private Logger logger;
     private ListAppender<ILoggingEvent> appender;
 
     @BeforeEach
     void attachAppender() {
-        logger = (Logger) LoggerFactory.getLogger(PortalEditor.class);
+        logger = (Logger) LoggerFactory.getLogger(PortalCopier.class);
         logger.setLevel(Level.INFO);
         appender = new ListAppender<>();
         appender.start();
@@ -64,56 +66,40 @@ class PortalEditorLoggingTest {
     }
 
     @Test
-    @DisplayName("Saving logs one INFO line with the id and the world")
-    void saveLogsOneInfoLine() {
+    @DisplayName("Copying logs one INFO line with the number of portals and both worlds")
+    void copyLogsOneInfoLine() {
         PortalEditor editor = new PortalEditor(new InMemoryPortalStore());
-        editor.corner1(PLAYER, "survival", new Pos(0, 0, 0));
-        editor.corner2(PLAYER, "survival", new Pos(1, 1, 1));
-        editor.task(PLAYER, "survival", "Survival");
+        InMemoryPortalSources sources = new InMemoryPortalSources("winter").world("lobby", SURVIVAL, CREATIVE);
 
-        editor.save(PLAYER, "survival");
+        new PortalCopier(editor, sources, new InMemoryPortalStore()).copy(PLAYER, "lobby");
 
-        assertEquals(List.of("Saved portal survival in world test-world"), messages(), "exactly one line for the save");
+        assertEquals(List.of("Copied 2 portals from world lobby into drafts in world test-world"), messages(), "exactly one line for the copy");
         assertEquals(Level.INFO, appender.list.getFirst().getLevel(), "at INFO level");
     }
 
     @Test
-    @DisplayName("Removing logs one INFO line")
-    void removeLogsOneInfoLine() {
-        Portal saved = new Portal("survival", new Box(new Vec(0, 0, 0), new Vec(1, 1, 1)), "Survival", null);
-        PortalEditor editor = new PortalEditor(new InMemoryPortalStore(saved));
+    @DisplayName("An unreadable source logs one WARN line with the world")
+    void unreadableSourceLogsOneWarnLine() {
+        PortalEditor editor = new PortalEditor(new InMemoryPortalStore());
+        InMemoryPortalSources sources = new InMemoryPortalSources("winter").unreadable("broken");
 
-        editor.remove(PLAYER, "survival");
+        new PortalCopier(editor, sources, new InMemoryPortalStore()).copy(PLAYER, "broken");
 
-        assertEquals(List.of("Removed portal survival from world test-world"), messages(), "exactly one line for the removal");
+        assertEquals(1, appender.list.size(), "exactly one line for the failed read");
+        assertEquals(Level.WARN, appender.list.getFirst().getLevel(), "a failed read is a warning");
+        assertTrue(messages().getFirst().contains("broken"), "the line names the world: " + messages().getFirst());
     }
 
     @Test
-    @DisplayName("Save all logs one INFO line per written portal and none for a draft that stays open")
-    void saveAllLogsOneLinePerWrittenPortal() {
+    @DisplayName("Copy logs never carry the player")
+    void noLineCarriesThePlayer() {
         PortalEditor editor = new PortalEditor(new InMemoryPortalStore());
-        for (String id : List.of("a", "b")) {
-            editor.corner1(PLAYER, id, new Pos(0, 0, 0));
-            editor.corner2(PLAYER, id, new Pos(1, 1, 1));
-            editor.task(PLAYER, id, "Survival");
-        }
-        editor.corner1(PLAYER, "half", new Pos(0, 0, 0));
+        InMemoryPortalSources sources = new InMemoryPortalSources("winter").world("lobby", SURVIVAL).unreadable("broken");
+        PortalCopier copier = new PortalCopier(editor, sources, new InMemoryPortalStore());
 
-        editor.saveAll(PLAYER);
+        copier.copy(PLAYER, "lobby");
+        copier.copy(PLAYER, "broken");
 
-        assertEquals(List.of("Saved portal a in world test-world", "Saved portal b in world test-world"), messages(), "one line per written portal, none for the open draft");
-    }
-
-    @Test
-    @DisplayName("Editing, cancelling and rejected saves log nothing, and no line carries the player")
-    void nothingElseIsLogged() {
-        PortalEditor editor = new PortalEditor(new InMemoryPortalStore());
-        editor.corner1(PLAYER, "survival", new Pos(0, 0, 0));
-        editor.save(PLAYER, "survival");
-        editor.cancel(PLAYER, "survival");
-        editor.remove(PLAYER, "unknown");
-
-        assertEquals(List.of(), messages(), "only writes to the map are logged");
         assertFalse(messages().stream().anyMatch(line -> line.contains(PLAYER.toString())), "the player is never logged");
     }
 }

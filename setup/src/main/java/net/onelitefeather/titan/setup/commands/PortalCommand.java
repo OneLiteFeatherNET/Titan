@@ -27,13 +27,17 @@ import net.minestom.server.command.builder.suggestion.SuggestionEntry;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.onelitefeather.titan.core.portal.Portal;
+import net.onelitefeather.titan.setup.portal.PortalSources;
 import net.onelitefeather.titan.setup.portal.PortalStore;
+import net.onelitefeather.titan.setup.portal.editor.CopyResult;
 import net.onelitefeather.titan.setup.portal.editor.PortalCompletions;
+import net.onelitefeather.titan.setup.portal.editor.PortalCopier;
 import net.onelitefeather.titan.setup.portal.editor.PortalDraft;
 import net.onelitefeather.titan.setup.portal.editor.PortalEditResult;
 import net.onelitefeather.titan.setup.portal.editor.PortalEditor;
 import net.onelitefeather.titan.setup.portal.editor.PortalFlow;
 import net.onelitefeather.titan.setup.portal.editor.PortalMessages;
+import net.onelitefeather.titan.setup.portal.editor.SaveAllResult;
 import net.onelitefeather.titan.setup.portal.preview.DraftPreview;
 import net.onelitefeather.titan.setup.portal.preview.LabelPreview;
 import net.onelitefeather.titan.setup.portal.preview.PortalShow;
@@ -43,6 +47,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * {@code /setup portal ...}: parses arguments, hands them to the {@link PortalEditor} and prints
@@ -62,22 +67,28 @@ public final class PortalCommand extends Command {
     private final Argument<String> permission = ArgumentType.Word("node");
     private final Argument<String> previewVariant = ArgumentType.Word("variant").from("online", "offline");
     private final Argument<String> form = ArgumentType.Word("kind").from("box", "ring");
+    private final Argument<String> world = ArgumentType.Word("world");
 
     private final PortalEditor editor;
     private final PortalStore store;
     private final DraftPreview preview;
     private final PortalShow show;
     private final LabelPreview labelPreview;
+    private final PortalCopier copier;
+    private final PortalSources sources;
 
-    public PortalCommand(PortalEditor editor, PortalStore store, DraftPreview preview, PortalShow show, LabelPreview labelPreview) {
+    public PortalCommand(PortalEditor editor, PortalStore store, DraftPreview preview, PortalShow show, LabelPreview labelPreview, PortalCopier copier, PortalSources sources) {
         super("portal");
         this.editor = editor;
         this.store = store;
         this.preview = preview;
         this.show = show;
         this.labelPreview = labelPreview;
+        this.copier = copier;
+        this.sources = sources;
 
-        id.setSuggestionCallback((sender, context, suggestion) -> suggest(sender, suggestion, player -> PortalCompletions.ids(store.portals(), editor.drafts(player.getUuid()))));
+        id.setSuggestionCallback((sender, context, suggestion) -> suggest(sender, suggestion, player -> Stream.concat(PortalCompletions.ids(store.portals(), editor.drafts(player.getUuid())).stream(), PortalCompletions.verbs().stream()).toList()));
+        world.setSuggestionCallback((sender, context, suggestion) -> suggest(sender, suggestion, player -> PortalCompletions.worlds(sources)));
         radius.setSuggestionCallback((sender, context, suggestion) -> suggest(sender, suggestion, player -> PortalCompletions.radii()));
         task.setSuggestionCallback((sender, context, suggestion) -> suggest(sender, suggestion, player -> PortalCompletions.tasks(store.portals())));
         // Free word, not 'from(...)': the editor answers an unknown type with the allowed ones.
@@ -87,6 +98,8 @@ public final class PortalCommand extends Command {
         setDefaultExecutor((sender, context) -> sender.sendMessage(PortalMessages.usage()));
         addSyntax(this::list, ArgumentType.Literal("list"));
         addSyntax(this::show, ArgumentType.Literal("show"));
+        addSyntax(this::copy, ArgumentType.Literal("copy"), world);
+        addSyntax(this::saveAll, ArgumentType.Literal("save-all"));
         addSyntax(edit((player, context) -> editor.create(player.getUuid(), context.get(id))), ArgumentType.Literal("create"), newId);
         addSyntax(edit((player, context) -> editor.corner1(player.getUuid(), context.get(id), player.getPosition())), id, ArgumentType.Literal("pos1"));
         addSyntax(edit((player, context) -> editor.corner2(player.getUuid(), context.get(id), player.getPosition())), id, ArgumentType.Literal("pos2"));
@@ -128,6 +141,34 @@ public final class PortalCommand extends Command {
             List<Portal> portals = store.portals();
             player.sendMessage(show.start(player, portals) ? PortalMessages.showing(portals.size()) : PortalMessages.nothingToShow());
         }
+    }
+
+    /** Opens drafts for the other world's portals and shows them once; nothing is saved. */
+    private void copy(@NotNull CommandSender sender, @NotNull CommandContext context) {
+        if (sender instanceof Player player) {
+            CopyResult result = copier.copy(player.getUuid(), context.get(world));
+            player.sendMessage(PortalMessages.copy(result));
+            if (result instanceof CopyResult.Copied copied && !copied.portals().isEmpty()) {
+                show.start(player, copied.portals());
+            }
+        }
+    }
+
+    /** The editor writes what is complete; the previews of the ids it wrote end with it. */
+    private void saveAll(@NotNull CommandSender sender, @NotNull CommandContext context) {
+        if (sender instanceof Player player) {
+            SaveAllResult result = editor.saveAll(player.getUuid());
+            player.sendMessage(PortalMessages.saveAll(result));
+            result.results().forEach(outcome -> savedId(outcome).ifPresent(id -> stopPreviews(player, id)));
+        }
+    }
+
+    private static Optional<String> savedId(PortalEditResult result) {
+        return switch (result) {
+            case PortalEditResult.Saved saved -> Optional.of(saved.portal().id());
+            case PortalEditResult.Updated updated -> Optional.of(updated.portal().id());
+            default -> Optional.empty();
+        };
     }
 
     /** One editor call per syntax; the answer is printed and the preview follows the draft. */

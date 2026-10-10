@@ -60,7 +60,7 @@ public final class PortalEditor {
     private static final Logger LOGGER = LoggerFactory.getLogger(PortalEditor.class);
     private static final Pattern ID_PATTERN = Pattern.compile("[a-z0-9_-]+");
     /** Words the command uses in the id position. */
-    private static final Set<String> RESERVED_IDS = Set.of("list", "show", "create");
+    private static final Set<String> RESERVED_IDS = Set.of("list", "show", "create", "copy", "save-all");
     private static final String NO_PERMISSION = "none";
 
     private final PortalStore store;
@@ -182,29 +182,95 @@ public final class PortalEditor {
         if (draft == null) {
             return new Unknown(id);
         }
+        Staged staged = stage(store.portals(), id, draft);
+        if (staged.written()) {
+            store.save(staged.portals());
+            LOGGER.info("Saved portal {} in world {}", id, store.world());
+            dropDraft(player, id);
+        }
+        return staged.result();
+    }
+
+    /**
+     * Writes every open draft of the player that is complete and valid, in one store write. Each
+     * draft is checked against the portals the earlier ones produced, as {@link #save} would see
+     * them; a failing draft stays open and does not hold back the others.
+     */
+    public SaveAllResult saveAll(UUID player) {
+        List<PortalDraft> open = drafts(player);
+        List<PortalEditResult> results = new ArrayList<>();
+        List<String> written = new ArrayList<>();
+        List<Portal> next = store.portals();
+        for (PortalDraft draft : open) {
+            Staged staged = stage(next, draft.id(), draft);
+            results.add(staged.result());
+            if (staged.written()) {
+                next = staged.portals();
+                written.add(draft.id());
+            }
+        }
+        if (!written.isEmpty()) {
+            store.save(next);
+            written.forEach(id -> {
+                LOGGER.info("Saved portal {} in world {}", id, store.world());
+                dropDraft(player, id);
+            });
+        }
+        return new SaveAllResult(results);
+    }
+
+    /**
+     * The one rule set for putting a draft into the saved portals: complete, then replacing or
+     * appending by id, then the validator's problems for this entry only. Nothing is written here.
+     */
+    private static Staged stage(List<Portal> current, String id, PortalDraft draft) {
         Optional<Portal> portal = draft.toPortal();
         if (portal.isEmpty()) {
-            return new Pending(id, draft.missing());
+            return new Staged(new Pending(id, draft.missing()), current);
         }
-        List<Portal> saved = store.portals();
-        int position = indexOf(saved, id);
-        List<Portal> next = new ArrayList<>(saved);
-        if (position < 0) {
-            position = next.size();
+        int existing = indexOf(current, id);
+        List<Portal> next = new ArrayList<>(current);
+        int edited = existing < 0 ? next.size() : existing;
+        if (existing < 0) {
             next.add(portal.get());
         } else {
-            next.set(position, portal.get());
+            next.set(existing, portal.get());
         }
-        int edited = position;
         // The validator is the lobby's own check; only the edited entry's problems concern this save.
         List<PortalProblem> problems = PortalValidator.problems(next).stream().filter(problem -> problem.index() == edited).toList();
         if (!problems.isEmpty()) {
-            return new Rejected(id, problems);
+            return new Staged(new Rejected(id, problems), current);
         }
-        store.save(next);
-        LOGGER.info("Saved portal {} in world {}", id, store.world());
-        dropDraft(player, id);
-        return edited < saved.size() ? new Updated(portal.get()) : new Saved(portal.get());
+        PortalEditResult result = existing < 0 ? new Saved(portal.get()) : new Updated(portal.get());
+        return new Staged(result, next);
+    }
+
+    /**
+     * The outcome of staging one draft; {@code portals} is the list to write when it was written.
+     */
+    private record Staged(PortalEditResult result, List<Portal> portals) {
+
+        boolean written() {
+            return result instanceof Saved || result instanceof Updated;
+        }
+    }
+
+    /**
+     * Opens a draft with the values of a portal taken from another world, so a copy starts with the
+     * source's values. Empty when adopted; otherwise the reason, and the player's draft stays as it
+     * was.
+     */
+    public Optional<String> adopt(UUID player, Portal portal) {
+        Optional<Invalid> invalid = invalidId(portal.id());
+        if (invalid.isPresent()) {
+            return Optional.of(invalid.get().reason());
+        }
+        Map<String, PortalDraft> own = draftsOf(player);
+        if (own.containsKey(portal.id())) {
+            return Optional.of("you already have an open draft of this id");
+        }
+        own.put(portal.id(), PortalDraft.of(portal));
+        return Optional.empty();
     }
 
     /** Discards the player's draft; the saved portal stays. */
