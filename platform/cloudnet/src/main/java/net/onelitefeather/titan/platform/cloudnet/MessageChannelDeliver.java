@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.common.deliver;
+package net.onelitefeather.titan.platform.cloudnet;
 
 import net.minestom.server.entity.Player;
 import net.onelitefeather.titan.api.deliver.DeliverComponent;
 import net.onelitefeather.titan.api.deliver.Deliver;
+import net.onelitefeather.titan.common.deliver.TitanServerConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

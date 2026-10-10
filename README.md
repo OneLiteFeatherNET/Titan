@@ -44,6 +44,9 @@ Player and console permission checks go through a `PermissionService` a permissi
 module provides via dependency injection - LuckPerms in production, nothing by default in
 development:
 
+- **Server bootstrap:** every start logs `Server bootstrap: <name>`. `apps/cloudnet` starts through
+  the `extensions` bootstrap and loads the `extensions/` folder; `apps/local` starts plain Minestom
+  and ignores `extensions/` entirely. `forwarding.secret` and `service.bind.*` work in both.
 - **`apps/cloudnet`** always bundles the LuckPerms platform module and refuses to start without it
   (the startup check aborts, naming the missing module) - a deployment always has real
   permissions.

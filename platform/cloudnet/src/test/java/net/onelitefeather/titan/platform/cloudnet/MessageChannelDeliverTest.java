@@ -13,8 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.common.deliver;
+package net.onelitefeather.titan.platform.cloudnet;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -23,31 +26,37 @@ import net.minestom.server.instance.Instance;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.api.deliver.DeliverComponent;
-import net.onelitefeather.titan.common.config.testing.CapturingLoggerFactory;
+import net.onelitefeather.titan.common.deliver.ServerConnector;
+import net.onelitefeather.titan.common.deliver.TitanServerConnector;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.slf4j.LoggerFactory;
 
 /**
  * Unit coverage for {@link MessageChannelDeliver} without an installed {@link ServerConnector};
- * log lines are asserted through {@link CapturingLoggerFactory}.
+ * log lines are captured with a {@link ListAppender} attached for this test only.
  */
 @ExtendWith(MicrotusExtension.class)
 class MessageChannelDeliverTest {
 
     private final MessageChannelDeliver deliver = new MessageChannelDeliver();
+    private final ListAppender<ILoggingEvent> appender = new ListAppender<>();
+    private final Logger logger = (Logger) LoggerFactory.getLogger(MessageChannelDeliver.class);
 
     @BeforeEach
-    void clearStateBeforeTest() {
+    void attachAppenderAndClearConnector() {
         TitanServerConnector.setConnector(null);
-        CapturingLoggerFactory.clear();
+        this.appender.start();
+        this.logger.addAppender(this.appender);
     }
 
     @AfterEach
-    void uninstallConnector() {
+    void detachAppenderAndUninstallConnector() {
+        this.logger.detachAppender(this.appender);
         TitanServerConnector.setConnector(null);
     }
 
@@ -59,7 +68,7 @@ class MessageChannelDeliverTest {
 
         this.deliver.sendPlayer(player, component);
 
-        Assertions.assertEquals(List.of(warning(player, "task", "cygnus")), CapturingLoggerFactory.messages(), "exactly one WARN line must be logged for the missed task transfer");
+        Assertions.assertEquals(List.of(warning(player, "task", "cygnus")), messages(), "exactly one WARN line must be logged for the missed task transfer");
     }
 
     @DisplayName("Sending to a server without a connector logs one WARN line naming the player, the server and the target")
@@ -70,7 +79,7 @@ class MessageChannelDeliverTest {
 
         this.deliver.sendPlayer(player, component);
 
-        Assertions.assertEquals(List.of(warning(player, "server", "survival-1")), CapturingLoggerFactory.messages(), "exactly one WARN line must be logged for the missed server transfer");
+        Assertions.assertEquals(List.of(warning(player, "server", "survival-1")), messages(), "exactly one WARN line must be logged for the missed server transfer");
     }
 
     @DisplayName("A missed transfer without a connector does not throw to the caller")
@@ -93,7 +102,7 @@ class MessageChannelDeliverTest {
         this.deliver.sendPlayer(player, component);
 
         Assertions.assertEquals(List.of("task " + player.getUuid() + " cygnus"), connector.calls, "the connector must receive the task transfer");
-        Assertions.assertTrue(CapturingLoggerFactory.messages().isEmpty(), "a handed-over transfer must not log a warning");
+        Assertions.assertTrue(messages().isEmpty(), "a handed-over transfer must not log a warning");
     }
 
     @DisplayName("A null player logs nothing")
@@ -104,7 +113,7 @@ class MessageChannelDeliverTest {
 
         this.deliver.sendPlayer(null, component);
 
-        Assertions.assertTrue(CapturingLoggerFactory.messages().isEmpty(), "no log line may be written without a player");
+        Assertions.assertTrue(messages().isEmpty(), "no log line may be written without a player");
     }
 
     @DisplayName("A null component logs nothing")
@@ -114,7 +123,11 @@ class MessageChannelDeliverTest {
 
         this.deliver.sendPlayer(player, null);
 
-        Assertions.assertTrue(CapturingLoggerFactory.messages().isEmpty(), "no log line may be written without a component");
+        Assertions.assertTrue(messages().isEmpty(), "no log line may be written without a component");
+    }
+
+    private List<String> messages() {
+        return this.appender.list.stream().map(event -> event.getLevel() + " " + event.getLoggerName() + " - " + event.getFormattedMessage()).toList();
     }
 
     private static Player connect(Env env) {
@@ -123,7 +136,7 @@ class MessageChannelDeliverTest {
     }
 
     private static String warning(Player player, String kind, String target) {
-        return "WARN net.onelitefeather.titan.common.deliver.MessageChannelDeliver - Server connector missing: cannot send " + player.getUsername() + " (" + player.getUuid() + ") to " + kind + " " + target;
+        return "WARN net.onelitefeather.titan.platform.cloudnet.MessageChannelDeliver - Server connector missing: cannot send " + player.getUsername() + " (" + player.getUuid() + ") to " + kind + " " + target;
     }
 
     private static final class RecordingConnector implements ServerConnector {

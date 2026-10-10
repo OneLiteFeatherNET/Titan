@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.ServiceLoader;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
@@ -33,7 +34,9 @@ import net.onelitefeather.titan.core.portal.LobbyPortals;
 import net.onelitefeather.titan.core.portal.Portal;
 import net.onelitefeather.titan.feature.portal.PortalModule;
 import net.onelitefeather.titan.core.module.LobbyWorldChoice;
+import net.onelitefeather.titan.core.bootstrap.ServerBootstrap;
 import net.onelitefeather.titan.core.permission.PermissionService;
+import net.onelitefeather.titan.runtime.bootstrap.ServerBootstraps;
 import net.onelitefeather.titan.runtime.variant.LoadedModules;
 import net.onelitefeather.titan.runtime.variant.VariantDescriptor;
 import net.onelitefeather.titan.runtime.variant.VariantStartupCheck;
@@ -182,5 +185,13 @@ class VariantStartTest {
         IllegalStateException thrown = Assertions.assertThrows(IllegalStateException.class, () -> VariantStartupCheck.verify(withAMissingModule, LoadedModules.discover(loader)));
 
         Assertions.assertTrue(thrown.getMessage().contains("ghostColumn"), "the message must name the missing column, was: " + thrown.getMessage());
+    }
+
+    @DisplayName("The local variant starts plain Minestom without the extension loader")
+    @Test
+    void theActiveBootstrapIsPlainMinestom() {
+        ServerBootstrap active = ServerBootstraps.select(ServiceLoader.load(ServerBootstrap.class).stream().map(ServiceLoader.Provider::get).toList());
+
+        Assertions.assertEquals("minestom", active.name(), "local ships no bootstrap platform, so plain Minestom must be active");
     }
 }

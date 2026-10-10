@@ -20,6 +20,7 @@ import io.avaje.inject.spi.InjectExtension;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
+import net.onelitefeather.titan.core.bootstrap.ServerBootstrap;
 
 /**
  * The Avaje modules actually on {@code loader}, discovered the same built-in way Avaje itself
@@ -33,10 +34,16 @@ import java.util.ServiceLoader;
 public final class LoadedModules {
 
     private static final String SUFFIX = "Module";
+    private static final String BOOTSTRAP_SUFFIX = "Platform";
 
     private LoadedModules() {
     }
 
+    /**
+     * The Avaje modules on {@code loader}, plus one {@code <name>Platform} per server bootstrap
+     * found there: a bootstrap platform such as {@code extensions} counts as a loaded module, so a
+     * variant expecting {@code extensionsPlatform} fails without it.
+     */
     public static List<String> discover(ClassLoader loader) {
         List<String> names = new ArrayList<>();
         for (InjectExtension extension : ServiceLoader.load(InjectExtension.class, loader)) {
@@ -47,6 +54,9 @@ public final class LoadedModules {
                     names.add(Character.toLowerCase(moduleName.charAt(0)) + moduleName.substring(1));
                 }
             }
+        }
+        for (ServerBootstrap bootstrap : ServiceLoader.load(ServerBootstrap.class, loader)) {
+            names.add(bootstrap.name() + BOOTSTRAP_SUFFIX);
         }
         return List.copyOf(names);
     }

@@ -11,8 +11,6 @@ dependencies {
     implementation(platform(libs.aonyx.bom))
     implementation(libs.adventure.minimessage)
     implementation(libs.minestom)
-    implementation(platform(libs.minestom.extensions.bom))
-    implementation(libs.minestom.extensions)
 
     // Compile-time dependency injection for the lobby feature modules; see
     // openspec/changes/avaje-dependency-injection. No jakarta.annotation-api needed: avaje-inject

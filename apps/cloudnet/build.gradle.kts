@@ -5,8 +5,9 @@ plugins {
 
 titanVariant {
     aotCache.set(true)
-    // The only production variant: LuckPerms is mandatory here, never optional.
-    platform("luckperms")
+    // The only production variant: LuckPerms is mandatory here, never optional. The extension
+    // bootstrap loads the CloudNet bridge from extensions/, and cloudnet forwards players through it.
+    platform("extensions", "cloudnet", "luckperms")
 }
 
 dependencies {

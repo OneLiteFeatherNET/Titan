@@ -32,6 +32,11 @@ public final class CloudNetEnvironment {
     }
 
     public static boolean isPresent() {
-        return Files.isDirectory(WRAPPER_MARKER);
+        return isPresent(Path.of(""));
+    }
+
+    /** The injected directory keeps the check testable without the real working directory. */
+    public static boolean isPresent(Path workingDirectory) {
+        return Files.isDirectory(workingDirectory.resolve(WRAPPER_MARKER));
     }
 }

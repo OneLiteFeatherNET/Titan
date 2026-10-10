@@ -35,7 +35,6 @@ import net.minestom.server.event.EventNode;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.timer.Scheduler;
-import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.common.deliver.TitanLobbyIdentity;
 import net.onelitefeather.titan.core.lobby.LobbyIdentities;
 import net.onelitefeather.titan.core.module.FeatureNode;
@@ -43,13 +42,11 @@ import net.onelitefeather.titan.core.module.LobbySpawn;
 import net.onelitefeather.titan.core.module.LobbyWorldChoice;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
-import net.onelitefeather.titan.common.deliver.DeliverProvider;
 import net.onelitefeather.titan.common.deliver.HolderPlayerCounts;
 import net.onelitefeather.titan.core.portal.PlayerCounts;
 import net.onelitefeather.titan.runtime.feature.ConfigFeatureFlags;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.common.map.MapProvider;
-import net.onelitefeather.titan.runtime.deliver.TracedDeliver;
 
 /**
  * Wires the platform services every lobby feature module is built from as Avaje Inject beans, so
@@ -104,12 +101,6 @@ public final class PlatformBeans {
     @Bean
     public LobbyPortals lobbyPortals(MapProvider mapProvider) {
         return () -> mapProvider.getActiveLobby().portals();
-    }
-
-    /** A no-op outside a CloudNet service. Every transfer is traced, whichever feature sends it. */
-    @Bean
-    public Deliver deliver(Telemetry telemetry) {
-        return new TracedDeliver(DeliverProvider.create(), telemetry);
     }
 
     /**

@@ -31,6 +31,9 @@ dependencies {
     testImplementation(libs.minestom)
     testImplementation(libs.cyano)
     testImplementation(libs.aves)
+    // TracedDeliverTest records spans with TestTelemetry and mocks the delivered player.
+    testImplementation(testFixtures(project(":core")))
+    testImplementation(libs.mockito)
     testImplementation(libs.junit.api)
     testImplementation(libs.junit.params)
     testImplementation(libs.junit.platform.launcher)

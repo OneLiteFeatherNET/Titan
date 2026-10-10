@@ -15,12 +15,14 @@
  */
 package net.onelitefeather.titan.runtime;
 
-import net.hollowcube.minestom.extensions.ExtensionBootstrap;
 import net.minestom.server.Auth;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.command.CommandManager;
 import net.onelitefeather.titan.common.deliver.ConnectorStartupCheck;
 import net.onelitefeather.titan.common.observability.TitanObservability;
+import net.onelitefeather.titan.core.bootstrap.ServerBootstrap;
+import net.onelitefeather.titan.runtime.bootstrap.BootstrapSettings;
+import net.onelitefeather.titan.runtime.bootstrap.ServerBootstraps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,8 +32,11 @@ import java.io.IOError;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.function.Supplier;
 
 
@@ -46,31 +51,18 @@ public class TitanApplication {
         // Anything logged before this reaches the console but not Sentry.
         TitanObservability.bootstrap();
 
-        // minestom-extensions loads platform extensions (the CloudNet bridge among
-        // them) from the extensions/ folder; running standalone simply loads none.
-        ExtensionBootstrap bootstrap = bootstrap();
-
-        // Needs an initialised MinecraftServer, which the line above provides. Replaces
-        // Minestom's Throwable::printStackTrace default with SLF4J logging.
-        TitanObservability.installExceptionHandler();
-
         // Also catch Error: a broken application.yaml throws ExceptionInInitializerError;
         // rethrowing would hang on a permission platform's non-daemon threads.
         try {
-            Titan titan = new Titan();
-            titan.initialize();
+            Map<String, String> properties = startupProperties();
+            List<ServerBootstrap> candidates = ServiceLoader.load(ServerBootstrap.class).stream().map(ServiceLoader.Provider::get).toList();
+            TitanStartup.run(ServerBootstraps.select(candidates), velocityAuth(properties), BootstrapSettings.bindHost(properties), BootstrapSettings.bindPort(properties), TitanObservability::installExceptionHandler, active -> new Titan(active).initialize());
         } catch (RuntimeException | Error throwable) {
             LOGGER.error("Titan failed to start: {}", throwable.toString(), throwable);
             System.exit(1);
             return;
         }
-
-        // CloudNet passes the bind address/port via -Dservice.bind.host /
-        // -Dservice.bind.port; fall back to the standalone defaults otherwise.
-        String bindHost = System.getProperty("service.bind.host", "localhost");
-        int bindPort = Integer.getInteger("service.bind.port", 25565);
-        bootstrap.start(bindHost, bindPort);
-        // Extensions install their connector only in start(); checking earlier would always see none.
+        // Extensions install their connector only once the server is started; checking earlier would always see none.
         ConnectorStartupCheck.verify();
 
         // Reads console input so locally typed commands and CloudNet's "stop" (written to stdin)
@@ -90,6 +82,23 @@ public class TitanApplication {
                 System.exit(0);
             });
         }
+    }
+
+    /** The system properties the start-up settings read, copied so those settings stay pure. */
+    private static Map<String, String> startupProperties() {
+        Map<String, String> properties = new HashMap<>();
+        for (String key : List.of(BootstrapSettings.SECRET_PROPERTY, BootstrapSettings.HOST_PROPERTY, BootstrapSettings.PORT_PROPERTY)) {
+            String value = System.getProperty(key);
+            if (value != null) {
+                properties.put(key, value);
+            }
+        }
+        return properties;
+    }
+
+    /** Velocity modern forwarding is on only with a secret; null keeps Minestom's default auth. */
+    private static Auth velocityAuth(Map<String, String> properties) {
+        return BootstrapSettings.velocitySecret(VELOCITY_SECRET_FILE, properties).map(Auth.Velocity::new).orElse(null);
     }
 
     private static void startConsole() {
@@ -119,29 +128,5 @@ public class TitanApplication {
                 }
             }
         });
-    }
-
-    private static ExtensionBootstrap bootstrap() {
-        String secret = velocitySecret();
-        if (secret == null || secret.isBlank()) {
-            // No proxy secret: ExtensionBootstrap initialises Minestom with default auth.
-            return ExtensionBootstrap.init();
-        }
-        // Velocity modern forwarding: init(Auth) is the only point it can be turned on - Minestom
-        // binds the Auth in MinecraftServer.init with no way to change it afterwards.
-        return ExtensionBootstrap.init(new Auth.Velocity(secret));
-    }
-
-    private static String velocitySecret() {
-        if (Files.isRegularFile(VELOCITY_SECRET_FILE)) {
-            try {
-                String fromFile = Files.readString(VELOCITY_SECRET_FILE).trim();
-                if (!fromFile.isBlank()) {
-                    return fromFile;
-                }
-            } catch (IOException ignored) {
-            }
-        }
-        return System.getProperty("minestom.velocity.secret");
     }
 }

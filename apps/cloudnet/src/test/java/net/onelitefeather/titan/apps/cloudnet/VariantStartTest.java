@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ServiceLoader;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
@@ -29,8 +30,10 @@ import net.onelitefeather.titan.core.portal.Box;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
 import net.onelitefeather.titan.core.portal.Portal;
 import net.onelitefeather.titan.feature.portal.PortalModule;
+import net.onelitefeather.titan.core.bootstrap.ServerBootstrap;
 import net.onelitefeather.titan.core.permission.PermissionService;
 import net.onelitefeather.titan.platform.luckperms.LuckPermsPermissionService;
+import net.onelitefeather.titan.runtime.bootstrap.ServerBootstraps;
 import net.onelitefeather.titan.runtime.variant.LoadedModules;
 import net.onelitefeather.titan.runtime.variant.VariantDescriptor;
 import net.onelitefeather.titan.runtime.variant.VariantStartupCheck;
@@ -147,5 +150,19 @@ class VariantStartTest {
         IllegalStateException thrown = Assertions.assertThrows(IllegalStateException.class, () -> VariantStartupCheck.verify(withAMissingModule, LoadedModules.discover(loader)));
 
         Assertions.assertTrue(thrown.getMessage().contains("ghostColumn"), "the message must name the missing column, was: " + thrown.getMessage());
+    }
+
+    @DisplayName("The extensions platform is one of the loaded Avaje modules, so the startup check sees it")
+    @Test
+    void theExtensionsPlatformModuleIsLoaded() {
+        Assertions.assertTrue(LoadedModules.discover(getClass().getClassLoader()).contains("extensionsPlatform"), "cloudnet expects extensionsPlatform, which must be an Avaje module on the classpath");
+    }
+
+    @DisplayName("The cloudnet variant starts Minestom through the extension bootstrap")
+    @Test
+    void theActiveBootstrapIsExtensions() {
+        ServerBootstrap active = ServerBootstraps.select(ServiceLoader.load(ServerBootstrap.class).stream().map(ServiceLoader.Provider::get).toList());
+
+        Assertions.assertEquals("extensions", active.name(), "cloudnet ships the extensions platform, so it must be the active bootstrap");
     }
 }
