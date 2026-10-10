@@ -15,6 +15,9 @@
  */
 package net.onelitefeather.titan.common.deliver;
 
+import java.util.List;
+import net.onelitefeather.titan.core.portal.ServiceCount;
+
 /**
  * Reads player counts from CloudNet. Implemented in the CloudNet bridge extension realm and
  * invoked from the application via {@link TitanPlayerCountLookup}. Only JDK types cross the
@@ -26,4 +29,9 @@ public interface PlayerCountLookup {
 
     /** {@code {online, max}}, or {@code null} when nothing of that name runs. */
     int[] lookup(String type, String name);
+
+    /** The running services of that source, one entry each; empty when none runs. */
+    default List<ServiceCount> running(String type, String name) {
+        return List.of();
+    }
 }

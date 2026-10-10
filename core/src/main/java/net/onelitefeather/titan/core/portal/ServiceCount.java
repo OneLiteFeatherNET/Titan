@@ -15,28 +15,14 @@
  */
 package net.onelitefeather.titan.core.portal;
 
-import java.util.List;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Supplies player counts for portal labels. Exactly one provider is active; a real provider
- * replaces the built-in fallback without configuration.
+ * One running service as the provider reports it.
+ *
+ * @param name   the service name, e.g. {@code Lobby-1}
+ * @param online players currently on the service
+ * @param max    the player limit; {@code 0} while the service has not announced one
  */
-public interface PlayerCounts {
-
-    default boolean supports(@NotNull SourceType type) {
-        return true;
-    }
-
-    @NotNull
-    PlayerCount count(@NotNull SourceType type, @NotNull String name);
-
-    /**
-     * The running services of the named source, one entry each; empty when the provider cannot list
-     * them.
-     */
-    @NotNull
-    default List<ServiceCount> running(@NotNull SourceType type, @NotNull String name) {
-        return List.of();
-    }
+public record ServiceCount(@NotNull String name, int online, int max) {
 }

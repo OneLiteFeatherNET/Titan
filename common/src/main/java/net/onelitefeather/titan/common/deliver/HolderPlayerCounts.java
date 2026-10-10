@@ -15,8 +15,10 @@
  */
 package net.onelitefeather.titan.common.deliver;
 
+import java.util.List;
 import net.onelitefeather.titan.core.portal.PlayerCount;
 import net.onelitefeather.titan.core.portal.PlayerCounts;
+import net.onelitefeather.titan.core.portal.ServiceCount;
 import net.onelitefeather.titan.core.portal.SourceType;
 
 /**
@@ -35,5 +37,10 @@ public final class HolderPlayerCounts implements PlayerCounts {
     public PlayerCount count(SourceType type, String name) {
         int[] counts = TitanPlayerCountLookup.lookup(type.id(), name);
         return counts == null ? PlayerCount.NOT_RUNNING : new PlayerCount(counts[0], counts[1], true);
+    }
+
+    @Override
+    public List<ServiceCount> running(SourceType type, String name) {
+        return TitanPlayerCountLookup.running(type.id(), name);
     }
 }

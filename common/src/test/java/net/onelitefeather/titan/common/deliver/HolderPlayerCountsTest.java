@@ -15,7 +15,9 @@
  */
 package net.onelitefeather.titan.common.deliver;
 
+import java.util.List;
 import net.onelitefeather.titan.core.portal.PlayerCount;
+import net.onelitefeather.titan.core.portal.ServiceCount;
 import net.onelitefeather.titan.core.portal.SourceType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -99,5 +101,44 @@ class HolderPlayerCountsTest {
 
         IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> this.counts.count(SourceType.TASK, "Survival"), "the exception crosses the holder");
         assertEquals("cloud unreachable", thrown.getMessage(), "the original failure");
+    }
+
+    @DisplayName("An empty holder lists no running services")
+    @Test
+    void emptyHolderListsNothing() {
+        assertTrue(this.counts.running(SourceType.TASK, "Lobby").isEmpty(), "no bridge installed");
+    }
+
+    @DisplayName("The installed lookup's running services are passed through")
+    @Test
+    void runningServicesArePassedThrough() {
+        List<ServiceCount> services = List.of(new ServiceCount("Lobby-1", 3, 20), new ServiceCount("Lobby-2", 0, 20));
+        TitanPlayerCountLookup.setLookup(new PlayerCountLookup() {
+            @Override
+            public boolean supports(String type) {
+                return true;
+            }
+
+            @Override
+            public int[] lookup(String type, String name) {
+                return null;
+            }
+
+            @Override
+            public List<ServiceCount> running(String type, String name) {
+                return type.equals("task") && name.equals("Lobby") ? services : List.of();
+            }
+        });
+
+        assertEquals(services, this.counts.running(SourceType.TASK, "Lobby"), "the lookup's list for the task");
+        assertTrue(this.counts.running(SourceType.TASK, "Survival").isEmpty(), "nothing runs for another task");
+    }
+
+    @DisplayName("A lookup without its own listing yields an empty list")
+    @Test
+    void lookupWithoutListingIsEmpty() {
+        install(true, new int[]{3, 20});
+
+        assertTrue(this.counts.running(SourceType.TASK, "Survival").isEmpty(), "the default listing is empty");
     }
 }
