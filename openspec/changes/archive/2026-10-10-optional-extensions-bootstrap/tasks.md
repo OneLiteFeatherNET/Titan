@@ -45,4 +45,4 @@ Jeder Agent-Prompt nennt die Regeln, die für seinen Task gelten: erst Vorhanden
 
 ## 5. Pull Request
 
-- [ ] 5.1 Den Pull Request vom Integrationszweig auf `main` unter dem Titel `refactor(bootstrap)!: make minestom extensions a platform module` öffnen, mit dem BREAKING-CHANGE-Footer aus dem Proposal, dem Hinweis auf die Abweichungen (ServiceLoader statt zweitem Scope, Bind-Adresse bleibt in `runtime`) und dem Abnahmeprotokoll in der englischen Beschreibung. Nachweis: PR-URL, CI grün.
+- [x] 5.1 Den Pull Request vom Integrationszweig auf `main` unter dem Titel `refactor(bootstrap)!: make minestom extensions a platform module` öffnen, mit dem BREAKING-CHANGE-Footer aus dem Proposal, dem Hinweis auf die Abweichungen (ServiceLoader statt zweitem Scope, Bind-Adresse bleibt in `runtime`) und dem Abnahmeprotokoll in der englischen Beschreibung. Nachweis: PR-URL, CI grün.
