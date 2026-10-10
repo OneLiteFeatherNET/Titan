@@ -1,0 +1,4 @@
+# The "lobbyswitcher" module: the hotbar item that lists the running lobbies of this task.
+lobbyswitcher:
+  # How often, in whole seconds (1 to 3600), an open lobby list reads the player counts again.
+  refreshSeconds: 5
