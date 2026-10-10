@@ -15,6 +15,8 @@
  */
 package net.onelitefeather.titan.feature.sit;
 
+import java.util.ArrayList;
+import java.util.List;
 import net.minestom.server.coordinate.BlockVec;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
@@ -159,5 +161,81 @@ class SitModuleIntegrationTest {
 
             Assertions.assertNull(player.getVehicle(), "no listener may still be attached once the module is stopped");
         }
+    }
+
+    @DisplayName("Disconnecting a player without an instance who is not sitting raises no exception")
+    @Test
+    void disconnectingWithoutInstanceAndNotSittingRaisesNoException(Env env) {
+        Player player = env.createPlayer(env.createFlatInstance());
+        player.remove();
+        List<Throwable> exceptions = collectExceptions(env);
+
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            SitModule module = new SitModule(titan.node(), Telemetry.noop());
+            module.start();
+            try {
+                env.process().eventHandler().call(new PlayerDisconnectEvent(player));
+
+                Assertions.assertTrue(exceptions.isEmpty(), "no exception may escape the sit feature: " + exceptions);
+            } finally {
+                module.stop();
+            }
+        }
+    }
+
+    @DisplayName("Disconnecting a sitting player who has no instance raises no exception")
+    @Test
+    void disconnectingWhileSittingWithoutInstanceRaisesNoException(Env env) {
+        Instance instance = env.createFlatInstance();
+        Player player = env.createPlayer(instance);
+        player.teleport(new Pos(0, 64, 0));
+        List<Throwable> exceptions = collectExceptions(env);
+
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            SitModule module = new SitModule(titan.node(), Telemetry.noop());
+            module.start();
+            try {
+                env.process().eventHandler().call(clickBlock(player, instance, Block.fromKey("minecraft:spruce_stairs"), new BlockVec(0, 64, 0)));
+                Assertions.assertNotNull(player.getVehicle(), "player must be sitting before the instance is lost");
+                player.remove();
+
+                env.process().eventHandler().call(new PlayerDisconnectEvent(player));
+
+                Assertions.assertTrue(exceptions.isEmpty(), "no exception may escape the sit feature: " + exceptions);
+            } finally {
+                module.stop();
+            }
+        }
+    }
+
+    @DisplayName("Disconnecting a sitting player who has no instance leaves no seat after the next tick")
+    @Test
+    void disconnectingWhileSittingWithoutInstanceLeavesNoSeatAfterTick(Env env) {
+        Instance instance = env.createFlatInstance();
+        Player player = env.createPlayer(instance);
+        player.teleport(new Pos(0, 64, 0));
+
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            SitModule module = new SitModule(titan.node(), Telemetry.noop());
+            module.start();
+            try {
+                env.process().eventHandler().call(clickBlock(player, instance, Block.fromKey("minecraft:spruce_stairs"), new BlockVec(0, 64, 0)));
+                var seat = player.getVehicle();
+                player.remove();
+                env.process().eventHandler().call(new PlayerDisconnectEvent(player));
+
+                env.tick();
+
+                Assertions.assertNull(instance.getEntityByUuid(seat.getUuid()), "the seat must be gone after the next tick");
+            } finally {
+                module.stop();
+            }
+        }
+    }
+
+    private static List<Throwable> collectExceptions(Env env) {
+        List<Throwable> exceptions = new ArrayList<>();
+        env.process().exception().setExceptionHandler(exceptions::add);
+        return exceptions;
     }
 }
