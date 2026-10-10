@@ -162,7 +162,10 @@ class DifficultyTest {
         assertEquals(Jump.climbCost(3), Jump.climbCost(Difficulty.towerHeight(Mode.MEDIUM, 0, 3, 8)), 1e-9, "lowest tower at score 0");
     }
 
-    /** The tower's cost is within half a height step of the target cost, with the limits of the config up to 8. */
+    /**
+     * The tower's cost is within half a height step of the target cost, with the limits of the
+     * config up to 8.
+     */
     private static void assertTowerCostNearTarget(Mode mode, int score) {
         double target = Difficulty.level(mode, score) * Jump.maxCost(mode, mode.unlockedAt(score));
         double cost = Jump.climbCost(Difficulty.towerHeight(mode, score, 3, 8));

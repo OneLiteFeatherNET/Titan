@@ -39,10 +39,7 @@ class OutlineTowerTest {
     private static final int HEIGHT_OF_TOWER = 3;
 
     private static List<Entity> glowingDisplays(Instance instance) {
-        return instance.getEntities().stream()
-                .filter(entity -> entity.getEntityType() == EntityType.BLOCK_DISPLAY)
-                .filter(entity -> ((BlockDisplayMeta) entity.getEntityMeta()).isHasGlowingEffect())
-                .toList();
+        return instance.getEntities().stream().filter(entity -> entity.getEntityType() == EntityType.BLOCK_DISPLAY).filter(entity -> ((BlockDisplayMeta) entity.getEntityMeta()).isHasGlowingEffect()).toList();
     }
 
     @Test
