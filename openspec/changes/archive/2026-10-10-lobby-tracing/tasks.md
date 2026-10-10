@@ -60,4 +60,4 @@ Jeder Agent-Prompt nennt die Regeln:
 
 ## 6. Pull Request
 
-- [ ] 6.1 Pull Request vom Integrationszweig `feat/lobby-tracing` auf `main` unter dem Titel `feat(telemetry): add tracing and metrics foundation with lifecycle spans` öffnen (Titel und Beschreibung Englisch), mit Smoke-Checkliste und Szenario-Zuordnung. Nachweis: PR-URL, CI grün.
+- [x] 6.1 Pull Request vom Integrationszweig `feat/lobby-tracing` auf `main` unter dem Titel `feat(telemetry): add tracing and metrics foundation with lifecycle spans` öffnen (Titel und Beschreibung Englisch), mit Smoke-Checkliste und Szenario-Zuordnung. Nachweis: PR #362 (gemergt).
