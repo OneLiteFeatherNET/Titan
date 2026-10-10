@@ -68,8 +68,9 @@ final class LobbySwitcherModule {
     @PostConstruct
     void start() {
         // Aves' click and close listeners do not fire for a per-locale inventory, so the list's
-        // clicks and closes are routed from here.
-        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry).on(InventoryPreClickEvent.class, this.inventory::onClick).on(InventoryCloseEvent.class, this.inventory::onClose);
+        // clicks and closes are routed from here. The protection feature cancels every click first,
+        // so the click listener must also see cancelled events.
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry).onIncludingCancelled(InventoryPreClickEvent.class, this.inventory::onClick).on(InventoryCloseEvent.class, this.inventory::onClose);
     }
 
     /** Idempotent. */

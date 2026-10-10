@@ -26,6 +26,9 @@ import net.minestom.testing.Env;
 import net.minestom.testing.TestConnection;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.portal.ServiceCount;
+import net.minestom.server.event.inventory.InventoryPreClickEvent;
+import net.onelitefeather.titan.core.module.FeatureNode;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -70,6 +73,19 @@ class SwitcherSelectionTest {
             env.tick();
 
             Assertions.assertEquals(List.of(new RecordingDeliver.Delivery(player, "Lobby-1")), fixture.deliver().deliveries(), "one delivery by service name");
+        }
+    }
+
+    @DisplayName("A click still delivers when the lobby protection cancels every inventory click first")
+    @Test
+    void clickSurvivesTheProtectionCancelling(Env env) {
+        try (SwitcherFixture fixture = SwitcherFixture.active(env); FeatureNode protection = FeatureNode.attach(fixture.titanNode(), "protection", 100, Telemetry.noop()).on(InventoryPreClickEvent.class, event -> event.setCancelled(true))) {
+            Player player = fixture.joinAndOpen();
+
+            fixture.click(player, LOBBY_1);
+            env.tick();
+
+            Assertions.assertEquals(List.of(new RecordingDeliver.Delivery(player, "Lobby-1")), fixture.deliver().deliveries(), "one delivery although protection (priority 100) cancelled the click");
         }
     }
 
