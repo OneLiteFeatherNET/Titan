@@ -42,4 +42,4 @@ Wave 3 beginnt erst nach Wave 2 (nutzt `activeMap()`/`readMap`). Innerhalb von W
 
 ## 6. Pull Request
 
-- [ ] 6.1 Pull Request (englisch) mit dem Titel `feat(setup): copy portals from another world` eröffnen; Beschreibung nennt die Voraussetzungen (#329 gemergt, `setup-portal-command` archiviert) und die zwei neuen `MapProvider`-Methoden
+- [x] 6.1 Pull Request (englisch) mit dem Titel `feat(setup): copy portals from another world` eröffnen; Beschreibung nennt die Voraussetzungen (#329 gemergt, `setup-portal-command` archiviert) und die zwei neuen `MapProvider`-Methoden
