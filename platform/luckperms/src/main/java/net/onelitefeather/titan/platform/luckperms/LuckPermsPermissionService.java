@@ -20,6 +20,7 @@ import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import java.util.List;
 import java.util.UUID;
+import me.lucko.luckperms.minestom.app.LuckPermsMinestomOptions;
 import me.lucko.luckperms.minestom.loader.MinestomLoader;
 import net.hollowcube.minestom.extensions.ExtensionBootstrap;
 import net.luckperms.api.LuckPermsProvider;
@@ -53,7 +54,7 @@ public final class LuckPermsPermissionService implements PermissionService {
 
     @PostConstruct
     void start() {
-        this.telemetry.started(loadedExtensionNames(), () -> MinestomLoader.get().load().registerShutdownHook().start());
+        this.telemetry.started(loadedExtensionNames(), () -> MinestomLoader.create(LuckPermsMinestomOptions.builder().registerShutdownHook(true).build()).load().enable());
     }
 
     private static List<String> loadedExtensionNames() {

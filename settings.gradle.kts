@@ -35,7 +35,7 @@ dependencyResolutionManagement {
             version("aonyx-bom", "0.8.8")
             version("cloudnet", "4.0.0-RC18-SNAPSHOT")
 
-            version("luckperms", "5.6-SNAPSHOT")
+            version("luckperms", "6.0.2")
 
             version("tomcat-annotations-api", "6.0.53")
 
