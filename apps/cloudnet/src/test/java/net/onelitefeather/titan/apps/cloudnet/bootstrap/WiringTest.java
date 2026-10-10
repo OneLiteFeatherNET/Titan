@@ -16,6 +16,8 @@
 package net.onelitefeather.titan.apps.cloudnet.bootstrap;
 
 import io.avaje.inject.BeanScope;
+import java.util.List;
+import java.util.Optional;
 import io.avaje.inject.spi.GenericType;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
@@ -29,12 +31,15 @@ import net.onelitefeather.titan.feature.sit.SitModule;
 import net.onelitefeather.titan.feature.spawn.SpawnModule;
 import net.onelitefeather.titan.feature.tickle.TickleModule;
 import net.onelitefeather.titan.feature.hotbar.HotbarLobbyItems;
+import net.onelitefeather.titan.core.lobby.LobbyIdentities;
+import net.onelitefeather.titan.core.lobby.LobbyIdentity;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.core.permission.PermissionService;
 import net.onelitefeather.titan.platform.luckperms.LuckPermsPermissionService;
 import net.onelitefeather.titan.apps.cloudnet.ActiveLobby;
 import net.onelitefeather.titan.common.map.MapProvider;
+import net.onelitefeather.titan.runtime.bootstrap.BeanProfiles;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -84,6 +89,63 @@ class WiringTest {
         } finally {
             Assertions.assertDoesNotThrow(scope::close, "closing a fully built scope must not throw");
         }
+    }
+
+    @DisplayName("As a CloudNet service with the flag on and an identity, the lobby switcher module and its clock exist")
+    @Test
+    void cloudnetProfileWithFlagOnProvidesTheLobbySwitcher(Env env) throws ClassNotFoundException {
+        LobbyIdentities identities = () -> Optional.of(new LobbyIdentity("Lobby", "Lobby-1"));
+        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class, ActiveLobby.empty()).mock(FeatureFlags.class, flags -> Mockito.when(flags.isActive("LOBBYSWITCHER")).thenReturn(true)).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).bean(LobbyIdentities.class, identities).profiles(BeanProfiles.active(List.of(), true)).build();
+
+        try {
+            Assertions.assertTrue(hasLobbySwitcherModule(scope), "the lobby switcher module must be a bean as a CloudNet service");
+            Assertions.assertEquals(5, scope.get(HotbarLobbyItems.class).itemCount(), "the four lobby items plus the switcher clock must be contributed");
+        } finally {
+            Assertions.assertDoesNotThrow(scope::close, "closing a fully built scope must not throw");
+        }
+    }
+
+    @DisplayName("As a CloudNet service with the flag off, the clock does not exist")
+    @Test
+    void cloudnetProfileWithFlagOffProvidesNoClock(Env env) {
+        LobbyIdentities identities = () -> Optional.of(new LobbyIdentity("Lobby", "Lobby-1"));
+        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class, ActiveLobby.empty()).mock(FeatureFlags.class).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).bean(LobbyIdentities.class, identities).profiles(BeanProfiles.active(List.of(), true)).build();
+
+        try {
+            Assertions.assertEquals(4, scope.get(HotbarLobbyItems.class).itemCount(), "without the flag no switcher clock may be contributed");
+        } finally {
+            scope.close();
+        }
+    }
+
+    @DisplayName("As a CloudNet service the real identity bean resolves, empty until the bridge reports one")
+    @Test
+    void cloudnetProfileResolvesTheRealIdentityBean(Env env) {
+        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class, ActiveLobby.empty()).mock(FeatureFlags.class).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).profiles(BeanProfiles.active(List.of(), true)).build();
+
+        try {
+            Assertions.assertNotNull(scope.get(LobbyIdentities.class), "the CloudNet profile must provide the lobby identity bean");
+        } finally {
+            scope.close();
+        }
+    }
+
+    @DisplayName("Without the CloudNet profile no lobby switcher bean exists")
+    @Test
+    void withoutTheCloudnetProfileThereIsNoLobbySwitcher(Env env) throws ClassNotFoundException {
+        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class, ActiveLobby.empty()).mock(FeatureFlags.class, flags -> Mockito.when(flags.isActive("LOBBYSWITCHER")).thenReturn(true)).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).profiles(BeanProfiles.active(List.of(), false)).build();
+
+        try {
+            Assertions.assertFalse(hasLobbySwitcherModule(scope), "the switcher module must not exist outside CloudNet");
+            Assertions.assertEquals(4, scope.get(HotbarLobbyItems.class).itemCount(), "no switcher clock may be contributed outside CloudNet");
+        } finally {
+            scope.close();
+        }
+    }
+
+    // The switcher module is package-private, so the bean is looked up by class name.
+    private static boolean hasLobbySwitcherModule(BeanScope scope) throws ClassNotFoundException {
+        return scope.contains(Class.forName("net.onelitefeather.titan.feature.lobbyswitcher.LobbySwitcherModule"));
     }
 
     @DisplayName("Closing the scope detaches every feature's own node from the titan node")
