@@ -47,7 +47,7 @@ class ServiceReadingsTest {
     @DisplayName("A resolved provider is read and announced once")
     @Test
     void logsInfoOnceWhenResolved() {
-        ServiceReading reading = new ServiceReading(true, 2, 10);
+        ServiceReading reading = new ServiceReading("Lobby-1", true, 2, 10);
         ServiceReadings readings = new ServiceReadings(() -> (type, name) -> List.of(reading), logger);
 
         assertEquals(List.of(reading), readings.read("task", "Lobby"), "reading of the provider");
@@ -61,7 +61,7 @@ class ServiceReadingsTest {
     void retriesUntilProviderAvailable() {
         List<ServiceReadings.Source> sources = new ArrayList<>();
         sources.add(null);
-        sources.add((type, name) -> List.of(new ServiceReading(true, 1, 5)));
+        sources.add((type, name) -> List.of(new ServiceReading("Lobby-1", true, 1, 5)));
         ServiceReadings readings = new ServiceReadings(sources::removeFirst, logger);
 
         assertTrue(readings.read("task", "Lobby").isEmpty(), "first lookup: not available");

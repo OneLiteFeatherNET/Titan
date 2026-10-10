@@ -19,12 +19,15 @@ dependencies {
     compileOnly(libs.minestom.extensions)
     compileOnly(libs.minestom.extensions.processor)
     compileOnly(project(":common"))
+    compileOnly(project(":core"))
 
     compileOnly(platform(libs.cloudnet.bom))
     compileOnly(libs.cloudnet.driver.api)
     compileOnly(libs.cloudnet.bridge)
     compileOnly(libs.cloudnet.bridge.impl)
+    compileOnly(libs.cloudnet.jvm.wrapper)
 
+    testImplementation(project(":core"))
     testImplementation(platform(libs.aonyx.bom))
     testImplementation(libs.junit.api)
     testImplementation(libs.junit.platform.launcher)

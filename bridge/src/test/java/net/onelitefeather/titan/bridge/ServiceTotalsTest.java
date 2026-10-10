@@ -28,7 +28,7 @@ class ServiceTotalsTest {
     @DisplayName("The counts of all running services are summed")
     @Test
     void sumsRunningServices() {
-        int[] total = ServiceTotals.total(List.of(new ServiceReading(true, 3, 20), new ServiceReading(true, 4, 30)));
+        int[] total = ServiceTotals.total(List.of(new ServiceReading("Lobby-1", true, 3, 20), new ServiceReading("Lobby-1", true, 4, 30)));
 
         assertArrayEquals(new int[]{7, 50}, total, "online and max of both services");
     }
@@ -36,7 +36,7 @@ class ServiceTotalsTest {
     @DisplayName("Services that do not run are ignored")
     @Test
     void ignoresStoppedServices() {
-        int[] total = ServiceTotals.total(List.of(new ServiceReading(true, 3, 20), new ServiceReading(false, 9, 99)));
+        int[] total = ServiceTotals.total(List.of(new ServiceReading("Lobby-1", true, 3, 20), new ServiceReading("Lobby-1", false, 9, 99)));
 
         assertArrayEquals(new int[]{3, 20}, total, "the stopped service must not count");
     }
@@ -44,13 +44,13 @@ class ServiceTotalsTest {
     @DisplayName("Nothing running is reported as null, not as zero players")
     @Test
     void noneRunningIsNull() {
-        assertNull(ServiceTotals.total(List.of(new ServiceReading(false, 1, 2))), "only stopped services");
+        assertNull(ServiceTotals.total(List.of(new ServiceReading("Lobby-1", false, 1, 2))), "only stopped services");
         assertNull(ServiceTotals.total(List.of()), "no services at all");
     }
 
     @DisplayName("A running service with no players still counts as running")
     @Test
     void emptyRunningServiceIsRunning() {
-        assertArrayEquals(new int[]{0, 20}, ServiceTotals.total(List.of(new ServiceReading(true, 0, 20))), "0 online of 20");
+        assertArrayEquals(new int[]{0, 20}, ServiceTotals.total(List.of(new ServiceReading("Lobby-1", true, 0, 20))), "0 online of 20");
     }
 }

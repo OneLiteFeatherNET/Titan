@@ -23,8 +23,8 @@ import java.util.Collection;
  */
 final class ServiceTotals {
 
-    /** One service: whether it runs, and the players the bridge reports for it. */
-    record ServiceReading(boolean running, int online, int max) {
+    /** One service: its name, whether it runs, and the players the bridge reports for it. */
+    record ServiceReading(String name, boolean running, int online, int max) {
     }
 
     private ServiceTotals() {
