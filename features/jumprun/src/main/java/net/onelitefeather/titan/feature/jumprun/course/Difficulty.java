@@ -40,4 +40,15 @@ final class Difficulty {
         double target = level(mode, score) * hardest + random.nextGaussian() * NOISE_SIGMA;
         return Math.clamp(target, 0.0, hardest);
     }
+
+    /**
+     * The height of a tower at the score: the one whose cost comes closest to the target cost
+     * without noise, clamped to the configured limits. Deterministic and rising with the score, so
+     * the tower grows as the course does.
+     */
+    static int towerHeight(Mode mode, int score, int minHeight, int maxHeight) {
+        double hardest = Jump.maxCost(mode, mode.unlockedAt(score));
+        double height = Jump.climbHeightFor(level(mode, score) * hardest);
+        return Math.clamp(Math.round(height), minHeight, maxHeight);
+    }
 }

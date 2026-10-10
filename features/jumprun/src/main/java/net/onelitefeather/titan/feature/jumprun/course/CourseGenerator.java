@@ -327,18 +327,34 @@ public final class CourseGenerator {
         return candidates.stream().filter(candidate -> JumpRules.isReachable(new Jump(from, candidate), phase.mode())).toList();
     }
 
-    /** A tower on each axis and height of the config, for each climbing block the phase unlocks. */
+    /**
+     * A tower on each axis for each climbing block the phase unlocks, as high as the score asks for
+     * (see {@link Difficulty#towerHeight}). A tower that would not fit the height band is shortened
+     * step by step, down to the lowest allowed height.
+     */
     private List<Spot> towers(Placement from, Phase phase) {
+        if (!(phase instanceof Phase.Scored scored)) {
+            return List.of();
+        }
+        int wanted = Difficulty.towerHeight(scored.mode(), scored.score(), palettes.minClimbHeight(), palettes.maxClimbHeight());
         List<Spot> towers = new ArrayList<>();
         for (Climb.Kind kind : phase.climbs()) {
             for (Direction direction : Climb.DIRECTIONS) {
-                for (int height = palettes.minClimbHeight(); height <= palettes.maxClimbHeight(); height++) {
-                    BlockPos target = from.pos().offset(direction.dx(), height, direction.dz());
-                    towers.add(new Spot(target, Surface.FULL, Optional.of(new Climb(direction, height, kind))));
+                for (int height = wanted; height >= palettes.minClimbHeight(); height--) {
+                    Spot tower = tower(from, direction, height, kind);
+                    if (band.allows(tower)) {
+                        towers.add(tower);
+                        break;
+                    }
                 }
             }
         }
         return towers;
+    }
+
+    private static Spot tower(Placement from, Direction direction, int height, Climb.Kind kind) {
+        BlockPos target = from.pos().offset(direction.dx(), height, direction.dz());
+        return new Spot(target, Surface.FULL, Optional.of(new Climb(direction, height, kind)));
     }
 
     /** Best candidate first. */
