@@ -116,7 +116,7 @@ public final class TitanBridgePermissionExtension extends Extension {
                 return ServiceListing.running(readings.read(type, name));
             }
         });
-        TitanLobbyIdentity.set(ownIdentity());
+        TitanLobbyIdentity.set(ownIdentity(logger));
         logger.log(Logger.Level.INFO, "Player count lookup installed");
     }
 
@@ -147,11 +147,12 @@ public final class TitanBridgePermissionExtension extends Extension {
      * This service's task and name from the wrapper; {@code null} (no identity) when it is
      * unreachable.
      */
-    private static LobbyIdentity ownIdentity() {
+    private static LobbyIdentity ownIdentity(Logger logger) {
         try {
             ServiceInfoSnapshot self = InjectionLayer.ext().instance(ServiceInfoHolder.class).serviceInfo();
             return new LobbyIdentity(self.serviceId().taskName(), self.name());
         } catch (RuntimeException | LinkageError e) {
+            logger.log(Logger.Level.WARNING, "Own lobby identity unavailable, the lobby switcher stays closed", e);
             return null;
         }
     }

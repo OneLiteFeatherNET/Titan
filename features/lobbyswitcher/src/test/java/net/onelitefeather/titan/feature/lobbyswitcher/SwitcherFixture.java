@@ -61,15 +61,19 @@ final class SwitcherFixture implements AutoCloseable {
     }
 
     SwitcherFixture(Env env, FeatureFlags flags, Optional<LobbyIdentity> identity, Telemetry telemetry) {
+        this(env, flags, () -> identity, telemetry);
+    }
+
+    /** For tests where the identity appears after the beans are built, as in the real startup. */
+    SwitcherFixture(Env env, FeatureFlags flags, LobbyIdentities identities, Telemetry telemetry) {
         this.env = env;
         this.titan = TestTitanNode.attach(env);
-        LobbyIdentities identities = () -> identity;
         this.messages.register();
         this.inventory = new SwitcherInventory(this.messages, this.counts, env.process().scheduler(), Runnable::run, this.deliver, telemetry, new LobbySwitcherSettings(REFRESH_SECONDS));
         this.inventory.start();
         this.module = new LobbySwitcherModule(this.titan.node(), this.inventory, identities, this.messages, telemetry);
         this.module.start();
-        this.item = new LobbySwitcherItems().lobbySwitcherItem(this.module, flags, identities, this.messages).orElse(null);
+        this.item = new LobbySwitcherItems().lobbySwitcherItem(this.module, flags, this.messages).orElse(null);
         this.lobbyItems = new PlacingLobbyItems(this.item == null ? List.of() : List.of(this.item));
     }
 

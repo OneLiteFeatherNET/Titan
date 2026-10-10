@@ -16,19 +16,22 @@
 package net.onelitefeather.titan.feature.lobbyswitcher;
 
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.core.lobby.LobbyIdentity;
 import net.onelitefeather.titan.core.module.item.ItemSlot;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-/** The clock in hotbar slot 8 exists only with the flag on and a known identity. */
+/** The clock in hotbar slot 8 exists whenever the flag is on. */
 @ExtendWith(MicrotusExtension.class)
 class LobbySwitcherItemsTest {
 
@@ -61,16 +64,21 @@ class LobbySwitcherItemsTest {
         }
     }
 
-    @DisplayName("Without an identity there is no item and the slot stays empty")
+    @DisplayName("An identity that appears after the beans are built still gives the clock, and the list opens")
     @Test
-    void withoutAnIdentityThereIsNoItem(Env env) {
-        try (SwitcherFixture fixture = new SwitcherFixture(env, new FakeFeatureFlags(LobbySwitcherModule.FLAG), Optional.empty())) {
+    void identityArrivingLaterStillWorks(Env env) {
+        AtomicReference<Optional<LobbyIdentity>> identity = new AtomicReference<>(Optional.empty());
+        try (SwitcherFixture fixture = new SwitcherFixture(env, new FakeFeatureFlags(LobbySwitcherModule.FLAG), identity::get, Telemetry.noop())) {
+            identity.set(Optional.of(SwitcherFixture.OWN));
             Instance instance = env.createFlatInstance();
 
             Player player = fixture.join(instance);
+            fixture.use(player);
+            fixture.settle();
 
-            Assertions.assertNull(fixture.item(), "the lobby does not know itself, so no item bean");
-            Assertions.assertEquals(ItemStack.AIR, player.getInventory().getItemStack(8), "slot 8 must stay empty");
+            Assertions.assertNotNull(fixture.item(), "the clock is contributed whenever the flag is on");
+            Assertions.assertEquals(Material.CLOCK, player.getInventory().getItemStack(8).material(), "slot 8 must hold the clock");
+            Assertions.assertNotNull(player.getOpenInventory(), "the list must open once the identity is known");
         }
     }
 }

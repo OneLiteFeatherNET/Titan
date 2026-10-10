@@ -24,14 +24,14 @@ import net.kyori.adventure.key.Key;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
-import net.onelitefeather.titan.core.lobby.LobbyIdentities;
 import net.onelitefeather.titan.core.module.item.ItemSlot;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
 
 /**
  * Contributes the {@code titan:lobbyswitcher} clock to the platform-wide lobby items, but only when
- * the flag is on and this lobby knows its own identity: the hotbar builds its item maps once, so a
- * clock that cannot work must not exist at all.
+ * the flag is on: the hotbar builds its item maps once, and the bean scope is built before the
+ * bridge extension learns this lobby's identity, so the identity is resolved when the clock is
+ * used.
  */
 @Factory
 @Profile(LobbySwitcherModule.CLOUDNET)
@@ -42,12 +42,11 @@ final class LobbySwitcherItems {
     private static final int HOTBAR_SLOT = 8;
 
     /**
-     * Empty - no bean - when the flag is off or the identity is unknown; Avaje skips an empty
-     * Optional.
+     * Empty - no bean - when the flag is off; Avaje skips an empty Optional.
      */
     @Bean
-    Optional<LobbyItem> lobbySwitcherItem(LobbySwitcherModule module, FeatureFlags flags, LobbyIdentities identities, LobbySwitcherMessages messages) {
-        if (!flags.isActive(LobbySwitcherModule.FLAG) || identities.self().isEmpty()) {
+    Optional<LobbyItem> lobbySwitcherItem(LobbySwitcherModule module, FeatureFlags flags, LobbySwitcherMessages messages) {
+        if (!flags.isActive(LobbySwitcherModule.FLAG)) {
             return Optional.empty();
         }
         ItemStack clock = ItemStack.builder(Material.CLOCK).customName(messages.itemName(Locale.ENGLISH)).build();
