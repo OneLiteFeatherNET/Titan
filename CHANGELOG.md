@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.0.0](https://github.com/OneLiteFeatherNET/Titan/compare/v2.6.0...v3.0.0) (2026-10-10)
+
+
+### ⚠ BREAKING CHANGES
+
+* **bootstrap:** only the apps/cloudnet variant loads the extensions folder; apps/local starts plain Minestom without the extension loader.
+
+### Code Refactoring
+
+* **bootstrap:** make minestom extensions a platform module ([#407](https://github.com/OneLiteFeatherNET/Titan/issues/407)) ([306587a](https://github.com/OneLiteFeatherNET/Titan/commit/306587a6682924773ee4298dd365cb7cb0ee496a))
+
 ## [2.6.0](https://github.com/OneLiteFeatherNET/Titan/compare/v2.5.0...v2.6.0) (2026-10-10)
 
 
