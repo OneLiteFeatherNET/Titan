@@ -18,6 +18,7 @@ package net.onelitefeather.titan.core.testfixtures;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
+import io.opentelemetry.sdk.metrics.data.HistogramPointData;
 import io.opentelemetry.sdk.metrics.data.LongPointData;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricReader;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
@@ -81,9 +82,23 @@ public final class TestTelemetry implements AutoCloseable {
         return this.metricReader.collectAllMetrics().stream().filter(metric -> metric.getName().equals(name)).flatMap(metric -> metric.getLongGaugeData().getPoints().stream()).mapToLong(LongPointData::getValue).sum();
     }
 
+    /** Every recorded point of a histogram, one per attribute set. */
+    public List<HistogramPointData> histogramPoints(String name) {
+        return this.metricReader.collectAllMetrics().stream().filter(metric -> metric.getName().equals(name)).flatMap(metric -> metric.getHistogramData().getPoints().stream()).toList();
+    }
+
+    /** Count and sum recorded for exactly these attributes, 0 and 0.0 if nothing was recorded. */
+    public HistogramReading histogram(String name, Attributes attributes) {
+        List<HistogramPointData> matching = histogramPoints(name).stream().filter(point -> point.getAttributes().equals(attributes)).toList();
+        return new HistogramReading(matching.stream().mapToLong(HistogramPointData::getCount).sum(), matching.stream().mapToDouble(HistogramPointData::getSum).sum());
+    }
+
     /** Every span name and attribute value so far, for asserting that a value never appears. */
     public List<String> allSpanText() {
         return spans().stream().flatMap(span -> Stream.concat(Stream.of(span.getName()), span.getAttributes().asMap().values().stream().map(String::valueOf))).toList();
+    }
+
+    public record HistogramReading(long count, double sum) {
     }
 
     @Override
