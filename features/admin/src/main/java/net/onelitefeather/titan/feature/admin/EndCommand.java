@@ -15,23 +15,24 @@
  */
 package net.onelitefeather.titan.feature.admin;
 
-import net.minestom.server.MinecraftServer;
 import net.minestom.server.command.CommandSender;
 import net.minestom.server.command.builder.Command;
-import net.minestom.server.command.builder.CommandContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 final class EndCommand extends Command {
-    EndCommand() {
-        super("end");
-        setCondition(this::hasPermission);
-        addSyntax(this::execute);
+
+    private static final String NAME = "end";
+
+    EndCommand(AdminTelemetry telemetry, Runnable shutdown) {
+        super(NAME);
+        setCondition(telemetry.guard(NAME, this::hasPermission));
+        addSyntax((commandSender, commandContext) -> execute(telemetry, commandSender, shutdown));
     }
 
-    private void execute(@NotNull CommandSender commandSender, @NotNull CommandContext commandContext) {
-        MinecraftServer.stopCleanly();
-        System.exit(0);
+    private static void execute(AdminTelemetry telemetry, CommandSender commandSender, Runnable shutdown) {
+        telemetry.executed(NAME, commandSender);
+        shutdown.run();
     }
 
     private boolean hasPermission(@NotNull CommandSender commandSender, @Nullable String s) {
