@@ -58,6 +58,7 @@ public final class HotbarLobbyItems implements LobbyItems {
     private final Map<EquipmentSlot, ItemStack> equipment;
     private final EventNode<Event> titan;
     private final Telemetry telemetry;
+    private final HotbarTelemetry hotbarTelemetry;
     private final EventListener<PlayerUseItemEvent> dispatcher;
 
     /** @throws IllegalStateException if two items conflict */
@@ -65,6 +66,7 @@ public final class HotbarLobbyItems implements LobbyItems {
         ItemConflicts.check(items);
         this.titan = titan;
         this.telemetry = telemetry;
+        this.hotbarTelemetry = new HotbarTelemetry(telemetry);
         this.itemsByKey = stampAll(items);
         Placements placements = placementsOf(this.itemsByKey.values());
         this.hotbar = placements.hotbar();
@@ -75,9 +77,12 @@ public final class HotbarLobbyItems implements LobbyItems {
 
     @Override
     public void equip(Player player) {
-        player.getInventory().clear();
-        this.hotbar.forEach((slot, stack) -> player.getInventory().setItemStack(slot, stack));
-        this.equipment.forEach(player::setEquipment);
+        int placed = this.hotbar.size() + this.equipment.size();
+        this.hotbarTelemetry.equip(player.getUuid(), placed, () -> {
+            player.getInventory().clear();
+            this.hotbar.forEach((slot, stack) -> player.getInventory().setItemStack(slot, stack));
+            this.equipment.forEach(player::setEquipment);
+        });
     }
 
     public int itemCount() {
@@ -136,7 +141,7 @@ public final class HotbarLobbyItems implements LobbyItems {
         if (item == null) {
             return;
         }
-        Consumer<PlayerUseItemEvent> handler = FeatureNode.guard(item.featureId(), this.telemetry, (PlayerUseItemEvent guardedEvent) -> item.onUse().handle(guardedEvent.getPlayer(), guardedEvent));
+        Consumer<PlayerUseItemEvent> handler = FeatureNode.guard(item.featureId(), this.telemetry, (PlayerUseItemEvent guardedEvent) -> this.hotbarTelemetry.use(item.featureId(), keyValue, guardedEvent.getPlayer().getUuid(), () -> item.onUse().handle(guardedEvent.getPlayer(), guardedEvent)));
         handler.accept(event);
     }
 }

@@ -15,6 +15,8 @@
  */
 package net.onelitefeather.titan.feature.hotbar;
 
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.trace.Span;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +36,10 @@ final class ItemConflicts {
         throw new UnsupportedOperationException("This class cannot be instantiated");
     }
 
+    /**
+     * @throws IllegalStateException naming both items; the conflict is also a span event on the
+     *                               current span, so the startup trace shows which items clashed
+     */
     static void check(List<LobbyItem> items) {
         Map<String, LobbyItem> claimedKeys = new LinkedHashMap<>();
         Map<ItemSlot, LobbyItem> claimedSlots = new LinkedHashMap<>();
@@ -41,15 +47,20 @@ final class ItemConflicts {
             String key = item.key().asString();
             LobbyItem previousKey = claimedKeys.putIfAbsent(key, item);
             if (previousKey != null) {
-                throw new IllegalStateException("Items " + describe(previousKey) + " and " + describe(item) + " both use key '" + key + "'");
+                throw conflict("key", item, "Items " + describe(previousKey) + " and " + describe(item) + " both use key '" + key + "'");
             }
             if (!(item.placement() instanceof ItemSlot.Unplaced)) {
                 LobbyItem previousSlot = claimedSlots.putIfAbsent(item.placement(), item);
                 if (previousSlot != null) {
-                    throw new IllegalStateException("Items " + describe(previousSlot) + " and " + describe(item) + " both claim " + describeSlot(item.placement()));
+                    throw conflict("slot", item, "Items " + describe(previousSlot) + " and " + describe(item) + " both claim " + describeSlot(item.placement()));
                 }
             }
         }
+    }
+
+    private static IllegalStateException conflict(String kind, LobbyItem item, String message) {
+        Span.current().addEvent(HotbarTelemetry.CONFLICT_EVENT, Attributes.of(HotbarTelemetry.CONFLICT_KIND, kind, HotbarTelemetry.ITEM, item.key().asString()));
+        return new IllegalStateException(message);
     }
 
     private static String describe(LobbyItem item) {
