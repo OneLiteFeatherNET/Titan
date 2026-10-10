@@ -127,4 +127,26 @@ class ViewerCounterTest {
         Assertions.assertEquals(2, this.scheduling.startedPeriods.size());
         Assertions.assertEquals(1, this.scheduling.stopped, "the first period stays stopped");
     }
+
+    @DisplayName("Stopping ends the running period even while viewers are counted")
+    @Test
+    void stopEndsThePeriod() {
+        this.counter.opened();
+        this.counter.opened();
+
+        this.counter.stop();
+
+        Assertions.assertEquals(1, this.scheduling.stopped);
+    }
+
+    @DisplayName("After stopping, a late close does not stop the period a second time")
+    @Test
+    void closeAfterStopIsIgnored() {
+        this.counter.opened();
+        this.counter.stop();
+
+        this.counter.closed();
+
+        Assertions.assertEquals(1, this.scheduling.stopped);
+    }
 }

@@ -56,4 +56,13 @@ final class ViewerCounter {
             this.period = null;
         }
     }
+
+    /** Ends the period whatever the viewer count, for shutdown; later closes are ignored. */
+    synchronized void stop() {
+        this.viewers = 0;
+        if (this.period != null) {
+            this.period.stop();
+            this.period = null;
+        }
+    }
 }

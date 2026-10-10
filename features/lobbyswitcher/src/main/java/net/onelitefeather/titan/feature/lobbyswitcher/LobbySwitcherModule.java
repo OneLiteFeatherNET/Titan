@@ -24,6 +24,8 @@ import java.util.Objects;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
+import net.minestom.server.event.inventory.InventoryCloseEvent;
+import net.minestom.server.event.inventory.InventoryPreClickEvent;
 import net.onelitefeather.titan.core.lobby.LobbyIdentities;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
@@ -65,9 +67,9 @@ final class LobbySwitcherModule {
 
     @PostConstruct
     void start() {
-        // Listener-less: attached so the feature shows up in the fixed priority order; Aves handles
-        // every inventory click itself.
-        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry);
+        // Aves' click and close listeners do not fire for a per-locale inventory, so the list's
+        // clicks and closes are routed from here.
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry).on(InventoryPreClickEvent.class, this.inventory::onClick).on(InventoryCloseEvent.class, this.inventory::onClose);
     }
 
     /** Idempotent. */

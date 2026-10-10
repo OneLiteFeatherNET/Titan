@@ -50,7 +50,7 @@ class SwitcherInventoryTest {
     private static AbstractInventory opened(SwitcherFixture fixture, Env env) {
         Player player = fixture.join(env.createFlatInstance());
         fixture.use(player);
-        env.tick();
+        fixture.settle();
         return player.getOpenInventory();
     }
 
@@ -98,7 +98,7 @@ class SwitcherInventoryTest {
             player.setLocale(Locale.GERMAN);
 
             fixture.use(player);
-            env.tick();
+            fixture.settle();
 
             Assertions.assertTrue(lore(player.getOpenInventory().getItemStack(2)).contains("Voll"), "German lore: " + lore(player.getOpenInventory().getItemStack(2)));
         }

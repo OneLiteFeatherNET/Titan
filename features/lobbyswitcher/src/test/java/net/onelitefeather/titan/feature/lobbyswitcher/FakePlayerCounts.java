@@ -25,10 +25,22 @@ import net.onelitefeather.titan.core.portal.SourceType;
 final class FakePlayerCounts implements PlayerCounts {
 
     private List<ServiceCount> services;
+    private RuntimeException failure;
     private int reads;
 
     FakePlayerCounts(ServiceCount... services) {
         this.services = List.of(services);
+    }
+
+    /** What the following reads return. */
+    void serve(ServiceCount... services) {
+        this.services = List.of(services);
+        this.failure = null;
+    }
+
+    /** Makes the following reads throw. */
+    void failWith(RuntimeException failure) {
+        this.failure = failure;
     }
 
     int reads() {
@@ -43,6 +55,9 @@ final class FakePlayerCounts implements PlayerCounts {
     @Override
     public List<ServiceCount> running(SourceType type, String name) {
         this.reads++;
+        if (this.failure != null) {
+            throw this.failure;
+        }
         return this.services;
     }
 }

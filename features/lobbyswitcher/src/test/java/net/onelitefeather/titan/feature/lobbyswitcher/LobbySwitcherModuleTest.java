@@ -84,7 +84,7 @@ class LobbySwitcherModuleTest {
         try (SwitcherFixture fixture = SwitcherFixture.active(env)) {
             Player player = fixture.join(env.createFlatInstance());
             fixture.use(player);
-            env.tick();
+            fixture.settle();
             Assertions.assertNotNull(player.getOpenInventory(), "precondition: the inventory is open");
 
             fixture.inventory().stop();

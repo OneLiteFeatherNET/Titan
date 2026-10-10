@@ -18,28 +18,40 @@ package net.onelitefeather.titan.feature.lobbyswitcher;
 import io.avaje.inject.PostConstruct;
 import io.avaje.inject.PreDestroy;
 import io.avaje.inject.Profile;
+import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executor;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.entity.Player;
+import net.minestom.server.event.inventory.InventoryCloseEvent;
+import net.minestom.server.event.inventory.InventoryPreClickEvent;
+import net.minestom.server.inventory.AbstractInventory;
 import net.minestom.server.inventory.Inventory;
 import net.minestom.server.inventory.InventoryType;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
+import net.minestom.server.timer.Scheduler;
+import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.core.lobby.LobbyIdentity;
 import net.onelitefeather.titan.core.portal.PlayerCounts;
-import net.onelitefeather.titan.core.portal.ServiceCount;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.theevilreaper.aves.i18n.TextData;
+import net.theevilreaper.aves.inventory.CustomInventory;
 import net.theevilreaper.aves.inventory.GlobalTranslatedInventoryBuilder;
+import net.theevilreaper.aves.inventory.holder.InventoryHolderImpl;
 import net.theevilreaper.aves.inventory.layout.InventoryLayout;
 import net.theevilreaper.aves.item.TranslatedItem;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * The lobby list: one Aves {@link GlobalTranslatedInventoryBuilder} for the whole module, rendered
- * per viewer locale. The content is the last reading, taken when a player opens it.
+ * per viewer locale. Opening reads the services off the tick and shows the list on the next tick;
+ * while somebody has it open the content is read again every refresh period.
  *
  * <p>The builder's size is fixed, so the list always has six rows, the most {@link SwitcherLayout}
  * allows; slots without an entry hold a filler because Aves does not clear a slot that becomes
@@ -54,13 +66,25 @@ final class SwitcherInventory {
 
     private final GlobalTranslatedInventoryBuilder builder = new EnglishWithoutLocale();
     private final SwitcherReading reading;
+    private final Scheduler scheduler;
+    private final ViewerCounter viewers;
+    private final SwitcherSelection selection;
+    private final LobbySwitcherTelemetry telemetry;
+    // Players waiting for the read that shows them the list.
+    private final Queue<Player> opening = new ConcurrentLinkedQueue<>();
     private volatile SwitcherReading.Outcome outcome = new SwitcherReading.Unavailable();
     private volatile LobbyIdentity own;
+    private volatile boolean stopped;
     private boolean registered;
 
-    SwitcherInventory(LobbySwitcherMessages messages, PlayerCounts counts) {
+    SwitcherInventory(LobbySwitcherMessages messages, PlayerCounts counts, Scheduler scheduler, @Named(LobbySwitcherBeans.READS) Executor reads, Deliver deliver, Telemetry telemetry, LobbySwitcherSettings settings) {
         Objects.requireNonNull(messages, "messages must not be null");
         this.reading = new SwitcherReading(counts);
+        this.scheduler = scheduler;
+        this.telemetry = new LobbySwitcherTelemetry(telemetry);
+        SchedulerReadScheduling scheduling = new SchedulerReadScheduling(scheduler, reads, () -> this.reading.read(this.own.task()), this::apply);
+        this.viewers = new ViewerCounter(scheduling, settings.refreshSeconds());
+        this.selection = new SwitcherSelection(counts, scheduler, reads, deliver, messages, this.telemetry, scheduling::requestRead);
         this.builder.setTitleData(new TextData(LobbySwitcherMessages.TITLE));
         this.builder.setLayout(InventoryLayout.fromType(TYPE));
         this.builder.setDataLayoutFunction(previous -> layout());
@@ -72,22 +96,102 @@ final class SwitcherInventory {
         this.registered = true;
     }
 
-    /** Idempotent. Closes the inventory for everyone who has it open. */
+    /** Idempotent. Closes the inventory for everyone who has it open and ends the period. */
     @PreDestroy
     void stop() {
+        this.stopped = true;
+        this.opening.clear();
+        this.viewers.stop();
         if (this.registered) {
             this.registered = false;
             this.builder.unregister();
         }
     }
 
-    /** Reads the services of {@code own}'s task now and shows them to {@code player}. */
+    /**
+     * Reads the services of {@code own}'s task off the tick and shows them to {@code player} on the
+     * next tick, so the list never opens with a stale or empty reading.
+     */
     void open(Player player, LobbyIdentity own) {
+        if (this.stopped) {
+            return;
+        }
         this.own = own;
-        this.outcome = this.reading.read(own.task());
+        this.opening.add(player);
+        this.viewers.opened();
+    }
+
+    /**
+     * Cancels every click in the list and treats a click on an entry as a selection.
+     *
+     * <p>Aves' own click and close listeners never fire for a translated builder (each locale's
+     * inventory gets a new holder, and Aves compares holders by identity), so the module forwards
+     * these two events here instead.
+     */
+    void onClick(InventoryPreClickEvent event) {
+        if (!isOurs(event.getInventory())) {
+            return;
+        }
+        event.setCancelled(true);
+        List<SwitcherEntry> entries = entries();
+        int slot = event.getSlot();
+        if (this.own != null && slot >= 0 && slot < entries.size()) {
+            this.selection.select(event.getPlayer(), this.own, entries.get(slot).name());
+        }
+    }
+
+    /** A viewer left the list; the last one stops the period. */
+    void onClose(InventoryCloseEvent event) {
+        if (isOurs(event.getInventory())) {
+            this.viewers.closed();
+        }
+    }
+
+    private boolean isOurs(AbstractInventory inventory) {
+        return inventory instanceof CustomInventory custom && custom.getHolder() instanceof InventoryHolderImpl holder && holder.inventoryBuilder() == this.builder;
+    }
+
+    // Tick thread: the only place the inventory content changes.
+    private void apply(SwitcherReading.Outcome read) {
+        if (this.stopped) {
+            return;
+        }
+        this.outcome = read;
         this.builder.invalidateDataLayout();
-        Locale locale = Objects.requireNonNullElse(player.getLocale(), Locale.ENGLISH);
-        player.openInventory(this.builder.getInventory(locale));
+        if (!this.opening.isEmpty()) {
+            // Aves recomputes the content on the next tick, and only once an inventory asks for
+            // it; asking now and opening on that tick shows the new content.
+            this.opening.forEach(player -> this.builder.getInventory(localeOf(player)));
+            this.scheduler.scheduleNextTick(this::showOpening);
+        }
+    }
+
+    private static Locale localeOf(Player player) {
+        return Objects.requireNonNullElse(player.getLocale(), Locale.ENGLISH);
+    }
+
+    private void showOpening() {
+        for (Player player = this.opening.poll(); player != null; player = this.opening.poll()) {
+            show(player);
+        }
+    }
+
+    private void show(Player player) {
+        if (!player.isOnline()) {
+            this.viewers.closed();
+            return;
+        }
+        this.telemetry.open(player.getUuid(), entries().size(), () -> player.openInventory(this.builder.getInventory(localeOf(player))));
+    }
+
+    private List<SwitcherEntry> entries() {
+        return switch (this.outcome) {
+            case SwitcherReading.Fresh fresh ->
+                SwitcherLayout.fit(SwitcherEntry.sorted(fresh.services(), this.own));
+            case SwitcherReading.Stale stale ->
+                SwitcherLayout.fit(SwitcherEntry.sorted(stale.services(), this.own));
+            case SwitcherReading.Unavailable ignored -> List.of();
+        };
     }
 
     private InventoryLayout layout() {
@@ -95,20 +199,15 @@ final class SwitcherInventory {
         for (int slot = 0; slot < layout.getSize(); slot++) {
             layout.setItem(slot, FILLER);
         }
-        switch (this.outcome) {
-            case SwitcherReading.Fresh fresh -> place(layout, fresh.services());
-            case SwitcherReading.Stale stale -> place(layout, stale.services());
-            case SwitcherReading.Unavailable ignored ->
-                layout.setItem(0, TranslatedItem.of(Material.BARRIER).setDisplayName(new TextData(LobbySwitcherMessages.STATE_UNAVAILABLE)).toNonClickSlot());
+        if (this.outcome instanceof SwitcherReading.Unavailable) {
+            layout.setItem(0, TranslatedItem.of(Material.BARRIER).setDisplayName(new TextData(LobbySwitcherMessages.STATE_UNAVAILABLE)).toNonClickSlot());
+            return layout;
         }
-        return layout;
-    }
-
-    private void place(InventoryLayout layout, List<ServiceCount> services) {
-        List<SwitcherEntry> entries = SwitcherLayout.fit(SwitcherEntry.sorted(services, this.own));
+        List<SwitcherEntry> entries = entries();
         for (int slot = 0; slot < entries.size(); slot++) {
             layout.setItem(slot, item(entries.get(slot)).toNonClickSlot());
         }
+        return layout;
     }
 
     private static TranslatedItem item(SwitcherEntry entry) {

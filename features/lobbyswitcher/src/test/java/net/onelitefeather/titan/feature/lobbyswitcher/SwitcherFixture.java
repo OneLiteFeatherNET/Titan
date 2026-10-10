@@ -21,7 +21,9 @@ import net.minestom.server.entity.Player;
 import net.minestom.server.entity.PlayerHand;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
+import net.minestom.server.event.inventory.InventoryPreClickEvent;
 import net.minestom.server.event.player.PlayerUseItemEvent;
+import net.minestom.server.inventory.click.Click;
 import net.minestom.server.instance.Instance;
 import net.minestom.testing.Env;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
@@ -38,6 +40,7 @@ import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
  */
 final class SwitcherFixture implements AutoCloseable {
 
+    static final int REFRESH_SECONDS = 5;
     static final LobbyIdentity OWN = new LobbyIdentity("Lobby", "Lobby-2");
     static final ServiceCount LOBBY_1 = new ServiceCount("Lobby-1", 3, 50);
     static final ServiceCount LOBBY_2 = new ServiceCount("Lobby-2", 8, 50);
@@ -45,6 +48,7 @@ final class SwitcherFixture implements AutoCloseable {
 
     private final Env env;
     private final TestTitanNode titan;
+    private final RecordingDeliver deliver = new RecordingDeliver();
     private final LobbySwitcherMessages messages = new LobbySwitcherMessages();
     private final FakePlayerCounts counts = new FakePlayerCounts(LOBBY_3, LOBBY_1, LOBBY_2);
     private final SwitcherInventory inventory;
@@ -53,20 +57,51 @@ final class SwitcherFixture implements AutoCloseable {
     private final PlacingLobbyItems lobbyItems;
 
     SwitcherFixture(Env env, FeatureFlags flags, Optional<LobbyIdentity> identity) {
+        this(env, flags, identity, Telemetry.noop());
+    }
+
+    SwitcherFixture(Env env, FeatureFlags flags, Optional<LobbyIdentity> identity, Telemetry telemetry) {
         this.env = env;
         this.titan = TestTitanNode.attach(env);
         LobbyIdentities identities = () -> identity;
         this.messages.register();
-        this.inventory = new SwitcherInventory(this.messages, this.counts);
+        this.inventory = new SwitcherInventory(this.messages, this.counts, env.process().scheduler(), Runnable::run, this.deliver, telemetry, new LobbySwitcherSettings(REFRESH_SECONDS));
         this.inventory.start();
-        this.module = new LobbySwitcherModule(this.titan.node(), this.inventory, identities, this.messages, Telemetry.noop());
+        this.module = new LobbySwitcherModule(this.titan.node(), this.inventory, identities, this.messages, telemetry);
         this.module.start();
         this.item = new LobbySwitcherItems().lobbySwitcherItem(this.module, flags, identities, this.messages);
         this.lobbyItems = new PlacingLobbyItems(this.item == null ? List.of() : List.of(this.item));
     }
 
     static SwitcherFixture active(Env env) {
-        return new SwitcherFixture(env, new FakeFeatureFlags(LobbySwitcherModule.FLAG), Optional.of(OWN));
+        return active(env, Telemetry.noop());
+    }
+
+    static SwitcherFixture active(Env env, Telemetry telemetry) {
+        return new SwitcherFixture(env, new FakeFeatureFlags(LobbySwitcherModule.FLAG), Optional.of(OWN), telemetry);
+    }
+
+    RecordingDeliver deliver() {
+        return this.deliver;
+    }
+
+    /** Opens the list for a fresh player and runs the ticks that show it. */
+    Player joinAndOpen() {
+        Player player = join(this.env.createFlatInstance());
+        use(player);
+        settle();
+        return player;
+    }
+
+    /** The read is applied on the next tick and Aves fills the list on the one after. */
+    void settle() {
+        this.env.tick();
+        this.env.tick();
+    }
+
+    /** Clicks {@code slot} of the inventory the player has open, as the client would. */
+    void click(Player player, int slot) {
+        this.env.process().eventHandler().call(new InventoryPreClickEvent(player.getOpenInventory(), player, new Click.Left(slot)));
     }
 
     EventNode<Event> titanNode() {
