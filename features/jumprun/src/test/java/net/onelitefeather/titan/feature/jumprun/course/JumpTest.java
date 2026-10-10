@@ -155,12 +155,19 @@ class JumpTest {
     }
 
     @Test
-    void aTowerCostsTwoPlusHalfPerBlockAboveThree() {
+    void aTowerCostsTwoPlusTwoPointOneBlockAboveThree() {
         CourseBlock start = block(0, 64, 0, Surface.FULL);
 
-        assertEquals(2.0, jump(start, tower(new BlockPos(1, 67, 0), 3)).cost(Mode.MEDIUM), "height 3");
-        assertEquals(2.5, jump(start, tower(new BlockPos(1, 68, 0), 4)).cost(Mode.MEDIUM), "height 4");
-        assertEquals(3.0, jump(start, tower(new BlockPos(1, 69, 0), 5)).cost(Mode.MEDIUM), "height 5");
+        assertEquals(2.0, jump(start, tower(new BlockPos(1, 67, 0), 3)).cost(Mode.MEDIUM), 1e-9, "height 3");
+        assertEquals(4.1, jump(start, tower(new BlockPos(1, 68, 0), 4)).cost(Mode.MEDIUM), 1e-9, "height 4");
+        assertEquals(6.2, jump(start, tower(new BlockPos(1, 69, 0), 5)).cost(Mode.MEDIUM), 1e-9, "height 5");
+    }
+
+    @Test
+    void theTallestAllowedTowerCostsTheHardestMediumJump() {
+        CourseBlock start = block(0, 64, 0, Surface.FULL);
+
+        assertEquals(Jump.MAX_COST, jump(start, tower(new BlockPos(1, 72, 0), 8)).cost(Mode.MEDIUM), 1e-9, "height 8 is the hardest jump");
     }
 
     @Test

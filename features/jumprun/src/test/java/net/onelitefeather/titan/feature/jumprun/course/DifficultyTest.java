@@ -18,6 +18,7 @@ package net.onelitefeather.titan.feature.jumprun.course;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import java.util.random.RandomGenerator;
 import java.util.random.RandomGeneratorFactory;
 import org.junit.jupiter.api.Test;
@@ -109,6 +110,63 @@ class DifficultyTest {
             sum += Difficulty.targetCost(Mode.MEDIUM, 10_000, random);
         }
         assertEquals(Jump.maxCost(Mode.MEDIUM, Mode.MEDIUM.unlockedAt(10_000)), sum / samples, 1.0, "mean target at a huge score approaches the hardest medium jump");
+    }
+
+    @Test
+    void towerHeightIsTheMinimumAtScoreZero() {
+        assertEquals(3, Difficulty.towerHeight(Mode.MEDIUM, 0, 3, 8), "no score, the lowest tower");
+    }
+
+    @Test
+    void towerHeightNeverDecreasesWithTheScore() {
+        for (Mode mode : List.of(Mode.MEDIUM, Mode.HARD)) {
+            int previous = Difficulty.towerHeight(mode, 0, 3, 8);
+            for (int score = 1; score <= 300; score++) {
+                int height = Difficulty.towerHeight(mode, score, 3, 8);
+                assertTrue(height >= previous, mode + ": height " + height + " below " + previous + " at score " + score);
+                previous = height;
+            }
+        }
+    }
+
+    @Test
+    void towerHeightStaysWithinTheConfiguredLimits() {
+        for (int score = 0; score <= 1000; score += 7) {
+            int height = Difficulty.towerHeight(Mode.MEDIUM, score, 3, 5);
+            assertTrue(height >= 3 && height <= 5, "height " + height + " outside 3 to 5 at score " + score);
+        }
+    }
+
+    @Test
+    void towerHeightIsClampedToTheMaximumWhenTheTargetIsHigher() {
+        assertEquals(5, Difficulty.towerHeight(Mode.MEDIUM, 80, 3, 5), "target 7.9 is above a tower of 5 at 6.2");
+    }
+
+    @Test
+    void towerCostFollowsTheTargetCostAtScoreForty() {
+        assertTowerCostNearTarget(Mode.MEDIUM, 40);
+    }
+
+    @Test
+    void towerCostFollowsTheTargetCostAtScoreEighty() {
+        assertTowerCostNearTarget(Mode.MEDIUM, 80);
+    }
+
+    @Test
+    void towerCostFollowsTheTargetCostAtScoreEightyInHard() {
+        assertTowerCostNearTarget(Mode.HARD, 80);
+    }
+
+    @Test
+    void towerCostAtScoreZeroIsTheCostOfTheLowestTower() {
+        assertEquals(Jump.climbCost(3), Jump.climbCost(Difficulty.towerHeight(Mode.MEDIUM, 0, 3, 8)), 1e-9, "lowest tower at score 0");
+    }
+
+    /** The tower's cost is within half a height step of the target cost, with the limits of the config up to 8. */
+    private static void assertTowerCostNearTarget(Mode mode, int score) {
+        double target = Difficulty.level(mode, score) * Jump.maxCost(mode, mode.unlockedAt(score));
+        double cost = Jump.climbCost(Difficulty.towerHeight(mode, score, 3, 8));
+        assertEquals(target, cost, 1.05, mode + " at score " + score + ": tower cost " + cost + " vs target " + target);
     }
 
     @Test

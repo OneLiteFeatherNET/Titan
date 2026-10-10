@@ -30,7 +30,6 @@ import net.onelitefeather.titan.feature.jumprun.space.BlockPos;
 import net.onelitefeather.titan.feature.jumprun.space.FakeSpaceProbe;
 import net.onelitefeather.titan.feature.jumprun.space.FlightPath;
 import net.onelitefeather.titan.feature.jumprun.space.Heading;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /** What the generator makes in each mode, over long walks with a fixed seed. */
@@ -240,11 +239,6 @@ class ModeGenerationTest {
         assertTrue(towers > 0, "medium at score 30 and above must make towers");
     }
 
-    /**
-     * Open question, not met by the cost design: a tower costs 2 to 3, and at score 80 the target
-     * cost is about 6.6, so the closest jump is never a tower. See the PR for the decision.
-     */
-    @Disabled("open question: towers never reach the target cost at score 80")
     @Test
     void mediumMakesTowersAtScore80() {
         long towers = 0;
