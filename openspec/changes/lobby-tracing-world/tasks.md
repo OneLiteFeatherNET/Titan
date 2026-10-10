@@ -41,4 +41,4 @@ Regeln für jeden Agent-Prompt:
 
 ## 5. Pull Request
 
-- [ ] 5.1 Pull Request vom Zweig `feat/lobby-tracing-world` auf `main` unter dem Titel `feat(telemetry): trace season changes, daytime and protection denials` öffnen (Titel und Beschreibung Englisch), mit Checkliste und Zuordnung. Nachweis: PR-URL, CI grün.
+- [x] 5.1 Pull Request vom Zweig `feat/lobby-tracing-world` auf `main` unter dem Titel `feat(telemetry): trace season changes, daytime and protection denials` öffnen (Titel und Beschreibung Englisch), mit Checkliste und Zuordnung. Nachweis: PR-URL, CI grün.

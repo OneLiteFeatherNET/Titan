@@ -31,4 +31,4 @@ Jeder Agent-Prompt nennt: SLF4J mit `{}`-Parametern, eine `private static final 
 
 ## 4. Pull Request
 
-- [ ] 4.1 Pull Request von `feat/bridge-connector-warning` nach `main` unter dem Titel `feat(bridge): warn when the server connector is missing` öffnen; englische Beschreibung nennt den stillen Ausfall vorher, die zwei neuen Logzeilen (WARN je verpasstem Klick, ERROR einmal nach dem Laden der Extensions), warum der Check nach `start` steht, die Nicht-Ziele (kein Chat, kein Abbruch) und das Abnahmeprotokoll aus 3.2. Nachweis: PR-URL, CI grün.
+- [x] 4.1 Pull Request von `feat/bridge-connector-warning` nach `main` unter dem Titel `feat(bridge): warn when the server connector is missing` öffnen; englische Beschreibung nennt den stillen Ausfall vorher, die zwei neuen Logzeilen (WARN je verpasstem Klick, ERROR einmal nach dem Laden der Extensions), warum der Check nach `start` steht, die Nicht-Ziele (kein Chat, kein Abbruch) und das Abnahmeprotokoll aus 3.2. Nachweis: PR-URL, CI grün.

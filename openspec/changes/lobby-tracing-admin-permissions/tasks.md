@@ -41,4 +41,4 @@ Regeln für jeden Agent-Prompt:
 
 ## 5. Pull Request
 
-- [ ] 5.1 Pull Request vom Zweig `feat/lobby-tracing-admin-permissions` auf `main` unter dem Titel `feat(telemetry): trace admin commands, hotbar items and permission checks` öffnen (Titel und Beschreibung Englisch), mit Checkliste und Zuordnung. Nachweis: PR-URL, CI grün.
+- [x] 5.1 Pull Request vom Zweig `feat/lobby-tracing-admin-permissions` auf `main` unter dem Titel `feat(telemetry): trace admin commands, hotbar items and permission checks` öffnen (Titel und Beschreibung Englisch), mit Checkliste und Zuordnung. Nachweis: PR-URL, CI grün.

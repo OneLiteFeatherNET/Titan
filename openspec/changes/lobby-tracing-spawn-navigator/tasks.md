@@ -36,4 +36,4 @@ Regeln für jeden Agent-Prompt:
 
 ## 4. Pull Request
 
-- [ ] 4.1 Pull Request vom Zweig `feat/lobby-tracing-spawn-navigator` auf `main` unter dem Titel `feat(telemetry): trace spawn returns and navigator use` öffnen (Titel und Beschreibung Englisch), mit Checkliste und Zuordnung. Nachweis: PR-URL, CI grün.
+- [x] 4.1 Pull Request vom Zweig `feat/lobby-tracing-spawn-navigator` auf `main` unter dem Titel `feat(telemetry): trace spawn returns and navigator use` öffnen (Titel und Beschreibung Englisch), mit Checkliste und Zuordnung. Nachweis: PR-URL, CI grün.
