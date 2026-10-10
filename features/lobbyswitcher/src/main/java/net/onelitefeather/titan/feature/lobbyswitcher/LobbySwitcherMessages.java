@@ -104,7 +104,8 @@ final class LobbySwitcherMessages implements AutoCloseable {
         return render(Component.translatable(MESSAGE_UNAVAILABLE), locale);
     }
 
+    /** A player whose client has not reported a locale yet reads English. */
     Component render(Component translatable, Locale locale) {
-        return GlobalTranslator.render(translatable, locale);
+        return GlobalTranslator.render(translatable, locale == null ? Locale.ENGLISH : locale);
     }
 }

@@ -20,7 +20,10 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import net.kyori.adventure.key.Key;
+import net.kyori.adventure.text.Component;
+import net.minestom.server.component.DataComponents;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.entity.EquipmentSlot;
 import net.minestom.server.entity.Player;
@@ -170,5 +173,20 @@ class HotbarLobbyItemsIntegrationTest {
         String message = appender.list.get(0).getFormattedMessage();
         Assertions.assertTrue(message.contains("navigator"), "the report must name the feature: " + message);
         Assertions.assertFalse(message.contains("titan:navigator-feather"), "the report must not name the item's key: " + message);
+    }
+
+    @DisplayName("equip() gives each player the stack of their own locale")
+    @Test
+    void equipGivesTheStackOfThePlayersLocale(Env env) {
+        EventNode<Event> titan = EventNode.all("test-lobby-items-locale");
+        LobbyItem clock = new LobbyItem("lobbyswitcher", Key.key("titan:lobbyswitcher"), ItemStack.of(Material.CLOCK), ItemSlot.hotbar(8), (player, event) -> {
+        }, locale -> ItemStack.of(Material.CLOCK).withCustomName(Component.text(locale.getLanguage())));
+        HotbarLobbyItems lobbyItems = new HotbarLobbyItems(List.of(clock), titan, Telemetry.noop());
+        Player player = env.createPlayer(env.createFlatInstance());
+        player.setLocale(Locale.GERMAN);
+
+        lobbyItems.equip(player);
+
+        Assertions.assertEquals(Component.text("de"), player.getInventory().getItemStack(8).get(DataComponents.CUSTOM_NAME), "the German player must get the German stack");
     }
 }

@@ -16,6 +16,8 @@
 package net.onelitefeather.titan.feature.lobbyswitcher;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 import net.minestom.server.entity.Player;
 import net.minestom.server.item.ItemStack;
 import net.onelitefeather.titan.core.module.item.ItemSlot;
@@ -39,7 +41,7 @@ final class PlacingLobbyItems implements LobbyItems {
         player.getInventory().clear();
         for (LobbyItem item : this.items) {
             if (item.placement() instanceof ItemSlot.Hotbar hotbar) {
-                player.getInventory().setItemStack(hotbar.slot(), item.itemStack());
+                player.getInventory().setItemStack(hotbar.slot(), item.stackFor(Objects.requireNonNullElse(player.getLocale(), Locale.ENGLISH)));
             }
         }
     }
