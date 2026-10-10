@@ -17,4 +17,13 @@
  * The {@code lobbyswitcher} column: a hotbar item that lists the running lobbies of this task and
  * sends the player to one of them. See {@code openspec/changes/lobby-switcher}.
  */
+@InjectModule(name = "lobbyswitcherColumn", requires = {EventNode.class, FeatureFlags.class, LobbyIdentities.class, PlayerCounts.class, Telemetry.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"}, provides = {LobbyItem.class})
 package net.onelitefeather.titan.feature.lobbyswitcher;
+
+import io.avaje.inject.InjectModule;
+import net.minestom.server.event.EventNode;
+import net.onelitefeather.titan.core.feature.FeatureFlags;
+import net.onelitefeather.titan.core.lobby.LobbyIdentities;
+import net.onelitefeather.titan.core.module.item.LobbyItem;
+import net.onelitefeather.titan.core.portal.PlayerCounts;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
