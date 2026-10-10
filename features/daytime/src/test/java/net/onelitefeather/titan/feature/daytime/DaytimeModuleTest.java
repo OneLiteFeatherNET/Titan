@@ -20,6 +20,8 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import io.avaje.config.Config;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -27,6 +29,7 @@ import java.util.List;
 import net.minestom.server.instance.Instance;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.core.testfixtures.TestTelemetry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +46,7 @@ class DaytimeModuleTest {
     private static final Instant NINE_IN_BERLIN = Instant.parse("2026-01-15T08:00:00Z");
     private static final long BERLIN_NINE_TICKS = 3000L;
     private static final int RUN_INTERVAL_TICKS = 20;
+    private static final AttributeKey<String> REASON = AttributeKey.stringKey("reason");
 
     private final Logger moduleLogger = (Logger) LoggerFactory.getLogger(DaytimeModule.class);
     private final ListAppender<ILoggingEvent> logLines = new ListAppender<>();
@@ -52,6 +56,7 @@ class DaytimeModuleTest {
     private Env env;
     private Instance lobby;
     private AdjustableClock clock;
+    private TestTelemetry telemetry;
     private DaytimeModule module;
 
     @BeforeEach
@@ -61,6 +66,7 @@ class DaytimeModuleTest {
         this.env = env;
         this.lobby = env.createFlatInstance();
         this.clock = new AdjustableClock(NINE_IN_BERLIN, ZoneOffset.UTC);
+        this.telemetry = TestTelemetry.create();
         this.logLines.start();
         this.moduleLogger.addAppender(this.logLines);
     }
@@ -70,14 +76,19 @@ class DaytimeModuleTest {
         if (this.module != null) {
             this.module.stop();
         }
+        this.telemetry.close();
         this.moduleLogger.detachAppender(this.logLines);
         Config.setProperty(DaytimeSettings.ENABLED_KEY, this.originalEnabled);
         Config.setProperty(DaytimeSettings.ZONE_KEY, this.originalZone);
     }
 
     private void startModule() {
-        this.module = new DaytimeModule(this.lobby, this.env.process().scheduler(), this.clock);
+        this.module = new DaytimeModule(this.lobby, this.env.process().scheduler(), this.clock, this.telemetry.telemetry());
         this.module.start();
+    }
+
+    private long rejections(String reason) {
+        return this.telemetry.counter("daytime.config_rejected", Attributes.of(REASON, reason));
     }
 
     private void tick(int ticks) {
@@ -185,7 +196,7 @@ class DaytimeModuleTest {
     void invalidZoneAtStartAbortsStartup() {
         Config.setProperty(DaytimeSettings.ZONE_KEY, "Mars/Olympus");
 
-        IllegalStateException thrown = Assertions.assertThrows(IllegalStateException.class, () -> new DaytimeModule(this.lobby, this.env.process().scheduler(), this.clock).start());
+        IllegalStateException thrown = Assertions.assertThrows(IllegalStateException.class, () -> new DaytimeModule(this.lobby, this.env.process().scheduler(), this.clock, this.telemetry.telemetry()).start());
 
         Assertions.assertTrue(thrown.getMessage().contains(DaytimeSettings.ZONE_KEY), "the message must name " + DaytimeSettings.ZONE_KEY + ", was: " + thrown.getMessage());
         Assertions.assertTrue(thrown.getCause().getMessage().contains("Mars/Olympus"), "the reason must name the offending zone, was: " + thrown.getCause().getMessage());
@@ -259,7 +270,7 @@ class DaytimeModuleTest {
     void missingDefaultClockLogsAWarning() {
         // Env instances always carry a default clock, so the null-clock case needs a mock.
         Instance clocklessLobby = Mockito.mock(Instance.class);
-        this.module = new DaytimeModule(clocklessLobby, this.env.process().scheduler(), this.clock);
+        this.module = new DaytimeModule(clocklessLobby, this.env.process().scheduler(), this.clock, this.telemetry.telemetry());
 
         this.module.start();
 
@@ -275,7 +286,7 @@ class DaytimeModuleTest {
         this.module.stop();
 
         Instance restartedLobby = this.env.createFlatInstance();
-        this.module = new DaytimeModule(restartedLobby, this.env.process().scheduler(), new AdjustableClock(NINE_IN_BERLIN, ZoneOffset.UTC));
+        this.module = new DaytimeModule(restartedLobby, this.env.process().scheduler(), new AdjustableClock(NINE_IN_BERLIN, ZoneOffset.UTC), this.telemetry.telemetry());
         this.module.start();
 
         Assertions.assertEquals(firstStart, restartedLobby.getTime(), "same instant and zone, same ticks");
@@ -291,5 +302,52 @@ class DaytimeModuleTest {
         tick(2 * RUN_INTERVAL_TICKS);
 
         Assertions.assertEquals(BERLIN_NINE_TICKS, this.lobby.getTime(), "a stopped module must not touch the lobby time");
+    }
+
+    @DisplayName("Every update is counted, the one at start included")
+    @Test
+    void everyUpdateIsCounted() {
+        startModule();
+
+        tick(RUN_INTERVAL_TICKS);
+
+        Assertions.assertEquals(2L, this.telemetry.counter("daytime.updates", Attributes.empty()), "the start update and one scheduled update");
+    }
+
+    @DisplayName("An invalid zone at runtime counts one rejection with reason invalid, not one per update")
+    @Test
+    void invalidZoneIsCountedOncePerRejection() {
+        startModule();
+
+        Config.setProperty(DaytimeSettings.ZONE_KEY, "Mars/Olympus");
+        tick(3 * RUN_INTERVAL_TICKS);
+        Assertions.assertEquals(1L, rejections("invalid"), "three updates with the same invalid value are one rejection");
+
+        Config.setProperty(DaytimeSettings.ZONE_KEY, "Mars/Phobos");
+        tick(RUN_INTERVAL_TICKS);
+        Assertions.assertEquals(2L, rejections("invalid"), "a different invalid value is a new rejection");
+    }
+
+    @DisplayName("A blank zone at runtime counts one rejection with reason blank")
+    @Test
+    void blankZoneIsCountedAsBlank() {
+        startModule();
+
+        Config.setProperty(DaytimeSettings.ZONE_KEY, "");
+        tick(3 * RUN_INTERVAL_TICKS);
+
+        Assertions.assertEquals(1L, rejections("blank"), "one rejection for the blank value");
+        Assertions.assertEquals(0L, rejections("invalid"), "a blank value is not an invalid zone");
+    }
+
+    @DisplayName("Rejections and updates create no span")
+    @Test
+    void daytimeCreatesNoSpans() {
+        startModule();
+
+        Config.setProperty(DaytimeSettings.ZONE_KEY, "Mars/Olympus");
+        tick(2 * RUN_INTERVAL_TICKS);
+
+        Assertions.assertTrue(this.telemetry.spans().isEmpty(), "no span for periodic housekeeping, got: " + this.telemetry.spans());
     }
 }

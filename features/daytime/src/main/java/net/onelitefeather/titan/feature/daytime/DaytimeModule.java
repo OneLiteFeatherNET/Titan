@@ -18,6 +18,9 @@ package net.onelitefeather.titan.feature.daytime;
 import io.avaje.config.Config;
 import io.avaje.inject.PostConstruct;
 import io.avaje.inject.PreDestroy;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.LongCounter;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.time.Clock;
@@ -28,6 +31,7 @@ import net.minestom.server.instance.Instance;
 import net.minestom.server.timer.Scheduler;
 import net.minestom.server.timer.Task;
 import net.minestom.server.timer.TaskSchedule;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,10 +44,15 @@ public final class DaytimeModule {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DaytimeModule.class);
     private static final TaskSchedule UPDATE_INTERVAL = TaskSchedule.tick(20);
+    private static final AttributeKey<String> REASON = AttributeKey.stringKey("reason");
+    private static final String REASON_BLANK = "blank";
+    private static final String REASON_INVALID = "invalid";
 
     private final Instance lobby;
     private final Scheduler scheduler;
     private final Clock clock;
+    private final LongCounter updates;
+    private final LongCounter configRejected;
     private final DayTimeMapping mapping = new DayTimeMapping();
     // Written by start() and by the scheduler thread in update().
     private volatile ZoneId zone;
@@ -51,10 +60,12 @@ public final class DaytimeModule {
     private Task task;
 
     @Inject
-    public DaytimeModule(Instance lobby, Scheduler scheduler, Clock clock) {
+    public DaytimeModule(Instance lobby, Scheduler scheduler, Clock clock, Telemetry telemetry) {
         this.lobby = Objects.requireNonNull(lobby, "lobby");
         this.scheduler = Objects.requireNonNull(scheduler, "scheduler");
         this.clock = Objects.requireNonNull(clock, "clock");
+        this.updates = Objects.requireNonNull(telemetry, "telemetry").meter().counterBuilder("daytime.updates").setUnit("{update}").setDescription("Time-of-day updates of the lobby").build();
+        this.configRejected = telemetry.meter().counterBuilder("daytime.config_rejected").setUnit("{rejection}").setDescription("Changed daytime.zone values that were rejected").build();
     }
 
     @PostConstruct
@@ -82,6 +93,7 @@ public final class DaytimeModule {
     }
 
     private void update() {
+        this.updates.add(1);
         long ticks = enabled() ? this.mapping.ticksAt(this.clock.instant(), currentZone()) : DayTimeMapping.NOON_TICKS;
         this.lobby.setTime(ticks);
     }
@@ -93,21 +105,25 @@ public final class DaytimeModule {
     private ZoneId currentZone() {
         String raw = Config.get(DaytimeSettings.ZONE_KEY, this.zone.getId());
         if (raw.isBlank()) {
-            warnOnceAbout(raw, "value is blank");
+            rejectOnce(raw, "value is blank", REASON_BLANK);
             return this.zone;
         }
         try {
             this.zone = ZoneId.of(raw);
             this.rejectedZone = null;
         } catch (DateTimeException e) {
-            warnOnceAbout(raw, e.getMessage());
+            rejectOnce(raw, e.getMessage(), REASON_INVALID);
         }
         return this.zone;
     }
 
-    private void warnOnceAbout(String rejected, String reason) {
+    /**
+     * Warns and counts a rejection once per changed value; the counter's reason stays a fixed word.
+     */
+    private void rejectOnce(String rejected, String reason, String counterReason) {
         if (!rejected.equals(this.rejectedZone)) {
             this.rejectedZone = rejected;
+            this.configRejected.add(1, Attributes.of(REASON, counterReason));
             LOGGER.warn("Ignoring invalid {} '{}' ({}), keeping zone {}", DaytimeSettings.ZONE_KEY, rejected, reason, this.zone);
         }
     }

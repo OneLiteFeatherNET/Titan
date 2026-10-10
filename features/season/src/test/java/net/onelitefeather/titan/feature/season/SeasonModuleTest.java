@@ -20,6 +20,9 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import io.avaje.config.Config;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.sdk.trace.data.SpanData;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,6 +36,7 @@ import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.core.testfixtures.TestTelemetry;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -49,6 +53,11 @@ class SeasonModuleTest {
     private static final Instant BEFORE_WINTER = Instant.parse("2026-11-15T12:00:00Z");
     private static final Instant IN_WINTER = Instant.parse("2026-12-10T12:00:00Z");
 
+    private static final AttributeKey<String> CURRENT = AttributeKey.stringKey("season.current");
+    private static final AttributeKey<String> DESIRED = AttributeKey.stringKey("season.desired");
+    private static final AttributeKey<String> OUTCOME = AttributeKey.stringKey("season.outcome");
+    private static final AttributeKey<Long> ONLINE_PLAYERS = AttributeKey.longKey("season.online_players");
+
     private final Logger moduleLogger = (Logger) LoggerFactory.getLogger(SeasonModule.class);
     private final ListAppender<ILoggingEvent> moduleLines = new ListAppender<>();
     private final Logger readerLogger = (Logger) LoggerFactory.getLogger(SeasonConfigReader.class);
@@ -64,6 +73,7 @@ class SeasonModuleTest {
     private CountingServerStop serverStop;
     private int fakeOnline;
     private SeasonModule module;
+    private TestTelemetry telemetry;
 
     /** Counts calls instead of stopping anything. */
     private static final class CountingServerStop implements ServerStop {
@@ -88,6 +98,7 @@ class SeasonModuleTest {
         this.clock = new AdjustableClock(BEFORE_WINTER, ZoneOffset.UTC);
         this.serverStop = new CountingServerStop();
         this.fakeOnline = 0;
+        this.telemetry = TestTelemetry.create();
         this.moduleLines.start();
         this.moduleLogger.addAppender(this.moduleLines);
         this.readerLines.start();
@@ -104,6 +115,7 @@ class SeasonModuleTest {
             this.module.stop();
         }
         this.titan.close();
+        this.telemetry.close();
         this.moduleLogger.detachAppender(this.moduleLines);
         this.readerLogger.detachAppender(this.readerLines);
         Config.asProperties().stringPropertyNames().stream().filter(key -> key.startsWith(SeasonSettings.PREFIX)).forEach(Config::clearProperty);
@@ -116,7 +128,7 @@ class SeasonModuleTest {
 
     private void startModule(Optional<String> startedWorld, OnlinePlayers players) {
         SeasonSchedule schedule = new SeasonSchedule(this.clock, this.worlds);
-        this.module = new SeasonModule(this.titan.node(), this.env.process().scheduler(), this.clock, schedule, () -> startedWorld, players, this.serverStop);
+        this.module = new SeasonModule(this.titan.node(), this.env.process().scheduler(), this.clock, schedule, () -> startedWorld, players, this.serverStop, this.telemetry.telemetry());
         this.module.start();
     }
 
@@ -139,6 +151,14 @@ class SeasonModuleTest {
         for (int i = 0; i < minutes * SeasonModule.CHECK_INTERVAL_TICKS; i++) {
             this.env.tick();
         }
+    }
+
+    private String outcomeOf(SpanData check) {
+        return this.telemetry.attribute(check, OUTCOME);
+    }
+
+    private long restartsRequested() {
+        return this.telemetry.counter("season.restarts_requested", Attributes.empty());
     }
 
     private List<String> infoMessages() {
@@ -375,5 +395,112 @@ class SeasonModuleTest {
 
         Assertions.assertEquals(0, this.serverStop.calls());
         this.module = null;
+    }
+
+    @DisplayName("A check with nothing to change ends in a span marked unchanged")
+    @Test
+    void uneventfulCheckIsMarkedUnchanged() {
+        startInDefaultWorld();
+
+        tickMinutes(1);
+
+        SpanData check = this.telemetry.span("season.check");
+        Assertions.assertEquals("default", this.telemetry.attribute(check, CURRENT), "current world");
+        Assertions.assertEquals("default", this.telemetry.attribute(check, DESIRED), "desired world");
+        Assertions.assertEquals("unchanged", outcomeOf(check), "outcome");
+        Assertions.assertEquals(0L, this.telemetry.attribute(check, ONLINE_PLAYERS), "online players");
+    }
+
+    @DisplayName("A check that waits for players marks the pending restart and the online count")
+    @Test
+    void pendingRestartIsMarkedWithTheOnlineCount() {
+        this.fakeOnline = 2;
+        startInDefaultWorld();
+        this.clock.set(IN_WINTER);
+
+        tickMinutes(1);
+
+        SpanData check = this.telemetry.span("season.check");
+        Assertions.assertEquals("winter", this.telemetry.attribute(check, DESIRED), "desired world");
+        Assertions.assertEquals("pending_restart", outcomeOf(check), "outcome");
+        Assertions.assertEquals(2L, this.telemetry.attribute(check, ONLINE_PLAYERS), "online players");
+    }
+
+    @DisplayName("A check that requests a restart marks the span restart_requested")
+    @Test
+    void restartRequestIsMarkedOnTheSpan() {
+        startInDefaultWorld();
+        this.clock.set(IN_WINTER);
+
+        tickMinutes(1);
+
+        Assertions.assertEquals("restart_requested", outcomeOf(this.telemetry.span("season.check")), "outcome");
+    }
+
+    @DisplayName("An invalid season configuration marks the span unresolvable")
+    @Test
+    void unresolvableConfigurationIsMarkedOnTheSpan() {
+        Config.setProperty("seasons.winter.from", "morgen");
+        startInDefaultWorld();
+
+        tickMinutes(1);
+
+        SpanData check = this.telemetry.span("season.check");
+        Assertions.assertEquals("unresolvable", this.telemetry.attribute(check, DESIRED), "desired world");
+        Assertions.assertEquals("unresolvable", outcomeOf(check), "outcome");
+    }
+
+    @DisplayName("A restart request adds the stop_requested event to the check span")
+    @Test
+    void restartRequestAddsTheStopEvent() {
+        startInDefaultWorld();
+        this.clock.set(IN_WINTER);
+
+        tickMinutes(1);
+
+        List<String> events = this.telemetry.span("season.check").getEvents().stream().map(event -> event.getName()).toList();
+        Assertions.assertEquals(List.of("season.stop_requested"), events, "the check span must carry the stop event");
+        Assertions.assertEquals(1L, restartsRequested(), "season.restarts_requested");
+    }
+
+    @DisplayName("The restart counter stays at one however many checks request the stop")
+    @Test
+    void restartRequestsAreCountedOnce() {
+        startInDefaultWorld();
+        this.clock.set(IN_WINTER);
+
+        tickMinutes(3);
+
+        Assertions.assertEquals(1L, restartsRequested(), "season.restarts_requested");
+    }
+
+    @DisplayName("Each check is counted under its outcome")
+    @Test
+    void checksAreCountedByOutcome() {
+        startInDefaultWorld();
+        tickMinutes(1);
+        this.clock.set(IN_WINTER);
+        this.fakeOnline = 1;
+
+        tickMinutes(1);
+
+        Assertions.assertEquals(1L, this.telemetry.counter("season.checks", Attributes.of(OUTCOME, "unchanged")), "unchanged checks");
+        Assertions.assertEquals(1L, this.telemetry.counter("season.checks", Attributes.of(OUTCOME, "pending_restart")), "pending checks");
+    }
+
+    @DisplayName("A player leaving adds no span of its own, only the check on the next tick")
+    @Test
+    void disconnectAddsNoSpanOfItsOwn() {
+        Instance lobby = this.env.createFlatInstance();
+        Player player = this.env.createPlayer(lobby);
+        startModule(Optional.empty(), new ConnectionOnlinePlayers(this.env.process()::connection));
+        tickMinutes(1);
+        Assertions.assertEquals(1, this.telemetry.spans().size(), "precondition: the minute check");
+
+        disconnect(player);
+        this.env.tick();
+        this.env.tick();
+
+        Assertions.assertEquals(List.of("season.check", "season.check"), this.telemetry.spans().stream().map(SpanData::getName).toList(), "one span for the minute check and one for the check after the leave");
     }
 }

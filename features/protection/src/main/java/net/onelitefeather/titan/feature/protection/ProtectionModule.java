@@ -17,9 +17,13 @@ package net.onelitefeather.titan.feature.protection;
 
 import io.avaje.inject.PostConstruct;
 import io.avaje.inject.PreDestroy;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.LongCounter;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import java.util.Objects;
+import java.util.function.Consumer;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.event.inventory.InventoryPreClickEvent;
@@ -28,7 +32,9 @@ import net.minestom.server.event.item.PickupItemEvent;
 import net.minestom.server.event.player.PlayerBlockBreakEvent;
 import net.minestom.server.event.player.PlayerBlockPlaceEvent;
 import net.minestom.server.event.player.PlayerSwapItemEvent;
+import net.minestom.server.event.trait.CancellableEvent;
 import net.onelitefeather.titan.core.module.FeatureNode;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.onelitefeather.titan.core.utils.Cancelable;
 
 /**
@@ -46,17 +52,35 @@ public final class ProtectionModule {
     static final int EVENT_PRIORITY = 100;
 
     private static final String ID = "protection";
+    private static final String DENIED_METRIC = "protection.denied";
+    private static final AttributeKey<String> EVENT = AttributeKey.stringKey("event");
 
     private final EventNode<Event> titan;
+    private final Telemetry telemetry;
+    private final LongCounter denied;
     private FeatureNode node;
 
-    public ProtectionModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan) {
+    public ProtectionModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Telemetry telemetry) {
         this.titan = Objects.requireNonNull(titan, "titan must not be null");
+        this.telemetry = Objects.requireNonNull(telemetry, "telemetry must not be null");
+        this.denied = telemetry.meter().counterBuilder(DENIED_METRIC).setUnit("{event}").setDescription("Events cancelled by the lobby protection").build();
     }
 
     @PostConstruct
     void start() {
-        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY).on(PickupItemEvent.class, Cancelable::cancel).on(InventoryPreClickEvent.class, Cancelable::cancel).on(PlayerBlockBreakEvent.class, Cancelable::cancel).on(PlayerBlockPlaceEvent.class, Cancelable::cancel).on(PlayerSwapItemEvent.class, Cancelable::cancel).on(ItemDropEvent.class, Cancelable::cancel);
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry).on(PickupItemEvent.class, deny("pickup")).on(InventoryPreClickEvent.class, deny("inventory_click")).on(PlayerBlockBreakEvent.class, deny("block_break")).on(PlayerBlockPlaceEvent.class, deny("block_place")).on(PlayerSwapItemEvent.class, deny("item_swap")).on(ItemDropEvent.class, deny("item_drop"));
+    }
+
+    /**
+     * Cancels the event and counts it under {@code event}. No span: these fire far too often, and
+     * the counter's only attribute is the fixed event name.
+     */
+    private <E extends CancellableEvent> Consumer<E> deny(String event) {
+        Attributes attributes = Attributes.of(EVENT, event);
+        return cancellable -> {
+            this.denied.add(1, attributes);
+            Cancelable.cancel(cancellable);
+        };
     }
 
     @PreDestroy

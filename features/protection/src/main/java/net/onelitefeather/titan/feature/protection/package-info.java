@@ -17,8 +17,9 @@
  * The {@code protection} column. See {@code docs/lobby-modules.md}, "Wie eine Column
  * Plattform-Beans bekommt", for how a column declares its platform dependencies.
  */
-@InjectModule(name = "protectionColumn", requires = {EventNode.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"})
+@InjectModule(name = "protectionColumn", requires = {EventNode.class, Telemetry.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"})
 package net.onelitefeather.titan.feature.protection;
 
 import io.avaje.inject.InjectModule;
 import net.minestom.server.event.EventNode;
+import net.onelitefeather.titan.core.telemetry.Telemetry;

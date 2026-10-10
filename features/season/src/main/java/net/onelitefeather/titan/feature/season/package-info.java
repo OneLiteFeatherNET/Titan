@@ -18,10 +18,11 @@
  * a restart while the lobby is empty. See {@code docs/lobby-modules.md}, "Wie eine Column
  * Plattform-Beans bekommt", for how a column declares its platform dependencies.
  */
-@InjectModule(name = "seasonColumn", requires = {Scheduler.class, Clock.class, EventNode.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"})
+@InjectModule(name = "seasonColumn", requires = {Scheduler.class, Clock.class, EventNode.class, Telemetry.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"})
 package net.onelitefeather.titan.feature.season;
 
 import io.avaje.inject.InjectModule;
 import java.time.Clock;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.timer.Scheduler;
+import net.onelitefeather.titan.core.telemetry.Telemetry;

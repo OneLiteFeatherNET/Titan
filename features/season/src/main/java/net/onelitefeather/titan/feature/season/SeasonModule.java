@@ -32,6 +32,7 @@ import net.minestom.server.timer.Scheduler;
 import net.minestom.server.timer.Task;
 import net.minestom.server.timer.TaskSchedule;
 import net.onelitefeather.titan.core.module.FeatureNode;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +58,8 @@ final class SeasonModule {
     private final StartedWorld startedWorld;
     private final OnlinePlayers onlinePlayers;
     private final ServerStop serverStop;
+    private final Telemetry telemetry;
+    private final SeasonTelemetry seasonTelemetry;
     private final RestartPolicy policy = new RestartPolicy();
     private final AtomicBoolean stopRequested = new AtomicBoolean();
     // Written and read on the tick thread only; volatile for the tests that read it from outside.
@@ -65,7 +68,7 @@ final class SeasonModule {
     private FeatureNode node;
     private Task task;
 
-    SeasonModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Scheduler scheduler, Clock clock, SeasonSchedule schedule, StartedWorld startedWorld, OnlinePlayers onlinePlayers, ServerStop serverStop) {
+    SeasonModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Scheduler scheduler, Clock clock, SeasonSchedule schedule, StartedWorld startedWorld, OnlinePlayers onlinePlayers, ServerStop serverStop, Telemetry telemetry) {
         this.titan = Objects.requireNonNull(titan, "titan");
         this.scheduler = Objects.requireNonNull(scheduler, "scheduler");
         this.clock = Objects.requireNonNull(clock, "clock");
@@ -73,13 +76,15 @@ final class SeasonModule {
         this.startedWorld = Objects.requireNonNull(startedWorld, "startedWorld");
         this.onlinePlayers = Objects.requireNonNull(onlinePlayers, "onlinePlayers");
         this.serverStop = Objects.requireNonNull(serverStop, "serverStop");
+        this.telemetry = Objects.requireNonNull(telemetry, "telemetry");
+        this.seasonTelemetry = new SeasonTelemetry(this.telemetry);
     }
 
     @PostConstruct
     void start() {
         this.started = this.startedWorld.worldName();
         // Checked next tick, not inside the event, so the count no longer includes the leaving player.
-        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY).on(PlayerDisconnectEvent.class, event -> this.scheduler.scheduleNextTick(this::check));
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry).on(PlayerDisconnectEvent.class, event -> this.scheduler.scheduleNextTick(this::check));
         TaskSchedule interval = TaskSchedule.tick(CHECK_INTERVAL_TICKS);
         this.task = this.scheduler.scheduleTask(this::check, interval, interval);
     }
@@ -91,24 +96,40 @@ final class SeasonModule {
     }
 
     private void check() {
+        this.seasonTelemetry.inCheck(this.started.orElse(SeasonTelemetry.DEFAULT_WORLD), this::checkInSpan);
+    }
+
+    private void checkInSpan() {
+        int online = this.onlinePlayers.count();
         switch (this.schedule.now()) {
-            case SeasonSchedule.Desired.Chosen chosen -> apply(chosen.season());
+            case SeasonSchedule.Desired.Chosen chosen -> {
+                SeasonTelemetry.Outcome outcome = apply(chosen.season(), online);
+                this.seasonTelemetry.recordOutcome(chosen.season().map(Season::world).orElse(SeasonTelemetry.DEFAULT_WORLD), online, outcome);
+            }
             case SeasonSchedule.Desired.Unresolvable ignored -> {
                 // Already warned about by the reader; keep the current state and do nothing.
+                this.seasonTelemetry.recordOutcome(SeasonTelemetry.UNRESOLVABLE_WORLD, online, SeasonTelemetry.Outcome.UNRESOLVABLE);
             }
         }
     }
 
-    private void apply(Optional<Season> desiredSeason) {
-        RestartPolicy.Decision decision = this.policy.decide(this.started, desiredSeason.map(Season::world), this.onlinePlayers.count());
-        switch (decision) {
-            case NONE -> clearPending();
-            case PENDING -> markPending(desiredSeason);
+    private SeasonTelemetry.Outcome apply(Optional<Season> desiredSeason, int online) {
+        RestartPolicy.Decision decision = this.policy.decide(this.started, desiredSeason.map(Season::world), online);
+        return switch (decision) {
+            case NONE -> {
+                clearPending();
+                yield SeasonTelemetry.Outcome.UNCHANGED;
+            }
+            case PENDING -> {
+                markPending(desiredSeason);
+                yield SeasonTelemetry.Outcome.PENDING_RESTART;
+            }
             case STOP -> {
                 markPending(desiredSeason);
                 requestStop();
+                yield SeasonTelemetry.Outcome.RESTART_REQUESTED;
             }
-        }
+        };
     }
 
     private void markPending(Optional<Season> desiredSeason) {
@@ -130,6 +151,7 @@ final class SeasonModule {
         // Both triggers can fire before the server is down; stop only once.
         if (this.stopRequested.compareAndSet(false, true)) {
             LOGGER.info("Stopping lobby for season change");
+            this.seasonTelemetry.restartRequested();
             this.serverStop.stop();
         }
     }
