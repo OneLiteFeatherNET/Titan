@@ -41,7 +41,7 @@ Jeder Agent-Prompt nennt die Regeln, die für seinen Task gelten: erst Vorhanden
 - [x] 4.2 Nur wenn `permission-spi` gemergt ist: Die Prüfung auf doppeltes LuckPerms in `platform/luckperms` auf `ServerBootstrap.loadedExtensions()` umstellen und die Abhängigkeit auf minestom-extensions dort entfernen. Test zuerst (Unit mit Fake-`ServerBootstrap`). Nachweis: Tests grün, `./gradlew :apps:local:build -Ptitan.luckperms` grün. Ist `permission-spi` nicht gemergt: Task mit Verweis auf D7 abhaken, nachdem das `permission-spi`-Design entsprechend angepasst ist.
 - [x] 4.3 README und Deploy-Doku: `local` lädt keine Extensions, `cloudnet` wie bisher; Start-Log-Zeile `Server bootstrap: …`. Nachweis: Die Doku nennt beide Varianten mit ihrem Bootstrap.
 - [ ] 4.4 Manuelle E2E-Abnahme: `titan-cloudnet.jar` mit CloudNet-Bridge und Titan-Bridge in `extensions/`: Beide sind geladen, und das Log zeigt `Server bootstrap: extensions`. Die Navigator-Weiterleitung in CloudNet klappt, außerhalb von CloudNet kommt die Chat-Nachricht. `titan-local.jar` mit gefülltem `extensions/`: nichts geladen, Log `Server bootstrap: minestom`. `forwarding.secret` und `-Dservice.bind.port` wirken in beiden. Nachweis: Protokoll im PR.
-- [ ] 4.5 Verifikation (Haiku, read-only): Szenarien von `server-bootstrap` Test für Test bzw. Abnahmepunkt zuordnen; F.I.R.S.T.-Check (keine Zugriffe auf das echte Arbeitsverzeichnis, keine System-Properties ohne Zurücksetzen). Nachweis: Bericht ohne Lücken.
+- [x] 4.5 Verifikation (Haiku, read-only): Szenarien von `server-bootstrap` Test für Test bzw. Abnahmepunkt zuordnen; F.I.R.S.T.-Check (keine Zugriffe auf das echte Arbeitsverzeichnis, keine System-Properties ohne Zurücksetzen). Nachweis: Bericht ohne Lücken.
 
 ## 5. Pull Request
 
