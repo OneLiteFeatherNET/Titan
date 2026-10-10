@@ -52,7 +52,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 class NavigatorModuleTest {
 
     private static FakeFeatureFlags slenderActive() {
-        return new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", true);
+        return new FakeFeatureFlags().declare(Destination.SLENDER_FLAG, true);
     }
 
     private static AbstractInventory openNavigator(NavigatorFixture fixture, Player player) {

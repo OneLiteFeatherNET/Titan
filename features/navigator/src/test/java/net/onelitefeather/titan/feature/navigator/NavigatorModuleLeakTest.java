@@ -59,7 +59,7 @@ class NavigatorModuleLeakTest {
     private static final String BUILD_PERMISSION = "titan.navigator.buildserver";
 
     private static FakeFeatureFlags slenderActive() {
-        return new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", true);
+        return new FakeFeatureFlags().declare(Destination.SLENDER_FLAG, true);
     }
 
     @DisplayName("Opening and closing the navigator 50 times, alternating with and without permission, registers no extra listeners")

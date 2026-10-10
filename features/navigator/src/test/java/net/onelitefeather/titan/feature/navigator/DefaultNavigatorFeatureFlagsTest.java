@@ -16,7 +16,9 @@
 package net.onelitefeather.titan.feature.navigator;
 
 import io.avaje.config.Configuration;
+import java.util.Arrays;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -47,5 +49,15 @@ class DefaultNavigatorFeatureFlagsTest {
                 Assertions.assertTrue(knownFlags.contains(feature), () -> "destination '" + destination + "' uses feature '" + feature + "', which is missing from the 'features' section of " + DEFAULTS_RESOURCE);
             }
         }
+    }
+
+    @DisplayName("The shipped features section lists exactly the flags that a destination uses")
+    @Test
+    void shippedFeaturesAreExactlyTheDestinationFlags() {
+        Configuration classpathOnly = Configuration.builder().resourceLoader(getClass().getClassLoader()::getResourceAsStream).load(DEFAULTS_RESOURCE).build();
+        Set<String> knownFlags = classpathOnly.forPath(FEATURES_SECTION).keys();
+        Set<String> destinationFlags = Arrays.stream(Destination.values()).map(Destination::feature).filter(feature -> feature != null).collect(Collectors.toSet());
+
+        Assertions.assertEquals(destinationFlags, knownFlags, "the 'features' section of " + DEFAULTS_RESOURCE + " must list exactly the flags a destination is gated by");
     }
 }

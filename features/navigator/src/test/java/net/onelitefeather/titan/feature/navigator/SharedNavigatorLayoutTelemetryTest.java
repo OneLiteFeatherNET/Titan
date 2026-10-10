@@ -73,10 +73,10 @@ class SharedNavigatorLayoutTelemetryTest {
     @Test
     void changedLayoutIsSpannedAgain() {
         SharedNavigator navigator = new SharedNavigator(false, testTelemetry.telemetry());
-        FakeFeatureFlags flags = new FakeFeatureFlags().declare("NAVIGATOR_SLENDER", false);
+        FakeFeatureFlags flags = new FakeFeatureFlags().declare(Destination.SLENDER_FLAG, false);
         navigator.applyLayoutIfChanged(flags, SharedNavigatorLayoutTelemetryTest::emptyLayout);
 
-        flags.set("NAVIGATOR_SLENDER", true);
+        flags.set(Destination.SLENDER_FLAG, true);
         navigator.applyLayoutIfChanged(flags, SharedNavigatorLayoutTelemetryTest::emptyLayout);
 
         Assertions.assertEquals(2, layoutSpans(), "a changed layout must produce a span again");
