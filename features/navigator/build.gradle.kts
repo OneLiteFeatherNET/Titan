@@ -10,5 +10,4 @@ dependencies {
     // against Destination's fixed feature flags - a test-only reader, never a main-code dependency
     // (see ColumnArchitectureTest's navigatorDoesNotDependOnAvajeConfig rule).
     testImplementation(libs.avaje.config)
-    testRuntimeOnly(libs.snakeyaml)
 }

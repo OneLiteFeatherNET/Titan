@@ -40,6 +40,9 @@ dependencies {
     // EventListenerCounter) - see core's testFixtures.
     add("testImplementation", testFixtures(project(":core")))
     add("testRuntimeOnly", lib("junit.engine"))
+    // Tests read application-test.yaml with the same SnakeYAML parser production uses; without it
+    // avaje-config silently drops YAML values, so a column test would pass on a broken config.
+    add("testRuntimeOnly", lib("snakeyaml"))
 }
 
 // A column's tests that read io.avaje.config.Config need this column's own shipped defaults, not
