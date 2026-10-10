@@ -98,6 +98,12 @@ class BootstrapSettingsTest {
         Assertions.assertEquals(40001, BootstrapSettings.bindPort(Map.of("service.bind.port", "40001")));
     }
 
+    @DisplayName("A hexadecimal bind port is decoded, as Integer.getInteger decodes it")
+    @Test
+    void bindPortAcceptsHexadecimalLikeIntegerGetInteger() {
+        Assertions.assertEquals(40001, BootstrapSettings.bindPort(Map.of("service.bind.port", "0x9C41")));
+    }
+
     @DisplayName("A non-numeric bind port falls back to 25565, as Integer.getInteger does")
     @Test
     void nonNumericBindPortFallsBackToDefault() {

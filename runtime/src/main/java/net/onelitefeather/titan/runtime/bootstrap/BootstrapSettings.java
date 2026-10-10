@@ -55,7 +55,7 @@ public final class BootstrapSettings {
             return DEFAULT_PORT;
         }
         try {
-            return Integer.parseInt(value);
+            return Integer.decode(value);
         } catch (NumberFormatException notANumber) {
             return DEFAULT_PORT;
         }
