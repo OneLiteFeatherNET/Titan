@@ -139,7 +139,10 @@ class DifficultyTest {
 
     @Test
     void towerHeightIsClampedToTheMaximumWhenTheTargetIsHigher() {
-        assertEquals(5, Difficulty.towerHeight(Mode.MEDIUM, 80, 3, 5), "target 7.9 is above a tower of 5 at 6.2");
+        int maximum = 5;
+        double target = Difficulty.level(Mode.HARD, 80) * Jump.maxCost(Mode.HARD, Mode.HARD.unlockedAt(80));
+        assertTrue(Jump.climbCost(maximum) < target, "the test needs a target above the tallest allowed tower");
+        assertEquals(maximum, Difficulty.towerHeight(Mode.HARD, 80, 3, maximum), "the target is above the tallest tower");
     }
 
     @Test
