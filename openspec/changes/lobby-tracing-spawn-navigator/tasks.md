@@ -20,7 +20,7 @@ Regeln für jeden Agent-Prompt:
 
 ## 1. spawn
 
-- [ ] 1.1 Test zuerst (Unit, `LobbySpawnReturn`): `sendToSpawn` erzeugt `spawn.return` mit Quelle, Ergebnis, `user.id`; `titan.spawn.returns{source,result}` stimmt für `sent` und `already_at_spawn`. Rot, dann `SpawnModule` und `LobbySpawnReturn` mit `Telemetry` (`requires Telemetry.class`, `attach(…, telemetry)`). Grün.
+- [x] 1.1 Test zuerst (Unit, `LobbySpawnReturn`): `sendToSpawn` erzeugt `spawn.return` mit Quelle, Ergebnis, `user.id`; `titan.spawn.returns{source,result}` stimmt für `sent` und `blocked`. Rot, dann `SpawnModule` und `LobbySpawnReturn` mit `Telemetry` (`requires Telemetry.class`, `attach(…, telemetry)`). Grün.
 - [x] 1.2 Test zuerst (Integration, `Env`, `env.tick()`): Ein Spieler unter `minHeight` erzeugt genau einen `spawn.bounds_teleport`; 100 Bewegungen innerhalb der Grenzen erzeugen keinen Span. Rot, dann nur der Teleport-Zweig in `inSpan`. Grün.
 - [x] 1.3 Test zuerst (Integration): Beitritt erzeugt `spawn.join` über `onTraced`; ein werfender Join-Teleport trägt Ausnahme und ERROR. Rot, dann grün. Nachweis: `./gradlew :features:spawn:build`.
 

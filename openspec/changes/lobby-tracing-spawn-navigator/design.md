@@ -8,3 +8,4 @@ Grundregeln stehen in `lobby-tracing/design.md` (D1 bis D5, D9, D10): `Telemetry
 - `SpawnBoundsListener` hört auf `PlayerMoveEvent`: kein Span am Listener, nur im Teleportzweig (`spawn.bounds_teleport`, selten).
 - Aves-Inventar-Klicks sind selten und von Menschen ausgelöst: Spans erlaubt. `navigator.destination` ist ein Wert aus der festen `Destination`-Aufzählung.
 - Das Rechte-Ergebnis (`navigator.result=denied`) kommt aus `isAllowed`.
+- `spawn.return.result` hat genau zwei Werte: `sent` (Rückkehr erfolgt) und `blocked` (kein Spawn-Punkt verfügbar, `NO_SPAWN`). Einen Wert `already_at_spawn` gibt es nicht; ein Spieler am Spawn wird wie jede andere Rückkehr behandelt.

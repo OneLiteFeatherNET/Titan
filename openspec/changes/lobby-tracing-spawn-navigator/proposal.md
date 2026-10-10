@@ -8,7 +8,7 @@ Teil der Aufteilung aus `lobby-tracing` (Fundament): Dieser Change nutzt `Teleme
 
 ## What Changes
 
-- `spawn.return` (Span in `LobbySpawnReturn.sendToSpawn`): `spawn.return.source` (`command`/`navigator`/`event`), `spawn.return.result` (`sent`/`already_at_spawn`/`blocked`), `user.id`.
+- `spawn.return` (Span in `LobbySpawnReturn.sendToSpawn`): `spawn.return.source` (`command`/`navigator`/`event`), `spawn.return.result` (`sent`/`blocked`, `blocked` = no spawn point available), `user.id`.
 - `spawn.bounds_teleport` (Span, wenn `SpawnBoundsListener` zum Spawn setzt): `spawn.y`, `spawn.min_height`, `spawn.max_height`. Das Event ist `PlayerMoveEvent`: Der Listener bleibt ohne Span, der Span entsteht nur im seltenen Teleport-Zweig.
 - `spawn.join` (Span für den Beitritts-Teleport in `SpawnJoinListener`/`SpawnConfigurationListener`, über `onTraced`).
 - `navigator.open` (Span): `navigator.kind` (`public`/`team`), `navigator.entries`, `user.id`. `navigator.select` (Span je Klick auf ein Ziel): `navigator.destination`, `navigator.result` (`sent`/`denied`/`spawn`), `user.id`; das Ziel-Senden hängt als `deliver.send_player` darunter (aus `lobby-tracing-portal`; ohne dieses ist der Kind-Span einfach nicht da). `navigator.layout.apply` (Span, nur wenn das Layout sich geändert hat).

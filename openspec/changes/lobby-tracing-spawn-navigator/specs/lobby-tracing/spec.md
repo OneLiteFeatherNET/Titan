@@ -3,7 +3,7 @@
 ## ADDED Requirements
 
 ### Requirement: Spawn-Rückkehr ist sichtbar
-Die Lobby MUSS für jede Rückkehr zum Spawn einen kurzen Span `spawn.return` mit Quelle (`command`, `navigator`, `event`), Ergebnis und Spieler-UUID erzeugen und `titan.spawn.returns{source,result}` erhöhen. Setzt der Spawn-Modul-Listener einen Spieler wegen der Höhengrenzen zurück, MUSS ein Span `spawn.bounds_teleport` mit `y` und den Grenzen entstehen. Der Listener auf `PlayerMoveEvent` DARF selbst KEINEN Span erzeugen.
+Die Lobby MUSS für jede Rückkehr zum Spawn einen kurzen Span `spawn.return` mit Quelle (`command`, `navigator`, `event`), Ergebnis und Spieler-UUID erzeugen und `titan.spawn.returns{source,result}` erhöhen. Das Ergebnis ist `sent`, wenn der Spieler zurückgesetzt wurde, und `blocked`, wenn kein Spawn-Punkt verfügbar ist. Setzt der Spawn-Modul-Listener einen Spieler wegen der Höhengrenzen zurück, MUSS ein Span `spawn.bounds_teleport` mit `y` und den Grenzen entstehen. Der Listener auf `PlayerMoveEvent` DARF selbst KEINEN Span erzeugen.
 
 #### Scenario: `/spawn`
 - **WHEN** ein Spieler `/spawn` nutzt und zum Spawn gesetzt wird
