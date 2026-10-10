@@ -95,7 +95,7 @@ class HotbarTelemetryIntegrationTest {
         SpanData span = testTelemetry.span(HotbarTelemetry.USE_SPAN);
         Assertions.assertEquals(NAVIGATOR, testTelemetry.attribute(span, HotbarTelemetry.ITEM), "the span names the item");
         Assertions.assertEquals(player.getUuid().toString(), testTelemetry.attribute(span, Telemetry.USER_ID), "the span carries the player's UUID");
-        Assertions.assertEquals(1, testTelemetry.counter("hotbar.item.uses", Attributes.of(ITEM_METRIC, NAVIGATOR)), "the use counter for the item is incremented");
+        Assertions.assertEquals(1, testTelemetry.counter("titan.hotbar.item.uses", Attributes.of(ITEM_METRIC, NAVIGATOR)), "the use counter for the item is incremented");
     }
 
     @DisplayName("A click with something that is no lobby item opens no span and counts nothing")
@@ -109,6 +109,6 @@ class HotbarTelemetryIntegrationTest {
         titan.call(new PlayerUseItemEvent(player, PlayerHand.MAIN, ItemStack.of(Material.FEATHER), 0L));
 
         Assertions.assertTrue(testTelemetry.spans().stream().noneMatch(span -> span.getName().equals(HotbarTelemetry.USE_SPAN)), "a plain feather must not open a use span");
-        Assertions.assertEquals(0, testTelemetry.counter("hotbar.item.uses", Attributes.of(ITEM_METRIC, NAVIGATOR)), "a plain feather must not count as a use");
+        Assertions.assertEquals(0, testTelemetry.counter("titan.hotbar.item.uses", Attributes.of(ITEM_METRIC, NAVIGATOR)), "a plain feather must not count as a use");
     }
 }

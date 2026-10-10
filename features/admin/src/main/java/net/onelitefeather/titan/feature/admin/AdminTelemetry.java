@@ -46,7 +46,7 @@ final class AdminTelemetry {
 
     AdminTelemetry(Telemetry telemetry) {
         this.telemetry = telemetry;
-        this.commands = telemetry.meter().counterBuilder("admin.commands").setUnit("{command}").build();
+        this.commands = telemetry.meter().counterBuilder("titan.admin.commands").setUnit("{command}").build();
     }
 
     /** Records a run that passed its condition; call before starting the shutdown. */

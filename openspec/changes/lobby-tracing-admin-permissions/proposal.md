@@ -8,9 +8,9 @@ Teil der Aufteilung aus `lobby-tracing` (Fundament): Dieser Change nutzt `Teleme
 
 ## What Changes
 
-- **admin:** Span `admin.command` je Ausführung: `admin.command` (`stop`/`end`), `admin.sender` (`console`/`player`), `admin.result` (`executed`/`denied`), `user.id` bei Spielern. Zähler `admin.commands{command,result}`. Der Span endet **vor** dem Herunterfahren, der Agent flusht im JVM-Hook.
-- **hotbar:** Span `hotbar.equip` (Ausrüsten beim Beitritt/Respawn/Spawn-Rückkehr: `hotbar.items`, `user.id`) und `hotbar.item.use` (Span je Item-Nutzung über `PlayerUseItemEvent`: `hotbar.item` = Item-Schlüssel). Zähler `hotbar.item.uses{item}`. `ItemConflicts` (Konflikt beim Start) wird als Span-Event `hotbar.item_conflict` an `titan.startup` gehängt.
-- **luckperms:** Zähler `permission.checks{result}` je `PermissionService.check` (hochfrequent, aus Portal-Pfad und Befehls-Bedingungen) und ein **Span-Event** `permission.check` (`permission`, `result`) am gerade aktiven Span, falls einer läuft (No-op sonst). Span `permission.platform.start` beim Start (`permission.platform`, `luckperms.extension.loaded`).
+- **admin:** Span `admin.command` je Ausführung: `admin.command` (`stop`/`end`), `admin.sender` (`console`/`player`), `admin.result` (`executed`/`denied`), `user.id` bei Spielern. Zähler `titan.admin.commands{command,result}`. Der Span endet **vor** dem Herunterfahren, der Agent flusht im JVM-Hook.
+- **hotbar:** Span `hotbar.equip` (Ausrüsten beim Beitritt/Respawn/Spawn-Rückkehr: `hotbar.items`, `user.id`) und `hotbar.item.use` (Span je Item-Nutzung über `PlayerUseItemEvent`: `hotbar.item` = Item-Schlüssel). Zähler `titan.hotbar.item.uses{item}`. `ItemConflicts` (Konflikt beim Start) wird als Span-Event `hotbar.item_conflict` an `titan.startup` gehängt.
+- **luckperms:** Zähler `titan.permission.checks{result}` je `PermissionService.check` (hochfrequent, aus Portal-Pfad und Befehls-Bedingungen) und ein **Span-Event** `permission.check` (`permission`, `result`) am gerade aktiven Span, falls einer läuft (No-op sonst). Span `permission.platform.start` beim Start (`permission.platform`, `luckperms.extension.loaded`).
 - `FeatureNode.attach(…, telemetry)` in admin und hotbar (soweit sie einen Knoten haben).
 
 Rollout: später, nach Fundament und `lobby-tracing-jumprun`.

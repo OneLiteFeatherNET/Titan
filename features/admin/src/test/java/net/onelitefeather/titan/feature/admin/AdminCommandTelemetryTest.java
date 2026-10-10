@@ -93,7 +93,7 @@ class AdminCommandTelemetryTest {
         Assertions.assertEquals("console", testTelemetry.attribute(span, SENDER), "the span names the sender kind");
         Assertions.assertEquals("executed", testTelemetry.attribute(span, RESULT), "the run was executed");
         Assertions.assertNull(testTelemetry.attribute(span, Telemetry.USER_ID), "a console has no user.id");
-        Assertions.assertEquals(1, testTelemetry.counter("admin.commands", counterAttributes("stop", "executed")), "the executed counter is incremented");
+        Assertions.assertEquals(1, testTelemetry.counter("titan.admin.commands", counterAttributes("stop", "executed")), "the executed counter is incremented");
     }
 
     @DisplayName("A player with the stop permission carries his UUID on the executed span")
@@ -119,7 +119,7 @@ class AdminCommandTelemetryTest {
         SpanData span = testTelemetry.span(SPAN);
         Assertions.assertEquals("denied", testTelemetry.attribute(span, RESULT), "the refused run is denied");
         Assertions.assertEquals(PLAYER.toString(), testTelemetry.attribute(span, Telemetry.USER_ID), "the denied span carries the player's UUID");
-        Assertions.assertEquals(1, testTelemetry.counter("admin.commands", counterAttributes("stop", "denied")), "the denied counter is incremented");
+        Assertions.assertEquals(1, testTelemetry.counter("titan.admin.commands", counterAttributes("stop", "denied")), "the denied counter is incremented");
         Assertions.assertFalse(shutDown.get(), "a denied stop must not shut the server down");
     }
 
@@ -131,7 +131,7 @@ class AdminCommandTelemetryTest {
         env.process().command().createDeclareCommandsPacket(playerWithStopPermission(TriState.FALSE));
 
         Assertions.assertTrue(testTelemetry.spans().isEmpty(), "building the tree is not a command attempt, so no span is recorded");
-        Assertions.assertEquals(0, testTelemetry.counter("admin.commands", counterAttributes("stop", "denied")), "the denied counter stays at zero");
+        Assertions.assertEquals(0, testTelemetry.counter("titan.admin.commands", counterAttributes("stop", "denied")), "the denied counter stays at zero");
         Assertions.assertFalse(shutDown.get(), "building the tree must not shut the server down");
     }
 
@@ -143,7 +143,7 @@ class AdminCommandTelemetryTest {
         env.process().command().execute(playerWithStopPermission(TriState.FALSE), "stop");
 
         Assertions.assertEquals(1, testTelemetry.spans().size(), "one command attempt, one span");
-        Assertions.assertEquals(1, testTelemetry.counter("admin.commands", counterAttributes("stop", "denied")), "one attempt, one denial");
+        Assertions.assertEquals(1, testTelemetry.counter("titan.admin.commands", counterAttributes("stop", "denied")), "one attempt, one denial");
     }
 
     @DisplayName("The stop span has ended before the stop thread is handed the shutdown")
@@ -172,7 +172,7 @@ class AdminCommandTelemetryTest {
         SpanData span = testTelemetry.span(SPAN);
         Assertions.assertEquals("end", testTelemetry.attribute(span, COMMAND), "the span names end");
         Assertions.assertEquals("denied", testTelemetry.attribute(span, RESULT), "end stays disabled, so it is denied");
-        Assertions.assertEquals(1, testTelemetry.counter("admin.commands", counterAttributes("end", "denied")), "the denied counter is incremented");
+        Assertions.assertEquals(1, testTelemetry.counter("titan.admin.commands", counterAttributes("end", "denied")), "the denied counter is incremented");
         Assertions.assertFalse(shutDown.get(), "end must not shut the server down");
     }
 }

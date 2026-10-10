@@ -22,16 +22,16 @@ Regeln für jeden Agent-Prompt:
 ## 1. admin
 
 - [x] 1.1 Test zuerst (Unit/Integration): `/stop` und `/end` erzeugen `admin.command` mit Befehl, Absender, Ergebnis, `user.id` bei Spielern; ein Spieler ohne Recht ergibt `denied` und keine Ausführung. Rot, dann `AdminCommands`/`StopCommand`/`EndCommand` mit `Telemetry` (`requires Telemetry.class`). Grün.
-- [x] 1.2 Test zuerst: Der Span von `stop` endet, bevor der Stopp-Thread startet (Fake-Stopper statt `MinecraftServer.stopCleanly`); `admin.commands` stimmt. Rot, dann grün. Nachweis: `./gradlew :features:admin:build`.
+- [x] 1.2 Test zuerst: Der Span von `stop` endet, bevor der Stopp-Thread startet (Fake-Stopper statt `MinecraftServer.stopCleanly`); `titan.admin.commands` stimmt. Rot, dann grün. Nachweis: `./gradlew :features:admin:build`.
 
 ## 2. hotbar
 
-- [x] 2.1 Test zuerst (Integration, `Env`): `equip` erzeugt `hotbar.equip` mit `hotbar.items`, `user.id`; eine Item-Nutzung erzeugt `hotbar.item.use` mit `hotbar.item`, `hotbar.item.uses{item}` steigt; ein Klick ohne Lobby-Item erzeugt keinen Span. Rot, dann `HotbarLobbyItems` (`Telemetry` per Konstruktor). Grün.
+- [x] 2.1 Test zuerst (Integration, `Env`): `equip` erzeugt `hotbar.equip` mit `hotbar.items`, `user.id`; eine Item-Nutzung erzeugt `hotbar.item.use` mit `hotbar.item`, `titan.hotbar.item.uses{item}` steigt; ein Klick ohne Lobby-Item erzeugt keinen Span. Rot, dann `HotbarLobbyItems` (`Telemetry` per Konstruktor). Grün.
 - [x] 2.2 Test zuerst (Unit, `ItemConflicts`): Ein Konflikt hängt `hotbar.item_conflict` an den aktuellen Span. Rot, dann grün. Nachweis: `./gradlew :features:hotbar:build`.
 
 ## 3. luckperms
 
-- [x] 3.1 Test zuerst (Unit, Fake-LuckPerms wie in den bestehenden Tests): Jede Prüfung erhöht `permission.checks{result}`; läuft sie in einem Test-Span, trägt dieser `permission.check` mit `permission` und `result`; ohne aktiven Span passiert nichts außer dem Zähler. Rot, dann `LuckPermsPermissionService` (`Telemetry`; Events über `Span.current()`). Grün.
+- [x] 3.1 Test zuerst (Unit, Fake-LuckPerms wie in den bestehenden Tests): Jede Prüfung erhöht `titan.permission.checks{result}`; läuft sie in einem Test-Span, trägt dieser `permission.check` mit `permission` und `result`; ohne aktiven Span passiert nichts außer dem Zähler. Rot, dann `LuckPermsPermissionService` (`Telemetry`; Events über `Span.current()`). Grün.
 - [x] 3.2 Test zuerst: `permission.platform.start` mit `permission.platform` beim Start; ein fehlendes Extension-Jar (`LuckPermsExtensionCheck`) setzt ERROR und die Ausnahme geht weiter. Rot, dann grün. Nachweis: `./gradlew :platform:luckperms:build`; `docs/lobby-modules.md` nennt Spans, Zähler und das Span-Event-Muster.
 
 ## 4. Abnahme

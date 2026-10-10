@@ -46,7 +46,7 @@ final class LuckPermsTelemetry {
 
     LuckPermsTelemetry(Telemetry telemetry) {
         this.telemetry = telemetry;
-        this.checks = telemetry.meter().counterBuilder("permission.checks").setUnit("{check}").build();
+        this.checks = telemetry.meter().counterBuilder("titan.permission.checks").setUnit("{check}").build();
     }
 
     /** @return {@code result}, so the caller can return the check's outcome unchanged */

@@ -51,7 +51,7 @@ class LuckPermsTelemetryTest {
     void aDeniedCheckIncrementsTheDeniedCounter() {
         telemetry.checked(STOP, PermissionResult.DENIED);
 
-        Assertions.assertEquals(1, testTelemetry.counter("permission.checks", Attributes.of(RESULT, "denied")), "the denied counter");
+        Assertions.assertEquals(1, testTelemetry.counter("titan.permission.checks", Attributes.of(RESULT, "denied")), "the denied counter");
     }
 
     @DisplayName("A check without a running span is counted and opens no span")
@@ -60,7 +60,7 @@ class LuckPermsTelemetryTest {
         PermissionResult result = telemetry.checked(STOP, PermissionResult.ALLOWED);
 
         Assertions.assertEquals(PermissionResult.ALLOWED, result, "the outcome is handed back unchanged");
-        Assertions.assertEquals(1, testTelemetry.counter("permission.checks", Attributes.of(RESULT, "allowed")), "the allowed counter");
+        Assertions.assertEquals(1, testTelemetry.counter("titan.permission.checks", Attributes.of(RESULT, "allowed")), "the allowed counter");
         Assertions.assertTrue(testTelemetry.spans().isEmpty(), "a check must not open a span of its own");
     }
 

@@ -43,7 +43,7 @@ final class HotbarTelemetry {
 
     HotbarTelemetry(Telemetry telemetry) {
         this.telemetry = telemetry;
-        this.uses = telemetry.meter().counterBuilder("hotbar.item.uses").setUnit("{use}").build();
+        this.uses = telemetry.meter().counterBuilder("titan.hotbar.item.uses").setUnit("{use}").build();
     }
 
     /** Runs {@code equip} inside the equip span, with the number of items it places. */
