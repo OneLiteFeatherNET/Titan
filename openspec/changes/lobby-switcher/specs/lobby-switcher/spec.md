@@ -54,12 +54,12 @@ Jeder Eintrag MUSS genau einen Zustand haben: `CURRENT`, `FULL`, `NOT_READY` ode
 - **THEN** ist der Eintrag als nicht bereit gekennzeichnet
 
 ### Requirement: Wechsel per Klick
-_A click on a joinable entry MUST send the player to that service; any other entry MUST NOT send the player._
+_A click on a joinable entry MUST re-check that service and then send the player to it; any other entry MUST NOT send the player._
 
-Ein Klick auf einen beitretbaren Eintrag MUSS den Spieler über den bestehenden Weiterleitungsweg (`Deliver`) an genau diesen Dienst schicken und das Inventar schließen. Ein Klick auf die eigene, eine volle oder eine nicht bereite Lobby DARF den Spieler NICHT weiterleiten; er MUSS stattdessen eine Meldung in seiner Sprache erhalten, mit Englisch als Fallback.
+Ein Klick auf einen beitretbaren Eintrag MUSS den Zieldienst vor dem Wechsel frisch prüfen und, wenn er dann noch beitretbar ist, den Spieler über den bestehenden Weiterleitungsweg (`Deliver`) an genau diesen Dienst schicken und das Inventar schließen. Ist der Zieldienst bei der Prüfung voll, nicht bereit oder nicht mehr laufend, DARF der Spieler NICHT weitergeleitet werden; er MUSS stattdessen die passende Meldung erhalten und das Inventar MUSS den aktuellen Stand zeigen. Ein Klick auf die eigene Lobby DARF den Spieler NICHT weiterleiten; er MUSS eine Meldung erhalten. Die Meldungen MÜSSEN in der Sprache des Spielers erscheinen, mit Englisch als Fallback.
 
 #### Scenario: Beitretbare Lobby
-- **WHEN** ein Spieler auf `Lobby-2` klickt, die beitretbar ist
+- **WHEN** ein Spieler auf `Lobby-2` klickt, die bei der Prüfung beitretbar ist
 - **THEN** wird er an den Dienst `Lobby-2` weitergeleitet und das Inventar schließt sich
 
 #### Scenario: Eigene Lobby
@@ -67,8 +67,20 @@ Ein Klick auf einen beitretbaren Eintrag MUSS den Spieler über den bestehenden 
 - **THEN** bleibt er, wo er ist, und erhält die Meldung, dass er schon hier ist
 
 #### Scenario: Volle Lobby
-- **WHEN** ein Spieler auf eine volle Lobby klickt
+- **WHEN** ein Spieler auf eine Lobby klickt, die bei der Prüfung voll ist
 - **THEN** wird er nicht weitergeleitet, und er erhält die Meldung, dass die Lobby voll ist
+
+#### Scenario: Lobby wird zwischen Anzeige und Klick voll
+- **WHEN** eine Lobby in der Liste beitretbar war, beim Klick aber 100 von 100 Plätzen belegt
+- **THEN** wird der Spieler nicht weitergeleitet, die Meldung „voll“ erscheint und die Liste zeigt den aktuellen Stand
+
+#### Scenario: Lobby ist beim Klick gestoppt
+- **WHEN** der Zieldienst beim Klick nicht mehr läuft
+- **THEN** wird der Spieler nicht weitergeleitet, er erhält die Meldung „nicht mehr verfügbar“ und die Liste wird aktualisiert
+
+#### Scenario: Prüfung schlägt fehl
+- **WHEN** der Provider bei der Klick-Prüfung eine Ausnahme wirft
+- **THEN** wird der Spieler nicht weitergeleitet und erhält die Meldung „Lobbys nicht verfügbar“
 
 #### Scenario: Deutsche Sprache
 - **WHEN** ein Spieler mit deutscher Client-Sprache auf eine volle Lobby klickt
@@ -115,7 +127,7 @@ Wirft der Provider oder fehlt er, MUSS das Inventar den letzten gelesenen Stand 
 ### Requirement: Telemetrie
 _The lobby MUST emit the spans and the counter named here; the counter MUST NOT carry names or user ids._
 
-Öffnen und Klick MÜSSEN je einen Span erzeugen (`lobbyswitcher.open`, `lobbyswitcher.select`). Der Zähler `titan.lobbyswitcher.selections` MUSS je Klick das Ergebnis tragen und DARF KEINE Dienstnamen und keine `user.id` tragen. Die Aktualisierung DARF KEINEN Span erzeugen.
+Öffnen und Klick MÜSSEN je einen Span erzeugen (`lobbyswitcher.open`, `lobbyswitcher.select`). Der Klick-Span MUSS das Ergebnis (`sent`, `current`, `full`, `not_ready`, `gone` oder `error`) tragen; bei `error` MUSS der Span-Status `ERROR` sein. Der Zähler `titan.lobbyswitcher.selections` MUSS je Klick das Ergebnis tragen und DARF KEINE Dienstnamen und keine `user.id` tragen. Die Aktualisierung DARF KEINEN Span erzeugen.
 #### Scenario: Erfolgreicher Wechsel
 - **WHEN** ein Spieler auf eine beitretbare Lobby klickt
 - **THEN** enthält der Span `lobbyswitcher.select` das Ergebnis `sent` und den Zieldienst, und der Zähler steigt um eins mit `result=sent`
@@ -134,10 +146,14 @@ Alle Texte des Inventars und der Meldungen MÜSSEN über Übersetzungsschlüssel
 - **THEN** erscheinen die Texte auf Englisch
 
 ### Requirement: Konfiguration und Standardwerte
-_The flag MUST default to false, and an invalid refresh value MUST abort the start._
+_The flag MUST default to true in the CloudNet profile and is read at start only; an invalid refresh value MUST abort the start._
 
-Das Flag `LOBBYSWITCHER` MUSS in den Standardwerten mit `false` stehen und in der Liste der Flags der Lobby enthalten sein. Ein ungültiger Wert von `lobbyswitcher.refreshSeconds` MUSS den Start mit Schlüssel und Grund abbrechen.
+Das Flag `LOBBYSWITCHER` MUSS in den Standardwerten mit `true` stehen und in der Liste der Flags der Lobby enthalten sein. Das Flag wird beim Start gelesen; ein Umschalten wirkt erst nach einem Neustart. Ein ungültiger Wert von `lobbyswitcher.refreshSeconds` MUSS den Start mit Schlüssel und Grund abbrechen.
 
 #### Scenario: Auslieferung ohne Änderung
-- **WHEN** die Lobby mit Standardwerten startet
-- **THEN** ist das Flag aus und kein Item erscheint
+- **WHEN** die CloudNet-Lobby mit Standardwerten startet
+- **THEN** ist das Flag an und das Item liegt auf Slot 8
+
+#### Scenario: Flag nachträglich ausgeschaltet
+- **WHEN** das Flag in der Konfiguration ausgeschaltet wird und die Lobby läuft noch
+- **THEN** bleibt das Item bis zum Neustart sichtbar; nach dem Neustart fehlt es

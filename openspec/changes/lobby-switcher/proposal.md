@@ -13,7 +13,7 @@ Die Zahlen gibt es bereits: Die Portal-Labels lesen sie über den `PlayerCounts`
 - Die eigene Lobby ist markiert und nicht anklickbar. Volle Lobbys sind als voll gekennzeichnet und nicht anklickbar. Ein Klick auf eine andere beitretbare Lobby leitet den Spieler über den bestehenden `Deliver` an genau diesen Dienst weiter.
 - Die Zahlen kommen aus derselben CloudNet-Anbindung wie die Portal-Labels. Die Anbindung wird um eine Auflistung der laufenden Dienste eines Tasks erweitert; es entsteht kein zweiter Zugriffspfad.
 - Das offene Inventar aktualisiert sich periodisch und nur, solange es offen ist.
-- Feature-Flag `LOBBYSWITCHER` (Standard `false`). Ohne CloudNet-Profil (lokale Variante) gibt es weder Item noch Inventar.
+- Feature-Flag `LOBBYSWITCHER` (Standard `true`, wirkt beim Start, Umschalten braucht Neustart). Ohne CloudNet-Profil (lokale Variante) gibt es weder Item noch Inventar.
 - Telemetrie: Spans `lobbyswitcher.open` und `lobbyswitcher.select`, Zähler `titan.lobbyswitcher.selections{result}`.
 - Konfiguration `lobbyswitcher.refreshSeconds` (Standard `5`, 1 bis 3600).
 - Texte in `titan/lobbyswitcher/messages_{en,de}.properties`, Englisch als Fallback.
@@ -42,14 +42,14 @@ Die Zahlen gibt es bereits: Die Portal-Labels lesen sie über den `PlayerCounts`
   - `common/deliver`: `HolderPlayerCounts` und `TitanPlayerCountLookup` reichen die Auflistung durch.
   - `bridge`: `TitanBridgePermissionExtension` implementiert die Auflistung über dieselben `servicesByTask`-Aufrufe und `ServiceReadings`, und liefert die eigene Identität.
   - `runtime`: `PlatformBeans` nur im CloudNet-Profil (wie bisher `PlayerCounts`).
-  - Optional, vorgelagerter `refactor`-PR: das Muster aus `LabelRefresh` (überspringen, wenn die letzte Lesung läuft; Lesung off-tick; Anwendung auf dem nächsten Tick) nach `common` heben, s. design.md D5.
-- **Konfiguration:** `features/lobbyswitcher/src/main/resources/titan/defaults/lobbyswitcher.yaml` mit `lobbyswitcher.refreshSeconds: 5`. Der Flag-Abschnitt `features` wandert aus `features/navigator/.../navigator.yaml` nach `runtime/.../titan/defaults/features.yaml` und bekommt `LOBBYSWITCHER: false`, weil `DefaultsMerger` nur eine Datei pro Top-Level-Abschnitt erlaubt.
+  - Kein Refactor von `LabelRefresh` (design.md D5b, Q3): der Switcher hat eine eigene kleine Aktualisierung nach demselben Muster.
+- **Konfiguration:** `features/lobbyswitcher/src/main/resources/titan/defaults/lobbyswitcher.yaml` mit `lobbyswitcher.refreshSeconds: 5`. Der Flag-Abschnitt `features` wandert aus `features/navigator/.../navigator.yaml` nach `runtime/.../titan/defaults/features.yaml` und bekommt `LOBBYSWITCHER: true`, weil `DefaultsMerger` nur eine Datei pro Top-Level-Abschnitt erlaubt.
 - **Abhängigkeiten:** keine neuen Bibliotheken. Aves ist für Columns bereits Pflicht.
 - **Nutzertexte:** neu, Englisch und Deutsch.
-- **Spielerverhalten:** nur wenn das Flag gesetzt ist; Item auf Slot 8 bei Lobby-Beitritt.
+- **Spielerverhalten:** nur in der CloudNet-Variante mit eingeschaltetem Flag (Standard); Uhr (`CLOCK`) auf Slot 8 bei Lobby-Beitritt.
 
 ## Delivery
 
 Pull-Request-Titel und Squash-Commit: `feat(lobbyswitcher): show other lobbies with player counts and switch between them`
 
-Dieser PR ist ein einziger Typ (`feat`). Dokumentation (README, `docs/lobby-modules.md`) gehört in denselben PR, ist aber kein eigener Typ. Der optionale Refactor aus D5 kommt als eigener, vorgelagerter PR mit dem Titel `refactor(common): share the off-tick refresh of portal labels`, damit der Squash-Commit dieses PRs nur `feat` trägt.
+Dieser PR ist ein einziger Typ (`feat`). Dokumentation (README, `docs/lobby-modules.md`) gehört in denselben PR, ist aber kein eigener Typ. Das Verschieben des Abschnitts `features` nach `runtime` ist ein eigener `refactor(runtime)`-Commit im selben PR, weil `DefaultsMerger` ohne ihn das neue Flag nicht zulässt; der Squash-Commit trägt dann trotzdem nur den Titel-Typ `feat`.
