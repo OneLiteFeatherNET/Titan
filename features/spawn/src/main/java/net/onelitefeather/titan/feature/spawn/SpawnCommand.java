@@ -36,7 +36,7 @@ final class SpawnCommand extends Command {
         Objects.requireNonNull(spawnReturn, "spawnReturn");
         setDefaultExecutor((sender, context) -> {
             if (sender instanceof Player player) {
-                spawnReturn.sendToSpawnAndTell(player);
+                spawnReturn.sendToSpawnAndTell(player, SpawnReturn.Source.COMMAND);
             } else {
                 sender.sendMessage(CONSOLE_MESSAGE);
             }

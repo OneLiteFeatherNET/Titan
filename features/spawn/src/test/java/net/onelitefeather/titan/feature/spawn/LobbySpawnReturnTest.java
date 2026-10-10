@@ -33,6 +33,12 @@ import org.mockito.Mockito;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.module.LobbyReturnToSpawnEvent;
 import net.onelitefeather.titan.core.module.SpawnReturn;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
+import net.onelitefeather.titan.core.testfixtures.TestTelemetry;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.sdk.trace.data.SpanData;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -43,6 +49,56 @@ class LobbySpawnReturnTest {
 
     private static final Pos SPAWN = new Pos(5, 64, 5);
     private static final Pos ROOF = new Pos(40, 90, 40);
+    private static final AttributeKey<String> SOURCE = AttributeKey.stringKey("source");
+    private static final AttributeKey<String> RESULT = AttributeKey.stringKey("result");
+
+    private final TestTelemetry testTelemetry = TestTelemetry.create();
+
+    @AfterEach
+    void closeTelemetry() {
+        testTelemetry.close();
+    }
+
+    @DisplayName("A return from /spawn produces a spawn.return span with source, result and the player's UUID")
+    @Test
+    void returnProducesSpanWithSourceResultAndPlayer(Env env) {
+        Player player = playerOnRoof(env);
+
+        new LobbySpawnReturn(() -> SPAWN, new SpawnMessages(), testTelemetry.telemetry()).sendToSpawn(player, SpawnReturn.Source.COMMAND);
+
+        SpanData span = testTelemetry.span("spawn.return");
+        Assertions.assertEquals("command", testTelemetry.attribute(span, AttributeKey.stringKey("spawn.return.source")), "source");
+        Assertions.assertEquals("sent", testTelemetry.attribute(span, AttributeKey.stringKey("spawn.return.result")), "result");
+        Assertions.assertEquals(player.getUuid().toString(), testTelemetry.attribute(span, Telemetry.USER_ID), "the player's UUID, never the name");
+    }
+
+    @DisplayName("A return without a spawn point produces a spawn.return span with the result blocked")
+    @Test
+    void returnWithoutSpawnPointIsSpannedAsBlocked(Env env) {
+        Player player = playerOnRoof(env);
+
+        new LobbySpawnReturn(() -> null, new SpawnMessages(), testTelemetry.telemetry()).sendToSpawn(player, SpawnReturn.Source.NAVIGATOR);
+
+        SpanData span = testTelemetry.span("spawn.return");
+        Assertions.assertEquals("navigator", testTelemetry.attribute(span, AttributeKey.stringKey("spawn.return.source")), "source");
+        Assertions.assertEquals("blocked", testTelemetry.attribute(span, AttributeKey.stringKey("spawn.return.result")), "result");
+    }
+
+    @DisplayName("Returns count by source and result")
+    @Test
+    void returnsCountBySourceAndResult(Env env) {
+        Player player = playerOnRoof(env);
+        LobbySpawnReturn spawnReturn = new LobbySpawnReturn(() -> SPAWN, new SpawnMessages(), testTelemetry.telemetry());
+
+        spawnReturn.sendToSpawn(player, SpawnReturn.Source.COMMAND);
+        spawnReturn.sendToSpawn(player, SpawnReturn.Source.COMMAND);
+        new LobbySpawnReturn(() -> null, new SpawnMessages(), testTelemetry.telemetry()).sendToSpawn(player, SpawnReturn.Source.NAVIGATOR);
+
+        Attributes commandSent = Attributes.of(SOURCE, "command", RESULT, "sent");
+        Attributes navigatorBlocked = Attributes.of(SOURCE, "navigator", RESULT, "blocked");
+        Assertions.assertEquals(2, testTelemetry.counter("titan.spawn.returns", commandSent), "two sent returns from the command");
+        Assertions.assertEquals(1, testTelemetry.counter("titan.spawn.returns", navigatorBlocked), "one blocked return from the navigator");
+    }
 
     @DisplayName("With a spawn point the event fires once, before the teleport, and the player is returned")
     @Test
@@ -51,9 +107,9 @@ class LobbySpawnReturnTest {
         List<Pos> positionsAtEvent = new ArrayList<>();
         EventNode<Event> node = recordPositionsAtEvent(env, positionsAtEvent);
         try {
-            LobbySpawnReturn spawnReturn = new LobbySpawnReturn(() -> SPAWN, new SpawnMessages());
+            LobbySpawnReturn spawnReturn = new LobbySpawnReturn(() -> SPAWN, new SpawnMessages(), testTelemetry.telemetry());
 
-            SpawnReturn.Result result = spawnReturn.sendToSpawn(player);
+            SpawnReturn.Result result = spawnReturn.sendToSpawn(player, SpawnReturn.Source.COMMAND);
 
             Assertions.assertEquals(SpawnReturn.Result.RETURNED, result, "a map with a spawn point must return the player");
             Assertions.assertEquals(List.of(ROOF), positionsAtEvent, "the event must fire exactly once while the player is still on the roof");
@@ -70,9 +126,9 @@ class LobbySpawnReturnTest {
         List<Pos> positionsAtEvent = new ArrayList<>();
         EventNode<Event> node = recordPositionsAtEvent(env, positionsAtEvent);
         try {
-            LobbySpawnReturn spawnReturn = new LobbySpawnReturn(() -> null, new SpawnMessages());
+            LobbySpawnReturn spawnReturn = new LobbySpawnReturn(() -> null, new SpawnMessages(), testTelemetry.telemetry());
 
-            SpawnReturn.Result result = spawnReturn.sendToSpawn(player);
+            SpawnReturn.Result result = spawnReturn.sendToSpawn(player, SpawnReturn.Source.COMMAND);
 
             Assertions.assertEquals(SpawnReturn.Result.NO_SPAWN, result, "a map without a spawn point must report NO_SPAWN");
             Assertions.assertTrue(positionsAtEvent.isEmpty(), "no event may fire without a spawn point");
@@ -91,7 +147,7 @@ class LobbySpawnReturnTest {
         Mockito.when(player.getUuid()).thenReturn(uuid);
         Mockito.when(player.teleport(SPAWN, Vec.ZERO)).thenReturn(CompletableFuture.failedFuture(failure));
         try (CapturedLog log = new CapturedLog(LobbySpawnReturn.class)) {
-            SpawnReturn.Result result = new LobbySpawnReturn(() -> SPAWN, new SpawnMessages()).sendToSpawn(player);
+            SpawnReturn.Result result = new LobbySpawnReturn(() -> SPAWN, new SpawnMessages(), testTelemetry.telemetry()).sendToSpawn(player, SpawnReturn.Source.COMMAND);
 
             Assertions.assertEquals(SpawnReturn.Result.RETURNED, result, "the teleport was requested, so the result stays RETURNED");
             Assertions.assertEquals(1, log.warnings().size(), "exactly one warning must be logged");
@@ -110,7 +166,7 @@ class LobbySpawnReturnTest {
         player.setFlyingWithElytra(true);
         player.setVelocity(new Vec(400, -200, 400));
 
-        new LobbySpawnReturn(() -> SPAWN, new SpawnMessages()).sendToSpawn(player);
+        new LobbySpawnReturn(() -> SPAWN, new SpawnMessages(), testTelemetry.telemetry()).sendToSpawn(player, SpawnReturn.Source.COMMAND);
         env.tick();
         env.tick();
         env.tick();

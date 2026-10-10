@@ -28,6 +28,7 @@ import net.minestom.testing.Env;
 import net.minestom.testing.TestConnection;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.module.item.LobbyItems;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -65,7 +66,7 @@ class SpawnModuleTest {
         LobbyItems lobbyItems = Mockito.mock(LobbyItems.class);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            SpawnModule module = new SpawnModule(targetInstance, () -> spawnPos, new SpawnHeightBoundsFactory().lobbyHeightBounds(), titan.node(), lobbyItems);
+            SpawnModule module = new SpawnModule(targetInstance, () -> spawnPos, new SpawnHeightBoundsFactory().lobbyHeightBounds(), titan.node(), lobbyItems, Telemetry.noop());
             module.start();
             try {
                 Player player = env.createPlayer(targetInstance);
@@ -92,7 +93,7 @@ class SpawnModuleTest {
         LobbyItems lobbyItems = Mockito.mock(LobbyItems.class);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            SpawnModule module = new SpawnModule(instance, () -> spawnPos, new SpawnHeightBoundsFactory().lobbyHeightBounds(), titan.node(), lobbyItems);
+            SpawnModule module = new SpawnModule(instance, () -> spawnPos, new SpawnHeightBoundsFactory().lobbyHeightBounds(), titan.node(), lobbyItems, Telemetry.noop());
             module.start();
             try {
                 TestConnection connection = env.createConnection();
@@ -121,7 +122,7 @@ class SpawnModuleTest {
         LobbyItems lobbyItems = Mockito.mock(LobbyItems.class);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            SpawnModule module = new SpawnModule(instance, () -> spawnPos, new SpawnHeightBoundsFactory().lobbyHeightBounds(), titan.node(), lobbyItems);
+            SpawnModule module = new SpawnModule(instance, () -> spawnPos, new SpawnHeightBoundsFactory().lobbyHeightBounds(), titan.node(), lobbyItems, Telemetry.noop());
             module.start();
             try {
                 Player player = env.createPlayer(instance);
@@ -145,7 +146,7 @@ class SpawnModuleTest {
         LobbyItems lobbyItems = Mockito.mock(LobbyItems.class);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            SpawnModule module = new SpawnModule(instance, () -> spawnPos, new SpawnHeightBoundsFactory().lobbyHeightBounds(), titan.node(), lobbyItems);
+            SpawnModule module = new SpawnModule(instance, () -> spawnPos, new SpawnHeightBoundsFactory().lobbyHeightBounds(), titan.node(), lobbyItems, Telemetry.noop());
             module.start();
             try {
                 Player player = env.createPlayer(instance);
@@ -169,7 +170,7 @@ class SpawnModuleTest {
         LobbyItems lobbyItems = Mockito.mock(LobbyItems.class);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            SpawnModule module = new SpawnModule(instance, () -> spawnPos, new SpawnHeightBoundsFactory().lobbyHeightBounds(), titan.node(), lobbyItems);
+            SpawnModule module = new SpawnModule(instance, () -> spawnPos, new SpawnHeightBoundsFactory().lobbyHeightBounds(), titan.node(), lobbyItems, Telemetry.noop());
             module.start();
             try {
                 Player player = env.createPlayer(instance);
@@ -193,7 +194,7 @@ class SpawnModuleTest {
         LobbyItems lobbyItems = Mockito.mock(LobbyItems.class);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            SpawnModule module = new SpawnModule(instance, () -> spawnPos, new SpawnHeightBoundsFactory().lobbyHeightBounds(), titan.node(), lobbyItems);
+            SpawnModule module = new SpawnModule(instance, () -> spawnPos, new SpawnHeightBoundsFactory().lobbyHeightBounds(), titan.node(), lobbyItems, Telemetry.noop());
             module.start();
             module.stop();
 

@@ -38,6 +38,7 @@ import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.module.SpawnReturn;
 import net.onelitefeather.titan.core.permission.PermissionResult;
 import net.onelitefeather.titan.core.permission.PermissionService;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.theevilreaper.aves.inventory.click.ClickHolder;
 import net.theevilreaper.aves.inventory.layout.InventoryLayout;
 
@@ -66,20 +67,26 @@ public final class NavigatorModule {
     private final Deliver deliver;
     private final FeatureFlags featureFlags;
     private final PermissionService permissions;
-    private final SharedNavigator publicNavigator = new SharedNavigator(false);
-    private final SharedNavigator teamNavigator = new SharedNavigator(true);
+    private final SharedNavigator publicNavigator;
+    private final SharedNavigator teamNavigator;
+    private final Telemetry telemetry;
+    private final NavigatorTelemetry navigatorTelemetry;
     // A Provider, not a bean: the spawn column sits before this one in module order (spawn ->
     // hotbar -> navigator item), so requiring SpawnReturn here would close a cycle.
     private final Provider<SpawnReturn> spawnReturnProvider;
     private SpawnReturn spawnReturn;
     private FeatureNode node;
 
-    public NavigatorModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Deliver deliver, FeatureFlags featureFlags, PermissionService permissions, Provider<SpawnReturn> spawnReturnProvider) {
+    public NavigatorModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Deliver deliver, FeatureFlags featureFlags, PermissionService permissions, Provider<SpawnReturn> spawnReturnProvider, Telemetry telemetry) {
         this.titan = Objects.requireNonNull(titan, "titan must not be null");
         this.deliver = Objects.requireNonNull(deliver, "deliver must not be null");
         this.featureFlags = Objects.requireNonNull(featureFlags, "featureFlags must not be null");
         this.permissions = Objects.requireNonNull(permissions, "permissions must not be null");
         this.spawnReturnProvider = Objects.requireNonNull(spawnReturnProvider, "spawnReturnProvider must not be null");
+        this.telemetry = Objects.requireNonNull(telemetry, "telemetry must not be null");
+        this.navigatorTelemetry = new NavigatorTelemetry(this.telemetry);
+        this.publicNavigator = new SharedNavigator(false, this.telemetry);
+        this.teamNavigator = new SharedNavigator(true, this.telemetry);
     }
 
     @PostConstruct
@@ -87,7 +94,7 @@ public final class NavigatorModule {
         this.spawnReturn = resolveSpawnReturn();
         // Listener-less: only attached so this feature shows up in the fixed EVENT_PRIORITY order
         // and the leak test; Aves handles every inventory click itself.
-        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY);
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry);
         this.publicNavigator.applyLayoutIfChanged(this.featureFlags, this::toAvesLayout);
         this.teamNavigator.applyLayoutIfChanged(this.featureFlags, this::toAvesLayout);
         this.publicNavigator.register();
@@ -102,9 +109,14 @@ public final class NavigatorModule {
     }
 
     void open(Player player) {
-        SharedNavigator navigator = isAllowed(player, Destination.BUILD) ? this.teamNavigator : this.publicNavigator;
-        navigator.applyLayoutIfChanged(this.featureFlags, this::toAvesLayout);
-        player.openInventory(navigator.inventory());
+        boolean team = isAllowed(player, Destination.BUILD);
+        SharedNavigator navigator = team ? this.teamNavigator : this.publicNavigator;
+        // The destinations plus the fixed spawn entry.
+        int entries = Destination.visible(this.featureFlags, team).size() + 1;
+        this.navigatorTelemetry.open(player.getUuid(), team, entries, () -> {
+            navigator.applyLayoutIfChanged(this.featureFlags, this::toAvesLayout);
+            player.openInventory(navigator.inventory());
+        });
     }
 
     // Test-only: lets a leak test assert the listener count on each Aves event node stays constant
@@ -144,12 +156,15 @@ public final class NavigatorModule {
         for (Destination destination : visible) {
             layout.setItem(destination.slot(), destination.item(), (player, clickedSlot, click, stack, result) -> {
                 result.accept(ClickHolder.cancelClick());
-                if (!isAllowed(player, destination)) {
+                this.navigatorTelemetry.select(player.getUuid(), destination.name(), () -> {
+                    if (!isAllowed(player, destination)) {
+                        player.closeInventory();
+                        return NavigatorTelemetry.Selection.DENIED;
+                    }
+                    this.deliver.sendPlayer(player, DeliverComponent.taskBuilder().taskName(destination.task()).player(player).build());
                     player.closeInventory();
-                    return;
-                }
-                this.deliver.sendPlayer(player, DeliverComponent.taskBuilder().taskName(destination.task()).player(player).build());
-                player.closeInventory();
+                    return NavigatorTelemetry.Selection.SENT;
+                });
             });
         }
         addSpawnEntry(layout);
@@ -160,8 +175,11 @@ public final class NavigatorModule {
     private void addSpawnEntry(InventoryLayout layout) {
         layout.setItem(SPAWN_SLOT, SPAWN_ITEM, (player, clickedSlot, click, stack, result) -> {
             result.accept(ClickHolder.cancelClick());
-            this.spawnReturn.sendToSpawnAndTell(player);
-            player.closeInventory();
+            this.navigatorTelemetry.select(player.getUuid(), NavigatorTelemetry.SPAWN_DESTINATION, () -> {
+                this.spawnReturn.sendToSpawnAndTell(player, SpawnReturn.Source.NAVIGATOR);
+                player.closeInventory();
+                return NavigatorTelemetry.Selection.SPAWN;
+            });
         });
     }
 }

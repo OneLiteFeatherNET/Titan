@@ -15,7 +15,6 @@
  */
 package net.onelitefeather.titan.feature.spawn;
 
-import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import net.minestom.server.coordinate.Pos;
@@ -33,10 +32,12 @@ final class SpawnBoundsListener implements Consumer<PlayerMoveEvent> {
 
     private final Supplier<Pos> spawnPosition;
     private final LobbyHeightBounds lobbyHeightBounds;
+    private final SpawnTelemetry telemetry;
 
-    SpawnBoundsListener(Supplier<Pos> spawnPosition, LobbyHeightBounds lobbyHeightBounds) {
+    SpawnBoundsListener(Supplier<Pos> spawnPosition, LobbyHeightBounds lobbyHeightBounds, SpawnTelemetry telemetry) {
         this.spawnPosition = spawnPosition;
         this.lobbyHeightBounds = lobbyHeightBounds;
+        this.telemetry = telemetry;
     }
 
     @Override
@@ -45,9 +46,14 @@ final class SpawnBoundsListener implements Consumer<PlayerMoveEvent> {
         if (player.getInstance() == null) {
             return;
         }
-        HeightBounds heightBounds = new HeightBounds(this.lobbyHeightBounds.minHeight(), this.lobbyHeightBounds.maxHeight());
-        if (heightBounds.isOutOfBounds(player.getPosition().y())) {
-            Optional.ofNullable(this.spawnPosition.get()).ifPresent(player::teleport);
+        int minHeight = this.lobbyHeightBounds.minHeight();
+        int maxHeight = this.lobbyHeightBounds.maxHeight();
+        double y = player.getPosition().y();
+        if (new HeightBounds(minHeight, maxHeight).isOutOfBounds(y)) {
+            Pos spawn = this.spawnPosition.get();
+            if (spawn != null) {
+                this.telemetry.inBoundsTeleport(y, minHeight, maxHeight, () -> player.teleport(spawn));
+            }
         }
     }
 }

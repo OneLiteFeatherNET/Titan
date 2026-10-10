@@ -25,13 +25,13 @@ final class FakeSpawnReturn implements SpawnReturn {
     private int tellCalls;
 
     @Override
-    public Result sendToSpawn(Player player) {
+    public Result sendToSpawn(Player player, Source source) {
         this.sendCalls++;
         return Result.RETURNED;
     }
 
     @Override
-    public void sendToSpawnAndTell(Player player) {
+    public void sendToSpawnAndTell(Player player, Source source) {
         this.tellCalls++;
     }
 

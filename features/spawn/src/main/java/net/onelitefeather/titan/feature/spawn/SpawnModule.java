@@ -31,6 +31,7 @@ import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.module.LobbyHeightBounds;
 import net.onelitefeather.titan.core.module.LobbySpawn;
 import net.onelitefeather.titan.core.module.item.LobbyItems;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 
 /**
  * Puts a joining player into the lobby and keeps them inside its height bounds: sets the spawning
@@ -55,14 +56,16 @@ public final class SpawnModule {
     private final LobbyHeightBounds heightBounds;
     private final EventNode<Event> titan;
     private final LobbyItems lobbyItems;
+    private final Telemetry telemetry;
     private FeatureNode node;
 
-    public SpawnModule(Instance instance, LobbySpawn spawnPosition, LobbyHeightBounds heightBounds, @Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbyItems lobbyItems) {
+    public SpawnModule(Instance instance, LobbySpawn spawnPosition, LobbyHeightBounds heightBounds, @Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbyItems lobbyItems, Telemetry telemetry) {
         this.instance = Objects.requireNonNull(instance, "instance");
         this.spawnPosition = Objects.requireNonNull(spawnPosition, "spawnPosition");
         this.heightBounds = Objects.requireNonNull(heightBounds, "heightBounds");
         this.titan = Objects.requireNonNull(titan, "titan");
         this.lobbyItems = Objects.requireNonNull(lobbyItems, "lobbyItems");
+        this.telemetry = Objects.requireNonNull(telemetry, "telemetry");
     }
 
     @PostConstruct
@@ -72,7 +75,7 @@ public final class SpawnModule {
         SpawnSettings.minHeight(this.heightBounds.minHeight(), this.heightBounds.maxHeight());
         Config.getAs(SpawnSettings.SIMULATION_DISTANCE_KEY, SpawnSettings::simulationDistance);
 
-        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY).on(AsyncPlayerConfigurationEvent.class, new SpawnConfigurationListener(this.instance, this.spawnPosition::position)).on(PlayerSpawnEvent.class, new SpawnJoinListener(this.spawnPosition::position, this.lobbyItems)).on(PlayerMoveEvent.class, new SpawnBoundsListener(this.spawnPosition::position, this.heightBounds));
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry).on(AsyncPlayerConfigurationEvent.class, new SpawnConfigurationListener(this.instance, this.spawnPosition::position)).onTraced(PlayerSpawnEvent.class, SpawnTelemetry.JOIN_SPAN, new SpawnJoinListener(this.spawnPosition::position, this.lobbyItems)).on(PlayerMoveEvent.class, new SpawnBoundsListener(this.spawnPosition::position, this.heightBounds, new SpawnTelemetry(this.telemetry)));
     }
 
     @PreDestroy

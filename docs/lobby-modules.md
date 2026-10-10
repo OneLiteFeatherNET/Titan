@@ -987,6 +987,19 @@ Disconnect.
   Der Start hat den Span `permission.platform.start` (`permission.platform`,
   `luckperms.extension.loaded`); ein doppelt geladenes LuckPerms markiert ihn als ERROR.
 
+### Spawn und Navigator
+
+- `spawn`: Span `spawn.return` (`spawn.return.source` = `command`/`navigator`/`event`,
+  `spawn.return.result` = `sent`/`blocked`, `user.id`) bei jeder Rückkehr zum Spawn; Zähler
+  `titan.spawn.returns{source,result}`. Span `spawn.bounds_teleport` (`spawn.y`, `spawn.min_height`,
+  `spawn.max_height`) nur im Teleport-Zweig der Höhengrenze, der Listener auf `PlayerMoveEvent`
+  selbst hat keinen Span; Zähler `titan.spawn.bounds_teleports`. Span `spawn.join` (über `onTraced`).
+- `navigator`: Span `navigator.open` (`navigator.kind` = `public`/`team`, `navigator.entries` mit
+  dem Spawn-Eintrag, `user.id`), Span `navigator.select` je Klick (`navigator.destination`, Name aus
+  `Destination` oder `spawn`; `navigator.result` = `sent`/`denied`/`spawn`; `user.id`); Zähler
+  `titan.navigator.selections{destination,result}`. Span `navigator.layout.apply` nur, wenn sich das
+  Layout geändert hat.
+
 ### Testen mit `TestTelemetry`
 
 `TestTelemetry.create()` (`core/testFixtures`) baut je Aufruf einen eigenen In-Memory-Exporter und
