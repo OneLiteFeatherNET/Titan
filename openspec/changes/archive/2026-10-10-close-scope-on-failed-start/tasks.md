@@ -25,4 +25,4 @@ Regeln: Test zuerst (rot, dann grün); F.I.R.S.T.: kein Server, kein Warten, kei
 
 ## 3. Pull Request
 
-- [ ] 3.1 Pull Request vom Branch `fix/close-scope-on-failed-start` auf `main` unter dem Titel `fix(runtime): close the bean scope when the startup check fails` öffnen (Titel und Beschreibung Englisch), mit Szenario-Zuordnung. Nachweis: PR-URL, CI grün.
+- [x] 3.1 Pull Request vom Branch `fix/close-scope-on-failed-start` auf `main` unter dem Titel `fix(runtime): close the bean scope when the startup check fails` öffnen (Titel und Beschreibung Englisch), mit Szenario-Zuordnung. Nachweis: PR-URL, CI grün.
