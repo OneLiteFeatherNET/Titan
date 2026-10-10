@@ -4,34 +4,26 @@ on:
     branches: [main]
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   release-please:
     runs-on: ubuntu-latest
-    outputs:
-      release_created: ${{ steps.release.outputs.release_created }}
-      tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
+      # The GITHUB_TOKEN would leave the release PR in "action_required" and its
+      # tags would not trigger publish.yaml, so use the release bot app instead.
+      - name: Create release bot token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.RELEASE_PLEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_PLEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
       - name: Run release-please
-        id: release
         uses: googleapis/release-please-action@v5
         with:
+          token: ${{ steps.app-token.outputs.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
-
-  # Tags created by release-please use the GITHUB_TOKEN, whose push event does
-  # NOT trigger other workflows (so publish.yaml never fired on a release).
-  # Chain the publish in the same run instead, only when a release was created.
-  publish:
-    needs: release-please
-    if: needs.release-please.outputs.release_created == 'true'
-    uses: OneLiteFeatherNET/workflows/.github/workflows/gradle-publish.yml@v2.9.0
-    # Pin the exact LTS JDK the lobby runs on: the published AOT cache is tied to
-    # the precise HotSpot build, so it must be generated with the runtime's JDK
-    # (Temurin 25.0.3 LTS) or the service fails with "Unable to map shared spaces".
-    with:
-      java-version: "25.0.3"
-      java-distribution: "temurin"
-    secrets: inherit
