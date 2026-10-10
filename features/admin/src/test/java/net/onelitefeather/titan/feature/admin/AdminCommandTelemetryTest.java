@@ -123,6 +123,29 @@ class AdminCommandTelemetryTest {
         Assertions.assertFalse(shutDown.get(), "a denied stop must not shut the server down");
     }
 
+    @DisplayName("Building the command tree for a player without the permission records no denial")
+    @Test
+    void buildingTheCommandTreeRecordsNoDenial(Env env) {
+        registerStop(env, Runnable::run);
+
+        env.process().command().createDeclareCommandsPacket(playerWithStopPermission(TriState.FALSE));
+
+        Assertions.assertTrue(testTelemetry.spans().isEmpty(), "building the tree is not a command attempt, so no span is recorded");
+        Assertions.assertEquals(0, testTelemetry.counter("admin.commands", counterAttributes("stop", "denied")), "the denied counter stays at zero");
+        Assertions.assertFalse(shutDown.get(), "building the tree must not shut the server down");
+    }
+
+    @DisplayName("A real denied stop attempt records exactly one denied span")
+    @Test
+    void aRealDeniedAttemptRecordsExactlyOneSpan(Env env) {
+        registerStop(env, Runnable::run);
+
+        env.process().command().execute(playerWithStopPermission(TriState.FALSE), "stop");
+
+        Assertions.assertEquals(1, testTelemetry.spans().size(), "one command attempt, one span");
+        Assertions.assertEquals(1, testTelemetry.counter("admin.commands", counterAttributes("stop", "denied")), "one attempt, one denial");
+    }
+
     @DisplayName("The stop span has ended before the stop thread is handed the shutdown")
     @Test
     void theStopSpanEndsBeforeTheShutdownIsLaunched(Env env) {

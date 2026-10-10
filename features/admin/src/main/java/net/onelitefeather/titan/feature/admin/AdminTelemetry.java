@@ -54,11 +54,15 @@ final class AdminTelemetry {
         observe(command, sender, EXECUTED);
     }
 
-    /** Wraps {@code condition} so that a refusal is recorded as a denied run. */
+    /**
+     * Wraps {@code condition} so that a refusal of a real command attempt is recorded as a denied
+     * run. Minestom calls the condition with a null command string when it builds the command tree
+     * for a client; that is no attempt and is not recorded.
+     */
     CommandCondition guard(String command, CommandCondition condition) {
         return (sender, commandString) -> {
             boolean allowed = condition.canUse(sender, commandString);
-            if (!allowed) {
+            if (!allowed && commandString != null) {
                 observe(command, sender, DENIED);
             }
             return allowed;
