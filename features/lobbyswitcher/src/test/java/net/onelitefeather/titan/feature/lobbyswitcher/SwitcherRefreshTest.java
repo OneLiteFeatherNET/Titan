@@ -66,6 +66,34 @@ class SwitcherRefreshTest {
         }
     }
 
+    @DisplayName("After the last viewer disconnected with the list open nothing is read any more")
+    @Test
+    void noReadsAfterTheLastViewerDisconnected(Env env) {
+        try (SwitcherFixture fixture = SwitcherFixture.active(env)) {
+            Player player = fixture.joinAndOpen();
+            player.remove();
+
+            tick(env, PERIOD_TICKS * 3);
+
+            Assertions.assertEquals(1, fixture.counts().reads(), "no periodic read once the only viewer is gone");
+        }
+    }
+
+    @DisplayName("A disconnect of one of two viewers keeps the period running")
+    @Test
+    void oneOfTwoViewersDisconnecting(Env env) {
+        try (SwitcherFixture fixture = SwitcherFixture.active(env)) {
+            Player leaving = fixture.joinAndOpen();
+            fixture.joinAndOpen();
+            int before = fixture.counts().reads();
+            leaving.remove();
+
+            tick(env, PERIOD_TICKS + 10);
+
+            Assertions.assertEquals(before + 1, fixture.counts().reads(), "the remaining viewer still gets the periodic read");
+        }
+    }
+
     @DisplayName("After the last viewer closed the list nothing is read any more")
     @Test
     void noReadsWithoutViewers(Env env) {

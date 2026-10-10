@@ -26,6 +26,7 @@ import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.event.inventory.InventoryCloseEvent;
 import net.minestom.server.event.inventory.InventoryPreClickEvent;
+import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.onelitefeather.titan.core.lobby.LobbyIdentities;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
@@ -70,7 +71,7 @@ final class LobbySwitcherModule {
         // Aves' click and close listeners do not fire for a per-locale inventory, so the list's
         // clicks and closes are routed from here. The protection feature cancels every click first,
         // so the click listener must also see cancelled events.
-        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry).onIncludingCancelled(InventoryPreClickEvent.class, this.inventory::onClick).on(InventoryCloseEvent.class, this.inventory::onClose);
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry).onIncludingCancelled(InventoryPreClickEvent.class, this.inventory::onClick).on(InventoryCloseEvent.class, this.inventory::onClose).on(PlayerDisconnectEvent.class, event -> this.inventory.onDisconnect(event.getPlayer()));
     }
 
     /** Idempotent. */

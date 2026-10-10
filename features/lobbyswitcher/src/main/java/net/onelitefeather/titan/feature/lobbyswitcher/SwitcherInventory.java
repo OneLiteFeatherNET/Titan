@@ -147,6 +147,17 @@ final class SwitcherInventory {
         }
     }
 
+    /**
+     * A player left with the list open; Minestom fires no close event for that, so the viewer is
+     * released here.
+     */
+    void onDisconnect(Player player) {
+        AbstractInventory open = player.getOpenInventory();
+        if (open != null && isOurs(open)) {
+            this.viewers.closed();
+        }
+    }
+
     private boolean isOurs(AbstractInventory inventory) {
         return inventory instanceof CustomInventory custom && custom.getHolder() instanceof InventoryHolderImpl holder && holder.inventoryBuilder() == this.builder;
     }
