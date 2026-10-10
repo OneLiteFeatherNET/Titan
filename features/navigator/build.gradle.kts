@@ -10,4 +10,6 @@ dependencies {
     // against Destination's fixed feature flags - a test-only reader, never a main-code dependency
     // (see ColumnArchitectureTest's navigatorDoesNotDependOnAvajeConfig rule).
     testImplementation(libs.avaje.config)
+    // The features section lives in runtime's defaults; only its resource is needed at test time.
+    testRuntimeOnly(project(":runtime"))
 }
