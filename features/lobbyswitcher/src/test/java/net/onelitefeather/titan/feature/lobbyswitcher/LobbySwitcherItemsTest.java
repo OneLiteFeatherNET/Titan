@@ -81,4 +81,21 @@ class LobbySwitcherItemsTest {
             Assertions.assertNotNull(player.getOpenInventory(), "the list must open once the identity is known");
         }
     }
+
+    @DisplayName("An identity that is known before the beans are built gives the clock, and the list opens")
+    @Test
+    void identityKnownBeforeTheScopeStillWorks(Env env) {
+        AtomicReference<Optional<LobbyIdentity>> identity = new AtomicReference<>(Optional.of(SwitcherFixture.OWN));
+        try (SwitcherFixture fixture = new SwitcherFixture(env, new FakeFeatureFlags(LobbySwitcherModule.FLAG), identity::get, Telemetry.noop())) {
+            Instance instance = env.createFlatInstance();
+
+            Player player = fixture.join(instance);
+            fixture.use(player);
+            fixture.settle();
+
+            Assertions.assertNotNull(fixture.item(), "the clock is contributed whenever the flag is on");
+            Assertions.assertEquals(Material.CLOCK, player.getInventory().getItemStack(8).material(), "slot 8 must hold the clock");
+            Assertions.assertNotNull(player.getOpenInventory(), "the list must open when the identity was there from the start");
+        }
+    }
 }
