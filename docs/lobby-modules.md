@@ -26,7 +26,7 @@ apps/local ────┼─▶ runtime ─────────────
 - **`core`** enthält nur APIs, keine Implementierung: die Andockpunkte einer Column
   (`net.onelitefeather.titan.core.module.FeatureNode`, `LobbySpawn`, `LobbyItem`, `ItemSlot`,
   `ItemUseHandler`, `net.onelitefeather.titan.core.module.item.LobbyItems`), `FeatureFlags`,
-  `EntityDismountEvent`, `Cancelable` sowie `Deliver` (`net.onelitefeather.titan.api.deliver`).
+  `Cancelable` sowie `Deliver` (`net.onelitefeather.titan.api.deliver`).
   Dazu kommen `testFixtures` - `TestTitanNode`, `DummyDeliver`, `EventListenerCounter` und die
   geteilten ArchUnit-Regeln `ColumnArchitectureRules` (s. "Architekturregeln" unten).
 - **`features/<name>`** (Paket `net.onelitefeather.titan.feature.<name>`) ist eine Column: ein

@@ -22,9 +22,9 @@ import net.minestom.server.item.ItemStack;
  * The platform-wide home for every {@link LobbyItem} a column contributes: {@link #equip(Player)}
  * gives a player the standard loadout, {@link #stack(String)} hands back the stamped stack for an
  * item with no fixed placement (e.g. the elytra's firework, given out and taken back by its own
- * feature). The implementation, {@code HotbarLobbyItems}, lives in {@code features/hotbar} (in
- * this wave, temporarily in {@code :app}) - a column depends only on this interface (DIP, ISP: a
- * column never sees {@code itemCount()} or how items are collected).
+ * feature). The implementation, {@code HotbarLobbyItems}, lives in {@code features/hotbar} - a
+ * column depends only on this interface (DIP, ISP: a column never sees {@code itemCount()} or how
+ * items are collected).
  */
 public interface LobbyItems {
 

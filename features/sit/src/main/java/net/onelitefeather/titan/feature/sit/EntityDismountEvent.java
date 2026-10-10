@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.core.event;
+package net.onelitefeather.titan.feature.sit;
 
 import net.minestom.server.entity.Entity;
 import net.minestom.server.event.trait.EntityEvent;
