@@ -8,9 +8,9 @@ Teil der Aufteilung aus `lobby-tracing` (Fundament): Dieser Change nutzt `Teleme
 
 ## What Changes
 
-- **season:** Span `season.check` je periodischer Prüfung (Minutentakt, `SeasonModule.check`): `season.current`, `season.desired`, `season.outcome` (`unchanged`/`pending_restart`/`restart_requested`/`unresolvable`), `season.online_players`. Span-Event `season.stop_requested`. Zähler `season.restarts_requested`, `season.checks{outcome}`.
-- **daytime:** kein Span (periodisches Housekeeping, `UPDATE_INTERVAL`). Zähler `daytime.updates` und `daytime.config_rejected{reason}` (statt nur einmaliger Warnung im Log), Gauge `daytime.minute_of_day` ist **nicht** Teil (Wert ändert sich laufend, kaum nützlich).
-- **protection:** kein Span, Zähler `protection.denied{event}` je abgebrochenem Event (`pickup`, `inventory_click`, `block_break`, … nach dem tatsächlich registrierten Handler). Hochfrequente Events, daher nur Zähler.
+- **season:** Span `season.check` je periodischer Prüfung (Minutentakt, `SeasonModule.check`): `season.current`, `season.desired`, `season.outcome` (`unchanged`/`pending_restart`/`restart_requested`/`unresolvable`), `season.online_players`. Span-Event `season.stop_requested`. Zähler `titan.season.restarts_requested`, `titan.season.checks{outcome}`.
+- **daytime:** kein Span (periodisches Housekeeping, `UPDATE_INTERVAL`). Zähler `titan.daytime.updates` und `titan.daytime.config_rejected{reason}` (statt nur einmaliger Warnung im Log), Gauge `daytime.minute_of_day` ist **nicht** Teil (Wert ändert sich laufend, kaum nützlich).
+- **protection:** kein Span, Zähler `titan.protection.denied{event}` je abgebrochenem Event (`pickup`, `inventory_click`, `block_break`, … nach dem tatsächlich registrierten Handler). Hochfrequente Events, daher nur Zähler.
 - `FeatureNode.attach(…, telemetry)` in allen drei.
 
 Rollout: später, nach Fundament und `lobby-tracing-jumprun`.

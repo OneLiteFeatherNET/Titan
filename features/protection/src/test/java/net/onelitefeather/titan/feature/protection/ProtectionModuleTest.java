@@ -52,7 +52,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 class ProtectionModuleTest {
 
     private static final AttributeKey<String> EVENT = AttributeKey.stringKey("event");
-    private static final String DENIED = "protection.denied";
+    private static final String DENIED = "titan.protection.denied";
 
     /**
      * A started {@link ProtectionModule} plus its {@code titan} node and its own telemetry, torn

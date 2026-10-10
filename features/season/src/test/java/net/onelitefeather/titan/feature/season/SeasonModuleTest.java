@@ -158,7 +158,7 @@ class SeasonModuleTest {
     }
 
     private long restartsRequested() {
-        return this.telemetry.counter("season.restarts_requested", Attributes.empty());
+        return this.telemetry.counter("titan.season.restarts_requested", Attributes.empty());
     }
 
     private List<String> infoMessages() {
@@ -460,7 +460,7 @@ class SeasonModuleTest {
 
         List<String> events = this.telemetry.span("season.check").getEvents().stream().map(event -> event.getName()).toList();
         Assertions.assertEquals(List.of("season.stop_requested"), events, "the check span must carry the stop event");
-        Assertions.assertEquals(1L, restartsRequested(), "season.restarts_requested");
+        Assertions.assertEquals(1L, restartsRequested(), "titan.season.restarts_requested");
     }
 
     @DisplayName("The restart counter stays at one however many checks request the stop")
@@ -471,7 +471,7 @@ class SeasonModuleTest {
 
         tickMinutes(3);
 
-        Assertions.assertEquals(1L, restartsRequested(), "season.restarts_requested");
+        Assertions.assertEquals(1L, restartsRequested(), "titan.season.restarts_requested");
     }
 
     @DisplayName("Each check is counted under its outcome")
@@ -484,8 +484,8 @@ class SeasonModuleTest {
 
         tickMinutes(1);
 
-        Assertions.assertEquals(1L, this.telemetry.counter("season.checks", Attributes.of(OUTCOME, "unchanged")), "unchanged checks");
-        Assertions.assertEquals(1L, this.telemetry.counter("season.checks", Attributes.of(OUTCOME, "pending_restart")), "pending checks");
+        Assertions.assertEquals(1L, this.telemetry.counter("titan.season.checks", Attributes.of(OUTCOME, "unchanged")), "unchanged checks");
+        Assertions.assertEquals(1L, this.telemetry.counter("titan.season.checks", Attributes.of(OUTCOME, "pending_restart")), "pending checks");
     }
 
     @DisplayName("A player leaving adds no span of its own, only the check on the next tick")

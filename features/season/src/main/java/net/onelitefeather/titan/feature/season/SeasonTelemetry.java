@@ -42,7 +42,8 @@ final class SeasonTelemetry {
     private static final AttributeKey<Long> ONLINE_PLAYERS = AttributeKey.longKey("season.online_players");
 
     /**
-     * The result of one check; the span and the {@code season.checks} counter use its wire name.
+     * The result of one check; the span and the {@code titan.season.checks} counter use its wire
+     * name.
      */
     enum Outcome {
         UNCHANGED, PENDING_RESTART, RESTART_REQUESTED, UNRESOLVABLE;
@@ -58,8 +59,8 @@ final class SeasonTelemetry {
 
     SeasonTelemetry(Telemetry telemetry) {
         this.telemetry = telemetry;
-        this.checks = telemetry.meter().counterBuilder("season.checks").setUnit("{check}").setDescription("Periodic season checks by outcome").build();
-        this.restartsRequested = telemetry.meter().counterBuilder("season.restarts_requested").setUnit("{restart}").setDescription("Lobby stops requested for a season change").build();
+        this.checks = telemetry.meter().counterBuilder("titan.season.checks").setUnit("{check}").setDescription("Periodic season checks by outcome").build();
+        this.restartsRequested = telemetry.meter().counterBuilder("titan.season.restarts_requested").setUnit("{restart}").setDescription("Lobby stops requested for a season change").build();
     }
 
     /** Runs one check inside its span; {@code current} is the world the lobby runs in now. */

@@ -22,16 +22,16 @@ Regeln für jeden Agent-Prompt:
 ## 1. season
 
 - [x] 1.1 Test zuerst (Unit, `SeasonModule` mit Fake-`Scheduler`, `SeasonSchedule`, fester `Clock`): `check` erzeugt `season.check` mit `current`, `desired`, `outcome`, `online_players` für die Fälle unverändert, wartend, Neustart, nicht auflösbar. Rot, dann `SeasonModule` (`Telemetry`, `attach(…, telemetry)`, `check` in `inSpan`). Grün.
-- [x] 1.2 Test zuerst: Neustart-Anforderung setzt das Event `season.stop_requested` und erhöht `season.restarts_requested`; `season.checks{outcome}` stimmt. Rot, dann grün.
+- [x] 1.2 Test zuerst: Neustart-Anforderung setzt das Event `season.stop_requested` und erhöht `titan.season.restarts_requested`; `titan.season.checks{outcome}` stimmt. Rot, dann grün.
 - [x] 1.3 Test zuerst: Der Disconnect-Listener erzeugt selbst keinen Span, nur den Check im nächsten Tick (`env.tick()`). Rot, dann grün. Nachweis: `./gradlew :features:season:build`.
 
 ## 2. daytime
 
-- [x] 2.1 Test zuerst (Unit, feste `Clock`): `daytime.updates` zählt jede Aktualisierung; eine abgelehnte Zonen-ID erhöht `daytime.config_rejected{reason}` einmal je Ablehnung, kein Span. Rot, dann `DaytimeModule` (`Telemetry`). Grün. Nachweis: `./gradlew :features:daytime:build`.
+- [x] 2.1 Test zuerst (Unit, feste `Clock`): `titan.daytime.updates` zählt jede Aktualisierung; eine abgelehnte Zonen-ID erhöht `titan.daytime.config_rejected{reason}` einmal je Ablehnung, kein Span. Rot, dann `DaytimeModule` (`Telemetry`). Grün. Nachweis: `./gradlew :features:daytime:build`.
 
 ## 3. protection
 
-- [x] 3.1 Test zuerst (Integration, `Env`): Jedes geschützte Event (Aufheben, Inventar-Klick, weitere der Handler-Liste) ist abgebrochen und erhöht `protection.denied{event}` mit dem passenden Namen; kein Span. Rot, dann `ProtectionModule` (`Telemetry`; zählender Abbruch-Handler an einer Stelle). Grün.
+- [x] 3.1 Test zuerst (Integration, `Env`): Jedes geschützte Event (Aufheben, Inventar-Klick, weitere der Handler-Liste) ist abgebrochen und erhöht `titan.protection.denied{event}` mit dem passenden Namen; kein Span. Rot, dann `ProtectionModule` (`Telemetry`; zählender Abbruch-Handler an einer Stelle). Grün.
 - [x] 3.2 Test zuerst: 1000 abgebrochene Events erzeugen null Spans und keinen Attributwert mit Spieler-Daten. Rot, dann grün. Nachweis: `./gradlew :features:protection:build`; `docs/lobby-modules.md` nennt Spans und Zähler von season, daytime, protection.
 
 ## 4. Abnahme

@@ -88,7 +88,7 @@ class DaytimeModuleTest {
     }
 
     private long rejections(String reason) {
-        return this.telemetry.counter("daytime.config_rejected", Attributes.of(REASON, reason));
+        return this.telemetry.counter("titan.daytime.config_rejected", Attributes.of(REASON, reason));
     }
 
     private void tick(int ticks) {
@@ -311,7 +311,7 @@ class DaytimeModuleTest {
 
         tick(RUN_INTERVAL_TICKS);
 
-        Assertions.assertEquals(2L, this.telemetry.counter("daytime.updates", Attributes.empty()), "the start update and one scheduled update");
+        Assertions.assertEquals(2L, this.telemetry.counter("titan.daytime.updates", Attributes.empty()), "the start update and one scheduled update");
     }
 
     @DisplayName("An invalid zone at runtime counts one rejection with reason invalid, not one per update")

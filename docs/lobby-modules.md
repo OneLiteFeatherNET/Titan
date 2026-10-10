@@ -938,11 +938,11 @@ Auftraggebers mit, Hibernate-Spans hängen so am auslösenden Span.
   Konfiguration `unresolvable`), `season.outcome` (`unchanged`, `pending_restart`,
   `restart_requested`, `unresolvable`) und `season.online_players`. Das Span-Event
   `season.stop_requested` markiert die tatsächliche Stop-Anforderung. Zähler
-  `season.checks{outcome}` und `season.restarts_requested`.
-- `daytime`: kein Span. Zähler `daytime.updates` je Aktualisierung und
-  `daytime.config_rejected{reason}` je neu abgelehntem Wert von `daytime.zone` (`blank` oder
+  `titan.season.checks{outcome}` und `titan.season.restarts_requested`.
+- `daytime`: kein Span. Zähler `titan.daytime.updates` je Aktualisierung und
+  `titan.daytime.config_rejected{reason}` je neu abgelehntem Wert von `daytime.zone` (`blank` oder
   `invalid`).
-- `protection`: kein Span. Zähler `protection.denied{event}` je abgebrochenem Event, mit den Namen
+- `protection`: kein Span. Zähler `titan.protection.denied{event}` je abgebrochenem Event, mit den Namen
   `pickup`, `inventory_click`, `block_break`, `block_place`, `item_swap` und `item_drop`.
 
 ### Testen mit `TestTelemetry`

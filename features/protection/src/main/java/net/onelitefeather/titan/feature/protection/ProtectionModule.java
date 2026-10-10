@@ -52,7 +52,7 @@ public final class ProtectionModule {
     static final int EVENT_PRIORITY = 100;
 
     private static final String ID = "protection";
-    private static final String DENIED_METRIC = "protection.denied";
+    private static final String DENIED_METRIC = "titan.protection.denied";
     private static final AttributeKey<String> EVENT = AttributeKey.stringKey("event");
 
     private final EventNode<Event> titan;

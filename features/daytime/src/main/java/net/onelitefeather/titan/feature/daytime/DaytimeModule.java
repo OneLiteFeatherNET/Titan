@@ -64,8 +64,8 @@ public final class DaytimeModule {
         this.lobby = Objects.requireNonNull(lobby, "lobby");
         this.scheduler = Objects.requireNonNull(scheduler, "scheduler");
         this.clock = Objects.requireNonNull(clock, "clock");
-        this.updates = Objects.requireNonNull(telemetry, "telemetry").meter().counterBuilder("daytime.updates").setUnit("{update}").setDescription("Time-of-day updates of the lobby").build();
-        this.configRejected = telemetry.meter().counterBuilder("daytime.config_rejected").setUnit("{rejection}").setDescription("Changed daytime.zone values that were rejected").build();
+        this.updates = Objects.requireNonNull(telemetry, "telemetry").meter().counterBuilder("titan.daytime.updates").setUnit("{update}").setDescription("Time-of-day updates of the lobby").build();
+        this.configRejected = telemetry.meter().counterBuilder("titan.daytime.config_rejected").setUnit("{rejection}").setDescription("Changed daytime.zone values that were rejected").build();
     }
 
     @PostConstruct
