@@ -43,6 +43,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
 
 /**
  * Start coverage for the {@code local} variant (spec {@code app-variants}, "Eine Variante startet
@@ -98,6 +99,25 @@ class VariantStartTest {
 
         Assertions.assertTrue(descriptor.modules().contains("jumprunColumn"), "expected modules must include jumprunColumn, were: " + descriptor.modules());
         Assertions.assertTrue(LoadedModules.discover(loader).contains("jumprunColumn"), "the jumprun column must be on the classpath and load");
+    }
+
+    @DisplayName("variant.properties lists lobbyswitcherColumn, but without the CloudNet profile its module is no bean")
+    @Test
+    @Timeout(30)
+    void lobbyswitcherColumnIsLoadedButItsModuleIsNoBeanWithoutCloudNet(Env env) throws ClassNotFoundException {
+        ClassLoader loader = getClass().getClassLoader();
+        VariantDescriptor descriptor = VariantDescriptor.fromClasspath(loader).orElseThrow(() -> new AssertionError("this variant must ship META-INF/titan/variant.properties"));
+
+        Assertions.assertTrue(descriptor.modules().contains("lobbyswitcherColumn"), "expected modules must include lobbyswitcherColumn, were: " + descriptor.modules());
+        Assertions.assertTrue(LoadedModules.discover(loader).contains("lobbyswitcherColumn"), "the lobbyswitcher column must be on the classpath and load");
+
+        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class, ActiveLobby.empty()).mock(FeatureFlags.class, flags -> Mockito.when(flags.isActive("LOBBYSWITCHER")).thenReturn(true)).mock(PermissionService.class, "luckperms").build();
+        try {
+            // The module is package-private, so the bean is looked up by class name.
+            Assertions.assertFalse(scope.contains(Class.forName("net.onelitefeather.titan.feature.lobbyswitcher.LobbySwitcherModule", false, loader)), "the lobbyswitcher module must not exist without the CloudNet profile");
+        } finally {
+            scope.close();
+        }
     }
 
     @DisplayName("The season column is neither expected nor on the classpath")
