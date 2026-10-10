@@ -19,6 +19,9 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.sdk.trace.data.SpanData;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -32,6 +35,7 @@ import net.onelitefeather.titan.core.portal.Billboard;
 import net.onelitefeather.titan.core.portal.Box;
 import net.onelitefeather.titan.core.portal.Portal;
 import net.onelitefeather.titan.core.portal.PortalLabel;
+import net.onelitefeather.titan.core.testfixtures.TestTelemetry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -42,7 +46,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
- * Time passes only through the scheduler's own tick methods; every test builds its own scheduler.
+ * Time passes only through the scheduler's own tick methods; every test builds its own scheduler
+ * and telemetry.
  */
 class LabelRefreshTest {
 
@@ -51,6 +56,8 @@ class LabelRefreshTest {
     private final Scheduler scheduler = Scheduler.newScheduler();
     private final Logger refreshLogger = (Logger) LoggerFactory.getLogger(LabelRefresh.class);
     private final ListAppender<ILoggingEvent> lines = new ListAppender<>();
+    private final TestTelemetry testTelemetry = TestTelemetry.create();
+    private final PortalTelemetry telemetry = new PortalTelemetry(this.testTelemetry.telemetry());
 
     @BeforeEach
     void captureLog() {
@@ -62,6 +69,7 @@ class LabelRefreshTest {
     void releaseLog() {
         this.refreshLogger.detachAppender(this.lines);
         this.lines.stop();
+        this.testTelemetry.close();
     }
 
     private static LabelRefresh.Entry entry(String id, List<String> shown) {
@@ -83,6 +91,10 @@ class LabelRefreshTest {
         return this.lines.list.stream().filter(line -> line.getLevel() == Level.WARN).toList();
     }
 
+    private LabelRefresh refresh(Executor executor, LabelReadings readings, LabelRefresh.Entry... entries) {
+        return new LabelRefresh(this.scheduler, executor, readings, List.of(entries), this.telemetry);
+    }
+
     @DisplayName("An executor that rejects the read is offered the read again next period and warns once")
     @Test
     void rejectingExecutorIsRetried() {
@@ -94,7 +106,7 @@ class LabelRefreshTest {
             }
             task.run();
         };
-        LabelRefresh refresh = new LabelRefresh(this.scheduler, rejectingTwice, portal -> new LabelReading.Local(4), List.of(entry("a", shown)));
+        LabelRefresh refresh = refresh(rejectingTwice, portal -> new LabelReading.Local(4), entry("a", shown));
         refresh.start(1);
 
         tick(2);
@@ -114,7 +126,7 @@ class LabelRefreshTest {
     void lateResultAfterStopIsIgnored() {
         QueuedExecutor executor = new QueuedExecutor();
         List<String> shown = new ArrayList<>();
-        LabelRefresh refresh = new LabelRefresh(this.scheduler, executor, portal -> new LabelReading.Local(4), List.of(entry("a", shown)));
+        LabelRefresh refresh = refresh(executor, portal -> new LabelReading.Local(4), entry("a", shown));
         refresh.start(1);
         tick(2);
         assertEquals(1, executor.pending(), "a read is under way");
@@ -137,7 +149,7 @@ class LabelRefreshTest {
             }
             return new LabelReading.Local(5);
         };
-        LabelRefresh refresh = new LabelRefresh(this.scheduler, Runnable::run, readings, List.of(entry("a", shownA), entry("b", shownB)));
+        LabelRefresh refresh = refresh(Runnable::run, readings, entry("a", shownA), entry("b", shownB));
         refresh.start(1);
 
         tick(2);
@@ -150,10 +162,49 @@ class LabelRefreshTest {
         refresh.stop();
     }
 
+    @DisplayName("A refresh cycle is one span with the label count and the number of failed reads")
+    @Test
+    void aCycleIsSpannedWithCountAndFailures() {
+        LabelReadings readings = portal -> {
+            if (portal.id().equals("a")) {
+                throw new IllegalStateException("provider down");
+            }
+            return new LabelReading.Local(5);
+        };
+        LabelRefresh refresh = refresh(Runnable::run, readings, entry("a", new ArrayList<>()), entry("b", new ArrayList<>()));
+        refresh.start(1);
+
+        tick(2);
+        refresh.stop();
+
+        SpanData span = this.testTelemetry.span("portal.labels.refresh");
+        assertEquals(2L, this.testTelemetry.attribute(span, AttributeKey.longKey("portal.labels.count")), "both labels are in the cycle");
+        assertEquals(1L, this.testTelemetry.attribute(span, AttributeKey.longKey("portal.labels.failed")), "one read failed");
+    }
+
+    @DisplayName("Each player-count read counts once: a successful one as ok, a throwing one as error")
+    @Test
+    void lookupsAreCountedByResult() {
+        LabelReadings readings = portal -> {
+            if (portal.id().equals("a")) {
+                throw new IllegalStateException("provider down");
+            }
+            return new LabelReading.Local(5);
+        };
+        LabelRefresh refresh = refresh(Runnable::run, readings, entry("a", new ArrayList<>()), entry("b", new ArrayList<>()));
+        refresh.start(1);
+
+        tick(2);
+        refresh.stop();
+
+        assertEquals(1, this.testTelemetry.counter("portal.player_count.lookups", Attributes.of(AttributeKey.stringKey("result"), "error")), "the throwing lookup");
+        assertEquals(1, this.testTelemetry.counter("portal.player_count.lookups", Attributes.of(AttributeKey.stringKey("result"), "ok")), "the healthy lookup");
+    }
+
     @DisplayName("A period whose ticks overflow an int is rejected instead of wrapping")
     @Test
     void overflowingPeriodIsRejected() {
-        LabelRefresh refresh = new LabelRefresh(this.scheduler, Runnable::run, portal -> new LabelReading.Local(1), List.of());
+        LabelRefresh refresh = refresh(Runnable::run, portal -> new LabelReading.Local(1));
 
         assertThrows(ArithmeticException.class, () -> refresh.start(Integer.MAX_VALUE), "seconds times ticks per second must not wrap");
     }
@@ -162,7 +213,7 @@ class LabelRefreshTest {
     @Test
     void startAfterStopSchedulesNothing() {
         AtomicInteger offered = new AtomicInteger();
-        LabelRefresh refresh = new LabelRefresh(this.scheduler, task -> offered.incrementAndGet(), portal -> new LabelReading.Local(1), List.of(entry("a", new ArrayList<>())));
+        LabelRefresh refresh = refresh(task -> offered.incrementAndGet(), portal -> new LabelReading.Local(1), entry("a", new ArrayList<>()));
         refresh.stop();
 
         refresh.start(1);
@@ -181,7 +232,7 @@ class LabelRefreshTest {
             }
             return new LabelReading.Local(5);
         };
-        LabelRefresh refresh = new LabelRefresh(this.scheduler, Runnable::run, readings, List.of(entry("a", new ArrayList<>())));
+        LabelRefresh refresh = refresh(Runnable::run, readings, entry("a", new ArrayList<>()));
         refresh.start(1);
 
         tick(2);

@@ -25,14 +25,14 @@ Regeln für jeden Agent-Prompt:
 
 ## 2. portal
 
-- [ ] 2.1 Test zuerst (Integration, Cyano-`Env`, `env.tick()`): Ein Spieler läuft durch ein Portal: `portal.transfer` mit `portal.id`, `portal.task`, `user.id`, `portal.result=delivered`; `portal.transfers{result=delivered}` steht auf eins; bei Fake-`Deliver`, der wirft: ERROR, `result=error`. Bewegung ohne Portal erzeugt keinen Span. Rot. Dann `PortalModule` (`Telemetry` per Konstruktor, `requires Telemetry.class`, `attach(…, telemetry)`, `deliver` in `inSpan`). Grün.
-- [ ] 2.2 Test zuerst (Unit, `PortalTriggerTest`): Verweigertes Recht erhöht `portal.denied{portal.id}` und erzeugt keinen Span; Abkühlzeit zählt nicht als verweigert. Rot, dann grün (der Zähler wird im Aufrufer erhöht, `PortalTrigger` bleibt rein).
-- [ ] 2.3 Test zuerst (Unit, `LabelRefresh` mit Fake-Scheduler und Fake-Lookup): Ein Zyklus erzeugt `portal.labels.refresh` mit Anzahl Labels und fehlgeschlagenen Abfragen; ein werfender Lookup erhöht `portal.player_count.lookups{result=error}`, die übrigen Labels werden aktualisiert. Rot, dann grün. Nachweis: `./gradlew :features:portal:build`; `docs/lobby-modules.md` (portal) nennt Spans und Zähler.
+- [x] 2.1 Test zuerst (Integration, Cyano-`Env`, `env.tick()`): Ein Spieler läuft durch ein Portal: `portal.transfer` mit `portal.id`, `portal.task`, `user.id`, `portal.result=delivered`; `portal.transfers{result=delivered}` steht auf eins; bei Fake-`Deliver`, der wirft: ERROR, `result=error`. Bewegung ohne Portal erzeugt keinen Span. Rot. Dann `PortalModule` (`Telemetry` per Konstruktor, `requires Telemetry.class`, `attach(…, telemetry)`, `deliver` in `inSpan`). Grün.
+- [x] 2.2 Test zuerst (Unit, `PortalTriggerTest`): Verweigertes Recht erhöht `portal.denied{portal.id}` und erzeugt keinen Span; Abkühlzeit zählt nicht als verweigert. Rot, dann grün (der Zähler wird im Aufrufer erhöht, `PortalTrigger` bleibt rein).
+- [x] 2.3 Test zuerst (Unit, `LabelRefresh` mit Fake-Scheduler und Fake-Lookup): Ein Zyklus erzeugt `portal.labels.refresh` mit Anzahl Labels und fehlgeschlagenen Abfragen; ein werfender Lookup erhöht `portal.player_count.lookups{result=error}`, die übrigen Labels werden aktualisiert. Rot, dann grün. Nachweis: `./gradlew :features:portal:build`; `docs/lobby-modules.md` (portal) nennt Spans und Zähler.
 
 ## 3. Abnahme
 
 - [ ] 3.1 Smoke-Test mit Shaded-Jar, Agent und `logging`-Exporter: Portal betreten (Transfer ok, Rechte verweigert), Label-Aktualisierung; `portal.transfer` mit Kind `deliver.send_player`, Zähler `portal.transfers`. Ohne Agent keine Fehler. Nachweis: Checkliste im PR-Text. Nach dem Deploy (Mensch): Spans in Tempo, Zähler in Mimir.
-- [ ] 3.2 Verifikation (read-only): Jedes Szenario ist einem Test oder Smoke-Punkt zugeordnet, F.I.R.S.T. erfüllt. Nachweis: Zuordnungstabelle im PR-Text.
+- [x] 3.2 Verifikation (read-only): Jedes Szenario ist einem Test oder Smoke-Punkt zugeordnet, F.I.R.S.T. erfüllt. Nachweis: Zuordnungstabelle im PR-Text.
 
 ## 4. Pull Request
 

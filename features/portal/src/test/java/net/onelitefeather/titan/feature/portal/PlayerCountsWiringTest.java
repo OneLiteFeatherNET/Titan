@@ -31,6 +31,7 @@ import net.onelitefeather.titan.core.portal.LobbyPortals;
 import net.onelitefeather.titan.core.portal.PlayerCount;
 import net.onelitefeather.titan.core.portal.PlayerCounts;
 import net.onelitefeather.titan.core.portal.SourceType;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -44,7 +45,7 @@ class PlayerCountsWiringTest {
     /** What the platform supplies to the column; the portal module itself is built for real. */
     private static BeanScopeBuilder platform() {
         return BeanScope.builder().bean(FeatureNode.TITAN_NODE, new GenericType<EventNode<Event>>() {
-        }.type(), EventNode.all("test-portal-wiring")).bean(Deliver.class, new RecordingDeliver()).bean(PermissionService.class, new FakePermissionService()).bean(LobbyPortals.class, (LobbyPortals) List::of).bean(Clock.class, Clock.systemUTC()).bean(Instance.class, Mockito.mock(Instance.class)).bean(Scheduler.class, Scheduler.newScheduler());
+        }.type(), EventNode.all("test-portal-wiring")).bean(Deliver.class, new RecordingDeliver()).bean(PermissionService.class, new FakePermissionService()).bean(LobbyPortals.class, (LobbyPortals) List::of).bean(Clock.class, Clock.systemUTC()).bean(Instance.class, Mockito.mock(Instance.class)).bean(Scheduler.class, Scheduler.newScheduler()).bean(Telemetry.class, Telemetry.noop());
     }
 
     @DisplayName("Without a provider the fallback answers that nothing runs")

@@ -25,6 +25,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import net.minestom.server.coordinate.Point;
 import net.onelitefeather.titan.core.permission.PermissionResult;
 import net.onelitefeather.titan.core.permission.PermissionService;
@@ -53,12 +54,18 @@ final class PortalTrigger {
     private final PortalIndex index;
     private final PermissionService permissions;
     private final Clock clock;
+    private final Consumer<Portal> onDenied;
     private final Map<UUID, PlayerState> states = new ConcurrentHashMap<>();
 
-    PortalTrigger(PortalIndex index, PermissionService permissions, Clock clock) {
+    /**
+     * @param onDenied told each portal a player entered without the permission; a refusal during
+     *                 the cooldown is not reported
+     */
+    PortalTrigger(PortalIndex index, PermissionService permissions, Clock clock, Consumer<Portal> onDenied) {
         this.index = Objects.requireNonNull(index, "index");
         this.permissions = Objects.requireNonNull(permissions, "permissions");
         this.clock = Objects.requireNonNull(clock, "clock");
+        this.onDenied = Objects.requireNonNull(onDenied, "onDenied");
     }
 
     /**
@@ -69,6 +76,8 @@ final class PortalTrigger {
      */
     Optional<Portal> onMove(UUID playerId, Point from, Point to) {
         PlayerState state = this.states.computeIfAbsent(playerId, id -> new PlayerState());
+        Instant now = this.clock.instant();
+        boolean coolingDown = now.isBefore(state.cooldownUntil);
         Set<String> touchedNow = new HashSet<>();
         Portal entered = null;
         for (Portal portal : this.index.candidates(from, to)) {
@@ -76,12 +85,17 @@ final class PortalTrigger {
                 continue;
             }
             touchedNow.add(portal.id());
-            if (entered == null && !state.touched.contains(portal.id()) && mayUse(playerId, portal)) {
+            if (state.touched.contains(portal.id())) {
+                continue;
+            }
+            if (!mayUse(playerId, portal)) {
+                if (!coolingDown) {
+                    this.onDenied.accept(portal);
+                }
+            } else if (entered == null) {
                 entered = portal;
             }
         }
-        Instant now = this.clock.instant();
-        boolean coolingDown = now.isBefore(state.cooldownUntil);
         state.touched = touchedNow;
         if (entered == null || coolingDown) {
             return Optional.empty();

@@ -30,6 +30,7 @@ import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.portal.Box;
 import net.onelitefeather.titan.core.portal.Portal;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.onelitefeather.titan.core.testfixtures.EventListenerCounter;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 import org.junit.jupiter.api.Assertions;
@@ -45,7 +46,7 @@ class PortalModuleLeakTest {
 
     private PortalModule module(Env env, TestTitanNode titan) {
         Portal portal = new Portal("survival", new Box(new Vec(0, 64, 0), new Vec(1, 65, 1)), "Survival", null);
-        return new PortalModule(titan.node(), () -> List.of(portal), this.deliver, new FakePermissionService(), this.clock, env.createFlatInstance(), env.process().scheduler(), Runnable::run, unused -> new LabelReading.Local(0), new PortalSettings(1));
+        return new PortalModule(titan.node(), () -> List.of(portal), this.deliver, new FakePermissionService(), this.clock, env.createFlatInstance(), env.process().scheduler(), Runnable::run, unused -> new LabelReading.Local(0), new PortalSettings(1), Telemetry.noop());
     }
 
     @DisplayName("After stop the module's node is gone and a move into a portal delivers nothing")
