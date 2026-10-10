@@ -110,6 +110,7 @@ class PortalEditorSaveAllTest {
 
         Rejected rejected = assertInstanceOf(Rejected.class, result.results().get(0), "the rejected draft is reported with its reason");
         assertEquals("ring", rejected.id(), "the rejection names the draft's id");
+        assertEquals(List.of("normal must not have length 0"), rejected.problems().stream().map(problem -> problem.reason()).toList(), "the reason comes from the validator");
         assertInstanceOf(Saved.class, result.results().get(1), "the valid draft is still saved");
         assertEquals(List.of("ring", "a"), ids(store.portals()), "the broken portal stays, the valid one is appended");
         assertEquals(List.of("ring"), openDraftIds(ALICE), "only the rejected draft stays open");

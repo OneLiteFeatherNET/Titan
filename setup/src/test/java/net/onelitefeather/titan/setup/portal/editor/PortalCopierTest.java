@@ -91,6 +91,7 @@ class PortalCopierTest {
 
         assertEquals(List.of("survival"), copied.replacing(), "survival exists in the target world");
         assertEquals(List.of("creative"), copied.added(), "creative is new");
+        assertEquals(List.of(new Portal("survival", new Box(new Vec(10, 64, 10), new Vec(14, 68, 11)), "Old", null)), store.portals(), "the saved portal stays until save");
     }
 
     @Test

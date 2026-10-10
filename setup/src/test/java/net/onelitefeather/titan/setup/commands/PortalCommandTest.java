@@ -627,6 +627,15 @@ class PortalCommandTest {
         assertTrue(display.isRemoved(), "display removed with the world change");
     }
 
+    @DisplayName("The console cannot copy portals either")
+    @Test
+    void consoleCannotCopy() {
+        CommandResult result = commands.execute(commands.getConsoleSender(), "setup portal copy lobby");
+
+        assertNotEquals(CommandResult.Type.SUCCESS, result.getType(), "playerOnly stops the console");
+        assertTrue(editor.drafts(player.getUuid()).isEmpty(), "no draft appeared");
+    }
+
     @DisplayName("Copy shows the copied portals once, for the player only")
     @Test
     void copyShowsTheCopiedPortalsOnce(Env env) {

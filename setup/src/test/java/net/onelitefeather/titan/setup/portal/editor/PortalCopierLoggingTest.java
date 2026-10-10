@@ -44,11 +44,13 @@ class PortalCopierLoggingTest {
     private static final Portal CREATIVE = new Portal("creative", new Box(new Vec(2, 2, 2), new Vec(3, 3, 3)), "Creative", null);
 
     private Logger logger;
+    private Level previousLevel;
     private ListAppender<ILoggingEvent> appender;
 
     @BeforeEach
     void attachAppender() {
         logger = (Logger) LoggerFactory.getLogger(PortalCopier.class);
+        previousLevel = logger.getLevel();
         logger.setLevel(Level.INFO);
         appender = new ListAppender<>();
         appender.start();
@@ -59,6 +61,7 @@ class PortalCopierLoggingTest {
     void detachAppender() {
         logger.detachAppender(appender);
         appender.stop();
+        logger.setLevel(previousLevel);
     }
 
     private List<String> messages() {
@@ -100,6 +103,7 @@ class PortalCopierLoggingTest {
         copier.copy(PLAYER, "lobby");
         copier.copy(PLAYER, "broken");
 
+        assertEquals(2, messages().size(), "both copies were logged, so the check below is not vacuous");
         assertFalse(messages().stream().anyMatch(line -> line.contains(PLAYER.toString())), "the player is never logged");
     }
 }

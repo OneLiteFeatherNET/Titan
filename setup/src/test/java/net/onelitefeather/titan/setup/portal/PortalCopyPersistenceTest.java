@@ -96,6 +96,7 @@ class PortalCopyPersistenceTest {
         world("world", WINTER);
         Files.createDirectories(this.base.resolve("worlds").resolve("empty"));
         MapProvider provider = MapProvider.create(this.base, env.process().instance().createInstanceContainer(), stream -> stream.map(MapEntry::new).toList());
+        assertEquals("world", new MapProviderPortalSources(provider).active(), "the loaded world is the one the pool picks by its default name");
 
         List<String> worlds = new MapProviderPortalSources(provider).worlds();
 
