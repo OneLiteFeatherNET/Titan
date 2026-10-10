@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.0.1](https://github.com/OneLiteFeatherNET/Titan/compare/v3.0.0...v3.0.1) (2026-10-10)
+
+
+### Bug Fixes
+
+* **lobbyswitcher:** translate the switcher texts ([#412](https://github.com/OneLiteFeatherNET/Titan/issues/412)) ([f47002c](https://github.com/OneLiteFeatherNET/Titan/commit/f47002c572ba3651be812736def9b8afdd295968))
+
 ## [3.0.0](https://github.com/OneLiteFeatherNET/Titan/compare/v2.6.0...v3.0.0) (2026-10-10)
 
 
