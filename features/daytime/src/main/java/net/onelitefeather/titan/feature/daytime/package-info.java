@@ -18,10 +18,11 @@
  * {@code docs/lobby-modules.md}, "Wie eine Column Plattform-Beans bekommt", for how a column
  * declares its platform dependencies.
  */
-@InjectModule(name = "daytimeColumn", requires = {Instance.class, Scheduler.class, Clock.class})
+@InjectModule(name = "daytimeColumn", requires = {Instance.class, Scheduler.class, Clock.class, Telemetry.class})
 package net.onelitefeather.titan.feature.daytime;
 
 import io.avaje.inject.InjectModule;
 import java.time.Clock;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.timer.Scheduler;
+import net.onelitefeather.titan.core.telemetry.Telemetry;

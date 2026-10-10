@@ -931,6 +931,20 @@ alle Spans und Zähler No-ops, die Lobby verhält sich unverändert.
 `titan.listener.failures`. Datenbankarbeit über den `DatabaseWriter` nimmt den Kontext des
 Auftraggebers mit, Hibernate-Spans hängen so am auslösenden Span.
 
+### Was `season`, `daytime` und `protection` messen
+
+- `season`: Span `season.check` je periodischer Prüfung (Minutentakt, und der Check nach einem
+  Disconnect) mit `season.current`, `season.desired` (Welt oder `default`, bei ungültiger
+  Konfiguration `unresolvable`), `season.outcome` (`unchanged`, `pending_restart`,
+  `restart_requested`, `unresolvable`) und `season.online_players`. Das Span-Event
+  `season.stop_requested` markiert die tatsächliche Stop-Anforderung. Zähler
+  `titan.season.checks{outcome}` und `titan.season.restarts_requested`.
+- `daytime`: kein Span. Zähler `titan.daytime.updates` je Aktualisierung und
+  `titan.daytime.config_rejected{reason}` je neu abgelehntem Wert von `daytime.zone` (`blank` oder
+  `invalid`).
+- `protection`: kein Span. Zähler `titan.protection.denied{event}` je abgebrochenem Event, mit den Namen
+  `pickup`, `inventory_click`, `block_break`, `block_place`, `item_swap` und `item_drop`.
+
 ### Testen mit `TestTelemetry`
 
 `TestTelemetry.create()` (`core/testFixtures`) baut je Aufruf einen eigenen In-Memory-Exporter und
