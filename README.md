@@ -193,11 +193,7 @@ portal:
   labelRefreshSeconds: 5
 
 features:
-  NAVIGATOR_CREATIVE: false
   NAVIGATOR_SLENDER: false
-  NAVIGATOR_MANIS: false
-  NAVIGATOR_SURVIVAL: false
-  NAVIGATOR_ELYTRA: false
 ```
 
 ### Configuration Options Explained
@@ -305,11 +301,12 @@ SLF4J-backed logs) and applies no value from it; every other changed file is sti
 Feature flags are plain booleans under the `features` section, one per flag name (e.g.
 `features.NAVIGATOR_SLENDER: true`), with the same sources and override order as every other
 configuration key - a profile's file, an external file, an environment variable
-(`FEATURES_NAVIGATOR_SLENDER`), or a system property. The five flags the lobby ships with, all
-`false` by default: `NAVIGATOR_CREATIVE`, `NAVIGATOR_SLENDER`, `NAVIGATOR_MANIS`,
-`NAVIGATOR_SURVIVAL` and `NAVIGATOR_ELYTRA`. Only `NAVIGATOR_SLENDER` currently gates anything -
-the navigator's Slender destination. Changing its value takes effect the next time a player opens
-the navigator, without restarting any module or the lobby.
+(`FEATURES_NAVIGATOR_SLENDER`), or a system property. The lobby ships with one flag, `false` by
+default: `NAVIGATOR_SLENDER`, which gates the navigator's Slender destination. Changing its value
+takes effect the next time a player opens the navigator, without restarting any module or the
+lobby. The flags `NAVIGATOR_CREATIVE`, `NAVIGATOR_MANIS`, `NAVIGATOR_SURVIVAL` and
+`NAVIGATOR_ELYTRA` were never wired to anything; a setting of them is unknown to the lobby and has
+no effect, so such a line can be deleted.
 
 ### Migrating from `flags.properties`
 
@@ -322,19 +319,15 @@ the navigator, without restarting any module or the lobby.
 Remove `flags.properties` from the working directory once its values are migrated - a leftover
 copy has no effect any more.
 
-### Local testing with every flag on
+### Local testing with Slender on
 
-For local testing, create an `application-local.yaml` next to `application.yaml` with every flag
+For local testing, create an `application-local.yaml` next to `application.yaml` with Slender
 turned on. It also turns on the file watcher from "Runtime reloading" above, so a flag flipped
 back off in the file takes effect without a restart while testing:
 
 ```yaml
 features:
-  NAVIGATOR_CREATIVE: true
   NAVIGATOR_SLENDER: true
-  NAVIGATOR_MANIS: true
-  NAVIGATOR_SURVIVAL: true
-  NAVIGATOR_ELYTRA: true
 config.watch.enabled: true
 ```
 

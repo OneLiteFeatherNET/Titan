@@ -337,7 +337,7 @@ Abschalten oder erneutes `start()`.
 Jede konfigurierbare Column liefert ihre eigenen Standardwerte als
 `src/main/resources/titan/defaults/<column>.yaml`, kommentiert, mit genau ihrem Abschnitt (z. B.
 `features/spawn/src/main/resources/titan/defaults/spawn.yaml` mit dem Abschnitt `spawn`;
-`navigator` liefert den Abschnitt `features` mit allen `NAVIGATOR_*`-Flags). `runtime` liefert
+`navigator` liefert den Abschnitt `features` mit genau der Flag `NAVIGATOR_SLENDER`). `runtime` liefert
 `runtime/src/main/resources/titan/defaults/runtime.yaml` (`config.watch.*`). Eine Column ohne
 eigene Konfiguration (`protection`, `respawn`, `hotbar`, `admin`) liefert keine Default-Datei.
 
