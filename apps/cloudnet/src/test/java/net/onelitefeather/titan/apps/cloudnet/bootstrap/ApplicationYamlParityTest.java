@@ -106,7 +106,20 @@ class ApplicationYamlParityTest {
             boolean emptyAsBlank = wanted.isEmpty() && actual.equals(List.of(""));
             return actual.equals(wanted) || emptyAsBlank ? Optional.empty() : Optional.of(key + ": expected " + wanted + " but was " + actual);
         }
-        String actual = configuration.getOptional(key).orElse(null);
-        return String.valueOf(expected).equals(actual) ? Optional.empty() : Optional.of(key + ": expected " + expected + " but was " + actual);
+        Optional<String> raw = configuration.getOptional(key);
+        if (raw.isEmpty()) {
+            return Optional.of(key + ": missing, expected " + expected);
+        }
+        try {
+            Object actual = switch (expected) {
+                case Boolean ignored -> configuration.getBool(key);
+                case Integer ignored -> configuration.getInt(key);
+                case Double ignored -> configuration.getDecimal(key).doubleValue();
+                default -> raw.get();
+            };
+            return actual.equals(expected) ? Optional.empty() : Optional.of(key + ": expected " + expected + " but was " + actual);
+        } catch (RuntimeException unreadable) {
+            return Optional.of(key + ": " + raw.get() + " is not readable as " + expected.getClass().getSimpleName());
+        }
     }
 }
