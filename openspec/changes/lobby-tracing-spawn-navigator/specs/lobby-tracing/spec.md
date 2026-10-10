@@ -14,7 +14,7 @@ Die Lobby MUSS für jede Rückkehr zum Spawn einen kurzen Span `spawn.return` mi
 - **THEN** gibt es genau einen Span `spawn.bounds_teleport` mit `spawn.y` und den Grenzen, und für Bewegungen innerhalb der Grenzen entsteht kein Span
 
 ### Requirement: Navigator-Nutzung ist sichtbar
-Die Lobby MUSS für das Öffnen des Navigators einen Span `navigator.open` mit Art und Eintragszahl und für jede Auswahl eines Ziels einen Span `navigator.select` mit Ziel und Ergebnis (`sent`, `denied`, `spawn`) erzeugen und `titan.navigator.selections{destination,result}` erhöhen. Ein neu angewendetes Layout MUSS einen Span `navigator.layout.apply` erzeugen, ein unverändertes keinen.
+Die Lobby MUSS für das Öffnen des Navigators einen Span `navigator.open` mit Art, Eintragszahl und `user.id` und für jede Auswahl eines Ziels einen Span `navigator.select` mit Ziel, Ergebnis (`sent`, `denied`, `spawn`) und `user.id` erzeugen und `titan.navigator.selections{destination,result}` erhöhen. Ein neu angewendetes Layout MUSS einen Span `navigator.layout.apply` erzeugen, ein unverändertes keinen.
 
 #### Scenario: Verweigertes Ziel
 - **WHEN** ein Spieler ein Ziel wählt, für das ihm das Recht fehlt

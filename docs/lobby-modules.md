@@ -995,8 +995,8 @@ Disconnect.
   `spawn.max_height`) nur im Teleport-Zweig der Höhengrenze, der Listener auf `PlayerMoveEvent`
   selbst hat keinen Span; Zähler `titan.spawn.bounds_teleports`. Span `spawn.join` (über `onTraced`).
 - `navigator`: Span `navigator.open` (`navigator.kind` = `public`/`team`, `navigator.entries` mit
-  dem Spawn-Eintrag), Span `navigator.select` je Klick (`navigator.destination`, Name aus
-  `Destination` oder `spawn`; `navigator.result` = `sent`/`denied`/`spawn`); Zähler
+  dem Spawn-Eintrag, `user.id`), Span `navigator.select` je Klick (`navigator.destination`, Name aus
+  `Destination` oder `spawn`; `navigator.result` = `sent`/`denied`/`spawn`; `user.id`); Zähler
   `titan.navigator.selections{destination,result}`. Span `navigator.layout.apply` nur, wenn sich das
   Layout geändert hat.
 

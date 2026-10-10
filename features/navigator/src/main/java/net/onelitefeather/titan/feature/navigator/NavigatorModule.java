@@ -113,7 +113,7 @@ public final class NavigatorModule {
         SharedNavigator navigator = team ? this.teamNavigator : this.publicNavigator;
         // The destinations plus the fixed spawn entry.
         int entries = Destination.visible(this.featureFlags, team).size() + 1;
-        this.navigatorTelemetry.open(team, entries, () -> {
+        this.navigatorTelemetry.open(player.getUuid(), team, entries, () -> {
             navigator.applyLayoutIfChanged(this.featureFlags, this::toAvesLayout);
             player.openInventory(navigator.inventory());
         });
@@ -156,7 +156,7 @@ public final class NavigatorModule {
         for (Destination destination : visible) {
             layout.setItem(destination.slot(), destination.item(), (player, clickedSlot, click, stack, result) -> {
                 result.accept(ClickHolder.cancelClick());
-                this.navigatorTelemetry.select(destination.name(), () -> {
+                this.navigatorTelemetry.select(player.getUuid(), destination.name(), () -> {
                     if (!isAllowed(player, destination)) {
                         player.closeInventory();
                         return NavigatorTelemetry.Selection.DENIED;
@@ -175,7 +175,7 @@ public final class NavigatorModule {
     private void addSpawnEntry(InventoryLayout layout) {
         layout.setItem(SPAWN_SLOT, SPAWN_ITEM, (player, clickedSlot, click, stack, result) -> {
             result.accept(ClickHolder.cancelClick());
-            this.navigatorTelemetry.select(NavigatorTelemetry.SPAWN_DESTINATION, () -> {
+            this.navigatorTelemetry.select(player.getUuid(), NavigatorTelemetry.SPAWN_DESTINATION, () -> {
                 this.spawnReturn.sendToSpawnAndTell(player, SpawnReturn.Source.NAVIGATOR);
                 player.closeInventory();
                 return NavigatorTelemetry.Selection.SPAWN;

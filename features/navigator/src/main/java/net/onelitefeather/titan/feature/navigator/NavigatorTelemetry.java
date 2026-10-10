@@ -19,12 +19,14 @@ import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.trace.Span;
+import java.util.UUID;
 import java.util.function.Supplier;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
 
 /**
  * Spans and counter of the navigator. Opening and clicking are rare and triggered by a player, so
- * both get a span; the counter carries only the destination's name and the outcome.
+ * both get a span with the player's UUID as {@code user.id}; the counter carries only the
+ * destination's name and the outcome.
  */
 final class NavigatorTelemetry {
 
@@ -62,13 +64,14 @@ final class NavigatorTelemetry {
         this.selections = telemetry.meter().counterBuilder("titan.navigator.selections").setUnit("{selection}").build();
     }
 
-    void open(boolean team, int entries, Runnable body) {
-        Attributes attributes = Attributes.builder().put(KIND, team ? "team" : "public").put(ENTRIES, (long) entries).build();
+    void open(UUID player, boolean team, int entries, Runnable body) {
+        Attributes attributes = Attributes.builder().put(KIND, team ? "team" : "public").put(ENTRIES, (long) entries).put(Telemetry.USER_ID, player.toString()).build();
         this.telemetry.inSpan(OPEN_SPAN, attributes, body);
     }
 
-    void select(String destination, Supplier<Selection> body) {
-        this.telemetry.inSpan(SELECT_SPAN, Attributes.of(DESTINATION, destination), () -> {
+    void select(UUID player, String destination, Supplier<Selection> body) {
+        Attributes attributes = Attributes.builder().put(DESTINATION, destination).put(Telemetry.USER_ID, player.toString()).build();
+        this.telemetry.inSpan(SELECT_SPAN, attributes, () -> {
             Selection selection = body.get();
             Span.current().setAttribute(RESULT, selection.value);
             this.selections.add(1, Attributes.of(METRIC_DESTINATION, destination, METRIC_RESULT, selection.value));

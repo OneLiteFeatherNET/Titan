@@ -26,6 +26,7 @@ import net.minestom.server.inventory.click.Click;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.permission.PermissionResult;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.onelitefeather.titan.core.testfixtures.TestTelemetry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -83,6 +84,7 @@ class NavigatorTelemetryTest {
 
             SpanData span = testTelemetry.span("navigator.open");
             Assertions.assertEquals("public", testTelemetry.attribute(span, KIND), "a player without the build permission gets the public menu");
+            Assertions.assertEquals(player.getUuid().toString(), testTelemetry.attribute(span, Telemetry.USER_ID), "the player UUID is the user.id");
             Assertions.assertEquals(5L, testTelemetry.attribute(span, ENTRIES), "four public destinations plus the spawn entry");
         }
     }
@@ -101,6 +103,7 @@ class NavigatorTelemetryTest {
 
             SpanData span = testTelemetry.span("navigator.open");
             Assertions.assertEquals("team", testTelemetry.attribute(span, KIND), "a permitted player gets the team menu");
+            Assertions.assertEquals(player.getUuid().toString(), testTelemetry.attribute(span, Telemetry.USER_ID), "the player UUID is the user.id");
             Assertions.assertEquals(6L, testTelemetry.attribute(span, ENTRIES), "five destinations including Build, plus the spawn entry");
         }
     }
@@ -120,6 +123,7 @@ class NavigatorTelemetryTest {
             SpanData span = testTelemetry.span("navigator.select");
             Assertions.assertEquals("SURVIVAL", testTelemetry.attribute(span, DESTINATION), "the destination's name from the fixed enumeration");
             Assertions.assertEquals("sent", testTelemetry.attribute(span, RESULT), "an allowed destination is sent");
+            Assertions.assertEquals(player.getUuid().toString(), testTelemetry.attribute(span, Telemetry.USER_ID), "the player UUID is the user.id");
             Assertions.assertEquals(1, testTelemetry.counter("titan.navigator.selections", Attributes.of(METRIC_DESTINATION, "SURVIVAL", METRIC_RESULT, "sent")), "the selection is counted");
         }
     }
@@ -141,6 +145,7 @@ class NavigatorTelemetryTest {
 
             SpanData span = testTelemetry.span("navigator.select");
             Assertions.assertEquals("denied", testTelemetry.attribute(span, RESULT), "the revoked destination is denied");
+            Assertions.assertEquals(player.getUuid().toString(), testTelemetry.attribute(span, Telemetry.USER_ID), "the player UUID is the user.id");
             Assertions.assertTrue(deliver.deliveries().isEmpty(), "a denied destination must not transfer the player");
             Assertions.assertEquals(1, testTelemetry.counter("titan.navigator.selections", Attributes.of(METRIC_DESTINATION, "BUILD", METRIC_RESULT, "denied")), "the denial is counted");
         }
@@ -160,6 +165,7 @@ class NavigatorTelemetryTest {
             SpanData span = testTelemetry.span("navigator.select");
             Assertions.assertEquals("spawn", testTelemetry.attribute(span, DESTINATION), "the spawn entry is not a Destination, it has its own value");
             Assertions.assertEquals("spawn", testTelemetry.attribute(span, RESULT), "the spawn entry reports spawn");
+            Assertions.assertEquals(player.getUuid().toString(), testTelemetry.attribute(span, Telemetry.USER_ID), "the player UUID is the user.id");
             Assertions.assertEquals(1, testTelemetry.counter("titan.navigator.selections", Attributes.of(METRIC_DESTINATION, "spawn", METRIC_RESULT, "spawn")), "the spawn selection is counted");
         }
     }
