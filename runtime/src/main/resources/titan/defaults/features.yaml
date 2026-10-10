@@ -4,3 +4,4 @@
 # complete list of flags the lobby knows about. All flags are "false" by default.
 features:
   NAVIGATOR_SLENDER: false
+  LOBBYSWITCHER: true
