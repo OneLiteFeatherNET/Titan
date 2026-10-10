@@ -18,7 +18,6 @@ package net.onelitefeather.titan.feature.lobbyswitcher;
 import io.avaje.inject.Bean;
 import io.avaje.inject.Factory;
 import io.avaje.inject.Profile;
-import java.util.Locale;
 import java.util.Optional;
 import net.kyori.adventure.key.Key;
 import net.minestom.server.item.ItemStack;
@@ -49,7 +48,9 @@ final class LobbySwitcherItems {
         if (!flags.isActive(LobbySwitcherModule.FLAG)) {
             return Optional.empty();
         }
-        ItemStack clock = ItemStack.builder(Material.CLOCK).customName(messages.itemName(Locale.ENGLISH)).build();
-        return Optional.of(new LobbyItem(FEATURE_ID, ITEM_KEY, clock, ItemSlot.hotbar(HOTBAR_SLOT), (player, event) -> module.open(player)));
+        // The name is rendered per locale when the hotbar equips the player, not here: the bundle
+        // may not be registered yet while the bean is built.
+        ItemStack clock = ItemStack.builder(Material.CLOCK).build();
+        return Optional.of(new LobbyItem(FEATURE_ID, ITEM_KEY, clock, ItemSlot.hotbar(HOTBAR_SLOT), (player, event) -> module.open(player), locale -> ItemStack.builder(Material.CLOCK).customName(messages.itemName(locale)).build()));
     }
 }

@@ -15,16 +15,23 @@
  */
 package net.onelitefeather.titan.feature.lobbyswitcher;
 
+import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import net.minestom.server.component.DataComponents;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.item.ItemStack;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.minestom.server.item.Material;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.lobby.LobbyIdentity;
 import net.onelitefeather.titan.core.module.item.ItemSlot;
+import net.onelitefeather.titan.core.module.item.LobbyItem;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -97,5 +104,37 @@ class LobbySwitcherItemsTest {
             Assertions.assertEquals(Material.CLOCK, player.getInventory().getItemStack(8).material(), "slot 8 must hold the clock");
             Assertions.assertNotNull(player.getOpenInventory(), "the list must open when the identity was there from the start");
         }
+    }
+
+    @DisplayName("A clock built before the bundle is registered is still named once it is handed out")
+    @Test
+    void clockBuiltBeforeRegistrationIsNamedWhenGiven(Env env) {
+        try (SwitcherFixture fixture = new SwitcherFixture(env, new FakeFeatureFlags(), Optional.of(SwitcherFixture.OWN))) {
+            fixture.messages().close();
+            LobbyItem item = new LobbySwitcherItems().lobbySwitcherItem(fixture.module(), new FakeFeatureFlags(LobbySwitcherModule.FLAG), fixture.messages()).orElseThrow();
+            fixture.messages().register();
+            Player player = fixture.joinWithLocale(env.createFlatInstance(), Locale.GERMAN, List.of(item));
+
+            Component name = player.getInventory().getItemStack(8).get(DataComponents.CUSTOM_NAME);
+
+            Assertions.assertEquals("Lobbys", plain(name), "the German clock must read Lobbys, not the raw key");
+            Assertions.assertEquals(TextDecoration.State.FALSE, name.decoration(TextDecoration.ITALIC), "the clock name must not be italic");
+        }
+    }
+
+    @DisplayName("A German player holds the clock named in German, an English player in English")
+    @Test
+    void clockNameFollowsThePlayersLocale(Env env) {
+        try (SwitcherFixture fixture = SwitcherFixture.active(env)) {
+            Player german = fixture.join(env.createFlatInstance(), Locale.GERMAN);
+            Player english = fixture.join(env.createFlatInstance(), Locale.ENGLISH);
+
+            Assertions.assertEquals("Lobbys", plain(german.getInventory().getItemStack(8).get(DataComponents.CUSTOM_NAME)), "German clock name");
+            Assertions.assertEquals("Lobbies", plain(english.getInventory().getItemStack(8).get(DataComponents.CUSTOM_NAME)), "English clock name");
+        }
+    }
+
+    private static String plain(Component component) {
+        return PlainTextComponentSerializer.plainText().serialize(component);
     }
 }

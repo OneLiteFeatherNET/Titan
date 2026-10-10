@@ -16,6 +16,7 @@
 package net.onelitefeather.titan.feature.lobbyswitcher;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.PlayerHand;
@@ -136,6 +137,19 @@ final class SwitcherFixture implements AutoCloseable {
     Player join(Instance instance) {
         Player player = this.env.createConnection().connect(instance);
         equip(player);
+        return player;
+    }
+
+    /** A player whose client reported {@code locale} before the lobby items were given out. */
+    Player join(Instance instance, Locale locale) {
+        return joinWithLocale(instance, locale, this.item == null ? List.of() : List.of(this.item));
+    }
+
+    /** Hands {@code items} to a player with {@code locale}, as the hotbar column does on spawn. */
+    Player joinWithLocale(Instance instance, Locale locale, List<LobbyItem> items) {
+        Player player = this.env.createConnection().connect(instance);
+        player.setLocale(locale);
+        new PlacingLobbyItems(items).equip(player);
         return player;
     }
 

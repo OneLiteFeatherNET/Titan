@@ -21,8 +21,11 @@ import jakarta.inject.Singleton;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
+import net.kyori.adventure.key.Key;
 import net.minestom.server.entity.EquipmentSlot;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
@@ -54,8 +57,6 @@ public final class HotbarLobbyItems implements LobbyItems {
     public static final Tag<String> IDENTITY_TAG = Tag.String("titan:item");
 
     private final Map<String, LobbyItem> itemsByKey;
-    private final Map<Integer, ItemStack> hotbar;
-    private final Map<EquipmentSlot, ItemStack> equipment;
     private final EventNode<Event> titan;
     private final Telemetry telemetry;
     private final HotbarTelemetry hotbarTelemetry;
@@ -68,20 +69,19 @@ public final class HotbarLobbyItems implements LobbyItems {
         this.telemetry = telemetry;
         this.hotbarTelemetry = new HotbarTelemetry(telemetry);
         this.itemsByKey = stampAll(items);
-        Placements placements = placementsOf(this.itemsByKey.values());
-        this.hotbar = placements.hotbar();
-        this.equipment = placements.equipment();
         this.dispatcher = EventListener.of(PlayerUseItemEvent.class, this::dispatch);
         this.titan.addListener(this.dispatcher);
     }
 
     @Override
     public void equip(Player player) {
-        int placed = this.hotbar.size() + this.equipment.size();
+        // Rendered per player: a localized item (e.g. a translated name) differs by locale.
+        Placements placements = placementsOf(this.itemsByKey.values(), Objects.requireNonNullElse(player.getLocale(), Locale.ENGLISH));
+        int placed = placements.hotbar().size() + placements.equipment().size();
         this.hotbarTelemetry.equip(player.getUuid(), placed, () -> {
             player.getInventory().clear();
-            this.hotbar.forEach((slot, stack) -> player.getInventory().setItemStack(slot, stack));
-            this.equipment.forEach(player::setEquipment);
+            placements.hotbar().forEach((slot, stack) -> player.getInventory().setItemStack(slot, stack));
+            placements.equipment().forEach(player::setEquipment);
         });
     }
 
@@ -107,22 +107,28 @@ public final class HotbarLobbyItems implements LobbyItems {
         Map<String, LobbyItem> stamped = new LinkedHashMap<>();
         for (LobbyItem item : items) {
             ItemStack stampedStack = item.itemStack().withTag(IDENTITY_TAG, item.key().asString());
-            stamped.put(item.key().asString(), new LobbyItem(item.featureId(), item.key(), stampedStack, item.placement(), item.onUse()));
+            Key key = item.key();
+            stamped.put(key.asString(), new LobbyItem(item.featureId(), key, stampedStack, item.placement(), item.onUse(), locale -> stamp(item.localized().apply(locale), key)));
         }
         return Map.copyOf(stamped);
+    }
+
+    private static ItemStack stamp(ItemStack stack, Key key) {
+        return stack.withTag(IDENTITY_TAG, key.asString());
     }
 
     private record Placements(Map<Integer, ItemStack> hotbar,
                               Map<EquipmentSlot, ItemStack> equipment) {
     }
 
-    private static Placements placementsOf(Collection<LobbyItem> items) {
+    private static Placements placementsOf(Collection<LobbyItem> items, Locale locale) {
         Map<Integer, ItemStack> hotbarSlots = new LinkedHashMap<>();
         Map<EquipmentSlot, ItemStack> equipmentSlots = new LinkedHashMap<>();
         for (LobbyItem item : items) {
             switch (item.placement()) {
-                case ItemSlot.Hotbar slot -> hotbarSlots.put(slot.slot(), item.itemStack());
-                case ItemSlot.Equipment slot -> equipmentSlots.put(slot.slot(), item.itemStack());
+                case ItemSlot.Hotbar slot -> hotbarSlots.put(slot.slot(), item.stackFor(locale));
+                case ItemSlot.Equipment slot ->
+                    equipmentSlots.put(slot.slot(), item.stackFor(locale));
                 case ItemSlot.Unplaced ignored -> {
                     // Given out and taken back by the owning feature itself; equip() never places
                     // it.
