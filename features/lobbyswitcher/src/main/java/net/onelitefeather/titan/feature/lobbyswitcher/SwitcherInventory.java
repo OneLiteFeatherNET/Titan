@@ -64,6 +64,7 @@ final class SwitcherInventory {
     private static final InventoryType TYPE = InventoryType.CHEST_6_ROW;
     private static final ItemStack FILLER = ItemStack.builder(Material.GRAY_STAINED_GLASS_PANE).customName(Component.empty()).build();
 
+    private final SwitcherLayout fitting = new SwitcherLayout();
     private final GlobalTranslatedInventoryBuilder builder = new EnglishWithoutLocale();
     private final SwitcherReading reading;
     private final Scheduler scheduler;
@@ -198,9 +199,9 @@ final class SwitcherInventory {
     private List<SwitcherEntry> entries() {
         return switch (this.outcome) {
             case SwitcherReading.Fresh fresh ->
-                SwitcherLayout.fit(SwitcherEntry.sorted(fresh.services(), this.own));
+                this.fitting.fit(SwitcherEntry.sorted(fresh.services(), this.own));
             case SwitcherReading.Stale stale ->
-                SwitcherLayout.fit(SwitcherEntry.sorted(stale.services(), this.own));
+                this.fitting.fit(SwitcherEntry.sorted(stale.services(), this.own));
             case SwitcherReading.Unavailable ignored -> List.of();
         };
     }

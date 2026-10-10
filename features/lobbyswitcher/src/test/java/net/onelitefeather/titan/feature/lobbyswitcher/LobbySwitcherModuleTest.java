@@ -16,6 +16,7 @@
 package net.onelitefeather.titan.feature.lobbyswitcher;
 
 import java.util.Locale;
+import java.util.Optional;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
@@ -103,6 +104,45 @@ class LobbySwitcherModuleTest {
 
             Assertions.assertEquals(1, before, "precondition: the node is attached");
             Assertions.assertEquals(0, after, "stop() must detach the node");
+        }
+    }
+
+    @DisplayName("Stopping the inventory closes it for every viewer, not just the first")
+    @Test
+    void stoppingTheInventoryClosesItForAllViewers(Env env) {
+        try (SwitcherFixture fixture = SwitcherFixture.active(env)) {
+            Player first = fixture.join(env.createFlatInstance());
+            Player second = fixture.join(env.createFlatInstance());
+            fixture.use(first);
+            fixture.use(second);
+            fixture.settle();
+            Assertions.assertNotNull(first.getOpenInventory(), "precondition: the first viewer has it open");
+            Assertions.assertNotNull(second.getOpenInventory(), "precondition: the second viewer has it open");
+
+            fixture.inventory().stop();
+
+            Assertions.assertNull(first.getOpenInventory(), "the first viewer's list is closed");
+            Assertions.assertNull(second.getOpenInventory(), "the second viewer's list is closed");
+        }
+    }
+
+    @DisplayName("Using the clock without a known identity tells the player lobbies are unavailable")
+    @Test
+    void openWithoutIdentityTellsUnavailable(Env env) {
+        try (SwitcherFixture fixture = new SwitcherFixture(env, new FakeFeatureFlags(LobbySwitcherModule.FLAG), Optional.empty())) {
+            TestConnection connection = env.createConnection();
+            Player player = connection.connect(env.createFlatInstance());
+            fixture.equip(player);
+            player.setLocale(Locale.ENGLISH);
+            Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);
+
+            fixture.use(player);
+            env.tick();
+
+            String text = PlainTextComponentSerializer.plainText().serialize(chat.collect().getFirst().message());
+            Assertions.assertTrue(text.contains("not available"), "the player is told why nothing opens: " + text);
+            Assertions.assertNull(player.getOpenInventory(), "nothing opens without an identity");
+            Assertions.assertEquals(0, fixture.counts().reads(), "nothing is read without a task");
         }
     }
 }

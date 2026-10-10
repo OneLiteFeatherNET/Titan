@@ -88,7 +88,8 @@ final class LobbySwitcherModule {
         if (this.stopped) {
             return;
         }
-        this.identities.self().ifPresent(own -> this.inventory.open(player, own));
+        // Without a task there is nothing to read; say so instead of ignoring the click.
+        this.identities.self().ifPresentOrElse(own -> this.inventory.open(player, own), () -> player.sendMessage(this.messages.unavailable(player.getLocale())));
     }
 
     /** Tells the player what their click did, in their own language. */

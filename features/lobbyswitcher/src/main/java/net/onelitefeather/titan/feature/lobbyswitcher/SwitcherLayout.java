@@ -17,6 +17,7 @@ package net.onelitefeather.titan.feature.lobbyswitcher;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +30,10 @@ final class SwitcherLayout {
     static final int MAX_ROWS = 6;
     static final int MAX_ENTRIES = SLOTS_PER_ROW * MAX_ROWS;
 
-    private SwitcherLayout() {
+    // The list is fitted on every refresh; an overflow is reported once until it fits again.
+    private final AtomicBoolean cutReported = new AtomicBoolean();
+
+    SwitcherLayout() {
     }
 
     /** One row for up to nine entries, one more per further nine, at most six. */
@@ -38,13 +42,19 @@ final class SwitcherLayout {
         return Math.clamp(needed, 1, MAX_ROWS);
     }
 
-    /** The first {@value #MAX_ENTRIES} entries by name; reports it when some had to be left out. */
-    static List<SwitcherEntry> fit(List<SwitcherEntry> entries) {
+    /**
+     * The first {@value #MAX_ENTRIES} entries by name; reports it once when some had to be left
+     * out, and again after the list fitted in between.
+     */
+    List<SwitcherEntry> fit(List<SwitcherEntry> entries) {
         List<SwitcherEntry> byName = entries.stream().sorted(Comparator.comparing(SwitcherEntry::name)).toList();
         if (byName.size() <= MAX_ENTRIES) {
+            this.cutReported.set(false);
             return byName;
         }
-        LOGGER.warn("Lobby switcher lists {} lobbies but fits {}; the others are left out", byName.size(), MAX_ENTRIES);
+        if (this.cutReported.compareAndSet(false, true)) {
+            LOGGER.warn("Lobby switcher lists {} lobbies but fits {}; the others are left out", byName.size(), MAX_ENTRIES);
+        }
         return byName.subList(0, MAX_ENTRIES);
     }
 }

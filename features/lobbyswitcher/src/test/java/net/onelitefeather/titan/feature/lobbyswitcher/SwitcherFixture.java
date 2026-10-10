@@ -135,8 +135,13 @@ final class SwitcherFixture implements AutoCloseable {
 
     Player join(Instance instance) {
         Player player = this.env.createConnection().connect(instance);
-        this.lobbyItems.equip(player);
+        equip(player);
         return player;
+    }
+
+    /** Gives the player the lobby items a joining player gets. */
+    void equip(Player player) {
+        this.lobbyItems.equip(player);
     }
 
     void use(Player player) {

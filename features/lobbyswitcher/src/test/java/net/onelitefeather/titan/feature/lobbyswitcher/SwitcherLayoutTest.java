@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 class SwitcherLayoutTest {
 
+    private final SwitcherLayout layout = new SwitcherLayout();
     private final Logger layoutLogger = (Logger) LoggerFactory.getLogger(SwitcherLayout.class);
     private final ListAppender<ILoggingEvent> lines = new ListAppender<>();
 
@@ -91,7 +92,7 @@ class SwitcherLayoutTest {
     @DisplayName("Up to 54 entries are kept and nothing is logged")
     @Test
     void fittingEntriesAreKeptSilently() {
-        List<SwitcherEntry> fitted = SwitcherLayout.fit(entries(54));
+        List<SwitcherEntry> fitted = this.layout.fit(entries(54));
 
         Assertions.assertEquals(54, fitted.size());
         Assertions.assertTrue(this.lines.list.isEmpty(), "nothing was cut, nothing is logged");
@@ -102,7 +103,7 @@ class SwitcherLayoutTest {
     void excessEntriesAreCutByName() {
         List<SwitcherEntry> shuffled = entries(60).reversed();
 
-        List<SwitcherEntry> fitted = SwitcherLayout.fit(shuffled);
+        List<SwitcherEntry> fitted = this.layout.fit(shuffled);
 
         Assertions.assertEquals(54, fitted.size(), "capped at six rows");
         Assertions.assertEquals("Lobby-000", fitted.getFirst().name(), "sorted ascending");
@@ -112,12 +113,33 @@ class SwitcherLayoutTest {
     @DisplayName("Cutting entries is reported once per call with the numbers")
     @Test
     void cuttingIsLogged() {
-        SwitcherLayout.fit(entries(60));
+        this.layout.fit(entries(60));
 
         Assertions.assertEquals(1, this.lines.list.size(), "one line");
         ILoggingEvent line = this.lines.list.getFirst();
         Assertions.assertEquals(Level.WARN, line.getLevel());
         Assertions.assertTrue(line.getFormattedMessage().contains("60"), "names the number of lobbies: " + line.getFormattedMessage());
         Assertions.assertTrue(line.getFormattedMessage().contains("54"), "names the cap: " + line.getFormattedMessage());
+    }
+
+    @DisplayName("Cutting entries is reported once, not on every refresh")
+    @Test
+    void cuttingIsLoggedOnlyOnce() {
+        this.layout.fit(entries(60));
+        this.layout.fit(entries(60));
+        this.layout.fit(entries(61));
+
+        Assertions.assertEquals(1, this.lines.list.size(), "repeated cuts log a single line");
+    }
+
+    @DisplayName("Cutting warns again after the list fitted in between")
+    @Test
+    void cuttingWarnsAgainAfterFitting() {
+        this.layout.fit(entries(60));
+        this.layout.fit(entries(10));
+
+        this.layout.fit(entries(60));
+
+        Assertions.assertEquals(2, this.lines.list.size(), "a new overflow is news again");
     }
 }

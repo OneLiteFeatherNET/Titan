@@ -99,6 +99,11 @@ final class LobbySwitcherMessages implements AutoCloseable {
         return render(message, locale);
     }
 
+    /** Lobbies cannot be listed, e.g. because this lobby does not know its own task. */
+    Component unavailable(Locale locale) {
+        return render(Component.translatable(MESSAGE_UNAVAILABLE), locale);
+    }
+
     Component render(Component translatable, Locale locale) {
         return GlobalTranslator.render(translatable, locale);
     }
