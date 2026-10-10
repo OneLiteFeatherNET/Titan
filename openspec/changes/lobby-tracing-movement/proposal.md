@@ -8,10 +8,10 @@ Teil der Aufteilung aus `lobby-tracing` (Fundament): Dieser Change nutzt `Teleme
 
 ## What Changes
 
-- **sit:** Span `sit.start` (`sit.block`, `user.id`) und `sit.stop` (`sit.stop.reason`: `sneak`/`dismount`/`disconnect`); Zähler `sit.sessions{event}` (`started`/`stopped`).
-- **elytra:** Span `elytra.glide.start` (bei `PlayerStartFlyingWithElytraEvent`, legt die Rakete ab) und `elytra.glide.end` (Landung, `elytra.glide.duration_ms` über die injizierte `Clock`); Zähler `elytra.flights{event}`, Zähler `elytra.boosts` (Raketenzündungen). `FireworkBoostTracker.advance` läuft jeden Tick und bekommt **keinen** Span.
-- **tickle:** Zähler `tickle.attacks{result}` (`tickled`/`cooldown`), kein Span (Kämpfe können häufig sein).
-- **respawn:** Span `respawn.perform` (der um einen Tick verzögerte `player::respawn`), Zähler `player.respawns`.
+- **sit:** Span `sit.start` (`sit.block`, `user.id`) und `sit.stop` (`sit.stop.reason`: `sneak`/`dismount`/`disconnect`); Zähler `titan.sit.sessions{event}` (`started`/`stopped`).
+- **elytra:** Span `elytra.glide.start` (bei `PlayerStartFlyingWithElytraEvent`, legt die Rakete ab) und `elytra.glide.end` (Landung, `elytra.glide.duration_ms` über die injizierte `Clock`); Zähler `titan.elytra.flights{event}`, Zähler `titan.elytra.boosts` (Raketenzündungen). `FireworkBoostTracker.advance` läuft jeden Tick und bekommt **keinen** Span.
+- **tickle:** Zähler `titan.tickle.attacks{result}` (`tickled`/`cooldown`), kein Span (Kämpfe können häufig sein).
+- **respawn:** Span `respawn.perform` (der um einen Tick verzögerte `player::respawn`), Zähler `titan.player.respawns`.
 - Alle vier: `FeatureNode.attach(…, telemetry)`, Listener mit `onTraced`, wo ein Span entsteht.
 
 Rollout: später, nach Fundament und `lobby-tracing-jumprun`.

@@ -47,8 +47,8 @@ final class ElytraTelemetry {
     @Inject
     ElytraTelemetry(Telemetry telemetry) {
         this.telemetry = telemetry;
-        this.flights = telemetry.meter().counterBuilder("elytra.flights").setUnit("{flight}").build();
-        this.boosts = telemetry.meter().counterBuilder("elytra.boosts").setUnit("{boost}").build();
+        this.flights = telemetry.meter().counterBuilder("titan.elytra.flights").setUnit("{flight}").build();
+        this.boosts = telemetry.meter().counterBuilder("titan.elytra.boosts").setUnit("{boost}").build();
     }
 
     void glideStarted(UUID player, Runnable handOutRocket) {

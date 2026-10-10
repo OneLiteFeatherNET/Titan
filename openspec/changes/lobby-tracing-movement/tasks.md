@@ -21,19 +21,19 @@ Regeln für jeden Agent-Prompt:
 
 ## 1. sit
 
-- [x] 1.1 Test zuerst (Integration, `Env`): Hinsetzen erzeugt `sit.start` mit `sit.block`, `user.id`; Aufstehen durch Schleichen, Dismount und Disconnect erzeugt `sit.stop` mit dem jeweiligen Grund; `sit.sessions` stimmt. Rot, dann `SitModule` (`Telemetry`, `attach(…, telemetry)`, `onTraced` für Block-Interaktion und Dismount). Grün.
+- [x] 1.1 Test zuerst (Integration, `Env`): Hinsetzen erzeugt `sit.start` mit `sit.block`, `user.id`; Aufstehen durch Schleichen, Dismount und Disconnect erzeugt `sit.stop` mit dem jeweiligen Grund; `titan.sit.sessions` stimmt. Rot, dann `SitModule` (`Telemetry`, `attach(…, telemetry)`, `onTraced` für Block-Interaktion und Dismount). Grün.
 - [x] 1.2 Test zuerst: Ein Disconnect ohne Sitz erzeugt keinen `sit.stop`; `PlayerPacketEvent` (Schleichen-Paket) erhält **keinen** Span (nur der Dismount-Zweig). Rot, dann grün. Nachweis: `./gradlew :features:sit:build`.
 
 ## 2. elytra
 
 - [x] 2.1 Test zuerst (Integration): Start erzeugt `elytra.glide.start`, Landung `elytra.glide.end` mit `elytra.glide.duration_ms` aus einer festen `Clock`; Disconnect im Flug vergisst den Start ohne Span-Leck. Rot, dann `ElytraModule` mit `Telemetry` und `Clock`. Grün.
-- [x] 2.2 Test zuerst (Unit): `elytra.boosts` zählt Zündungen; `FireworkBoostTracker.advance` über 100 Ticks erzeugt keinen Span. Rot, dann grün.
-- [x] 2.3 Test zuerst: `elytra.flights{event}` stimmt für Start und Landung. Rot, dann grün. Nachweis: `./gradlew :features:elytra:build`.
+- [x] 2.2 Test zuerst (Unit): `titan.elytra.boosts` zählt Zündungen; `FireworkBoostTracker.advance` über 100 Ticks erzeugt keinen Span. Rot, dann grün.
+- [x] 2.3 Test zuerst: `titan.elytra.flights{event}` stimmt für Start und Landung. Rot, dann grün. Nachweis: `./gradlew :features:elytra:build`.
 
 ## 3. tickle und respawn
 
-- [x] 3.1 Test zuerst (Unit, `TickleAttackHandler`, feste `Clock`): `tickle.attacks{result=tickled}` und `{result=cooldown}`, kein Span. Rot, dann `TickleModule`/`TickleAttackHandler` mit `Telemetry`. Grün.
-- [x] 3.2 Test zuerst (Integration, `env.tick()`): Tod und verzögerter Respawn erzeugen `respawn.perform` mit `user.id`, `player.respawns` steigt; ein Disconnect vor dem Tick erzeugt keinen Span. Rot, dann `RespawnModule` (`Telemetry`). Grün. Nachweis: `./gradlew :features:tickle:build :features:respawn:build`; `docs/lobby-modules.md` nennt die Spans und Zähler dieser vier Module.
+- [x] 3.1 Test zuerst (Unit, `TickleAttackHandler`, feste `Clock`): `titan.tickle.attacks{result=tickled}` und `{result=cooldown}`, kein Span. Rot, dann `TickleModule`/`TickleAttackHandler` mit `Telemetry`. Grün.
+- [x] 3.2 Test zuerst (Integration, `env.tick()`): Tod und verzögerter Respawn erzeugen `respawn.perform` mit `user.id`, `titan.player.respawns` steigt; ein Disconnect vor dem Tick erzeugt keinen Span. Rot, dann `RespawnModule` (`Telemetry`). Grün. Nachweis: `./gradlew :features:tickle:build :features:respawn:build`; `docs/lobby-modules.md` nennt die Spans und Zähler dieser vier Module.
 
 ## 4. Abnahme
 

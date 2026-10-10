@@ -103,8 +103,8 @@ class ElytraModuleTelemetryTest {
             env.process().eventHandler().call(new PlayerStartFlyingWithElytraEvent(player));
             env.process().eventHandler().call(new PlayerStopFlyingWithElytraEvent(player));
 
-            assertEquals(1, telemetry.counter("elytra.flights", Attributes.of(EVENT, "started")), "one started flight");
-            assertEquals(1, telemetry.counter("elytra.flights", Attributes.of(EVENT, "landed")), "one landed flight");
+            assertEquals(1, telemetry.counter("titan.elytra.flights", Attributes.of(EVENT, "started")), "one started flight");
+            assertEquals(1, telemetry.counter("titan.elytra.flights", Attributes.of(EVENT, "landed")), "one landed flight");
         }
     }
 
@@ -118,7 +118,7 @@ class ElytraModuleTelemetryTest {
 
             fixture.useFirework(player);
 
-            assertEquals(1, telemetry.counter("elytra.boosts", Attributes.empty()), "one lit firework");
+            assertEquals(1, telemetry.counter("titan.elytra.boosts", Attributes.empty()), "one lit firework");
         }
     }
 
@@ -133,7 +133,7 @@ class ElytraModuleTelemetryTest {
 
             fixture.useFirework(player);
 
-            assertEquals(1, telemetry.counter("elytra.boosts", Attributes.empty()), "the second use was refused, so it is not counted");
+            assertEquals(1, telemetry.counter("titan.elytra.boosts", Attributes.empty()), "the second use was refused, so it is not counted");
         }
     }
 

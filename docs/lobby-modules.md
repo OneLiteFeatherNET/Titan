@@ -949,10 +949,10 @@ Auftraggebers mit, Hibernate-Spans hängen so am auslösenden Span.
 
 | Modul | Spans | Zähler | Attribute |
 | --- | --- | --- | --- |
-| `sit` | `sit.start`, `sit.stop` | `sit.sessions{event}` (`started`, `stopped`) | `sit.block`, `sit.stop.reason` (`sneak`, `dismount`, `disconnect`), `user.id` |
-| `elytra` | `elytra.glide.start`, `elytra.glide.end` (mit Dauer) | `elytra.flights{event}` (`started`, `landed`), `elytra.boosts` | `elytra.glide.duration_ms`, `user.id` |
-| `tickle` | keine (Kämpfe sind zu häufig) | `tickle.attacks{result}` (`tickled`, `cooldown`) | - |
-| `respawn` | `respawn.perform` | `player.respawns` | `user.id` |
+| `sit` | `sit.start`, `sit.stop` | `titan.sit.sessions{event}` (`started`, `stopped`) | `sit.block`, `sit.stop.reason` (`sneak`, `dismount`, `disconnect`), `user.id` |
+| `elytra` | `elytra.glide.start`, `elytra.glide.end` (mit Dauer) | `titan.elytra.flights{event}` (`started`, `landed`), `titan.elytra.boosts` | `elytra.glide.duration_ms`, `user.id` |
+| `tickle` | keine (Kämpfe sind zu häufig) | `titan.tickle.attacks{result}` (`tickled`, `cooldown`) | - |
+| `respawn` | `respawn.perform` | `titan.player.respawns` | `user.id` |
 
 Die Ticks eines Elytra-Flugs und die Raketenbrenndauer haben keinen Span. Ein Flug endet mit einem
 Span bei der Landung; die Lobby merkt sich den Startzeitpunkt je Spieler und vergisst ihn beim

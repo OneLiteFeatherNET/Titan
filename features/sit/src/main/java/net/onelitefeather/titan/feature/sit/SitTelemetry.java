@@ -55,7 +55,7 @@ final class SitTelemetry {
 
     SitTelemetry(Telemetry telemetry) {
         this.telemetry = telemetry;
-        this.sessions = telemetry.meter().counterBuilder("sit.sessions").setUnit("{session}").build();
+        this.sessions = telemetry.meter().counterBuilder("titan.sit.sessions").setUnit("{session}").build();
     }
 
     void sit(UUID player, Key block, Runnable sitDown) {

@@ -30,7 +30,7 @@ final class RespawnTelemetry {
 
     RespawnTelemetry(Telemetry telemetry) {
         this.telemetry = telemetry;
-        this.respawns = telemetry.meter().counterBuilder("player.respawns").setUnit("{respawn}").build();
+        this.respawns = telemetry.meter().counterBuilder("titan.player.respawns").setUnit("{respawn}").build();
     }
 
     void respawn(UUID player, Runnable respawn) {

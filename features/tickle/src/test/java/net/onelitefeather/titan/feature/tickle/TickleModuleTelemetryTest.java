@@ -63,7 +63,7 @@ class TickleModuleTelemetryTest {
             try {
                 env.process().eventHandler().call(new EntityAttackEvent(attacker, target));
 
-                assertEquals(1, telemetry.counter("tickle.attacks", Attributes.of(RESULT, "tickled")), "one tickle");
+                assertEquals(1, telemetry.counter("titan.tickle.attacks", Attributes.of(RESULT, "tickled")), "one tickle");
             } finally {
                 module.stop();
             }
@@ -86,7 +86,7 @@ class TickleModuleTelemetryTest {
                 env.process().eventHandler().call(new EntityAttackEvent(attacker, target));
                 env.process().eventHandler().call(new EntityAttackEvent(attacker, target));
 
-                assertEquals(1, telemetry.counter("tickle.attacks", Attributes.of(RESULT, "cooldown")), "one attack refused by the cooldown");
+                assertEquals(1, telemetry.counter("titan.tickle.attacks", Attributes.of(RESULT, "cooldown")), "one attack refused by the cooldown");
             } finally {
                 module.stop();
             }

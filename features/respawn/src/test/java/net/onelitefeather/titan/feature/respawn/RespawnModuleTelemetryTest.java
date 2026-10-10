@@ -70,7 +70,7 @@ class RespawnModuleTelemetryTest {
                 player.kill();
                 env.tick();
 
-                assertEquals(1, telemetry.counter("player.respawns", Attributes.empty()), "one respawn");
+                assertEquals(1, telemetry.counter("titan.player.respawns", Attributes.empty()), "one respawn");
             } finally {
                 module.stop();
             }

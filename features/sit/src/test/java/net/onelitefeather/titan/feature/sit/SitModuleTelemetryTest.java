@@ -79,7 +79,7 @@ class SitModuleTelemetryTest {
             try {
                 sitOnSpruceStairs(env, player);
 
-                assertEquals(1, telemetry.counter("sit.sessions", Attributes.of(EVENT, "started")), "one started session");
+                assertEquals(1, telemetry.counter("titan.sit.sessions", Attributes.of(EVENT, "started")), "one started session");
             } finally {
                 module.stop();
             }
@@ -100,7 +100,7 @@ class SitModuleTelemetryTest {
                 SpanData span = telemetry.span("sit.stop");
                 assertEquals("sneak", telemetry.attribute(span, STOP_REASON), "the reason the seat was left");
                 assertEquals(player.getUuid().toString(), telemetry.attribute(span, Telemetry.USER_ID), "the player's UUID");
-                assertEquals(1, telemetry.counter("sit.sessions", Attributes.of(EVENT, "stopped")), "one stopped session");
+                assertEquals(1, telemetry.counter("titan.sit.sessions", Attributes.of(EVENT, "stopped")), "one stopped session");
             } finally {
                 module.stop();
             }

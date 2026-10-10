@@ -57,7 +57,7 @@ final class TickleAttackHandler implements Consumer<EntityAttackEvent> {
 
     TickleAttackHandler(Clock clock, Telemetry telemetry) {
         this.clock = clock;
-        this.attacks = telemetry.meter().counterBuilder("tickle.attacks").setUnit("{attack}").build();
+        this.attacks = telemetry.meter().counterBuilder("titan.tickle.attacks").setUnit("{attack}").build();
     }
 
     @Override
