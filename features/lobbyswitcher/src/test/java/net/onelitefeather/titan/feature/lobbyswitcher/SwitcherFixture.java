@@ -69,7 +69,7 @@ final class SwitcherFixture implements AutoCloseable {
         this.inventory.start();
         this.module = new LobbySwitcherModule(this.titan.node(), this.inventory, identities, this.messages, telemetry);
         this.module.start();
-        this.item = new LobbySwitcherItems().lobbySwitcherItem(this.module, flags, identities, this.messages);
+        this.item = new LobbySwitcherItems().lobbySwitcherItem(this.module, flags, identities, this.messages).orElse(null);
         this.lobbyItems = new PlacingLobbyItems(this.item == null ? List.of() : List.of(this.item));
     }
 

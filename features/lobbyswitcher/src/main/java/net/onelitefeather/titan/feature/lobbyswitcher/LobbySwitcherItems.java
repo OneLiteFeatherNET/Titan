@@ -19,6 +19,7 @@ import io.avaje.inject.Bean;
 import io.avaje.inject.Factory;
 import io.avaje.inject.Profile;
 import java.util.Locale;
+import java.util.Optional;
 import net.kyori.adventure.key.Key;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
@@ -26,7 +27,6 @@ import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.core.lobby.LobbyIdentities;
 import net.onelitefeather.titan.core.module.item.ItemSlot;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Contributes the {@code titan:lobbyswitcher} clock to the platform-wide lobby items, but only when
@@ -41,14 +41,16 @@ final class LobbySwitcherItems {
     private static final Key ITEM_KEY = Key.key("titan:lobbyswitcher");
     private static final int HOTBAR_SLOT = 8;
 
-    /** {@code null} - no bean - when the flag is off or the identity is unknown. */
+    /**
+     * Empty - no bean - when the flag is off or the identity is unknown; Avaje skips an empty
+     * Optional.
+     */
     @Bean
-    @Nullable
-    LobbyItem lobbySwitcherItem(LobbySwitcherModule module, FeatureFlags flags, LobbyIdentities identities, LobbySwitcherMessages messages) {
+    Optional<LobbyItem> lobbySwitcherItem(LobbySwitcherModule module, FeatureFlags flags, LobbyIdentities identities, LobbySwitcherMessages messages) {
         if (!flags.isActive(LobbySwitcherModule.FLAG) || identities.self().isEmpty()) {
-            return null;
+            return Optional.empty();
         }
         ItemStack clock = ItemStack.builder(Material.CLOCK).customName(messages.itemName(Locale.ENGLISH)).build();
-        return new LobbyItem(FEATURE_ID, ITEM_KEY, clock, ItemSlot.hotbar(HOTBAR_SLOT), (player, event) -> module.open(player));
+        return Optional.of(new LobbyItem(FEATURE_ID, ITEM_KEY, clock, ItemSlot.hotbar(HOTBAR_SLOT), (player, event) -> module.open(player)));
     }
 }
