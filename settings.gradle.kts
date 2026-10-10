@@ -32,7 +32,7 @@ dependencyResolutionManagement {
 
     versionCatalogs {
         create("libs") {
-            version("aonyx-bom", "0.8.7")
+            version("aonyx-bom", "0.8.8")
             version("cloudnet", "4.0.0-RC18-SNAPSHOT")
 
             version("luckperms", "5.6-SNAPSHOT")
