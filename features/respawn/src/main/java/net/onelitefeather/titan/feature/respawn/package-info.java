@@ -18,9 +18,10 @@
  * Plattform-Beans bekommt" - like {@code spawn}, it injects {@code LobbyItems} directly, since it
  * contributes no {@code LobbyItem} of its own.
  */
-@InjectModule(name = "respawnColumn", requires = {EventNode.class, LobbyItems.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"})
+@InjectModule(name = "respawnColumn", requires = {EventNode.class, LobbyItems.class, Telemetry.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"})
 package net.onelitefeather.titan.feature.respawn;
 
 import io.avaje.inject.InjectModule;
 import net.minestom.server.event.EventNode;
 import net.onelitefeather.titan.core.module.item.LobbyItems;
+import net.onelitefeather.titan.core.telemetry.Telemetry;

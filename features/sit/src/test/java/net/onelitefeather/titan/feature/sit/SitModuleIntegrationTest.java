@@ -29,6 +29,7 @@ import net.minestom.server.instance.block.BlockFace;
 import net.minestom.server.network.packet.client.play.ClientInputPacket;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -59,7 +60,7 @@ class SitModuleIntegrationTest {
         player.teleport(new Pos(0, 64, 0));
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            SitModule module = new SitModule(titan.node());
+            SitModule module = new SitModule(titan.node(), Telemetry.noop());
             module.start();
             try {
                 env.process().eventHandler().call(clickBlock(player, instance, Block.fromKey("minecraft:spruce_stairs"), new BlockVec(0, 64, 0)));
@@ -80,7 +81,7 @@ class SitModuleIntegrationTest {
         player.teleport(before);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            SitModule module = new SitModule(titan.node());
+            SitModule module = new SitModule(titan.node(), Telemetry.noop());
             module.start();
             try {
                 env.process().eventHandler().call(clickBlock(player, instance, Block.fromKey("minecraft:spruce_stairs"), new BlockVec(2, 65, 2)));
@@ -106,7 +107,7 @@ class SitModuleIntegrationTest {
         player.teleport(new Pos(0, 64, 0));
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            SitModule module = new SitModule(titan.node());
+            SitModule module = new SitModule(titan.node(), Telemetry.noop());
             module.start();
             try {
                 env.process().eventHandler().call(clickBlock(player, instance, Block.fromKey("minecraft:spruce_stairs"), new BlockVec(0, 64, 0)));
@@ -130,7 +131,7 @@ class SitModuleIntegrationTest {
         player.teleport(new Pos(0, 64, 0));
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            SitModule module = new SitModule(titan.node());
+            SitModule module = new SitModule(titan.node(), Telemetry.noop());
             module.start();
             try {
                 env.process().eventHandler().call(clickBlock(player, instance, Block.fromKey("minecraft:stone"), new BlockVec(0, 64, 0)));
@@ -150,7 +151,7 @@ class SitModuleIntegrationTest {
         player.teleport(new Pos(0, 64, 0));
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            SitModule module = new SitModule(titan.node());
+            SitModule module = new SitModule(titan.node(), Telemetry.noop());
             module.start();
             module.stop();
 

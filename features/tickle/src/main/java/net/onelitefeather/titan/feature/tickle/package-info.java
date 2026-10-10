@@ -17,9 +17,10 @@
  * The {@code tickle} column. See {@code docs/lobby-modules.md}, "Wie eine Column
  * Plattform-Beans bekommt", for how a column declares its platform dependencies.
  */
-@InjectModule(name = "tickleColumn", requires = {EventNode.class, Clock.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"})
+@InjectModule(name = "tickleColumn", requires = {EventNode.class, Clock.class, Telemetry.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"})
 package net.onelitefeather.titan.feature.tickle;
 
 import io.avaje.inject.InjectModule;
 import java.time.Clock;
 import net.minestom.server.event.EventNode;
+import net.onelitefeather.titan.core.telemetry.Telemetry;

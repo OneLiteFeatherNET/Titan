@@ -21,6 +21,10 @@ import io.avaje.inject.PreDestroy;
 import jakarta.inject.Named;
 import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
+import java.time.Clock;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
@@ -34,6 +38,7 @@ import net.minestom.server.timer.TaskSchedule;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.module.LobbyReturnToSpawnEvent;
 import net.onelitefeather.titan.core.module.item.LobbyItems;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 
 /**
  * The {@code elytra} feature: flight and firework boost. {@link ElytraLobbyItems} contributes its
@@ -58,20 +63,27 @@ public final class ElytraModule {
     /** This feature's position among its sibling {@link FeatureNode}s. */
     static final int EVENT_PRIORITY = 700;
 
-    private static final String ID = "elytra";
+    static final String ID = "elytra";
 
     private final EventNode<Event> titan;
     private final Provider<LobbyItems> lobbyItems;
     private final FireworkBoostTracker boosts;
     private final Scheduler scheduler;
+    private final Clock clock;
+    private final Telemetry telemetry;
+    private final ElytraTelemetry elytraTelemetry;
+    private final Map<UUID, Long> glideStartMillis = new HashMap<>();
     private FeatureNode node;
     private Task task;
 
-    public ElytraModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Provider<LobbyItems> lobbyItems, FireworkBoostTracker boosts, Scheduler scheduler) {
+    public ElytraModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Provider<LobbyItems> lobbyItems, FireworkBoostTracker boosts, Scheduler scheduler, Clock clock, Telemetry telemetry, ElytraTelemetry elytraTelemetry) {
         this.titan = titan;
         this.lobbyItems = lobbyItems;
         this.boosts = boosts;
         this.scheduler = scheduler;
+        this.clock = clock;
+        this.telemetry = telemetry;
+        this.elytraTelemetry = elytraTelemetry;
     }
 
     @PostConstruct
@@ -79,9 +91,9 @@ public final class ElytraModule {
         int burnDurationTicksAtStartup = Config.getAs(ElytraSettings.BURN_DURATION_TICKS_KEY, ElytraSettings::burnDurationTicks);
         ElytraSettings.cooldownTicks(Config.getAs(ElytraSettings.COOLDOWN_TICKS_KEY, Integer::parseInt), burnDurationTicksAtStartup);
 
-        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY).on(PlayerStartFlyingWithElytraEvent.class, event -> event.getPlayer().setItemInOffHand(this.lobbyItems.get().stack(ElytraLobbyItems.FIREWORK_KEY.asString()))).on(PlayerStopFlyingWithElytraEvent.class, event -> takeRocketAway(event.getPlayer()))
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry).on(PlayerStartFlyingWithElytraEvent.class, this::startGlide).on(PlayerStopFlyingWithElytraEvent.class, this::land)
                 // The server ends the glide itself on the way to spawn, which fires no stop-flying event.
-                .on(LobbyReturnToSpawnEvent.class, event -> takeRocketAway(event.getPlayer())).on(PlayerDisconnectEvent.class, event -> this.boosts.forget(event.getPlayer().getUuid()));
+                .on(LobbyReturnToSpawnEvent.class, event -> takeRocketAway(event.getPlayer())).on(PlayerDisconnectEvent.class, event -> forgetGlide(event.getPlayer().getUuid()));
 
         this.task = this.scheduler.scheduleTask(this.boosts::advance, TaskSchedule.tick(1), TaskSchedule.tick(1));
 
@@ -91,9 +103,30 @@ public final class ElytraModule {
         this.lobbyItems.get();
     }
 
+    private void startGlide(PlayerStartFlyingWithElytraEvent event) {
+        Player player = event.getPlayer();
+        this.glideStartMillis.put(player.getUuid(), this.clock.millis());
+        this.elytraTelemetry.glideStarted(player.getUuid(), () -> player.setItemInOffHand(this.lobbyItems.get().stack(ElytraLobbyItems.FIREWORK_KEY.asString())));
+    }
+
+    private void land(PlayerStopFlyingWithElytraEvent event) {
+        Player player = event.getPlayer();
+        Long startMillis = this.glideStartMillis.get(player.getUuid());
+        if (startMillis == null) {
+            takeRocketAway(player);
+            return;
+        }
+        this.elytraTelemetry.glideEnded(player.getUuid(), this.clock.millis() - startMillis, () -> takeRocketAway(player));
+    }
+
     private void takeRocketAway(Player player) {
         player.setItemInOffHand(ItemStack.AIR);
-        this.boosts.forget(player.getUuid());
+        forgetGlide(player.getUuid());
+    }
+
+    private void forgetGlide(UUID playerId) {
+        this.glideStartMillis.remove(playerId);
+        this.boosts.forget(playerId);
     }
 
     @PreDestroy

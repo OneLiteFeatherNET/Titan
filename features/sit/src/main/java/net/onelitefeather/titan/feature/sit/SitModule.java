@@ -33,8 +33,10 @@ import net.minestom.server.event.player.PlayerBlockInteractEvent;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.event.player.PlayerPacketEvent;
 import net.minestom.server.network.packet.client.play.ClientInputPacket;
-import net.onelitefeather.titan.core.module.FeatureNode;
+import net.minestom.server.tag.Tag;
 import net.onelitefeather.titan.core.event.EntityDismountEvent;
+import net.onelitefeather.titan.core.module.FeatureNode;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 
 /**
  * Lets a player sit down on an allowed block and stand back up again, by sneaking, by dismounting
@@ -45,13 +47,22 @@ public final class SitModule {
 
     static final int EVENT_PRIORITY = 500;
 
-    private static final String ID = "sit";
+    static final String ID = "sit";
+
+    // Set only while a sneak dispatches its EntityDismountEvent, so the listener can tell a sneak
+    // from a real dismount; removed in the same call, so it never outlives the sneak.
+    private static final Tag<Boolean> STOPPING_BY_SNEAK = Tag.Boolean("titan:sit/stopping-by-sneak");
 
     private final EventNode<Event> titan;
+    private final Telemetry telemetry;
+    private final Seats seats = new Seats();
+    private final SitTelemetry sitTelemetry;
     private FeatureNode node;
 
-    public SitModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan) {
+    public SitModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Telemetry telemetry) {
         this.titan = Objects.requireNonNull(titan, "titan");
+        this.telemetry = Objects.requireNonNull(telemetry, "telemetry");
+        this.sitTelemetry = new SitTelemetry(telemetry);
     }
 
     @PostConstruct
@@ -62,9 +73,8 @@ public final class SitModule {
         Config.getAs(SitSettings.OFFSET_Y_KEY, Double::parseDouble);
         Config.getAs(SitSettings.OFFSET_Z_KEY, Double::parseDouble);
         SitSettings.allowedBlocks(Config.list().of(SitSettings.ALLOWED_BLOCKS_KEY).stream().map(SitSettings::parseBlock).toList());
-        Seats seats = new Seats();
 
-        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY);
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry);
 
         this.node.on(PlayerBlockInteractEvent.class, event -> {
             // Live, unvalidated read on every interaction - the strict check above only runs
@@ -74,33 +84,48 @@ public final class SitModule {
                 double x = Config.getAs(SitSettings.OFFSET_X_KEY, Double::parseDouble);
                 double y = Config.getAs(SitSettings.OFFSET_Y_KEY, Double::parseDouble);
                 double z = Config.getAs(SitSettings.OFFSET_Z_KEY, Double::parseDouble);
-                seats.sit(event.getPlayer(), event.getBlockPosition(), new Vec(x, y, z));
+                Vec offset = new Vec(x, y, z);
+                this.sitTelemetry.sit(event.getPlayer().getUuid(), event.getBlock().key(), () -> this.seats.sit(event.getPlayer(), event.getBlockPosition(), offset));
             }
         });
 
         // Uses shift() rather than the raw flags: the sneak bit is 0x20, not 0x02, and shift()
-        // also matches when other movement keys are held at once.
+        // also matches when other movement keys are held at once. Not traced: it fires on every
+        // sneak packet, and only a seat actually left opens a span.
         this.node.on(PlayerPacketEvent.class, event -> {
             if (event.getPacket() instanceof ClientInputPacket input && input.shift()) {
-                Entity vehicle = event.getPlayer().getVehicle();
+                Player player = event.getPlayer();
+                Entity vehicle = player.getVehicle();
                 if (vehicle != null) {
-                    EventDispatcher.call(new EntityDismountEvent(event.getPlayer(), vehicle));
+                    player.setTag(STOPPING_BY_SNEAK, true);
+                    try {
+                        EventDispatcher.call(new EntityDismountEvent(player, vehicle));
+                    } finally {
+                        player.removeTag(STOPPING_BY_SNEAK);
+                    }
                 }
             }
         });
 
         this.node.on(EntityDismountEvent.class, event -> {
-            if (event.rider() instanceof Player player && seats.isSitting(player)) {
-                seats.standUp(player);
+            if (event.rider() instanceof Player player) {
+                SitTelemetry.StopReason reason = player.hasTag(STOPPING_BY_SNEAK) ? SitTelemetry.StopReason.SNEAK : SitTelemetry.StopReason.DISMOUNT;
+                standUp(player, reason);
             }
         });
 
-        this.node.on(PlayerDisconnectEvent.class, event -> seats.standUp(event.getPlayer()));
+        this.node.on(PlayerDisconnectEvent.class, event -> standUp(event.getPlayer(), SitTelemetry.StopReason.DISCONNECT));
     }
 
     @PreDestroy
     void stop() {
         this.node.close();
+    }
+
+    private void standUp(Player player, SitTelemetry.StopReason reason) {
+        if (this.seats.isSitting(player)) {
+            this.sitTelemetry.standUp(player.getUuid(), reason, () -> this.seats.standUp(player));
+        }
     }
 
     // Extracted as a pure function so the block-allow rule can be unit-tested without an Env.

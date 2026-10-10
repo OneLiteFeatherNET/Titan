@@ -25,6 +25,7 @@ import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.module.item.LobbyItems;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -47,7 +48,7 @@ import org.mockito.Mockito;
 class RespawnModuleTest {
 
     private static RespawnModule startedModule(TestTitanNode titan, LobbyItems lobbyItems) {
-        RespawnModule module = new RespawnModule(titan.node(), lobbyItems);
+        RespawnModule module = new RespawnModule(titan.node(), lobbyItems, Telemetry.noop());
         module.start();
         return module;
     }

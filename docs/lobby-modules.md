@@ -945,6 +945,19 @@ Auftraggebers mit, Hibernate-Spans hängen so am auslösenden Span.
 - `protection`: kein Span. Zähler `titan.protection.denied{event}` je abgebrochenem Event, mit den Namen
   `pickup`, `inventory_click`, `block_break`, `block_place`, `item_swap` und `item_drop`.
 
+### Sitzen, Elytra, Kitzeln, Respawn
+
+| Modul | Spans | Zähler | Attribute |
+| --- | --- | --- | --- |
+| `sit` | `sit.start`, `sit.stop` | `titan.sit.sessions{event}` (`started`, `stopped`) | `sit.block`, `sit.stop.reason` (`sneak`, `dismount`, `disconnect`), `user.id` |
+| `elytra` | `elytra.glide.start`, `elytra.glide.end` (mit Dauer) | `titan.elytra.flights{event}` (`started`, `landed`), `titan.elytra.boosts` | `elytra.glide.duration_ms`, `user.id` |
+| `tickle` | keine (Kämpfe sind zu häufig) | `titan.tickle.attacks{result}` (`tickled`, `cooldown`) | - |
+| `respawn` | `respawn.perform` | `titan.player.respawns` | `user.id` |
+
+Die Ticks eines Elytra-Flugs und die Raketenbrenndauer haben keinen Span. Ein Flug endet mit einem
+Span bei der Landung; die Lobby merkt sich den Startzeitpunkt je Spieler und vergisst ihn beim
+Disconnect.
+
 ### Testen mit `TestTelemetry`
 
 `TestTelemetry.create()` (`core/testFixtures`) baut je Aufruf einen eigenen In-Memory-Exporter und

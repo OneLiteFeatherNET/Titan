@@ -17,8 +17,9 @@
  * The {@code sit} column. See {@code docs/lobby-modules.md}, "Wie eine Column
  * Plattform-Beans bekommt", for how a column declares its platform dependencies.
  */
-@InjectModule(name = "sitColumn", requires = {EventNode.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"})
+@InjectModule(name = "sitColumn", requires = {EventNode.class, Telemetry.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"})
 package net.onelitefeather.titan.feature.sit;
 
 import io.avaje.inject.InjectModule;
 import net.minestom.server.event.EventNode;
+import net.onelitefeather.titan.core.telemetry.Telemetry;

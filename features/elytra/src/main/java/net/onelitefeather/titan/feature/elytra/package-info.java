@@ -21,11 +21,13 @@
  * {@link net.onelitefeather.titan.feature.elytra.ElytraModule}).
  */
 @InjectModule(
-        name = "elytraColumn", requires = {EventNode.class, Scheduler.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"}, provides = {LobbyItem.class}
+        name = "elytraColumn", requires = {EventNode.class, Scheduler.class, Clock.class, Telemetry.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"}, provides = {LobbyItem.class}
 )
 package net.onelitefeather.titan.feature.elytra;
 
 import io.avaje.inject.InjectModule;
+import java.time.Clock;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.timer.Scheduler;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
+import net.onelitefeather.titan.core.telemetry.Telemetry;

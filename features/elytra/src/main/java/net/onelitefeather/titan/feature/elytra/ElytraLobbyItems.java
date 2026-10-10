@@ -48,13 +48,14 @@ final class ElytraLobbyItems {
 
     @Bean
     @Named("elytra-firework")
-    LobbyItem firework(FireworkBoostTracker boosts) {
+    LobbyItem firework(FireworkBoostTracker boosts, ElytraTelemetry telemetry) {
         return new LobbyItem(FEATURE_ID, FIREWORK_KEY, ElytraItems.FIREWORK, ItemSlot.unplaced(), (player, event) -> {
             // Live, unvalidated read on every boost (see ElytraSettings' Javadoc): the strict,
             // cross-field check only ever runs once, in ElytraModule#start().
             int burnDurationTicks = Config.getInt(ElytraSettings.BURN_DURATION_TICKS_KEY);
             int cooldownTicks = Config.getInt(ElytraSettings.COOLDOWN_TICKS_KEY);
             if (boosts.requestBoost(player.getUuid(), burnDurationTicks, cooldownTicks, player.isFlyingWithElytra())) {
+                telemetry.boosted();
                 FireworkRockets.fire(player, burnDurationTicks, cooldownTicks);
             }
         });
