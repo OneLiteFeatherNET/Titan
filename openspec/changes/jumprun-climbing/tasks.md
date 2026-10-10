@@ -45,7 +45,7 @@ Jeder Agent-Prompt nennt die Regeln, die für seine Aufgabe gelten:
 
 ## 4. Konfiguration und Prüfung (Welle 1)
 
-- [x] 4.1 Test zuerst (Unit, `JumprunSettingsTest`, `JumprunConfigTest`): Standardwerte `jumprun.climb.minHeight` 3, `maxHeight` 5 und die Paletten `ladder` und `vine` sind gültig. Abgelehnt mit Schlüssel und Grund: `stone` in `ladder`, `minHeight: 1`, `maxHeight` kleiner als `minHeight`, `maxHeight: 9`, nicht numerisch, Gewicht −1, alle Gewichte 0. Eine gültige Änderung der Höhen wird beim nächsten Start gelesen, eine ungültige bleibt wirkungslos und wird protokolliert (Muster `rainbow.rerollTicks`, `LiveSetting`). Rot. Dann `JumprunSettings` (Prüfung `climbable` über die Tag-Registry, sonst feste Erlaubnisliste), `JumprunConfig` und `titan/defaults/jumprun.yaml` mit Kommentaren. Grün.
+- [x] 4.1 Test zuerst (Unit, `JumprunSettingsTest`, `JumprunConfigTest`): Standardwerte `jumprun.climb.minHeight` 3, `maxHeight` 7 (D10) und die Paletten `ladder` und `vine` sind gültig. Abgelehnt mit Schlüssel und Grund: `stone` in `ladder`, `minHeight: 1`, `maxHeight` kleiner als `minHeight`, `maxHeight: 9`, nicht numerisch, Gewicht −1, alle Gewichte 0. Eine gültige Änderung der Höhen wird beim nächsten Start gelesen, eine ungültige bleibt wirkungslos und wird protokolliert (Muster `rainbow.rerollTicks`, `LiveSetting`). Rot. Dann `JumprunSettings` (Prüfung `climbable` über die Tag-Registry, sonst feste Erlaubnisliste), `JumprunConfig` und `titan/defaults/jumprun.yaml` mit Kommentaren. Grün.
 - [x] 4.2 Nachweis: `./gradlew build` grün, `JumprunStartTest` startet mit den Standardwerten.
 
 ## 5. Abnahme (Welle 4–5)

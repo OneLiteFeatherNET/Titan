@@ -29,7 +29,7 @@ Motivation steht in `proposal.md` (Why). Ausgangslage im Code (`origin/main`):
 
 ### D1 Aufbau: Turm aus Pfeiler, Leiter und Zielblock
 
-Ein Kletterabschnitt vom Block `A` (Vollblock oder andere Form, aktuell oder nächster) zum Zielblock `B` in Achsenrichtung `d` (Nord, Süd, Ost, West) mit Höhe `H` (Rise von `A.topY` zu `B.topY`, Bereich 3 bis 5, Konfiguration `jumprun.climb.minHeight`/`maxHeight`):
+Ein Kletterabschnitt vom Block `A` (Vollblock oder andere Form, aktuell oder nächster) zum Zielblock `B` in Achsenrichtung `d` (Nord, Süd, Ost, West) mit Höhe `H` (Rise von `A.topY` zu `B.topY`, Bereich 3 bis 7, Konfiguration `jumprun.climb.minHeight`/`maxHeight`):
 
 ```
 Seitenansicht, Richtung d nach rechts, H = 3 (y wächst nach oben)
@@ -107,7 +107,7 @@ jumprun:
   climb:
     # Height of a tower in blocks (rise of the target block's top over the block it starts from).
     minHeight: 3
-    maxHeight: 5
+    maxHeight: 7
   palettes:
     ladder:
       ladder: 1
@@ -133,7 +133,8 @@ Die Höhe eines Turms folgt dem Score, damit seine Kosten der Zielschwierigkeit 
 - **Höhe:** Aus den Zielkosten ohne Rauschen, `level(Score) · maxCost(Modus, freigeschaltete Formen)`, folgt `H = round(3 + (Zielkosten − 2,0) / 2,1)`. Das Ergebnis wird auf `[jumprun.climb.minHeight, jumprun.climb.maxHeight]` geklemmt und, wenn der Zielblock nicht in das Höhenband der Lobby passt, um je eine Stufe verkürzt, bis er passt (`HeightBand.allows`).
 - **Funktion:** rein und deterministisch, eine kleine Methode in `Difficulty`. Sie nimmt Modus, Score und die Grenzen der Konfiguration. Das Rauschen der Zielkosten wählt weiterhin unter den Kandidaten; es verschiebt die Höhe nicht.
 - **Monoton:** Das Ziel steigt mit dem Score nicht fallend, weil Formen nur freigeschaltet werden. Also steigt auch die Höhe nicht fallend.
-- **Standardgrenzen 3 bis 5:** Bei Score 80 erreicht der Turm die Obergrenze (Kosten 6,2 gegen Ziel etwa 7,9). Ein Ziel von mehr als 6,2 kann mit den Standardgrenzen nicht erreicht werden. Höhere Ziele verlangen `maxHeight` von 6 bis 8 in `jumprun.yaml`. Das ist eine Betreiber-Entscheidung, keine Codeänderung.
+- **Standardgrenzen 3 bis 7 (Entscheidung nach dem Rebase auf `main` mit #409):** `Climb.MAX_HEIGHT` und `jumprun.climb.maxHeight` sind 7, ein einziger Wert. Medium bleibt von selbst unter der Obergrenze: Das Ziel bei Score 80 ist etwa 4,1 (Schwierigkeit 6,5), also Höhe 4. Hard erreicht bei Score 80 die Obergrenze 7 (Ziel etwa 10,8, Kosten 10,4). Die Höhe folgt dem Ziel je Modus, die Grenze klemmt nur.
+- **Höhenband:** Eine Höhe 7 passt nur, wenn der Zielblock in das Höhenband passt; sonst verkürzt die Schleife in `CourseGenerator.towers` die Höhe, bis sie passt (Test: `HardMakesTheTallestTower...`, Walk mit Band-Prüfung).
 - **Alternative: fester Anteil für Türme je Score.** Verworfen (Entscheidung der Nutzer): ignoriert die Schwierigkeit.
 - **Alternative: Höhe würfeln.** Verworfen: Höhe und Ziel würden sich gegenseitig verschieben, und Tests wären nicht deterministisch.
 - **Test:** Unit (`DifficultyTest`): Höhe monoton im Score; geklemmt auf die Grenzen; Kosten bei Score 0, 40 und 80 innerhalb einer halben Höhenstufe (1,05) der Zielkosten, sofern die Höhe im Bereich 3 bis 8 liegt; bei Score 0 die Mindesthöhe. Unit (`ModeGenerationTest`, feste Seeds): In Medium kommen bei Score 80 Türme vor, mit den Standardgrenzen.
