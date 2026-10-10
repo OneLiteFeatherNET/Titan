@@ -40,7 +40,7 @@ runtime/.../titan/defaults/features.yaml   features.NAVIGATOR_* und features.LOB
 - **Flag:** `features.LOBBYSWITCHER`, Standard `true` (Q4). Name folgt dem Modul (`lobbyswitcher`) in Großbuchstaben, ohne Unterstrich, wie `NAVIGATOR` als Präfix. Umgebungsvariable `FEATURES_LOBBYSWITCHER`. Die lokale Variante hat kein CloudNet-Profil und damit kein Item; der Standardwert wirkt dort nicht.
 - **Wirkzeitpunkt (Q1, entschieden):** Das Flag wird beim Start gelesen und entscheidet, ob das Item als Bean existiert. Der Grund ist `HotbarLobbyItems`: Die Item-Maps werden im Konstruktor einmal gebaut, ein Item lässt sich nicht zur Laufzeit aus der Leiste nehmen, ohne Spieler neu auszustatten. Umschalten braucht einen Neustart. Die Einstellung `lobbyswitcher.refreshSeconds` dagegen wird bei jedem Öffnen bzw. jeder Aktualisierung gelesen.
 - **Profil:** Lokal (`apps/local`) gibt es kein Item, kein Inventar und keine Abfragen. Der Portal-Fallback `NoPlayerCounts` zeigt Labels als offline, ein Wechselinventar nur mit der eigenen Lobby ist aber ohne Ziel (der `DebugDeliver` wechselt nie) nutzlos.
-- **Identität fehlt (Korrektur):** Der Bean-Scope entsteht, bevor die Bridge-Extension die Identität (D3) setzt. Das Item wird deshalb immer beigesteuert, solange Flag und CloudNet-Profil aktiv sind; die Identität wird erst beim Öffnen aufgelöst. Fehlt sie dann noch, öffnet sich nichts (ohne Task gibt es nichts zu lesen). Die Bridge loggt den Grund einmal als WARN.
+- **Identität fehlt (Korrektur):** Der Bean-Scope entsteht, bevor die Bridge-Extension die Identität (D3) setzt. Das Item wird deshalb immer beigesteuert, solange Flag und CloudNet-Profil aktiv sind; die Identität wird erst beim Öffnen aufgelöst. Fehlt sie dann noch, öffnet sich nichts, der Spieler bekommt aber die übersetzte Meldung „Lobbys nicht verfügbar“ (`message.unavailable`) statt Stille (ohne Task gibt es nichts zu lesen). Die Bridge loggt den Grund einmal als WARN.
 - **Priorität:** `FeatureNode.attach(..., priority)` mit freiem Wert zwischen `navigator` (400) und `portal` (900); Wert in `FeatureNode`-Tabelle prüfen.
 - **Alternativen:** (a) Flag live beim Klick prüfen, Item immer da: Spieler sähen ein wirkungsloses Item, wenn das Flag aus ist. Verworfen (Q1). (b) Standard `false` wie `NAVIGATOR_*`: verworfen (Q4), das Item soll nach dem Deploy ohne Konfigurationsänderung da sein.
 
@@ -53,12 +53,13 @@ default List<ServiceCount> running(SourceType type, String name) { return List.o
 record ServiceCount(String name, int online, int max) {}   // core.portal, nur laufende Dienste
 ```
 
-- `HolderPlayerCounts` reicht sie über `TitanPlayerCountLookup` durch (JDK-Typen: `List<String[]>`-Zeilen oder ein `common`-Record; die Bridge kennt `common` bereits, da sie `PlayerCountLookup` implementiert, daher ist ein `common`-Record zulässig).
-- Die Bridge implementiert die Auflistung auf denselben `ServiceReadings`-Quellen und denselben `BridgeDocProperties`-Lesungen. `ServiceTotals` bleibt unverändert.
+- `HolderPlayerCounts` reicht sie über `TitanPlayerCountLookup` durch. Über die Holder-Grenze gehen nur JDK-Typen: `PlayerCountLookup.running` liefert `List<Map<String, Object>>` mit den Schlüsseln `name` (String), `online` und `max` (je Integer); `HolderPlayerCounts` bildet die Zeilen auf `core.ServiceCount` ab, `ServiceListing` in der Bridge bildet ihre Lesungen auf die Zeilen ab.
+- Es gibt nur diesen einen Abfragepfad: `count(...)` summiert `HolderPlayerCounts` aus `running()`, leer heißt „läuft nicht“. `ServiceTotals` und das `int[]`-`lookup` sind entfallen.
+- Die Bridge implementiert die Auflistung auf denselben `ServiceReadings`-Quellen und denselben `BridgeDocProperties`-Lesungen.
 - Ohne Bridge liefert die Default-Methode eine leere Liste, der Switcher ist dann ohnehin nicht gebaut (D1).
 - **Warum keine zweite Schnittstelle:** Die Zahlen sollen nicht zwei Quellen mit möglicherweise verschiedenem Stand haben. Ein eigener `LobbyDirectory`-SPI wäre sauberer getrennt, hätte aber einen zweiten Holder, einen zweiten Bridge-Pfad und einen zweiten Konfigurationspunkt.
 - **Alternative:** Pro Dienstnamen `count(SERVICE, name)` aufrufen. Braucht die Namensliste, die es nicht gibt. Verworfen.
-- **Test:** Unit-Test für die Zuordnung `ServiceReading -> ServiceCount` und die Filterung auf laufende Dienste in der Bridge (ohne CloudNet-Typen testbar, wie `ServiceTotals`).
+- **Test:** Unit-Test für die Zuordnung `ServiceReading -> ServiceCount` und die Filterung auf laufende Dienste in der Bridge (ohne CloudNet-Typen testbar).
 
 ### D3 Identität der eigenen Lobby
 
@@ -70,6 +71,7 @@ interface LobbyIdentities { Optional<LobbyIdentity> self(); }
 
 - Die Bridge liest die eigene Dienst-Info über `InjectionLayer.ext()`. Im Wrapper-API (`wrapper-jvm-api` 4.0.0-RC16) gibt es `WrapperConfiguration.serviceInfoSnapshot()` und `ServiceInfoHolder.serviceInfo()`; `serviceInfo().serviceId().taskName()` liefert den Task, `name()` den Dienstnamen. Ob diese Instanz über `InjectionLayer.ext()` erreichbar ist, entscheidet der Spike (Task 1.1, Q2); das Ergebnis steht unter „Spike-Ergebnis“.
 - Der Holder folgt `TitanPlayerCountLookup` (statisch, volatile, JDK-Typen). Ohne Bridge: `Optional.empty()`.
+- `TitanLobbyIdentity.set(String task, String serviceName)` nimmt zwei Strings (fehlend oder leer heißt keine Identität, `clear()` löscht); erst `self()` baut daraus das `core.LobbyIdentity`. `LobbyIdentities.none()` entfällt, die Identität gibt es nur im CloudNet-Profil.
 - **Alternative:** Task und Dienstname als Konfiguration (`lobbyswitcher.task`, `lobbyswitcher.service`). Einfach, aber der Betreiber pflegt Werte, die CloudNet schon kennt, und sie können beim Kopieren einer Konfiguration falsch werden. Als Rückfall vorgesehen, falls der Spike negativ ausfällt.
 
 ### D4 Inventar: ein Aves-Builder pro Modul
@@ -91,7 +93,7 @@ interface LobbyIdentities { Optional<LobbyIdentity> self(); }
 
 ### D6 Zustände und Klick
 
-Jeder Eintrag hat genau einen Zustand, aus dem Zählerstand und der eigenen Identität bestimmt (reine Funktion, ohne Minestom, unit-getestet). Die Liste zeigt nur laufende Dienste; `GONE` (Dienst läuft beim Klick nicht mehr) entsteht nur in der Klick-Prüfung.
+Jeder Eintrag hat genau einen Zustand, aus dem Zählerstand und der eigenen Identität bestimmt (reine Funktion, ohne Minestom, unit-getestet). Die Liste zeigt nur laufende Dienste; `GONE` (Dienst läuft beim Klick nicht mehr) und `ERROR` (Prüfung gescheitert) entstehen nur in der Klick-Prüfung. Der Zustand und das Klick-Ergebnis sind ein Typ (`SwitcherState`), `JOINABLE` ist beim Klick „senden“.
 
 | Zustand | Bedingung | Anzeige | Klick |
 | --- | --- | --- | --- |
@@ -117,6 +119,7 @@ Jeder Eintrag hat genau einen Zustand, aus dem Zählerstand und der eigenen Iden
 
 - Wirft der Provider oder liefert er keinen Stand: der letzte gute Stand bleibt, das Inventar zeigt weiter diesen Stand. Ohne jeden Stand zeigt das Öffnen eine Meldung „Lobbys nicht verfügbar“ (übersetzt) und enthält nur die eigene Lobby, sofern die Identität bekannt ist.
 - Log wie `LabelReader`: der erste Fehler einer Art als `WARN` je Quelle, danach nur `DEBUG`, Rückkehr zum Normalzustand meldet sich wieder neu.
+- `LinkageError` (z. B. `NoClassDefFoundError` aus dem Bridge-Classloader) ist kein `RuntimeException`: `HolderPlayerCounts` loggt sie wie oben (erste Art als `WARN` mit Throwable, danach `DEBUG`) und wirft sie als `IllegalStateException` weiter, damit Portal und Switcher ihren Rückfall nutzen. `SwitcherReading` fängt `LinkageError` zusätzlich selbst, sonst stürbe die Lesung auf dem virtuellen Thread still.
 - Keine eigene Fehlermetrik (Q9): Fehler beim Klick erscheinen als `result=error` im Zähler und als Span-Status; Lesefehler bei der Aktualisierung nur im Log.
 
 ### D9 Texte
