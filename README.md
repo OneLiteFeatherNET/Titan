@@ -216,7 +216,7 @@ features:
 - `portal.labelRefreshSeconds`: how often portal labels re-read their player counts, in seconds -
   an integer from `1` to `3600` (see "Portal labels" below)
 - `lobbyswitcher.refreshSeconds`: how often an open lobby switcher re-reads the lobby list, in seconds -
-  an integer from `1` to `3600`; the periodic read runs only while someone has the list open
+  an integer from `1` to `3600`, default `5`; the periodic read runs only while someone has the list open
 - `features`: plain booleans, one per feature flag, with the same sources and override order as
   every other key (see "Feature flags" below).
 

@@ -89,14 +89,14 @@ Kein Refactor von `LabelRefresh` (Q3, design.md D5b). Der Switcher bekommt eine 
 
 ## 11. Dokumentation
 
-- [ ] 11.1 `README.md`: Abschnitt „Feature flags“ um `LOBBYSWITCHER` (Standard `true`, nur CloudNet-Variante wirksam) ergänzen; den Absatz „kein Neustart“ um die Ausnahme ergänzen (Item-Präsenz wird beim Start festgelegt, Q1); Tabelle der Umgebungsvariablen um `lobbyswitcher.refreshSeconds`; kurzer Eintrag zu Column und Hotbar-Slot 8.
-- [ ] 11.2 `docs/lobby-modules.md`: Column-Liste im Kapitel „Module“ um `lobbyswitcher`; Abschnitt „Traces und Metriken“ um Spans und Zähler; Tabelle „Was Admin, Hotbar und Rechteprüfung liefern“ um `lobbyswitcher` ergänzen.
-- [ ] 11.3 Nachweis: Dokumentation und Code stimmen überein (Flagname, Schlüssel, Span- und Zählernamen, Slot 8). Mechanisches Review durch einen Haiku-Agenten.
+- [x] 11.1 `README.md`: Abschnitt „Feature flags“ um `LOBBYSWITCHER` (Standard `true`, nur CloudNet-Variante wirksam) ergänzen; den Absatz „kein Neustart“ um die Ausnahme ergänzen (Item-Präsenz wird beim Start festgelegt, Q1); Tabelle der Umgebungsvariablen um `lobbyswitcher.refreshSeconds`; kurzer Eintrag zu Column und Hotbar-Slot 8.
+- [x] 11.2 `docs/lobby-modules.md`: Column-Liste im Kapitel „Module“ um `lobbyswitcher`; Abschnitt „Traces und Metriken“ um Spans und Zähler; Tabelle „Was Admin, Hotbar und Rechteprüfung liefern“ um `lobbyswitcher` ergänzen.
+- [x] 11.3 Nachweis: Dokumentation und Code stimmen überein (Flagname, Schlüssel, Span- und Zählernamen, Slot 8). Mechanisches Review durch einen Haiku-Agenten.
 
 ## 12. Smoke-Test und Abschluss
 
 - [ ] 12.1 Smoke-Test auf CloudNet mit zwei Lobbys desselben Tasks (manuell): Standard (Flag an) prüfen; beide Lobbys starten; Item (Uhr) auf Slot 8; die Liste zeigt beide mit Zahlen; Zahlen ändern sich, während das Inventar offen ist; Schließen stoppt die Aktualisierung (Zähler oder DEBUG-Log); Klick auf die andere Lobby wechselt; die eigene Lobby ist nicht klickbar; eine volle Lobby (Max-Wert der Lobby begrenzen) ist nicht beitretbar; Flag aus und Neustart entfernt das Item; Loki zeigt `lobbyswitcher.select` mit `result=sent`.
-- [ ] 12.2 Offene Fragen Q1 bis Q10 in `design.md` festhalten (Abschnitt „Entscheidungen“): Q1, Q3 bis Q6, Q8 bis Q10 sind entschieden; Q2 und Q7 schließt der Spike (Task 1.1).
+- [x] 12.2 Offene Fragen Q1 bis Q10 in `design.md` festhalten (Abschnitt „Entscheidungen“): Q1, Q3 bis Q6, Q8 bis Q10 sind entschieden; Q2 und Q7 schließt der Spike (Task 1.1).
 - [ ] 12.3 Archiv nach Umsetzung: `openspec/changes/lobby-switcher` nach `openspec/changes/archive/2026-10-10-lobby-switcher` verschieben, Delta nach `openspec/specs/lobby-switcher/spec.md` übernehmen. Commit `docs(openspec): archive lobby-switcher`. Durch den Nutzer ausstehend.
 - [ ] 12.4 Nachweis: `openspec validate lobby-switcher --strict` grün (vor dem Archiv); `./gradlew build` grün; das Startlog der cloudnet- und der local-Variante hat keine neuen Warnungen.
 - [ ] 12.5 PR öffnen: Titel `feat(lobbyswitcher): show other lobbies with player counts and switch between them`; Beschreibung auf Englisch mit Zusammenfassung, Smoke-Test-Ergebnis und Verweis auf `openspec/changes/lobby-switcher`; abschließend `https://claude.ai/code/session_01GXose9rakuRNZoM3TP3xj1`. Danach nur auf grüne CI warten; Merge und Release macht der Nutzer.
