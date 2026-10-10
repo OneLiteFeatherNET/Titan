@@ -17,11 +17,11 @@ Jeder Agent-Prompt nennt die Regeln, die für seinen Task gelten: erst Vorhanden
 
 ## 1. Vertrag und Startablauf (Welle 1)
 
-- [ ] 1.1 `ServerBootstrap` in `core` anlegen (D1). Nachweis: `./gradlew :core:build` grün.
-- [ ] 1.2 Test zuerst (Unit): `ServerBootstraps.select` liefert ohne Kandidaten den Rückfall, bei einem genau diesen und wirft bei zweien eine Ausnahme mit beiden Namen (D2). Danach umsetzen. Nachweis: Tests grün.
-- [ ] 1.3 `PlainMinestomBootstrap` in `runtime` (D3). Nachweis: `./gradlew :runtime:build` grün.
-- [ ] 1.4 Charakterisierung zuerst (Unit): Das Auslesen von Secret und Bind-Adresse als reine Funktionen aus `TitanApplication` herausziehen und testen (Datei vor Property, leere Datei ignoriert, Standard `localhost:25565`). Pfad und Properties werden übergeben, statt global gelesen. Nachweis: Tests grün, Verhalten unverändert.
-- [ ] 1.5 Test zuerst (Unit): `TitanStartup` ruft mit Fake-Schritten in der Reihenfolge `init` → Exception-Handler → Scope bauen → `start` auf, und bei einem Fehler beim Scope-Bau kein `start`. Danach `main` auf `TitanStartup` umstellen; die gewählte Instanz kommt per `builder().bean(ServerBootstrap.class, …)` in den Scope; INFO `Server bootstrap: {}`; `runtime` hängt nicht mehr an `minestom-extensions`, und bis Welle 2 fällt der Start auf `PlainMinestomBootstrap` zurück. Nachweis: Tests grün, `grep -rn hollowcube runtime/src/main` ohne Treffer.
+- [x] 1.1 `ServerBootstrap` in `core` anlegen (D1). Nachweis: `./gradlew :core:build` grün.
+- [x] 1.2 Test zuerst (Unit): `ServerBootstraps.select` liefert ohne Kandidaten den Rückfall, bei einem genau diesen und wirft bei zweien eine Ausnahme mit beiden Namen (D2). Danach umsetzen. Nachweis: Tests grün.
+- [x] 1.3 `PlainMinestomBootstrap` in `runtime` (D3). Nachweis: `./gradlew :runtime:build` grün.
+- [x] 1.4 Charakterisierung zuerst (Unit): Das Auslesen von Secret und Bind-Adresse als reine Funktionen aus `TitanApplication` herausziehen und testen (Datei vor Property, leere Datei ignoriert, Standard `localhost:25565`). Pfad und Properties werden übergeben, statt global gelesen. Nachweis: Tests grün, Verhalten unverändert.
+- [x] 1.5 Test zuerst (Unit): `TitanStartup` ruft mit Fake-Schritten in der Reihenfolge `init` → Exception-Handler → Scope bauen → `start` auf, und bei einem Fehler beim Scope-Bau kein `start`. Danach `main` auf `TitanStartup` umstellen; die gewählte Instanz kommt per `builder().bean(ServerBootstrap.class, …)` in den Scope; INFO `Server bootstrap: {}`; `runtime` hängt nicht mehr an `minestom-extensions`, und bis Welle 2 fällt der Start auf `PlainMinestomBootstrap` zurück. Nachweis: Tests grün, `grep -rn hollowcube runtime/src/main` ohne Treffer.
 
 ## 2. `platform/extensions` (Welle 2)
 

@@ -19,6 +19,7 @@ import io.avaje.config.Config;
 import io.avaje.inject.BeanScope;
 import io.avaje.inject.spi.GenericType;
 import io.opentelemetry.api.GlobalOpenTelemetry;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import net.minestom.server.MinecraftServer;
@@ -29,6 +30,7 @@ import net.onelitefeather.titan.runtime.bootstrap.BeanProfiles;
 import net.onelitefeather.titan.runtime.bootstrap.ConfigurationStartupLog;
 import net.onelitefeather.titan.runtime.bootstrap.FeatureStartupLog;
 import net.onelitefeather.titan.runtime.bootstrap.PermissionStartupLog;
+import net.onelitefeather.titan.core.bootstrap.ServerBootstrap;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.permission.PermissionService;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
@@ -47,17 +49,20 @@ import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
  */
 public final class Titan {
 
+    private static final String BOOTSTRAP_PLATFORM_SUFFIX = "Platform";
+
     private final BeanScope beanScope;
     private final TitanLifecycle lifecycle;
 
     /**
+     * @param bootstrap the initialised server; it is handed to the scope so features can see it
      * @throws ExceptionInInitializerError if {@code application.yaml} cannot be parsed
      * @throws RuntimeException            if a feature's {@code @PostConstruct} throws while the
      *                                     {@link BeanScope} is being built
      * @throws IllegalStateException       if the running variant expected a column that did not
      *                                     load (see {@link VariantStartupCheck})
      */
-    public Titan() {
+    public Titan(ServerBootstrap bootstrap) {
         BlockHandlerHelper.registerAll();
 
         // First touch of the static io.avaje.config.Config facade, so a broken application.yaml
@@ -68,7 +73,7 @@ public final class Titan {
         this.lifecycle = new TitanLifecycle(Telemetry.of(GlobalOpenTelemetry.get()));
         ClassLoader loader = Titan.class.getClassLoader();
         String[] profiles = BeanProfiles.active(Config.asConfiguration().list().of(ConfigurationStartupLog.ACTIVE_PROFILES_KEY), CloudNetEnvironment.isPresent());
-        this.beanScope = this.lifecycle.startup(() -> start(loader, profiles));
+        this.beanScope = this.lifecycle.startup(() -> start(loader, profiles, bootstrap));
         ScopeGuard.closeOnFailure(this.beanScope, () -> finishStartup(this.beanScope));
     }
 
@@ -88,11 +93,13 @@ public final class Titan {
      * Runs every feature's {@code @PostConstruct}, attaching it to the titan event node before any
      * player can connect.
      */
-    private static BeanScope start(ClassLoader loader, String[] profiles) {
+    private static BeanScope start(ClassLoader loader, String[] profiles, ServerBootstrap bootstrap) {
         Optional<VariantDescriptor> variant = VariantDescriptor.fromClasspath(loader);
-        List<String> loadedModules = LoadedModules.discover(loader);
+        List<String> loadedModules = new ArrayList<>(LoadedModules.discover(loader));
+        // The bootstrap platform counts as a loaded module, so a variant expecting extensionsPlatform fails without it.
+        loadedModules.add(bootstrap.name() + BOOTSTRAP_PLATFORM_SUFFIX);
         TitanLifecycle.describeStartup(variant.map(VariantDescriptor::name).orElse("unknown"), List.of(profiles), loadedModules.size());
-        BeanScope scope = BeanScope.builder().profiles(profiles).build();
+        BeanScope scope = BeanScope.builder().profiles(profiles).bean(ServerBootstrap.class, bootstrap).build();
         return ScopeGuard.closeOnFailure(scope, () -> {
             variant.ifPresent(descriptor -> VariantStartupCheck.verify(descriptor, loadedModules));
             return scope;
@@ -112,7 +119,7 @@ public final class Titan {
         MinecraftServer.getSchedulerManager().buildShutdownTask(() -> this.lifecycle.shutdown(this.beanScope::close));
     }
 
-    public static Titan instance() {
-        return new Titan();
+    public static Titan instance(ServerBootstrap bootstrap) {
+        return new Titan(bootstrap);
     }
 }
