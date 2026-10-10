@@ -53,8 +53,8 @@ final class SpawnTelemetry {
 
     SpawnTelemetry(Telemetry telemetry) {
         this.telemetry = telemetry;
-        this.returns = telemetry.meter().counterBuilder("spawn.returns").setUnit("{return}").build();
-        this.boundsTeleports = telemetry.meter().counterBuilder("spawn.bounds_teleports").setUnit("{teleport}").build();
+        this.returns = telemetry.meter().counterBuilder("titan.spawn.returns").setUnit("{return}").build();
+        this.boundsTeleports = telemetry.meter().counterBuilder("titan.spawn.bounds_teleports").setUnit("{teleport}").build();
     }
 
     /**

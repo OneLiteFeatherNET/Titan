@@ -96,8 +96,8 @@ class LobbySpawnReturnTest {
 
         Attributes commandSent = Attributes.of(SOURCE, "command", RESULT, "sent");
         Attributes navigatorBlocked = Attributes.of(SOURCE, "navigator", RESULT, "blocked");
-        Assertions.assertEquals(2, testTelemetry.counter("spawn.returns", commandSent), "two sent returns from the command");
-        Assertions.assertEquals(1, testTelemetry.counter("spawn.returns", navigatorBlocked), "one blocked return from the navigator");
+        Assertions.assertEquals(2, testTelemetry.counter("titan.spawn.returns", commandSent), "two sent returns from the command");
+        Assertions.assertEquals(1, testTelemetry.counter("titan.spawn.returns", navigatorBlocked), "one blocked return from the navigator");
     }
 
     @DisplayName("With a spawn point the event fires once, before the teleport, and the player is returned")

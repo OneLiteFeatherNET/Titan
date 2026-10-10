@@ -78,7 +78,7 @@ class SpawnTelemetryTest {
                 Assertions.assertEquals(MIN_HEIGHT - 10.0, testTelemetry.attribute(span, SpawnTelemetry.Y), "the height the player fell to");
                 Assertions.assertEquals((long) MIN_HEIGHT, testTelemetry.attribute(span, SpawnTelemetry.MIN_HEIGHT), "the configured minimum");
                 Assertions.assertEquals((long) MAX_HEIGHT, testTelemetry.attribute(span, SpawnTelemetry.MAX_HEIGHT), "the configured maximum");
-                Assertions.assertEquals(1, testTelemetry.counter("spawn.bounds_teleports", Attributes.empty()), "the teleport is counted once");
+                Assertions.assertEquals(1, testTelemetry.counter("titan.spawn.bounds_teleports", Attributes.empty()), "the teleport is counted once");
             } finally {
                 module.stop();
             }
@@ -102,7 +102,7 @@ class SpawnTelemetryTest {
                 }
 
                 Assertions.assertTrue(testTelemetry.spans().isEmpty(), "a move inside the bounds must not produce a span, found " + testTelemetry.spans().stream().map(SpanData::getName).toList());
-                Assertions.assertEquals(0, testTelemetry.counter("spawn.bounds_teleports", Attributes.empty()), "no bounds teleport was counted");
+                Assertions.assertEquals(0, testTelemetry.counter("titan.spawn.bounds_teleports", Attributes.empty()), "no bounds teleport was counted");
             } finally {
                 module.stop();
             }

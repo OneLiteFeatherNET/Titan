@@ -120,7 +120,7 @@ class NavigatorTelemetryTest {
             SpanData span = testTelemetry.span("navigator.select");
             Assertions.assertEquals("SURVIVAL", testTelemetry.attribute(span, DESTINATION), "the destination's name from the fixed enumeration");
             Assertions.assertEquals("sent", testTelemetry.attribute(span, RESULT), "an allowed destination is sent");
-            Assertions.assertEquals(1, testTelemetry.counter("navigator.selections", Attributes.of(METRIC_DESTINATION, "SURVIVAL", METRIC_RESULT, "sent")), "the selection is counted");
+            Assertions.assertEquals(1, testTelemetry.counter("titan.navigator.selections", Attributes.of(METRIC_DESTINATION, "SURVIVAL", METRIC_RESULT, "sent")), "the selection is counted");
         }
     }
 
@@ -142,7 +142,7 @@ class NavigatorTelemetryTest {
             SpanData span = testTelemetry.span("navigator.select");
             Assertions.assertEquals("denied", testTelemetry.attribute(span, RESULT), "the revoked destination is denied");
             Assertions.assertTrue(deliver.deliveries().isEmpty(), "a denied destination must not transfer the player");
-            Assertions.assertEquals(1, testTelemetry.counter("navigator.selections", Attributes.of(METRIC_DESTINATION, "BUILD", METRIC_RESULT, "denied")), "the denial is counted");
+            Assertions.assertEquals(1, testTelemetry.counter("titan.navigator.selections", Attributes.of(METRIC_DESTINATION, "BUILD", METRIC_RESULT, "denied")), "the denial is counted");
         }
     }
 
@@ -160,7 +160,7 @@ class NavigatorTelemetryTest {
             SpanData span = testTelemetry.span("navigator.select");
             Assertions.assertEquals("spawn", testTelemetry.attribute(span, DESTINATION), "the spawn entry is not a Destination, it has its own value");
             Assertions.assertEquals("spawn", testTelemetry.attribute(span, RESULT), "the spawn entry reports spawn");
-            Assertions.assertEquals(1, testTelemetry.counter("navigator.selections", Attributes.of(METRIC_DESTINATION, "spawn", METRIC_RESULT, "spawn")), "the spawn selection is counted");
+            Assertions.assertEquals(1, testTelemetry.counter("titan.navigator.selections", Attributes.of(METRIC_DESTINATION, "spawn", METRIC_RESULT, "spawn")), "the spawn selection is counted");
         }
     }
 }

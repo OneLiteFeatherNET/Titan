@@ -59,7 +59,7 @@ final class NavigatorTelemetry {
 
     NavigatorTelemetry(Telemetry telemetry) {
         this.telemetry = telemetry;
-        this.selections = telemetry.meter().counterBuilder("navigator.selections").setUnit("{selection}").build();
+        this.selections = telemetry.meter().counterBuilder("titan.navigator.selections").setUnit("{selection}").build();
     }
 
     void open(boolean team, int entries, Runnable body) {

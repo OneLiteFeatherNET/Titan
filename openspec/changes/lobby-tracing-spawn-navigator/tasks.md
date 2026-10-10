@@ -20,13 +20,13 @@ Regeln für jeden Agent-Prompt:
 
 ## 1. spawn
 
-- [ ] 1.1 Test zuerst (Unit, `LobbySpawnReturn`): `sendToSpawn` erzeugt `spawn.return` mit Quelle, Ergebnis, `user.id`; `spawn.returns{source,result}` stimmt für `sent` und `already_at_spawn`. Rot, dann `SpawnModule` und `LobbySpawnReturn` mit `Telemetry` (`requires Telemetry.class`, `attach(…, telemetry)`). Grün.
+- [ ] 1.1 Test zuerst (Unit, `LobbySpawnReturn`): `sendToSpawn` erzeugt `spawn.return` mit Quelle, Ergebnis, `user.id`; `titan.spawn.returns{source,result}` stimmt für `sent` und `already_at_spawn`. Rot, dann `SpawnModule` und `LobbySpawnReturn` mit `Telemetry` (`requires Telemetry.class`, `attach(…, telemetry)`). Grün.
 - [x] 1.2 Test zuerst (Integration, `Env`, `env.tick()`): Ein Spieler unter `minHeight` erzeugt genau einen `spawn.bounds_teleport`; 100 Bewegungen innerhalb der Grenzen erzeugen keinen Span. Rot, dann nur der Teleport-Zweig in `inSpan`. Grün.
 - [x] 1.3 Test zuerst (Integration): Beitritt erzeugt `spawn.join` über `onTraced`; ein werfender Join-Teleport trägt Ausnahme und ERROR. Rot, dann grün. Nachweis: `./gradlew :features:spawn:build`.
 
 ## 2. navigator
 
-- [x] 2.1 Test zuerst (Integration, Aves-Klick in `Env`): `open` erzeugt `navigator.open` (Art, Einträge); die Auswahl eines erlaubten Ziels `navigator.select` mit `result=sent`, eines verbotenen `denied`, des Spawn-Eintrags `spawn`; `navigator.selections` stimmt. Rot, dann `NavigatorModule` (`Telemetry`, `attach(…, telemetry)`). Grün.
+- [x] 2.1 Test zuerst (Integration, Aves-Klick in `Env`): `open` erzeugt `navigator.open` (Art, Einträge); die Auswahl eines erlaubten Ziels `navigator.select` mit `result=sent`, eines verbotenen `denied`, des Spawn-Eintrags `spawn`; `titan.navigator.selections` stimmt. Rot, dann `NavigatorModule` (`Telemetry`, `attach(…, telemetry)`). Grün.
 - [x] 2.2 Test zuerst (Unit): `navigator.layout.apply` nur bei geändertem Layout. Rot, dann grün. Nachweis: `./gradlew :features:navigator:build`; `docs/lobby-modules.md` (spawn, navigator) nennt Spans und Zähler.
 
 ## 3. Abnahme
