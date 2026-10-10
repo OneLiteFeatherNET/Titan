@@ -19,7 +19,6 @@ import io.avaje.config.Config;
 import io.avaje.inject.BeanScope;
 import io.avaje.inject.spi.GenericType;
 import io.opentelemetry.api.GlobalOpenTelemetry;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import net.minestom.server.MinecraftServer;
@@ -48,8 +47,6 @@ import net.onelitefeather.titan.common.helper.BlockHandlerHelper;
  * {@code @PostConstruct}/{@code @PreDestroy} methods are its whole lifecycle.
  */
 public final class Titan {
-
-    private static final String BOOTSTRAP_PLATFORM_SUFFIX = "Platform";
 
     private final BeanScope beanScope;
     private final TitanLifecycle lifecycle;
@@ -95,9 +92,7 @@ public final class Titan {
      */
     private static BeanScope start(ClassLoader loader, String[] profiles, ServerBootstrap bootstrap) {
         Optional<VariantDescriptor> variant = VariantDescriptor.fromClasspath(loader);
-        List<String> loadedModules = new ArrayList<>(LoadedModules.discover(loader));
-        // The bootstrap platform counts as a loaded module, so a variant expecting extensionsPlatform fails without it.
-        loadedModules.add(bootstrap.name() + BOOTSTRAP_PLATFORM_SUFFIX);
+        List<String> loadedModules = LoadedModules.discover(loader);
         TitanLifecycle.describeStartup(variant.map(VariantDescriptor::name).orElse("unknown"), List.of(profiles), loadedModules.size());
         BeanScope scope = BeanScope.builder().profiles(profiles).bean(ServerBootstrap.class, bootstrap).build();
         return ScopeGuard.closeOnFailure(scope, () -> {

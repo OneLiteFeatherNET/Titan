@@ -43,8 +43,7 @@ class ServerBootstrapsTest {
     @DisplayName("Two bootstrap platforms abort the start, naming both")
     @Test
     void twoCandidatesAbortNamingBoth() {
-        IllegalStateException thrown = Assertions.assertThrows(IllegalStateException.class,
-                () -> ServerBootstraps.select(List.of(new NamedBootstrap("extensions"), new NamedBootstrap("cloudnet"))));
+        IllegalStateException thrown = Assertions.assertThrows(IllegalStateException.class, () -> ServerBootstraps.select(List.of(new NamedBootstrap("extensions"), new NamedBootstrap("cloudnet"))));
 
         Assertions.assertTrue(thrown.getMessage().contains("extensions"), "the message must name extensions, was: " + thrown.getMessage());
         Assertions.assertTrue(thrown.getMessage().contains("cloudnet"), "the message must name cloudnet, was: " + thrown.getMessage());

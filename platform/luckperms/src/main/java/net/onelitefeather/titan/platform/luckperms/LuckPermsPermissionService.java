@@ -18,19 +18,15 @@ package net.onelitefeather.titan.platform.luckperms;
 import io.avaje.inject.PostConstruct;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;
-import java.util.List;
 import java.util.UUID;
 import me.lucko.luckperms.minestom.app.LuckPermsMinestomOptions;
 import me.lucko.luckperms.minestom.loader.MinestomLoader;
-import net.hollowcube.minestom.extensions.ExtensionBootstrap;
 import net.luckperms.api.LuckPermsProvider;
 import net.luckperms.api.model.user.User;
 import net.luckperms.api.query.QueryOptions;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.entity.Player;
-import net.minestom.server.extensions.DiscoveredExtension;
-import net.minestom.server.extensions.Extension;
-import net.minestom.server.extensions.ExtensionManager;
+import net.onelitefeather.titan.core.bootstrap.ServerBootstrap;
 import net.onelitefeather.titan.core.permission.PermissionResult;
 import net.onelitefeather.titan.core.permission.PermissionService;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
@@ -47,22 +43,16 @@ public final class LuckPermsPermissionService implements PermissionService {
     public static final String QUALIFIER = "luckperms";
 
     private final LuckPermsTelemetry telemetry;
+    private final ServerBootstrap bootstrap;
 
-    public LuckPermsPermissionService(Telemetry telemetry) {
+    public LuckPermsPermissionService(Telemetry telemetry, ServerBootstrap bootstrap) {
         this.telemetry = new LuckPermsTelemetry(telemetry);
+        this.bootstrap = bootstrap;
     }
 
     @PostConstruct
     void start() {
-        this.telemetry.started(loadedExtensionNames(), () -> MinestomLoader.create(LuckPermsMinestomOptions.builder().registerShutdownHook(true).build()).load().enable());
-    }
-
-    private static List<String> loadedExtensionNames() {
-        ExtensionManager extensionManager = ExtensionBootstrap.getExtensionManager();
-        if (extensionManager == null) {
-            return List.of();
-        }
-        return extensionManager.getExtensions().stream().map(Extension::getOrigin).map(DiscoveredExtension::getName).toList();
+        this.telemetry.started(this.bootstrap.loadedExtensions(), () -> MinestomLoader.create(LuckPermsMinestomOptions.builder().registerShutdownHook(true).build()).load().enable());
     }
 
     @Override

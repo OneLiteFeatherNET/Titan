@@ -54,4 +54,12 @@ class ExpectedModulesTest {
 
         Assertions.assertEquals(List.of("adminColumn", "sitColumn"), missing);
     }
+
+    @DisplayName("A variant expecting extensionsPlatform reports it missing when the plain minestom bootstrap is active")
+    @Test
+    void extensionsPlatformIsMissingWithPlainMinestom() {
+        List<String> missing = ExpectedModules.missingModules(List.of("adminColumn", "extensionsPlatform"), List.of("adminColumn", "minestomPlatform"));
+
+        Assertions.assertEquals(List.of("extensionsPlatform"), missing);
+    }
 }

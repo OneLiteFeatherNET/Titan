@@ -13,14 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * The LuckPerms permission platform module. See {@code docs/lobby-modules.md}, "Wie eine Column
- * Plattform-Beans bekommt", for how a module declares what it provides.
- */
-@InjectModule(name = "luckpermsPlatform", provides = PermissionService.class, requires = {Telemetry.class, ServerBootstrap.class})
-package net.onelitefeather.titan.platform.luckperms;
+package net.onelitefeather.titan.runtime.bootstrap;
 
-import io.avaje.inject.InjectModule;
-import net.onelitefeather.titan.core.bootstrap.ServerBootstrap;
-import net.onelitefeather.titan.core.permission.PermissionService;
+import net.onelitefeather.titan.common.deliver.TracedDeliver;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+class DeliverFallbackBeansTest {
+
+    @DisplayName("The fallback deliver is traced, so a transfer without a platform still shows in the trace")
+    @Test
+    void fallbackDeliverIsTraced() {
+        Assertions.assertInstanceOf(TracedDeliver.class, new DeliverFallbackBeans().deliver(Telemetry.noop()));
+    }
+}

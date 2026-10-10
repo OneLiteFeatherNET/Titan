@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 /**
- * The LuckPerms permission platform module. See {@code docs/lobby-modules.md}, "Wie eine Column
- * Plattform-Beans bekommt", for how a module declares what it provides.
+ * The CloudNet platform module: the CloudNet deliver. Its {@code cloudnetPlatform} module id is
+ * what a variant expects in {@code variant.properties} when it includes this platform.
  */
-@InjectModule(name = "luckpermsPlatform", provides = PermissionService.class, requires = {Telemetry.class, ServerBootstrap.class})
-package net.onelitefeather.titan.platform.luckperms;
+@InjectModule(name = "cloudnetPlatform", provides = Deliver.class, requires = {Telemetry.class})
+package net.onelitefeather.titan.platform.cloudnet;
 
 import io.avaje.inject.InjectModule;
-import net.onelitefeather.titan.core.bootstrap.ServerBootstrap;
-import net.onelitefeather.titan.core.permission.PermissionService;
+import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.core.telemetry.Telemetry;

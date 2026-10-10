@@ -7,10 +7,6 @@ dependencies {
     implementation(project(":core"))
     implementation(platform(libs.aonyx.bom))
     implementation(libs.minestom)
-    implementation(platform(libs.minestom.extensions.bom))
-    // Bundles net.minestom.server.extensions.ExtensionManager, used to detect a leftover
-    // extensions/luckperms.jar loading LuckPerms a second time.
-    implementation(libs.minestom.extensions)
 
     compileOnly(libs.luckperms.api) {
         exclude(group = "net.kyori.adventure")

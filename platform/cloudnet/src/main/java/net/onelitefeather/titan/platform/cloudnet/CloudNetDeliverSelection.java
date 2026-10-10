@@ -13,24 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.common.deliver;
+package net.onelitefeather.titan.platform.cloudnet;
 
+import java.nio.file.Path;
 import net.onelitefeather.titan.api.deliver.Deliver;
+import net.onelitefeather.titan.common.deliver.DebugDeliver;
 import net.onelitefeather.titan.common.utils.CloudNetEnvironment;
 
-/**
- * Picks the {@link Deliver} implementation based on whether the server runs as a
- * CloudNet service. CloudNet itself is provided by the CloudNet wrapper at runtime rather than
- * bundled into the fat jar, so standalone runs fall back to {@link DebugDeliver}, which reports
- * the delivery it would have made instead of forwarding it.
- */
-public final class DeliverProvider {
+/** Forwards players through the CloudNet bridge only when the server runs as a CloudNet service. */
+final class CloudNetDeliverSelection {
 
-    private DeliverProvider() {
+    private CloudNetDeliverSelection() {
     }
 
-    public static Deliver create() {
-        if (CloudNetEnvironment.isPresent()) {
+    static Deliver select(Path workingDirectory) {
+        if (CloudNetEnvironment.isPresent(workingDirectory)) {
             return new MessageChannelDeliver();
         }
         return new DebugDeliver();

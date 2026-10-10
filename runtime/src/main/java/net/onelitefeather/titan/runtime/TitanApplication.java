@@ -56,8 +56,7 @@ public class TitanApplication {
         try {
             Map<String, String> properties = startupProperties();
             List<ServerBootstrap> candidates = ServiceLoader.load(ServerBootstrap.class).stream().map(ServiceLoader.Provider::get).toList();
-            TitanStartup.run(ServerBootstraps.select(candidates), velocityAuth(properties), BootstrapSettings.bindHost(properties),
-                    BootstrapSettings.bindPort(properties), TitanObservability::installExceptionHandler, active -> new Titan(active).initialize());
+            TitanStartup.run(ServerBootstraps.select(candidates), velocityAuth(properties), BootstrapSettings.bindHost(properties), BootstrapSettings.bindPort(properties), TitanObservability::installExceptionHandler, active -> new Titan(active).initialize());
         } catch (RuntimeException | Error throwable) {
             LOGGER.error("Titan failed to start: {}", throwable.toString(), throwable);
             System.exit(1);

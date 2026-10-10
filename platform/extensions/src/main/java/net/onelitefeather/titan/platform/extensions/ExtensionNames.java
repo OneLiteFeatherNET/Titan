@@ -13,14 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * The LuckPerms permission platform module. See {@code docs/lobby-modules.md}, "Wie eine Column
- * Plattform-Beans bekommt", for how a module declares what it provides.
- */
-@InjectModule(name = "luckpermsPlatform", provides = PermissionService.class, requires = {Telemetry.class, ServerBootstrap.class})
-package net.onelitefeather.titan.platform.luckperms;
+package net.onelitefeather.titan.platform.extensions;
 
-import io.avaje.inject.InjectModule;
-import net.onelitefeather.titan.core.bootstrap.ServerBootstrap;
-import net.onelitefeather.titan.core.permission.PermissionService;
-import net.onelitefeather.titan.core.telemetry.Telemetry;
+import java.util.Collection;
+import java.util.List;
+
+/** Extension names in a stable order, so the start log and the permission checks never flicker. */
+final class ExtensionNames {
+
+    private ExtensionNames() {
+    }
+
+    static List<String> sorted(Collection<String> names) {
+        return names.stream().sorted().toList();
+    }
+}
