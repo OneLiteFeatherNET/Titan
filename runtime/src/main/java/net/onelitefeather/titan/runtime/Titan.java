@@ -32,6 +32,7 @@ import net.onelitefeather.titan.runtime.bootstrap.PermissionStartupLog;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.permission.PermissionService;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
+import net.onelitefeather.titan.runtime.lifecycle.ScopeGuard;
 import net.onelitefeather.titan.runtime.lifecycle.TitanLifecycle;
 import net.onelitefeather.titan.runtime.variant.LoadedModules;
 import net.onelitefeather.titan.runtime.variant.VariantDescriptor;
@@ -68,14 +69,19 @@ public final class Titan {
         ClassLoader loader = Titan.class.getClassLoader();
         String[] profiles = BeanProfiles.active(Config.asConfiguration().list().of(ConfigurationStartupLog.ACTIVE_PROFILES_KEY), CloudNetEnvironment.isPresent());
         this.beanScope = this.lifecycle.startup(() -> start(loader, profiles));
+        ScopeGuard.closeOnFailure(this.beanScope, () -> finishStartup(this.beanScope));
+    }
 
-        // Players can only connect once bootstrap.start() runs, well after this point, so the
-        // provider can safely use the PermissionService resolved from the scope.
-        PermissionService permissionService = this.beanScope.get(PermissionService.class);
+    /**
+     * Players can only connect once bootstrap.start() runs, well after this point, so the provider
+     * can safely use the PermissionService resolved from the scope.
+     */
+    private static void finishStartup(BeanScope scope) {
+        PermissionService permissionService = scope.get(PermissionService.class);
         MinecraftServer.getConnectionManager().setPlayerProvider((connection, gameProfile) -> new TitanPlayer(connection, gameProfile, permissionService));
         PermissionStartupLog.activeService(permissionService);
 
-        FeatureStartupLog.startedInEventOrder(titanNode(this.beanScope));
+        FeatureStartupLog.startedInEventOrder(titanNode(scope));
     }
 
     /**
@@ -87,8 +93,10 @@ public final class Titan {
         List<String> loadedModules = LoadedModules.discover(loader);
         TitanLifecycle.describeStartup(variant.map(VariantDescriptor::name).orElse("unknown"), List.of(profiles), loadedModules.size());
         BeanScope scope = BeanScope.builder().profiles(profiles).build();
-        variant.ifPresent(descriptor -> VariantStartupCheck.verify(descriptor, loadedModules));
-        return scope;
+        return ScopeGuard.closeOnFailure(scope, () -> {
+            variant.ifPresent(descriptor -> VariantStartupCheck.verify(descriptor, loadedModules));
+            return scope;
+        });
     }
 
     private static EventNode<Event> titanNode(BeanScope scope) {

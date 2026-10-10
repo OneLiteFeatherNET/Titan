@@ -14,14 +14,14 @@ Regeln: Test zuerst (rot, dann grün); F.I.R.S.T.: kein Server, kein Warten, kei
 
 ## 1. Scope schließen (Welle 1)
 
-- [ ] 1.1 Test zuerst (Unit, runtime): Wirft der Körper nach einem erfolgreich gebauten Scope, ist der Scope danach geschlossen (ein `@PreDestroy` ist gelaufen), und die Ausnahme erreicht den Aufrufer unverändert (gleiche Instanz). Rot (die Hilfsmethode fehlt). Dann `closingOnFailure` (Name frei) in `runtime`. Grün.
-- [ ] 1.2 Test zuerst (Unit): Wirft zusätzlich `close()`, ist die gemeldete Ausnahme die ursprüngliche, die andere hängt per `getSuppressed()` daran. Ein Körper ohne Fehler schließt den Scope nicht und gibt den Rückgabewert zurück. Je ein eigener Test. Rot, dann grün.
-- [ ] 1.3 `Titan.start` und der Konstruktorblock nach dem Aufbau laufen über die Hilfsmethode. Test (Unit, runtime, `VariantStartupCheck` mit fehlender Column über `start`-Logik, soweit ohne Minestom erreichbar; sonst Nachweis über den Test aus 1.1 plus Code-Review der zwei Aufrufstellen): der Fehlertext nennt weiter die fehlende Column. Nachweis: `./gradlew :runtime:build :apps:cloudnet:build :apps:local:build`, bestehende `VariantStartupCheckTest` und `VariantStartTest` bleiben grün.
-- [ ] 1.4 Befund prüfen und im PR-Text festhalten (kein Code): Räumt Avaje einen Scope auf, wenn `build()` selbst wirft? Ein kurzer Test oder Lesen der Avaje-Quelle; bei „nein“ ein Hinweis für einen Folge-Change.
+- [x] 1.1 Test zuerst (Unit, runtime): Wirft der Körper nach einem erfolgreich gebauten Scope, ist der Scope danach geschlossen (ein `@PreDestroy` ist gelaufen), und die Ausnahme erreicht den Aufrufer unverändert (gleiche Instanz). Rot (die Hilfsmethode fehlt). Dann `closingOnFailure` (Name frei) in `runtime`. Grün.
+- [x] 1.2 Test zuerst (Unit): Wirft zusätzlich `close()`, ist die gemeldete Ausnahme die ursprüngliche, die andere hängt per `getSuppressed()` daran. Ein Körper ohne Fehler schließt den Scope nicht und gibt den Rückgabewert zurück. Je ein eigener Test. Rot, dann grün.
+- [x] 1.3 `Titan.start` und der Konstruktorblock nach dem Aufbau laufen über die Hilfsmethode. Test (Unit, runtime, `VariantStartupCheck` mit fehlender Column über `start`-Logik, soweit ohne Minestom erreichbar; sonst Nachweis über den Test aus 1.1 plus Code-Review der zwei Aufrufstellen): der Fehlertext nennt weiter die fehlende Column. Nachweis: `./gradlew :runtime:build :apps:cloudnet:build :apps:local:build`, bestehende `VariantStartupCheckTest` und `VariantStartTest` bleiben grün.
+- [x] 1.4 Befund prüfen und im PR-Text festhalten (kein Code): Räumt Avaje einen Scope auf, wenn `build()` selbst wirft? Ein kurzer Test oder Lesen der Avaje-Quelle; bei „nein“ ein Hinweis für einen Folge-Change.
 
 ## 2. Verifikation (Welle 2)
 
-- [ ] 2.1 Read-only: Jedes Szenario des Spec-Deltas ist einem Test zugeordnet, die Tests erfüllen F.I.R.S.T. (keine Sleeps, kein geteilter statischer Zustand). Nachweis: Zuordnungstabelle im PR-Text.
+- [x] 2.1 Read-only: Jedes Szenario des Spec-Deltas ist einem Test zugeordnet, die Tests erfüllen F.I.R.S.T. (keine Sleeps, kein geteilter statischer Zustand). Nachweis: Zuordnungstabelle im PR-Text.
 
 ## 3. Pull Request
 
