@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.feature.elytra;
 
+import java.time.Clock;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.PlayerHand;
 import net.minestom.server.event.player.PlayerUseItemEvent;
@@ -24,6 +25,7 @@ import net.minestom.server.timer.Scheduler;
 import net.minestom.testing.Env;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
 import net.onelitefeather.titan.core.module.item.LobbyItems;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 import org.mockito.Mockito;
 
@@ -61,12 +63,17 @@ final class ElytraFixture implements AutoCloseable {
     }
 
     static ElytraFixture start(Env env) {
+        return start(env, Telemetry.noop(), Clock.systemUTC());
+    }
+
+    static ElytraFixture start(Env env, Telemetry telemetry, Clock clock) {
         TestTitanNode titan = TestTitanNode.attach(env);
         FireworkBoostTracker boosts = new FireworkBoostTracker();
-        LobbyItem fireworkItem = new ElytraLobbyItems().firework(boosts);
+        ElytraTelemetry elytraTelemetry = new ElytraTelemetry(telemetry);
+        LobbyItem fireworkItem = new ElytraLobbyItems().firework(boosts, elytraTelemetry);
         LobbyItems lobbyItems = stubLobbyItems(fireworkItem);
         Scheduler scheduler = env.process().scheduler();
-        ElytraModule module = new ElytraModule(titan.node(), () -> lobbyItems, boosts, scheduler);
+        ElytraModule module = new ElytraModule(titan.node(), () -> lobbyItems, boosts, scheduler, clock, telemetry, elytraTelemetry);
         module.start();
         return new ElytraFixture(titan, module, fireworkItem, boosts);
     }

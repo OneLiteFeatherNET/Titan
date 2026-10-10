@@ -33,6 +33,7 @@ import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.TestConnection;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
@@ -62,7 +63,7 @@ class TickleModuleTest {
     private static final long DEFAULT_COOLDOWN_MILLIS = Config.getAs(TickleSettings.COOLDOWN_KEY, Long::parseLong);
 
     private static TickleModule fixedClockModule(EventNode<Event> titan) {
-        return new TickleModule(titan, Clock.fixed(NOW, ZoneOffset.UTC));
+        return new TickleModule(titan, Clock.fixed(NOW, ZoneOffset.UTC), Telemetry.noop());
     }
 
     @DisplayName("Attacking another player with a feather broadcasts the tickle message and sets the cooldown")
@@ -200,7 +201,7 @@ class TickleModuleTest {
 
         TestTitanNode titanNode = TestTitanNode.attach(env);
         EventNode<Event> titan = titanNode.node();
-        TickleModule module = new TickleModule(titan, clock);
+        TickleModule module = new TickleModule(titan, clock, Telemetry.noop());
         module.start();
         try {
             env.process().eventHandler().call(new EntityAttackEvent(attacker, target));

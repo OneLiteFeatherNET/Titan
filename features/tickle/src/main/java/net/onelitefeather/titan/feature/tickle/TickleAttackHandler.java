@@ -16,6 +16,9 @@
 package net.onelitefeather.titan.feature.tickle;
 
 import io.avaje.config.Config;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.LongCounter;
 import java.time.Clock;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -28,6 +31,7 @@ import net.minestom.server.instance.Instance;
 import net.minestom.server.item.Material;
 import net.minestom.server.network.packet.server.play.SetCooldownPacket;
 import net.minestom.server.tag.Tag;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 
 /**
  * Reacts to a player attacking another player while holding a feather in either hand: applies the
@@ -44,10 +48,16 @@ final class TickleAttackHandler implements Consumer<EntityAttackEvent> {
 
     private static final String TICKLE_MESSAGE = "<yellow><player> <white>tickled <yellow><target>";
 
-    private final Clock clock;
+    private static final AttributeKey<String> RESULT = AttributeKey.stringKey("result");
+    private static final String TICKLED = "tickled";
+    private static final String COOLDOWN = "cooldown";
 
-    TickleAttackHandler(Clock clock) {
+    private final Clock clock;
+    private final LongCounter attacks;
+
+    TickleAttackHandler(Clock clock, Telemetry telemetry) {
         this.clock = clock;
+        this.attacks = telemetry.meter().counterBuilder("tickle.attacks").setUnit("{attack}").build();
     }
 
     @Override
@@ -68,11 +78,12 @@ final class TickleAttackHandler implements Consumer<EntityAttackEvent> {
         long cooldownExpiryMillis = hasCooldownTag ? player.getTag(COOLDOWN_EXPIRY) : 0L;
 
         switch (TickleCooldownRule.decide(hasCooldownTag, cooldownExpiryMillis, now)) {
-            case TICKLE -> tickle(player, target, instance, now);
-            case CLEAR_EXPIRED_TAG -> player.removeTag(COOLDOWN_EXPIRY);
-            case ON_COOLDOWN -> {
-                // still on cooldown: nothing to do
+            case TICKLE -> {
+                tickle(player, target, instance, now);
+                this.attacks.add(1, Attributes.of(RESULT, TICKLED));
             }
+            case CLEAR_EXPIRED_TAG -> player.removeTag(COOLDOWN_EXPIRY);
+            case ON_COOLDOWN -> this.attacks.add(1, Attributes.of(RESULT, COOLDOWN));
         }
     }
 

@@ -28,6 +28,7 @@ import net.minestom.server.event.player.PlayerDeathEvent;
 import net.minestom.server.event.player.PlayerRespawnEvent;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.module.item.LobbyItems;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 
 /**
  * Handles a lobby player's death and respawn: blanks the death text and respawns immediately on
@@ -41,20 +42,24 @@ public final class RespawnModule {
 
     static final int EVENT_PRIORITY = 300;
 
-    private static final String ID = "respawn";
+    static final String ID = "respawn";
 
     private final EventNode<Event> titan;
     private final LobbyItems lobbyItems;
+    private final Telemetry telemetry;
+    private final RespawnTelemetry respawnTelemetry;
     private FeatureNode node;
 
-    public RespawnModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbyItems lobbyItems) {
+    public RespawnModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbyItems lobbyItems, Telemetry telemetry) {
         this.titan = Objects.requireNonNull(titan, "titan");
         this.lobbyItems = Objects.requireNonNull(lobbyItems, "lobbyItems");
+        this.telemetry = Objects.requireNonNull(telemetry, "telemetry");
+        this.respawnTelemetry = new RespawnTelemetry(telemetry);
     }
 
     @PostConstruct
     void start() {
-        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY).on(PlayerDeathEvent.class, RespawnModule::onDeath).on(PlayerRespawnEvent.class, event -> this.lobbyItems.equip(event.getPlayer()));
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry).on(PlayerDeathEvent.class, this::onDeath).on(PlayerRespawnEvent.class, event -> this.lobbyItems.equip(event.getPlayer()));
     }
 
     @PreDestroy
@@ -62,11 +67,11 @@ public final class RespawnModule {
         this.node.close();
     }
 
-    private static void onDeath(PlayerDeathEvent event) {
+    private void onDeath(PlayerDeathEvent event) {
         event.setDeathText(Component.empty());
         Player player = event.getPlayer();
         // The player's own scheduler drops the task automatically on disconnect, and respawn()
         // already checks isDead(), so no extra double-respawn guard is needed here.
-        player.scheduler().scheduleNextTick(player::respawn);
+        player.scheduler().scheduleNextTick(() -> this.respawnTelemetry.respawn(player.getUuid(), player::respawn));
     }
 }

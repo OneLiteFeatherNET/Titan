@@ -17,6 +17,7 @@ package net.onelitefeather.titan.feature.elytra;
 
 import io.avaje.config.Config;
 import jakarta.inject.Provider;
+import java.time.Clock;
 import java.util.List;
 import net.minestom.server.component.DataComponents;
 import net.minestom.server.entity.Entity;
@@ -37,6 +38,7 @@ import net.onelitefeather.titan.core.module.LobbyReturnToSpawnEvent;
 import net.onelitefeather.titan.core.module.item.ItemSlot;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
 import net.onelitefeather.titan.core.module.item.LobbyItems;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -81,7 +83,7 @@ class ElytraModuleTest {
             Provider<LobbyItems> missingLobbyItems = () -> {
                 throw new IllegalStateException("no LobbyItems bean in this scope (ElytraModuleTest)");
             };
-            ElytraModule module = new ElytraModule(titan.node(), missingLobbyItems, new FireworkBoostTracker(), env.process().scheduler());
+            ElytraModule module = new ElytraModule(titan.node(), missingLobbyItems, new FireworkBoostTracker(), env.process().scheduler(), Clock.systemUTC(), Telemetry.noop(), new ElytraTelemetry(Telemetry.noop()));
 
             Assertions.assertThrows(IllegalStateException.class, module::start, "a missing LobbyItems bean must abort start(), just like any other missing feature dependency");
         }
