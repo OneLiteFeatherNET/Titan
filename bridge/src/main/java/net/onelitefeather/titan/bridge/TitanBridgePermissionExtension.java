@@ -25,15 +25,17 @@ import eu.cloudnetservice.modules.bridge.impl.platform.minestom.MinestomPermissi
 import eu.cloudnetservice.modules.bridge.player.PlayerManager;
 import eu.cloudnetservice.modules.bridge.player.executor.PlayerExecutor;
 import eu.cloudnetservice.modules.bridge.player.executor.ServerSelectorType;
+import eu.cloudnetservice.wrapper.holder.ServiceInfoHolder;
 import java.lang.System.Logger;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import net.minestom.server.extensions.Extension;
 import net.onelitefeather.minestom.extensions.processor.ExtensionInfo;
-import net.onelitefeather.titan.bridge.ServiceTotals.ServiceReading;
 import net.onelitefeather.titan.common.deliver.PlayerCountLookup;
 import net.onelitefeather.titan.common.deliver.ServerConnector;
+import net.onelitefeather.titan.common.deliver.TitanLobbyIdentity;
 import net.onelitefeather.titan.common.deliver.TitanPlayerCountLookup;
 import net.onelitefeather.titan.common.deliver.TitanServerConnector;
 import net.onelitefeather.titan.common.permission.TitanPermissionBridge;
@@ -58,8 +60,9 @@ import net.onelitefeather.titan.common.permission.TitanPermissionBridge;
  * {@link PlayerManager} / {@link PlayerExecutor}.
  * <li><b>Player counts:</b> installs a {@link PlayerCountLookup} (used by
  * {@code HolderPlayerCounts})
- * that sums the bridge's player counts of the running services of a task or group, or reads one
- * service by name.
+ * that lists the bridge's player counts of the running services of a task or group, or of one
+ * service by name, one by one; the application sums them.
+ * <li><b>Identity:</b> publishes this service's task and name through {@link TitanLobbyIdentity}.
  * </ul>
  *
  * <p>{@link ExtensionInfo} generates {@code extension.json} at compile time; the version is
@@ -102,10 +105,11 @@ public final class TitanBridgePermissionExtension extends Extension {
             }
 
             @Override
-            public int[] lookup(String type, String name) {
-                return ServiceTotals.total(readings.read(type, name));
+            public List<Map<String, Object>> running(String type, String name) {
+                return ServiceListing.running(readings.read(type, name));
             }
         });
+        publishIdentity(logger);
         logger.log(Logger.Level.INFO, "Player count lookup installed");
     }
 
@@ -132,8 +136,22 @@ public final class TitanBridgePermissionExtension extends Extension {
         };
     }
 
+    /**
+     * Publishes this service's task and name from the wrapper; the lobby stays without an identity
+     * when they are unreachable.
+     */
+    private static void publishIdentity(Logger logger) {
+        try {
+            ServiceInfoSnapshot self = InjectionLayer.ext().instance(ServiceInfoHolder.class).serviceInfo();
+            TitanLobbyIdentity.set(self.serviceId().taskName(), self.name());
+        } catch (RuntimeException | LinkageError e) {
+            TitanLobbyIdentity.clear();
+            logger.log(Logger.Level.WARNING, "Own lobby identity unavailable, the lobby switcher stays closed", e);
+        }
+    }
+
     private static ServiceReading reading(ServiceInfoSnapshot service) {
-        return new ServiceReading(service.lifeCycle() == ServiceLifeCycle.RUNNING, count(service.readProperty(BridgeDocProperties.ONLINE_COUNT)), count(service.readProperty(BridgeDocProperties.MAX_PLAYERS)));
+        return new ServiceReading(service.name(), service.lifeCycle() == ServiceLifeCycle.RUNNING, count(service.readProperty(BridgeDocProperties.ONLINE_COUNT)), count(service.readProperty(BridgeDocProperties.MAX_PLAYERS)));
     }
 
     private static int count(Integer value) {

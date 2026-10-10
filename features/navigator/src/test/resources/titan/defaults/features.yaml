@@ -1,0 +1,8 @@
+# Test-only copy of runtime's titan/defaults/features.yaml, so this module's tests need no dependency on :runtime.
+# Feature flags: plain booleans, one per flag name, with the same sources and override order as
+# every other key here (a profile's file, an external file, an environment variable such as
+# "FEATURES_NAVIGATOR_SLENDER", or a system property). The names listed here are also the
+# complete list of flags the lobby knows about. All flags are "false" by default.
+features:
+  NAVIGATOR_SLENDER: false
+  LOBBYSWITCHER: true

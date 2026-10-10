@@ -1,0 +1,54 @@
+/**
+ * Copyright 2025 OneLiteFeather Network
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package net.onelitefeather.titan.feature.lobbyswitcher;
+
+import java.util.Comparator;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/** Which entries of a lobby list still fit into the six rows of the inventory. */
+final class SwitcherLayout {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SwitcherLayout.class);
+
+    static final int SLOTS_PER_ROW = 9;
+    static final int MAX_ROWS = 6;
+    static final int MAX_ENTRIES = SLOTS_PER_ROW * MAX_ROWS;
+
+    // The list is fitted on every refresh; an overflow is reported once until it fits again.
+    private final AtomicBoolean cutReported = new AtomicBoolean();
+
+    SwitcherLayout() {
+    }
+
+    /**
+     * The first {@value #MAX_ENTRIES} entries by name; reports it once when some had to be left
+     * out, and again after the list fitted in between.
+     */
+    List<SwitcherEntry> fit(List<SwitcherEntry> entries) {
+        List<SwitcherEntry> byName = entries.stream().sorted(Comparator.comparing(SwitcherEntry::name)).toList();
+        if (byName.size() <= MAX_ENTRIES) {
+            this.cutReported.set(false);
+            return byName;
+        }
+        if (this.cutReported.compareAndSet(false, true)) {
+            LOGGER.warn("Lobby switcher lists {} lobbies but fits {}; the others are left out", byName.size(), MAX_ENTRIES);
+        }
+        return byName.subList(0, MAX_ENTRIES);
+    }
+}

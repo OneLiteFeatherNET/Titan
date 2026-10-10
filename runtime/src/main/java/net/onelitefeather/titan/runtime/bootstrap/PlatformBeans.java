@@ -36,6 +36,8 @@ import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.timer.Scheduler;
 import net.onelitefeather.titan.api.deliver.Deliver;
+import net.onelitefeather.titan.common.deliver.TitanLobbyIdentity;
+import net.onelitefeather.titan.core.lobby.LobbyIdentities;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.module.LobbySpawn;
 import net.onelitefeather.titan.core.module.LobbyWorldChoice;
@@ -118,6 +120,16 @@ public final class PlatformBeans {
     @Profile(BeanProfiles.CLOUDNET)
     public PlayerCounts playerCounts() {
         return new HolderPlayerCounts();
+    }
+
+    /**
+     * Who this lobby is, as the CloudNet bridge reported it; the lobby switcher needs it. Only as
+     * a CloudNet service, where the switcher exists as well.
+     */
+    @Bean
+    @Profile(BeanProfiles.CLOUDNET)
+    public LobbyIdentities lobbyIdentities() {
+        return TitanLobbyIdentity.identities();
     }
 
     @Bean

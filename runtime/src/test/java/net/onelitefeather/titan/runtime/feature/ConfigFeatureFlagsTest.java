@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.runtime.feature;
 
+import io.avaje.config.Configuration;
 import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -58,6 +59,25 @@ class ConfigFeatureFlagsTest {
         ConfigFeatureFlags flags = new ConfigFeatureFlags(Set.of("NAVIGATOR_SLENDER"), name -> true);
 
         Assertions.assertFalse(flags.isActive("GIBT_ES_NICHT"), "an unknown name must never be active");
+    }
+
+    @DisplayName("The shipped runtime defaults declare the lobby switcher flag, on by default")
+    @Test
+    void theLobbySwitcherFlagIsDeclaredOnByDefault() {
+        ClassLoader classLoader = ConfigFeatureFlagsTest.class.getClassLoader();
+        Set<String> known = ConfigFeatureFlags.knownFlagsIn("titan/defaults/features.yaml", classLoader);
+
+        Assertions.assertTrue(known.contains("LOBBYSWITCHER"), "LOBBYSWITCHER must be a known flag");
+        Assertions.assertTrue(known.contains("NAVIGATOR_SLENDER"), "the navigator flags must move along unchanged");
+    }
+
+    @DisplayName("The navigator flags stay off by default, the lobby switcher flag is on")
+    @Test
+    void theShippedDefaultValuesAreAsDocumented() {
+        Configuration defaults = Configuration.builder().resourceLoader(ConfigFeatureFlagsTest.class.getClassLoader()::getResourceAsStream).load("titan/defaults/features.yaml").build();
+
+        Assertions.assertTrue(defaults.getBool("features.LOBBYSWITCHER", false), "LOBBYSWITCHER must default to true");
+        Assertions.assertFalse(defaults.getBool("features.NAVIGATOR_SLENDER", true), "NAVIGATOR_SLENDER must default to false");
     }
 
     @DisplayName("A missing value is treated as off")

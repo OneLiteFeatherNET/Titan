@@ -23,11 +23,15 @@ import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.common.deliver.TitanLobbyIdentity;
+import net.onelitefeather.titan.core.lobby.LobbyIdentities;
+import net.onelitefeather.titan.core.lobby.LobbyIdentity;
 import net.onelitefeather.titan.core.module.LobbySpawn;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.onelitefeather.titan.runtime.deliver.TracedDeliver;
 import net.onelitefeather.titan.common.map.LobbyMap;
 import net.onelitefeather.titan.common.map.MapProvider;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -103,5 +107,31 @@ class PlatformBeansTest {
 
             Assertions.assertEquals(Telemetry.SCOPE, exporter.getFinishedSpanItems().getFirst().getInstrumentationScopeInfo().getName());
         }
+    }
+
+    @AfterEach
+    void clearLobbyIdentityHolder() {
+        TitanLobbyIdentity.clear();
+    }
+
+    @DisplayName("The lobby identity bean reads what the bridge put into the holder")
+    @Test
+    void lobbyIdentitiesBeanIsBackedByTheHolder() {
+        TitanLobbyIdentity.set("Lobby", "Lobby-7");
+
+        LobbyIdentities identities = this.platformBeans.lobbyIdentities();
+
+        Assertions.assertEquals(new LobbyIdentity("Lobby", "Lobby-7"), identities.self().orElseThrow(), "the bean must answer with the holder's identity");
+    }
+
+    @DisplayName("The lobby identity bean is empty while the holder is empty, and follows a later change")
+    @Test
+    void lobbyIdentitiesBeanFollowsTheHolder() {
+        LobbyIdentities identities = this.platformBeans.lobbyIdentities();
+        Assertions.assertTrue(identities.self().isEmpty(), "no identity before the bridge sets one");
+
+        TitanLobbyIdentity.set("Lobby", "Lobby-1");
+
+        Assertions.assertTrue(identities.self().isPresent(), "the bean must read the holder per call, not capture it");
     }
 }

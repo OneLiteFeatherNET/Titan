@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.core.portal;
 
+import java.util.List;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -29,4 +30,13 @@ public interface PlayerCounts {
 
     @NotNull
     PlayerCount count(@NotNull SourceType type, @NotNull String name);
+
+    /**
+     * The running services of the named source, one entry each; empty when the provider cannot list
+     * them.
+     */
+    @NotNull
+    default List<ServiceCount> running(@NotNull SourceType type, @NotNull String name) {
+        return List.of();
+    }
 }

@@ -8,6 +8,7 @@ Titan is a complete Minestom-based Minecraft lobby server that provides various 
 - **Tickle Mechanic**: Players can tickle each other using feathers, with cooldown periods
 - **Elytra Boost**: Provides boost functionality for players using elytra
 - **Jump & Run**: A random single-player jump and run in hotbar slot 0 with client-side blocks (2 behind, 2 ahead of the player); the difficulty rises with the score and records persist in the database when one is configured (otherwise in memory), and a sidebar shows score, record and the top three of the mode during a run; see [Database](docs/lobby-modules.md#datenbank-persistence)
+- **Lobby switcher** (CloudNet variant only): a clock in hotbar slot 8 opens an inventory listing the running lobbies of the own task with their player counts; a click sends the player there. Gated by the flag `LOBBYSWITCHER` (see "Feature flags" below)
 - **Height Teleportation**: Automatically teleports players when they exceed certain height limits
 
 ## Requirements
@@ -214,6 +215,8 @@ features:
   burn's start
 - `portal.labelRefreshSeconds`: how often portal labels re-read their player counts, in seconds -
   an integer from `1` to `3600` (see "Portal labels" below)
+- `lobbyswitcher.refreshSeconds`: how often an open lobby switcher re-reads the lobby list, in seconds -
+  an integer from `1` to `3600`, default `5`; the periodic read runs only while someone has the list open
 - `features`: plain booleans, one per feature flag, with the same sources and override order as
   every other key (see "Feature flags" below).
 
@@ -239,6 +242,7 @@ with no restart of the navigator or the lobby.
 | `elytra.burnDurationTicks` | `ELYTRA_BURNDURATIONTICKS` |
 | `elytra.cooldownTicks` | `ELYTRA_COOLDOWNTICKS` |
 | `portal.labelRefreshSeconds` | `PORTAL_LABELREFRESHSECONDS` |
+| `lobbyswitcher.refreshSeconds` | `LOBBYSWITCHER_REFRESHSECONDS` |
 | `features.<NAME>` | `FEATURES_<NAME>` |
 
 `<NAME>` is a feature flag's own name, upper-cased - e.g. `features.NAVIGATOR_SLENDER` becomes
@@ -301,12 +305,17 @@ SLF4J-backed logs) and applies no value from it; every other changed file is sti
 Feature flags are plain booleans under the `features` section, one per flag name (e.g.
 `features.NAVIGATOR_SLENDER: true`), with the same sources and override order as every other
 configuration key - a profile's file, an external file, an environment variable
-(`FEATURES_NAVIGATOR_SLENDER`), or a system property. The lobby ships with one flag, `false` by
+(`FEATURES_NAVIGATOR_SLENDER`), or a system property. The navigator ships with one flag, `false` by
 default: `NAVIGATOR_SLENDER`, which gates the navigator's Slender destination. Changing its value
 takes effect the next time a player opens the navigator, without restarting any module or the
 lobby. The flags `NAVIGATOR_CREATIVE`, `NAVIGATOR_MANIS`, `NAVIGATOR_SURVIVAL` and
 `NAVIGATOR_ELYTRA` were never wired to anything; a setting of them is unknown to the lobby and has
 no effect, so such a line can be deleted.
+
+`LOBBYSWITCHER` gates the lobby switcher: the clock item in hotbar slot 8 and the inventory behind
+it. It is effective only in the CloudNet variant; the local variant has no switcher whatever the
+flag says. Unlike the other flags it is read at start, so the item appears or disappears only after
+a restart (an exception to the no-restart rule above).
 
 ### Migrating from `flags.properties`
 

@@ -32,7 +32,8 @@ apps/local ────┼─▶ runtime ─────────────
 - **`features/<name>`** (Paket `net.onelitefeather.titan.feature.<name>`) ist eine Column: ein
   eigenes Gradle-Modul, das die Convention `titan.column` anwendet und **nur** an `core` hängt -
   nie an einer anderen Column, nie an `runtime` oder einer App-Variante. Die heutigen
-  Columns: `protection`, `spawn`, `respawn`, `navigator`, `sit`, `tickle`, `elytra`, `jumprun`, `hotbar`
+  Columns: `protection`, `spawn`, `respawn`, `navigator`, `sit`, `tickle`, `elytra`, `jumprun`, `lobbyswitcher`
+  (nur CloudNet: Uhr in Hotbar-Slot 8 mit Lobby-Liste), `hotbar`
   (Hotbar-/Ausrüstungsitems, `LobbyItems`-Implementierung) und `admin` (`/stop`, `/end`).
 - **`runtime`** ist der gemeinsame Starter: `TitanApplication` (`main`), `Titan` (baut den
   `BeanScope`), `PlatformBeans`-Äquivalent (`runtime`s eigene `package-info.java` deklariert die
@@ -986,6 +987,12 @@ Disconnect.
   Span-Event `permission.check` (`permission`, `result`) am gerade aktiven Span, falls einer läuft.
   Der Start hat den Span `permission.platform.start` (`permission.platform`,
   `luckperms.extension.loaded`); ein doppelt geladenes LuckPerms markiert ihn als ERROR.
+
+- **lobbyswitcher:** Span `lobbyswitcher.open` (`lobbyswitcher.entries`, `user.id`) beim Öffnen und
+  Span `lobbyswitcher.select` je Klick (`lobbyswitcher.target`, `lobbyswitcher.result` = `sent`/
+  `current`/`full`/`not_ready`/`gone`/`error`, `user.id`; bei `error` Status ERROR). Die periodische
+  Aktualisierung hat keinen Span. Zähler `titan.lobbyswitcher.selections{result}`, ohne Dienstnamen
+  und ohne `user.id`.
 
 ### Spawn und Navigator
 

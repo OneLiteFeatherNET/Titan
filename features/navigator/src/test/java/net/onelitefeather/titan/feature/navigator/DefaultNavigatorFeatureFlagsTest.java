@@ -24,18 +24,19 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Guards this column's shipped {@code titan/defaults/navigator.yaml} against a {@link Destination}
+ * Guards the shipped {@code titan/defaults/features.yaml} against a {@link Destination}
  * that gates itself behind a feature flag the {@code features} section does not list.
  *
  * <p>{@link Destination#feature()} is fixed in code, so this is a plain unit test rather than a
- * start-up registry validation. Loads {@code titan/defaults/navigator.yaml} as its own,
+ * start-up registry validation. Loads {@code titan/defaults/features.yaml} as its own,
  * independent {@link Configuration} instance, rather than through the static facade, so this test
  * stays Independent and Repeatable regardless of load order.
  */
 class DefaultNavigatorFeatureFlagsTest {
 
     private static final String FEATURES_SECTION = "features";
-    private static final String DEFAULTS_RESOURCE = "titan/defaults/navigator.yaml";
+    private static final String NAVIGATOR_PREFIX = "NAVIGATOR_";
+    private static final String DEFAULTS_RESOURCE = "titan/defaults/features.yaml";
 
     @DisplayName("Every destination's feature flag is listed in the shipped features section")
     @Test
@@ -51,13 +52,13 @@ class DefaultNavigatorFeatureFlagsTest {
         }
     }
 
-    @DisplayName("The shipped features section lists exactly the flags that a destination uses")
+    @DisplayName("The shipped features section lists exactly the navigator flags that a destination uses")
     @Test
-    void shippedFeaturesAreExactlyTheDestinationFlags() {
+    void shippedNavigatorFlagsAreExactlyTheDestinationFlags() {
         Configuration classpathOnly = Configuration.builder().resourceLoader(getClass().getClassLoader()::getResourceAsStream).load(DEFAULTS_RESOURCE).build();
-        Set<String> knownFlags = classpathOnly.forPath(FEATURES_SECTION).keys();
+        Set<String> navigatorFlags = classpathOnly.forPath(FEATURES_SECTION).keys().stream().filter(flag -> flag.startsWith(NAVIGATOR_PREFIX)).collect(Collectors.toSet());
         Set<String> destinationFlags = Arrays.stream(Destination.values()).map(Destination::feature).filter(feature -> feature != null).collect(Collectors.toSet());
 
-        Assertions.assertEquals(destinationFlags, knownFlags, "the 'features' section of " + DEFAULTS_RESOURCE + " must list exactly the flags a destination is gated by");
+        Assertions.assertEquals(destinationFlags, navigatorFlags, "the " + NAVIGATOR_PREFIX + "* flags in the 'features' section of " + DEFAULTS_RESOURCE + " must be exactly the flags a destination is gated by; other flags are allowed");
     }
 }

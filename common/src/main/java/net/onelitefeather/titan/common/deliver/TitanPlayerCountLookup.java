@@ -15,6 +15,9 @@
  */
 package net.onelitefeather.titan.common.deliver;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * Cross-classloader bridge for player counts of CloudNet services. The CloudNet service provider
  * runs in the bridge extension's own classloader, unreachable from the application, so this
@@ -37,8 +40,9 @@ public final class TitanPlayerCountLookup {
         return current == null || current.supports(type);
     }
 
-    public static int[] lookup(String type, String name) {
+    /** Rows as documented on {@link PlayerCountLookup}; empty while no bridge is installed. */
+    public static List<Map<String, Object>> running(String type, String name) {
         PlayerCountLookup current = lookup;
-        return current == null ? null : current.lookup(type, name);
+        return current == null ? List.of() : current.running(type, name);
     }
 }
