@@ -20,9 +20,13 @@ import java.util.function.Consumer;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.Player;
+import net.minestom.server.entity.EntityType;
 import net.minestom.server.entity.metadata.display.AbstractDisplayMeta;
+import net.minestom.server.entity.metadata.display.BlockDisplayMeta;
 import net.minestom.server.instance.Instance;
+import net.minestom.server.instance.block.Block;
 import net.minestom.server.timer.TaskSchedule;
+import net.onelitefeather.titan.feature.jumprun.course.Cell;
 import net.onelitefeather.titan.feature.jumprun.course.CourseBlock;
 import net.onelitefeather.titan.feature.jumprun.space.BlockPos;
 
@@ -51,6 +55,8 @@ public final class AnimatedBlock {
     private final FakeBlocks fakeBlocks;
     private CourseBlock block;
     private final HiddenDisplay display;
+    /** The pillar and the ladder or vine of a tower, one display each, moving with the block. */
+    private final List<HiddenDisplay> attachments;
     private final Consumer<CourseBlock> onLanded;
     private State state = State.FALLING;
 
@@ -64,6 +70,17 @@ public final class AnimatedBlock {
         this.display = HiddenDisplay.spawn(runner, BlockLook.entityType(block), AbstractDisplayMeta.class, meta -> {
             BlockLook.show(meta, block);
             meta.setTranslation(BlockLook.origin(block).add(HEIGHT));
+            meta.setTransformationInterpolationStartDelta(NO_START_DELAY);
+        }, instance, new Pos(pos.x(), pos.y(), pos.z()), true);
+        this.attachments = block.attachments().stream().map(cell -> spawnAttachment(runner, instance, cell)).toList();
+    }
+
+    /** An attachment starts at the same height as the block, and is shown to the runner too. */
+    private static HiddenDisplay spawnAttachment(Player runner, Instance instance, Cell cell) {
+        BlockPos pos = cell.pos();
+        return HiddenDisplay.spawn(runner, EntityType.BLOCK_DISPLAY, BlockDisplayMeta.class, meta -> {
+            meta.setBlockState(cell.block());
+            meta.setTranslation(HEIGHT);
             meta.setTransformationInterpolationStartDelta(NO_START_DELAY);
         }, instance, new Pos(pos.x(), pos.y(), pos.z()), true);
     }
@@ -95,6 +112,10 @@ public final class AnimatedBlock {
         state = State.RISING;
         display.showToRunner(true);
         display.entity().editEntityMeta(AbstractDisplayMeta.class, meta -> animateTo(meta, BlockLook.origin(block).add(HEIGHT)));
+        for (HiddenDisplay attachment : attachments) {
+            attachment.showToRunner(true);
+            attachment.entity().editEntityMeta(AbstractDisplayMeta.class, meta -> animateTo(meta, HEIGHT));
+        }
         after(ANIMATION_TICKS, this::remove);
     }
 
@@ -109,6 +130,11 @@ public final class AnimatedBlock {
         }
         block = recolored;
         display.entity().editEntityMeta(AbstractDisplayMeta.class, meta -> BlockLook.show(meta, recolored));
+        List<Cell> cells = recolored.attachments();
+        for (int i = 0; i < attachments.size(); i++) {
+            Block material = cells.get(i).block();
+            attachments.get(i).entity().editEntityMeta(BlockDisplayMeta.class, meta -> meta.setBlockState(material));
+        }
         fakeBlocks.show(runner, List.of(recolored));
     }
 
@@ -116,6 +142,7 @@ public final class AnimatedBlock {
     void remove() {
         state = State.REMOVED;
         display.remove();
+        attachments.forEach(HiddenDisplay::remove);
     }
 
     private void startFall() {
@@ -123,6 +150,9 @@ public final class AnimatedBlock {
             return;
         }
         display.entity().editEntityMeta(AbstractDisplayMeta.class, meta -> animateTo(meta, BlockLook.origin(block)));
+        for (HiddenDisplay attachment : attachments) {
+            attachment.entity().editEntityMeta(AbstractDisplayMeta.class, meta -> animateTo(meta, Vec.ZERO));
+        }
         after(ANIMATION_TICKS, this::land);
     }
 
@@ -133,6 +163,7 @@ public final class AnimatedBlock {
         state = State.LANDED;
         fakeBlocks.show(runner, List.of(block));
         display.showToRunner(false);
+        attachments.forEach(attachment -> attachment.showToRunner(false));
         onLanded.accept(block);
     }
 

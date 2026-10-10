@@ -33,23 +33,34 @@ import net.onelitefeather.titan.feature.jumprun.head.HeadSkin;
 public final class Palettes {
 
     private final Map<Surface, Palette> byShape;
+    private final Map<Climb.Kind, Palette> climbing;
     private final List<HeadSkin> heads;
+    private final int minClimbHeight;
+    private final int maxClimbHeight;
 
     /**
-     * @throws IllegalArgumentException when a shape has no palette
+     * @throws IllegalArgumentException when a shape or a climbing block has no palette
      */
-    public Palettes(Map<Surface, Palette> byShape) {
-        this(byShape, List.of());
+    public Palettes(Map<Surface, Palette> byShape, Map<Climb.Kind, Palette> climbing) {
+        this(byShape, climbing, List.of(), Climb.MIN_HEIGHT, Climb.MAX_HEIGHT);
     }
 
-    private Palettes(Map<Surface, Palette> byShape, List<HeadSkin> heads) {
+    private Palettes(Map<Surface, Palette> byShape, Map<Climb.Kind, Palette> climbing, List<HeadSkin> heads, int minClimbHeight, int maxClimbHeight) {
         for (Surface surface : Surface.values()) {
             if (!byShape.containsKey(surface)) {
                 throw new IllegalArgumentException("no palette for " + surface);
             }
         }
+        for (Climb.Kind kind : Climb.Kind.values()) {
+            if (!climbing.containsKey(kind)) {
+                throw new IllegalArgumentException("no palette for " + kind);
+            }
+        }
         this.byShape = new EnumMap<>(byShape);
+        this.climbing = new EnumMap<>(climbing);
         this.heads = List.copyOf(heads);
+        this.minClimbHeight = minClimbHeight;
+        this.maxClimbHeight = maxClimbHeight;
     }
 
     /** The team heads that replace the plain heads; empty when there are none. */
@@ -59,7 +70,30 @@ public final class Palettes {
 
     /** The same palettes with the given team heads. */
     public Palettes withHeads(List<HeadSkin> heads) {
-        return new Palettes(byShape, heads);
+        return new Palettes(byShape, climbing, heads, minClimbHeight, maxClimbHeight);
+    }
+
+    /** The same palettes with the given range of tower heights, in blocks. */
+    public Palettes withClimbHeights(int min, int max) {
+        return new Palettes(byShape, climbing, heads, min, max);
+    }
+
+    /** The lowest tower the generator makes, in blocks. */
+    public int minClimbHeight() {
+        return minClimbHeight;
+    }
+
+    /** The highest tower the generator makes, in blocks. */
+    public int maxClimbHeight() {
+        return maxClimbHeight;
+    }
+
+    public Palette climbing(Climb.Kind kind) {
+        return climbing.get(kind);
+    }
+
+    Block drawClimb(Climb.Kind kind, RandomGenerator random) {
+        return climbing(kind).draw(random);
     }
 
     public Palette of(Surface surface) {

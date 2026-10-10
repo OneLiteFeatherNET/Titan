@@ -40,11 +40,16 @@ public enum Mode {
 
     /** The generator parameters, shared by the modes that play like another one. */
     private record Params(double scale, int maxGap, int maxGapAscent, double ascentWeight,
-                          Map<Surface, Integer> unlocks) {
+                          Map<Surface, Integer> unlocks, Map<Climb.Kind, Integer> climbs) {
 
-        static final Params EASY = new Params(160.0, 2, 2, 3.0, Map.of(Surface.FULL, 0, Surface.SLAB, 10));
-        static final Params MEDIUM = new Params(80.0, Jump.MAX_GAP, Jump.MAX_GAP_ASCENT, 1.0, unlocks(10, 25, 40));
-        static final Params HARD = new Params(40.0, Jump.MAX_GAP, Jump.MAX_GAP_ASCENT, 1.0, unlocks(5, 10, 20));
+        static final Params EASY = new Params(160.0, 2, 2, 3.0, Map.of(Surface.FULL, 0, Surface.SLAB, 10), Map.of());
+        static final Params MEDIUM = new Params(80.0, Jump.MAX_GAP, Jump.MAX_GAP_ASCENT, 1.0, unlocks(10, 25, 40), climbs(30, 40));
+        static final Params HARD = new Params(40.0, Jump.MAX_GAP, Jump.MAX_GAP_ASCENT, 1.0, unlocks(5, 10, 20), climbs(15, 25));
+
+        /** The score from which a ladder and a vine tower may appear. */
+        private static Map<Climb.Kind, Integer> climbs(int ladder, int vine) {
+            return Map.of(Climb.Kind.LADDER, ladder, Climb.Kind.VINE, vine);
+        }
 
         /** The shapes of the cost classes 1, 2 and 3 to 4 from the given scores on. */
         private static Map<Surface, Integer> unlocks(int gentle, int narrow, int narrowest) {
@@ -118,6 +123,11 @@ public enum Mode {
     /** The score from which the shape may appear; {@link Integer#MAX_VALUE} when it never does. */
     int minScore(Surface surface) {
         return params.unlocks().getOrDefault(surface, Integer.MAX_VALUE);
+    }
+
+    /** The climbing blocks that may build a tower once the score has reached {@code score}. */
+    List<Climb.Kind> climbsUnlockedAt(int score) {
+        return Arrays.stream(Climb.Kind.values()).filter(kind -> params.climbs().getOrDefault(kind, Integer.MAX_VALUE) <= score).toList();
     }
 
     /** The shapes that may appear once the score has reached {@code score}. */

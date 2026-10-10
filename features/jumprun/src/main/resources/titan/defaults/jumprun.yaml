@@ -18,6 +18,13 @@ jumprun:
   # Same rules as for Rainbow.
   ultra:
     rerollTicks: 40
+  # Climbing towers: a pillar with a ladder or vine beside it, ending in a block on top. The height
+  # is the rise of the top of the tower's block over the block the runner starts from, in blocks: a
+  # whole number from 2 to 8, and minHeight not above maxHeight. Read when a run starts; an invalid
+  # edit is logged and the last valid values stay.
+  climb:
+    minHeight: 3
+    maxHeight: 5
   # The materials each shape of the course is shown as. Key: the block name without namespace;
   # value: its weight, a whole number of 0 or more (a weight of 3 is drawn three times as often as
   # 1; 0 switches the material off, e.g. to drop a shipped one in an override).
@@ -217,3 +224,10 @@ jumprun:
       end_rod: 1
       iron_chain: 1
       lightning_rod: 1
+    # Ladders. The client climbs any block tagged climbable at the foot of the runner; the ladder
+    # faces away from its pillar.
+    ladder:
+      ladder: 1
+    # Vines, attached to the pillar. Their side is set by the generator.
+    vine:
+      vine: 1

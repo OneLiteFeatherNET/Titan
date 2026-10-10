@@ -16,6 +16,7 @@
 package net.onelitefeather.titan.feature.jumprun.course;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -166,5 +167,28 @@ class ModeTest {
 
         assertEquals(2.0 * Surface.SLAB.typeCost() + 1.5, hardest);
         assertNotEquals(Jump.MAX_COST, hardest, "easy has its own ceiling");
+    }
+
+    @Test
+    void aLadderUnlocksInMediumAtScore30AndInHardAtScore15() {
+        assertFalse(Mode.MEDIUM.climbsUnlockedAt(29).contains(Climb.Kind.LADDER), "medium at 29");
+        assertTrue(Mode.MEDIUM.climbsUnlockedAt(30).contains(Climb.Kind.LADDER), "medium at 30");
+        assertFalse(Mode.HARD.climbsUnlockedAt(14).contains(Climb.Kind.LADDER), "hard at 14");
+        assertTrue(Mode.HARD.climbsUnlockedAt(15).contains(Climb.Kind.LADDER), "hard at 15");
+    }
+
+    @Test
+    void aVineUnlocksInMediumAtScore40AndInHardAtScore25() {
+        assertFalse(Mode.MEDIUM.climbsUnlockedAt(39).contains(Climb.Kind.VINE), "medium at 39");
+        assertTrue(Mode.MEDIUM.climbsUnlockedAt(40).contains(Climb.Kind.VINE), "medium at 40");
+        assertFalse(Mode.HARD.climbsUnlockedAt(24).contains(Climb.Kind.VINE), "hard at 24");
+        assertTrue(Mode.HARD.climbsUnlockedAt(25).contains(Climb.Kind.VINE), "hard at 25");
+    }
+
+    @Test
+    void easyNeverUnlocksAClimb() {
+        for (int score = 0; score <= 200; score++) {
+            assertTrue(Mode.EASY.climbsUnlockedAt(score).isEmpty(), "easy at score " + score);
+        }
     }
 }

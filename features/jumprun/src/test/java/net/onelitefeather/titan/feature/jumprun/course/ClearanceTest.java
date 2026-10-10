@@ -19,7 +19,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.Optional;
 import net.onelitefeather.titan.feature.jumprun.space.BlockPos;
+import net.onelitefeather.titan.feature.jumprun.space.Direction;
 import org.junit.jupiter.api.Test;
 
 class ClearanceTest {
@@ -109,5 +111,33 @@ class ClearanceTest {
     @Test
     void theHeightSpanCoversBothEndsOfTheJump() {
         assertFalse(kept(block(2, 12, 0), SOURCE, block(3, 14, 0)), "two above the higher end");
+    }
+
+    /**
+     * A tower of the given height that starts at the origin, facing east, with its target at x = 1.
+     */
+    private static Jump towerJump(int height) {
+        BlockPos target = new BlockPos(1, 10 + height, 0);
+        Spot top = new Spot(target, Surface.FULL, Optional.of(new Climb(Direction.EAST, height, Climb.Kind.LADDER)));
+        return new Jump(TestBlocks.at(new BlockPos(0, 10, 0), Surface.FULL), top);
+    }
+
+    private static boolean keptNextTo(Jump jump, BlockPos visible) {
+        return Clearance.isKept(jump, List.of(TestBlocks.at(visible, Surface.FULL)));
+    }
+
+    @Test
+    void aVisibleBlockNextToThePillarColumnIsTooClose() {
+        assertFalse(keptNextTo(towerJump(3), new BlockPos(2, 12, 0)), "one cell beside the pillar column");
+    }
+
+    @Test
+    void aVisibleBlockNextToTheLadderColumnIsTooClose() {
+        assertFalse(keptNextTo(towerJump(3), new BlockPos(-1, 12, 0)), "one cell beside the ladder column");
+    }
+
+    @Test
+    void aVisibleBlockTwoCellsAwayFromTheTowerIsKept() {
+        assertTrue(keptNextTo(towerJump(3), new BlockPos(3, 12, 0)), "two cells beside the pillar column");
     }
 }

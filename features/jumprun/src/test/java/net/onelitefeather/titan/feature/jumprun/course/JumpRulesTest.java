@@ -19,7 +19,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Optional;
+import net.minestom.server.instance.block.Block;
 import net.onelitefeather.titan.feature.jumprun.space.BlockPos;
+import net.onelitefeather.titan.feature.jumprun.space.Direction;
 import net.onelitefeather.titan.feature.jumprun.space.FakeSpaceProbe;
 import org.junit.jupiter.api.Test;
 
@@ -285,5 +288,43 @@ class JumpRulesTest {
         HeightBand band = new HeightBand(TestBlocks.bounds(0, 310));
         assertTrue(validIn(world, band, block(0, 9, 0, Surface.FULL), block(2, 8, 0, Surface.FULL)), "target top 9 keeps the fall allowance above 0");
         assertFalse(validIn(world, band, block(0, 8, 0, Surface.FULL), block(2, 7, 0, Surface.FULL)), "target top 8 lets the fall reach 0");
+    }
+
+    // --- towers ----------------------------------------------------------------------------------
+
+    /** A tower of the given height that starts at the origin block, in the open. */
+    private static CourseBlock tower(int height) {
+        BlockPos target = new BlockPos(1, 10 + height, 0);
+        return new Spot(target, Surface.FULL, Optional.of(new Climb(Direction.EAST, height, Climb.Kind.LADDER))).withMaterial(Block.STONE, Optional.empty(), Block.LADDER);
+    }
+
+    @Test
+    void aTowerInTheOpenIsFree() {
+        assertTrue(validIn(new FakeSpaceProbe(), ORIGIN, tower(3)), "tower of 3 in the open");
+    }
+
+    @Test
+    void aBlockInAPillarCellMakesTheTowerInvalid() {
+        assertFalse(validIn(new FakeSpaceProbe().occupy(1, 11, 0), ORIGIN, tower(3)), "pillar cell at the first step");
+        assertFalse(validIn(new FakeSpaceProbe().occupy(1, 12, 0), ORIGIN, tower(3)), "pillar cell below the target");
+    }
+
+    @Test
+    void aBlockInALadderCellMakesTheTowerInvalid() {
+        assertFalse(validIn(new FakeSpaceProbe().occupy(0, 12, 0), ORIGIN, tower(3)), "ladder cell");
+    }
+
+    @Test
+    void aBlockInTheHeadroomAboveTheLadderMakesTheTowerInvalid() {
+        assertFalse(validIn(new FakeSpaceProbe().occupy(0, 16, 0), ORIGIN, tower(3)), "headroom over the ladder, inside the jump room");
+        assertTrue(validIn(new FakeSpaceProbe().occupy(0, 18, 0), ORIGIN, tower(3)), "one block above the jump room");
+    }
+
+    @Test
+    void aTowerUnderTheCeilingOfTheHeightBandIsFreeAndOneBlockHigherIsNot() {
+        FakeSpaceProbe world = new FakeSpaceProbe();
+
+        assertTrue(validIn(world, new HeightBand(TestBlocks.bounds(-64, 17)), ORIGIN, tower(3)), "the target just fits under the ceiling");
+        assertFalse(validIn(world, new HeightBand(TestBlocks.bounds(-64, 16)), ORIGIN, tower(3)), "one block lower ceiling");
     }
 }

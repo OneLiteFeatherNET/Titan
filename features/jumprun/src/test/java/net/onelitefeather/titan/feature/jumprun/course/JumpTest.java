@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Optional;
 import net.onelitefeather.titan.feature.jumprun.space.BlockPos;
 import net.onelitefeather.titan.feature.jumprun.space.Direction;
 import org.junit.jupiter.api.Test;
@@ -29,7 +30,7 @@ class JumpTest {
         return TestBlocks.at(new BlockPos(x, y, z), surface);
     }
 
-    private static Jump jump(CourseBlock from, CourseBlock to) {
+    private static Jump jump(Placement from, Placement to) {
         return new Jump(from, to);
     }
 
@@ -128,5 +129,45 @@ class JumpTest {
 
         assertEquals(1.5, jump.rise(), "low step to the next top");
         assertFalse(JumpRules.isReachable(jump, Mode.MEDIUM), "more than a block up");
+    }
+
+    private static Spot tower(BlockPos target, int height) {
+        return new Spot(target, Surface.FULL, Optional.of(new Climb(Direction.EAST, height, Climb.Kind.LADDER)));
+    }
+
+    @Test
+    void aTowerOfThreeToFiveBlocksIsReachableFromItsStartBlock() {
+        CourseBlock start = block(0, 64, 0, Surface.FULL);
+        for (int height = 3; height <= 5; height++) {
+            Jump climb = jump(start, tower(new BlockPos(1, 64 + height, 0), height));
+
+            assertTrue(JumpRules.isReachable(climb, Mode.MEDIUM), "height " + height + " from its start block");
+        }
+    }
+
+    @Test
+    void aTowerIsNotReachableDiagonallyOrFromAnotherBlock() {
+        CourseBlock start = block(0, 64, 0, Surface.FULL);
+
+        assertFalse(JumpRules.isReachable(jump(block(0, 64, -1, Surface.FULL), tower(new BlockPos(1, 67, 0), 3)), Mode.MEDIUM), "diagonal start");
+        assertFalse(JumpRules.isReachable(jump(block(0, 63, 0, Surface.FULL), tower(new BlockPos(1, 67, 0), 3)), Mode.MEDIUM), "start one block lower");
+        assertFalse(JumpRules.isReachable(jump(start, tower(new BlockPos(1, 68, 0), 3)), Mode.MEDIUM), "target one block higher than the tower height");
+    }
+
+    @Test
+    void aTowerCostsTwoPlusHalfPerBlockAboveThree() {
+        CourseBlock start = block(0, 64, 0, Surface.FULL);
+
+        assertEquals(2.0, jump(start, tower(new BlockPos(1, 67, 0), 3)).cost(Mode.MEDIUM), "height 3");
+        assertEquals(2.5, jump(start, tower(new BlockPos(1, 68, 0), 4)).cost(Mode.MEDIUM), "height 4");
+        assertEquals(3.0, jump(start, tower(new BlockPos(1, 69, 0), 5)).cost(Mode.MEDIUM), "height 5");
+    }
+
+    @Test
+    void theMaximumCostCoversTheHighestTowerTheConfigAllows() {
+        CourseBlock start = block(0, 64, 0, Surface.FULL);
+        double highest = jump(start, tower(new BlockPos(1, 72, 0), 8)).cost(Mode.MEDIUM);
+
+        assertTrue(Jump.MAX_COST >= highest, "max cost " + Jump.MAX_COST + " below the tower of height 8 at " + highest);
     }
 }

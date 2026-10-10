@@ -67,4 +67,26 @@ class JumprunConfigTest {
             assertTrue(abort.getMessage().startsWith(key), "the abort names the key: " + abort.getMessage());
         }
     }
+
+    @Test
+    void aValidClimbHeightEditIsReadAtTheNextStart() {
+        Configuration source = TestSettings.shippedConfiguration();
+        JumprunConfig config = new JumprunConfig(source);
+        config.readAtStartup();
+
+        source.setProperty("jumprun.climb.maxHeight", "7");
+
+        assertEquals(7, config.palettes().maxClimbHeight(), "the edit is read");
+    }
+
+    @Test
+    void anInvalidClimbHeightEditKeepsTheLastValidOne() {
+        Configuration source = TestSettings.shippedConfiguration();
+        JumprunConfig config = new JumprunConfig(source);
+        config.readAtStartup();
+
+        source.setProperty("jumprun.climb.minHeight", "1");
+
+        assertEquals(3, config.palettes().minClimbHeight(), "the invalid minimum is not used");
+    }
 }

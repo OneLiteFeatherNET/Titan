@@ -39,12 +39,36 @@ final class JumpRules {
      * The target is in the height band and the world leaves room: at the target and along the way.
      */
     boolean isFree(Jump jump) {
+        if (jump.to().climb().isPresent()) {
+            return band.allows(jump.to()) && isClimbFree(jump, jump.to().climb().get());
+        }
         return band.allows(jump.to()) && hasRoomAtTarget(jump) && isFlightPathFree(jump);
+    }
+
+    /**
+     * A tower needs air where its pillar and ladder stand, and room above the target and above the
+     * ladder column up to the apex of a jump from the target. There is no flight to check.
+     */
+    private boolean isClimbFree(Jump jump, Climb climb) {
+        BlockPos base = jump.from().pos();
+        BlockPos target = jump.to().pos();
+        return climb.positions(target).stream().allMatch(probe::isAir) && hasRoomAtTarget(jump) && isColumnFree(base.x(), base.z(), base.y() + 1, jump.to().jumpRoomTopY());
     }
 
     /** Pure geometry: the player can bridge the gap and the rise, whatever stands in the way. */
     static boolean isReachable(Jump jump, Mode mode) {
+        if (jump.to().climb().isPresent()) {
+            return isReachableByClimb(jump, jump.to().climb().get());
+        }
         return jump.gap() >= Jump.MIN_GAP && jump.gap() <= maxGap(jump, mode) && jump.rise() <= Jump.MAX_RISE;
+    }
+
+    /**
+     * A tower is climbed from the block it stands beside, straight along its axis, and its top
+     * lies exactly its height above that block's top.
+     */
+    private static boolean isReachableByClimb(Jump jump, Climb climb) {
+        return jump.gap() == 0 && !jump.isDiagonal() && climb.height() > Jump.MAX_RISE && jump.from().pos().equals(climb.baseOf(jump.to().pos())) && jump.from().topY() + climb.height() == jump.to().topY();
     }
 
     private static int maxGap(Jump jump, Mode mode) {
