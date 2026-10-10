@@ -47,6 +47,7 @@ import net.onelitefeather.titan.core.portal.PlayerCounts;
 import net.onelitefeather.titan.runtime.feature.ConfigFeatureFlags;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.common.map.MapProvider;
+import net.onelitefeather.titan.runtime.deliver.TracedDeliver;
 
 /**
  * Wires the platform services every lobby feature module is built from as Avaje Inject beans, so
@@ -103,10 +104,10 @@ public final class PlatformBeans {
         return () -> mapProvider.getActiveLobby().portals();
     }
 
-    /** A no-op outside a CloudNet service. */
+    /** A no-op outside a CloudNet service. Every transfer is traced, whichever feature sends it. */
     @Bean
-    public Deliver deliver() {
-        return DeliverProvider.create();
+    public Deliver deliver(Telemetry telemetry) {
+        return new TracedDeliver(DeliverProvider.create(), telemetry);
     }
 
     /**
