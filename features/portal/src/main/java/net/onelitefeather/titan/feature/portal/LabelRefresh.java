@@ -47,6 +47,13 @@ final class LabelRefresh {
     record Entry(Portal portal, PortalLabel label, LabelDisplay display) {
     }
 
+    /**
+     * One label's text, {@code null} when its read threw and the old text stays; failed counts both
+     * kinds.
+     */
+    private record Outcome(@Nullable Component text, boolean failed) {
+    }
+
     private final Scheduler scheduler;
     private final Executor executor;
     private final LabelReadings readings;
@@ -98,7 +105,7 @@ final class LabelRefresh {
 
     private void read() {
         try {
-            List<Component> rendered = this.telemetry.refreshLabels(this.entries.size(), this::renderAll);
+            List<Outcome> rendered = this.telemetry.refreshLabels(this.entries.size(), this::renderAll, Outcome::failed);
             this.scheduler.scheduleNextTick(() -> apply(rendered));
         } catch (RuntimeException e) {
             failed("batch", "Reading the portal label counts failed, keeping the displayed texts", e);
@@ -107,12 +114,12 @@ final class LabelRefresh {
         }
     }
 
-    private List<Component> renderAll() {
-        List<Component> rendered = new ArrayList<>(this.entries.size());
+    private List<Outcome> renderAll() {
+        List<Outcome> rendered = new ArrayList<>(this.entries.size());
         for (Entry entry : this.entries) {
-            rendered.add(renderOrNull(entry));
+            rendered.add(render(entry));
         }
-        if (!rendered.contains(null)) {
+        if (rendered.stream().noneMatch(Outcome::failed)) {
             // Fully recovered: a later failure is news again.
             this.warned.clear();
         }
@@ -120,15 +127,18 @@ final class LabelRefresh {
     }
 
     // One failing entry keeps its old text and leaves the others alone.
-    private @Nullable Component renderOrNull(Entry entry) {
+    private Outcome render(Entry entry) {
         try {
-            Component text = LabelRenderer.render(entry.portal(), entry.label(), this.readings.read(entry.portal()));
-            this.telemetry.lookup(true);
-            return text;
+            LabelReading reading = this.readings.read(entry.portal());
+            Component text = LabelRenderer.render(entry.portal(), entry.label(), reading);
+            // A provider failure is logged by LabelReader; it reads as not running and counts as an error lookup here.
+            boolean failed = reading instanceof LabelReading.Failed;
+            this.telemetry.lookup(!failed);
+            return new Outcome(text, failed);
         } catch (RuntimeException e) {
             this.telemetry.lookup(false);
             failed("entry:" + entry.portal().id(), "Reading the label of portal '" + entry.portal().id() + "' failed, keeping its displayed text", e);
-            return null;
+            return new Outcome(null, true);
         }
     }
 
@@ -141,13 +151,13 @@ final class LabelRefresh {
     }
 
     // Synchronized with stop(): the displays are removed only once no apply can still touch them.
-    private synchronized void apply(List<Component> rendered) {
+    private synchronized void apply(List<Outcome> rendered) {
         if (this.stopped) {
             return;
         }
         for (int i = 0; i < rendered.size(); i++) {
             Entry entry = this.entries.get(i);
-            Component text = rendered.get(i);
+            Component text = rendered.get(i).text();
             if (text != null && entry.display().update(text)) {
                 LOGGER.debug("Portal label of '{}' changed", entry.portal().id());
             }

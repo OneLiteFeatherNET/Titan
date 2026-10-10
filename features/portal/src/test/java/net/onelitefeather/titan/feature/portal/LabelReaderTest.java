@@ -187,7 +187,7 @@ class LabelReaderTest {
         LabelReader reader = reader(throwing);
         Portal portal = portal("survival", new LabelSource.Task("Survival"));
 
-        assertEquals(new LabelReading.Remote(PlayerCount.NOT_RUNNING), reader.read(portal), "offline instead of the exception");
+        assertEquals(new LabelReading.Failed(), reader.read(portal), "a throwing provider reads as failed, shown as offline");
         reader.read(portal);
         reader.read(portal);
 

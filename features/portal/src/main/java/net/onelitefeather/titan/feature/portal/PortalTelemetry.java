@@ -22,6 +22,7 @@ import io.opentelemetry.api.trace.Span;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import net.onelitefeather.titan.core.portal.Portal;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
@@ -93,12 +94,12 @@ final class PortalTelemetry {
 
     /**
      * Runs one label cycle in a {@link #LABELS_SPAN} span. {@code cycle} returns one entry per
-     * label, {@code null} where its read failed; those are counted on the span.
+     * label; those for which {@code failed} holds are counted on the span.
      */
-    <T> List<T> refreshLabels(int labels, Supplier<List<T>> cycle) {
+    <T> List<T> refreshLabels(int labels, Supplier<List<T>> cycle, Predicate<T> failed) {
         return this.telemetry.inSpan(LABELS_SPAN, Attributes.of(LABEL_COUNT, (long) labels), () -> {
             List<T> results = cycle.get();
-            Span.current().setAttribute(LABEL_FAILED, results.stream().filter(Objects::isNull).count());
+            Span.current().setAttribute(LABEL_FAILED, results.stream().filter(failed).count());
             return results;
         });
     }

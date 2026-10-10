@@ -44,6 +44,8 @@ final class LabelRenderer {
             // A source that is not running shows zeros, whatever the provider reported for it.
             case LabelReading.Remote ignored ->
                 LabelText.render(parser, label, portal.task(), "0", "0", true);
+            case LabelReading.Failed ignored ->
+                LabelText.render(parser, label, portal.task(), "0", "0", true);
         };
     }
 }

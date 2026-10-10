@@ -32,9 +32,12 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.timer.Scheduler;
 import net.onelitefeather.titan.core.portal.Billboard;
+import net.onelitefeather.titan.core.portal.PlayerCount;
+import net.onelitefeather.titan.core.portal.PlayerCounts;
 import net.onelitefeather.titan.core.portal.Box;
 import net.onelitefeather.titan.core.portal.Portal;
 import net.onelitefeather.titan.core.portal.PortalLabel;
+import net.onelitefeather.titan.core.portal.SourceType;
 import net.onelitefeather.titan.core.testfixtures.TestTelemetry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -199,6 +202,34 @@ class LabelRefreshTest {
 
         assertEquals(1, this.testTelemetry.counter("portal.player_count.lookups", Attributes.of(AttributeKey.stringKey("result"), "error")), "the throwing lookup");
         assertEquals(1, this.testTelemetry.counter("portal.player_count.lookups", Attributes.of(AttributeKey.stringKey("result"), "ok")), "the healthy lookup");
+    }
+
+    @DisplayName("A provider that throws shows the label as not running and counts the failed lookup and the span")
+    @Test
+    void throwingProviderIsCountedAsFailedLookup() {
+        PlayerCounts throwing = new PlayerCounts() {
+            @Override
+            public boolean supports(SourceType type) {
+                return true;
+            }
+
+            @Override
+            public PlayerCount count(SourceType type, String name) {
+                throw new IllegalStateException("cloud unreachable");
+            }
+        };
+        List<String> shown = new ArrayList<>();
+        LabelRefresh.Entry entry = entry("a", shown);
+        LabelRefresh refresh = refresh(Runnable::run, new LabelReader(throwing, () -> 0), entry);
+        refresh.start(1);
+
+        tick(2);
+        refresh.stop();
+
+        String notRunning = PlainTextComponentSerializer.plainText().serialize(LabelRenderer.render(entry.portal(), entry.label(), new LabelReading.Remote(PlayerCount.NOT_RUNNING)));
+        assertEquals(List.of(notRunning), shown, "the label shows the not running state, as before");
+        assertEquals(1, this.testTelemetry.counter("portal.player_count.lookups", Attributes.of(AttributeKey.stringKey("result"), "error")), "the failed provider call is an error lookup");
+        assertEquals(1L, this.testTelemetry.attribute(this.testTelemetry.span("portal.labels.refresh"), AttributeKey.longKey("portal.labels.failed")), "the refresh span counts the failed read");
     }
 
     @DisplayName("A period whose ticks overflow an int is rejected instead of wrapping")
