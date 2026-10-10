@@ -1,5 +1,40 @@
 # Changelog
 
+## [2.6.0](https://github.com/OneLiteFeatherNET/Titan/compare/v2.5.0...v2.6.0) (2026-10-10)
+
+
+### Features
+
+* **bridge:** warn when the server connector is missing ([#397](https://github.com/OneLiteFeatherNET/Titan/issues/397)) ([97d2d5a](https://github.com/OneLiteFeatherNET/Titan/commit/97d2d5ac5157e2dde091b7f2ebe00a49acd203ff))
+* **jumprun:** add climbing segments with ladders and vines ([#400](https://github.com/OneLiteFeatherNET/Titan/issues/400)) ([9acd5ff](https://github.com/OneLiteFeatherNET/Titan/commit/9acd5ff68affe55c93e82ffc56887d1226ef0cb5))
+* **jumprun:** grow climbing tower height with the score ([#408](https://github.com/OneLiteFeatherNET/Titan/issues/408)) ([eb38473](https://github.com/OneLiteFeatherNET/Titan/commit/eb38473a94e8a10589a80a1a4e3b5e482e9138bb))
+* **lobbyswitcher:** show other lobbies with player counts and switch between them ([3492de5](https://github.com/OneLiteFeatherNET/Titan/commit/3492de5459aca811a350caf1322c5d6405c39032))
+* **setup:** copy portals from another world ([#399](https://github.com/OneLiteFeatherNET/Titan/issues/399)) ([05ceb06](https://github.com/OneLiteFeatherNET/Titan/commit/05ceb06d0ea1c53b2ab7c188bc31c283fad3daf3))
+* **telemetry:** trace admin commands, hotbar items and permission checks ([#393](https://github.com/OneLiteFeatherNET/Titan/issues/393)) ([77cb2f1](https://github.com/OneLiteFeatherNET/Titan/commit/77cb2f16d860ccb166df06dd988b090dacc0b88d))
+* **telemetry:** trace portal transfers and player count lookups ([#394](https://github.com/OneLiteFeatherNET/Titan/issues/394)) ([ca749a6](https://github.com/OneLiteFeatherNET/Titan/commit/ca749a6eba33be82fd656882dba239bcb918f020))
+* **telemetry:** trace season changes, daytime and protection denials ([#391](https://github.com/OneLiteFeatherNET/Titan/issues/391)) ([3bc3fa0](https://github.com/OneLiteFeatherNET/Titan/commit/3bc3fa0ebba124e3e1c78d19f3303948d6d757aa))
+* **telemetry:** trace sit, elytra, tickle and respawn ([#392](https://github.com/OneLiteFeatherNET/Titan/issues/392)) ([5741bd9](https://github.com/OneLiteFeatherNET/Titan/commit/5741bd9ee267c7d75fa17ff319aacc937a0ef0e7))
+* **telemetry:** trace spawn returns and navigator use ([#395](https://github.com/OneLiteFeatherNET/Titan/issues/395)) ([cc0cf8d](https://github.com/OneLiteFeatherNET/Titan/commit/cc0cf8d5cb8f2efd6482d8eaf0bdede9ab4c5124))
+
+
+### Bug Fixes
+
+* **deps:** update dependency io.opentelemetry:opentelemetry-bom to v1.52.0 ([#366](https://github.com/OneLiteFeatherNET/Titan/issues/366)) ([03f189e](https://github.com/OneLiteFeatherNET/Titan/commit/03f189e7771a584f8567d18dc55e9b9e05c960c5))
+* **deps:** update dependency io.opentelemetry:opentelemetry-bom to v1.53.0 ([#370](https://github.com/OneLiteFeatherNET/Titan/issues/370)) ([b15f39b](https://github.com/OneLiteFeatherNET/Titan/commit/b15f39b43a238796fe133275b1db39e17a187647))
+* **deps:** update dependency io.opentelemetry:opentelemetry-bom to v1.54.0 ([#372](https://github.com/OneLiteFeatherNET/Titan/issues/372)) ([576dfc3](https://github.com/OneLiteFeatherNET/Titan/commit/576dfc38f324334cc11b5cf776041a0a8843870e))
+* **deps:** update dependency io.opentelemetry:opentelemetry-bom to v1.54.1 ([#373](https://github.com/OneLiteFeatherNET/Titan/issues/373)) ([cee3591](https://github.com/OneLiteFeatherNET/Titan/commit/cee35919f6424f04add887095be0e211a236617e))
+* **deps:** update dependency io.opentelemetry:opentelemetry-bom to v1.55.0 ([#374](https://github.com/OneLiteFeatherNET/Titan/issues/374)) ([dbb67f0](https://github.com/OneLiteFeatherNET/Titan/commit/dbb67f0153b758b54fc024fde399e3a296a08585))
+* **deps:** update dependency io.opentelemetry:opentelemetry-bom to v1.56.0 ([#375](https://github.com/OneLiteFeatherNET/Titan/issues/375)) ([2edd29b](https://github.com/OneLiteFeatherNET/Titan/commit/2edd29b51431669e93a77bdf2d5d84d9e4ca6342))
+* **deps:** update dependency io.opentelemetry:opentelemetry-bom to v1.57.0 ([#376](https://github.com/OneLiteFeatherNET/Titan/issues/376)) ([b9a4a92](https://github.com/OneLiteFeatherNET/Titan/commit/b9a4a925f395ad242b3a507b4e7a4ad8cffa4c0e))
+* **deps:** update dependency net.onelitefeather:aonyx-bom to v0.8.8 ([#388](https://github.com/OneLiteFeatherNET/Titan/issues/388)) ([3eeb89b](https://github.com/OneLiteFeatherNET/Titan/commit/3eeb89bc586e33d477f7ebf556b98cb8e302cd0e))
+* **deps:** update dependency org.postgresql:postgresql to v42.7.14 ([#384](https://github.com/OneLiteFeatherNET/Titan/issues/384)) ([64274ee](https://github.com/OneLiteFeatherNET/Titan/commit/64274ee553511efd50a20b6a4bd55f770ef1735f))
+* **deps:** update flyway to v13.10.0 ([#385](https://github.com/OneLiteFeatherNET/Titan/issues/385)) ([2f5be99](https://github.com/OneLiteFeatherNET/Titan/commit/2f5be9928e1f8a883334d491b7b252fbe430863c))
+* **deps:** update luckperms minestom loader to 6.0.2 ([#401](https://github.com/OneLiteFeatherNET/Titan/issues/401)) ([9d76bd8](https://github.com/OneLiteFeatherNET/Titan/commit/9d76bd86bb60122aee3298ee39f1d1767e51afb6))
+* **jumprun:** keep narrow surfaces out of medium courses ([#409](https://github.com/OneLiteFeatherNET/Titan/issues/409)) ([b9f2213](https://github.com/OneLiteFeatherNET/Titan/commit/b9f221379209ca2bfa3e3f76e374c69f47db6334))
+* **navigator:** drop dead feature flags and fix the slender gradient ([#404](https://github.com/OneLiteFeatherNET/Titan/issues/404)) ([daadc0f](https://github.com/OneLiteFeatherNET/Titan/commit/daadc0f832ba04a9ca0d55998619dfe8b4b13638))
+* **runtime:** close the bean scope when the startup check fails ([#403](https://github.com/OneLiteFeatherNET/Titan/issues/403)) ([f4d310e](https://github.com/OneLiteFeatherNET/Titan/commit/f4d310ed200569c57335a0a9c16b73d149a2a511))
+* **sit:** do not throw when a player without an instance disconnects ([#405](https://github.com/OneLiteFeatherNET/Titan/issues/405)) ([f42ce9a](https://github.com/OneLiteFeatherNET/Titan/commit/f42ce9aafaac239e15681eb7c72652bbed0abe3e))
+
 ## [2.5.0](https://github.com/OneLiteFeatherNET/Titan/compare/v2.4.0...v2.5.0) (2026-10-04)
 
 
