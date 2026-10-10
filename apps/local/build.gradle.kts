@@ -29,6 +29,8 @@ dependencies {
     testImplementation(libs.junit.api)
     testImplementation(libs.junit.platform.launcher)
     testRuntimeOnly(libs.junit.engine)
+    // BootedVariant - the boot smoke test starts the shipped jar as a child process.
+    testImplementation(testFixtures(project(":core")))
 }
 
 // Not published (see design.md D8): titan.app-variant's titan.publish-conventions still creates
