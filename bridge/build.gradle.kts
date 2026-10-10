@@ -27,7 +27,7 @@ dependencies {
     compileOnly(libs.cloudnet.bridge.impl)
     compileOnly(libs.cloudnet.jvm.wrapper)
 
-    testImplementation(project(":core"))
+    testImplementation(project(":common"))
     testImplementation(platform(libs.aonyx.bom))
     testImplementation(libs.junit.api)
     testImplementation(libs.junit.platform.launcher)

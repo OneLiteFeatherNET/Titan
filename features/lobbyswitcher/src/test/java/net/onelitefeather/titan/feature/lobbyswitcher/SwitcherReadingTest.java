@@ -36,7 +36,7 @@ class SwitcherReadingTest {
     /** Answers with a list, or throws what it was told to throw. */
     private static final class FakeCounts implements PlayerCounts {
         List<ServiceCount> services = List.of();
-        RuntimeException failure;
+        Throwable failure;
         SourceType askedType;
         String askedName;
 
@@ -49,8 +49,11 @@ class SwitcherReadingTest {
         public List<ServiceCount> running(SourceType type, String name) {
             this.askedType = type;
             this.askedName = name;
-            if (this.failure != null) {
-                throw this.failure;
+            if (this.failure instanceof RuntimeException runtime) {
+                throw runtime;
+            }
+            if (this.failure instanceof Error error) {
+                throw error;
             }
             return this.services;
         }
@@ -202,5 +205,28 @@ class SwitcherReadingTest {
         this.counts.failure = new IllegalStateException("bridge down");
 
         Assertions.assertEquals(new SwitcherReading.Stale(List.of(LOBBY_2)), this.reading.read("Lobby"));
+    }
+
+    @DisplayName("A linkage error keeps the last good snapshot instead of escaping")
+    @Test
+    void linkageErrorKeepsLastSnapshot() {
+        this.counts.services = List.of(LOBBY_1);
+        this.reading.read("Lobby");
+        this.counts.failure = new NoClassDefFoundError("eu/cloudnetservice/Gone");
+
+        Assertions.assertEquals(new SwitcherReading.Stale(List.of(LOBBY_1)), this.reading.read("Lobby"));
+    }
+
+    @DisplayName("A linkage error warns once with the throwable, then logs DEBUG")
+    @Test
+    void linkageErrorWarnsOnce() {
+        this.counts.failure = new NoClassDefFoundError("eu/cloudnetservice/Gone");
+
+        this.reading.read("Lobby");
+        this.reading.read("Lobby");
+
+        Assertions.assertEquals(1, linesAt(Level.WARN), "one warning");
+        Assertions.assertEquals(2, linesAt(Level.DEBUG), "every failure leaves a DEBUG line");
+        Assertions.assertTrue(this.lines.list.stream().filter(line -> line.getLevel() == Level.WARN).allMatch(line -> line.getThrowableProxy() != null), "the warning carries the throwable");
     }
 }

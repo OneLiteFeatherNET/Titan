@@ -16,22 +16,35 @@
 package net.onelitefeather.titan.common.deliver;
 
 import java.util.List;
-import net.onelitefeather.titan.core.portal.ServiceCount;
+import java.util.Map;
 
 /**
  * Reads player counts from CloudNet. Implemented in the CloudNet bridge extension realm and
  * invoked from the application via {@link TitanPlayerCountLookup}. Only JDK types cross the
  * classloader boundary; {@code type} is {@code task}, {@code group} or {@code service}.
+ *
+ * <p>A running service is a {@code Map<String, Object>} with the keys {@link #NAME} (a
+ * {@code String}) and {@link #ONLINE} and {@link #MAX} (each an {@code Integer}); the application
+ * maps the rows to its own types.
  */
 public interface PlayerCountLookup {
+
+    /** Row key of the service name, a {@code String}. */
+    String NAME = "name";
+
+    /** Row key of the players on the service, an {@code Integer}. */
+    String ONLINE = "online";
+
+    /** Row key of the player limit, an {@code Integer}; {@code 0} while none is announced. */
+    String MAX = "max";
 
     boolean supports(String type);
 
     /** {@code {online, max}}, or {@code null} when nothing of that name runs. */
     int[] lookup(String type, String name);
 
-    /** The running services of that source, one entry each; empty when none runs. */
-    default List<ServiceCount> running(String type, String name) {
+    /** The running services of that source, one row each (see above); empty when none runs. */
+    default List<Map<String, Object>> running(String type, String name) {
         return List.of();
     }
 }

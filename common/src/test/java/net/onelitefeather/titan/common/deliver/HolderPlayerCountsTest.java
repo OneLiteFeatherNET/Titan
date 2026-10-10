@@ -16,10 +16,13 @@
 package net.onelitefeather.titan.common.deliver;
 
 import java.util.List;
+import java.util.Map;
+import net.onelitefeather.titan.common.config.testing.CapturingLoggerFactory;
 import net.onelitefeather.titan.core.portal.PlayerCount;
 import net.onelitefeather.titan.core.portal.ServiceCount;
 import net.onelitefeather.titan.core.portal.SourceType;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -32,10 +35,42 @@ class HolderPlayerCountsTest {
 
     private final HolderPlayerCounts counts = new HolderPlayerCounts();
 
+    @BeforeEach
+    void emptyLog() {
+        CapturingLoggerFactory.clear();
+    }
+
     // The holder is static by nature; every test leaves it empty again.
     @AfterEach
     void emptyHolder() {
         TitanPlayerCountLookup.setLookup(null);
+    }
+
+    private static long linesAt(String level) {
+        return CapturingLoggerFactory.messages().stream().filter(line -> line.startsWith(level + " ")).count();
+    }
+
+    private static Map<String, Object> row(String name, int online, int max) {
+        return Map.of(PlayerCountLookup.NAME, name, PlayerCountLookup.ONLINE, online, PlayerCountLookup.MAX, max);
+    }
+
+    private static void failWith(Error error) {
+        TitanPlayerCountLookup.setLookup(new PlayerCountLookup() {
+            @Override
+            public boolean supports(String type) {
+                return true;
+            }
+
+            @Override
+            public int[] lookup(String type, String name) {
+                throw error;
+            }
+
+            @Override
+            public List<Map<String, Object>> running(String type, String name) {
+                throw error;
+            }
+        });
     }
 
     private static void install(boolean supportsGroups, int[] answer) {
@@ -109,10 +144,9 @@ class HolderPlayerCountsTest {
         assertTrue(this.counts.running(SourceType.TASK, "Lobby").isEmpty(), "no bridge installed");
     }
 
-    @DisplayName("The installed lookup's running services are passed through")
+    @DisplayName("The installed lookup's JDK rows are mapped to core service counts")
     @Test
-    void runningServicesArePassedThrough() {
-        List<ServiceCount> services = List.of(new ServiceCount("Lobby-1", 3, 20), new ServiceCount("Lobby-2", 0, 20));
+    void runningRowsAreMapped() {
         TitanPlayerCountLookup.setLookup(new PlayerCountLookup() {
             @Override
             public boolean supports(String type) {
@@ -125,13 +159,37 @@ class HolderPlayerCountsTest {
             }
 
             @Override
-            public List<ServiceCount> running(String type, String name) {
-                return type.equals("task") && name.equals("Lobby") ? services : List.of();
+            public List<Map<String, Object>> running(String type, String name) {
+                return type.equals("task") && name.equals("Lobby") ? List.of(row("Lobby-1", 3, 20), row("Lobby-2", 0, 20)) : List.of();
             }
         });
 
-        assertEquals(services, this.counts.running(SourceType.TASK, "Lobby"), "the lookup's list for the task");
+        assertEquals(List.of(new ServiceCount("Lobby-1", 3, 20), new ServiceCount("Lobby-2", 0, 20)), this.counts.running(SourceType.TASK, "Lobby"), "the lookup's rows for the task");
         assertTrue(this.counts.running(SourceType.TASK, "Survival").isEmpty(), "nothing runs for another task");
+    }
+
+    @DisplayName("A linkage error of the bridge side surfaces as a runtime exception with the cause")
+    @Test
+    void linkageErrorBecomesRuntimeException() {
+        NoClassDefFoundError error = new NoClassDefFoundError("eu/cloudnetservice/Gone");
+        failWith(error);
+
+        IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> this.counts.running(SourceType.TASK, "Lobby"), "callers only handle runtime exceptions");
+        assertEquals(error, thrown.getCause(), "the original error is kept");
+    }
+
+    @DisplayName("The first linkage error warns with the throwable, later ones only log DEBUG")
+    @Test
+    void linkageErrorWarnsOnce() {
+        failWith(new NoClassDefFoundError("eu/cloudnetservice/Gone"));
+
+        assertThrows(IllegalStateException.class, () -> this.counts.running(SourceType.TASK, "Lobby"));
+        assertThrows(IllegalStateException.class, () -> this.counts.running(SourceType.TASK, "Lobby"));
+        assertThrows(IllegalStateException.class, () -> this.counts.count(SourceType.TASK, "Lobby"));
+
+        assertEquals(1, linesAt("WARN"), "one warning per kind of error");
+        assertTrue(CapturingLoggerFactory.messages().getFirst().contains("NoClassDefFoundError"), "the warning names the error: " + CapturingLoggerFactory.messages().getFirst());
+        assertEquals(2, linesAt("DEBUG"), "the repeats go to DEBUG");
     }
 
     @DisplayName("A lookup without its own listing yields an empty list")

@@ -29,6 +29,7 @@ import eu.cloudnetservice.wrapper.holder.ServiceInfoHolder;
 import java.lang.System.Logger;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import net.minestom.server.extensions.Extension;
 import net.onelitefeather.minestom.extensions.processor.ExtensionInfo;
@@ -39,8 +40,6 @@ import net.onelitefeather.titan.common.deliver.TitanLobbyIdentity;
 import net.onelitefeather.titan.common.deliver.TitanPlayerCountLookup;
 import net.onelitefeather.titan.common.deliver.TitanServerConnector;
 import net.onelitefeather.titan.common.permission.TitanPermissionBridge;
-import net.onelitefeather.titan.core.lobby.LobbyIdentity;
-import net.onelitefeather.titan.core.portal.ServiceCount;
 
 /**
  * Minestom extension that wires the CloudNet bridge to Titan across the classloader boundary.
@@ -112,11 +111,11 @@ public final class TitanBridgePermissionExtension extends Extension {
             }
 
             @Override
-            public List<ServiceCount> running(String type, String name) {
+            public List<Map<String, Object>> running(String type, String name) {
                 return ServiceListing.running(readings.read(type, name));
             }
         });
-        TitanLobbyIdentity.set(ownIdentity(logger));
+        publishIdentity(logger);
         logger.log(Logger.Level.INFO, "Player count lookup installed");
     }
 
@@ -144,16 +143,16 @@ public final class TitanBridgePermissionExtension extends Extension {
     }
 
     /**
-     * This service's task and name from the wrapper; {@code null} (no identity) when it is
-     * unreachable.
+     * Publishes this service's task and name from the wrapper; the lobby stays without an identity
+     * when they are unreachable.
      */
-    private static LobbyIdentity ownIdentity(Logger logger) {
+    private static void publishIdentity(Logger logger) {
         try {
             ServiceInfoSnapshot self = InjectionLayer.ext().instance(ServiceInfoHolder.class).serviceInfo();
-            return new LobbyIdentity(self.serviceId().taskName(), self.name());
+            TitanLobbyIdentity.set(self.serviceId().taskName(), self.name());
         } catch (RuntimeException | LinkageError e) {
+            TitanLobbyIdentity.clear();
             logger.log(Logger.Level.WARNING, "Own lobby identity unavailable, the lobby switcher stays closed", e);
-            return null;
         }
     }
 

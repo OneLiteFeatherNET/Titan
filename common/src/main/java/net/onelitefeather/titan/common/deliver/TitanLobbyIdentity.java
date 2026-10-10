@@ -21,23 +21,30 @@ import net.onelitefeather.titan.core.lobby.LobbyIdentity;
 
 /**
  * Cross-classloader holder for the identity of this lobby. Like {@link TitanPlayerCountLookup} it
- * lives on the shared application classloader: the CloudNet bridge extension sets the identity it
- * reads from CloudNet, the application reads it; until then the lobby knows nothing about itself.
+ * lives on the shared application classloader and exchanges only JDK types: the CloudNet bridge
+ * extension sets the task and service name it reads from CloudNet, the application reads them as
+ * a {@link LobbyIdentity}; until then the lobby knows nothing about itself.
  */
 public final class TitanLobbyIdentity {
 
-    private static volatile LobbyIdentity identity;
+    private static volatile String[] identity;
 
     private TitanLobbyIdentity() {
     }
 
-    /** Installs the identity; {@code null} clears it. */
-    public static void set(LobbyIdentity lobbyIdentity) {
-        identity = lobbyIdentity;
+    /** Installs the identity; a missing or blank name leaves the lobby without one. */
+    public static void set(String task, String serviceName) {
+        boolean usable = task != null && !task.isBlank() && serviceName != null && !serviceName.isBlank();
+        identity = usable ? new String[]{task, serviceName} : null;
+    }
+
+    public static void clear() {
+        identity = null;
     }
 
     public static Optional<LobbyIdentity> self() {
-        return Optional.ofNullable(identity);
+        String[] current = identity;
+        return current == null ? Optional.empty() : Optional.of(new LobbyIdentity(current[0], current[1]));
     }
 
     /** The holder as the application-facing {@link LobbyIdentities}. */

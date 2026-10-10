@@ -67,14 +67,14 @@ final class SwitcherReading {
                 LOGGER.info("Reading the running services of task '{}' works again", task);
             }
             return new Fresh(services);
-        } catch (RuntimeException e) {
+        } catch (RuntimeException | LinkageError e) {
             return failed(task, e);
         }
     }
 
-    private Outcome failed(String task, RuntimeException e) {
+    private Outcome failed(String task, Throwable e) {
         if (this.failureKinds.add(e.getClass().getName())) {
-            LOGGER.warn("Reading the running services of task '{}' failed: {}", task, e.toString());
+            LOGGER.warn("Reading the running services of task '{}' failed: {}", task, e.toString(), e);
         }
         LOGGER.debug("Reading the running services of task '{}' failed", task, e);
         List<ServiceCount> kept = this.lastGood;

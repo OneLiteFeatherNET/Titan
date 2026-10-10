@@ -17,8 +17,9 @@ package net.onelitefeather.titan.bridge;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import net.onelitefeather.titan.bridge.ServiceTotals.ServiceReading;
-import net.onelitefeather.titan.core.portal.ServiceCount;
+import net.onelitefeather.titan.common.deliver.PlayerCountLookup;
 
 /**
  * Lists the running services of a source one by one, where {@link ServiceTotals} sums them. Kept
@@ -29,8 +30,17 @@ final class ServiceListing {
     private ServiceListing() {
     }
 
-    /** The running services in the order given; services that do not run are left out. */
-    static List<ServiceCount> running(Collection<ServiceReading> services) {
-        return services.stream().filter(ServiceReading::running).map(service -> new ServiceCount(service.name(), service.online(), service.max())).toList();
+    /**
+     * The running services in the order given as JDK-typed rows ({@link PlayerCountLookup#NAME},
+     * {@link PlayerCountLookup#ONLINE}, {@link PlayerCountLookup#MAX}); services that do not run
+     * are
+     * left out.
+     */
+    static List<Map<String, Object>> running(Collection<ServiceReading> services) {
+        return services.stream().filter(ServiceReading::running).map(ServiceListing::row).toList();
+    }
+
+    private static Map<String, Object> row(ServiceReading service) {
+        return Map.of(PlayerCountLookup.NAME, service.name(), PlayerCountLookup.ONLINE, service.online(), PlayerCountLookup.MAX, service.max());
     }
 }

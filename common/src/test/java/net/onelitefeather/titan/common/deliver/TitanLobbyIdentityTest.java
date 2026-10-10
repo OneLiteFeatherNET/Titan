@@ -29,7 +29,7 @@ class TitanLobbyIdentityTest {
     // The holder is static by nature; every test leaves it empty again.
     @AfterEach
     void emptyHolder() {
-        TitanLobbyIdentity.set(null);
+        TitanLobbyIdentity.clear();
     }
 
     @DisplayName("An unset holder knows no identity")
@@ -41,19 +41,17 @@ class TitanLobbyIdentityTest {
     @DisplayName("An installed identity is returned")
     @Test
     void installedIdentityIsReturned() {
-        LobbyIdentity identity = new LobbyIdentity("Lobby", "Lobby-1");
+        TitanLobbyIdentity.set("Lobby", "Lobby-1");
 
-        TitanLobbyIdentity.set(identity);
-
-        assertEquals(Optional.of(identity), TitanLobbyIdentity.self(), "the installed identity");
+        assertEquals(Optional.of(new LobbyIdentity("Lobby", "Lobby-1")), TitanLobbyIdentity.self(), "the installed identity, mapped from the JDK strings");
     }
 
-    @DisplayName("Setting null clears the identity again")
+    @DisplayName("Clearing removes the identity again")
     @Test
-    void nullClears() {
-        TitanLobbyIdentity.set(new LobbyIdentity("Lobby", "Lobby-1"));
+    void clearRemoves() {
+        TitanLobbyIdentity.set("Lobby", "Lobby-1");
 
-        TitanLobbyIdentity.set(null);
+        TitanLobbyIdentity.clear();
 
         assertTrue(TitanLobbyIdentity.self().isEmpty(), "cleared");
     }
@@ -61,8 +59,18 @@ class TitanLobbyIdentityTest {
     @DisplayName("The holder works as the application's LobbyIdentities")
     @Test
     void holderIsLobbyIdentities() {
-        TitanLobbyIdentity.set(new LobbyIdentity("Lobby", "Lobby-2"));
+        TitanLobbyIdentity.set("Lobby", "Lobby-2");
 
         assertEquals("Lobby-2", TitanLobbyIdentity.identities().self().orElseThrow().serviceName(), "via the interface");
+    }
+
+    @DisplayName("Missing or blank names leave the lobby without an identity")
+    @Test
+    void unusableNamesAreNoIdentity() {
+        TitanLobbyIdentity.set(null, "Lobby-1");
+        assertTrue(TitanLobbyIdentity.self().isEmpty(), "no task");
+
+        TitanLobbyIdentity.set("Lobby", " ");
+        assertTrue(TitanLobbyIdentity.self().isEmpty(), "blank service name");
     }
 }

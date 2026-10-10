@@ -111,13 +111,13 @@ class PlatformBeansTest {
 
     @AfterEach
     void clearLobbyIdentityHolder() {
-        TitanLobbyIdentity.set(null);
+        TitanLobbyIdentity.clear();
     }
 
     @DisplayName("The lobby identity bean reads what the bridge put into the holder")
     @Test
     void lobbyIdentitiesBeanIsBackedByTheHolder() {
-        TitanLobbyIdentity.set(new LobbyIdentity("Lobby", "Lobby-7"));
+        TitanLobbyIdentity.set("Lobby", "Lobby-7");
 
         LobbyIdentities identities = this.platformBeans.lobbyIdentities();
 
@@ -130,7 +130,7 @@ class PlatformBeansTest {
         LobbyIdentities identities = this.platformBeans.lobbyIdentities();
         Assertions.assertTrue(identities.self().isEmpty(), "no identity before the bridge sets one");
 
-        TitanLobbyIdentity.set(new LobbyIdentity("Lobby", "Lobby-1"));
+        TitanLobbyIdentity.set("Lobby", "Lobby-1");
 
         Assertions.assertTrue(identities.self().isPresent(), "the bean must read the holder per call, not capture it");
     }
