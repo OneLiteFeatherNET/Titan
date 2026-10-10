@@ -25,8 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.StatusCode;
-import io.opentelemetry.sdk.metrics.SdkMeterProvider;
-import io.opentelemetry.sdk.testing.exporter.InMemoryMetricReader;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import java.util.Optional;
 import java.util.UUID;
@@ -158,17 +156,13 @@ class RunTelemetryTest {
 
     @Test
     void theScoreGoesIntoAHistogramPerMode() {
-        InMemoryMetricReader reader = InMemoryMetricReader.create();
-        try (SdkMeterProvider meters = SdkMeterProvider.builder().registerMetricReader(reader).build()) {
-            RunTelemetry own = new RunTelemetry(new Telemetry(testTelemetry.telemetry().tracer(), meters.get("test")));
+        telemetry.end(ending(EndReason.FALL, Optional.of(FALL)), () -> false);
 
-            own.end(ending(EndReason.FALL, Optional.of(FALL)), () -> false);
-
-            var points = reader.collectAllMetrics().stream().filter(metric -> metric.getName().equals("titan.jumprun.run.score")).flatMap(metric -> metric.getHistogramData().getPoints().stream()).toList();
-            assertEquals(1, points.size(), "one point for one mode");
-            assertEquals("MEDIUM", points.getFirst().getAttributes().get(AttributeKey.stringKey("mode")), "mode");
-            assertEquals(12.0, points.getFirst().getSum(), "the score is recorded");
-            assertNull(points.getFirst().getAttributes().get(Telemetry.USER_ID), "no user.id on the histogram");
-        }
+        var points = testTelemetry.histogramPoints("titan.jumprun.run.score");
+        assertEquals(1, points.size(), "one point for one mode");
+        assertEquals("MEDIUM", points.getFirst().getAttributes().get(AttributeKey.stringKey("mode")), "mode");
+        assertEquals(12.0, points.getFirst().getSum(), "the score is recorded");
+        assertEquals(1, testTelemetry.histogram("titan.jumprun.run.score", Attributes.of(AttributeKey.stringKey("mode"), "MEDIUM")).count(), "one run recorded");
+        assertNull(points.getFirst().getAttributes().get(Telemetry.USER_ID), "no user.id on the histogram");
     }
 }
