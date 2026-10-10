@@ -146,6 +146,23 @@ class DifficultyTest {
     }
 
     @Test
+    void theDefaultMaximumTowerHeightIsSeven() {
+        assertEquals(7, Climb.MAX_HEIGHT, "the tallest tower of the shipped config");
+    }
+
+    @Test
+    void mediumAtScoreEightyAsksForLessThanTheDefaultMaximum() {
+        int height = Difficulty.towerHeight(Mode.MEDIUM, 80, Climb.MIN_HEIGHT, Climb.MAX_HEIGHT);
+
+        assertTrue(height < Climb.MAX_HEIGHT, "medium at score 80 wants " + height + ", below the maximum");
+    }
+
+    @Test
+    void hardAtScoreEightyReachesTheDefaultMaximum() {
+        assertEquals(Climb.MAX_HEIGHT, Difficulty.towerHeight(Mode.HARD, 80, Climb.MIN_HEIGHT, Climb.MAX_HEIGHT), "hard at score 80 wants the tallest tower");
+    }
+
+    @Test
     void towerCostFollowsTheTargetCostAtScoreForty() {
         assertTowerCostNearTarget(Mode.MEDIUM, 40);
     }

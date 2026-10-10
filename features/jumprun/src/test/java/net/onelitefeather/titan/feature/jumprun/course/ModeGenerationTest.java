@@ -249,14 +249,23 @@ class ModeGenerationTest {
     }
 
     @Test
-    void everyTowerIsStraightAndThreeToFiveHigh() {
+    void hardMakesTheTallestTowerWithTheDefaultLimitsAtScoreEighty() {
+        long tallest = 0;
+        for (long seed = 1; seed <= 20; seed++) {
+            tallest += walk(Mode.HARD, seed).stream().filter(move -> move.score() >= 80 && isTower(move.jump()) && move.jump().to().climb().orElseThrow().height() == Climb.MAX_HEIGHT).count();
+        }
+        assertTrue(tallest > 0, "hard at score 80 must make towers of " + Climb.MAX_HEIGHT + ", made " + tallest);
+    }
+
+    @Test
+    void everyTowerIsStraightAndWithinTheDefaultHeights() {
         for (long seed = 1; seed <= 200; seed++) {
             for (Mode mode : List.of(Mode.MEDIUM, Mode.HARD)) {
                 for (Move move : walk(mode, seed)) {
                     if (isTower(move.jump())) {
                         int height = move.jump().to().climb().orElseThrow().height();
                         assertEquals(0, move.jump().gap(), mode + " seed " + seed + ": tower gap");
-                        assertTrue(height >= 3 && height <= 5, mode + " seed " + seed + ": tower height " + height);
+                        assertTrue(height >= Climb.MIN_HEIGHT && height <= Climb.MAX_HEIGHT, mode + " seed " + seed + ": tower height " + height);
                     }
                 }
             }
