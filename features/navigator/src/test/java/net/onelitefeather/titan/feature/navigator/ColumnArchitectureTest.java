@@ -25,8 +25,8 @@ import net.onelitefeather.titan.core.testfixtures.architecture.ColumnArchitectur
 
 /**
  * Applies the architecture rules every column shares to this column's own package, plus the
- * navigator's own rule: its destinations are fixed in code, not read from the {@code io.avaje
- * .config} facade.
+ * navigator's own rule: its destinations are fixed in code, and only {@link NavigatorSettings}
+ * reads the {@code io.avaje.config} facade.
  */
 @AnalyzeClasses(packages = "net.onelitefeather.titan.feature.navigator", importOptions = ImportOption.DoNotIncludeTests.class)
 class ColumnArchitectureTest {
@@ -41,7 +41,7 @@ class ColumnArchitectureTest {
     static final ArchRule featureModulesDoNotUseBeanScope = ColumnArchitectureRules.FEATURE_MODULES_DO_NOT_USE_BEAN_SCOPE;
 
     @ArchTest
-    static final ArchRule navigatorDoesNotDependOnAvajeConfig = noClasses().should().dependOnClassesThat().resideInAPackage("io.avaje.config..").because("spawn-return scenario 'Navigator-Werte in der Konfiguration werden ignoriert': the navigator's destinations are fixed in code, not read from configuration");
+    static final ArchRule navigatorDoesNotDependOnAvajeConfig = noClasses().that().doNotHaveSimpleName("NavigatorSettings").should().dependOnClassesThat().resideInAPackage("io.avaje.config..").because("the navigator's destinations are fixed in code; only NavigatorSettings reads configuration (the refresh period)");
 
     // FeatureFlags (core) is the navigator's one legitimate switch and is not a config reader itself.
     @ArchTest

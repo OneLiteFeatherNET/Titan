@@ -17,9 +17,8 @@
 # Each top-level key is a column id (matching exactly one column's own configuration keys - a
 # column only ever reads its own section, see the lobby-module-config spec, "Ein Modul MUSS nur
 # seinen eigenen Abschnitt lesen können"); every other key inside a section is
-# <column-id>.<field>, e.g. "spawn.minHeight". The navigator has no section of its own: its title
-# and destinations are fixed in NavigatorModule/Destination, not read from configuration, so a
-# "navigator.*" key set here or by an operator has no effect.
+# <column-id>.<field>, e.g. "spawn.minHeight". The navigator's title and destinations are fixed in
+# NavigatorModule/Destination; its section only sets how often the player counts refresh.
 #
 # Profiles: create "application-dev.yaml" (or any other profile name) with just the keys you want
 # to differ for that profile, then start the lobby with the environment variable

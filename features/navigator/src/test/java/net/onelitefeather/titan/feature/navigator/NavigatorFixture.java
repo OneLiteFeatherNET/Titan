@@ -16,6 +16,7 @@
 package net.onelitefeather.titan.feature.navigator;
 
 import java.util.List;
+import java.util.Optional;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.PlayerHand;
 import net.minestom.server.event.player.PlayerUseItemEvent;
@@ -26,6 +27,7 @@ import net.onelitefeather.titan.core.module.SpawnReturn;
 import net.onelitefeather.titan.core.module.item.ItemSlot;
 import net.onelitefeather.titan.core.permission.PermissionService;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
+import net.onelitefeather.titan.core.portal.PlayerCounts;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
@@ -65,16 +67,25 @@ final class NavigatorFixture implements AutoCloseable {
     }
 
     static NavigatorFixture start(Env env, Deliver deliver, FeatureFlags featureFlags, PermissionService permissions, SpawnReturn spawnReturn, Telemetry telemetry) {
-        return start(env, deliver, featureFlags, permissions, spawnReturn, telemetry, List::of);
+        return start(env, deliver, featureFlags, permissions, spawnReturn, telemetry, List::of, Optional.empty());
     }
 
     static NavigatorFixture start(Env env, Deliver deliver, FeatureFlags featureFlags, PermissionService permissions, LobbyPortals portals) {
-        return start(env, deliver, featureFlags, permissions, new FakeSpawnReturn(), Telemetry.noop(), portals);
+        return start(env, deliver, featureFlags, permissions, new FakeSpawnReturn(), Telemetry.noop(), portals, Optional.empty());
     }
 
     static NavigatorFixture start(Env env, Deliver deliver, FeatureFlags featureFlags, PermissionService permissions, SpawnReturn spawnReturn, Telemetry telemetry, LobbyPortals portals) {
+        return start(env, deliver, featureFlags, permissions, spawnReturn, telemetry, portals, Optional.empty());
+    }
+
+    /** Reads on the calling thread and refreshes every second, so a test drives it with ticks. */
+    static NavigatorFixture start(Env env, Deliver deliver, FeatureFlags featureFlags, PermissionService permissions, PlayerCounts counts) {
+        return start(env, deliver, featureFlags, permissions, new FakeSpawnReturn(), Telemetry.noop(), List::of, Optional.of(counts));
+    }
+
+    private static NavigatorFixture start(Env env, Deliver deliver, FeatureFlags featureFlags, PermissionService permissions, SpawnReturn spawnReturn, Telemetry telemetry, LobbyPortals portals, Optional<PlayerCounts> counts) {
         TestTitanNode titan = TestTitanNode.attach(env);
-        NavigatorModule module = new NavigatorModule(titan.node(), deliver, featureFlags, permissions, () -> spawnReturn, portals, telemetry);
+        NavigatorModule module = new NavigatorModule(titan.node(), deliver, featureFlags, permissions, () -> spawnReturn, portals, telemetry, counts, env.process().scheduler(), Runnable::run, new NavigatorSettings(1));
         module.start();
         LobbyItem feather = new NavigatorItems().navigatorFeather(module);
         return new NavigatorFixture(titan, module, feather);

@@ -17,6 +17,7 @@ package net.onelitefeather.titan.feature.navigator;
 
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -213,7 +214,7 @@ class NavigatorModuleTest {
         try {
             NavigatorModule module = new NavigatorModule(titan.node(), new RecordingDeliver(), slenderActive(), new FakePermissionService(), () -> {
                 throw new NoSuchElementException("no bean");
-            }, List::of, Telemetry.noop());
+            }, List::of, Telemetry.noop(), Optional.empty(), env.process().scheduler(), Runnable::run, new NavigatorSettings(1));
 
             IllegalStateException thrown = Assertions.assertThrows(IllegalStateException.class, module::start, "an unresolvable provider must fail the start");
             Assertions.assertTrue(thrown.getMessage().contains("SpawnReturn") && thrown.getMessage().contains("spawn column"), "the message must name SpawnReturn and the spawn column, was: " + thrown.getMessage());
@@ -227,7 +228,7 @@ class NavigatorModuleTest {
     void startFailsClearlyWhenTheProviderYieldsNull(Env env) {
         TestTitanNode titan = TestTitanNode.attach(env);
         try {
-            NavigatorModule module = new NavigatorModule(titan.node(), new RecordingDeliver(), slenderActive(), new FakePermissionService(), () -> null, List::of, Telemetry.noop());
+            NavigatorModule module = new NavigatorModule(titan.node(), new RecordingDeliver(), slenderActive(), new FakePermissionService(), () -> null, List::of, Telemetry.noop(), Optional.empty(), env.process().scheduler(), Runnable::run, new NavigatorSettings(1));
 
             IllegalStateException thrown = Assertions.assertThrows(IllegalStateException.class, module::start, "a provider yielding null must fail the start");
             Assertions.assertTrue(thrown.getMessage().contains("SpawnReturn") && thrown.getMessage().contains("spawn column"), "the message must name SpawnReturn and the spawn column, was: " + thrown.getMessage());
