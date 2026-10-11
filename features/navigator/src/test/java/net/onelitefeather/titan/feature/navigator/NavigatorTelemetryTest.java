@@ -18,6 +18,8 @@ package net.onelitefeather.titan.feature.navigator;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.sdk.trace.data.SpanData;
+import java.util.List;
+import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.inventory.InventoryPreClickEvent;
 import net.minestom.server.instance.Instance;
@@ -26,6 +28,9 @@ import net.minestom.server.inventory.click.Click;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.permission.PermissionResult;
+import net.onelitefeather.titan.core.portal.Box;
+import net.onelitefeather.titan.core.portal.LobbyPortals;
+import net.onelitefeather.titan.core.portal.Portal;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.onelitefeather.titan.core.testfixtures.TestTelemetry;
 import org.junit.jupiter.api.AfterEach;
@@ -167,6 +172,37 @@ class NavigatorTelemetryTest {
             Assertions.assertEquals("spawn", testTelemetry.attribute(span, RESULT), "the spawn entry reports spawn");
             Assertions.assertEquals(player.getUuid().toString(), testTelemetry.attribute(span, Telemetry.USER_ID), "the player UUID is the user.id");
             Assertions.assertEquals(1, testTelemetry.counter("titan.navigator.selections", Attributes.of(METRIC_DESTINATION, "spawn", METRIC_RESULT, "spawn")), "the spawn selection is counted");
+        }
+    }
+
+    @DisplayName("A right click that teleports in front of the portal spans teleported")
+    @Test
+    void rightClickTeleportSpansTeleported(Env env) {
+        LobbyPortals portals = () -> List.of(new Portal("survival", new Box(new Vec(10, 40, 20), new Vec(12, 42, 22)), "Survival", null));
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), new FakePermissionService(), new FakeSpawnReturn(), testTelemetry.telemetry(), portals)) {
+            Player player = env.createPlayer(env.createFlatInstance());
+            fixture.equip(player);
+            fixture.useFeather(player);
+
+            env.process().eventHandler().call(new InventoryPreClickEvent(player.getOpenInventory(), player, new Click.Right(SURVIVAL_SLOT)));
+
+            SpanData span = testTelemetry.span("navigator.select");
+            Assertions.assertEquals("teleported", testTelemetry.attribute(span, RESULT), "the portal teleport has its own result");
+            Assertions.assertEquals(1, testTelemetry.counter("titan.navigator.selections", Attributes.of(METRIC_DESTINATION, "SURVIVAL", METRIC_RESULT, "teleported")), "the teleport is counted");
+        }
+    }
+
+    @DisplayName("A right click without a portal reports the fallback as sent")
+    @Test
+    void rightClickFallbackSpansSent(Env env) {
+        try (NavigatorFixture fixture = start(env, new RecordingDeliver(), new FakePermissionService())) {
+            Player player = env.createPlayer(env.createFlatInstance());
+            fixture.equip(player);
+            fixture.useFeather(player);
+
+            env.process().eventHandler().call(new InventoryPreClickEvent(player.getOpenInventory(), player, new Click.Right(SURVIVAL_SLOT)));
+
+            Assertions.assertEquals("sent", testTelemetry.attribute(testTelemetry.span("navigator.select"), RESULT), "the fallback connects, so it is sent");
         }
     }
 }
