@@ -75,6 +75,14 @@ class ApplicationYamlDefaultsCharacterizationTest {
         Assertions.assertEquals(5, configuration.getInt("portal.labelRefreshSeconds"), "portal.labelRefreshSeconds");
     }
 
+    @DisplayName("lobby: application.yaml ships a player limit of 100")
+    @Test
+    void lobbyMatchesDefaults() {
+        Configuration configuration = load();
+
+        Assertions.assertEquals(100, configuration.getInt("lobby.maxPlayers"), "lobby.maxPlayers");
+    }
+
     @DisplayName("config.watch: application.yaml ships file watching off by default")
     @Test
     void configWatchIsDisabledByDefault() {

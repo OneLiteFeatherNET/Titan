@@ -21,6 +21,7 @@ import eu.cloudnetservice.driver.registry.ServiceRegistry;
 import eu.cloudnetservice.driver.service.ServiceInfoSnapshot;
 import eu.cloudnetservice.driver.service.ServiceLifeCycle;
 import eu.cloudnetservice.modules.bridge.BridgeDocProperties;
+import eu.cloudnetservice.modules.bridge.BridgeServiceHelper;
 import eu.cloudnetservice.modules.bridge.impl.platform.minestom.MinestomPermissionChecker;
 import eu.cloudnetservice.modules.bridge.player.PlayerManager;
 import eu.cloudnetservice.modules.bridge.player.executor.PlayerExecutor;
@@ -36,6 +37,7 @@ import net.onelitefeather.minestom.extensions.processor.ExtensionInfo;
 import net.onelitefeather.titan.common.deliver.PlayerCountLookup;
 import net.onelitefeather.titan.common.deliver.ServerConnector;
 import net.onelitefeather.titan.common.deliver.TitanLobbyIdentity;
+import net.onelitefeather.titan.common.deliver.TitanPlayerLimit;
 import net.onelitefeather.titan.common.deliver.TitanPlayerCountLookup;
 import net.onelitefeather.titan.common.deliver.TitanServerConnector;
 import net.onelitefeather.titan.common.permission.TitanPermissionBridge;
@@ -63,6 +65,8 @@ import net.onelitefeather.titan.common.permission.TitanPermissionBridge;
  * that lists the bridge's player counts of the running services of a task or group, or of one
  * service by name, one by one; the application sums them.
  * <li><b>Identity:</b> publishes this service's task and name through {@link TitanLobbyIdentity}.
+ * <li><b>Player limit:</b> hands the limit Titan announces through {@link TitanPlayerLimit} to the
+ * bridge as the service's maximum players.
  * </ul>
  *
  * <p>{@link ExtensionInfo} generates {@code extension.json} at compile time; the version is
@@ -110,7 +114,25 @@ public final class TitanBridgePermissionExtension extends Extension {
             }
         });
         publishIdentity(logger);
+        publishPlayerLimit(logger);
         logger.log(Logger.Level.INFO, "Player count lookup installed");
+    }
+
+    /**
+     * The bridge read the maximum from a single ping while it loaded, before Titan knew its limit;
+     * the limit Titan announces later replaces it in the service info.
+     */
+    private static void publishPlayerLimit(Logger logger) {
+        try {
+            BridgeServiceHelper helper = InjectionLayer.ext().instance(BridgeServiceHelper.class);
+            ServiceInfoHolder holder = InjectionLayer.ext().instance(ServiceInfoHolder.class);
+            TitanPlayerLimit.onAnnounce(maxPlayers -> {
+                helper.maxPlayers().set(maxPlayers);
+                holder.publishServiceInfoUpdate();
+            });
+        } catch (RuntimeException | LinkageError e) {
+            logger.log(Logger.Level.WARNING, "Player limit cannot be published, CloudNet keeps the ping's maximum", e);
+        }
     }
 
     /** The provider is bound in CloudNet's injection layer, not in the {@code ServiceRegistry}. */

@@ -60,3 +60,8 @@
 config.watch.enabled: false
 config.watch.delay: 10
 config.watch.period: 10
+
+# The player limit the lobby reports in the server list ping and to CloudNet (whole number, at
+# least 1). The lobby does not refuse players above it; it only labels the lobby full.
+lobby:
+  maxPlayers: 100

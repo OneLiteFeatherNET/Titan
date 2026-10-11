@@ -124,6 +124,11 @@ public final class PlatformBeans {
     }
 
     @Bean
+    public LobbyPlayerLimit lobbyPlayerLimit() {
+        return LobbyPlayerLimit.read();
+    }
+
+    @Bean
     @Named(FeatureNode.TITAN_NODE)
     public EventNode<Event> titanEventNode() {
         EventNode<Event> node = EventNode.all(FeatureNode.TITAN_NODE);
