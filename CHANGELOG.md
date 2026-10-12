@@ -1,5 +1,19 @@
 # Changelog
 
+## [3.1.0](https://github.com/OneLiteFeatherNET/Titan/compare/v3.0.1...v3.1.0) (2026-10-12)
+
+
+### Features
+
+* **navigator:** show the player count per mode ([#417](https://github.com/OneLiteFeatherNET/Titan/issues/417)) ([5a3efd8](https://github.com/OneLiteFeatherNET/Titan/commit/5a3efd847726954b06729d76efc22bd3d0213b4b))
+* **navigator:** teleport in front of the portal on right click ([#414](https://github.com/OneLiteFeatherNET/Titan/issues/414)) ([d0afe9b](https://github.com/OneLiteFeatherNET/Titan/commit/d0afe9b2110d8bbee2fd87bf102a30227053f384))
+
+
+### Bug Fixes
+
+* **deps:** update dependency net.onelitefeather:aonyx-bom to v0.8.9 ([#415](https://github.com/OneLiteFeatherNET/Titan/issues/415)) ([db93460](https://github.com/OneLiteFeatherNET/Titan/commit/db9346025dc083f567ee2f035e534b0f2c539f35))
+* **lobbyswitcher:** report the configured player limit to CloudNet ([#416](https://github.com/OneLiteFeatherNET/Titan/issues/416)) ([ff6da98](https://github.com/OneLiteFeatherNET/Titan/commit/ff6da98baab73623a6bd770874fe139a3d7653ee))
+
 ## [3.0.1](https://github.com/OneLiteFeatherNET/Titan/compare/v3.0.0...v3.0.1) (2026-10-10)
 
 
