@@ -22,6 +22,7 @@ import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.minestom.server.entity.Player;
@@ -29,6 +30,7 @@ import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.inventory.Inventory;
 import net.minestom.server.inventory.InventoryType;
+import net.minestom.server.inventory.click.Click;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
 import net.onelitefeather.titan.api.deliver.DeliverComponent;
@@ -38,6 +40,9 @@ import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.module.SpawnReturn;
 import net.onelitefeather.titan.core.permission.PermissionResult;
 import net.onelitefeather.titan.core.permission.PermissionService;
+import net.onelitefeather.titan.core.portal.LobbyPortals;
+import net.onelitefeather.titan.core.portal.Portal;
+import net.onelitefeather.titan.core.portal.PortalApproach;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.theevilreaper.aves.inventory.click.ClickHolder;
 import net.theevilreaper.aves.inventory.layout.InventoryLayout;
@@ -46,6 +51,9 @@ import net.theevilreaper.aves.inventory.layout.InventoryLayout;
  * The lobby's navigator: a feather in hotbar slot 4 that opens one of two Aves-built inventories,
  * each shared by every player who gets it: the public one, or the team one that adds the
  * permissioned {@code BUILD} destination fixed in {@link Destination}. Opening picks by permission.
+ *
+ * <p>A right click on a destination walks the player to the lobby's portal for that task instead
+ * of connecting, when the map has one; any other click connects.
  *
  * <p>Aves maps its click listener directly onto each built {@code GlobalInventoryBuilder} inventory
  * and dispatches it before any regular event node's listeners, so this click handling always
@@ -74,15 +82,17 @@ public final class NavigatorModule {
     // A Provider, not a bean: the spawn column sits before this one in module order (spawn ->
     // hotbar -> navigator item), so requiring SpawnReturn here would close a cycle.
     private final Provider<SpawnReturn> spawnReturnProvider;
+    private final LobbyPortals portals;
     private SpawnReturn spawnReturn;
     private FeatureNode node;
 
-    public NavigatorModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Deliver deliver, FeatureFlags featureFlags, PermissionService permissions, Provider<SpawnReturn> spawnReturnProvider, Telemetry telemetry) {
+    public NavigatorModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Deliver deliver, FeatureFlags featureFlags, PermissionService permissions, Provider<SpawnReturn> spawnReturnProvider, LobbyPortals portals, Telemetry telemetry) {
         this.titan = Objects.requireNonNull(titan, "titan must not be null");
         this.deliver = Objects.requireNonNull(deliver, "deliver must not be null");
         this.featureFlags = Objects.requireNonNull(featureFlags, "featureFlags must not be null");
         this.permissions = Objects.requireNonNull(permissions, "permissions must not be null");
         this.spawnReturnProvider = Objects.requireNonNull(spawnReturnProvider, "spawnReturnProvider must not be null");
+        this.portals = Objects.requireNonNull(portals, "portals must not be null");
         this.telemetry = Objects.requireNonNull(telemetry, "telemetry must not be null");
         this.navigatorTelemetry = new NavigatorTelemetry(this.telemetry);
         this.publicNavigator = new SharedNavigator(false, this.telemetry);
@@ -161,6 +171,12 @@ public final class NavigatorModule {
                         player.closeInventory();
                         return NavigatorTelemetry.Selection.DENIED;
                     }
+                    Optional<Portal> portal = isRightClick(click) ? portalFor(destination) : Optional.empty();
+                    if (portal.isPresent()) {
+                        player.closeInventory();
+                        player.teleport(PortalApproach.standingBefore(portal.get(), player.getPosition()));
+                        return NavigatorTelemetry.Selection.TELEPORTED;
+                    }
                     this.deliver.sendPlayer(player, DeliverComponent.taskBuilder().taskName(destination.task()).player(player).build());
                     player.closeInventory();
                     return NavigatorTelemetry.Selection.SENT;
@@ -169,6 +185,16 @@ public final class NavigatorModule {
         }
         addSpawnEntry(layout);
         return layout;
+    }
+
+    // Shift keeps the button: a shift-right click is still a right click. Every other click type
+    // connects, as the left click does.
+    private static boolean isRightClick(Click click) {
+        return click instanceof Click.Right || click instanceof Click.RightShift;
+    }
+
+    private Optional<Portal> portalFor(Destination destination) {
+        return this.portals.portals().stream().filter(portal -> portal.task().equals(destination.task())).findFirst();
     }
 
     // Spawn is a fixed entry, not a Destination: it returns the player instead of redirecting them.

@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.feature.navigator;
 
+import java.util.List;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.PlayerHand;
 import net.minestom.server.event.player.PlayerUseItemEvent;
@@ -24,6 +25,7 @@ import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.core.module.SpawnReturn;
 import net.onelitefeather.titan.core.module.item.ItemSlot;
 import net.onelitefeather.titan.core.permission.PermissionService;
+import net.onelitefeather.titan.core.portal.LobbyPortals;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
@@ -63,8 +65,16 @@ final class NavigatorFixture implements AutoCloseable {
     }
 
     static NavigatorFixture start(Env env, Deliver deliver, FeatureFlags featureFlags, PermissionService permissions, SpawnReturn spawnReturn, Telemetry telemetry) {
+        return start(env, deliver, featureFlags, permissions, spawnReturn, telemetry, List::of);
+    }
+
+    static NavigatorFixture start(Env env, Deliver deliver, FeatureFlags featureFlags, PermissionService permissions, LobbyPortals portals) {
+        return start(env, deliver, featureFlags, permissions, new FakeSpawnReturn(), Telemetry.noop(), portals);
+    }
+
+    static NavigatorFixture start(Env env, Deliver deliver, FeatureFlags featureFlags, PermissionService permissions, SpawnReturn spawnReturn, Telemetry telemetry, LobbyPortals portals) {
         TestTitanNode titan = TestTitanNode.attach(env);
-        NavigatorModule module = new NavigatorModule(titan.node(), deliver, featureFlags, permissions, () -> spawnReturn, telemetry);
+        NavigatorModule module = new NavigatorModule(titan.node(), deliver, featureFlags, permissions, () -> spawnReturn, portals, telemetry);
         module.start();
         LobbyItem feather = new NavigatorItems().navigatorFeather(module);
         return new NavigatorFixture(titan, module, feather);
