@@ -135,7 +135,7 @@ class JumprunSidebarTest {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             SidebarScene scene = startHard(env, fixture, JumprunFixture.loadedInstance(env));
 
-            fixture.useItem(scene.player());
+            fixture.stopRun(scene.player());
 
             assertEquals(1, SidebarPackets.removed(scene.collect()).size(), "the sidebar goes with the run");
         }
@@ -200,7 +200,7 @@ class JumprunSidebarTest {
     void aNewRunGetsAFreshSidebar(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             SidebarScene scene = startHard(env, fixture, JumprunFixture.loadedInstance(env));
-            fixture.useItem(scene.player());
+            fixture.stopRun(scene.player());
 
             fixture.useItem(scene.player());
 

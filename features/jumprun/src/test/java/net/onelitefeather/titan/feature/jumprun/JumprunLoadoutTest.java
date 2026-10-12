@@ -85,7 +85,7 @@ class JumprunLoadoutTest {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             StartedRun run = startWearingTheLoadout(env, fixture);
 
-            fixture.useItem(run.player());
+            fixture.stopRun(run.player());
 
             assertLoadoutBack(fixture, run.player());
         }

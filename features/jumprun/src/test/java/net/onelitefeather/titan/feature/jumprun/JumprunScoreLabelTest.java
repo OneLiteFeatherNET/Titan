@@ -183,7 +183,7 @@ class JumprunScoreLabelTest {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             Scene scene = Scene.start(env, fixture);
 
-            fixture.useItem(scene.run().player());
+            fixture.stopRun(scene.run().player());
 
             assertTrue(scene.labels().isEmpty(), "no label stays behind");
             assertTrue(scene.run().player().getPassengers().isEmpty(), "the runner carries nothing");

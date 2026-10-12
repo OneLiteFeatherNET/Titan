@@ -19,7 +19,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.UUID;
 import net.kyori.adventure.text.Component;
+import net.minestom.server.network.player.GameProfile;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.minestom.server.entity.Entity;
 import net.minestom.server.entity.EntityType;
@@ -49,9 +51,7 @@ class JumprunModeTest {
     }
 
     private static void sneakUse(JumprunFixture fixture, Player player) {
-        player.setSneaking(true);
-        fixture.useItem(player);
-        player.setSneaking(false);
+        fixture.switchMode(player);
     }
 
     private static String labelText(Instance instance) {
@@ -160,7 +160,7 @@ class JumprunModeTest {
             fixture.useItem(player);
 
             assertTrue(labelText(instance).endsWith("Jump & Run · Rainbow · 0"), "rainbow in the head label: " + labelText(instance));
-            fixture.useItem(player);
+            fixture.stopRun(player);
             fixture.settle();
             sneakUse(fixture, player);
             fixture.useItem(player);
@@ -182,7 +182,7 @@ class JumprunModeTest {
             fixture.useItem(player);
             Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);
 
-            fixture.useItem(player);
+            fixture.stopRun(player);
 
             Component expected = fixture.messages().endScore(player.getLocale(), Mode.EASY, 0);
             chat.assertSingle(packet -> assertEquals(expected, packet.message()));
@@ -194,7 +194,7 @@ class JumprunModeTest {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             StartedRun run = StartedRun.start(env, fixture);
 
-            fixture.useItem(run.player());
+            fixture.stopRun(run.player());
             sneakUse(fixture, run.player());
 
             assertEquals(Mode.HARD, fixture.module().modeOf(run.player()), "the choice is made between runs");
@@ -211,6 +211,70 @@ class JumprunModeTest {
             env.process().eventHandler().call(new PlayerDisconnectEvent(player));
 
             assertEquals(Mode.MEDIUM, fixture.module().modeOf(player));
+        }
+    }
+
+    @Test
+    void twoSneakClicksWithinTheDebounceSwitchOnlyOnce(Env env) {
+        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+            Player player = standingPlayer(env, JumprunFixture.loadedInstance(env));
+
+            fixture.sneakUse(player);
+            env.tick();
+            fixture.sneakUse(player);
+
+            assertEquals(Mode.HARD, fixture.module().modeOf(player), "the repeated click is ignored");
+        }
+    }
+
+    @Test
+    void aSneakClickAfterTheDebounceSwitchesAgain(Env env) {
+        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+            Player player = standingPlayer(env, JumprunFixture.loadedInstance(env));
+
+            fixture.sneakUse(player);
+            for (int tick = 0; tick < JumprunModule.MODE_SWITCH_DEBOUNCE_TICKS; tick++) {
+                env.tick();
+            }
+            fixture.sneakUse(player);
+
+            assertEquals(Mode.RAINBOW, fixture.module().modeOf(player), "the window is over");
+        }
+    }
+
+    @Test
+    void anIgnoredClickDoesNotExtendTheDebounce(Env env) {
+        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+            Player player = standingPlayer(env, JumprunFixture.loadedInstance(env));
+
+            fixture.sneakUse(player);
+            for (int tick = 0; tick < JumprunModule.MODE_SWITCH_DEBOUNCE_TICKS - 1; tick++) {
+                env.tick();
+                fixture.sneakUse(player);
+            }
+            env.tick();
+            fixture.sneakUse(player);
+
+            assertEquals(Mode.RAINBOW, fixture.module().modeOf(player), "the window runs from the switch, not from the last click");
+        }
+    }
+
+    @Test
+    void theDebounceOfAPlayerWhoLeftDoesNotBlockTheNextSession(Env env) {
+        Instance instance = JumprunFixture.loadedInstance(env);
+        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+            UUID id = UUID.randomUUID();
+            Player first = env.createConnection(new GameProfile(id, "Alex")).connect(instance, StartedRun.STAND);
+            for (int tick = 0; tick < 3 * JumprunModule.MODE_SWITCH_DEBOUNCE_TICKS; tick++) {
+                env.tick();
+            }
+            fixture.sneakUse(first);
+            env.process().eventHandler().call(new PlayerDisconnectEvent(first));
+
+            Player second = env.createConnection(new GameProfile(id, "Alex")).connect(instance, StartedRun.STAND);
+            fixture.sneakUse(second);
+
+            assertEquals(Mode.HARD, fixture.module().modeOf(second), "a fresh session switches at once");
         }
     }
 }
