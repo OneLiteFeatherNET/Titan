@@ -161,7 +161,7 @@ class JumprunStartTest {
             List<BlockChangePacket> shown = sent.collect();
 
             Collector<BlockChangePacket> resets = connection.trackIncoming(BlockChangePacket.class);
-            fixture.useItem(player);
+            fixture.stopRun(player);
 
             assertFalse(fixture.module().isRunning(player), "the second use aborts the run");
             List<BlockChangePacket> restored = resets.collect();
@@ -180,7 +180,7 @@ class JumprunStartTest {
             fixture.useItem(player);
             Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);
 
-            fixture.useItem(player);
+            fixture.stopRun(player);
 
             Component expected = fixture.messages().endScore(player.getLocale(), Mode.MEDIUM, 0);
             chat.assertSingle(packet -> assertEquals(expected, packet.message()));

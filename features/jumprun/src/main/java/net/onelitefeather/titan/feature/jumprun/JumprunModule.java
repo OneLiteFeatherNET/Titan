@@ -111,6 +111,13 @@ final class JumprunModule {
     static final String ID = "jumprun";
     static final Mode DEFAULT_MODE = Mode.MEDIUM;
     private static final int USE_SUPPRESSION_TICKS = 2;
+    /**
+     * 1 s: a double click or a laggy repeat of the start click is over, a deliberate stop is not
+     * yet due.
+     */
+    static final int RUN_GRACE_TICKS = 20;
+    /** 250 ms: above the double fire of one click, below a deliberate second click. */
+    static final int MODE_SWITCH_DEBOUNCE_TICKS = 5;
     private static final int LEADERBOARD_REFRESH_SECONDS = 30;
     private static final String RANDOM_ALGORITHM = "L64X128MixRandom";
     private static final Logger LOGGER = LoggerFactory.getLogger(JumprunModule.class);
@@ -136,6 +143,8 @@ final class JumprunModule {
     private final FakeBlocks fakeBlocks = new FakeBlocks();
     /** Player tick until which the item is ignored after a click on a run block. */
     private final Map<UUID, Long> suppressedUntil = new ConcurrentHashMap<>();
+    /** Player tick of each player's last mode switch. */
+    private final Map<UUID, Long> modeSwitchedAt = new ConcurrentHashMap<>();
     /** The chosen mode of each player; absent means {@link #DEFAULT_MODE}. */
     private final Map<UUID, Mode> modes = new ConcurrentHashMap<>();
     private final Set<UUID> resendPending = ConcurrentHashMap.newKeySet();
@@ -263,6 +272,8 @@ final class JumprunModule {
             begin(player);
         } else {
             end(running, EndReason.ABORT);
+            // The grace period belongs to the run that ended.
+            suppressedUntil.remove(player.getUuid());
         }
     }
 
@@ -282,7 +293,7 @@ final class JumprunModule {
         }
         if (player.isSneaking()) {
             // Sneaking only picks the mode between runs; a run is never aborted by it.
-            if (!isRunning(player)) {
+            if (!isRunning(player) && !switchedRecently(player)) {
                 cycleMode(player);
             }
             return;
@@ -293,8 +304,22 @@ final class JumprunModule {
     private void cycleMode(Player player) {
         Mode next = modeOf(player).next();
         modes.put(player.getUuid(), next);
+        modeSwitchedAt.put(player.getUuid(), player.getAliveTicks());
         player.sendMessage(messages.modeChanged(player.getLocale(), next));
         RunSounds.hear(player, Sound.sound(SoundEvent.UI_BUTTON_CLICK, Sound.Source.UI, 1.0f, 1.0f));
+    }
+
+    /** One physical click can reach the item more than once, and each would skip a mode. */
+    private boolean switchedRecently(Player player) {
+        Long at = modeSwitchedAt.get(player.getUuid());
+        return at != null && player.getAliveTicks() < at + MODE_SWITCH_DEBOUNCE_TICKS;
+    }
+
+    /**
+     * Never shortens a suppression that is already running, such as the grace period of a start.
+     */
+    private void suppressUseUntil(Player player, int ticks) {
+        suppressedUntil.merge(player.getUuid(), player.getAliveTicks() + ticks, Math::max);
     }
 
     boolean suppressesUse(Player player) {
@@ -325,6 +350,7 @@ final class JumprunModule {
             run.label().show(run.score());
             showSidebar(run);
         }
+        suppressUseUntil(player, RUN_GRACE_TICKS);
         LOGGER.atDebug().addKeyValue("player", player.getUuid()).log("jumprun started");
         return true;
     }
@@ -357,6 +383,7 @@ final class JumprunModule {
         endRunOf(event.getPlayer(), EndReason.DISCONNECT);
         records.forget(event.getPlayer().getUuid());
         modes.remove(event.getPlayer().getUuid());
+        modeSwitchedAt.remove(event.getPlayer().getUuid());
     }
 
     /**
@@ -383,9 +410,9 @@ final class JumprunModule {
             case ClientPlayerActionPacket action when isDigging(action.status()) ->
                 resendNextTickIfRunBlock(player, action.blockPosition());
             case ClientPlayerBlockPlacementPacket placement -> {
-                if (resendNextTickIfRunBlock(player, placement.blockPosition())) {
-                    suppressedUntil.put(player.getUuid(), player.getAliveTicks() + USE_SUPPRESSION_TICKS);
-                }
+                // The client follows a click on any block, real or fake, with a plain use packet.
+                resendNextTickIfRunBlock(player, placement.blockPosition());
+                suppressUseUntil(player, USE_SUPPRESSION_TICKS);
             }
             case ClientPlayerPositionStatusPacket status when status.onGround() ->
                 landIfStanding(player);
