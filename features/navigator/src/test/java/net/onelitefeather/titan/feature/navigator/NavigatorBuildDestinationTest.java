@@ -118,7 +118,7 @@ class NavigatorBuildDestinationTest {
         }
     }
 
-    @DisplayName("Clicking Build with the permission forwards to the Build task and closes the inventory")
+    @DisplayName("Clicking Build with the permission forwards to the Team-Build task and closes the inventory")
     @Test
     void clickingBuildForwardsToTheBuildTask(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
@@ -133,7 +133,7 @@ class NavigatorBuildDestinationTest {
 
             Assertions.assertTrue(event.isCancelled(), "the click must be cancelled so the icon stays in place");
             Assertions.assertEquals(1, deliver.deliveries().size(), "exactly one delivery must be recorded");
-            Assertions.assertEquals("Build", deliver.deliveries().get(0).taskName());
+            Assertions.assertEquals("Team-Build", deliver.deliveries().get(0).taskName());
             Assertions.assertNotSame(inventory, player.getOpenInventory(), "the navigator must close after a click");
         }
     }

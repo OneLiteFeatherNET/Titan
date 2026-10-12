@@ -56,7 +56,7 @@ class NavigatorFeatureFlagTest {
         }
     }
 
-    @DisplayName("Slender's flag on: slot 5 shows Slender, and a click on it forwards to cygnus")
+    @DisplayName("Slender's flag on: slot 5 shows Slender, and a click on it forwards to Slender")
     @Test
     void slenderShownAndForwardsWhenFlagIsOn(Env env) {
         FakeFeatureFlags flags = new FakeFeatureFlags().declare(Destination.SLENDER_FLAG, true);
@@ -75,7 +75,7 @@ class NavigatorFeatureFlagTest {
 
             Assertions.assertTrue(clickEvent.isCancelled());
             Assertions.assertEquals(1, deliver.deliveries().size());
-            Assertions.assertEquals("cygnus", deliver.deliveries().get(0).taskName(), "clicking Slender must forward to cygnus");
+            Assertions.assertEquals("Slender", deliver.deliveries().get(0).taskName(), "clicking Slender must forward to cygnus");
         }
     }
 

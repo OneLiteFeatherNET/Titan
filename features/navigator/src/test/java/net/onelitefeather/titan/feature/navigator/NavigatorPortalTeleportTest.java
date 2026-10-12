@@ -161,7 +161,7 @@ class NavigatorPortalTeleportTest {
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance, new Pos(11.5, 40, 60));
         FakePermissionService permissions = new FakePermissionService().set(player.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED);
-        LobbyPortals buildPortal = () -> List.of(new Portal("build", AREA, "Build", BUILD_PERMISSION));
+        LobbyPortals buildPortal = () -> List.of(new Portal("build", AREA, "Team-Build", BUILD_PERMISSION));
         try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), permissions, buildPortal)) {
             AbstractInventory inventory = open(fixture, player);
             permissions.set(player.getUuid(), BUILD_PERMISSION, PermissionResult.NOT_SET);
@@ -182,7 +182,7 @@ class NavigatorPortalTeleportTest {
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance, new Pos(11.5, 40, 60));
         FakePermissionService permissions = new FakePermissionService().set(player.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED);
-        LobbyPortals buildPortal = () -> List.of(new Portal("build", AREA, "Build", BUILD_PERMISSION));
+        LobbyPortals buildPortal = () -> List.of(new Portal("build", AREA, "Team-Build", BUILD_PERMISSION));
         try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), permissions, buildPortal)) {
             AbstractInventory inventory = open(fixture, player);
             permissions.set(player.getUuid(), BUILD_PERMISSION, PermissionResult.DENIED);
