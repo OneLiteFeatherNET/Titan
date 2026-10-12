@@ -20,11 +20,17 @@ import io.avaje.inject.PreDestroy;
 import jakarta.inject.Named;
 import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.minestom.server.ServerFlag;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
@@ -33,6 +39,9 @@ import net.minestom.server.inventory.InventoryType;
 import net.minestom.server.inventory.click.Click;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
+import net.minestom.server.timer.Scheduler;
+import net.minestom.server.timer.Task;
+import net.minestom.server.timer.TaskSchedule;
 import net.onelitefeather.titan.api.deliver.DeliverComponent;
 import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
@@ -43,6 +52,7 @@ import net.onelitefeather.titan.core.permission.PermissionService;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
 import net.onelitefeather.titan.core.portal.Portal;
 import net.onelitefeather.titan.core.portal.PortalApproach;
+import net.onelitefeather.titan.core.portal.PlayerCounts;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.theevilreaper.aves.inventory.click.ClickHolder;
 import net.theevilreaper.aves.inventory.layout.InventoryLayout;
@@ -83,10 +93,19 @@ public final class NavigatorModule {
     // hotbar -> navigator item), so requiring SpawnReturn here would close a cycle.
     private final Provider<SpawnReturn> spawnReturnProvider;
     private final LobbyPortals portals;
+    private final Scheduler scheduler;
+    private final Executor reads;
+    private final TaskPlayers players;
+    private final NavigatorSettings settings;
+    private final AtomicBoolean reading = new AtomicBoolean();
+    // Replaced as a whole by each refresh; read when a layout is rebuilt.
+    private volatile Map<Destination, OptionalInt> online = Map.of();
+    private volatile boolean stopped;
     private SpawnReturn spawnReturn;
     private FeatureNode node;
+    private Task refreshTask;
 
-    public NavigatorModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Deliver deliver, FeatureFlags featureFlags, PermissionService permissions, Provider<SpawnReturn> spawnReturnProvider, LobbyPortals portals, Telemetry telemetry) {
+    public NavigatorModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Deliver deliver, FeatureFlags featureFlags, PermissionService permissions, Provider<SpawnReturn> spawnReturnProvider, LobbyPortals portals, Telemetry telemetry, Optional<PlayerCounts> counts, Scheduler scheduler, @Named(NavigatorBeans.READS) Executor reads, NavigatorSettings settings) {
         this.titan = Objects.requireNonNull(titan, "titan must not be null");
         this.deliver = Objects.requireNonNull(deliver, "deliver must not be null");
         this.featureFlags = Objects.requireNonNull(featureFlags, "featureFlags must not be null");
@@ -94,6 +113,10 @@ public final class NavigatorModule {
         this.spawnReturnProvider = Objects.requireNonNull(spawnReturnProvider, "spawnReturnProvider must not be null");
         this.portals = Objects.requireNonNull(portals, "portals must not be null");
         this.telemetry = Objects.requireNonNull(telemetry, "telemetry must not be null");
+        this.scheduler = Objects.requireNonNull(scheduler, "scheduler must not be null");
+        this.reads = Objects.requireNonNull(reads, "reads must not be null");
+        this.players = new TaskPlayers(Objects.requireNonNull(counts, "counts must not be null"));
+        this.settings = Objects.requireNonNull(settings, "settings must not be null");
         this.navigatorTelemetry = new NavigatorTelemetry(this.telemetry);
         this.publicNavigator = new SharedNavigator(false, this.telemetry);
         this.teamNavigator = new SharedNavigator(true, this.telemetry);
@@ -109,10 +132,15 @@ public final class NavigatorModule {
         this.teamNavigator.applyLayoutIfChanged(this.featureFlags, this::toAvesLayout);
         this.publicNavigator.register();
         this.teamNavigator.register();
+        // Tick-based on purpose: Minestom's time-based schedules run on a wall-clock timer outside the tick.
+        TaskSchedule period = TaskSchedule.tick(Math.multiplyExact(this.settings.refreshSeconds(), ServerFlag.SERVER_TICKS_PER_SECOND));
+        this.refreshTask = this.scheduler.scheduleTask(this::refreshCounts, TaskSchedule.nextTick(), period);
     }
 
     @PreDestroy
     void stop() {
+        this.stopped = true;
+        this.refreshTask.cancel();
         this.node.close();
         this.publicNavigator.unregister();
         this.teamNavigator.unregister();
@@ -137,6 +165,42 @@ public final class NavigatorModule {
 
     Inventory teamInventory() {
         return this.teamNavigator.inventory();
+    }
+
+    // The read may block on the network, so it runs on the executor; the inventories are only
+    // touched from a scheduler task. A period that finds the previous read running is skipped.
+    private void refreshCounts() {
+        if (!this.reading.compareAndSet(false, true)) {
+            return;
+        }
+        try {
+            this.reads.execute(() -> {
+                try {
+                    Map<Destination, OptionalInt> read = new EnumMap<>(Destination.class);
+                    for (Destination destination : Destination.values()) {
+                        read.put(destination, this.players.online(destination.task()));
+                    }
+                    this.scheduler.scheduleNextTick(() -> showCounts(read));
+                } finally {
+                    this.reading.set(false);
+                }
+            });
+        } catch (RuntimeException e) {
+            this.reading.set(false);
+        }
+    }
+
+    private void showCounts(Map<Destination, OptionalInt> read) {
+        if (this.stopped) {
+            return;
+        }
+        this.online = read;
+        this.publicNavigator.showItems(this::itemOf);
+        this.teamNavigator.showItems(this::itemOf);
+    }
+
+    private ItemStack itemOf(Destination destination) {
+        return destination.item(this.online.getOrDefault(destination, OptionalInt.empty()));
     }
 
     private SpawnReturn resolveSpawnReturn() {
@@ -164,7 +228,7 @@ public final class NavigatorModule {
             layout.setItem(slot, BLANK);
         }
         for (Destination destination : visible) {
-            layout.setItem(destination.slot(), destination.item(), (player, clickedSlot, click, stack, result) -> {
+            layout.setItem(destination.slot(), itemOf(destination), (player, clickedSlot, click, stack, result) -> {
                 result.accept(ClickHolder.cancelClick());
                 this.navigatorTelemetry.select(player.getUuid(), destination.name(), () -> {
                     if (!isAllowed(player, destination)) {

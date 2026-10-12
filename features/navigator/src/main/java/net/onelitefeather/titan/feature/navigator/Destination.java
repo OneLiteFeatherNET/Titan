@@ -17,6 +17,8 @@ package net.onelitefeather.titan.feature.navigator;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.OptionalInt;
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
@@ -71,7 +73,21 @@ enum Destination {
 
     // Rebuilds the icon on every call so callers never share one ItemStack instance.
     ItemStack item() {
-        return ItemStack.builder(this.icon).customName(MiniMessage.miniMessage().deserialize(this.displayName)).build();
+        return item(OptionalInt.empty());
+    }
+
+    // An unknown count adds no line, so it never reads as an empty lobby.
+    ItemStack item(OptionalInt online) {
+        ItemStack.Builder builder = ItemStack.builder(this.icon).customName(MiniMessage.miniMessage().deserialize(this.displayName));
+        if (online.isPresent()) {
+            builder.lore(playersLine(online.getAsInt()));
+        }
+        return builder.build();
+    }
+
+    static Component playersLine(int online) {
+        String count = online > 0 ? "<green>" + online + "</green>" : String.valueOf(online);
+        return MiniMessage.miniMessage().deserialize("<!i><gray>" + count + " online</gray>");
     }
 
     // withPermissioned is the caller's verdict for a whole menu: the team menu passes true, the

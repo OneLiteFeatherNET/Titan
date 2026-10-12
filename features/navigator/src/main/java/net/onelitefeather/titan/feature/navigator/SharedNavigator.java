@@ -21,6 +21,7 @@ import java.util.function.Function;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.minestom.server.inventory.Inventory;
 import net.minestom.server.inventory.InventoryType;
+import net.minestom.server.item.ItemStack;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.theevilreaper.aves.inventory.GlobalInventoryBuilder;
@@ -68,5 +69,15 @@ final class SharedNavigator {
             this.builder.invalidateLayout();
             this.appliedVisible = visible;
         });
+    }
+
+    // Updates the stacks in place, so a refresh never rebuilds the layout or touches the click handlers.
+    synchronized void showItems(Function<Destination, ItemStack> itemFor) {
+        if (this.appliedVisible == null) {
+            return;
+        }
+        for (Destination destination : this.appliedVisible) {
+            this.builder.getInventory().setItemStack(destination.slot(), itemFor.apply(destination));
+        }
     }
 }

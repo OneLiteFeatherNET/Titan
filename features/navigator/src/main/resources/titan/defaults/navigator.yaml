@@ -1,0 +1,4 @@
+# The "navigator" module: the lobby's mode menu.
+navigator:
+  # How often, in whole seconds (1 to 3600), the player count shown under each mode is read again.
+  refreshSeconds: 5
