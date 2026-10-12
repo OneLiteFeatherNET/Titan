@@ -55,6 +55,7 @@ import net.minestom.server.event.player.PlayerDeathEvent;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.event.player.PlayerMoveEvent;
 import net.minestom.server.event.player.PlayerPacketEvent;
+import net.minestom.server.instance.block.Block;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.network.packet.client.ClientPacket;
 import net.minestom.server.network.packet.client.play.ClientPlayerActionPacket;
@@ -490,11 +491,16 @@ final class JumprunModule {
         Pos to = event.getNewPosition();
         whileRegistered(run, () -> {
             if (run.hasFallen(to.y())) {
-                end(run, EndReason.FALL, Optional.of(new RunTelemetry.Fall(to.y(), run.fallThreshold(), run.currentIndex())));
+                end(run, EndReason.FALL, Optional.of(fallAt(run, to)));
             } else if (event.isOnGround()) {
                 advance(run, run.advanceTo(to));
             }
         });
+    }
+
+    private static RunTelemetry.Fall fallAt(Run run, Pos to) {
+        Block below = run.player().getInstance().getBlock(to.sub(0, 0.01, 0));
+        return new RunTelemetry.Fall(to.y(), run.fallThreshold(), run.currentIndex(), to.x(), to.z(), below.compare(Block.AIR) ? "air" : below.key().asString(), run.distanceToCurrent(to));
     }
 
     private void advance(Run run, Course.Advance advance) {

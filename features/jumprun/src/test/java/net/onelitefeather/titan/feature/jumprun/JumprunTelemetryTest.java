@@ -34,6 +34,8 @@ import java.util.OptionalInt;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.function.Predicate;
+import net.minestom.server.coordinate.Pos;
+import net.minestom.server.instance.block.Block;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.testing.Env;
@@ -119,6 +121,25 @@ class JumprunTelemetryTest {
             assertEquals(run.player().getUuid().toString(), testTelemetry.attribute(span, Telemetry.USER_ID), "player uuid");
             assertEquals(StatusCode.UNSET, span.getStatus().getStatusCode(), "a fall is no error");
             assertNotNull(testTelemetry.attribute(span, AttributeKey.doubleKey("jumprun.fall.threshold")), "the threshold is there");
+        }
+    }
+
+    @Test
+    void aFallSpanNamesWhereAndOverWhatTheRunFell(Env env) {
+        try (JumprunFixture fixture = start(env, new InMemoryRunRecords())) {
+            StartedRun run = StartedRun.start(env, fixture);
+            run.settleOnNext();
+            Pos landed = run.player().getPosition();
+            Pos fallen = landed.add(0, -5, 0);
+            run.instance().setBlock(fallen.sub(0, 0.01, 0), Block.STONE);
+
+            fixture.sendPositionPacket(run.player(), fallen, false);
+
+            SpanData span = testTelemetry.span("jumprun.end");
+            assertEquals(fallen.x(), testTelemetry.attribute(span, AttributeKey.doubleKey("jumprun.fall.x")), "x");
+            assertEquals(fallen.z(), testTelemetry.attribute(span, AttributeKey.doubleKey("jumprun.fall.z")), "z");
+            assertEquals("minecraft:stone", testTelemetry.attribute(span, AttributeKey.stringKey("jumprun.fall.block_below")), "block under the feet");
+            assertEquals(0.0, testTelemetry.attribute(span, AttributeKey.doubleKey("jumprun.fall.distance")), 0.6, "straight down from the block that was landed on");
         }
     }
 
