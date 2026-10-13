@@ -40,7 +40,7 @@ final class SharedNavigator {
     private List<Destination> appliedVisible;
 
     SharedNavigator(boolean withPermissioned, Telemetry telemetry) {
-        this.builder = new GlobalInventoryBuilder(MiniMessage.miniMessage().deserialize("<yellow>Navigator"), InventoryType.CHEST_1_ROW);
+        this.builder = new GlobalInventoryBuilder(MiniMessage.miniMessage().deserialize("<gradient:#00ddff:#ffffff>Navigator</gradient>"), InventoryType.CHEST_1_ROW);
         this.withPermissioned = withPermissioned;
         this.telemetry = telemetry;
     }

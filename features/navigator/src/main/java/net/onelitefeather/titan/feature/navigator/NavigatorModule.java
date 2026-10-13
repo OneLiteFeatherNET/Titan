@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.OptionalInt;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import net.kyori.adventure.text.Component;
@@ -52,6 +51,7 @@ import net.onelitefeather.titan.core.permission.PermissionService;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
 import net.onelitefeather.titan.core.portal.Portal;
 import net.onelitefeather.titan.core.portal.PortalApproach;
+import net.onelitefeather.titan.core.portal.PlayerCount;
 import net.onelitefeather.titan.core.portal.PlayerCounts;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.theevilreaper.aves.inventory.click.ClickHolder;
@@ -78,7 +78,7 @@ public final class NavigatorModule {
     private static final String ID = "navigator";
     private static final int SLOT_COUNT = 9;
     private static final int SPAWN_SLOT = 2;
-    private static final ItemStack SPAWN_ITEM = ItemStack.builder(Material.COMPASS).customName(MiniMessage.miniMessage().deserialize("<!i><aqua>Spawn</aqua>")).build();
+    private static final ItemStack SPAWN_ITEM = ItemStack.builder(Material.COMPASS).customName(MiniMessage.miniMessage().deserialize("<!i><gradient:#00ddff:#ffffff>Spawn</gradient>")).build();
     private static final ItemStack BLANK = ItemStack.builder(Material.GRAY_STAINED_GLASS_PANE).customName(Component.empty()).build();
 
     private final EventNode<Event> titan;
@@ -99,7 +99,7 @@ public final class NavigatorModule {
     private final NavigatorSettings settings;
     private final AtomicBoolean reading = new AtomicBoolean();
     // Replaced as a whole by each refresh; read when a layout is rebuilt.
-    private volatile Map<Destination, OptionalInt> online = Map.of();
+    private volatile Map<Destination, Optional<PlayerCount>> counts = Map.of();
     private volatile boolean stopped;
     private SpawnReturn spawnReturn;
     private FeatureNode node;
@@ -176,9 +176,9 @@ public final class NavigatorModule {
         try {
             this.reads.execute(() -> {
                 try {
-                    Map<Destination, OptionalInt> read = new EnumMap<>(Destination.class);
+                    Map<Destination, Optional<PlayerCount>> read = new EnumMap<>(Destination.class);
                     for (Destination destination : Destination.values()) {
-                        read.put(destination, this.players.online(destination.task()));
+                        read.put(destination, this.players.count(destination.task()));
                     }
                     this.scheduler.scheduleNextTick(() -> showCounts(read));
                 } finally {
@@ -190,17 +190,17 @@ public final class NavigatorModule {
         }
     }
 
-    private void showCounts(Map<Destination, OptionalInt> read) {
+    private void showCounts(Map<Destination, Optional<PlayerCount>> read) {
         if (this.stopped) {
             return;
         }
-        this.online = read;
+        this.counts = read;
         this.publicNavigator.showItems(this::itemOf);
         this.teamNavigator.showItems(this::itemOf);
     }
 
     private ItemStack itemOf(Destination destination) {
-        return destination.item(this.online.getOrDefault(destination, OptionalInt.empty()));
+        return destination.item(this.counts.getOrDefault(destination, Optional.empty()));
     }
 
     private SpawnReturn resolveSpawnReturn() {

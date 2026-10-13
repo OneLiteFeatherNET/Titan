@@ -16,7 +16,7 @@
 package net.onelitefeather.titan.feature.navigator;
 
 import java.util.List;
-import java.util.OptionalInt;
+import java.util.Optional;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
@@ -24,6 +24,7 @@ import net.minestom.server.component.DataComponents;
 import net.minestom.server.item.ItemStack;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.core.portal.PlayerCount;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,33 +40,40 @@ class DestinationPlayerLoreTest {
         return item.get(DataComponents.LORE).stream().map(line -> PlainTextComponentSerializer.plainText().serialize(line)).toList();
     }
 
-    private static boolean hasGreenPart(Component line) {
-        return line.children().stream().anyMatch(child -> NamedTextColor.GREEN.equals(child.color()));
+    private static boolean isSlash(Component child) {
+        return "/".equals(PlainTextComponentSerializer.plainText().serialize(child));
     }
 
-    @DisplayName("A known count adds a lore line with the number")
+    @DisplayName("A known count with a known max reads current/max")
     @Test
-    void knownCountAddsLine(Env env) {
-        Assertions.assertEquals(List.of("3 online"), lore(Destination.SURVIVAL.item(OptionalInt.of(3))));
+    void knownCountAddsCurrentOfMax(Env env) {
+        Assertions.assertEquals(List.of("12/100"), lore(Destination.SURVIVAL.item(Optional.of(new PlayerCount(12, 100, true)))));
     }
 
-    @DisplayName("A positive count is green")
+    @DisplayName("A count without a known max shows only the current number")
     @Test
-    void positiveCountIsGreen() {
-        Assertions.assertTrue(hasGreenPart(Destination.playersLine(3)));
+    void unknownMaxShowsCurrentOnly(Env env) {
+        Assertions.assertEquals(List.of("12"), lore(Destination.SURVIVAL.item(Optional.of(new PlayerCount(12, 0, true)))));
     }
 
-    @DisplayName("Zero online still shows a line, without green")
+    @DisplayName("Zero players still shows a line, as 0/100")
     @Test
-    void zeroCountAddsPlainLine(Env env) {
-        Assertions.assertEquals(List.of("0 online"), lore(Destination.SURVIVAL.item(OptionalInt.of(0))));
-        Assertions.assertFalse(hasGreenPart(Destination.playersLine(0)));
+    void zeroCountAddsLine(Env env) {
+        Assertions.assertEquals(List.of("0/100"), lore(Destination.SURVIVAL.item(Optional.of(new PlayerCount(0, 100, true)))));
+    }
+
+    @DisplayName("The slash between the two numbers is gray")
+    @Test
+    void slashIsGray() {
+        Component line = Destination.playersLine(new PlayerCount(12, 100, true));
+
+        Assertions.assertTrue(line.children().stream().anyMatch(child -> isSlash(child) && NamedTextColor.GRAY.equals(child.color())));
     }
 
     @DisplayName("An unknown count adds no lore line")
     @Test
     void unknownCountAddsNoLine(Env env) {
-        Assertions.assertTrue(lore(Destination.SURVIVAL.item(OptionalInt.empty())).isEmpty());
+        Assertions.assertTrue(lore(Destination.SURVIVAL.item(Optional.empty())).isEmpty());
         Assertions.assertTrue(lore(Destination.SURVIVAL.item()).isEmpty());
     }
 }

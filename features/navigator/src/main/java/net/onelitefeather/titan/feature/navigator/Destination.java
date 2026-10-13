@@ -17,12 +17,13 @@ package net.onelitefeather.titan.feature.navigator;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.OptionalInt;
+import java.util.Optional;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
+import net.onelitefeather.titan.core.portal.PlayerCount;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -32,10 +33,12 @@ import org.jetbrains.annotations.Nullable;
  */
 enum Destination {
 
-    ELYTRA_RACE(0, Material.ELYTRA, "<!i><gradient:#fcba03:#03fc8c>ElytraRace</gradient>", "ElytraRace", null, null), SURVIVAL(4, Material.GRASS_BLOCK, "<!i><green>Survival", "Survival", null, null), SLENDER(5, Material.ENDERMAN_SPAWN_EGG, "<!i><gradient:#616161:#e80000>Slender</gradient>", "Slender", Destination.SLENDER_FLAG, null), BUILD(7, Material.SCAFFOLDING, "<!i><gold>Build", "Team-Build", null, "titan.navigator.buildserver"), CREATIVE(8, Material.WOODEN_AXE, "<!i><rainbow>Creative</rainbow>", "MemberBuild", null, null);
+    ELYTRA_RACE(0, Material.ELYTRA, "<!i><gradient:#00ddff:#ffffff>ElytraRace</gradient>", "ElytraRace", null, null), SURVIVAL(4, Material.GRASS_BLOCK, "<!i><gradient:#3fa9ff:#e0f7ff>Survival</gradient>", "Survival", null, null), SLENDER(5, Material.ENDERMAN_SPAWN_EGG, "<!i><gradient:#00b4d8:#caf0f8>Slender</gradient>", "Slender", Destination.SLENDER_FLAG, null), BUILD(7, Material.SCAFFOLDING, "<!i><gradient:#1e90ff:#bfe6ff>Build</gradient>", "Team-Build", null, "titan.navigator.buildserver"), CREATIVE(8, Material.WOODEN_AXE, "<!i><gradient:#ffffff:#3fa9ff>Creative</gradient>", "MemberBuild", null, null);
 
     // The only feature flag the navigator knows; navigator.yaml lists it and nothing else.
     static final String SLENDER_FLAG = "NAVIGATOR_SLENDER";
+
+    private static final String COUNT_STYLE = "<gradient:#00ddff:#ffffff>";
 
     private final int slot;
     private final Material icon;
@@ -73,21 +76,25 @@ enum Destination {
 
     // Rebuilds the icon on every call so callers never share one ItemStack instance.
     ItemStack item() {
-        return item(OptionalInt.empty());
+        return item(Optional.empty());
     }
 
     // An unknown count adds no line, so it never reads as an empty lobby.
-    ItemStack item(OptionalInt online) {
+    ItemStack item(Optional<PlayerCount> players) {
         ItemStack.Builder builder = ItemStack.builder(this.icon).customName(MiniMessage.miniMessage().deserialize(this.displayName));
-        if (online.isPresent()) {
-            builder.lore(playersLine(online.getAsInt()));
+        if (players.isPresent()) {
+            builder.lore(playersLine(players.get()));
         }
         return builder.build();
     }
 
-    static Component playersLine(int online) {
-        String count = online > 0 ? "<green>" + online + "</green>" : String.valueOf(online);
-        return MiniMessage.miniMessage().deserialize("<!i><gray>" + count + " online</gray>");
+    // The max is 0 when the provider does not know it; then only the current count is shown.
+    static Component playersLine(PlayerCount players) {
+        String count = COUNT_STYLE + players.online() + "</gradient>";
+        if (players.max() > 0) {
+            count += "<gray>/</gray>" + COUNT_STYLE + players.max() + "</gradient>";
+        }
+        return MiniMessage.miniMessage().deserialize("<!i>" + count);
     }
 
     // withPermissioned is the caller's verdict for a whole menu: the team menu passes true, the

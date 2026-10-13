@@ -63,8 +63,8 @@ class NavigatorPlayerCountTest {
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), flags(), new FakePermissionService(), counts)) {
             tick(env, 2);
 
-            Assertions.assertEquals(List.of("4 online"), lore(survival(fixture.module().publicInventory())));
-            Assertions.assertEquals(List.of("4 online"), lore(survival(fixture.module().teamInventory())));
+            Assertions.assertEquals(List.of("4/100"), lore(survival(fixture.module().publicInventory())));
+            Assertions.assertEquals(List.of("4/100"), lore(survival(fixture.module().teamInventory())));
         }
     }
 
@@ -78,11 +78,11 @@ class NavigatorPlayerCountTest {
             counts.serve("Survival", 9);
             tick(env, 5);
             Inventory inventory = fixture.module().publicInventory();
-            Assertions.assertEquals(List.of("4 online"), lore(survival(inventory)), "no refresh is due yet");
+            Assertions.assertEquals(List.of("4/100"), lore(survival(inventory)), "no refresh is due yet");
 
             tick(env, PERIOD_TICKS);
 
-            Assertions.assertEquals(List.of("9 online"), lore(survival(inventory)));
+            Assertions.assertEquals(List.of("9/100"), lore(survival(inventory)));
         }
     }
 
@@ -108,7 +108,7 @@ class NavigatorPlayerCountTest {
 
             tick(env, PERIOD_TICKS * 2);
 
-            Assertions.assertEquals(List.of("4 online"), lore(survival(fixture.module().publicInventory())));
+            Assertions.assertEquals(List.of("4/100"), lore(survival(fixture.module().publicInventory())));
         }
     }
 

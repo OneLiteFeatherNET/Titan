@@ -16,7 +16,6 @@
 package net.onelitefeather.titan.feature.navigator;
 
 import java.util.Optional;
-import java.util.OptionalInt;
 import net.onelitefeather.titan.core.portal.PlayerCount;
 import net.onelitefeather.titan.core.portal.PlayerCounts;
 import net.onelitefeather.titan.core.portal.SourceType;
@@ -24,9 +23,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The players on a CloudNet task, summed over its running services by the {@link PlayerCounts}
- * provider. Empty whenever the number is unknown: no provider, a task that is not running, or a
- * lookup that failed.
+ * The players on a CloudNet task and their max, summed over its running services by the
+ * {@link PlayerCounts} provider. Empty whenever the count is unknown: no provider, a task that is
+ * not running, or a lookup that failed.
  */
 final class TaskPlayers {
 
@@ -38,16 +37,16 @@ final class TaskPlayers {
         this.counts = counts;
     }
 
-    OptionalInt online(String task) {
+    Optional<PlayerCount> count(String task) {
         if (this.counts.isEmpty() || !this.counts.get().supports(SourceType.TASK)) {
-            return OptionalInt.empty();
+            return Optional.empty();
         }
         try {
             PlayerCount count = this.counts.get().count(SourceType.TASK, task);
-            return count.running() ? OptionalInt.of(count.online()) : OptionalInt.empty();
+            return count.running() ? Optional.of(count) : Optional.empty();
         } catch (RuntimeException e) {
             LOGGER.debug("Reading the players of task '{}' failed", task, e);
-            return OptionalInt.empty();
+            return Optional.empty();
         }
     }
 }

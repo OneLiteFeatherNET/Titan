@@ -123,14 +123,14 @@ class NavigatorDestinationTest {
         Assertions.assertEquals(Set.copyOf(Arrays.asList(Destination.values())), Set.copyOf(visible), "every destination must be visible while NAVIGATOR_SLENDER is on, was: " + visible.stream().map(Enum::name).collect(Collectors.joining(", ")));
     }
 
-    @DisplayName("Slender's name fades from #616161 to #e80000 across its letters")
+    @DisplayName("Slender's name fades from #00b4d8 to #caf0f8 across its letters")
     @Test
-    void slenderNameFadesFromGrayToDeepRed(Env env) {
+    void slenderNameFadesFromBlueToWhite(Env env) {
         List<TextColor> letterColors = new ArrayList<>();
         collectLetterColors(Destination.SLENDER.item().get(DataComponents.CUSTOM_NAME), null, letterColors);
 
-        Assertions.assertEquals(TextColor.color(0x616161), letterColors.getFirst(), "the first letter of Slender must be #616161");
-        Assertions.assertEquals(TextColor.color(0xe80000), letterColors.getLast(), "the last letter of Slender must be #e80000, not a value cut off from an invalid hex literal");
+        Assertions.assertEquals(TextColor.color(0x00b4d8), letterColors.getFirst(), "the first letter of Slender must be #00b4d8");
+        Assertions.assertEquals(TextColor.color(0xcaf0f8), letterColors.getLast(), "the last letter of Slender must be #caf0f8");
     }
 
     private static void collectLetterColors(Component component, TextColor inherited, List<TextColor> sink) {

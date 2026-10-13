@@ -18,9 +18,7 @@ package net.onelitefeather.titan.feature.navigator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.minestom.server.component.DataComponents;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.inventory.InventoryPreClickEvent;
@@ -203,7 +201,7 @@ class NavigatorModuleTest {
             Assertions.assertTrue(deliver.deliveries().isEmpty(), "Spawn must not trigger a Deliver redirect");
             Assertions.assertNotSame(openInventory, player.getOpenInventory(), "the navigator must close after the click");
             Assertions.assertEquals(Material.COMPASS, openInventory.getItemStack(2).material(), "the icon must stay in the navigator");
-            Assertions.assertEquals(Component.text("Spawn", NamedTextColor.AQUA).decoration(TextDecoration.ITALIC, false), openInventory.getItemStack(2).get(DataComponents.CUSTOM_NAME), "the compass must be named Spawn, language-neutral");
+            Assertions.assertEquals("Spawn", PlainTextComponentSerializer.plainText().serialize(openInventory.getItemStack(2).get(DataComponents.CUSTOM_NAME)), "the compass must be named Spawn, language-neutral");
         }
     }
 
