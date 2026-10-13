@@ -97,6 +97,7 @@ class NavigatorModuleTest {
 
             InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(0));
             env.process().eventHandler().call(clickEvent);
+            env.tick();
 
             Assertions.assertTrue(clickEvent.isCancelled(), "the click must be cancelled so the icon stays in place");
             Assertions.assertEquals(1, deliver.deliveries().size(), "exactly one delivery must be recorded");
@@ -137,6 +138,7 @@ class NavigatorModuleTest {
 
             InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(5));
             env.process().eventHandler().call(clickEvent);
+            env.tick();
 
             Assertions.assertTrue(clickEvent.isCancelled());
             Assertions.assertEquals(1, deliver.deliveries().size());

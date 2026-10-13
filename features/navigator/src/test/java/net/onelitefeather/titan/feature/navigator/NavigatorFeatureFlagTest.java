@@ -72,6 +72,7 @@ class NavigatorFeatureFlagTest {
 
             InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(5));
             env.process().eventHandler().call(clickEvent);
+            env.tick();
 
             Assertions.assertTrue(clickEvent.isCancelled());
             Assertions.assertEquals(1, deliver.deliveries().size());

@@ -83,6 +83,11 @@ final class NavigatorFixture implements AutoCloseable {
         return start(env, deliver, featureFlags, permissions, new FakeSpawnReturn(), Telemetry.noop(), List::of, Optional.of(counts));
     }
 
+    /** Reads the running services on the calling thread, so a test drives the picker with ticks. */
+    static NavigatorFixture start(Env env, Deliver deliver, FeatureFlags featureFlags, PermissionService permissions, PlayerCounts counts, LobbyPortals portals) {
+        return start(env, deliver, featureFlags, permissions, new FakeSpawnReturn(), Telemetry.noop(), portals, Optional.of(counts));
+    }
+
     private static NavigatorFixture start(Env env, Deliver deliver, FeatureFlags featureFlags, PermissionService permissions, SpawnReturn spawnReturn, Telemetry telemetry, LobbyPortals portals, Optional<PlayerCounts> counts) {
         TestTitanNode titan = TestTitanNode.attach(env);
         NavigatorModule module = new NavigatorModule(titan.node(), deliver, featureFlags, permissions, () -> spawnReturn, portals, telemetry, counts, env.process().scheduler(), Runnable::run, new NavigatorSettings(1));

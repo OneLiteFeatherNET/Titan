@@ -16,21 +16,29 @@
 package net.onelitefeather.titan.feature.navigator;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import net.onelitefeather.titan.core.portal.PlayerCount;
 import net.onelitefeather.titan.core.portal.PlayerCounts;
+import net.onelitefeather.titan.core.portal.ServiceCount;
 import net.onelitefeather.titan.core.portal.SourceType;
 import org.jetbrains.annotations.NotNull;
 
-/** Answers task counts from a map; a task it does not know is not running. */
+/** Answers task counts and running services from maps; a task it does not know is not running. */
 final class FakePlayerCounts implements PlayerCounts {
 
     private final Map<String, PlayerCount> tasks = new HashMap<>();
+    private final Map<String, List<ServiceCount>> services = new HashMap<>();
     private boolean supportsTasks = true;
     private RuntimeException failure;
 
     void serve(String task, int online) {
         this.tasks.put(task, new PlayerCount(online, 100, true));
+    }
+
+    /** The running services of {@code task}, as the provider lists them. */
+    void serveServices(String task, ServiceCount... running) {
+        this.services.put(task, List.of(running));
     }
 
     void doNotSupportTasks() {
@@ -52,5 +60,13 @@ final class FakePlayerCounts implements PlayerCounts {
             throw this.failure;
         }
         return this.tasks.getOrDefault(name, PlayerCount.NOT_RUNNING);
+    }
+
+    @Override
+    public @NotNull List<ServiceCount> running(@NotNull SourceType type, @NotNull String name) {
+        if (this.failure != null) {
+            throw this.failure;
+        }
+        return this.services.getOrDefault(name, List.of());
     }
 }

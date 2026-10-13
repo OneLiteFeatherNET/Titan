@@ -54,10 +54,10 @@ enum SwitcherState {
         if (service.name().equals(own.serviceName())) {
             return CURRENT;
         }
-        if (service.max() == 0) {
+        if (!service.limitAnnounced()) {
             return NOT_READY;
         }
-        return service.online() >= service.max() ? FULL : JOINABLE;
+        return service.full() ? FULL : JOINABLE;
     }
 
     /**

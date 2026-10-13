@@ -21,11 +21,14 @@ import jakarta.inject.Named;
 import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import net.kyori.adventure.text.Component;
@@ -53,6 +56,7 @@ import net.onelitefeather.titan.core.portal.LobbyPortals;
 import net.onelitefeather.titan.core.portal.Portal;
 import net.onelitefeather.titan.core.portal.PortalApproach;
 import net.onelitefeather.titan.core.portal.PlayerCounts;
+import net.onelitefeather.titan.core.portal.ServiceCount;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.theevilreaper.aves.inventory.click.ClickHolder;
 import net.theevilreaper.aves.inventory.layout.InventoryLayout;
@@ -63,7 +67,8 @@ import net.theevilreaper.aves.inventory.layout.InventoryLayout;
  * permissioned {@code BUILD} destination fixed in {@link Destination}. Opening picks by permission.
  *
  * <p>A right click on a destination walks the player to the lobby's portal for that task instead
- * of connecting, when the map has one; any other click connects.
+ * of connecting, when the map has one; a left click on a mode that runs on several services opens
+ * the list of them instead (see {@link ServerPicker}); any other click connects.
  *
  * <p>Aves maps its click listener directly onto each built {@code GlobalInventoryBuilder} inventory
  * and dispatches it before any regular event node's listeners, so this click handling always
@@ -97,6 +102,9 @@ public final class NavigatorModule {
     private final Executor reads;
     private final TaskPlayers players;
     private final NavigatorSettings settings;
+    private final Map<Destination, SharedServerPicker> pickers = new EnumMap<>(Destination.class);
+    // Players whose left click is waiting for the service read; a second click meanwhile is ignored.
+    private final Set<UUID> choosing = new HashSet<>();
     private final AtomicBoolean reading = new AtomicBoolean();
     // Replaced as a whole by each refresh; read when a layout is rebuilt.
     private volatile Map<Destination, OptionalInt> online = Map.of();
@@ -120,6 +128,9 @@ public final class NavigatorModule {
         this.navigatorTelemetry = new NavigatorTelemetry(this.telemetry);
         this.publicNavigator = new SharedNavigator(false, this.telemetry);
         this.teamNavigator = new SharedNavigator(true, this.telemetry);
+        for (Destination destination : ServerPicker.DESTINATIONS) {
+            this.pickers.put(destination, new SharedServerPicker());
+        }
     }
 
     @PostConstruct
@@ -144,6 +155,7 @@ public final class NavigatorModule {
         this.node.close();
         this.publicNavigator.unregister();
         this.teamNavigator.unregister();
+        this.pickers.values().forEach(SharedServerPicker::unregister);
     }
 
     void open(Player player) {
@@ -230,6 +242,10 @@ public final class NavigatorModule {
         for (Destination destination : visible) {
             layout.setItem(destination.slot(), itemOf(destination), (player, clickedSlot, click, stack, result) -> {
                 result.accept(ClickHolder.cancelClick());
+                if (!isRightClick(click) && ServerPicker.DESTINATIONS.contains(destination)) {
+                    chooseServer(player, destination);
+                    return;
+                }
                 this.navigatorTelemetry.select(player.getUuid(), destination.name(), () -> {
                     if (!isAllowed(player, destination)) {
                         player.closeInventory();
@@ -241,9 +257,7 @@ public final class NavigatorModule {
                         player.teleport(PortalApproach.standingBefore(portal.get(), player.getPosition()));
                         return NavigatorTelemetry.Selection.TELEPORTED;
                     }
-                    this.deliver.sendPlayer(player, DeliverComponent.taskBuilder().taskName(destination.task()).player(player).build());
-                    player.closeInventory();
-                    return NavigatorTelemetry.Selection.SENT;
+                    return connectToTask(player, destination);
                 });
             });
         }
@@ -259,6 +273,62 @@ public final class NavigatorModule {
 
     private Optional<Portal> portalFor(Destination destination) {
         return this.portals.portals().stream().filter(portal -> portal.task().equals(destination.task())).findFirst();
+    }
+
+    private NavigatorTelemetry.Selection connectToTask(Player player, Destination destination) {
+        this.deliver.sendPlayer(player, DeliverComponent.taskBuilder().taskName(destination.task()).player(player).build());
+        player.closeInventory();
+        return NavigatorTelemetry.Selection.SENT;
+    }
+
+    // The services are read off the tick; the decision follows on the next tick, so the list never
+    // opens with a stale or empty reading.
+    private void chooseServer(Player player, Destination destination) {
+        if (!this.choosing.add(player.getUuid())) {
+            return;
+        }
+        try {
+            this.reads.execute(() -> {
+                List<ServiceCount> running = this.players.services(destination.task());
+                this.scheduler.scheduleNextTick(() -> conclude(player, destination, running));
+            });
+        } catch (RuntimeException e) {
+            conclude(player, destination, List.of());
+        }
+    }
+
+    private void conclude(Player player, Destination destination, List<ServiceCount> running) {
+        this.choosing.remove(player.getUuid());
+        if (this.stopped || !player.isOnline()) {
+            return;
+        }
+        this.navigatorTelemetry.select(player.getUuid(), destination.name(), () -> {
+            if (!isAllowed(player, destination)) {
+                player.closeInventory();
+                return NavigatorTelemetry.Selection.DENIED;
+            }
+            if (ServerPicker.opensFor(destination, running)) {
+                player.openInventory(this.pickers.get(destination).show(ServerPicker.entries(running), (viewer, service) -> pick(viewer, destination, service)));
+                return NavigatorTelemetry.Selection.PICKER;
+            }
+            return connectToTask(player, destination);
+        });
+    }
+
+    private void pick(Player player, Destination destination, ServiceCount service) {
+        this.navigatorTelemetry.select(player.getUuid(), destination.name(), () -> {
+            if (!isAllowed(player, destination)) {
+                player.closeInventory();
+                return NavigatorTelemetry.Selection.DENIED;
+            }
+            if (!ServerPicker.joinable(service)) {
+                player.sendMessage(ServerPicker.refusal(service));
+                return NavigatorTelemetry.Selection.REFUSED;
+            }
+            this.deliver.sendPlayer(player, DeliverComponent.serverBuilder().serverName(service.name()).player(player).build());
+            player.closeInventory();
+            return NavigatorTelemetry.Selection.SENT;
+        });
     }
 
     // Spawn is a fixed entry, not a Destination: it returns the player instead of redirecting them.
