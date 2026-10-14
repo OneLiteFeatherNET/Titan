@@ -20,6 +20,7 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import net.minestom.server.ServerFlag;
 import net.minestom.server.component.DataComponents;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
@@ -31,6 +32,7 @@ import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.portal.Box;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
 import net.onelitefeather.titan.core.portal.Portal;
+import net.onelitefeather.titan.core.portal.ServiceCount;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -49,9 +51,19 @@ class NavigatorClickHintTest {
     private static final Box AREA = new Box(new Vec(10, 40, 20), new Vec(12, 42, 22));
     private static final LobbyPortals NO_PORTALS = List::of;
     private static final LobbyPortals SURVIVAL_PORTAL = () -> List.of(new Portal("survival", AREA, "Survival", null));
+    private static final ServiceCount RACE_ONE = new ServiceCount("ElytraRace-1", 3, 50);
+    private static final ServiceCount RACE_TWO = new ServiceCount("ElytraRace-2", 10, 50);
+    // One refresh period; a test ticks this long so the refresh it needs has run.
+    private static final int REFRESH_TICKS = NavigatorFixture.REFRESH_SECONDS * ServerFlag.SERVER_TICKS_PER_SECOND;
 
     private static FakeFeatureFlags slenderActive() {
         return new FakeFeatureFlags().declare(Destination.SLENDER_FLAG, true);
+    }
+
+    private static void tick(Env env, int ticks) {
+        for (int i = 0; i < ticks; i++) {
+            env.tick();
+        }
     }
 
     private static List<String> lore(ItemStack item) {
@@ -90,13 +102,55 @@ class NavigatorClickHintTest {
         }
     }
 
-    @DisplayName("ElytraRace, which has the server picker, names the server choice on the left click")
+    @DisplayName("ElytraRace running on several services names the server choice on the left click")
     @Test
-    void elytraRaceNamesTheServerChoice(Env env) {
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), new FakePermissionService(), NO_PORTALS)) {
+    void elytraRaceWithSeveralServicesNamesTheServerChoice(Env env) {
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.serveServices("ElytraRace", RACE_ONE, RACE_TWO);
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), new FakePermissionService(), counts, NO_PORTALS)) {
+            tick(env, REFRESH_TICKS);
             AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
 
-            Assertions.assertEquals(List.of("Left click: choose a server"), lore(inventory.getItemStack(ELYTRA_RACE_SLOT)));
+            Assertions.assertEquals(List.of("13 online", "Left click: choose a server"), lore(inventory.getItemStack(ELYTRA_RACE_SLOT)), "the picker opens for several services, so the hint names it");
+        }
+    }
+
+    @DisplayName("ElytraRace running on one service names the connect on the left click, because the click connects directly")
+    @Test
+    void elytraRaceWithOneServiceNamesTheConnect(Env env) {
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.serveServices("ElytraRace", RACE_ONE);
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), new FakePermissionService(), counts, NO_PORTALS)) {
+            tick(env, REFRESH_TICKS);
+            AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
+
+            Assertions.assertEquals(List.of("3 online", "Left click: connect"), lore(inventory.getItemStack(ELYTRA_RACE_SLOT)), "one service never opens the picker, so the hint must not promise it");
+        }
+    }
+
+    @DisplayName("ElytraRace running nowhere names the connect on the left click")
+    @Test
+    void elytraRaceWithoutServicesNamesTheConnect(Env env) {
+        FakePlayerCounts counts = new FakePlayerCounts();
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), new FakePermissionService(), counts, NO_PORTALS)) {
+            tick(env, REFRESH_TICKS);
+            AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
+
+            Assertions.assertEquals(List.of("Left click: connect"), lore(inventory.getItemStack(ELYTRA_RACE_SLOT)), "nothing running means a plain connect, as before the picker");
+        }
+    }
+
+    @DisplayName("Opening right after a portal was added shows the walk-to-portal hint without waiting for a refresh")
+    @Test
+    void hintIsFreshWhenOpenedRightAfterPortalAdded(Env env) {
+        AtomicReference<List<Portal>> portals = new AtomicReference<>(List.of());
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), new FakePermissionService(), () -> portals.get())) {
+            tick(env, REFRESH_TICKS);
+            portals.set(List.of(new Portal("survival", AREA, "Survival", null)));
+
+            AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
+
+            Assertions.assertEquals(List.of("Left click: connect · Right click: walk to portal"), lore(inventory.getItemStack(SURVIVAL_SLOT)), "the menu must show the portal that exists when it opens, not the one the last refresh saw");
         }
     }
 

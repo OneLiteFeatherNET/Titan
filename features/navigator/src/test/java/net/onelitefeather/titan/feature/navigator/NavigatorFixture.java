@@ -46,6 +46,9 @@ import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
  */
 final class NavigatorFixture implements AutoCloseable {
 
+    /** How often the fixture's module refreshes the counts and services. */
+    static final int REFRESH_SECONDS = 1;
+
     private final TestTitanNode titan;
     private final NavigatorModule module;
     private final LobbyItem feather;
@@ -94,7 +97,7 @@ final class NavigatorFixture implements AutoCloseable {
         TestTitanNode titan = TestTitanNode.attach(env);
         NavigatorMessages messages = new NavigatorMessages();
         messages.register();
-        NavigatorModule module = new NavigatorModule(titan.node(), deliver, featureFlags, permissions, () -> spawnReturn, portals, telemetry, counts, env.process().scheduler(), Runnable::run, new NavigatorSettings(1), messages);
+        NavigatorModule module = new NavigatorModule(titan.node(), deliver, featureFlags, permissions, () -> spawnReturn, portals, telemetry, counts, env.process().scheduler(), Runnable::run, new NavigatorSettings(REFRESH_SECONDS), messages);
         module.start();
         LobbyItem feather = new NavigatorItems().navigatorFeather(module);
         return new NavigatorFixture(titan, module, feather, messages);
