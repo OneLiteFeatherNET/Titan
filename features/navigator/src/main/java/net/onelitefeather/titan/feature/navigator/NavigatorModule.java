@@ -195,10 +195,10 @@ public final class NavigatorModule {
         return this.menus.get(new Menu(team, language)).inventory();
     }
 
-    // A player with no locale yet, or one whose language has no bundle, reads English.
+    // A player whose language has no bundle reads English.
     private static Locale languageOf(Player player) {
-        Locale locale = player.getLocale();
-        return locale != null && Locale.GERMAN.getLanguage().equals(locale.getLanguage()) ? Locale.GERMAN : Locale.ENGLISH;
+        String language = player.getLocale().getLanguage();
+        return LANGUAGES.stream().filter(supported -> supported.getLanguage().equals(language)).findFirst().orElse(Locale.ENGLISH);
     }
 
     // The read may block on the network, so it runs on the executor; the inventories are only

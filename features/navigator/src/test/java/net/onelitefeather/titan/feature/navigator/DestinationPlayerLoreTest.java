@@ -35,6 +35,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(MicrotusExtension.class)
 class DestinationPlayerLoreTest {
 
+    private static final Component HINT = Component.text("Left click: connect");
+
     private static List<String> lore(ItemStack item) {
         return item.get(DataComponents.LORE).stream().map(line -> PlainTextComponentSerializer.plainText().serialize(line)).toList();
     }
@@ -43,10 +45,10 @@ class DestinationPlayerLoreTest {
         return line.children().stream().anyMatch(child -> NamedTextColor.GREEN.equals(child.color()));
     }
 
-    @DisplayName("A known count adds a lore line with the number")
+    @DisplayName("A known count adds a lore line with the number, before the hint")
     @Test
     void knownCountAddsLine(Env env) {
-        Assertions.assertEquals(List.of("3 online"), lore(Destination.SURVIVAL.item(OptionalInt.of(3))));
+        Assertions.assertEquals(List.of("3 online", "Left click: connect"), lore(Destination.SURVIVAL.item(OptionalInt.of(3), HINT)), "the players line comes first, then the click hint");
     }
 
     @DisplayName("A positive count is green")
@@ -58,14 +60,13 @@ class DestinationPlayerLoreTest {
     @DisplayName("Zero online still shows a line, without green")
     @Test
     void zeroCountAddsPlainLine(Env env) {
-        Assertions.assertEquals(List.of("0 online"), lore(Destination.SURVIVAL.item(OptionalInt.of(0))));
-        Assertions.assertFalse(hasGreenPart(Destination.playersLine(0)));
+        Assertions.assertEquals(List.of("0 online", "Left click: connect"), lore(Destination.SURVIVAL.item(OptionalInt.of(0), HINT)), "zero players is a known count, so it still gets a line");
+        Assertions.assertFalse(hasGreenPart(Destination.playersLine(0)), "zero players is not highlighted in green");
     }
 
-    @DisplayName("An unknown count adds no lore line")
+    @DisplayName("An unknown count adds no players line, only the hint")
     @Test
     void unknownCountAddsNoLine(Env env) {
-        Assertions.assertTrue(lore(Destination.SURVIVAL.item(OptionalInt.empty())).isEmpty());
-        Assertions.assertTrue(lore(Destination.SURVIVAL.item()).isEmpty());
+        Assertions.assertEquals(List.of("Left click: connect"), lore(Destination.SURVIVAL.item(OptionalInt.empty(), HINT)), "an unknown count must not read as an empty lobby");
     }
 }
