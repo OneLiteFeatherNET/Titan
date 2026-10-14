@@ -15,9 +15,12 @@
  */
 package net.onelitefeather.titan.feature.navigator;
 
+import static net.onelitefeather.titan.feature.navigator.NavigatorFixture.tick;
+
 import java.util.List;
 import java.util.Locale;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import net.minestom.server.ServerFlag;
 import net.minestom.server.component.DataComponents;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.inventory.InventoryPreClickEvent;
@@ -36,7 +39,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(MicrotusExtension.class)
 class NavigatorPlayerCountTest {
 
-    private static final int PERIOD_TICKS = 20;
+    private static final int PERIOD_TICKS = NavigatorFixture.REFRESH_SECONDS * ServerFlag.SERVER_TICKS_PER_SECOND;
     // Survival has no portal in these tests, so only its left click is named.
     private static final String HINT = "Left click: connect";
     private static final String GERMAN_HINT = "Linksklick: verbinden";
@@ -51,12 +54,6 @@ class NavigatorPlayerCountTest {
 
     private static ItemStack survival(Inventory inventory) {
         return inventory.getItemStack(Destination.SURVIVAL.slot());
-    }
-
-    private static void tick(Env env, int ticks) {
-        for (int i = 0; i < ticks; i++) {
-            env.tick();
-        }
     }
 
     @DisplayName("The first refresh shows the count under the mode, in both menus")

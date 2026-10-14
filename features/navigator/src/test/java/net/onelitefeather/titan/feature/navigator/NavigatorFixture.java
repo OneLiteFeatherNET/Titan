@@ -107,6 +107,13 @@ final class NavigatorFixture implements AutoCloseable {
         return this.module;
     }
 
+    /** Advances the server by {@code ticks}, so a test reaches a refresh without waiting. */
+    static void tick(Env env, int ticks) {
+        for (int i = 0; i < ticks; i++) {
+            env.tick();
+        }
+    }
+
     /** Places the feather in its production hotbar slot, standing in for hotbar's equip(). */
     void equip(Player player) {
         if (this.feather.placement() instanceof ItemSlot.Hotbar hotbar) {

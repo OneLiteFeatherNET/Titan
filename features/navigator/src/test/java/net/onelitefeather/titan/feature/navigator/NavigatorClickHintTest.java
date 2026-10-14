@@ -15,6 +15,8 @@
  */
 package net.onelitefeather.titan.feature.navigator;
 
+import static net.onelitefeather.titan.feature.navigator.NavigatorFixture.tick;
+
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -60,12 +62,6 @@ class NavigatorClickHintTest {
 
     private static FakeFeatureFlags slenderActive() {
         return new FakeFeatureFlags().declare(Destination.SLENDER_FLAG, true);
-    }
-
-    private static void tick(Env env, int ticks) {
-        for (int i = 0; i < ticks; i++) {
-            env.tick();
-        }
     }
 
     private static List<String> lore(ItemStack item) {
@@ -184,7 +180,7 @@ class NavigatorClickHintTest {
             AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
             portals.set(List.of());
 
-            tick(env, REFRESH_TICKS);
+            tick(env, REFRESH_TICKS + 1);
 
             Assertions.assertEquals(List.of("Left click: connect"), lore(inventory.getItemStack(SURVIVAL_SLOT)), "the right click must be gone once a refresh has seen the portal removed");
         }

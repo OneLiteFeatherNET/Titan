@@ -108,13 +108,18 @@ class NavigatorModuleLeakTest {
             EventNode<Event> navigatorNode = navigatorNode(env);
             EventNode<InventoryEvent> publicNode = fixture.module().publicInventory(Locale.GERMAN).eventNode();
             EventNode<InventoryEvent> teamNode = fixture.module().teamInventory(Locale.GERMAN).eventNode();
+            Assertions.assertTrue(EventListenerCounter.countListeners(publicNode) > 0, "the German public inventory must listen for clicks before the loop, or the leak check proves nothing");
+            Assertions.assertTrue(EventListenerCounter.countListeners(teamNode) > 0, "the German team inventory must listen for clicks before the loop, or the leak check proves nothing");
             int moduleListenersBefore = EventListenerCounter.countListeners(navigatorNode);
             int publicListenersBefore = EventListenerCounter.countListeners(publicNode);
             int teamListenersBefore = EventListenerCounter.countListeners(teamNode);
 
             for (int i = 0; i < OPEN_CLOSE_COUNT; i++) {
-                Player player = i % 2 == 0 ? team : other;
+                boolean withBuild = i % 2 == 0;
+                Player player = withBuild ? team : other;
+                Inventory expected = withBuild ? fixture.module().teamInventory(Locale.GERMAN) : fixture.module().publicInventory(Locale.GERMAN);
                 fixture.useFeather(player);
+                Assertions.assertSame(expected, player.getOpenInventory(), "opening the navigator must show the German " + (withBuild ? "team" : "public") + " inventory, or the leak check would pass vacuously");
                 player.closeInventory();
             }
 
