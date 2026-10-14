@@ -25,9 +25,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The players on a CloudNet task, summed over its running services by the {@link PlayerCounts}
- * provider. Empty whenever the number is unknown: no provider, a task that is not running, or a
- * lookup that failed.
+ * The players on a CloudNet task, read from the running services of the {@link PlayerCounts}
+ * provider and summed in {@link #online}. Empty whenever the number is unknown: no provider, a
+ * task that is not running, or a lookup that failed.
  */
 final class TaskPlayers {
 

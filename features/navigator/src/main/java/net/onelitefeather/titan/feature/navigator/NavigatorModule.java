@@ -181,9 +181,8 @@ public final class NavigatorModule {
         });
     }
 
-    // Test-only: lets a leak test assert the listener count on each Aves event node stays constant
-    // across opens, and lets a test read the stacks of one language. English is the language a
-    // player without a locale gets.
+    // Test-only: returns the live menu inventory for one language, so a leak test can read its
+    // event node and stacks. English is the language a player without a locale gets.
     Inventory publicInventory() {
         return publicInventory(Locale.ENGLISH);
     }
