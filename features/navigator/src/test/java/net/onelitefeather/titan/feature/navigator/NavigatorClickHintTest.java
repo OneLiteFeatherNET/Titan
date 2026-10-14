@@ -29,6 +29,7 @@ import net.minestom.server.inventory.AbstractInventory;
 import net.minestom.server.item.ItemStack;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.core.permission.PermissionResult;
 import net.onelitefeather.titan.core.portal.Box;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
 import net.onelitefeather.titan.core.portal.Portal;
@@ -55,6 +56,7 @@ class NavigatorClickHintTest {
     private static final ServiceCount RACE_TWO = new ServiceCount("ElytraRace-2", 10, 50);
     // One refresh period; a test ticks this long so the refresh it needs has run.
     private static final int REFRESH_TICKS = NavigatorFixture.REFRESH_SECONDS * ServerFlag.SERVER_TICKS_PER_SECOND;
+    private static final String BUILD_PERMISSION = "titan.navigator.buildserver";
 
     private static FakeFeatureFlags slenderActive() {
         return new FakeFeatureFlags().declare(Destination.SLENDER_FLAG, true);
@@ -182,11 +184,21 @@ class NavigatorClickHintTest {
             AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
             portals.set(List.of());
 
-            for (int tick = 0; tick < 40; tick++) {
-                env.tick();
-            }
+            tick(env, REFRESH_TICKS);
 
-            Assertions.assertEquals(List.of("Left click: connect"), lore(inventory.getItemStack(SURVIVAL_SLOT)));
+            Assertions.assertEquals(List.of("Left click: connect"), lore(inventory.getItemStack(SURVIVAL_SLOT)), "the right click must be gone once a refresh has seen the portal removed");
+        }
+    }
+
+    @DisplayName("A German player with the build permission reads the German hint on Build in the team menu")
+    @Test
+    void germanTeamPlayerReadsGermanHintOnBuild(Env env) {
+        Player player = player(env, Locale.GERMANY);
+        FakePermissionService permissions = new FakePermissionService().set(player.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED);
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), permissions, NO_PORTALS)) {
+            AbstractInventory inventory = open(fixture, player);
+
+            Assertions.assertEquals(List.of("Linksklick: verbinden"), lore(inventory.getItemStack(Destination.BUILD.slot())), "the team menu in German must name the connect in German");
         }
     }
 }

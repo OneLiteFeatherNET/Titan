@@ -182,13 +182,22 @@ public final class NavigatorModule {
     }
 
     // Test-only: lets a leak test assert the listener count on each Aves event node stays constant
-    // across opens. English is the language a player without a locale gets.
+    // across opens, and lets a test read the stacks of one language. English is the language a
+    // player without a locale gets.
     Inventory publicInventory() {
-        return inventory(false, Locale.ENGLISH);
+        return publicInventory(Locale.ENGLISH);
     }
 
     Inventory teamInventory() {
-        return inventory(true, Locale.ENGLISH);
+        return teamInventory(Locale.ENGLISH);
+    }
+
+    Inventory publicInventory(Locale language) {
+        return inventory(false, language);
+    }
+
+    Inventory teamInventory(Locale language) {
+        return inventory(true, language);
     }
 
     private Inventory inventory(boolean team, Locale language) {
