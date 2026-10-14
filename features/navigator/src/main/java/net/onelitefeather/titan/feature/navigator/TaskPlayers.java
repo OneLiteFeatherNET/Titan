@@ -15,10 +15,12 @@
  */
 package net.onelitefeather.titan.feature.navigator;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 import net.onelitefeather.titan.core.portal.PlayerCount;
 import net.onelitefeather.titan.core.portal.PlayerCounts;
+import net.onelitefeather.titan.core.portal.ServiceCount;
 import net.onelitefeather.titan.core.portal.SourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,6 +50,19 @@ final class TaskPlayers {
         } catch (RuntimeException e) {
             LOGGER.debug("Reading the players of task '{}' failed", task, e);
             return OptionalInt.empty();
+        }
+    }
+
+    /** The running services of a task; empty whenever they are unknown, like {@link #online}. */
+    List<ServiceCount> services(String task) {
+        if (this.counts.isEmpty() || !this.counts.get().supports(SourceType.TASK)) {
+            return List.of();
+        }
+        try {
+            return this.counts.get().running(SourceType.TASK, task);
+        } catch (RuntimeException e) {
+            LOGGER.debug("Reading the services of task '{}' failed", task, e);
+            return List.of();
         }
     }
 }

@@ -47,7 +47,7 @@ final class NavigatorTelemetry {
 
     /** What a click on a navigator entry led to. */
     enum Selection {
-        SENT("sent"), TELEPORTED("teleported"), DENIED("denied"), SPAWN("spawn");
+        SENT("sent"), TELEPORTED("teleported"), DENIED("denied"), SPAWN("spawn"), PICKER("picker"), REFUSED("refused");
 
         private final String value;
 

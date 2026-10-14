@@ -23,12 +23,12 @@ import net.onelitefeather.titan.api.deliver.Deliver;
 
 /**
  * A test-only {@link Deliver} that records every delivery instead of sending one, so a test can
- * assert which player was sent to which destination.
+ * assert which player was sent to which task or to which service.
  */
 final class RecordingDeliver implements Deliver {
 
-    /** One recorded call to {@link #sendPlayer}. */
-    record Delivery(Player player, String taskName) {
+    /** One recorded call to {@link #sendPlayer}; exactly one of the two names is set. */
+    record Delivery(Player player, String taskName, String serverName) {
     }
 
     private final List<Delivery> deliveries = new ArrayList<>();
@@ -36,7 +36,8 @@ final class RecordingDeliver implements Deliver {
     @Override
     public void sendPlayer(Player player, DeliverComponent component) {
         String taskName = component instanceof DeliverComponent.TaskComponent task ? task.taskName() : null;
-        this.deliveries.add(new Delivery(player, taskName));
+        String serverName = component instanceof DeliverComponent.ServerDeliverComponent server ? server.gameServer() : null;
+        this.deliveries.add(new Delivery(player, taskName, serverName));
     }
 
     List<Delivery> deliveries() {

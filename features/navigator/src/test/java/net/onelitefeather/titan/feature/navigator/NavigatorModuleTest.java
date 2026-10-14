@@ -97,6 +97,7 @@ class NavigatorModuleTest {
 
             InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(0));
             env.process().eventHandler().call(clickEvent);
+            env.tick();
 
             Assertions.assertTrue(clickEvent.isCancelled(), "the click must be cancelled so the icon stays in place");
             Assertions.assertEquals(1, deliver.deliveries().size(), "exactly one delivery must be recorded");
@@ -125,9 +126,9 @@ class NavigatorModuleTest {
         }
     }
 
-    @DisplayName("Clicking Slender forwards to the cygnus task and closes the inventory")
+    @DisplayName("Clicking Slender forwards to the Slender task and closes the inventory")
     @Test
-    void clickingSlenderForwardsToCygnus(Env env) {
+    void clickingSlenderForwardsToSlender(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
         try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService())) {
             Instance instance = env.createFlatInstance();
@@ -137,10 +138,11 @@ class NavigatorModuleTest {
 
             InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(5));
             env.process().eventHandler().call(clickEvent);
+            env.tick();
 
             Assertions.assertTrue(clickEvent.isCancelled());
             Assertions.assertEquals(1, deliver.deliveries().size());
-            Assertions.assertEquals("cygnus", deliver.deliveries().get(0).taskName());
+            Assertions.assertEquals("Slender", deliver.deliveries().get(0).taskName());
             Assertions.assertNotSame(openInventory, player.getOpenInventory());
         }
     }

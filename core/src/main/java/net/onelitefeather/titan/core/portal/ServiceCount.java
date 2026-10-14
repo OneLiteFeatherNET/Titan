@@ -25,4 +25,14 @@ import org.jetbrains.annotations.NotNull;
  * @param max    the player limit; {@code 0} while the service has not announced one
  */
 public record ServiceCount(@NotNull String name, int online, int max) {
+
+    /** Whether the service has announced a player limit; without one it cannot be judged. */
+    public boolean limitAnnounced() {
+        return this.max > 0;
+    }
+
+    /** Whether the service has reached its announced limit. */
+    public boolean full() {
+        return limitAnnounced() && this.online >= this.max;
+    }
 }

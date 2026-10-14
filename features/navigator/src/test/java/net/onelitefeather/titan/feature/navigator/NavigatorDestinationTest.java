@@ -53,12 +53,19 @@ class NavigatorDestinationTest {
         Assertions.assertEquals(8, Destination.CREATIVE.slot());
     }
 
-    @DisplayName("Build forwards to the Build task, has no feature flag and needs titan.navigator.buildserver")
+    @DisplayName("Build forwards to the Team-Build task, has no feature flag and needs titan.navigator.buildserver")
     @Test
     void buildForwardsToTheBuildTaskBehindItsPermission() {
-        Assertions.assertEquals("Build", Destination.BUILD.task());
+        Assertions.assertEquals("Team-Build", Destination.BUILD.task());
         Assertions.assertNull(Destination.BUILD.feature(), "Build must not sit behind a feature flag");
         Assertions.assertEquals("titan.navigator.buildserver", Destination.BUILD.permission());
+    }
+
+    @DisplayName("Slender forwards to the live Slender task behind its feature flag")
+    @Test
+    void slenderForwardsToTheSlenderTask() {
+        Assertions.assertEquals("Slender", Destination.SLENDER.task());
+        Assertions.assertEquals(Destination.SLENDER_FLAG, Destination.SLENDER.feature());
     }
 
     @DisplayName("Only Build needs a permission")
