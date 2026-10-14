@@ -49,13 +49,15 @@ final class NavigatorFixture implements AutoCloseable {
     private final TestTitanNode titan;
     private final NavigatorModule module;
     private final LobbyItem feather;
+    private final NavigatorMessages messages;
     private boolean moduleStopped;
     private boolean closed;
 
-    private NavigatorFixture(TestTitanNode titan, NavigatorModule module, LobbyItem feather) {
+    private NavigatorFixture(TestTitanNode titan, NavigatorModule module, LobbyItem feather, NavigatorMessages messages) {
         this.titan = titan;
         this.module = module;
         this.feather = feather;
+        this.messages = messages;
     }
 
     static NavigatorFixture start(Env env, Deliver deliver, FeatureFlags featureFlags, PermissionService permissions) {
@@ -90,10 +92,12 @@ final class NavigatorFixture implements AutoCloseable {
 
     private static NavigatorFixture start(Env env, Deliver deliver, FeatureFlags featureFlags, PermissionService permissions, SpawnReturn spawnReturn, Telemetry telemetry, LobbyPortals portals, Optional<PlayerCounts> counts) {
         TestTitanNode titan = TestTitanNode.attach(env);
-        NavigatorModule module = new NavigatorModule(titan.node(), deliver, featureFlags, permissions, () -> spawnReturn, portals, telemetry, counts, env.process().scheduler(), Runnable::run, new NavigatorSettings(1));
+        NavigatorMessages messages = new NavigatorMessages();
+        messages.register();
+        NavigatorModule module = new NavigatorModule(titan.node(), deliver, featureFlags, permissions, () -> spawnReturn, portals, telemetry, counts, env.process().scheduler(), Runnable::run, new NavigatorSettings(1), messages);
         module.start();
         LobbyItem feather = new NavigatorItems().navigatorFeather(module);
-        return new NavigatorFixture(titan, module, feather);
+        return new NavigatorFixture(titan, module, feather, messages);
     }
 
     NavigatorModule module() {
@@ -131,5 +135,6 @@ final class NavigatorFixture implements AutoCloseable {
         this.closed = true;
         stopModule();
         this.titan.close();
+        this.messages.close();
     }
 }

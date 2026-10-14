@@ -216,7 +216,7 @@ class NavigatorModuleTest {
         try {
             NavigatorModule module = new NavigatorModule(titan.node(), new RecordingDeliver(), slenderActive(), new FakePermissionService(), () -> {
                 throw new NoSuchElementException("no bean");
-            }, List::of, Telemetry.noop(), Optional.empty(), env.process().scheduler(), Runnable::run, new NavigatorSettings(1));
+            }, List::of, Telemetry.noop(), Optional.empty(), env.process().scheduler(), Runnable::run, new NavigatorSettings(1), new NavigatorMessages());
 
             IllegalStateException thrown = Assertions.assertThrows(IllegalStateException.class, module::start, "an unresolvable provider must fail the start");
             Assertions.assertTrue(thrown.getMessage().contains("SpawnReturn") && thrown.getMessage().contains("spawn column"), "the message must name SpawnReturn and the spawn column, was: " + thrown.getMessage());
@@ -230,7 +230,7 @@ class NavigatorModuleTest {
     void startFailsClearlyWhenTheProviderYieldsNull(Env env) {
         TestTitanNode titan = TestTitanNode.attach(env);
         try {
-            NavigatorModule module = new NavigatorModule(titan.node(), new RecordingDeliver(), slenderActive(), new FakePermissionService(), () -> null, List::of, Telemetry.noop(), Optional.empty(), env.process().scheduler(), Runnable::run, new NavigatorSettings(1));
+            NavigatorModule module = new NavigatorModule(titan.node(), new RecordingDeliver(), slenderActive(), new FakePermissionService(), () -> null, List::of, Telemetry.noop(), Optional.empty(), env.process().scheduler(), Runnable::run, new NavigatorSettings(1), new NavigatorMessages());
 
             IllegalStateException thrown = Assertions.assertThrows(IllegalStateException.class, module::start, "a provider yielding null must fail the start");
             Assertions.assertTrue(thrown.getMessage().contains("SpawnReturn") && thrown.getMessage().contains("spawn column"), "the message must name SpawnReturn and the spawn column, was: " + thrown.getMessage());

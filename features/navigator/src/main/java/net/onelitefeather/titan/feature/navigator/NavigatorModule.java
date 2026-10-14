@@ -21,8 +21,10 @@ import jakarta.inject.Named;
 import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -31,6 +33,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.minestom.server.ServerFlag;
@@ -86,12 +89,16 @@ public final class NavigatorModule {
     private static final ItemStack SPAWN_ITEM = ItemStack.builder(Material.COMPASS).customName(MiniMessage.miniMessage().deserialize("<!i><aqua>Spawn</aqua>")).build();
     private static final ItemStack BLANK = ItemStack.builder(Material.GRAY_STAINED_GLASS_PANE).customName(Component.empty()).build();
 
+    private static final List<Locale> LANGUAGES = List.of(Locale.ENGLISH, Locale.GERMAN);
+
     private final EventNode<Event> titan;
     private final Deliver deliver;
     private final FeatureFlags featureFlags;
     private final PermissionService permissions;
-    private final SharedNavigator publicNavigator;
-    private final SharedNavigator teamNavigator;
+    private final NavigatorMessages messages;
+    // One shared inventory per menu and language: the click hint is translated, and a shared
+    // inventory shows the same stacks to everyone who opens it.
+    private final Map<Menu, SharedNavigator> menus = new HashMap<>();
     private final Telemetry telemetry;
     private final NavigatorTelemetry navigatorTelemetry;
     // A Provider, not a bean: the spawn column sits before this one in module order (spawn ->
@@ -113,11 +120,12 @@ public final class NavigatorModule {
     private FeatureNode node;
     private Task refreshTask;
 
-    public NavigatorModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Deliver deliver, FeatureFlags featureFlags, PermissionService permissions, Provider<SpawnReturn> spawnReturnProvider, LobbyPortals portals, Telemetry telemetry, Optional<PlayerCounts> counts, Scheduler scheduler, @Named(NavigatorBeans.READS) Executor reads, NavigatorSettings settings) {
+    public NavigatorModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Deliver deliver, FeatureFlags featureFlags, PermissionService permissions, Provider<SpawnReturn> spawnReturnProvider, LobbyPortals portals, Telemetry telemetry, Optional<PlayerCounts> counts, Scheduler scheduler, @Named(NavigatorBeans.READS) Executor reads, NavigatorSettings settings, NavigatorMessages messages) {
         this.titan = Objects.requireNonNull(titan, "titan must not be null");
         this.deliver = Objects.requireNonNull(deliver, "deliver must not be null");
         this.featureFlags = Objects.requireNonNull(featureFlags, "featureFlags must not be null");
         this.permissions = Objects.requireNonNull(permissions, "permissions must not be null");
+        this.messages = Objects.requireNonNull(messages, "messages must not be null");
         this.spawnReturnProvider = Objects.requireNonNull(spawnReturnProvider, "spawnReturnProvider must not be null");
         this.portals = Objects.requireNonNull(portals, "portals must not be null");
         this.telemetry = Objects.requireNonNull(telemetry, "telemetry must not be null");
@@ -126,8 +134,10 @@ public final class NavigatorModule {
         this.players = new TaskPlayers(Objects.requireNonNull(counts, "counts must not be null"));
         this.settings = Objects.requireNonNull(settings, "settings must not be null");
         this.navigatorTelemetry = new NavigatorTelemetry(this.telemetry);
-        this.publicNavigator = new SharedNavigator(false, this.telemetry);
-        this.teamNavigator = new SharedNavigator(true, this.telemetry);
+        for (Locale language : LANGUAGES) {
+            this.menus.put(new Menu(false, language), new SharedNavigator(false, this.telemetry));
+            this.menus.put(new Menu(true, language), new SharedNavigator(true, this.telemetry));
+        }
         for (Destination destination : ServerPicker.DESTINATIONS) {
             this.pickers.put(destination, new SharedServerPicker());
         }
@@ -139,10 +149,10 @@ public final class NavigatorModule {
         // Listener-less: only attached so this feature shows up in the fixed EVENT_PRIORITY order
         // and the leak test; Aves handles every inventory click itself.
         this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry);
-        this.publicNavigator.applyLayoutIfChanged(this.featureFlags, this::toAvesLayout);
-        this.teamNavigator.applyLayoutIfChanged(this.featureFlags, this::toAvesLayout);
-        this.publicNavigator.register();
-        this.teamNavigator.register();
+        this.menus.forEach((menu, navigator) -> {
+            navigator.applyLayoutIfChanged(this.featureFlags, layoutFor(menu.language()));
+            navigator.register();
+        });
         // Tick-based on purpose: Minestom's time-based schedules run on a wall-clock timer outside the tick.
         TaskSchedule period = TaskSchedule.tick(Math.multiplyExact(this.settings.refreshSeconds(), ServerFlag.SERVER_TICKS_PER_SECOND));
         this.refreshTask = this.scheduler.scheduleTask(this::refreshCounts, TaskSchedule.nextTick(), period);
@@ -153,30 +163,40 @@ public final class NavigatorModule {
         this.stopped = true;
         this.refreshTask.cancel();
         this.node.close();
-        this.publicNavigator.unregister();
-        this.teamNavigator.unregister();
+        this.menus.values().forEach(SharedNavigator::unregister);
         this.pickers.values().forEach(SharedServerPicker::unregister);
     }
 
     void open(Player player) {
         boolean team = isAllowed(player, Destination.BUILD);
-        SharedNavigator navigator = team ? this.teamNavigator : this.publicNavigator;
+        Menu menu = new Menu(team, languageOf(player));
+        SharedNavigator navigator = this.menus.get(menu);
         // The destinations plus the fixed spawn entry.
         int entries = Destination.visible(this.featureFlags, team).size() + 1;
         this.navigatorTelemetry.open(player.getUuid(), team, entries, () -> {
-            navigator.applyLayoutIfChanged(this.featureFlags, this::toAvesLayout);
+            navigator.applyLayoutIfChanged(this.featureFlags, layoutFor(menu.language()));
             player.openInventory(navigator.inventory());
         });
     }
 
     // Test-only: lets a leak test assert the listener count on each Aves event node stays constant
-    // across opens.
+    // across opens. English is the language a player without a locale gets.
     Inventory publicInventory() {
-        return this.publicNavigator.inventory();
+        return inventory(false, Locale.ENGLISH);
     }
 
     Inventory teamInventory() {
-        return this.teamNavigator.inventory();
+        return inventory(true, Locale.ENGLISH);
+    }
+
+    private Inventory inventory(boolean team, Locale language) {
+        return this.menus.get(new Menu(team, language)).inventory();
+    }
+
+    // A player with no locale yet, or one whose language has no bundle, reads English.
+    private static Locale languageOf(Player player) {
+        Locale locale = player.getLocale();
+        return locale != null && Locale.GERMAN.getLanguage().equals(locale.getLanguage()) ? Locale.GERMAN : Locale.ENGLISH;
     }
 
     // The read may block on the network, so it runs on the executor; the inventories are only
@@ -207,12 +227,14 @@ public final class NavigatorModule {
             return;
         }
         this.online = read;
-        this.publicNavigator.showItems(this::itemOf);
-        this.teamNavigator.showItems(this::itemOf);
+        this.menus.forEach((menu, navigator) -> navigator.showItems(destination -> itemOf(destination, menu.language())));
     }
 
-    private ItemStack itemOf(Destination destination) {
-        return destination.item(this.online.getOrDefault(destination, OptionalInt.empty()));
+    private ItemStack itemOf(Destination destination, Locale language) {
+        OptionalInt count = this.online.getOrDefault(destination, OptionalInt.empty());
+        // Read on every refresh, like the count, so a portal added or removed shows up in the hint.
+        boolean serverPicker = ServerPicker.DESTINATIONS.contains(destination);
+        return destination.item(count, this.messages.clickHint(language, serverPicker, portalFor(destination).isPresent()));
     }
 
     private SpawnReturn resolveSpawnReturn() {
@@ -234,13 +256,17 @@ public final class NavigatorModule {
         return permission == null || this.permissions.check(player.getUuid(), permission) == PermissionResult.ALLOWED;
     }
 
-    private InventoryLayout toAvesLayout(List<Destination> visible) {
+    private Function<List<Destination>, InventoryLayout> layoutFor(Locale language) {
+        return visible -> toAvesLayout(visible, language);
+    }
+
+    private InventoryLayout toAvesLayout(List<Destination> visible, Locale language) {
         InventoryLayout layout = InventoryLayout.fromType(InventoryType.CHEST_1_ROW);
         for (int slot = 0; slot < SLOT_COUNT; slot++) {
             layout.setItem(slot, BLANK);
         }
         for (Destination destination : visible) {
-            layout.setItem(destination.slot(), itemOf(destination), (player, clickedSlot, click, stack, result) -> {
+            layout.setItem(destination.slot(), itemOf(destination, language), (player, clickedSlot, click, stack, result) -> {
                 result.accept(ClickHolder.cancelClick());
                 if (!isRightClick(click) && ServerPicker.DESTINATIONS.contains(destination)) {
                     chooseServer(player, destination);
@@ -329,6 +355,10 @@ public final class NavigatorModule {
             player.closeInventory();
             return NavigatorTelemetry.Selection.SENT;
         });
+    }
+
+    /** One shared inventory: the public or the team menu, in one language. */
+    private record Menu(boolean team, Locale language) {
     }
 
     // Spawn is a fixed entry, not a Destination: it returns the player instead of redirecting them.

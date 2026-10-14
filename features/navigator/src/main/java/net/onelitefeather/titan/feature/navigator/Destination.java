@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.feature.navigator;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.OptionalInt;
@@ -78,9 +79,21 @@ enum Destination {
 
     // An unknown count adds no line, so it never reads as an empty lobby.
     ItemStack item(OptionalInt online) {
+        return item(online, null);
+    }
+
+    // The players line comes first, then the click hint; either is left out when absent.
+    ItemStack item(OptionalInt online, @Nullable Component clickHint) {
         ItemStack.Builder builder = ItemStack.builder(this.icon).customName(MiniMessage.miniMessage().deserialize(this.displayName));
+        List<Component> lore = new ArrayList<>();
         if (online.isPresent()) {
-            builder.lore(playersLine(online.getAsInt()));
+            lore.add(playersLine(online.getAsInt()));
+        }
+        if (clickHint != null) {
+            lore.add(clickHint);
+        }
+        if (!lore.isEmpty()) {
+            builder.lore(lore);
         }
         return builder.build();
     }
