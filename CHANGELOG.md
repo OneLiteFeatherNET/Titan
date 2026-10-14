@@ -1,5 +1,26 @@
 # Changelog
 
+## [3.2.0](https://github.com/OneLiteFeatherNET/Titan/compare/v3.1.0...v3.2.0) (2026-10-14)
+
+
+### Features
+
+* **navigator:** explain click actions in the entry lore ([996d70f](https://github.com/OneLiteFeatherNET/Titan/commit/996d70fbc228d1c96d09dc6fa21c29be98be6f13))
+* **navigator:** pick a server when a mode runs on several ([#424](https://github.com/OneLiteFeatherNET/Titan/issues/424)) ([3f6e07a](https://github.com/OneLiteFeatherNET/Titan/commit/3f6e07a1052de0f39bb01ef51e52cfa90f482f2c))
+
+
+### Bug Fixes
+
+* **deps:** update dependency io.opentelemetry:opentelemetry-bom to v1.58.0 ([#377](https://github.com/OneLiteFeatherNET/Titan/issues/377)) ([5d5821e](https://github.com/OneLiteFeatherNET/Titan/commit/5d5821e64ac20a9166fa40d2490bb40aea9df7ea))
+* **deps:** update dependency io.opentelemetry:opentelemetry-bom to v1.59.0 ([#428](https://github.com/OneLiteFeatherNET/Titan/issues/428)) ([547837d](https://github.com/OneLiteFeatherNET/Titan/commit/547837d631a2f739d70fab209c11f42f0c5b3048))
+* **deps:** update dependency io.opentelemetry:opentelemetry-bom to v1.60.0 ([#429](https://github.com/OneLiteFeatherNET/Titan/issues/429)) ([86a24d7](https://github.com/OneLiteFeatherNET/Titan/commit/86a24d71097bab72ea31104298b63543e98a6842))
+* **deps:** update dependency io.opentelemetry:opentelemetry-bom to v1.60.1 ([#430](https://github.com/OneLiteFeatherNET/Titan/issues/430)) ([d1cf72e](https://github.com/OneLiteFeatherNET/Titan/commit/d1cf72e548d69a8adce2e9ae96b728ceeba83cf2))
+* **deps:** update dependency io.opentelemetry:opentelemetry-bom to v1.61.0 ([#431](https://github.com/OneLiteFeatherNET/Titan/issues/431)) ([63044d3](https://github.com/OneLiteFeatherNET/Titan/commit/63044d396a0e2315ff59ece167599a907968c5da))
+* **deps:** update dependency io.opentelemetry:opentelemetry-bom to v1.62.0 ([#432](https://github.com/OneLiteFeatherNET/Titan/issues/432)) ([403e62f](https://github.com/OneLiteFeatherNET/Titan/commit/403e62f3b9f4404eb0d98654a23d30cf59ff7a32))
+* **deps:** update dependency io.opentelemetry:opentelemetry-bom to v1.63.0 ([#434](https://github.com/OneLiteFeatherNET/Titan/issues/434)) ([225ebb2](https://github.com/OneLiteFeatherNET/Titan/commit/225ebb2e2f303d32e23a5b9fd0892a9dd76c3003))
+* **deps:** update dependency org.hibernate.orm:hibernate-core to v7.4.12.final ([#355](https://github.com/OneLiteFeatherNET/Titan/issues/355)) ([512edfb](https://github.com/OneLiteFeatherNET/Titan/commit/512edfb15550c949993b0957a0ad241fbf169060))
+* **deps:** update dependency org.hibernate.orm:hibernate-core to v7.4.13.final ([#426](https://github.com/OneLiteFeatherNET/Titan/issues/426)) ([e514e1c](https://github.com/OneLiteFeatherNET/Titan/commit/e514e1ca367e842a24a707535be336e6d56a5918))
+
 ## [3.1.0](https://github.com/OneLiteFeatherNET/Titan/compare/v3.0.1...v3.1.0) (2026-10-12)
 
 
