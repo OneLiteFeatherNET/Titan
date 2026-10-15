@@ -20,8 +20,8 @@ Titan schreibt beim Start keine Version ins Log. Im Betrieb (Loki) lässt sich d
 
 ## Impact
 
-- **Code:** `runtime` (`bootstrap/`: neue Start-Log-Klasse, Build-Info), `TitanApplication` ruft sie beim Start auf.
-- **Build:** `buildSrc/.../titan.java-conventions.gradle.kts` setzt `Git-Commit` in das Manifest aller Jars.
+- **Code:** `common` (`observability/TitanBuild`, auch von `TitanObservability` für das Sentry-Release genutzt), `runtime` (`bootstrap/`: neue Start-Log-Klasse), `TitanApplication` ruft sie beim Start auf.
+- **Build:** `Git-Commit` wird nur in die geschatteten Anwendungs-Jars geschrieben: `buildSrc/.../titan.app-variant.gradle.kts` (`titan-cloudnet`, `titan-local`) und `setup/build.gradle.kts` (`setup-titan`). `titan.java-conventions` setzt weiterhin `Implementation-Version` auf allen Jars.
 - **Abhängigkeiten:** keine.
 - **Nutzertexte:** keine.
 

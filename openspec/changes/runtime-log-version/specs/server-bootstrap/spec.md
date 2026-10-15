@@ -12,8 +12,16 @@ Beim Start MUSS Titan genau eine INFO-Zeile `Titan <version> (commit <commit>) s
 - **THEN** loggt Titan `Titan dev (commit unknown) starting`
 
 ### Requirement: Build schreibt den Commit ins Manifest
-Der Gradle-Build MUSS `Git-Commit` mit dem kurzen Git-Hash in das Manifest jedes Jars schreiben. Ist Git nicht verfügbar oder kein `.git`-Verzeichnis vorhanden, DARF der Build nicht fehlschlagen und MUSS `unknown` schreiben.
+Der Gradle-Build MUSS `Git-Commit` mit dem kurzen Git-Hash in das Manifest der ausgelieferten, geschatteten Anwendungs-Jars schreiben, nicht in die Manifeste der übrigen Jars. Ist Git nicht verfügbar, läuft Git nicht innerhalb von zehn Sekunden durch, oder hat das Wurzelverzeichnis des Quellbaums keine `.git`-Angabe, DARF der Build nicht fehlschlagen und MUSS `unknown` schreiben.
 
 #### Scenario: Build ohne Git
-- **WHEN** der Build ohne Git oder ohne `.git`-Verzeichnis läuft
+- **WHEN** der Build ohne Git oder ohne `.git`-Angabe im Projektwurzel-Verzeichnis läuft
 - **THEN** wird das Jar gebaut, und sein Manifest enthält `Git-Commit: unknown`
+
+#### Scenario: Quellbaum in einem fremden Checkout
+- **WHEN** der Quellbaum in einem anderen Git-Repository liegt, sein eigenes Wurzelverzeichnis aber keine `.git`-Angabe hat
+- **THEN** wird nicht der HEAD des umgebenden Repositories verwendet, sondern `Git-Commit: unknown` geschrieben
+
+#### Scenario: Nicht-Anwendungs-Jar
+- **WHEN** der Build ein Bibliotheks-Jar wie `runtime` erzeugt
+- **THEN** enthält dessen Manifest kein `Git-Commit`-Attribut
