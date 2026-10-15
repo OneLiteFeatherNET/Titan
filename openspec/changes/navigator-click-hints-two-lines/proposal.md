@@ -11,7 +11,7 @@ Die Klickhinweise der Modus-Einträge stehen als eine Lore-Zeile mit „ · “ 
   - Zeile 2 (nur mit Portal): „Rechtsklick: zum Portal laufen“ (en: „Right click: walk to portal“).
 - Kein „ · “ mehr zwischen den Klicks.
 - Übersetzungen: je Klick ein Schlüssel (Serverauswahl, Verbinden, Portal), die kombinierten Schlüssel entfallen.
-- Die Spec sagt ausdrücklich, dass der Serverauswahl-Teil dem letzten Aktualisierungszyklus folgt (höchstens eine `navigator.refreshSeconds`-Periode alt), während der Klick die Dienste neu liest.
+- Die Spec sagt ausdrücklich, dass der Serverauswahl-Teil der letzten abgeschlossenen Aktualisierung folgt, während der Klick die Dienste neu liest.
 
 ## Capabilities
 
