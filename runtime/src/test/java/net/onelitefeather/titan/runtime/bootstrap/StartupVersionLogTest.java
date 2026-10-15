@@ -20,7 +20,9 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import net.onelitefeather.titan.common.observability.TitanBuild;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
@@ -30,19 +32,27 @@ import org.slf4j.LoggerFactory;
  */
 class StartupVersionLogTest {
 
+    private Logger logger;
+    private ListAppender<ILoggingEvent> appender;
+
+    @BeforeEach
+    void attachAppender() {
+        logger = (Logger) LoggerFactory.getLogger(StartupVersionLog.class);
+        appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+    }
+
+    @AfterEach
+    void detachAppender() {
+        logger.detachAppender(appender);
+        appender.stop();
+    }
+
     @DisplayName("Logs one INFO line with the version and commit as arguments")
     @Test
     void logsOneInfoLineWithVersionAndCommit() {
-        Logger logger = (Logger) LoggerFactory.getLogger(StartupVersionLog.class);
-        ListAppender<ILoggingEvent> appender = new ListAppender<>();
-        appender.start();
-        logger.addAppender(appender);
-
-        try {
-            StartupVersionLog.log(new TitanBuild("3.2.1", "99a7f62"));
-        } finally {
-            logger.detachAppender(appender);
-        }
+        StartupVersionLog.log(new TitanBuild("3.2.1", "99a7f62"));
 
         Assertions.assertEquals(1, appender.list.size(), "must log exactly one line");
         ILoggingEvent event = appender.list.get(0);
