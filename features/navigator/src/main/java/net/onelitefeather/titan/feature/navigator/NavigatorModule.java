@@ -245,7 +245,7 @@ public final class NavigatorModule {
     private ItemStack itemOf(Destination destination, Locale language) {
         List<ServiceCount> services = this.running.getOrDefault(destination, List.of());
         boolean serverPicker = ServerPicker.opensFor(destination, services);
-        return destination.item(TaskPlayers.online(services), this.messages.clickHint(language, serverPicker, portalFor(destination).isPresent()));
+        return destination.item(TaskPlayers.online(services), this.messages.clickHints(language, serverPicker, portalFor(destination).isPresent()));
     }
 
     private SpawnReturn resolveSpawnReturn() {

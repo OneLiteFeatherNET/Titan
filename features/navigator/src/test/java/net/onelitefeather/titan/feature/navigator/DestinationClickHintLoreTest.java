@@ -32,7 +32,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(MicrotusExtension.class)
 class DestinationClickHintLoreTest {
 
-    private static final Component HINT = Component.text("Left click: connect");
+    private static final List<Component> HINT = List.of(Component.text("Left click: connect"));
 
     private static List<String> lore(ItemStack item) {
         return item.get(DataComponents.LORE).stream().map(line -> PlainTextComponentSerializer.plainText().serialize(line)).toList();
@@ -42,6 +42,13 @@ class DestinationClickHintLoreTest {
     @Test
     void hintFollowsThePlayersLine(Env env) {
         Assertions.assertEquals(List.of("3 online", "Left click: connect"), lore(Destination.SURVIVAL.item(OptionalInt.of(3), HINT)));
+    }
+
+    @DisplayName("The left and the right click hint each take their own line, after the players line")
+    @Test
+    void leftAndRightHintsOnSeparateLines(Env env) {
+        List<Component> hints = List.of(Component.text("Left click: connect"), Component.text("Right click: walk to portal"));
+        Assertions.assertEquals(List.of("3 online", "Left click: connect", "Right click: walk to portal"), lore(Destination.SURVIVAL.item(OptionalInt.of(3), hints)));
     }
 
     @DisplayName("Without a known count the click hint is the only lore line")

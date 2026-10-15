@@ -35,7 +35,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(MicrotusExtension.class)
 class DestinationPlayerLoreTest {
 
-    private static final Component HINT = Component.text("Left click: connect");
+    private static final List<Component> HINT = List.of(Component.text("Left click: connect"));
 
     private static List<String> lore(ItemStack item) {
         return item.get(DataComponents.LORE).stream().map(line -> PlainTextComponentSerializer.plainText().serialize(line)).toList();
