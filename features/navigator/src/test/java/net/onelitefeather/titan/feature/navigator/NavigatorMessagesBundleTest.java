@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
+import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,12 @@ class NavigatorMessagesBundleTest {
     @Test
     void fallbackBundleContainsEveryUsedKey() throws IOException {
         Assertions.assertTrue(load("messages_en.properties").stringPropertyNames().containsAll(NavigatorMessages.KEYS), "messages_en.properties must define all of " + NavigatorMessages.KEYS);
+    }
+
+    @DisplayName("The fallback bundle has no key that NavigatorMessages does not render")
+    @Test
+    void fallbackBundleHasNoUnusedKey() throws IOException {
+        Assertions.assertEquals(Set.copyOf(NavigatorMessages.KEYS), load("messages_en.properties").stringPropertyNames(), "every key in messages_en.properties must be rendered, and every rendered key must be defined");
     }
 
     @DisplayName("The German bundle has exactly the keys of the fallback bundle")

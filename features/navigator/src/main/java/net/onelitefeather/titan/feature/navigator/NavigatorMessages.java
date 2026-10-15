@@ -18,6 +18,7 @@ package net.onelitefeather.titan.feature.navigator;
 import io.avaje.inject.PostConstruct;
 import io.avaje.inject.PreDestroy;
 import jakarta.inject.Singleton;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
@@ -34,13 +35,12 @@ import net.kyori.adventure.translation.GlobalTranslator;
 final class NavigatorMessages implements AutoCloseable {
 
     private static final String BUNDLE = "titan.navigator.messages";
-    private static final String CLICK_CONNECT = "titan.navigator.click.connect";
-    private static final String CLICK_CONNECT_PORTAL = "titan.navigator.click.connect_portal";
-    private static final String CLICK_PICK = "titan.navigator.click.pick";
-    private static final String CLICK_PICK_PORTAL = "titan.navigator.click.pick_portal";
+    private static final String LEFT_CONNECT = "titan.navigator.click.left_connect";
+    private static final String LEFT_PICK = "titan.navigator.click.left_pick";
+    private static final String RIGHT_PORTAL = "titan.navigator.click.right_portal";
 
     /** Every key this class renders; the bundle test checks them against the property files. */
-    static final List<String> KEYS = List.of(CLICK_CONNECT, CLICK_CONNECT_PORTAL, CLICK_PICK, CLICK_PICK_PORTAL);
+    static final List<String> KEYS = List.of(LEFT_CONNECT, LEFT_PICK, RIGHT_PORTAL);
 
     private final MiniMessageTranslationStore store = MiniMessageTranslationStore.create(Key.key("titan", "navigator"));
     private boolean registered;
@@ -70,11 +70,20 @@ final class NavigatorMessages implements AutoCloseable {
     }
 
     /**
-     * The click hint line of one entry. The left click is "choose a server" only while the picker
-     * opens for the mode, and "connect" otherwise; the right click is named only with a portal.
+     * The click hint lines of one entry, one per click: the left click first, then the right click
+     * only with a portal. The left click is "choose a server" only while the picker opens for the
+     * mode.
      */
-    Component clickHint(Locale locale, boolean serverPicker, boolean portal) {
-        String key = serverPicker ? (portal ? CLICK_PICK_PORTAL : CLICK_PICK) : (portal ? CLICK_CONNECT_PORTAL : CLICK_CONNECT);
+    List<Component> clickHints(Locale locale, boolean serverPicker, boolean portal) {
+        List<Component> hints = new ArrayList<>();
+        hints.add(render(serverPicker ? LEFT_PICK : LEFT_CONNECT, locale));
+        if (portal) {
+            hints.add(render(RIGHT_PORTAL, locale));
+        }
+        return hints;
+    }
+
+    private static Component render(String key, Locale locale) {
         return GlobalTranslator.render(Component.translatable(key), locale);
     }
 }

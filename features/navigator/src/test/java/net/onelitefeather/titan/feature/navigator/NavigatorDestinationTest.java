@@ -128,7 +128,7 @@ class NavigatorDestinationTest {
     @Test
     void slenderNameFadesFromGrayToDeepRed(Env env) {
         List<TextColor> letterColors = new ArrayList<>();
-        collectLetterColors(Destination.SLENDER.item(OptionalInt.empty(), Component.empty()).get(DataComponents.CUSTOM_NAME), null, letterColors);
+        collectLetterColors(Destination.SLENDER.item(OptionalInt.empty(), List.of(Component.empty())).get(DataComponents.CUSTOM_NAME), null, letterColors);
 
         Assertions.assertEquals(TextColor.color(0x616161), letterColors.getFirst(), "the first letter of Slender must be #616161");
         Assertions.assertEquals(TextColor.color(0xe80000), letterColors.getLast(), "the last letter of Slender must be #e80000, not a value cut off from an invalid hex literal");

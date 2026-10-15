@@ -86,7 +86,7 @@ class NavigatorClickHintTest {
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), new FakePermissionService(), SURVIVAL_PORTAL)) {
             AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
 
-            Assertions.assertEquals(List.of("Left click: connect · Right click: walk to portal"), lore(inventory.getItemStack(SURVIVAL_SLOT)));
+            Assertions.assertEquals(List.of("Left click: connect", "Right click: walk to portal"), lore(inventory.getItemStack(SURVIVAL_SLOT)));
         }
     }
 
@@ -148,7 +148,7 @@ class NavigatorClickHintTest {
 
             AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
 
-            Assertions.assertEquals(List.of("Left click: connect · Right click: walk to portal"), lore(inventory.getItemStack(SURVIVAL_SLOT)), "the menu must show the portal that exists when it opens, not the one the last refresh saw");
+            Assertions.assertEquals(List.of("Left click: connect", "Right click: walk to portal"), lore(inventory.getItemStack(SURVIVAL_SLOT)), "the menu must show the portal that exists when it opens, not the one the last refresh saw");
         }
     }
 
@@ -168,7 +168,7 @@ class NavigatorClickHintTest {
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), new FakePermissionService(), SURVIVAL_PORTAL)) {
             AbstractInventory inventory = open(fixture, player(env, Locale.GERMANY));
 
-            Assertions.assertEquals(List.of("Linksklick: verbinden · Rechtsklick: zum Portal laufen"), lore(inventory.getItemStack(SURVIVAL_SLOT)));
+            Assertions.assertEquals(List.of("Linksklick: verbinden", "Rechtsklick: zum Portal laufen"), lore(inventory.getItemStack(SURVIVAL_SLOT)));
         }
     }
 
