@@ -50,8 +50,11 @@ class NavigatorMessagesTest {
         for (Locale locale : new Locale[]{Locale.GERMAN, Locale.ENGLISH}) {
             for (boolean serverPicker : new boolean[]{true, false}) {
                 for (boolean portal : new boolean[]{true, false}) {
-                    for (String line : plain(locale, serverPicker, portal)) {
-                        Assertions.assertFalse(line.isBlank(), "empty hint line for " + locale + " picker=" + serverPicker + " portal=" + portal);
+                    List<String> lines = plain(locale, serverPicker, portal);
+                    String combination = locale + " picker=" + serverPicker + " portal=" + portal;
+                    Assertions.assertFalse(lines.isEmpty(), "no hint line for " + combination);
+                    for (String line : lines) {
+                        Assertions.assertFalse(line.isBlank(), "empty hint line for " + combination);
                     }
                 }
             }

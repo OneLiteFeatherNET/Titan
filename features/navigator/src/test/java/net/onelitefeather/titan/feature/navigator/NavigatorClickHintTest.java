@@ -54,6 +54,7 @@ class NavigatorClickHintTest {
     private static final Box AREA = new Box(new Vec(10, 40, 20), new Vec(12, 42, 22));
     private static final LobbyPortals NO_PORTALS = List::of;
     private static final LobbyPortals SURVIVAL_PORTAL = () -> List.of(new Portal("survival", AREA, "Survival", null));
+    private static final LobbyPortals RACE_PORTAL = () -> List.of(new Portal("elytrarace", AREA, "ElytraRace", null));
     private static final ServiceCount RACE_ONE = new ServiceCount("ElytraRace-1", 3, 50);
     private static final ServiceCount RACE_TWO = new ServiceCount("ElytraRace-2", 10, 50);
     // One refresh period; a test ticks this long so the refresh it needs has run.
@@ -113,6 +114,19 @@ class NavigatorClickHintTest {
         }
     }
 
+    @DisplayName("ElytraRace running on several services with a portal names the server choice and the walk-to-portal on separate lines")
+    @Test
+    void elytraRaceWithSeveralServicesAndPortalNamesBothClicks(Env env) {
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.serveServices("ElytraRace", RACE_ONE, RACE_TWO);
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), new FakePermissionService(), counts, RACE_PORTAL)) {
+            tick(env, REFRESH_TICKS);
+            AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
+
+            Assertions.assertEquals(List.of("13 online", "Left click: choose a server", "Right click: walk to portal"), lore(inventory.getItemStack(ELYTRA_RACE_SLOT)), "a picker with a portal must name both clicks, each on its own line");
+        }
+    }
+
     @DisplayName("ElytraRace running on one service names the connect on the left click, because the click connects directly")
     @Test
     void elytraRaceWithOneServiceNamesTheConnect(Env env) {
@@ -158,7 +172,7 @@ class NavigatorClickHintTest {
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), new FakePermissionService(), SURVIVAL_PORTAL)) {
             AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
 
-            Assertions.assertTrue(lore(inventory.getItemStack(SPAWN_SLOT)).isEmpty(), "spawn's click does not depend on the mouse button");
+            Assertions.assertTrue(lore(inventory.getItemStack(SPAWN_SLOT)).isEmpty(), "spawn must show no click hint, because its click does not depend on the mouse button");
         }
     }
 

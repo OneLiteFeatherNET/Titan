@@ -39,9 +39,6 @@ final class NavigatorMessages implements AutoCloseable {
     private static final String LEFT_PICK = "titan.navigator.click.left_pick";
     private static final String RIGHT_PORTAL = "titan.navigator.click.right_portal";
 
-    /** Every key this class renders; the bundle test checks them against the property files. */
-    static final List<String> KEYS = List.of(LEFT_CONNECT, LEFT_PICK, RIGHT_PORTAL);
-
     private final MiniMessageTranslationStore store = MiniMessageTranslationStore.create(Key.key("titan", "navigator"));
     private boolean registered;
 
@@ -76,11 +73,23 @@ final class NavigatorMessages implements AutoCloseable {
      */
     List<Component> clickHints(Locale locale, boolean serverPicker, boolean portal) {
         List<Component> hints = new ArrayList<>();
-        hints.add(render(serverPicker ? LEFT_PICK : LEFT_CONNECT, locale));
-        if (portal) {
-            hints.add(render(RIGHT_PORTAL, locale));
+        for (String key : keysFor(serverPicker, portal)) {
+            hints.add(render(key, locale));
         }
         return hints;
+    }
+
+    /**
+     * The keys {@link #clickHints} renders for one combination; the bundle test checks them against
+     * the property files.
+     */
+    static List<String> keysFor(boolean serverPicker, boolean portal) {
+        List<String> keys = new ArrayList<>();
+        keys.add(serverPicker ? LEFT_PICK : LEFT_CONNECT);
+        if (portal) {
+            keys.add(RIGHT_PORTAL);
+        }
+        return keys;
     }
 
     private static Component render(String key, Locale locale) {

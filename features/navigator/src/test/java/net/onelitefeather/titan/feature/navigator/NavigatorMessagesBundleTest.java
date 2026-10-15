@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
 import org.junit.jupiter.api.Assertions;
@@ -26,6 +27,17 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class NavigatorMessagesBundleTest {
+
+    /** Every key any click hint can request, over all picker and portal combinations. */
+    private static Set<String> renderedKeys() {
+        Set<String> keys = new HashSet<>();
+        for (boolean serverPicker : new boolean[]{true, false}) {
+            for (boolean portal : new boolean[]{true, false}) {
+                keys.addAll(NavigatorMessages.keysFor(serverPicker, portal));
+            }
+        }
+        return keys;
+    }
 
     private static Properties load(String file) throws IOException {
         try (InputStream in = NavigatorMessagesBundleTest.class.getResourceAsStream("/titan/navigator/" + file)) {
@@ -39,13 +51,13 @@ class NavigatorMessagesBundleTest {
     @DisplayName("The fallback bundle defines every key NavigatorMessages renders")
     @Test
     void fallbackBundleContainsEveryUsedKey() throws IOException {
-        Assertions.assertTrue(load("messages_en.properties").stringPropertyNames().containsAll(NavigatorMessages.KEYS), "messages_en.properties must define all of " + NavigatorMessages.KEYS);
+        Assertions.assertTrue(load("messages_en.properties").stringPropertyNames().containsAll(renderedKeys()), "messages_en.properties must define all of " + renderedKeys());
     }
 
     @DisplayName("The fallback bundle has no key that NavigatorMessages does not render")
     @Test
     void fallbackBundleHasNoUnusedKey() throws IOException {
-        Assertions.assertEquals(Set.copyOf(NavigatorMessages.KEYS), load("messages_en.properties").stringPropertyNames(), "every key in messages_en.properties must be rendered, and every rendered key must be defined");
+        Assertions.assertEquals(renderedKeys(), load("messages_en.properties").stringPropertyNames(), "every key in messages_en.properties must be rendered, and every rendered key must be defined");
     }
 
     @DisplayName("The German bundle has exactly the keys of the fallback bundle")
