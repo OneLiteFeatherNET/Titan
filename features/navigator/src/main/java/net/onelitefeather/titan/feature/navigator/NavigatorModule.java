@@ -28,7 +28,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.OptionalInt;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executor;
@@ -113,8 +112,9 @@ public final class NavigatorModule {
     // Players whose left click is waiting for the service read; a second click meanwhile is ignored.
     private final Set<UUID> choosing = new HashSet<>();
     private final AtomicBoolean reading = new AtomicBoolean();
-    // Replaced as a whole by each refresh; read when a layout is rebuilt.
-    private volatile Map<Destination, OptionalInt> online = Map.of();
+    // The running services per destination, replaced as a whole by each refresh; the count line and
+    // the click hint of every stack are both derived from it.
+    private volatile Map<Destination, List<ServiceCount>> running = Map.of();
     private volatile boolean stopped;
     private SpawnReturn spawnReturn;
     private FeatureNode node;
@@ -175,28 +175,38 @@ public final class NavigatorModule {
         int entries = Destination.visible(this.featureFlags, team).size() + 1;
         this.navigatorTelemetry.open(player.getUuid(), team, entries, () -> {
             navigator.applyLayoutIfChanged(this.featureFlags, layoutFor(menu.language()));
+            // A portal added since the last refresh must already show in the hint when the menu opens.
+            navigator.showItems(destination -> itemOf(destination, menu.language()));
             player.openInventory(navigator.inventory());
         });
     }
 
-    // Test-only: lets a leak test assert the listener count on each Aves event node stays constant
-    // across opens. English is the language a player without a locale gets.
+    // Test-only: returns the live menu inventory for one language, so a leak test can read its
+    // event node and stacks. English is the language a player without a locale gets.
     Inventory publicInventory() {
-        return inventory(false, Locale.ENGLISH);
+        return publicInventory(Locale.ENGLISH);
     }
 
     Inventory teamInventory() {
-        return inventory(true, Locale.ENGLISH);
+        return teamInventory(Locale.ENGLISH);
+    }
+
+    Inventory publicInventory(Locale language) {
+        return inventory(false, language);
+    }
+
+    Inventory teamInventory(Locale language) {
+        return inventory(true, language);
     }
 
     private Inventory inventory(boolean team, Locale language) {
         return this.menus.get(new Menu(team, language)).inventory();
     }
 
-    // A player with no locale yet, or one whose language has no bundle, reads English.
+    // A player whose language has no bundle reads English.
     private static Locale languageOf(Player player) {
-        Locale locale = player.getLocale();
-        return locale != null && Locale.GERMAN.getLanguage().equals(locale.getLanguage()) ? Locale.GERMAN : Locale.ENGLISH;
+        String language = player.getLocale().getLanguage();
+        return LANGUAGES.stream().filter(supported -> supported.getLanguage().equals(language)).findFirst().orElse(Locale.ENGLISH);
     }
 
     // The read may block on the network, so it runs on the executor; the inventories are only
@@ -208,9 +218,9 @@ public final class NavigatorModule {
         try {
             this.reads.execute(() -> {
                 try {
-                    Map<Destination, OptionalInt> read = new EnumMap<>(Destination.class);
+                    Map<Destination, List<ServiceCount>> read = new EnumMap<>(Destination.class);
                     for (Destination destination : Destination.values()) {
-                        read.put(destination, this.players.online(destination.task()));
+                        read.put(destination, this.players.services(destination.task()));
                     }
                     this.scheduler.scheduleNextTick(() -> showCounts(read));
                 } finally {
@@ -222,19 +232,20 @@ public final class NavigatorModule {
         }
     }
 
-    private void showCounts(Map<Destination, OptionalInt> read) {
+    private void showCounts(Map<Destination, List<ServiceCount>> read) {
         if (this.stopped) {
             return;
         }
-        this.online = read;
+        this.running = read;
         this.menus.forEach((menu, navigator) -> navigator.showItems(destination -> itemOf(destination, menu.language())));
     }
 
+    // The picker hint follows the last refresh, as the count does; the portal is looked up now, so a
+    // portal added or removed shows up as soon as the menu is opened.
     private ItemStack itemOf(Destination destination, Locale language) {
-        OptionalInt count = this.online.getOrDefault(destination, OptionalInt.empty());
-        // Read on every refresh, like the count, so a portal added or removed shows up in the hint.
-        boolean serverPicker = ServerPicker.DESTINATIONS.contains(destination);
-        return destination.item(count, this.messages.clickHint(language, serverPicker, portalFor(destination).isPresent()));
+        List<ServiceCount> services = this.running.getOrDefault(destination, List.of());
+        boolean serverPicker = ServerPicker.opensFor(destination, services);
+        return destination.item(TaskPlayers.online(services), this.messages.clickHint(language, serverPicker, portalFor(destination).isPresent()));
     }
 
     private SpawnReturn resolveSpawnReturn() {

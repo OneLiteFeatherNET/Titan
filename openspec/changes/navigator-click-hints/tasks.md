@@ -1,6 +1,6 @@
 # Tasks
 
-Gestapelt auf `feat/navigator-server-picker-2` (#424). Jeder Schritt: Test zuerst (rot), dann Code (grün).
+Gestapelt auf `feat/navigator-server-picker-2` (#424), inzwischen in `main` (v3.2.0). Jeder Schritt: Test zuerst (rot), dann Code (grün).
 
 ## 1. Übersetzungen
 
@@ -9,12 +9,12 @@ Gestapelt auf `feat/navigator-server-picker-2` (#424). Jeder Schritt: Test zuers
 
 ## 2. Lore-Zeile
 
-- [x] 2.1 Test zuerst (Unit, Minestom-Env, `DestinationClickHintLoreTest`): Ein Hinweis steht nach der Spielerzahl; ohne Spielerzahl steht nur der Hinweis; ohne Hinweis bleibt die Lore wie bisher. Rot, dann `Destination.item(OptionalInt, Component)`.
+- [x] 2.1 Test zuerst (Unit, Minestom-Env, `DestinationClickHintLoreTest`): Ein Hinweis steht nach der Spielerzahl; ohne Spielerzahl steht nur der Hinweis. Rot, dann `Destination.item(OptionalInt, Component)`.
 
 ## 3. Navigator
 
 - [x] 3.1 Test zuerst (Integration, `NavigatorClickHintTest`, `Env`): Mit Portal zeigt Survival beide Angaben, ohne Portal nur den Linksklick, Spawn keine Zeile, ein deutscher Spieler bekommt deutschen Text. Rot, dann je Sprache eine Inventory in `NavigatorModule` und `SharedNavigator`.
-- [x] 3.2 Bestehende Tests anpassen: Die exakten Lore-Assertions in `NavigatorPlayerCountTest` und `DestinationPlayerLoreTest` erwarten jetzt zusätzlich den Hinweis; die Spielerzahl-Zeile bleibt gleich. Grün.
+- [x] 3.2 Bestehende Tests anpassen: Die exakten Lore-Assertions in `NavigatorPlayerCountTest` erwarten jetzt zusätzlich den Hinweis; die Spielerzahl-Zeile bleibt gleich. `DestinationPlayerLoreTest` übergibt den Hinweis als Argument und prüft die Spielerzahl-Zeile unverändert. Grün.
 
 ## 4. Abnahme
 
@@ -23,4 +23,14 @@ Gestapelt auf `feat/navigator-server-picker-2` (#424). Jeder Schritt: Test zuers
 
 ## 5. Pull Request
 
-- [ ] 5.1 Pull Request vom Zweig `feat/navigator-click-hints` auf `feat/navigator-server-picker-2` mit dem Titel `feat(navigator): explain click actions in the entry lore` öffnen (Titel und Beschreibung Englisch, Hinweis auf die Stapelung auf #424, Testplan). Nachweis: PR-URL, CI grün.
+- [x] 5.1 Pull Request #433 mit dem Titel `feat(navigator): explain click actions in the entry lore` ist umgesetzt und steht als 996d70f auf `main`.
+
+## 6. Nachtrag: Klickhinweis trifft den tatsächlichen Klick
+
+Der Hinweis „Server wählen“ galt für alle Ziele aus `ServerPicker.DESTINATIONS`, die Auswahl öffnet sich aber nur bei mehr als einem laufenden Dienst. Außerdem wurde der Portal-Hinweis nur beim Aktualisierungszyklus berechnet, nicht beim Öffnen.
+
+- [x] 6.1 Test zuerst (Integration, `NavigatorClickHintTest`): ElytraRace mit mehreren Diensten zeigt „Server wählen“; mit einem oder keinem Dienst „verbinden“. Rot bei einem und keinem Dienst, dann Code.
+- [x] 6.2 Test zuerst (Integration, `NavigatorClickHintTest`): Wird das Menü direkt nach einer Portal-Änderung geöffnet, zeigt es den Rechtsklick-Hinweis schon. Rot, dann Code: das Menü wird beim Öffnen neu befüllt.
+- [x] 6.3 Die Spielerzahl wird aus derselben Dienste-Lesung summiert wie der Hinweis, so liest jeder Zyklus die Dienste einmal je Ziel. `Destination.item` verlangt den Hinweis; die Überladungen ohne ihn sind entfernt.
+- [x] 6.4 Tests für deutsche Menüs (Spielerzahl-Zyklus, Team mit Deutsch) und Listener-Lebenszyklus je Sprache (Leak-Test).
+- [ ] 6.5 Pull Request mit dem Titel `fix(navigator): keep click hints in line with the actual click` nach `main` öffnen (Titel und Beschreibung Englisch, Testplan). Nachweis: PR-URL, CI grün.

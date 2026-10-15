@@ -18,7 +18,6 @@ package net.onelitefeather.titan.feature.navigator;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
-import net.onelitefeather.titan.core.portal.PlayerCount;
 import net.onelitefeather.titan.core.portal.PlayerCounts;
 import net.onelitefeather.titan.core.portal.ServiceCount;
 import net.onelitefeather.titan.core.portal.SourceType;
@@ -26,9 +25,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The players on a CloudNet task, summed over its running services by the {@link PlayerCounts}
- * provider. Empty whenever the number is unknown: no provider, a task that is not running, or a
- * lookup that failed.
+ * The players on a CloudNet task, read from the running services of the {@link PlayerCounts}
+ * provider and summed in {@link #online}. Empty whenever the number is unknown: no provider, a
+ * task that is not running, or a lookup that failed.
  */
 final class TaskPlayers {
 
@@ -40,20 +39,15 @@ final class TaskPlayers {
         this.counts = counts;
     }
 
-    OptionalInt online(String task) {
-        if (this.counts.isEmpty() || !this.counts.get().supports(SourceType.TASK)) {
+    /** The players over one snapshot of a task's services; unknown when nothing runs. */
+    static OptionalInt online(List<ServiceCount> running) {
+        if (running.isEmpty()) {
             return OptionalInt.empty();
         }
-        try {
-            PlayerCount count = this.counts.get().count(SourceType.TASK, task);
-            return count.running() ? OptionalInt.of(count.online()) : OptionalInt.empty();
-        } catch (RuntimeException e) {
-            LOGGER.debug("Reading the players of task '{}' failed", task, e);
-            return OptionalInt.empty();
-        }
+        return OptionalInt.of(running.stream().mapToInt(ServiceCount::online).sum());
     }
 
-    /** The running services of a task; empty whenever they are unknown, like {@link #online}. */
+    /** The running services of a task; empty whenever they are unknown. */
     List<ServiceCount> services(String task) {
         if (this.counts.isEmpty() || !this.counts.get().supports(SourceType.TASK)) {
             return List.of();

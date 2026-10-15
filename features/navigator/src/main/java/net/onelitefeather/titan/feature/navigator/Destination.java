@@ -72,30 +72,16 @@ enum Destination {
         return this.permission;
     }
 
-    // Rebuilds the icon on every call so callers never share one ItemStack instance.
-    ItemStack item() {
-        return item(OptionalInt.empty());
-    }
-
-    // An unknown count adds no line, so it never reads as an empty lobby.
-    ItemStack item(OptionalInt online) {
-        return item(online, null);
-    }
-
-    // The players line comes first, then the click hint; either is left out when absent.
-    ItemStack item(OptionalInt online, @Nullable Component clickHint) {
+    // Rebuilds the icon on every call so callers never share one ItemStack instance. An unknown count
+    // adds no line, so it never reads as an empty lobby; the players line comes before the hint.
+    ItemStack item(OptionalInt online, Component clickHint) {
         ItemStack.Builder builder = ItemStack.builder(this.icon).customName(MiniMessage.miniMessage().deserialize(this.displayName));
         List<Component> lore = new ArrayList<>();
         if (online.isPresent()) {
             lore.add(playersLine(online.getAsInt()));
         }
-        if (clickHint != null) {
-            lore.add(clickHint);
-        }
-        if (!lore.isEmpty()) {
-            builder.lore(lore);
-        }
-        return builder.build();
+        lore.add(clickHint);
+        return builder.lore(lore).build();
     }
 
     static Component playersLine(int online) {

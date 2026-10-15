@@ -1,11 +1,19 @@
 ## ADDED Requirements
 
 ### Requirement: Modus-Einträge erklären die Klicks
-Jeder Modus-Eintrag des Navigators MUSS eine zusätzliche Lore-Zeile mit seinen Klickaktionen zeigen. Der Linksklick wird als „Server wählen“ beschrieben, wenn das Ziel eine Serverauswahl hat, sonst als „verbinden“. Der Rechtsklick wird nur beschrieben, wenn das Ziel ein Portal in der Lobby hat. Der Spawn-Eintrag DARF KEINE solche Zeile zeigen.
+Jeder Modus-Eintrag des Navigators MUSS eine zusätzliche Lore-Zeile mit seinen Klickaktionen zeigen. Der Linksklick wird als „Server wählen“ beschrieben, wenn das Ziel eine Serverauswahl hat und gerade auf mehreren laufenden Servern läuft, weil der Klick dann die Auswahl öffnet. Sonst wird er als „verbinden“ beschrieben, weil der Klick direkt verbindet. Der Rechtsklick wird nur beschrieben, wenn das Ziel ein Portal in der Lobby hat. Der Spawn-Eintrag DARF KEINE solche Zeile zeigen.
 
-#### Scenario: Ziel mit Serverauswahl und Portal
-- **WHEN** ein Spieler den Navigator öffnet und für ElytraRace ein Portal in der Lobby existiert
+#### Scenario: Ziel mit Serverauswahl auf mehreren Servern und Portal
+- **WHEN** ein Spieler den Navigator öffnet, ElytraRace auf mehr als einem Server läuft und für ElytraRace ein Portal in der Lobby existiert
 - **THEN** zeigt der Eintrag ElytraRace die Zeile „Left click: choose a server · Right click: walk to portal“
+
+#### Scenario: Ziel mit Serverauswahl auf einem Server
+- **WHEN** ein Spieler den Navigator öffnet und ElytraRace nur auf einem Server läuft
+- **THEN** zeigt der Eintrag ElytraRace die Zeile „Left click: connect“, weil der Klick direkt verbindet
+
+#### Scenario: Ziel mit Serverauswahl ohne laufenden Server
+- **WHEN** ein Spieler den Navigator öffnet und ElytraRace nirgends läuft
+- **THEN** zeigt der Eintrag ElytraRace die Zeile „Left click: connect“
 
 #### Scenario: Ziel ohne Portal zeigt nur den Linksklick
 - **WHEN** ein Spieler den Navigator öffnet und für Survival kein Portal existiert
@@ -14,6 +22,10 @@ Jeder Modus-Eintrag des Navigators MUSS eine zusätzliche Lore-Zeile mit seinen 
 #### Scenario: Ziel ohne Serverauswahl mit Portal
 - **WHEN** ein Spieler den Navigator öffnet und für Survival ein Portal existiert
 - **THEN** zeigt der Eintrag Survival die Zeile „Left click: connect · Right click: walk to portal“
+
+#### Scenario: Portal seit dem letzten Zyklus hinzugekommen
+- **WHEN** ein Portal für Survival nach dem letzten Aktualisierungszyklus des Navigators angelegt wird und ein Spieler den Navigator danach öffnet, bevor der nächste Zyklus läuft
+- **THEN** zeigt der Eintrag Survival sofort die Rechtsklick-Angabe „Right click: walk to portal“
 
 #### Scenario: Spawn ohne Hinweis
 - **WHEN** ein Spieler den Navigator öffnet

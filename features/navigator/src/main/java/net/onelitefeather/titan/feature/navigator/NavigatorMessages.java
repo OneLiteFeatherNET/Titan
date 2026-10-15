@@ -70,8 +70,8 @@ final class NavigatorMessages implements AutoCloseable {
     }
 
     /**
-     * The click hint line of one entry. The left click is "choose a server" for a mode with the
-     * server picker and "connect" for the others; the right click is named only with a portal.
+     * The click hint line of one entry. The left click is "choose a server" only while the picker
+     * opens for the mode, and "connect" otherwise; the right click is named only with a portal.
      */
     Component clickHint(Locale locale, boolean serverPicker, boolean portal) {
         String key = serverPicker ? (portal ? CLICK_PICK_PORTAL : CLICK_PICK) : (portal ? CLICK_CONNECT_PORTAL : CLICK_CONNECT);

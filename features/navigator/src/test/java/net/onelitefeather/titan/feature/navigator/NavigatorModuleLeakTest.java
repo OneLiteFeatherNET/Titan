@@ -16,11 +16,13 @@
 package net.onelitefeather.titan.feature.navigator;
 
 import java.util.List;
+import java.util.Locale;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.event.trait.InventoryEvent;
+import net.minestom.server.inventory.Inventory;
 import net.minestom.server.instance.Instance;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
@@ -88,6 +90,59 @@ class NavigatorModuleLeakTest {
             Assertions.assertEquals(moduleListenersBefore, EventListenerCounter.countListeners(navigatorNode), "opening and closing the navigator must never register another listener on the module's own node");
             Assertions.assertEquals(publicListenersBefore, EventListenerCounter.countListeners(publicNode), "opening and closing the navigator must never register another listener on the public inventory's node");
             Assertions.assertEquals(teamListenersBefore, EventListenerCounter.countListeners(teamNode), "opening and closing the navigator must never register another listener on the team inventory's node");
+        }
+    }
+
+    @DisplayName("Opening and closing the German navigator 50 times registers no extra listeners")
+    @Test
+    void germanOpeningAndClosingRepeatedlyDoesNotLeakListeners(Env env) {
+        Instance instance = env.createFlatInstance();
+        Player team = env.createPlayer(instance);
+        Player other = env.createPlayer(instance);
+        team.setLocale(Locale.GERMANY);
+        other.setLocale(Locale.GERMANY);
+        FakePermissionService permissions = new FakePermissionService().set(team.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED);
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), permissions)) {
+            fixture.equip(team);
+            fixture.equip(other);
+            EventNode<Event> navigatorNode = navigatorNode(env);
+            EventNode<InventoryEvent> publicNode = fixture.module().publicInventory(Locale.GERMAN).eventNode();
+            EventNode<InventoryEvent> teamNode = fixture.module().teamInventory(Locale.GERMAN).eventNode();
+            Assertions.assertTrue(EventListenerCounter.countListeners(publicNode) > 0, "the German public inventory must listen for clicks before the loop, or the leak check proves nothing");
+            Assertions.assertTrue(EventListenerCounter.countListeners(teamNode) > 0, "the German team inventory must listen for clicks before the loop, or the leak check proves nothing");
+            int moduleListenersBefore = EventListenerCounter.countListeners(navigatorNode);
+            int publicListenersBefore = EventListenerCounter.countListeners(publicNode);
+            int teamListenersBefore = EventListenerCounter.countListeners(teamNode);
+
+            for (int i = 0; i < OPEN_CLOSE_COUNT; i++) {
+                boolean withBuild = i % 2 == 0;
+                Player player = withBuild ? team : other;
+                Inventory expected = withBuild ? fixture.module().teamInventory(Locale.GERMAN) : fixture.module().publicInventory(Locale.GERMAN);
+                fixture.useFeather(player);
+                Assertions.assertSame(expected, player.getOpenInventory(), "opening the navigator must show the German " + (withBuild ? "team" : "public") + " inventory, or the leak check would pass vacuously");
+                player.closeInventory();
+            }
+
+            Assertions.assertEquals(moduleListenersBefore, EventListenerCounter.countListeners(navigatorNode), "opening the German navigator must never register another listener on the module's own node");
+            Assertions.assertEquals(publicListenersBefore, EventListenerCounter.countListeners(publicNode), "opening the German navigator must never register another listener on the German public inventory's node");
+            Assertions.assertEquals(teamListenersBefore, EventListenerCounter.countListeners(teamNode), "opening the German navigator must never register another listener on the German team inventory's node");
+        }
+    }
+
+    @DisplayName("Every language's inventory listens while the module runs and stops listening once it is stopped")
+    @Test
+    void everyInventoryIsUnregisteredWhenTheModuleStops(Env env) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), new FakePermissionService())) {
+            List<Inventory> inventories = List.of(fixture.module().publicInventory(), fixture.module().teamInventory(), fixture.module().publicInventory(Locale.GERMAN), fixture.module().teamInventory(Locale.GERMAN));
+            for (Inventory inventory : inventories) {
+                Assertions.assertTrue(EventListenerCounter.countListeners(inventory.eventNode()) > 0, "the inventory must listen for clicks while the module runs");
+            }
+
+            fixture.stopModule();
+
+            for (Inventory inventory : inventories) {
+                Assertions.assertEquals(0, EventListenerCounter.countListeners(inventory.eventNode()), "a stopped module must leave no click listener behind on any inventory");
+            }
         }
     }
 

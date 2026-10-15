@@ -15,8 +15,12 @@
  */
 package net.onelitefeather.titan.feature.navigator;
 
+import static net.onelitefeather.titan.feature.navigator.NavigatorFixture.tick;
+
 import java.util.List;
+import java.util.Locale;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import net.minestom.server.ServerFlag;
 import net.minestom.server.component.DataComponents;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.inventory.InventoryPreClickEvent;
@@ -35,9 +39,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(MicrotusExtension.class)
 class NavigatorPlayerCountTest {
 
-    private static final int PERIOD_TICKS = 20;
+    private static final int PERIOD_TICKS = NavigatorFixture.REFRESH_SECONDS * ServerFlag.SERVER_TICKS_PER_SECOND;
     // Survival has no portal in these tests, so only its left click is named.
     private static final String HINT = "Left click: connect";
+    private static final String GERMAN_HINT = "Linksklick: verbinden";
 
     private static FeatureFlags flags() {
         return new FakeFeatureFlags().declare(Destination.SLENDER_FLAG, true);
@@ -49,12 +54,6 @@ class NavigatorPlayerCountTest {
 
     private static ItemStack survival(Inventory inventory) {
         return inventory.getItemStack(Destination.SURVIVAL.slot());
-    }
-
-    private static void tick(Env env, int ticks) {
-        for (int i = 0; i < ticks; i++) {
-            env.tick();
-        }
     }
 
     @DisplayName("The first refresh shows the count under the mode, in both menus")
@@ -88,13 +87,26 @@ class NavigatorPlayerCountTest {
         }
     }
 
-    @DisplayName("A mode whose task is not running shows no count line")
+    @DisplayName("A mode whose task is not running shows only its click hint")
     @Test
-    void notRunningTaskShowsNoLine(Env env) {
+    void notRunningTaskShowsOnlyTheClickHint(Env env) {
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), flags(), new FakePermissionService(), new FakePlayerCounts())) {
             tick(env, 2);
 
-            Assertions.assertEquals(List.of(HINT), lore(survival(fixture.module().publicInventory())), "unknown must not show a count line");
+            Assertions.assertEquals(List.of(HINT), lore(survival(fixture.module().publicInventory())), "a task that runs nowhere must not show a count line");
+        }
+    }
+
+    @DisplayName("German inventories show the count after a refresh, in both menus")
+    @Test
+    void germanInventoriesShowTheCount(Env env) {
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.serve("Survival", 4);
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), flags(), new FakePermissionService(), counts)) {
+            tick(env, 2);
+
+            Assertions.assertEquals(List.of("4 online", GERMAN_HINT), lore(survival(fixture.module().publicInventory(Locale.GERMAN))), "the German public menu must get the count refresh");
+            Assertions.assertEquals(List.of("4 online", GERMAN_HINT), lore(survival(fixture.module().teamInventory(Locale.GERMAN))), "the German team menu must get the count refresh");
         }
     }
 

@@ -86,6 +86,6 @@ class NavigatorMessagesTest {
     @DisplayName("A locale without a bundle falls back to English")
     @Test
     void unknownLocaleFallsBackToEnglish() {
-        Assertions.assertEquals(plain(Locale.ENGLISH, false, false), plain(Locale.JAPAN, false, false));
+        Assertions.assertEquals("Left click: connect", plain(Locale.JAPAN, false, false), "a locale without a bundle must read the English text");
     }
 }
