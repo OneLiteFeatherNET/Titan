@@ -17,6 +17,9 @@ package net.onelitefeather.titan.buildsrc.git;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.provider.ValueSource;
 import org.gradle.api.provider.ValueSourceParameters;
@@ -28,24 +31,41 @@ import org.gradle.api.provider.ValueSourceParameters;
  */
 public abstract class GitCommitValueSource implements ValueSource<String, GitCommitValueSource.Parameters> {
 
+    private static final long TIMEOUT_SECONDS = 10;
+
     public interface Parameters extends ValueSourceParameters {
         DirectoryProperty getWorkingDirectory();
     }
 
     @Override
     public String obtain() {
+        Path root = getParameters().getWorkingDirectory().get().getAsFile().toPath();
+        // git walks up to a parent repository, so a source tree unpacked inside another checkout
+        // would report that checkout's HEAD. Only a root with its own .git (a directory, or a file
+        // in a worktree) names its own commit.
+        if (!Files.exists(root.resolve(".git"))) {
+            return null;
+        }
+        Process process = null;
         try {
-            Process process = new ProcessBuilder("git", "rev-parse", "--short", "HEAD")
-                    .directory(getParameters().getWorkingDirectory().get().getAsFile())
+            process = new ProcessBuilder("git", "rev-parse", "--short", "HEAD")
+                    .directory(root.toFile())
                     .redirectError(ProcessBuilder.Redirect.DISCARD)
                     .start();
+            if (!process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS) || process.exitValue() != 0) {
+                return null;
+            }
             String commit = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
-            return process.waitFor() == 0 && !commit.isEmpty() ? commit : null;
+            return commit.isEmpty() ? null : commit;
         } catch (IOException exception) {
             return null;
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             return null;
+        } finally {
+            if (process != null) {
+                process.destroyForcibly();
+            }
         }
     }
 }
