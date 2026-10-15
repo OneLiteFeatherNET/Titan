@@ -15,9 +15,9 @@
  */
 package net.onelitefeather.titan.common.observability;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.security.CodeSource;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
@@ -25,7 +25,8 @@ import java.util.jar.Manifest;
 
 /**
  * The version and short commit of the running build, read from the manifest of the jar it was
- * started from.
+ * started from. Every lookup failure falls back to the defaults: a broken lookup must never stop
+ * the server from starting.
  */
 public record TitanBuild(String version, String commit) {
 
@@ -43,24 +44,29 @@ public record TitanBuild(String version, String commit) {
      * fallbacks apply.
      */
     public static TitanBuild of(Class<?> type) {
-        return fromManifest(manifestAttributes(type));
+        try {
+            CodeSource source = type.getProtectionDomain().getCodeSource();
+            if (source == null || source.getLocation() == null) {
+                return fromManifest(new Attributes());
+            }
+            return fromLocation(Path.of(source.getLocation().toURI()));
+        } catch (URISyntaxException | RuntimeException exception) {
+            return fromManifest(new Attributes());
+        }
+    }
+
+    /** Reads the manifest of {@code location}; a class directory has no manifest and falls back. */
+    static TitanBuild fromLocation(Path location) {
+        try (JarFile jar = new JarFile(location.toFile())) {
+            Manifest manifest = jar.getManifest();
+            return fromManifest(manifest == null ? new Attributes() : manifest.getMainAttributes());
+        } catch (IOException | RuntimeException exception) {
+            return fromManifest(new Attributes());
+        }
     }
 
     static TitanBuild fromManifest(Attributes attributes) {
         return new TitanBuild(attributes.getValue(Attributes.Name.IMPLEMENTATION_VERSION), attributes.getValue(GIT_COMMIT));
-    }
-
-    private static Attributes manifestAttributes(Class<?> type) {
-        CodeSource source = type.getProtectionDomain().getCodeSource();
-        if (source == null) {
-            return new Attributes();
-        }
-        try (JarFile jar = new JarFile(new File(source.getLocation().toURI()))) {
-            Manifest manifest = jar.getManifest();
-            return manifest == null ? new Attributes() : manifest.getMainAttributes();
-        } catch (IOException | URISyntaxException | IllegalArgumentException exception) {
-            return new Attributes();
-        }
     }
 
     private static String orDefault(String value, String fallback) {
