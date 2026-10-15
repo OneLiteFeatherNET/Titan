@@ -33,4 +33,4 @@ Der Hinweis „Server wählen“ galt für alle Ziele aus `ServerPicker.DESTINAT
 - [x] 6.2 Test zuerst (Integration, `NavigatorClickHintTest`): Wird das Menü direkt nach einer Portal-Änderung geöffnet, zeigt es den Rechtsklick-Hinweis schon. Rot, dann Code: das Menü wird beim Öffnen neu befüllt.
 - [x] 6.3 Die Spielerzahl wird aus derselben Dienste-Lesung summiert wie der Hinweis, so liest jeder Zyklus die Dienste einmal je Ziel. `Destination.item` verlangt den Hinweis; die Überladungen ohne ihn sind entfernt.
 - [x] 6.4 Tests für deutsche Menüs (Spielerzahl-Zyklus, Team mit Deutsch) und Listener-Lebenszyklus je Sprache (Leak-Test).
-- [ ] 6.5 Pull Request mit dem Titel `fix(navigator): keep click hints in line with the actual click` nach `main` öffnen (Titel und Beschreibung Englisch, Testplan). Nachweis: PR-URL, CI grün.
+- [x] 6.5 Pull Request #438 mit dem Titel `fix(navigator): keep click hints in line with the actual click` nach `main` geöffnet, CI grün, squash-gemergt als 972c932.
