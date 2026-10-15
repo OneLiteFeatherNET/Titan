@@ -15,7 +15,9 @@ java {
 
 // TitanObservability reports this as the Sentry release, so an issue can be traced back to the
 // deploy that introduced it. Package.getImplementationVersion() reads it from the jar the classes
-// were loaded from, which for both server processes is the shaded jar.
+// were loaded from, which for both server processes is the shaded jar. Git-Commit is not set here:
+// it only belongs on the shaded application jars (see titan.app-variant and :setup), so a commit
+// does not rebuild every library jar.
 tasks.withType<Jar>().configureEach {
     manifest {
         attributes("Implementation-Version" to rootProject.version.toString())
