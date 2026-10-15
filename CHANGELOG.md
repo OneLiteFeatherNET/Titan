@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.2.1](https://github.com/OneLiteFeatherNET/Titan/compare/v3.2.0...v3.2.1) (2026-10-15)
+
+
+### Bug Fixes
+
+* **deps:** update dependency io.opentelemetry:opentelemetry-bom to v1.64.0 ([#435](https://github.com/OneLiteFeatherNET/Titan/issues/435)) ([32f292f](https://github.com/OneLiteFeatherNET/Titan/commit/32f292f0105b84bfcde62853c51a6cae42b3a96c))
+* **deps:** update dependency io.opentelemetry:opentelemetry-bom to v1.65.0 ([#436](https://github.com/OneLiteFeatherNET/Titan/issues/436)) ([c590a19](https://github.com/OneLiteFeatherNET/Titan/commit/c590a19c007f010665aa02efafca943ce28cd294))
+* **deps:** update dependency io.opentelemetry:opentelemetry-bom to v1.66.0 ([#439](https://github.com/OneLiteFeatherNET/Titan/issues/439)) ([2c666b0](https://github.com/OneLiteFeatherNET/Titan/commit/2c666b072fecc95248ae8939c39091ad58606826))
+* **deps:** update dependency io.opentelemetry:opentelemetry-bom to v1.67.0 ([#440](https://github.com/OneLiteFeatherNET/Titan/issues/440)) ([9fbcfd9](https://github.com/OneLiteFeatherNET/Titan/commit/9fbcfd9db1cf0a6108246a03ebf065e4aaa26bb4))
+* **deps:** update dependency io.sentry:sentry-bom to v8.60.0 ([#383](https://github.com/OneLiteFeatherNET/Titan/issues/383)) ([78be857](https://github.com/OneLiteFeatherNET/Titan/commit/78be8578ebc12d74db217d70c2f515b6e099301e))
+* **deps:** update dependency io.sentry:sentry-bom to v8.61.0 ([#441](https://github.com/OneLiteFeatherNET/Titan/issues/441)) ([6578b4a](https://github.com/OneLiteFeatherNET/Titan/commit/6578b4a08aec13aba433374c452089a46f76db04))
+* **navigator:** keep click hints in line with the actual click ([972c932](https://github.com/OneLiteFeatherNET/Titan/commit/972c9321aba8b64b672e2cdec4c5de573e981e23))
+
 ## [3.2.0](https://github.com/OneLiteFeatherNET/Titan/compare/v3.1.0...v3.2.0) (2026-10-14)
 
 
