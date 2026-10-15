@@ -23,6 +23,8 @@ import net.onelitefeather.titan.common.observability.TitanObservability;
 import net.onelitefeather.titan.core.bootstrap.ServerBootstrap;
 import net.onelitefeather.titan.runtime.bootstrap.BootstrapSettings;
 import net.onelitefeather.titan.runtime.bootstrap.ServerBootstraps;
+import net.onelitefeather.titan.runtime.bootstrap.StartupVersionLog;
+import net.onelitefeather.titan.runtime.bootstrap.TitanBuild;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +52,7 @@ public class TitanApplication {
     public static void main(String[] args) {
         // Anything logged before this reaches the console but not Sentry.
         TitanObservability.bootstrap();
+        StartupVersionLog.log(TitanBuild.of(TitanApplication.class));
 
         // Also catch Error: a broken application.yaml throws ExceptionInInitializerError;
         // rethrowing would hang on a permission platform's non-daemon threads.
