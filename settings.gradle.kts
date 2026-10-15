@@ -57,7 +57,7 @@ dependencyResolutionManagement {
             version("hibernate", "7.4.13.Final")
             version("hikaricp", "7.1.0")
             version("postgresql", "42.7.14")
-            version("flyway", "13.10.0")
+            version("flyway", "13.10.2")
             version("testcontainers", "2.0.5")
 
             // Minestom
