@@ -26,4 +26,4 @@ Jeder Schritt: Test zuerst (rot), dann Code (grün). Ein Commit pro Typ.
 
 ## 5. Pull Request
 
-- [ ] 5.1 Pull Request mit dem Titel `feat(runtime): log the titan version and commit at startup` nach `main` öffnen, englische Beschreibung, CI abwarten.
+- [x] 5.1 Pull Request mit dem Titel `feat(runtime): log the titan version and commit at startup` nach `main` geöffnet (#445), englische Beschreibung, CI grün, squash-gemergt.
