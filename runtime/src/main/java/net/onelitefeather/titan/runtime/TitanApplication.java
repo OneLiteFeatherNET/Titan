@@ -19,12 +19,12 @@ import net.minestom.server.Auth;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.command.CommandManager;
 import net.onelitefeather.titan.common.deliver.ConnectorStartupCheck;
+import net.onelitefeather.titan.common.observability.TitanBuild;
 import net.onelitefeather.titan.common.observability.TitanObservability;
 import net.onelitefeather.titan.core.bootstrap.ServerBootstrap;
 import net.onelitefeather.titan.runtime.bootstrap.BootstrapSettings;
 import net.onelitefeather.titan.runtime.bootstrap.ServerBootstraps;
 import net.onelitefeather.titan.runtime.bootstrap.StartupVersionLog;
-import net.onelitefeather.titan.runtime.bootstrap.TitanBuild;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

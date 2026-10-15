@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.runtime.bootstrap;
+package net.onelitefeather.titan.common.observability;
 
 import java.util.jar.Attributes;
 import org.junit.jupiter.api.Assertions;

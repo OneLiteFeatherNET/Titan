@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.runtime.bootstrap;
 
+import net.onelitefeather.titan.common.observability.TitanBuild;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

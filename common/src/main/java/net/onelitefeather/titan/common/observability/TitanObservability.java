@@ -40,7 +40,6 @@ public final class TitanObservability {
     public static final String ENVIRONMENT_ENVIRONMENT_VARIABLE = "TITAN_SENTRY_ENVIRONMENT";
 
     private static final String DEFAULT_ENVIRONMENT = "unknown";
-    private static final String DEVELOPMENT_RELEASE = "dev";
 
     private TitanObservability() {
         throw new UnsupportedOperationException("This class cannot be instantiated");
@@ -79,10 +78,9 @@ public final class TitanObservability {
         MinecraftServer.getExceptionManager().setExceptionHandler(FeatureNode::reportUnhandledException);
     }
 
-    // Falls back to dev when not loaded from a jar (tests, IDE runs).
+    // The same version the startup log names; TitanBuild falls back to dev outside a jar.
     static String release() {
-        String version = TitanObservability.class.getPackage().getImplementationVersion();
-        return version == null || version.isBlank() ? DEVELOPMENT_RELEASE : version;
+        return TitanBuild.of(TitanObservability.class).version();
     }
 
     private static String environment() {
