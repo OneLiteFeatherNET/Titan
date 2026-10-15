@@ -1,5 +1,19 @@
 # Changelog
 
+## [3.3.0](https://github.com/OneLiteFeatherNET/Titan/compare/v3.2.1...v3.3.0) (2026-10-15)
+
+
+### Features
+
+* **runtime:** log the titan version and commit at startup ([62a55e9](https://github.com/OneLiteFeatherNET/Titan/commit/62a55e9f0bef8ef88f3fce285f2d5abb068c4321))
+
+
+### Bug Fixes
+
+* **deps:** update flyway to v13.10.2 ([#443](https://github.com/OneLiteFeatherNET/Titan/issues/443)) ([5bd8de8](https://github.com/OneLiteFeatherNET/Titan/commit/5bd8de88349c649310b0046ae5ac6eaf4ed14b59))
+* **deps:** update flyway to v13.10.3 ([#446](https://github.com/OneLiteFeatherNET/Titan/issues/446)) ([ac8a12b](https://github.com/OneLiteFeatherNET/Titan/commit/ac8a12b9e6a715319418150b2c786cc012575116))
+* **navigator:** show left and right click hints on separate lines ([eca7ed2](https://github.com/OneLiteFeatherNET/Titan/commit/eca7ed226c57e76256451f39e5fed3229cbf5b8d))
+
 ## [3.2.1](https://github.com/OneLiteFeatherNET/Titan/compare/v3.2.0...v3.2.1) (2026-10-15)
 
 
