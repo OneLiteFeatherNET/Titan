@@ -15,13 +15,22 @@
  */
 package net.onelitefeather.titan.common.observability;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.jar.Attributes;
+import java.util.jar.JarOutputStream;
+import java.util.jar.Manifest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 /** Unit coverage for {@link TitanBuild}: the version and commit that the startup line names. */
 class TitanBuildTest {
+
+    @TempDir
+    Path tempDir;
 
     @DisplayName("Falls back to dev and unknown when the version and commit are missing")
     @Test
@@ -68,5 +77,64 @@ class TitanBuildTest {
         TitanBuild build = TitanBuild.fromManifest(new Attributes());
 
         Assertions.assertEquals(new TitanBuild("dev", "unknown"), build, "a manifest without the two attributes must fall back");
+    }
+
+    @DisplayName("Reads the version and commit from the manifest of a jar")
+    @Test
+    void readsVersionAndCommitFromJarManifest() throws IOException {
+        Manifest manifest = new Manifest();
+        manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
+        manifest.getMainAttributes().put(Attributes.Name.IMPLEMENTATION_VERSION, "3.2.1");
+        manifest.getMainAttributes().putValue("Git-Commit", "99a7f62");
+        Path jar = writeJar("titan-cloudnet.jar", manifest);
+
+        TitanBuild build = TitanBuild.fromLocation(jar);
+
+        Assertions.assertEquals(new TitanBuild("3.2.1", "99a7f62"), build, "a jar must be read through its manifest");
+    }
+
+    @DisplayName("Falls back to dev and unknown when the jar has no manifest")
+    @Test
+    void jarWithoutManifestFallsBack() throws IOException {
+        Path jar = tempDir.resolve("no-manifest.jar");
+        try (JarOutputStream ignored = new JarOutputStream(Files.newOutputStream(jar))) {
+            // An empty jar on purpose: it has no META-INF/MANIFEST.MF to read.
+        }
+
+        Assertions.assertEquals(new TitanBuild("dev", "unknown"), TitanBuild.fromLocation(jar), "a jar without a manifest must fall back");
+    }
+
+    @DisplayName("Falls back to dev and unknown when the jar is missing")
+    @Test
+    void missingJarFallsBack() {
+        Path jar = tempDir.resolve("missing.jar");
+
+        Assertions.assertEquals(new TitanBuild("dev", "unknown"), TitanBuild.fromLocation(jar), "an unreadable location must not stop startup");
+    }
+
+    @DisplayName("Falls back to dev and unknown when the location is a class directory")
+    @Test
+    void classDirectoryFallsBack() {
+        Assertions.assertEquals(new TitanBuild("dev", "unknown"), TitanBuild.fromLocation(tempDir), "a class directory has no manifest and must fall back");
+    }
+
+    @DisplayName("Falls back to dev and unknown for a class that is not loaded from a jar")
+    @Test
+    void classOutsideAJarFallsBack() {
+        Assertions.assertEquals(new TitanBuild("dev", "unknown"), TitanBuild.of(TitanBuildTest.class), "test classes live in a class directory and must fall back");
+    }
+
+    @DisplayName("Falls back to dev and unknown for a bootstrap class without a code source")
+    @Test
+    void classWithoutCodeSourceFallsBack() {
+        Assertions.assertEquals(new TitanBuild("dev", "unknown"), TitanBuild.of(String.class), "a class without a code source must not fail the lookup");
+    }
+
+    private Path writeJar(String name, Manifest manifest) throws IOException {
+        Path jar = tempDir.resolve(name);
+        try (JarOutputStream ignored = new JarOutputStream(Files.newOutputStream(jar), manifest)) {
+            // Only the manifest is read, so the jar carries no other entries.
+        }
+        return jar;
     }
 }
