@@ -23,4 +23,4 @@ Jeder Schritt: Test zuerst (rot), dann Code (grün). Commits je Typ: `fix(naviga
 
 ## 5. Pull Request
 
-- [ ] 5.1 Pull Request mit dem Titel `fix(navigator): show left and right click hints on separate lines` gegen `main` öffnen, englischer Text, CI abwarten.
+- [x] 5.1 Pull Request mit dem Titel `fix(navigator): show left and right click hints on separate lines` gegen `main` geöffnet (#444), englischer Text, CI grün, squash-gemergt.
