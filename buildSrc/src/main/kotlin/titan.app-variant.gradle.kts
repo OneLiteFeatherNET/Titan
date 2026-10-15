@@ -6,6 +6,7 @@
 
 import java.nio.file.Files
 import net.onelitefeather.titan.buildsrc.config.MergeApplicationDefaultsTask
+import net.onelitefeather.titan.buildsrc.git.GitCommitValueSource
 import net.onelitefeather.titan.buildsrc.variant.PlatformModules
 import org.gradle.api.provider.Property
 
@@ -56,6 +57,18 @@ titanVariant.aotCache.convention(false)
 
 application {
     mainClass.set("net.onelitefeather.titan.runtime.TitanApplication")
+}
+
+// Git-Commit names the build in the startup log line (TitanBuild), so a deploy is traceable in
+// Loki. Only the shaded jar carries it, and the value is resolved lazily when that jar is written.
+val gitCommit = providers.of(GitCommitValueSource::class.java) {
+    parameters.workingDirectory.set(rootProject.layout.projectDirectory)
+}.orElse("unknown")
+
+tasks.named<Jar>("shadowJar") {
+    manifest {
+        attributes("Git-Commit" to gitCommit)
+    }
 }
 
 dependencies {

@@ -2,8 +2,6 @@
 // each module build file: the toolchain five times, the test configuration four
 // times, and Jacoco into only two of the five modules.
 
-import net.onelitefeather.titan.buildsrc.git.GitCommitValueSource
-
 plugins {
     java
     jacoco
@@ -17,15 +15,12 @@ java {
 
 // TitanObservability reports this as the Sentry release, so an issue can be traced back to the
 // deploy that introduced it. Package.getImplementationVersion() reads it from the jar the classes
-// were loaded from, which for both server processes is the shaded jar.
-// Git-Commit names the build in the startup log line (TitanBuild), so a deploy is traceable in Loki.
-val gitCommit = providers.of(GitCommitValueSource::class.java) {
-    parameters.workingDirectory.set(rootProject.layout.projectDirectory)
-}.getOrElse("unknown")
-
+// were loaded from, which for both server processes is the shaded jar. Git-Commit is not set here:
+// it only belongs on the shaded application jars (see titan.app-variant and :setup), so a commit
+// does not rebuild every library jar.
 tasks.withType<Jar>().configureEach {
     manifest {
-        attributes("Implementation-Version" to rootProject.version.toString(), "Git-Commit" to gitCommit)
+        attributes("Implementation-Version" to rootProject.version.toString())
     }
 }
 

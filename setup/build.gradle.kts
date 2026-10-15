@@ -1,3 +1,5 @@
+import net.onelitefeather.titan.buildsrc.git.GitCommitValueSource
+
 plugins {
     id("titan.java-conventions")
     id("titan.publish-conventions")
@@ -34,6 +36,12 @@ application {
     applicationDefaultJvmArgs = listOf("-DTITAN_LOBBY_MAP=halloween")
 }
 
+// Git-Commit names the build in the startup log line, like titan.app-variant's shaded jars; it is
+// resolved lazily when the shaded jar is written.
+val gitCommit = providers.of(GitCommitValueSource::class.java) {
+    parameters.workingDirectory.set(rootProject.layout.projectDirectory)
+}.orElse("unknown")
+
 tasks {
     jar {
         archiveClassifier.set("unshaded")
@@ -45,6 +53,9 @@ tasks {
         archiveClassifier.set("")
         archiveFileName.set("setup-titan.jar")
         mergeServiceFiles()
+        manifest {
+            attributes("Git-Commit" to gitCommit)
+        }
     }
 }
 
