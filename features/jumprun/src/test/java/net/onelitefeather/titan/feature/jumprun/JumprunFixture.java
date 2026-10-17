@@ -222,6 +222,13 @@ public final class JumprunFixture implements AutoCloseable {
         player.setSneaking(false);
     }
 
+    /** A player on the lobby floor, on the ground and not in a run. */
+    static Player standingPlayer(Env env, Instance instance) {
+        Player player = env.createConnection().connect(instance, StartedRun.STAND);
+        player.refreshOnGround(true);
+        return player;
+    }
+
     /** Uses the lobby item the way the hotbar's dispatcher would. */
     void useItem(Player player) {
         item.onUse().handle(player, new PlayerUseItemEvent(player, PlayerHand.MAIN, item.itemStack(), 0));

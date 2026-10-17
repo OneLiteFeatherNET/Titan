@@ -272,8 +272,6 @@ final class JumprunModule {
             begin(player);
         } else {
             end(running, EndReason.ABORT);
-            // The grace period belongs to the run that ended.
-            suppressedUntil.remove(player.getUuid());
         }
     }
 
@@ -412,7 +410,10 @@ final class JumprunModule {
             case ClientPlayerBlockPlacementPacket placement -> {
                 // The client follows a click on any block, real or fake, with a plain use packet.
                 resendNextTickIfRunBlock(player, placement.blockPosition());
-                suppressUseUntil(player, USE_SUPPRESSION_TICKS);
+                // Only a run has a follow-up use to keep from ending it; between runs the use starts or switches.
+                if (isRunning(player)) {
+                    suppressUseUntil(player, USE_SUPPRESSION_TICKS);
+                }
             }
             case ClientPlayerPositionStatusPacket status when status.onGround() ->
                 landIfStanding(player);
@@ -588,6 +589,8 @@ final class JumprunModule {
             if (!runs.remove(run)) {
                 return;
             }
+            // Whatever ended the run, its start grace and pending clicks end with it.
+            forgetClicks(player);
             score = run.score();
             run.stopRerolls();
             if (reason.risesAway()) {

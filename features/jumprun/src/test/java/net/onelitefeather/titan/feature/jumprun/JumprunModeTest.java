@@ -44,12 +44,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(MicrotusExtension.class)
 class JumprunModeTest {
 
-    private static Player standingPlayer(Env env, Instance instance) {
-        Player player = env.createConnection().connect(instance, StartedRun.STAND);
-        player.refreshOnGround(true);
-        return player;
-    }
-
     private static void sneakUse(JumprunFixture fixture, Player player) {
         fixture.switchMode(player);
     }
@@ -62,7 +56,7 @@ class JumprunModeTest {
     @Test
     void aPlayerStartsInMedium(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            Player player = standingPlayer(env, JumprunFixture.loadedInstance(env));
+            Player player = JumprunFixture.standingPlayer(env, JumprunFixture.loadedInstance(env));
 
             assertEquals(Mode.MEDIUM, fixture.module().modeOf(player));
         }
@@ -71,7 +65,7 @@ class JumprunModeTest {
     @Test
     void sneakingWithoutARunMovesToTheNextModeAndStartsNothing(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            Player player = standingPlayer(env, JumprunFixture.loadedInstance(env));
+            Player player = JumprunFixture.standingPlayer(env, JumprunFixture.loadedInstance(env));
 
             sneakUse(fixture, player);
 
@@ -83,7 +77,7 @@ class JumprunModeTest {
     @Test
     void theFiveModesCycleBackToEasyAndMedium(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            Player player = standingPlayer(env, JumprunFixture.loadedInstance(env));
+            Player player = JumprunFixture.standingPlayer(env, JumprunFixture.loadedInstance(env));
 
             sneakUse(fixture, player);
             sneakUse(fixture, player);
@@ -140,7 +134,7 @@ class JumprunModeTest {
     void aNormalUseStartsTheRunInTheChosenMode(Env env) {
         Instance instance = JumprunFixture.loadedInstance(env);
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            Player player = standingPlayer(env, instance);
+            Player player = JumprunFixture.standingPlayer(env, instance);
             sneakUse(fixture, player);
 
             fixture.useItem(player);
@@ -154,7 +148,7 @@ class JumprunModeTest {
     void theHeadLabelNamesRainbowAndUltra(Env env) {
         Instance instance = JumprunFixture.loadedInstance(env);
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            Player player = standingPlayer(env, instance);
+            Player player = JumprunFixture.standingPlayer(env, instance);
             sneakUse(fixture, player);
             sneakUse(fixture, player);
             fixture.useItem(player);
@@ -208,7 +202,7 @@ class JumprunModeTest {
     @Test
     void afterADisconnectTheModeIsMediumAgain(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            Player player = standingPlayer(env, JumprunFixture.loadedInstance(env));
+            Player player = JumprunFixture.standingPlayer(env, JumprunFixture.loadedInstance(env));
             sneakUse(fixture, player);
 
             env.process().eventHandler().call(new PlayerDisconnectEvent(player));
@@ -220,7 +214,7 @@ class JumprunModeTest {
     @Test
     void twoSneakClicksWithinTheDebounceSwitchOnlyOnce(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            Player player = standingPlayer(env, JumprunFixture.loadedInstance(env));
+            Player player = JumprunFixture.standingPlayer(env, JumprunFixture.loadedInstance(env));
 
             fixture.sneakUse(player);
             env.tick();
@@ -233,7 +227,7 @@ class JumprunModeTest {
     @Test
     void aSneakClickAfterTheDebounceSwitchesAgain(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            Player player = standingPlayer(env, JumprunFixture.loadedInstance(env));
+            Player player = JumprunFixture.standingPlayer(env, JumprunFixture.loadedInstance(env));
 
             fixture.sneakUse(player);
             fixture.tick(JumprunModule.MODE_SWITCH_DEBOUNCE_TICKS);
@@ -246,7 +240,7 @@ class JumprunModeTest {
     @Test
     void anIgnoredClickDoesNotExtendTheDebounce(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            Player player = standingPlayer(env, JumprunFixture.loadedInstance(env));
+            Player player = JumprunFixture.standingPlayer(env, JumprunFixture.loadedInstance(env));
 
             fixture.sneakUse(player);
             for (int tick = 0; tick < JumprunModule.MODE_SWITCH_DEBOUNCE_TICKS - 1; tick++) {
