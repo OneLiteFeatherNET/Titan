@@ -140,7 +140,7 @@ class SpawnReturnWiringTest {
 
     @DisplayName("Clicking the navigator's spawn entry (slot 31) during a run ends it and puts the player at the lobby spawn")
     @Test
-    void navigatorSlotTwoEndsTheRunAndReturnsThePlayer(Env env) {
+    void navigatorSpawnEntryEndsTheRunAndReturnsThePlayer(Env env) {
         try (Scene scene = Scene.start(env)) {
             scene.startRun(env);
             Assertions.assertTrue(scene.runBlocks() > 0, "precondition: the run must have started and shown its blocks");

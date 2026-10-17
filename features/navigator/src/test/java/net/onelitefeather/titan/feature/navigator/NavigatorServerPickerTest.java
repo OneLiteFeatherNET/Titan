@@ -25,7 +25,10 @@ import net.minestom.server.event.inventory.InventoryPreClickEvent;
 import net.minestom.server.inventory.AbstractInventory;
 import net.minestom.server.inventory.click.Click;
 import net.minestom.server.item.ItemStack;
+import net.minestom.server.network.packet.server.play.SystemChatPacket;
+import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
+import net.minestom.testing.TestConnection;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.portal.Box;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
@@ -177,9 +180,28 @@ class NavigatorServerPickerTest {
         }
     }
 
-    @DisplayName("A left click with no running service opens the picker, which is empty")
+    @DisplayName("Without a player-count provider a left click refuses in chat instead of listing nothing")
     @Test
-    void leftClickWithoutServiceOpensThePicker(Env env) {
+    void withoutProviderQuickJoinRefusesInChat(Env env) {
+        RecordingDeliver deliver = new RecordingDeliver();
+        TestConnection connection = env.createConnection();
+        Player player = connection.connect(env.createFlatInstance());
+        Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone(SLENDER_PERMISSION))) {
+            AbstractInventory navigator = openNavigator(fixture, player);
+
+            click(env, navigator, player, new Click.Left(ELYTRA_RACE_SLOT));
+            env.tick();
+
+            Assertions.assertTrue(deliver.deliveries().isEmpty(), "nothing can be joined without a provider");
+            Assertions.assertSame(navigator, player.getOpenInventory(), "no picker opens when the services are unknowable");
+            Assertions.assertEquals(List.of("Servers » The server list is unavailable right now."), chatTexts(chat), "the player is told why nothing happened");
+        }
+    }
+
+    @DisplayName("A left click with no running service opens the picker, which says that nothing runs")
+    @Test
+    void leftClickWithoutServiceOpensAPickerThatExplainsItself(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
         Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
         try (NavigatorFixture fixture = start(env, deliver, new FakePlayerCounts(), NO_PORTALS)) {
@@ -188,18 +210,22 @@ class NavigatorServerPickerTest {
             click(env, navigator, player, new Click.Left(ELYTRA_RACE_SLOT));
             env.tick();
 
+            AbstractInventory picker = player.getOpenInventory();
             Assertions.assertTrue(deliver.deliveries().isEmpty(), "nothing running means nobody is sent");
-            Assertions.assertNotSame(navigator, player.getOpenInventory(), "the picker replaces the navigator");
+            Assertions.assertNotSame(navigator, picker, "the picker replaces the navigator");
+            Assertions.assertEquals("No server is running right now.", nameOf(picker, 4), "the empty picker names the reason in its middle slot");
         }
     }
 
-    @DisplayName("A failing service read opens the picker instead of sending the player anywhere")
+    @DisplayName("A failing service read refuses in chat and opens no picker")
     @Test
-    void failedReadOpensThePicker(Env env) {
+    void failedReadRefusesInChatAndOpensNoPicker(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.failWith(new IllegalStateException("bridge gone"));
-        Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
+        TestConnection connection = env.createConnection();
+        Player player = connection.connect(env.createFlatInstance());
+        Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);
         try (NavigatorFixture fixture = start(env, deliver, counts, NO_PORTALS)) {
             AbstractInventory navigator = openNavigator(fixture, player);
 
@@ -207,8 +233,162 @@ class NavigatorServerPickerTest {
             env.tick();
 
             Assertions.assertTrue(deliver.deliveries().isEmpty(), "an unknown service list is not a joinable one");
-            Assertions.assertNotSame(navigator, player.getOpenInventory(), "the picker opens instead");
+            Assertions.assertSame(navigator, player.getOpenInventory(), "no picker opens when the services could not be read");
+            Assertions.assertEquals(List.of("Servers » The server list is unavailable right now."), chatTexts(chat), "the player is told why nothing happened");
         }
+    }
+
+    @DisplayName("A right click with a failing service read refuses in chat and opens no picker")
+    @Test
+    void failedReadOnRightClickRefusesInChat(Env env) {
+        RecordingDeliver deliver = new RecordingDeliver();
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.failWith(new IllegalStateException("bridge gone"));
+        TestConnection connection = env.createConnection();
+        Player player = connection.connect(env.createFlatInstance());
+        Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);
+        try (NavigatorFixture fixture = start(env, deliver, counts, NO_PORTALS)) {
+            AbstractInventory navigator = openNavigator(fixture, player);
+
+            click(env, navigator, player, new Click.Right(ELYTRA_RACE_SLOT));
+            env.tick();
+
+            Assertions.assertSame(navigator, player.getOpenInventory(), "no picker opens when the services could not be read");
+            Assertions.assertEquals(1, chat.collect().size(), "the refusal is sent once");
+        }
+    }
+
+    @DisplayName("A click on a picked server re-reads the services and refuses one that has filled up since the picker opened")
+    @Test
+    void pickRefusesAServerThatFilledUpAfterOpening(Env env) {
+        RecordingDeliver deliver = new RecordingDeliver();
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.serveServices("ElytraRace", RACE_ONE, RACE_TWO);
+        Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
+        try (NavigatorFixture fixture = start(env, deliver, counts, NO_PORTALS)) {
+            AbstractInventory navigator = openNavigator(fixture, player);
+            click(env, navigator, player, new Click.Right(ELYTRA_RACE_SLOT));
+            env.tick();
+            AbstractInventory picker = player.getOpenInventory();
+            counts.serveServices("ElytraRace", new ServiceCount("ElytraRace-1", 50, 50), RACE_TWO);
+
+            click(env, picker, player, new Click.Left(0));
+            env.tick();
+
+            Assertions.assertTrue(deliver.deliveries().isEmpty(), "a server that filled up since the picker opened must not be joined");
+            Assertions.assertSame(picker, player.getOpenInventory(), "the picker stays open after the refusal");
+        }
+    }
+
+    @DisplayName("A click on a picked server that has stopped running refuses instead of joining it")
+    @Test
+    void pickRefusesAServerThatStoppedSinceOpening(Env env) {
+        RecordingDeliver deliver = new RecordingDeliver();
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.serveServices("ElytraRace", RACE_ONE, RACE_TWO);
+        Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
+        try (NavigatorFixture fixture = start(env, deliver, counts, NO_PORTALS)) {
+            AbstractInventory navigator = openNavigator(fixture, player);
+            click(env, navigator, player, new Click.Right(ELYTRA_RACE_SLOT));
+            env.tick();
+            AbstractInventory picker = player.getOpenInventory();
+            counts.serveServices("ElytraRace", RACE_TWO);
+
+            click(env, picker, player, new Click.Left(0));
+            env.tick();
+
+            Assertions.assertTrue(deliver.deliveries().isEmpty(), "a server that is gone must not be joined");
+        }
+    }
+
+    @DisplayName("A click on a picked server still joins it when it is still ready and has room")
+    @Test
+    void pickJoinsAServerThatIsStillReady(Env env) {
+        RecordingDeliver deliver = new RecordingDeliver();
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.serveServices("ElytraRace", RACE_ONE, RACE_TWO);
+        Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
+        try (NavigatorFixture fixture = start(env, deliver, counts, NO_PORTALS)) {
+            AbstractInventory navigator = openNavigator(fixture, player);
+            click(env, navigator, player, new Click.Right(ELYTRA_RACE_SLOT));
+            env.tick();
+            AbstractInventory picker = player.getOpenInventory();
+
+            click(env, picker, player, new Click.Left(1));
+            env.tick();
+
+            Assertions.assertEquals("ElytraRace-2", deliver.deliveries().getFirst().serverName(), "the picked server is joined when it still qualifies");
+        }
+    }
+
+    @DisplayName("A middle click on a picked server does nothing: the picker stays open and nobody is sent")
+    @Test
+    void middleClickOnPickedServerDoesNothing(Env env) {
+        RecordingDeliver deliver = new RecordingDeliver();
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.serveServices("ElytraRace", RACE_ONE);
+        Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
+        try (NavigatorFixture fixture = start(env, deliver, counts, NO_PORTALS)) {
+            AbstractInventory navigator = openNavigator(fixture, player);
+            click(env, navigator, player, new Click.Right(ELYTRA_RACE_SLOT));
+            env.tick();
+            AbstractInventory picker = player.getOpenInventory();
+
+            InventoryPreClickEvent event = click(env, picker, player, new Click.Middle(0));
+            env.tick();
+
+            Assertions.assertTrue(event.isCancelled(), "the click must be cancelled so no icon moves");
+            Assertions.assertTrue(deliver.deliveries().isEmpty(), "an unnamed click must not join a server");
+            Assertions.assertSame(picker, player.getOpenInventory(), "an unnamed click must leave the picker open");
+        }
+    }
+
+    @DisplayName("A middle click on a minigame does nothing: it neither joins nor opens the picker")
+    @Test
+    void middleClickOnMinigameDoesNothing(Env env) {
+        assertUnnamedClickOnMinigameDoesNothing(env, new Click.Middle(ELYTRA_RACE_SLOT));
+    }
+
+    @DisplayName("A number-key swap on a minigame does nothing: it neither joins nor opens the picker")
+    @Test
+    void hotbarSwapOnMinigameDoesNothing(Env env) {
+        assertUnnamedClickOnMinigameDoesNothing(env, new Click.HotbarSwap(0, ELYTRA_RACE_SLOT));
+    }
+
+    @DisplayName("A Q drop on a minigame does nothing: it neither joins nor opens the picker")
+    @Test
+    void dropSlotOnMinigameDoesNothing(Env env) {
+        assertUnnamedClickOnMinigameDoesNothing(env, new Click.DropSlot(ELYTRA_RACE_SLOT, false));
+    }
+
+    @DisplayName("A double click on a minigame does nothing: it neither joins nor opens the picker")
+    @Test
+    void doubleClickOnMinigameDoesNothing(Env env) {
+        assertUnnamedClickOnMinigameDoesNothing(env, new Click.Double(ELYTRA_RACE_SLOT));
+    }
+
+    // Only the left and right clicks, with or without shift, are named: any other click is cancelled and
+    // does nothing, so the navigator stays open and nobody is sent.
+    private static void assertUnnamedClickOnMinigameDoesNothing(Env env, Click unnamed) {
+        RecordingDeliver deliver = new RecordingDeliver();
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.serveServices("ElytraRace", RACE_ONE);
+        Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
+        try (NavigatorFixture fixture = start(env, deliver, counts, NO_PORTALS)) {
+            AbstractInventory navigator = openNavigator(fixture, player);
+
+            InventoryPreClickEvent event = click(env, navigator, player, unnamed);
+            env.tick();
+
+            Assertions.assertTrue(event.isCancelled(), "the click must be cancelled so no icon moves");
+            Assertions.assertTrue(deliver.deliveries().isEmpty(), "an unnamed click must not join a server");
+            Assertions.assertSame(navigator, player.getOpenInventory(), "an unnamed click must not open the picker");
+        }
+    }
+
+    private static List<String> chatTexts(Collector<SystemChatPacket> chat) {
+        MiniMessage mini = MiniMessage.miniMessage();
+        return chat.collect().stream().map(packet -> mini.stripTags(mini.serialize(packet.message()))).toList();
     }
 
     @DisplayName("A shift click on a minigame walks to its portal and connects nobody")

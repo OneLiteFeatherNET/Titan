@@ -82,7 +82,7 @@ class NavigatorModuleTest {
     @Test
     void clickingElytraRaceWithoutServiceOpensTheList(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"))) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), new FakePlayerCounts())) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);
@@ -122,7 +122,7 @@ class NavigatorModuleTest {
     @Test
     void clickingSlenderWithoutServiceOpensTheList(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"))) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), new FakePlayerCounts())) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);
