@@ -33,12 +33,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(MicrotusExtension.class)
 class JumprunStopTest {
 
-    private static void tick(Env env, int ticks) {
-        for (int tick = 0; tick < ticks; tick++) {
-            env.tick();
-        }
-    }
-
     @Test
     void aUseRightAfterTheStartDoesNotStopTheRun(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
@@ -54,7 +48,7 @@ class JumprunStopTest {
     void aUseAfterTheGracePeriodStopsTheRun(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             StartedRun run = StartedRun.startFalling(env, fixture, JumprunFixture.loadedInstance(env), StartedRun.STAND);
-            tick(env, JumprunModule.RUN_GRACE_TICKS);
+            fixture.tickPastGrace();
 
             fixture.useItem(run.player());
 
@@ -66,7 +60,7 @@ class JumprunStopTest {
     void theUsePacketThatFollowsAClickOnARealBlockDoesNotStopTheRun(Env env) {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             StartedRun run = StartedRun.startFalling(env, fixture, JumprunFixture.loadedInstance(env), StartedRun.STAND);
-            tick(env, JumprunModule.RUN_GRACE_TICKS);
+            fixture.tickPastGrace();
 
             Vec ground = new Vec(0, JumprunFixture.GROUND_Y - 1, 0);
             fixture.sendClientPacket(run.player(), new ClientPlayerBlockPlacementPacket(PlayerHand.MAIN, ground, BlockFace.TOP, 0.5f, 1f, 0.5f, false, false, 1));
