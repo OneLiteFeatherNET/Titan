@@ -1,5 +1,18 @@
 # Changelog
 
+## [4.0.0](https://github.com/OneLiteFeatherNET/Titan/compare/v3.3.0...v4.0.0) (2026-10-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* **navigator:** the NAVIGATOR_SLENDER feature flag is removed; Slender is shown only to players with titan.navigator.slender.
+
+### Features
+
+* **jumprun:** trace where a run falls ([989670f](https://github.com/OneLiteFeatherNET/Titan/commit/989670f0a03d12975a70d3eaad7418360b3ce527))
+* **navigator:** gate slender behind a permission ([#425](https://github.com/OneLiteFeatherNET/Titan/issues/425)) ([1b3adae](https://github.com/OneLiteFeatherNET/Titan/commit/1b3adaee2bb27fdda2de34aae3d99f0a02f295d3))
+* **navigator:** refresh the navigator with gradients, rows and quick join ([#450](https://github.com/OneLiteFeatherNET/Titan/issues/450)) ([343d5a6](https://github.com/OneLiteFeatherNET/Titan/commit/343d5a69e46e9c5e9688816ab7ff71eca35afa86))
+
 ## [3.3.0](https://github.com/OneLiteFeatherNET/Titan/compare/v3.2.1...v3.3.0) (2026-10-15)
 
 
