@@ -1,6 +1,6 @@
 # Tasks
 
-Zweig: `feat/navigator-refresh`, gestapelt auf `feat/navigator-slender-permission` (PR #425). Vor dem Abhaken einer Aufgabe läuft `./gradlew build`.
+Zweig: `feat/navigator-refresh`, Basis `main` (der Stapel auf `feat/navigator-slender-permission` / PR #425 ist als `1b3adae` in `main` gelandet). Vor dem Abhaken einer Aufgabe läuft `./gradlew build`.
 
 ## 1. Tests zuerst (rot)
 
@@ -32,4 +32,13 @@ Zweig: `feat/navigator-refresh`, gestapelt auf `feat/navigator-slender-permissio
 
 ## 5. Pull Request
 
-- [ ] 5.1 Pull Request auf die Basis `feat/navigator-slender-permission` mit dem Titel `feat(navigator): refresh the navigator with gradients, rows and quick join` (Titel und Beschreibung Englisch). Die Beschreibung nennt den gestapelten Stand auf #425, das Layout, die Klicktabelle, die Regel für den Schnellbeitritt, die Verhaltensänderung des Rechtsklicks und den Testplan. Die CI läuft grün.
+- [ ] 5.1 Pull Request auf die Basis `main` mit dem Titel `feat(navigator): refresh the navigator with gradients, rows and quick join` (Titel und Beschreibung Englisch). Die Beschreibung nennt das Layout, die Klicktabelle, die Regel für den Schnellbeitritt, die Verhaltensänderung des Rechtsklicks und den Testplan. Die CI läuft grün.
+
+## 6. Korrekturen aus dem Review
+
+- [x] 6.1 Nur Links- und Rechtsklick, mit oder ohne Shift, wirken (`ClickAction.of` liefert ein `Optional`, `ClickAction.isNamed`). Alle anderen Klicktypen werden abgebrochen und tun nichts, auch die Einträge der Serverauswahl. Nachweis: Zahlentaste, Q, F, Mittelklick und Doppelklick schlugen auf den Assertions fehl, bevor die Umsetzung existierte.
+- [x] 6.2 Lesefehler und leere Liste sind getrennt (`TaskPlayers.services` liefert ein `Optional`). Ein Lesefehler wird im Chat abgelehnt und öffnet keine Serverauswahl; eine leere Serverauswahl zeigt „Kein Server läuft gerade.“.
+- [x] 6.3 Die Auswahl liest den Dienst beim Klick neu und lehnt ab, was inzwischen voll, nicht bereit oder nicht mehr gelistet ist.
+- [x] 6.4 Lebenszyklus-Tests der Serverauswahl: wiederholtes Öffnen registriert keine Listener, `stop()` entfernt jede geöffnete Serverauswahl (`NavigatorPickerLifecycleTest`).
+- [x] 6.5 Testnamen und Doku: `navigatorSpawnEntryEndsTheRunAndReturnsThePlayer`, `shiftClickOnMinigameWithoutPortalActsLikeTheUnshiftedClick`, Feather-Name in `docs/lobby-modules.md`, Javadoc-Umbrüche, Klickbeschreibung in `README.md`.
+- [x] 6.6 `./gradlew spotlessApply` und `./gradlew build` sind grün.

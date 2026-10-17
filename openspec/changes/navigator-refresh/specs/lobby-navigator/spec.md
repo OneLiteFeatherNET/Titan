@@ -129,6 +129,44 @@ Jede Lore-Zeile des Navigators MUSS in Deutsch oder Englisch erscheinen, je nach
 
 ## ADDED Requirements
 
+### Requirement: Nur benannte Klicks wirken
+
+Der Navigator und seine Serverauswahl MÜSSEN jeden Klick abbrechen. Gewirkt wird nur bei Links- und Rechtsklick, mit oder ohne Shift. Jeder andere Klicktyp (Zahlentasten, Q, F, Mittelklick, Doppelklick, Ziehen) DARF weder schnell beitreten, eine Serverauswahl öffnen, verbinden noch zum Portal laufen; das Inventar MUSS dabei offen bleiben. Das gilt für Minispiele, Server und die Einträge der Serverauswahl.
+
+#### Scenario: Zahlentaste auf einem Minispiel
+
+- **WHEN** ein Spieler auf ElytraRace die Zahlentaste drückt
+- **THEN** passiert nichts: keine Übergabe, keine Serverauswahl, und der Navigator bleibt offen
+
+#### Scenario: Q auf einem Server
+
+- **WHEN** ein Spieler auf Survival Q drückt
+- **THEN** wird niemand übergeben, und der Navigator bleibt offen
+
+#### Scenario: Mittelklick auf einen Eintrag der Serverauswahl
+
+- **WHEN** ein Spieler in der Serverauswahl mit dem Mittelklick auf einen Dienst klickt
+- **THEN** wird er nicht übergeben, und die Serverauswahl bleibt offen
+
+### Requirement: Unlesbare Dienste werden im Chat abgelehnt
+
+Kann die Lobby die laufenden Dienste eines Ziels nicht lesen, weil kein Zähl-Anbieter vorhanden ist oder die Abfrage fehlschlägt, MUSS sie das von dem Ergebnis „läuft nirgends“ unterscheiden. Dann DARF sie weder die Serverauswahl öffnen noch jemanden übergeben, MUSS den Navigator offen lassen und dem Spieler eine übersetzte Ablehnung im Chat senden. Die Ablehnung trägt das Präfix „Servers »“ wie die übrigen Ablehnungen.
+
+#### Scenario: Schnellbeitritt bei fehlgeschlagener Abfrage
+
+- **WHEN** die Abfrage der Dienste fehlschlägt und ein Spieler links auf ElytraRace klickt
+- **THEN** wird niemand übergeben, es öffnet sich keine Serverauswahl, und der Spieler erhält im Chat „Servers » Die Serverliste ist gerade nicht verfügbar.“
+
+#### Scenario: Rechtsklick bei fehlgeschlagener Abfrage
+
+- **WHEN** die Abfrage der Dienste fehlschlägt und ein Spieler rechts auf ElytraRace klickt
+- **THEN** öffnet sich keine Serverauswahl, und der Spieler erhält im Chat „Servers » Die Serverliste ist gerade nicht verfügbar.“
+
+#### Scenario: Ohne Zähl-Anbieter
+
+- **WHEN** kein Zähl-Anbieter vorhanden ist und ein Spieler links auf ElytraRace klickt
+- **THEN** wird niemand übergeben, und der Spieler erhält im Chat „Servers » Die Serverliste ist gerade nicht verfügbar.“
+
 ### Requirement: Der Navigator hat einen Rahmen aus Glasscheiben
 
 Der Navigator MUSS vier Reihen zu neun Plätzen haben. Die Plätze der ersten und letzten Reihe sowie der ersten und letzten Spalte MÜSSEN mit Glasscheiben in Hellblau und Cyan gefüllt sein, die sich nach der Parität von Reihe plus Spalte abwechseln, und einen leeren Namen haben. Die übrigen Plätze ohne Ziel MÜSSEN graue Glasscheiben sein. Spawn MUSS auf Platz 31 die Rahmenscheibe in der unteren Mitte ersetzen.
@@ -170,7 +208,7 @@ Ein Linksklick auf ein Minispiel MUSS aus den laufenden Diensten des Ziels den D
 #### Scenario: Ohne laufenden Dienst
 
 - **WHEN** ElytraRace nirgends läuft und ein Spieler links klickt
-- **THEN** öffnet sich die Serverauswahl, die leer ist
+- **THEN** öffnet sich die Serverauswahl, die leer ist und in der Mitte „Kein Server läuft gerade.“ zeigt
 
 ### Requirement: Klickzuordnung
 
@@ -182,7 +220,7 @@ Ein Klick MUSS nach dieser Tabelle wirken. Shift hat nur dann eine Wirkung, wenn
 | Rechts | Serverauswahl, immer | Verbinden |
 | Shift-Links oder Shift-Rechts mit Portal | zum Portal laufen | zum Portal laufen |
 
-Eine Serverauswahl nach dem Rechtsklick MUSS sich auch dann öffnen, wenn nur ein Dienst läuft, und diesen Dienst zeigen. Das Portal führt den Spieler vor den Portal-Auslöser, wie bisher.
+Eine Serverauswahl nach dem Rechtsklick MUSS sich auch dann öffnen, wenn nur ein Dienst läuft, und diesen Dienst zeigen. Das Portal führt den Spieler vor den Portal-Auslöser, wie bisher. Jeder andere Klicktyp wirkt nicht, siehe „Nur benannte Klicks wirken“.
 
 #### Scenario: Rechtsklick auf Minispiel mit einem Dienst
 
@@ -218,6 +256,21 @@ Die Serverauswahl MUSS den Titel „Server wählen“ im Verlauf zeigen, überse
 - **WHEN** ein Spieler mit deutschem Client einen vollen Dienst wählt
 - **THEN** erhält er im Chat „Servers » Dieser Server ist voll.“
 
+#### Scenario: Leere Serverauswahl erklärt sich
+
+- **WHEN** die Serverauswahl geöffnet wird, während das Ziel nirgends läuft
+- **THEN** zeigt sie in der Mitte einen Eintrag „Kein Server läuft gerade.“, der beim Klick nichts tut
+
+#### Scenario: Gewählter Server wird beim Klick neu gelesen
+
+- **WHEN** `ElytraRace-1` beim Öffnen bereit mit 3 von 50 Spielern gelistet war, danach aber mit 50 von 50 Spielern voll gemeldet wird, und der Spieler es anklickt
+- **THEN** wird der Spieler nicht übergeben, die Serverauswahl bleibt offen, und er erhält im Chat „Servers » Dieser Server ist voll.“
+
+#### Scenario: Gewählter Server läuft inzwischen nicht mehr
+
+- **WHEN** ein Spieler einen Dienst aus der Serverauswahl anklickt, der seit dem Öffnen nicht mehr läuft
+- **THEN** wird der Spieler nicht übergeben, und er erhält im Chat „Servers » Dieser Server ist noch nicht bereit.“
+
 ### Requirement: Menü-Varianten bleiben acht geteilte Inventare
 
 Der Navigator MUSS je Kombination aus Rechten und Sprache genau ein geteiltes Inventar haben, beim Start angelegt, mit dem Titel in dieser Sprache. Die Serverauswahl MUSS je Ziel und Sprache ein geteiltes Inventar haben. Das Öffnen DARF KEIN neues Inventar und keinen neuen Listener erzeugen.
@@ -231,3 +284,8 @@ Der Navigator MUSS je Kombination aus Rechten und Sprache genau ein geteiltes In
 
 - **WHEN** ein Spieler die Serverauswahl 50 Mal öffnet und wieder schließt
 - **THEN** ist die Anzahl angemeldeter Event-Listener unverändert
+
+#### Scenario: Stoppen entfernt jede geöffnete Serverauswahl
+
+- **WHEN** das Navigator-Modul gestoppt wird, nachdem Serverauswahlen auf Deutsch und Englisch geöffnet wurden
+- **THEN** hat keine dieser Serverauswahlen mehr einen Klick-Listener
