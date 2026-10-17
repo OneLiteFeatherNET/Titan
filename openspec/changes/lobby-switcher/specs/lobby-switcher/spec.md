@@ -37,6 +37,32 @@ Ein geöffnetes Inventar MUSS alle laufenden Dienste des Tasks der eigenen Lobby
 - **WHEN** ein Dienst des Tasks nicht läuft
 - **THEN** erscheint er nicht in der Liste
 
+### Requirement: Größe der Liste
+_The menu MUST have as many rows as its entries need, and MUST close when a refresh changes its row or page count._
+
+Ein Inventar MUSS so viele Zeilen haben, wie seine Einträge brauchen (eine bis sechs). Ändert eine Aktualisierung die Zeilen- oder Seitenzahl, MUSS das offene Inventar geschlossen werden; der Spieler öffnet es neu. Bleibt die Größe gleich, bleibt es offen und zeigt den neuen Stand.
+
+#### Scenario: Zwei Lobbys
+- **WHEN** der Task zwei laufende Dienste hat und ein Spieler das Inventar öffnet
+- **THEN** hat das Inventar eine Zeile
+
+#### Scenario: Größenänderung bei der Aktualisierung
+- **WHEN** die Lobbys von zwei auf zwölf steigen, während ein Spieler das Inventar offen hat
+- **THEN** wird das Inventar geschlossen, und beim nächsten Öffnen hat es zwei Zeilen
+
+### Requirement: Seiten bei mehr als 54 Lobbys
+_More than 54 entries MUST be paged, with a navigation row in the sixth line._
+
+Mehr als 54 Einträge MÜSSEN auf Seiten zu 45 verteilt werden. Die sechste Zeile trägt dann die Navigation: vorherige Seite, Seitenanzeige „Seite x/y“, nächste Seite. Ein Pfeil erscheint nur, wenn es in seine Richtung eine Seite gibt. Ein Klick auf einen Eintrag MUSS den Dienst dieses Eintrags betreffen, auf jeder Seite.
+
+#### Scenario: Mehr als 54 Lobbys
+- **WHEN** der Task 100 laufende Dienste hat und ein Spieler das Inventar öffnet
+- **THEN** zeigt Seite 1 die ersten 45 Lobbys, einen Pfeil nach rechts, keinen nach links, und die Anzeige „Seite 1/3“
+
+#### Scenario: Seite zurück
+- **WHEN** der Spieler auf Seite 2 den Pfeil nach links anklickt
+- **THEN** zeigt das Inventar Seite 1 wieder
+
 ### Requirement: Zustand jedes Eintrags
 _Each entry MUST have exactly one state: current, full, not ready or joinable._
 
