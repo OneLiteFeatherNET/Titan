@@ -88,23 +88,23 @@ class ConfigFileWatchIntegrationTest {
         }
     }
 
-    @DisplayName("An environment variable turns a feature flag on")
+    @DisplayName("An environment variable turns a feature flag off")
     @Test
-    void environmentVariableTurnsTheFlagOn(@TempDir Path workingDir) throws IOException, InterruptedException {
-        List<String> output = runOneShot(workingDir, Map.of("FEATURES_NAVIGATOR_SLENDER", "true"), FeatureFlagChildMain.class);
+    void environmentVariableTurnsTheFlagOff(@TempDir Path workingDir) throws IOException, InterruptedException {
+        List<String> output = runOneShot(workingDir, Map.of("FEATURES_LOBBYSWITCHER", "false"), FeatureFlagChildMain.class);
 
-        Assertions.assertTrue(output.contains("NAVIGATOR_SLENDER=true"), "the environment variable must turn the flag on, output was:\n" + String.join("\n", output));
+        Assertions.assertTrue(output.contains("LOBBYSWITCHER=false"), "the environment variable must turn the flag off, output was:\n" + String.join("\n", output));
     }
 
     @DisplayName("A leftover flags.properties in the working directory has no effect")
     @Test
     void leftoverFlagsPropertiesFileHasNoEffect(@TempDir Path workingDir) throws IOException, InterruptedException {
-        Files.writeString(workingDir.resolve("flags.properties"), "NAVIGATOR_SLENDER=true\n");
+        Files.writeString(workingDir.resolve("flags.properties"), "LOBBYSWITCHER=false\n");
 
         List<String> output = runOneShot(workingDir, Map.of(), FeatureFlagChildMain.class);
 
         Assertions.assertTrue(
-                output.contains("NAVIGATOR_SLENDER=false"), "flags.properties must no longer be read at all, output was:\n" + String.join("\n", output));
+                output.contains("LOBBYSWITCHER=true"), "flags.properties must no longer be read at all, output was:\n" + String.join("\n", output));
     }
 
     private static List<String> runOneShot(Path workingDir, Map<String, String> env, Class<?> mainClass) throws IOException, InterruptedException {

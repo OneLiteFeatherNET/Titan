@@ -29,7 +29,6 @@ import net.minestom.server.inventory.click.Click;
 import net.minestom.server.item.ItemStack;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.core.feature.FeatureFlags;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,10 +43,6 @@ class NavigatorPlayerCountTest {
     private static final String HINT = "Left click: connect";
     private static final String GERMAN_HINT = "Linksklick: verbinden";
 
-    private static FeatureFlags flags() {
-        return new FakeFeatureFlags().declare(Destination.SLENDER_FLAG, true);
-    }
-
     private static List<String> lore(ItemStack item) {
         return item.get(DataComponents.LORE).stream().map(line -> PlainTextComponentSerializer.plainText().serialize(line)).toList();
     }
@@ -61,7 +56,7 @@ class NavigatorPlayerCountTest {
     void firstRefreshShowsTheCount(Env env) {
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.serve("Survival", 4);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), flags(), new FakePermissionService(), counts)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), counts)) {
             tick(env, 2);
 
             Assertions.assertEquals(List.of("4 online", HINT), lore(survival(fixture.module().publicInventory())));
@@ -74,7 +69,7 @@ class NavigatorPlayerCountTest {
     void countUpdatesAfterThePeriod(Env env) {
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.serve("Survival", 4);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), flags(), new FakePermissionService(), counts)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), counts)) {
             tick(env, 2);
             counts.serve("Survival", 9);
             tick(env, 5);
@@ -90,7 +85,7 @@ class NavigatorPlayerCountTest {
     @DisplayName("A mode whose task is not running shows only its click hint")
     @Test
     void notRunningTaskShowsOnlyTheClickHint(Env env) {
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), flags(), new FakePermissionService(), new FakePlayerCounts())) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), new FakePlayerCounts())) {
             tick(env, 2);
 
             Assertions.assertEquals(List.of(HINT), lore(survival(fixture.module().publicInventory())), "a task that runs nowhere must not show a count line");
@@ -102,7 +97,7 @@ class NavigatorPlayerCountTest {
     void germanInventoriesShowTheCount(Env env) {
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.serve("Survival", 4);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), flags(), new FakePermissionService(), counts)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), counts)) {
             tick(env, 2);
 
             Assertions.assertEquals(List.of("4 online", GERMAN_HINT), lore(survival(fixture.module().publicInventory(Locale.GERMAN))), "the German public menu must get the count refresh");
@@ -115,7 +110,7 @@ class NavigatorPlayerCountTest {
     void stoppedModuleDoesNotRefresh(Env env) {
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.serve("Survival", 4);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), flags(), new FakePermissionService(), counts)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), counts)) {
             tick(env, 2);
             fixture.stopModule();
             counts.serve("Survival", 9);
@@ -132,7 +127,7 @@ class NavigatorPlayerCountTest {
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.serve("Survival", 4);
         RecordingDeliver deliver = new RecordingDeliver();
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, flags(), new FakePermissionService(), counts)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), counts)) {
             Player player = env.createPlayer(env.createFlatInstance());
             fixture.equip(player);
             tick(env, 2);

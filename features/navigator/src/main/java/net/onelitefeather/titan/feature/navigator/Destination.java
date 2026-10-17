@@ -19,38 +19,33 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.OptionalInt;
+import java.util.Set;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
-import net.onelitefeather.titan.core.feature.FeatureFlags;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * One destination shown in the shared navigator inventories, fixed in code as a Java {@code enum}
- * since destinations change rarely. {@link #SLENDER} is gated behind a feature flag and {@link
- * #BUILD} behind a permission; the others are always visible.
+ * since destinations change rarely. {@link #SLENDER} and {@link #BUILD} are each gated behind a
+ * permission; the others are always visible.
  */
 enum Destination {
 
-    ELYTRA_RACE(0, Material.ELYTRA, "<!i><gradient:#fcba03:#03fc8c>ElytraRace</gradient>", "ElytraRace", null, null), SURVIVAL(4, Material.GRASS_BLOCK, "<!i><green>Survival", "Survival", null, null), SLENDER(5, Material.ENDERMAN_SPAWN_EGG, "<!i><gradient:#616161:#e80000>Slender</gradient>", "Slender", Destination.SLENDER_FLAG, null), BUILD(7, Material.SCAFFOLDING, "<!i><gold>Build", "Team-Build", null, "titan.navigator.buildserver"), CREATIVE(8, Material.WOODEN_AXE, "<!i><rainbow>Creative</rainbow>", "MemberBuild", null, null);
-
-    // The only feature flag the navigator knows; navigator.yaml lists it and nothing else.
-    static final String SLENDER_FLAG = "NAVIGATOR_SLENDER";
+    ELYTRA_RACE(0, Material.ELYTRA, "<!i><gradient:#fcba03:#03fc8c>ElytraRace</gradient>", "ElytraRace", null), SURVIVAL(4, Material.GRASS_BLOCK, "<!i><green>Survival", "Survival", null), SLENDER(5, Material.ENDERMAN_SPAWN_EGG, "<!i><gradient:#616161:#e80000>Slender</gradient>", "Slender", "titan.navigator.slender"), BUILD(7, Material.SCAFFOLDING, "<!i><gold>Build", "Team-Build", "titan.navigator.buildserver"), CREATIVE(8, Material.WOODEN_AXE, "<!i><rainbow>Creative</rainbow>", "MemberBuild", null);
 
     private final int slot;
     private final Material icon;
     private final String displayName;
     private final String task;
-    private final @Nullable String feature;
     private final @Nullable String permission;
 
-    Destination(int slot, Material icon, String displayName, String task, @Nullable String feature, @Nullable String permission) {
+    Destination(int slot, Material icon, String displayName, String task, @Nullable String permission) {
         this.slot = slot;
         this.icon = icon;
         this.displayName = displayName;
         this.task = task;
-        this.feature = feature;
         this.permission = permission;
     }
 
@@ -60,11 +55,6 @@ enum Destination {
 
     String task() {
         return this.task;
-    }
-
-    @Nullable
-    String feature() {
-        return this.feature;
     }
 
     @Nullable
@@ -89,9 +79,12 @@ enum Destination {
         return MiniMessage.miniMessage().deserialize("<!i><gray>" + count + " online</gray>");
     }
 
-    // withPermissioned is the caller's verdict for a whole menu: the team menu passes true, the
-    // public one false.
-    static List<Destination> visible(FeatureFlags featureFlags, boolean withPermissioned) {
-        return Arrays.stream(values()).filter(destination -> destination.feature == null || featureFlags.isActive(destination.feature)).filter(destination -> destination.permission == null || withPermissioned).toList();
+    static List<Destination> permissioned() {
+        return Arrays.stream(values()).filter(destination -> destination.permission != null).toList();
+    }
+
+    // granted holds the permissioned destinations a menu shows; the others are always shown.
+    static List<Destination> visible(Set<Destination> granted) {
+        return Arrays.stream(values()).filter(destination -> destination.permission == null || granted.contains(destination)).toList();
     }
 }

@@ -61,10 +61,6 @@ class NavigatorClickHintTest {
     private static final int REFRESH_TICKS = NavigatorFixture.REFRESH_SECONDS * ServerFlag.SERVER_TICKS_PER_SECOND;
     private static final String BUILD_PERMISSION = "titan.navigator.buildserver";
 
-    private static FakeFeatureFlags slenderActive() {
-        return new FakeFeatureFlags().declare(Destination.SLENDER_FLAG, true);
-    }
-
     private static List<String> lore(ItemStack item) {
         return Optional.ofNullable(item.get(DataComponents.LORE)).orElse(List.of()).stream().map(line -> PlainTextComponentSerializer.plainText().serialize(line)).toList();
     }
@@ -84,7 +80,7 @@ class NavigatorClickHintTest {
     @DisplayName("With a portal, Survival names the left click and the right click")
     @Test
     void survivalWithPortalNamesBothClicks(Env env) {
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), new FakePermissionService(), SURVIVAL_PORTAL)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), SURVIVAL_PORTAL)) {
             AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
 
             Assertions.assertEquals(List.of("Left click: connect", "Right click: walk to portal"), lore(inventory.getItemStack(SURVIVAL_SLOT)));
@@ -94,7 +90,7 @@ class NavigatorClickHintTest {
     @DisplayName("Without a portal, Survival names only the left click")
     @Test
     void survivalWithoutPortalNamesOnlyTheLeftClick(Env env) {
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), new FakePermissionService(), NO_PORTALS)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), NO_PORTALS)) {
             AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
 
             Assertions.assertEquals(List.of("Left click: connect"), lore(inventory.getItemStack(SURVIVAL_SLOT)));
@@ -106,7 +102,7 @@ class NavigatorClickHintTest {
     void elytraRaceWithSeveralServicesNamesTheServerChoice(Env env) {
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.serveServices("ElytraRace", RACE_ONE, RACE_TWO);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), new FakePermissionService(), counts, NO_PORTALS)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), counts, NO_PORTALS)) {
             tick(env, REFRESH_TICKS);
             AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
 
@@ -119,7 +115,7 @@ class NavigatorClickHintTest {
     void elytraRaceWithSeveralServicesAndPortalNamesBothClicks(Env env) {
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.serveServices("ElytraRace", RACE_ONE, RACE_TWO);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), new FakePermissionService(), counts, RACE_PORTAL)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), counts, RACE_PORTAL)) {
             tick(env, REFRESH_TICKS);
             AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
 
@@ -132,7 +128,7 @@ class NavigatorClickHintTest {
     void elytraRaceWithOneServiceNamesTheConnect(Env env) {
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.serveServices("ElytraRace", RACE_ONE);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), new FakePermissionService(), counts, NO_PORTALS)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), counts, NO_PORTALS)) {
             tick(env, REFRESH_TICKS);
             AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
 
@@ -144,7 +140,7 @@ class NavigatorClickHintTest {
     @Test
     void elytraRaceWithoutServicesNamesTheConnect(Env env) {
         FakePlayerCounts counts = new FakePlayerCounts();
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), new FakePermissionService(), counts, NO_PORTALS)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), counts, NO_PORTALS)) {
             tick(env, REFRESH_TICKS);
             AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
 
@@ -156,7 +152,7 @@ class NavigatorClickHintTest {
     @Test
     void hintIsFreshWhenOpenedRightAfterPortalAdded(Env env) {
         AtomicReference<List<Portal>> portals = new AtomicReference<>(List.of());
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), new FakePermissionService(), () -> portals.get())) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), () -> portals.get())) {
             tick(env, REFRESH_TICKS);
             portals.set(List.of(new Portal("survival", AREA, "Survival", null)));
 
@@ -169,7 +165,7 @@ class NavigatorClickHintTest {
     @DisplayName("The spawn entry has no click hint")
     @Test
     void spawnHasNoClickHint(Env env) {
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), new FakePermissionService(), SURVIVAL_PORTAL)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), SURVIVAL_PORTAL)) {
             AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
 
             Assertions.assertTrue(lore(inventory.getItemStack(SPAWN_SLOT)).isEmpty(), "spawn must show no click hint, because its click does not depend on the mouse button");
@@ -179,7 +175,7 @@ class NavigatorClickHintTest {
     @DisplayName("A German player reads the German click hint")
     @Test
     void germanPlayerReadsGermanHint(Env env) {
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), new FakePermissionService(), SURVIVAL_PORTAL)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), SURVIVAL_PORTAL)) {
             AbstractInventory inventory = open(fixture, player(env, Locale.GERMANY));
 
             Assertions.assertEquals(List.of("Linksklick: verbinden", "Rechtsklick: zum Portal laufen"), lore(inventory.getItemStack(SURVIVAL_SLOT)));
@@ -190,7 +186,7 @@ class NavigatorClickHintTest {
     @Test
     void removedPortalDropsRightClickAtNextRefresh(Env env) {
         AtomicReference<List<Portal>> portals = new AtomicReference<>(List.of(new Portal("survival", AREA, "Survival", null)));
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), new FakePermissionService(), () -> portals.get())) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), () -> portals.get())) {
             AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
             portals.set(List.of());
 
@@ -204,8 +200,8 @@ class NavigatorClickHintTest {
     @Test
     void germanTeamPlayerReadsGermanHintOnBuild(Env env) {
         Player player = player(env, Locale.GERMANY);
-        FakePermissionService permissions = new FakePermissionService().set(player.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), permissions, NO_PORTALS)) {
+        FakePermissionService permissions = new FakePermissionService().allowEveryone("titan.navigator.slender").set(player.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED);
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions, NO_PORTALS)) {
             AbstractInventory inventory = open(fixture, player);
 
             Assertions.assertEquals(List.of("Linksklick: verbinden"), lore(inventory.getItemStack(Destination.BUILD.slot())), "the team menu in German must name the connect in German");

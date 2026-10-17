@@ -36,6 +36,7 @@ import net.onelitefeather.titan.core.lobby.LobbyIdentity;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.core.permission.PermissionService;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.onelitefeather.titan.platform.luckperms.LuckPermsPermissionService;
 import net.onelitefeather.titan.apps.cloudnet.ActiveLobby;
 import net.onelitefeather.titan.common.map.MapProvider;
@@ -167,17 +168,15 @@ class WiringTest {
     void aFailingFeatureAbortsTheBuildNamingIt(Env env) {
         // Avaje propagates a @PostConstruct failure unwrapped, so the failing feature's class only
         // appears in the original stack trace, never a wrapper naming it.
-        RuntimeException thrown = Assertions.assertThrows(RuntimeException.class, () -> BeanScope.builder().forTesting().mock(MapProvider.class, ActiveLobby.empty()).mock(FeatureFlags.class, flags -> Mockito.when(flags.isActive(Mockito.anyString())).thenAnswer(invocation -> {
-            throw new IllegalStateException("feature flag lookup failed (WiringTest)");
-        })).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).build(), "a feature failing its start must abort building the scope instead of silently continuing");
+        RuntimeException thrown = Assertions.assertThrows(RuntimeException.class, () -> BeanScope.builder().forTesting().mock(MapProvider.class, ActiveLobby.empty()).mock(FeatureFlags.class).mock(Telemetry.class, telemetry -> Mockito.doThrow(new IllegalStateException("telemetry failed (WiringTest)")).when(telemetry).inSpan(Mockito.anyString(), Mockito.any(), Mockito.any(Runnable.class))).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).build(), "a feature failing its start must abort building the scope instead of silently continuing");
 
-        Assertions.assertTrue(namesFailingFeature(thrown, NavigatorModule.class), "the exception's stack trace (or one of its causes') must contain a frame in the failing feature's class; was: " + describeChain(thrown));
+        Assertions.assertTrue(namesAFeature(thrown), "the exception's stack trace (or one of its causes') must contain a frame in a feature's package; was: " + describeChain(thrown));
     }
 
-    private static boolean namesFailingFeature(Throwable thrown, Class<?> featureType) {
+    private static boolean namesAFeature(Throwable thrown) {
         for (Throwable current = thrown; current != null; current = current.getCause()) {
             for (StackTraceElement frame : current.getStackTrace()) {
-                if (featureType.getName().equals(frame.getClassName())) {
+                if (frame.getClassName().startsWith("net.onelitefeather.titan.feature.")) {
                     return true;
                 }
             }

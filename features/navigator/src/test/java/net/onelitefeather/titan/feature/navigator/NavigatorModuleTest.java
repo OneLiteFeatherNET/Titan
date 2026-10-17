@@ -44,17 +44,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * shows the four fixed destinations synchronously (no tick needed), clicking a destination forwards
  * through {@code Deliver} and closes the inventory, and clicking a blank glass pane does neither.
  *
- * <p>Every test here declares {@code NAVIGATOR_SLENDER} active on its {@link FakeFeatureFlags},
- * since these tests are not about the feature-flag gate itself (see
- * {@code NavigatorFeatureFlagTest}
- * for that) - they only need Slender to behave like any other, always-visible destination.
+ * <p>Every test here grants {@code titan.navigator.slender} to every player, since these tests are
+ * not about the permission gate itself (see {@code NavigatorPermissionTest} for that) - they only
+ * need Slender to behave like any other destination.
  */
 @ExtendWith(MicrotusExtension.class)
 class NavigatorModuleTest {
-
-    private static FakeFeatureFlags slenderActive() {
-        return new FakeFeatureFlags().declare(Destination.SLENDER_FLAG, true);
-    }
 
     private static AbstractInventory openNavigator(NavigatorFixture fixture, Player player) {
         fixture.useFeather(player);
@@ -64,7 +59,7 @@ class NavigatorModuleTest {
     @DisplayName("Opening the navigator via the feather shows the four fixed destinations, synchronously")
     @Test
     void openingTheNavigatorShowsTheFourDestinations(Env env) {
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), new FakePermissionService())) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"))) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);
@@ -89,7 +84,7 @@ class NavigatorModuleTest {
     @Test
     void clickingElytraRaceForwardsToElytraRace(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService())) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"))) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);
@@ -110,7 +105,7 @@ class NavigatorModuleTest {
     @Test
     void clickingSurvivalForwardsToSurvival(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService())) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"))) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);
@@ -130,7 +125,7 @@ class NavigatorModuleTest {
     @Test
     void clickingSlenderForwardsToSlender(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService())) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"))) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);
@@ -151,7 +146,7 @@ class NavigatorModuleTest {
     @Test
     void clickingCreativeForwardsToMemberBuild(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService())) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"))) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);
@@ -171,7 +166,7 @@ class NavigatorModuleTest {
     @Test
     void clickingABlankSlotTriggersNoDeliveryAndKeepsTheNavigatorOpen(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService())) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"))) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);
@@ -190,7 +185,7 @@ class NavigatorModuleTest {
     void clickingSpawnReturnsThePlayerWithoutADelivery(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
         FakeSpawnReturn spawnReturn = new FakeSpawnReturn();
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService(), spawnReturn)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), spawnReturn)) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);
@@ -214,7 +209,7 @@ class NavigatorModuleTest {
     void startFailsClearlyWhenTheProviderThrows(Env env) {
         TestTitanNode titan = TestTitanNode.attach(env);
         try {
-            NavigatorModule module = new NavigatorModule(titan.node(), new RecordingDeliver(), slenderActive(), new FakePermissionService(), () -> {
+            NavigatorModule module = new NavigatorModule(titan.node(), new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), () -> {
                 throw new NoSuchElementException("no bean");
             }, List::of, Telemetry.noop(), Optional.empty(), env.process().scheduler(), Runnable::run, new NavigatorSettings(1), new NavigatorMessages());
 
@@ -230,7 +225,7 @@ class NavigatorModuleTest {
     void startFailsClearlyWhenTheProviderYieldsNull(Env env) {
         TestTitanNode titan = TestTitanNode.attach(env);
         try {
-            NavigatorModule module = new NavigatorModule(titan.node(), new RecordingDeliver(), slenderActive(), new FakePermissionService(), () -> null, List::of, Telemetry.noop(), Optional.empty(), env.process().scheduler(), Runnable::run, new NavigatorSettings(1), new NavigatorMessages());
+            NavigatorModule module = new NavigatorModule(titan.node(), new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), () -> null, List::of, Telemetry.noop(), Optional.empty(), env.process().scheduler(), Runnable::run, new NavigatorSettings(1), new NavigatorMessages());
 
             IllegalStateException thrown = Assertions.assertThrows(IllegalStateException.class, module::start, "a provider yielding null must fail the start");
             Assertions.assertTrue(thrown.getMessage().contains("SpawnReturn") && thrown.getMessage().contains("spawn column"), "the message must name SpawnReturn and the spawn column, was: " + thrown.getMessage());
@@ -243,7 +238,7 @@ class NavigatorModuleTest {
     @Test
     void clicksNoLongerForwardOnceTheModuleIsStopped(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService())) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"))) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);

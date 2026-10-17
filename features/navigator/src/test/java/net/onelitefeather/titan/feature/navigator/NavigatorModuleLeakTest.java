@@ -59,10 +59,7 @@ class NavigatorModuleLeakTest {
     }
 
     private static final String BUILD_PERMISSION = "titan.navigator.buildserver";
-
-    private static FakeFeatureFlags slenderActive() {
-        return new FakeFeatureFlags().declare(Destination.SLENDER_FLAG, true);
-    }
+    private static final String SLENDER_PERMISSION = "titan.navigator.slender";
 
     @DisplayName("Opening and closing the navigator 50 times, alternating with and without permission, registers no extra listeners")
     @Test
@@ -70,8 +67,8 @@ class NavigatorModuleLeakTest {
         Instance instance = env.createFlatInstance();
         Player team = env.createPlayer(instance);
         Player other = env.createPlayer(instance);
-        FakePermissionService permissions = new FakePermissionService().set(team.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), permissions)) {
+        FakePermissionService permissions = new FakePermissionService().set(team.getUuid(), SLENDER_PERMISSION, PermissionResult.ALLOWED).set(team.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED);
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions)) {
             fixture.equip(team);
             fixture.equip(other);
             EventNode<Event> navigatorNode = navigatorNode(env);
@@ -101,8 +98,8 @@ class NavigatorModuleLeakTest {
         Player other = env.createPlayer(instance);
         team.setLocale(Locale.GERMANY);
         other.setLocale(Locale.GERMANY);
-        FakePermissionService permissions = new FakePermissionService().set(team.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), permissions)) {
+        FakePermissionService permissions = new FakePermissionService().set(team.getUuid(), SLENDER_PERMISSION, PermissionResult.ALLOWED).set(team.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED);
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions)) {
             fixture.equip(team);
             fixture.equip(other);
             EventNode<Event> navigatorNode = navigatorNode(env);
@@ -132,7 +129,7 @@ class NavigatorModuleLeakTest {
     @DisplayName("Every language's inventory listens while the module runs and stops listening once it is stopped")
     @Test
     void everyInventoryIsUnregisteredWhenTheModuleStops(Env env) {
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), new FakePermissionService())) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"))) {
             List<Inventory> inventories = List.of(fixture.module().publicInventory(), fixture.module().teamInventory(), fixture.module().publicInventory(Locale.GERMAN), fixture.module().teamInventory(Locale.GERMAN));
             for (Inventory inventory : inventories) {
                 Assertions.assertTrue(EventListenerCounter.countListeners(inventory.eventNode()) > 0, "the inventory must listen for clicks while the module runs");
@@ -149,8 +146,8 @@ class NavigatorModuleLeakTest {
     @DisplayName("100 players joining, opening the navigator once and leaving leaves the listener count unchanged")
     @Test
     void manyPlayersJoinOpenAndLeaveWithoutLeakingListeners(Env env) {
-        FakePermissionService permissions = new FakePermissionService();
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), permissions)) {
+        FakePermissionService permissions = new FakePermissionService().allowEveryone("titan.navigator.slender");
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions)) {
             Instance instance = env.createFlatInstance();
             EventNode<Event> navigatorNode = navigatorNode(env);
             EventNode<InventoryEvent> publicNode = fixture.module().publicInventory().eventNode();
