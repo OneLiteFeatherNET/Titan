@@ -187,9 +187,46 @@ public final class JumprunFixture implements AutoCloseable {
      * gone.
      */
     void settle() {
-        for (int tick = 0; tick < AnimatedBlock.ANIMATION_TICKS + 2; tick++) {
+        tick(AnimatedBlock.ANIMATION_TICKS + 2);
+    }
+
+    /** Lets {@code ticks} server ticks pass, driven by the test instead of the clock. */
+    void tick(int ticks) {
+        for (int tick = 0; tick < ticks; tick++) {
             env.tick();
         }
+    }
+
+    /** Lets the start grace period of a run pass, so the next use is a deliberate click. */
+    void tickPastGrace() {
+        tick(JumprunModule.RUN_GRACE_TICKS);
+    }
+
+    /** Ends the run as a click after the grace period would, without waiting for it. */
+    void stopRun(Player player) {
+        module.toggle(player);
+    }
+
+    /**
+     * A deliberate mode switch: waits out the debounce of the last one, then sneak-uses the item.
+     */
+    void switchMode(Player player) {
+        tick(JumprunModule.MODE_SWITCH_DEBOUNCE_TICKS);
+        sneakUse(player);
+    }
+
+    /** Sneak + right-click without waiting, as a client that repeats the click would. */
+    void sneakUse(Player player) {
+        player.setSneaking(true);
+        useItem(player);
+        player.setSneaking(false);
+    }
+
+    /** A player on the lobby floor, on the ground and not in a run. */
+    static Player standingPlayer(Env env, Instance instance) {
+        Player player = env.createConnection().connect(instance, StartedRun.STAND);
+        player.refreshOnGround(true);
+        return player;
     }
 
     /** Uses the lobby item the way the hotbar's dispatcher would. */

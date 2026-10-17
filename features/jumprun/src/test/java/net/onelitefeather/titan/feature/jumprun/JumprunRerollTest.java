@@ -69,9 +69,7 @@ class JumprunRerollTest {
 
     private static void choose(JumprunFixture fixture, Player player, Mode mode) {
         while (fixture.module().modeOf(player) != mode) {
-            player.setSneaking(true);
-            fixture.useItem(player);
-            player.setSneaking(false);
+            fixture.switchMode(player);
         }
     }
 
@@ -249,7 +247,7 @@ class JumprunRerollTest {
     void afterTheRunEndedNoRerollFiresAnymore(Env env) {
         try (JumprunFixture fixture = fixture(env, INTERVAL, INTERVAL)) {
             StartedRun run = start(env, fixture, Mode.ULTRA);
-            fixture.useItem(run.player());
+            fixture.stopRun(run.player());
             fixture.settle();
             Collector<ServerPacket> sent = run.connection().trackIncoming();
 

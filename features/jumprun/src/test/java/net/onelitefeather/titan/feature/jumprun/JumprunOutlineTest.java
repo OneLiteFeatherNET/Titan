@@ -146,7 +146,7 @@ class JumprunOutlineTest {
             StartedRun run = StartedRun.start(env, fixture);
             theOutline(run.instance());
 
-            fixture.useItem(run.player());
+            fixture.stopRun(run.player());
 
             assertTrue(JumprunFixture.outlines(run.instance()).isEmpty(), "no outline outlives the run, it does not even rise");
         }
@@ -170,7 +170,7 @@ class JumprunOutlineTest {
             Instance instance = JumprunFixture.loadedInstance(env);
             StartedRun run = StartedRun.startFalling(env, fixture, instance, StartedRun.STAND);
 
-            fixture.useItem(run.player());
+            fixture.stopRun(run.player());
             for (int tick = 0; tick < AnimatedBlock.ANIMATION_TICKS + 2; tick++) {
                 env.tick();
             }

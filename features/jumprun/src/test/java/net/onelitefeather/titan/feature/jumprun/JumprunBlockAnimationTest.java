@@ -187,7 +187,7 @@ class JumprunBlockAnimationTest {
             StartedRun run = StartedRun.start(env, fixture, instance, StartedRun.STAND);
             Collector<BlockChangePacket> sent = run.connection().trackIncoming(BlockChangePacket.class);
 
-            fixture.useItem(run.player());
+            fixture.stopRun(run.player());
 
             List<BlockChangePacket> packets = sent.collect();
             assertEquals(2, packets.size(), "both blocks are given back at once");
@@ -237,7 +237,7 @@ class JumprunBlockAnimationTest {
             tick(env, 3);
 
             long solid = courseBlocksSentDuring(scene.run(), () -> {
-                fixture.useItem(scene.run().player());
+                fixture.stopRun(scene.run().player());
                 tick(env, TICKS + 2);
             });
 

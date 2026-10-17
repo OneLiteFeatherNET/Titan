@@ -57,9 +57,7 @@ record StartedRun(JumprunFixture fixture, TestConnection connection, Player play
     static StartedRun startIn(Env env, JumprunFixture fixture, Mode mode) {
         return startAfter(env, fixture, player -> {
             while (fixture.module().modeOf(player) != mode) {
-                player.setSneaking(true);
-                fixture.useItem(player);
-                player.setSneaking(false);
+                fixture.switchMode(player);
             }
         });
     }

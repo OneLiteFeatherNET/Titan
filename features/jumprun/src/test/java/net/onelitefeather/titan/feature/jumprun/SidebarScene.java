@@ -43,9 +43,7 @@ record SidebarScene(StartedRun run, Collector<ServerPacket> sent) {
         player.refreshOnGround(true);
         beforeStart.accept(player);
         while (fixture.module().modeOf(player) != mode) {
-            player.setSneaking(true);
-            fixture.useItem(player);
-            player.setSneaking(false);
+            fixture.switchMode(player);
         }
         Collector<ServerPacket> sent = connection.trackIncoming();
         return new SidebarScene(StartedRun.startAgain(fixture, instance, connection, player), sent);
