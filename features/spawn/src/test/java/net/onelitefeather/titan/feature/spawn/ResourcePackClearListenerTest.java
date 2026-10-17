@@ -24,6 +24,7 @@ import net.minestom.testing.Env;
 import net.minestom.testing.TestConnection;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.module.item.LobbyItems;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -44,7 +45,7 @@ class ResourcePackClearListenerTest {
     void configurationSendsPopWithoutId(Env env) throws InterruptedException {
         Instance instance = env.createFlatInstance();
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            SpawnModule module = new SpawnModule(instance, () -> new net.minestom.server.coordinate.Pos(0, 64, 0), new SpawnHeightBoundsFactory().lobbyHeightBounds(), titan.node(), Mockito.mock(LobbyItems.class));
+            SpawnModule module = new SpawnModule(instance, () -> new net.minestom.server.coordinate.Pos(0, 64, 0), new SpawnHeightBoundsFactory().lobbyHeightBounds(), titan.node(), Mockito.mock(LobbyItems.class), Telemetry.noop());
             module.start();
             try {
                 TestConnection connection = env.createConnection();
@@ -67,7 +68,7 @@ class ResourcePackClearListenerTest {
     void stopLeavesNoListenerBehind(Env env) throws InterruptedException {
         Instance instance = env.createFlatInstance();
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            SpawnModule module = new SpawnModule(instance, () -> new net.minestom.server.coordinate.Pos(0, 64, 0), new SpawnHeightBoundsFactory().lobbyHeightBounds(), titan.node(), Mockito.mock(LobbyItems.class));
+            SpawnModule module = new SpawnModule(instance, () -> new net.minestom.server.coordinate.Pos(0, 64, 0), new SpawnHeightBoundsFactory().lobbyHeightBounds(), titan.node(), Mockito.mock(LobbyItems.class), Telemetry.noop());
             module.start();
             module.stop();
 
