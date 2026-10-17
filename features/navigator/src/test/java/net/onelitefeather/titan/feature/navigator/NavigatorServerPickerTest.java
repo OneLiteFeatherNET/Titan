@@ -17,6 +17,7 @@ package net.onelitefeather.titan.feature.navigator;
 
 import java.util.List;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.minestom.server.component.DataComponents;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.Player;
@@ -24,7 +25,6 @@ import net.minestom.server.event.inventory.InventoryPreClickEvent;
 import net.minestom.server.inventory.AbstractInventory;
 import net.minestom.server.inventory.click.Click;
 import net.minestom.server.item.ItemStack;
-import net.minestom.server.component.DataComponents;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.portal.Box;
@@ -38,15 +38,17 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * End-to-end coverage of the server picker: a left click on a destination with several running
- * services opens a list of them, and a click on one entry connects to exactly that service.
+ * End-to-end coverage of the minigame clicks: a left click quick joins the best ready service, a
+ * right click opens the server list, and a shift click walks to the portal. A click on one listed
+ * server connects to exactly that service.
  */
 @ExtendWith(MicrotusExtension.class)
 class NavigatorServerPickerTest {
 
-    private static final int ELYTRA_RACE_SLOT = 0;
-    private static final int SURVIVAL_SLOT = 4;
-    private static final int SLENDER_SLOT = 5;
+    private static final String SLENDER_PERMISSION = "titan.navigator.slender";
+    private static final int ELYTRA_RACE_SLOT = Destination.ELYTRA_RACE.slot();
+    private static final int SURVIVAL_SLOT = Destination.SURVIVAL.slot();
+    private static final int SLENDER_SLOT = Destination.SLENDER.slot();
     private static final Pos SPAWN = new Pos(11.5, 40, 60);
     private static final Box AREA = new Box(new Vec(10, 40, 20), new Vec(12, 42, 22));
     private static final LobbyPortals RACE_PORTAL = () -> List.of(new Portal("race", AREA, "ElytraRace", null));
@@ -72,17 +74,21 @@ class NavigatorServerPickerTest {
         return mini.stripTags(mini.serialize(stack.get(DataComponents.CUSTOM_NAME)));
     }
 
-    @DisplayName("A left click on a mode with several services opens the list of those services, sorted by name")
+    private static NavigatorFixture start(Env env, RecordingDeliver deliver, FakePlayerCounts counts, LobbyPortals portals) {
+        return NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone(SLENDER_PERMISSION), counts, portals);
+    }
+
+    @DisplayName("A right click on a minigame opens the list of its services, sorted by name, and connects nobody")
     @Test
-    void leftClickWithTwoServicesOpensThePicker(Env env) {
+    void rightClickOpensThePickerSortedByName(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.serveServices("ElytraRace", RACE_TWO, RACE_ONE);
         Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), counts, NO_PORTALS)) {
+        try (NavigatorFixture fixture = start(env, deliver, counts, NO_PORTALS)) {
             AbstractInventory navigator = openNavigator(fixture, player);
 
-            click(env, navigator, player, new Click.Left(ELYTRA_RACE_SLOT));
+            click(env, navigator, player, new Click.Right(ELYTRA_RACE_SLOT));
             env.tick();
 
             AbstractInventory picker = player.getOpenInventory();
@@ -93,6 +99,24 @@ class NavigatorServerPickerTest {
         }
     }
 
+    @DisplayName("A right click with one running service still opens the picker, listing that service")
+    @Test
+    void rightClickWithOneServiceOpensThePicker(Env env) {
+        RecordingDeliver deliver = new RecordingDeliver();
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.serveServices("ElytraRace", RACE_ONE);
+        Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
+        try (NavigatorFixture fixture = start(env, deliver, counts, NO_PORTALS)) {
+            AbstractInventory navigator = openNavigator(fixture, player);
+
+            click(env, navigator, player, new Click.Right(ELYTRA_RACE_SLOT));
+            env.tick();
+
+            Assertions.assertTrue(deliver.deliveries().isEmpty(), "the picker opens instead of connecting");
+            Assertions.assertEquals("ElytraRace-1", nameOf(player.getOpenInventory(), 0), "the picker lists the one service");
+        }
+    }
+
     @DisplayName("A click on a listed service connects the player to exactly that service")
     @Test
     void clickingAServerDeliversToThatService(Env env) {
@@ -100,9 +124,9 @@ class NavigatorServerPickerTest {
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.serveServices("ElytraRace", RACE_ONE, RACE_TWO);
         Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), counts, NO_PORTALS)) {
+        try (NavigatorFixture fixture = start(env, deliver, counts, NO_PORTALS)) {
             openNavigator(fixture, player);
-            click(env, player.getOpenInventory(), player, new Click.Left(ELYTRA_RACE_SLOT));
+            click(env, player.getOpenInventory(), player, new Click.Right(ELYTRA_RACE_SLOT));
             env.tick();
             AbstractInventory picker = player.getOpenInventory();
 
@@ -116,108 +140,142 @@ class NavigatorServerPickerTest {
         }
     }
 
-    @DisplayName("A mode with exactly one running service connects directly to the task")
+    @DisplayName("A left click on a minigame quick joins the most populated ready service")
     @Test
-    void oneServiceConnectsDirectly(Env env) {
+    void leftClickQuickJoinsTheMostPopulatedService(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
         FakePlayerCounts counts = new FakePlayerCounts();
-        counts.serveServices("ElytraRace", RACE_ONE);
+        counts.serveServices("ElytraRace", RACE_ONE, RACE_TWO);
         Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), counts, NO_PORTALS)) {
+        try (NavigatorFixture fixture = start(env, deliver, counts, NO_PORTALS)) {
             AbstractInventory navigator = openNavigator(fixture, player);
 
             click(env, navigator, player, new Click.Left(ELYTRA_RACE_SLOT));
             env.tick();
 
             Assertions.assertEquals(1, deliver.deliveries().size(), "exactly one delivery");
-            Assertions.assertEquals("ElytraRace", deliver.deliveries().getFirst().taskName(), "one service connects to the task as today");
+            Assertions.assertEquals("ElytraRace-2", deliver.deliveries().getFirst().serverName(), "the round with the most players is filled first");
+            Assertions.assertNull(player.getOpenInventory(), "the navigator closes once the player is sent");
         }
     }
 
-    @DisplayName("A mode with no running service connects directly to the task")
+    @DisplayName("A left click without a joinable service opens the picker, which shows why")
     @Test
-    void noServiceConnectsDirectly(Env env) {
+    void leftClickWithoutJoinableServiceOpensThePicker(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.serveServices("ElytraRace", new ServiceCount("ElytraRace-1", 50, 50), new ServiceCount("ElytraRace-2", 4, 0));
         Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), new FakePlayerCounts(), NO_PORTALS)) {
+        try (NavigatorFixture fixture = start(env, deliver, counts, NO_PORTALS)) {
             AbstractInventory navigator = openNavigator(fixture, player);
 
             click(env, navigator, player, new Click.Left(ELYTRA_RACE_SLOT));
             env.tick();
 
-            Assertions.assertEquals("ElytraRace", deliver.deliveries().getFirst().taskName(), "no service known connects to the task");
+            Assertions.assertTrue(deliver.deliveries().isEmpty(), "no ready service means nobody is sent");
+            Assertions.assertEquals("ElytraRace-1", nameOf(player.getOpenInventory(), 0), "the picker lists the full and the not ready services");
         }
     }
 
-    @DisplayName("A failing service read connects directly to the task instead of opening an empty picker")
+    @DisplayName("A left click with no running service opens the picker, which is empty")
     @Test
-    void failedReadConnectsDirectly(Env env) {
+    void leftClickWithoutServiceOpensThePicker(Env env) {
+        RecordingDeliver deliver = new RecordingDeliver();
+        Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
+        try (NavigatorFixture fixture = start(env, deliver, new FakePlayerCounts(), NO_PORTALS)) {
+            AbstractInventory navigator = openNavigator(fixture, player);
+
+            click(env, navigator, player, new Click.Left(ELYTRA_RACE_SLOT));
+            env.tick();
+
+            Assertions.assertTrue(deliver.deliveries().isEmpty(), "nothing running means nobody is sent");
+            Assertions.assertNotSame(navigator, player.getOpenInventory(), "the picker replaces the navigator");
+        }
+    }
+
+    @DisplayName("A failing service read opens the picker instead of sending the player anywhere")
+    @Test
+    void failedReadOpensThePicker(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.failWith(new IllegalStateException("bridge gone"));
         Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), counts, NO_PORTALS)) {
+        try (NavigatorFixture fixture = start(env, deliver, counts, NO_PORTALS)) {
             AbstractInventory navigator = openNavigator(fixture, player);
 
             click(env, navigator, player, new Click.Left(ELYTRA_RACE_SLOT));
             env.tick();
 
-            Assertions.assertEquals("ElytraRace", deliver.deliveries().getFirst().taskName(), "an unknown count connects directly");
+            Assertions.assertTrue(deliver.deliveries().isEmpty(), "an unknown service list is not a joinable one");
+            Assertions.assertNotSame(navigator, player.getOpenInventory(), "the picker opens instead");
         }
     }
 
-    @DisplayName("A right click still teleports to the portal even when the mode runs on several services")
+    @DisplayName("A shift click on a minigame walks to its portal and connects nobody")
     @Test
-    void rightClickStillTeleports(Env env) {
+    void shiftClickStillTeleports(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.serveServices("ElytraRace", RACE_ONE, RACE_TWO);
         Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), counts, RACE_PORTAL)) {
+        try (NavigatorFixture fixture = start(env, deliver, counts, RACE_PORTAL)) {
             AbstractInventory navigator = openNavigator(fixture, player);
 
-            click(env, navigator, player, new Click.Right(ELYTRA_RACE_SLOT));
+            click(env, navigator, player, new Click.LeftShift(ELYTRA_RACE_SLOT));
             env.tick();
 
             Assertions.assertTrue(deliver.deliveries().isEmpty(), "a teleport connects nobody");
-            Assertions.assertNotEquals(SPAWN, player.getPosition(), "the player walks to the portal");
             Assertions.assertEquals(PortalApproach.standingBefore(RACE_PORTAL.portals().getFirst(), SPAWN), player.getPosition(), "the spot in front of the portal");
             Assertions.assertNull(player.getOpenInventory(), "neither the navigator nor a picker stays open");
         }
     }
 
-    @DisplayName("A mode without a picker connects directly even when it runs on several services")
+    @DisplayName("A left click on a server connects directly to the task, even when it runs on several services")
     @Test
     void survivalConnectsDirectly(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.serveServices("Survival", RACE_ONE, RACE_TWO);
         Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), counts, NO_PORTALS)) {
+        try (NavigatorFixture fixture = start(env, deliver, counts, NO_PORTALS)) {
             AbstractInventory navigator = openNavigator(fixture, player);
 
             click(env, navigator, player, new Click.Left(SURVIVAL_SLOT));
             env.tick();
 
-            Assertions.assertEquals("Survival", deliver.deliveries().getFirst().taskName(), "Survival stays direct");
+            Assertions.assertEquals("Survival", deliver.deliveries().getFirst().taskName(), "a server never opens the picker");
         }
     }
 
-    @DisplayName("Slender offers the picker as well")
+    @DisplayName("A right click on a server connects too, with no picker")
     @Test
-    void slenderOpensThePicker(Env env) {
+    void rightClickOnServerConnects(Env env) {
+        RecordingDeliver deliver = new RecordingDeliver();
+        Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
+        try (NavigatorFixture fixture = start(env, deliver, new FakePlayerCounts(), NO_PORTALS)) {
+            AbstractInventory navigator = openNavigator(fixture, player);
+
+            click(env, navigator, player, new Click.Right(SURVIVAL_SLOT));
+            env.tick();
+
+            Assertions.assertEquals("Survival", deliver.deliveries().getFirst().taskName(), "a plain right click on a server has no meaning, so it connects");
+        }
+    }
+
+    @DisplayName("A left click on Slender quick joins the best ready Slender service")
+    @Test
+    void slenderQuickJoins(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
         FakePlayerCounts counts = new FakePlayerCounts();
-        counts.serveServices("Slender", RACE_ONE, RACE_TWO);
+        counts.serveServices("Slender", new ServiceCount("Slender-1", 2, 10), new ServiceCount("Slender-2", 6, 10));
         Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), counts, NO_PORTALS)) {
+        try (NavigatorFixture fixture = start(env, deliver, counts, NO_PORTALS)) {
             AbstractInventory navigator = openNavigator(fixture, player);
 
             click(env, navigator, player, new Click.Left(SLENDER_SLOT));
             env.tick();
 
-            Assertions.assertTrue(deliver.deliveries().isEmpty(), "Slender opens the picker first");
-            Assertions.assertEquals("ElytraRace-1", nameOf(player.getOpenInventory(), 0), "the picker lists the Slender services");
+            Assertions.assertEquals("Slender-2", deliver.deliveries().getFirst().serverName(), "Slender uses the same quick join as ElytraRace");
         }
     }
 
@@ -228,9 +286,9 @@ class NavigatorServerPickerTest {
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.serveServices("ElytraRace", new ServiceCount("ElytraRace-1", 50, 50), RACE_TWO);
         Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), counts, NO_PORTALS)) {
+        try (NavigatorFixture fixture = start(env, deliver, counts, NO_PORTALS)) {
             openNavigator(fixture, player);
-            click(env, player.getOpenInventory(), player, new Click.Left(ELYTRA_RACE_SLOT));
+            click(env, player.getOpenInventory(), player, new Click.Right(ELYTRA_RACE_SLOT));
             env.tick();
             AbstractInventory picker = player.getOpenInventory();
 
@@ -249,9 +307,9 @@ class NavigatorServerPickerTest {
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.serveServices("ElytraRace", new ServiceCount("ElytraRace-1", 0, 0), RACE_TWO);
         Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), counts, NO_PORTALS)) {
+        try (NavigatorFixture fixture = start(env, deliver, counts, NO_PORTALS)) {
             openNavigator(fixture, player);
-            click(env, player.getOpenInventory(), player, new Click.Left(ELYTRA_RACE_SLOT));
+            click(env, player.getOpenInventory(), player, new Click.Right(ELYTRA_RACE_SLOT));
             env.tick();
 
             click(env, player.getOpenInventory(), player, new Click.Left(0));
@@ -268,7 +326,7 @@ class NavigatorServerPickerTest {
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.serveServices("ElytraRace", RACE_ONE);
         Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), counts, NO_PORTALS)) {
+        try (NavigatorFixture fixture = start(env, deliver, counts, NO_PORTALS)) {
             AbstractInventory navigator = openNavigator(fixture, player);
 
             click(env, navigator, player, new Click.Left(ELYTRA_RACE_SLOT));

@@ -38,7 +38,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(MicrotusExtension.class)
 class NavigatorBuildDestinationTest {
 
-    private static final int BUILD_SLOT = 7;
+    private static final int BUILD_SLOT = 24;
     private static final String BUILD_PERMISSION = "titan.navigator.buildserver";
     private static final String SLENDER_PERMISSION = "titan.navigator.slender";
 
@@ -54,17 +54,17 @@ class NavigatorBuildDestinationTest {
     }
 
     private static void assertPublicMenu(AbstractInventory inventory, boolean slenderVisible) {
-        Assertions.assertEquals(Material.ELYTRA, inventory.getItemStack(0).material());
-        Assertions.assertEquals(Material.COMPASS, inventory.getItemStack(2).material(), "slot 2 must show Spawn");
-        Assertions.assertEquals(Material.GRASS_BLOCK, inventory.getItemStack(4).material());
-        Assertions.assertEquals(slenderVisible ? Material.ENDERMAN_SPAWN_EGG : Material.GRAY_STAINED_GLASS_PANE, inventory.getItemStack(5).material(), "slot 5 has the wrong material");
-        Assertions.assertEquals(Material.WOODEN_AXE, inventory.getItemStack(8).material());
-        for (int slot : List.of(1, 3, 6, BUILD_SLOT)) {
+        Assertions.assertEquals(Material.ELYTRA, inventory.getItemStack(11).material());
+        Assertions.assertEquals(Material.COMPASS, inventory.getItemStack(31).material(), "slot 31 must show Spawn");
+        Assertions.assertEquals(Material.GRASS_BLOCK, inventory.getItemStack(20).material());
+        Assertions.assertEquals(slenderVisible ? Material.ENDERMAN_SPAWN_EGG : Material.GRAY_STAINED_GLASS_PANE, inventory.getItemStack(15).material(), "slot 15 has the wrong material");
+        Assertions.assertEquals(Material.WOODEN_AXE, inventory.getItemStack(22).material());
+        for (int slot : List.of(10, 12, 13, 14, BUILD_SLOT)) {
             Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, inventory.getItemStack(slot).material(), "slot " + slot + " should be a blank glass pane");
         }
     }
 
-    @DisplayName("A player with the build permission sees Build on slot 7 and the other destinations unchanged")
+    @DisplayName("A player with the build permission sees Build on slot 24 and the other destinations unchanged")
     @Test
     void permittedPlayerSeesBuildOnSlotSeven(Env env) {
         Instance instance = env.createFlatInstance();
@@ -75,19 +75,19 @@ class NavigatorBuildDestinationTest {
 
             AbstractInventory inventory = openNavigator(fixture, player);
 
-            Assertions.assertEquals(Material.SCAFFOLDING, inventory.getItemStack(BUILD_SLOT).material(), "slot 7 must show Build");
-            Assertions.assertEquals(Material.ELYTRA, inventory.getItemStack(0).material());
-            Assertions.assertEquals(Material.COMPASS, inventory.getItemStack(2).material(), "slot 2 must show Spawn");
-            Assertions.assertEquals(Material.GRASS_BLOCK, inventory.getItemStack(4).material());
-            Assertions.assertEquals(Material.ENDERMAN_SPAWN_EGG, inventory.getItemStack(5).material());
-            Assertions.assertEquals(Material.WOODEN_AXE, inventory.getItemStack(8).material());
-            for (int slot : List.of(1, 3, 6)) {
+            Assertions.assertEquals(Material.SCAFFOLDING, inventory.getItemStack(BUILD_SLOT).material(), "slot 24 must show Build");
+            Assertions.assertEquals(Material.ELYTRA, inventory.getItemStack(11).material());
+            Assertions.assertEquals(Material.COMPASS, inventory.getItemStack(31).material(), "slot 31 must show Spawn");
+            Assertions.assertEquals(Material.GRASS_BLOCK, inventory.getItemStack(20).material());
+            Assertions.assertEquals(Material.ENDERMAN_SPAWN_EGG, inventory.getItemStack(15).material());
+            Assertions.assertEquals(Material.WOODEN_AXE, inventory.getItemStack(22).material());
+            for (int slot : List.of(10, 12, 13, 14)) {
                 Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, inventory.getItemStack(slot).material(), "slot " + slot + " should be a blank glass pane");
             }
         }
     }
 
-    @DisplayName("A player whose build permission is not set gets the public menu, glass on slot 7")
+    @DisplayName("A player whose build permission is not set gets the public menu, glass on slot 24")
     @Test
     void notSetPlayerSeesThePublicMenu(Env env) {
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"))) {
@@ -100,7 +100,7 @@ class NavigatorBuildDestinationTest {
         }
     }
 
-    @DisplayName("A player whose build permission is denied gets the public menu, glass on slot 7")
+    @DisplayName("A player whose build permission is denied gets the public menu, glass on slot 24")
     @Test
     void deniedPlayerSeesThePublicMenu(Env env) {
         Instance instance = env.createFlatInstance();
@@ -155,7 +155,7 @@ class NavigatorBuildDestinationTest {
         }
     }
 
-    @DisplayName("Clicking the glass pane on slot 7 of the public menu forwards nothing and keeps it open")
+    @DisplayName("Clicking the glass pane on slot 24 of the public menu forwards nothing and keeps it open")
     @Test
     void clickingTheGlassPaneOnSlotSevenDoesNothing(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
@@ -195,14 +195,14 @@ class NavigatorBuildDestinationTest {
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions)) {
             fixture.equip(player);
             AbstractInventory first = openNavigator(fixture, player);
-            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, first.getItemStack(5).material(), "slot 5 must be blank without the Slender grant");
+            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, first.getItemStack(15).material(), "slot 15 must be blank without the Slender grant");
             Assertions.assertEquals(Material.SCAFFOLDING, first.getItemStack(BUILD_SLOT).material());
             player.closeInventory();
 
             permissions.set(player.getUuid(), SLENDER_PERMISSION, PermissionResult.ALLOWED);
 
             AbstractInventory second = openNavigator(fixture, player);
-            Assertions.assertEquals(Material.ENDERMAN_SPAWN_EGG, second.getItemStack(5).material(), "slot 5 must show Slender after the grant");
+            Assertions.assertEquals(Material.ENDERMAN_SPAWN_EGG, second.getItemStack(15).material(), "slot 15 must show Slender after the grant");
             Assertions.assertEquals(Material.SCAFFOLDING, second.getItemStack(BUILD_SLOT).material(), "Build must survive the relayout");
         }
     }
@@ -218,7 +218,7 @@ class NavigatorBuildDestinationTest {
 
             fixture.stopModule();
 
-            InventoryPreClickEvent event = click(env, inventory, player, 4);
+            InventoryPreClickEvent event = click(env, inventory, player, 20);
             Assertions.assertFalse(event.isCancelled(), "no feature code may run once the module has stopped");
             Assertions.assertTrue(deliver.deliveries().isEmpty(), "no delivery may happen once the module has stopped");
         }

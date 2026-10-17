@@ -43,23 +43,22 @@ import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.inventory.Inventory;
-import net.minestom.server.inventory.InventoryType;
 import net.minestom.server.inventory.click.Click;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
 import net.minestom.server.timer.Scheduler;
 import net.minestom.server.timer.Task;
 import net.minestom.server.timer.TaskSchedule;
-import net.onelitefeather.titan.api.deliver.DeliverComponent;
 import net.onelitefeather.titan.api.deliver.Deliver;
+import net.onelitefeather.titan.api.deliver.DeliverComponent;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.module.SpawnReturn;
 import net.onelitefeather.titan.core.permission.PermissionResult;
 import net.onelitefeather.titan.core.permission.PermissionService;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
+import net.onelitefeather.titan.core.portal.PlayerCounts;
 import net.onelitefeather.titan.core.portal.Portal;
 import net.onelitefeather.titan.core.portal.PortalApproach;
-import net.onelitefeather.titan.core.portal.PlayerCounts;
 import net.onelitefeather.titan.core.portal.ServiceCount;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.theevilreaper.aves.inventory.click.ClickHolder;
@@ -71,9 +70,9 @@ import net.theevilreaper.aves.inventory.layout.InventoryLayout;
  * ({@code SLENDER}, {@code BUILD}, see {@link Destination}) a player holds, so there is one per
  * subset of them and language. Opening picks by permission.
  *
- * <p>A right click on a destination walks the player to the lobby's portal for that task instead
- * of connecting, when the map has one; a left click on a mode that runs on several services opens
- * the list of them instead (see {@link ServerPicker}); any other click connects.
+ * <p>A minigame's left click joins its best ready service (see {@link QuickJoin}), its right click
+ * lists the services (see {@link ServerPicker}); a server connects on any unshifted click. A shift
+ * click walks to the lobby's portal for the entry when there is one (see {@link ClickAction}).
  *
  * <p>Aves maps its click listener directly onto each built {@code GlobalInventoryBuilder} inventory
  * and dispatches it before any regular event node's listeners, so this click handling always
@@ -86,9 +85,7 @@ public final class NavigatorModule {
     static final int EVENT_PRIORITY = 400;
 
     private static final String ID = "navigator";
-    private static final int SLOT_COUNT = 9;
-    private static final int SPAWN_SLOT = 2;
-    private static final ItemStack SPAWN_ITEM = ItemStack.builder(Material.COMPASS).customName(MiniMessage.miniMessage().deserialize("<!i><aqua>Spawn</aqua>")).build();
+    private static final ItemStack SPAWN_ITEM = ItemStack.builder(Material.COMPASS).customName(MiniMessage.miniMessage().deserialize("<!i><gradient:#00ddff:#ffffff>Spawn</gradient>")).build();
     private static final ItemStack BLANK = ItemStack.builder(Material.GRAY_STAINED_GLASS_PANE).customName(Component.empty()).build();
 
     private static final List<Locale> LANGUAGES = List.of(Locale.ENGLISH, Locale.GERMAN);
@@ -96,9 +93,8 @@ public final class NavigatorModule {
     private final EventNode<Event> titan;
     private final Deliver deliver;
     private final PermissionService permissions;
-    private final NavigatorMessages messages;
-    // One shared inventory per menu and language: the click hint is translated, and a shared
-    // inventory shows the same stacks to everyone who opens it.
+    // One shared inventory per menu and language: the title and the click lines are translated, and a
+    // shared inventory shows the same stacks to everyone who opens it.
     private final Map<Menu, SharedNavigator> menus = new HashMap<>();
     private final Telemetry telemetry;
     private final NavigatorTelemetry navigatorTelemetry;
@@ -110,12 +106,13 @@ public final class NavigatorModule {
     private final Executor reads;
     private final TaskPlayers players;
     private final NavigatorSettings settings;
-    private final Map<Destination, SharedServerPicker> pickers = new EnumMap<>(Destination.class);
-    // Players whose left click is waiting for the service read; a second click meanwhile is ignored.
+    // One server list per minigame and language, so each picker is in the language of its players.
+    private final Map<Picker, SharedServerPicker> pickers = new HashMap<>();
+    // Players whose click is waiting for the service read; a second click meanwhile is ignored.
     private final Set<UUID> choosing = new HashSet<>();
     private final AtomicBoolean reading = new AtomicBoolean();
     // The running services per destination, replaced as a whole by each refresh; the count line and
-    // the click hint of every stack are both derived from it.
+    // the click lines of every stack are both derived from it.
     private volatile Map<Destination, List<ServiceCount>> running = Map.of();
     private volatile boolean stopped;
     private SpawnReturn spawnReturn;
@@ -126,7 +123,8 @@ public final class NavigatorModule {
         this.titan = Objects.requireNonNull(titan, "titan must not be null");
         this.deliver = Objects.requireNonNull(deliver, "deliver must not be null");
         this.permissions = Objects.requireNonNull(permissions, "permissions must not be null");
-        this.messages = Objects.requireNonNull(messages, "messages must not be null");
+        // Injected so the translations are registered before this module renders its first line.
+        Objects.requireNonNull(messages, "messages must not be null");
         this.spawnReturnProvider = Objects.requireNonNull(spawnReturnProvider, "spawnReturnProvider must not be null");
         this.portals = Objects.requireNonNull(portals, "portals must not be null");
         this.telemetry = Objects.requireNonNull(telemetry, "telemetry must not be null");
@@ -135,13 +133,10 @@ public final class NavigatorModule {
         this.players = new TaskPlayers(Objects.requireNonNull(counts, "counts must not be null"));
         this.settings = Objects.requireNonNull(settings, "settings must not be null");
         this.navigatorTelemetry = new NavigatorTelemetry(this.telemetry);
-        for (Set<Destination> granted : grantCombinations()) {
-            for (Locale language : LANGUAGES) {
-                this.menus.put(new Menu(granted, language), new SharedNavigator(granted, this.telemetry));
-            }
-        }
         for (Destination destination : ServerPicker.DESTINATIONS) {
-            this.pickers.put(destination, new SharedServerPicker());
+            for (Locale language : LANGUAGES) {
+                this.pickers.put(new Picker(destination, language), new SharedServerPicker(language));
+            }
         }
     }
 
@@ -151,10 +146,16 @@ public final class NavigatorModule {
         // Listener-less: only attached so this feature shows up in the fixed EVENT_PRIORITY order
         // and the leak test; Aves handles every inventory click itself.
         this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry);
-        this.menus.forEach((menu, navigator) -> {
-            navigator.applyLayout(layoutFor(menu.language()));
-            navigator.register();
-        });
+        // Built here, not in the constructor: the title is translated, and the translations are
+        // registered when the messages bean starts, which happens before this module does.
+        for (Set<Destination> granted : grantCombinations()) {
+            for (Locale language : LANGUAGES) {
+                SharedNavigator navigator = new SharedNavigator(NavigatorMessages.title(language), granted, this.telemetry);
+                navigator.applyLayout(layoutFor(language));
+                navigator.register();
+                this.menus.put(new Menu(granted, language), navigator);
+            }
+        }
         // Tick-based on purpose: Minestom's time-based schedules run on a wall-clock timer outside the tick.
         TaskSchedule period = TaskSchedule.tick(Math.multiplyExact(this.settings.refreshSeconds(), ServerFlag.SERVER_TICKS_PER_SECOND));
         this.refreshTask = this.scheduler.scheduleTask(this::refreshCounts, TaskSchedule.nextTick(), period);
@@ -176,7 +177,7 @@ public final class NavigatorModule {
         // The destinations plus the fixed spawn entry.
         int entries = Destination.visible(granted).size() + 1;
         this.navigatorTelemetry.open(player.getUuid(), granted.contains(Destination.BUILD), entries, () -> {
-            // A portal added since the last refresh must already show in the hint when the menu opens.
+            // A portal added since the last refresh must already show in the lines when the menu opens.
             navigator.showItems(destination -> itemOf(destination, menu.language()));
             player.openInventory(navigator.inventory());
         });
@@ -263,12 +264,12 @@ public final class NavigatorModule {
         this.menus.forEach((menu, navigator) -> navigator.showItems(destination -> itemOf(destination, menu.language())));
     }
 
-    // The picker hint follows the last refresh, as the count does; the portal is looked up now, so a
-    // portal added or removed shows up as soon as the menu is opened.
+    // The lines follow the last refresh, as the count does; the portal is looked up now, so a portal
+    // added or removed shows up as soon as the menu is opened.
     private ItemStack itemOf(Destination destination, Locale language) {
         List<ServiceCount> services = this.running.getOrDefault(destination, List.of());
-        boolean serverPicker = ServerPicker.opensFor(destination, services);
-        return destination.item(TaskPlayers.online(services), this.messages.clickHints(language, serverPicker, portalFor(destination).isPresent()));
+        List<ClickAction> actions = ClickAction.hints(ServerPicker.DESTINATIONS.contains(destination), portalFor(destination).isPresent());
+        return destination.item(NavigatorMessages.modeLore(destination.gradient(), TaskPlayers.online(services), TaskPlayers.capacity(services), actions, language));
     }
 
     private SpawnReturn resolveSpawnReturn() {
@@ -295,40 +296,45 @@ public final class NavigatorModule {
     }
 
     private InventoryLayout toAvesLayout(List<Destination> visible, Locale language) {
-        InventoryLayout layout = InventoryLayout.fromType(InventoryType.CHEST_1_ROW);
-        for (int slot = 0; slot < SLOT_COUNT; slot++) {
-            layout.setItem(slot, BLANK);
+        InventoryLayout layout = InventoryLayout.fromType(NavigatorLayout.TYPE);
+        for (int slot = 0; slot < NavigatorLayout.SIZE; slot++) {
+            layout.setItem(slot, NavigatorLayout.isFrame(slot) ? frameItem(slot) : BLANK);
         }
         for (Destination destination : visible) {
             layout.setItem(destination.slot(), itemOf(destination, language), (player, clickedSlot, click, stack, result) -> {
                 result.accept(ClickHolder.cancelClick());
-                if (!isRightClick(click) && ServerPicker.DESTINATIONS.contains(destination)) {
-                    chooseServer(player, destination);
-                    return;
-                }
-                this.navigatorTelemetry.select(player.getUuid(), destination.name(), () -> {
-                    if (!isAllowed(player, destination)) {
-                        player.closeInventory();
-                        return NavigatorTelemetry.Selection.DENIED;
-                    }
-                    Optional<Portal> portal = isRightClick(click) ? portalFor(destination) : Optional.empty();
-                    if (portal.isPresent()) {
-                        player.closeInventory();
-                        player.teleport(PortalApproach.standingBefore(portal.get(), player.getPosition()));
-                        return NavigatorTelemetry.Selection.TELEPORTED;
-                    }
-                    return connectToTask(player, destination);
-                });
+                clickDestination(player, destination, click, language);
             });
         }
         addSpawnEntry(layout);
         return layout;
     }
 
-    // Shift keeps the button: a shift-right click is still a right click. Every other click type
-    // connects, as the left click does.
-    private static boolean isRightClick(Click click) {
-        return click instanceof Click.Right || click instanceof Click.RightShift;
+    private static ItemStack frameItem(int slot) {
+        return ItemStack.builder(NavigatorLayout.frameMaterial(slot)).customName(Component.empty()).build();
+    }
+
+    // Decides the click first: a join or the server list needs the services read, a connect or a
+    // walk to the portal happens at once.
+    private void clickDestination(Player player, Destination destination, Click click, Locale language) {
+        Optional<Portal> portal = portalFor(destination);
+        ClickAction action = ClickAction.of(ServerPicker.DESTINATIONS.contains(destination), click, portal.isPresent());
+        if (action == ClickAction.QUICK_JOIN || action == ClickAction.PICK_SERVER) {
+            chooseServer(player, destination, action, language);
+            return;
+        }
+        this.navigatorTelemetry.select(player.getUuid(), destination.name(), () -> {
+            if (!isAllowed(player, destination)) {
+                player.closeInventory();
+                return NavigatorTelemetry.Selection.DENIED;
+            }
+            if (action == ClickAction.PORTAL && portal.isPresent()) {
+                player.closeInventory();
+                player.teleport(PortalApproach.standingBefore(portal.get(), player.getPosition()));
+                return NavigatorTelemetry.Selection.TELEPORTED;
+            }
+            return connectToTask(player, destination);
+        });
     }
 
     private Optional<Portal> portalFor(Destination destination) {
@@ -341,23 +347,23 @@ public final class NavigatorModule {
         return NavigatorTelemetry.Selection.SENT;
     }
 
-    // The services are read off the tick; the decision follows on the next tick, so the list never
-    // opens with a stale or empty reading.
-    private void chooseServer(Player player, Destination destination) {
+    // The services are read off the tick; the decision follows on the next tick, so neither the join
+    // nor the list ever opens with a stale or empty reading.
+    private void chooseServer(Player player, Destination destination, ClickAction action, Locale language) {
         if (!this.choosing.add(player.getUuid())) {
             return;
         }
         try {
             this.reads.execute(() -> {
                 List<ServiceCount> running = this.players.services(destination.task());
-                this.scheduler.scheduleNextTick(() -> conclude(player, destination, running));
+                this.scheduler.scheduleNextTick(() -> conclude(player, destination, action, language, running));
             });
         } catch (RuntimeException e) {
-            conclude(player, destination, List.of());
+            conclude(player, destination, action, language, List.of());
         }
     }
 
-    private void conclude(Player player, Destination destination, List<ServiceCount> running) {
+    private void conclude(Player player, Destination destination, ClickAction action, Locale language, List<ServiceCount> running) {
         this.choosing.remove(player.getUuid());
         if (this.stopped || !player.isOnline()) {
             return;
@@ -367,37 +373,48 @@ public final class NavigatorModule {
                 player.closeInventory();
                 return NavigatorTelemetry.Selection.DENIED;
             }
-            if (ServerPicker.opensFor(destination, running)) {
-                player.openInventory(this.pickers.get(destination).show(ServerPicker.entries(running), (viewer, service) -> pick(viewer, destination, service)));
-                return NavigatorTelemetry.Selection.PICKER;
+            if (action == ClickAction.QUICK_JOIN) {
+                Optional<ServiceCount> service = QuickJoin.pick(running);
+                if (service.isPresent()) {
+                    return joinService(player, service.get());
+                }
             }
-            return connectToTask(player, destination);
+            player.openInventory(this.pickers.get(new Picker(destination, language)).show(destination, ServerPicker.entries(running), (viewer, service) -> pick(viewer, destination, language, service)));
+            return NavigatorTelemetry.Selection.PICKER;
         });
     }
 
-    private void pick(Player player, Destination destination, ServiceCount service) {
+    private void pick(Player player, Destination destination, Locale language, ServiceCount service) {
         this.navigatorTelemetry.select(player.getUuid(), destination.name(), () -> {
             if (!isAllowed(player, destination)) {
                 player.closeInventory();
                 return NavigatorTelemetry.Selection.DENIED;
             }
             if (!ServerPicker.joinable(service)) {
-                player.sendMessage(ServerPicker.refusal(service));
+                player.sendMessage(ServerPicker.refusal(service, language));
                 return NavigatorTelemetry.Selection.REFUSED;
             }
-            this.deliver.sendPlayer(player, DeliverComponent.serverBuilder().serverName(service.name()).player(player).build());
-            player.closeInventory();
-            return NavigatorTelemetry.Selection.SENT;
+            return joinService(player, service);
         });
+    }
+
+    private NavigatorTelemetry.Selection joinService(Player player, ServiceCount service) {
+        this.deliver.sendPlayer(player, DeliverComponent.serverBuilder().serverName(service.name()).player(player).build());
+        player.closeInventory();
+        return NavigatorTelemetry.Selection.SENT;
     }
 
     /** One shared inventory: the permissioned destinations it shows, in one language. */
     private record Menu(Set<Destination> granted, Locale language) {
     }
 
+    /** One shared server list: the minigame it lists, in one language. */
+    private record Picker(Destination destination, Locale language) {
+    }
+
     // Spawn is a fixed entry, not a Destination: it returns the player instead of redirecting them.
     private void addSpawnEntry(InventoryLayout layout) {
-        layout.setItem(SPAWN_SLOT, SPAWN_ITEM, (player, clickedSlot, click, stack, result) -> {
+        layout.setItem(NavigatorLayout.SPAWN_SLOT, SPAWN_ITEM, (player, clickedSlot, click, stack, result) -> {
             result.accept(ClickHolder.cancelClick());
             this.navigatorTelemetry.select(player.getUuid(), NavigatorTelemetry.SPAWN_DESTINATION, () -> {
                 this.spawnReturn.sendToSpawnAndTell(player, SpawnReturn.Source.NAVIGATOR);

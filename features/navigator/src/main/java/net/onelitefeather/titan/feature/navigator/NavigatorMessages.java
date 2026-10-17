@@ -21,23 +21,48 @@ import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.OptionalInt;
 import java.util.ResourceBundle;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import net.kyori.adventure.text.minimessage.translation.MiniMessageTranslationStore;
 import net.kyori.adventure.translation.GlobalTranslator;
 
 /**
- * Translated texts of the navigator. Rendering is explicit via {@link GlobalTranslator}: a
- * translatable component without the render flag stays empty on Minestom 26.1.
+ * Translated texts of the navigator. Each text is a translation key in the bundles, rendered by
+ * {@link GlobalTranslator}: a translatable component without the render flag stays empty on
+ * Minestom 26.1.
  */
 @Singleton
 final class NavigatorMessages implements AutoCloseable {
 
+    static final String TITLE = "titan.navigator.title";
+    static final String PICKER_TITLE = "titan.navigator.picker.title";
+    static final String PLAYERS = "titan.navigator.players";
+    static final String KEY_LEFT = "titan.navigator.key.left";
+    static final String KEY_RIGHT = "titan.navigator.key.right";
+    static final String KEY_SHIFT = "titan.navigator.key.shift";
+    static final String ACTION_QUICK_JOIN = "titan.navigator.action.quick_join";
+    static final String ACTION_CHOOSE_SERVER = "titan.navigator.action.choose_server";
+    static final String ACTION_CONNECT = "titan.navigator.action.connect";
+    static final String ACTION_PORTAL = "titan.navigator.action.portal";
+    static final String PICKER_FULL = "titan.navigator.picker.full";
+    static final String PICKER_NOT_READY = "titan.navigator.picker.not_ready";
+    static final String PICKER_JOIN = "titan.navigator.picker.join";
+    static final String REFUSAL_FULL = "titan.navigator.picker.refusal.full";
+    static final String REFUSAL_NOT_READY = "titan.navigator.picker.refusal.not_ready";
+
+    /** Every key the navigator renders; the bundle test checks the property files against it. */
+    static final List<String> KEYS = List.of(TITLE, PICKER_TITLE, PLAYERS, KEY_LEFT, KEY_RIGHT, KEY_SHIFT, ACTION_QUICK_JOIN, ACTION_CHOOSE_SERVER, ACTION_CONNECT, ACTION_PORTAL, PICKER_FULL, PICKER_NOT_READY, PICKER_JOIN, REFUSAL_FULL, REFUSAL_NOT_READY);
+
     private static final String BUNDLE = "titan.navigator.messages";
-    private static final String LEFT_CONNECT = "titan.navigator.click.left_connect";
-    private static final String LEFT_PICK = "titan.navigator.click.left_pick";
-    private static final String RIGHT_PORTAL = "titan.navigator.click.right_portal";
+    private static final String SEPARATOR = "━━━━━━━━━━━━";
+    private static final String LABEL_COLOR = "<#8c96a8>";
+    /** The marker in front of every click and state line. */
+    static final String ARROW = "<#00ddff>▸ </#00ddff>";
 
     private final MiniMessageTranslationStore store = MiniMessageTranslationStore.create(Key.key("titan", "navigator"));
     private boolean registered;
@@ -66,33 +91,50 @@ final class NavigatorMessages implements AutoCloseable {
         }
     }
 
-    /**
-     * The click hint lines of one entry, one per click: the left click first, then the right click
-     * only with a portal. The left click is "choose a server" only while the picker opens for the
-     * mode.
-     */
-    List<Component> clickHints(Locale locale, boolean serverPicker, boolean portal) {
-        List<Component> hints = new ArrayList<>();
-        for (String key : keysFor(serverPicker, portal)) {
-            hints.add(render(key, locale));
-        }
-        return hints;
-    }
-
-    /**
-     * The keys {@link #clickHints} renders for one combination; the bundle test checks them against
-     * the property files.
-     */
-    static List<String> keysFor(boolean serverPicker, boolean portal) {
-        List<String> keys = new ArrayList<>();
-        keys.add(serverPicker ? LEFT_PICK : LEFT_CONNECT);
-        if (portal) {
-            keys.add(RIGHT_PORTAL);
-        }
-        return keys;
-    }
-
-    private static Component render(String key, Locale locale) {
+    /** One translated text, rendered for {@code locale}. */
+    static Component text(String key, Locale locale) {
         return GlobalTranslator.render(Component.translatable(key), locale);
+    }
+
+    /**
+     * The lore of one mode entry: a separator in the mode's gradient, the players line when the
+     * count
+     * is known, a blank line, then one line per click action.
+     */
+    static List<Component> modeLore(String gradient, OptionalInt online, OptionalInt max, List<ClickAction> actions, Locale locale) {
+        MiniMessage mini = MiniMessage.miniMessage();
+        List<Component> lore = new ArrayList<>();
+        lore.add(mini.deserialize("<!i>" + gradient + SEPARATOR + "</gradient>"));
+        if (online.isPresent()) {
+            lore.add(playersLine(online.getAsInt(), max, locale));
+        }
+        lore.add(Component.empty());
+        for (ClickAction action : actions) {
+            lore.add(clickLine(action, locale));
+        }
+        return List.copyOf(lore);
+    }
+
+    /** The players of an entry, with the maximum after a slash when it is known. */
+    static Component playersLine(int online, OptionalInt max, Locale locale) {
+        MiniMessage mini = MiniMessage.miniMessage();
+        TagResolver label = Placeholder.component("label", text(PLAYERS, locale));
+        TagResolver count = Placeholder.unparsed("online", String.valueOf(online));
+        if (max.isEmpty()) {
+            return mini.deserialize("<!i>" + LABEL_COLOR + "<label>  </#8c96a8><white><online></white>", label, count);
+        }
+        TagResolver limit = Placeholder.unparsed("max", String.valueOf(max.getAsInt()));
+        return mini.deserialize("<!i>" + LABEL_COLOR + "<label>  </#8c96a8><white><online></white>" + LABEL_COLOR + " / <max></#8c96a8>", label, count, limit);
+    }
+
+    /** The title of the navigator, styled as its gradient, in {@code locale}. */
+    static Component title(Locale locale) {
+        return text(TITLE, locale);
+    }
+
+    private static Component clickLine(ClickAction action, Locale locale) {
+        TagResolver key = Placeholder.component("key", text(action.keyKey(), locale));
+        TagResolver label = Placeholder.component("action", text(action.labelKey(), locale));
+        return MiniMessage.miniMessage().deserialize("<!i>" + ARROW + "<white><key>  </white>" + LABEL_COLOR + "<action></#8c96a8>", key, label);
     }
 }

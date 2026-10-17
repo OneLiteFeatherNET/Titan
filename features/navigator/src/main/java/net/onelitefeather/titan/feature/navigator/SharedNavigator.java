@@ -19,9 +19,8 @@ import io.opentelemetry.api.common.Attributes;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
-import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.Component;
 import net.minestom.server.inventory.Inventory;
-import net.minestom.server.inventory.InventoryType;
 import net.minestom.server.item.ItemStack;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.theevilreaper.aves.inventory.GlobalInventoryBuilder;
@@ -38,8 +37,8 @@ final class SharedNavigator {
     private final Telemetry telemetry;
     private List<Destination> appliedVisible;
 
-    SharedNavigator(Set<Destination> granted, Telemetry telemetry) {
-        this.builder = new GlobalInventoryBuilder(MiniMessage.miniMessage().deserialize("<yellow>Navigator"), InventoryType.CHEST_1_ROW);
+    SharedNavigator(Component title, Set<Destination> granted, Telemetry telemetry) {
+        this.builder = new GlobalInventoryBuilder(title, NavigatorLayout.TYPE);
         this.granted = granted;
         this.telemetry = telemetry;
     }

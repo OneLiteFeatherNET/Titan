@@ -43,8 +43,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(MicrotusExtension.class)
 class NavigatorPortalTeleportTest {
 
-    private static final int SURVIVAL_SLOT = 4;
-    private static final int BUILD_SLOT = 7;
+    private static final int SURVIVAL_SLOT = 20;
+    private static final int BUILD_SLOT = 24;
     private static final String BUILD_PERMISSION = "titan.navigator.buildserver";
     private static final Box AREA = new Box(new Vec(10, 40, 20), new Vec(12, 42, 22));
     private static final LobbyPortals SURVIVAL_PORTAL = () -> List.of(new Portal("survival", AREA, "Survival", null));
@@ -63,14 +63,14 @@ class NavigatorPortalTeleportTest {
 
     @DisplayName("A right click teleports the player in front of the portal of that task, facing it, and sends nobody")
     @Test
-    void rightClickTeleportsInFrontOfTheMatchingPortal(Env env) {
+    void shiftClickTeleportsInFrontOfTheMatchingPortal(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance, new Pos(11.5, 40, 60));
         try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), SURVIVAL_PORTAL)) {
             AbstractInventory inventory = open(fixture, player);
 
-            InventoryPreClickEvent event = click(env, inventory, player, new Click.Right(SURVIVAL_SLOT));
+            InventoryPreClickEvent event = click(env, inventory, player, new Click.LeftShift(SURVIVAL_SLOT));
             env.tick();
 
             Pos expected = PortalApproach.standingBefore(SURVIVAL_PORTAL.portals().getFirst(), new Pos(11.5, 40, 60));
@@ -89,7 +89,7 @@ class NavigatorPortalTeleportTest {
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), SURVIVAL_PORTAL)) {
             AbstractInventory inventory = open(fixture, player);
 
-            click(env, inventory, player, new Click.Right(SURVIVAL_SLOT));
+            click(env, inventory, player, new Click.LeftShift(SURVIVAL_SLOT));
             env.tick();
 
             Assertions.assertFalse(AREA.crossedBy(player.getPosition(), player.getPosition()), "landing inside the trigger would send the player away again");
@@ -142,7 +142,7 @@ class NavigatorPortalTeleportTest {
         try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), SURVIVAL_PORTAL)) {
             AbstractInventory inventory = open(fixture, player);
 
-            click(env, inventory, player, new Click.LeftShift(SURVIVAL_SLOT));
+            click(env, inventory, player, new Click.Middle(SURVIVAL_SLOT));
             env.tick();
 
             Assertions.assertEquals(1, deliver.deliveries().size(), "a shift click connects");

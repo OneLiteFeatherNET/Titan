@@ -47,9 +47,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 class NavigatorTelemetryTest {
 
     private static final String BUILD_PERMISSION = "titan.navigator.buildserver";
-    private static final int SURVIVAL_SLOT = 4;
-    private static final int BUILD_SLOT = 7;
-    private static final int SPAWN_SLOT = 2;
+    private static final int SURVIVAL_SLOT = 20;
+    private static final int BUILD_SLOT = 24;
+    private static final int SPAWN_SLOT = 31;
 
     private static final AttributeKey<String> KIND = AttributeKey.stringKey("navigator.kind");
     private static final AttributeKey<Long> ENTRIES = AttributeKey.longKey("navigator.entries");
@@ -173,14 +173,14 @@ class NavigatorTelemetryTest {
 
     @DisplayName("A right click that teleports in front of the portal spans teleported")
     @Test
-    void rightClickTeleportSpansTeleported(Env env) {
+    void shiftClickTeleportSpansTeleported(Env env) {
         LobbyPortals portals = () -> List.of(new Portal("survival", new Box(new Vec(10, 40, 20), new Vec(12, 42, 22)), "Survival", null));
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), new FakeSpawnReturn(), testTelemetry.telemetry(), portals)) {
             Player player = env.createPlayer(env.createFlatInstance());
             fixture.equip(player);
             fixture.useFeather(player);
 
-            env.process().eventHandler().call(new InventoryPreClickEvent(player.getOpenInventory(), player, new Click.Right(SURVIVAL_SLOT)));
+            env.process().eventHandler().call(new InventoryPreClickEvent(player.getOpenInventory(), player, new Click.LeftShift(SURVIVAL_SLOT)));
 
             SpanData span = testTelemetry.span("navigator.select");
             Assertions.assertEquals("teleported", testTelemetry.attribute(span, RESULT), "the portal teleport has its own result");

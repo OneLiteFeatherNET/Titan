@@ -47,6 +47,17 @@ final class TaskPlayers {
         return OptionalInt.of(running.stream().mapToInt(ServiceCount::online).sum());
     }
 
+    /**
+     * The players a task can hold over one snapshot: the sum of the services' limits, or unknown
+     * unless every running service has announced its limit.
+     */
+    static OptionalInt capacity(List<ServiceCount> running) {
+        if (running.isEmpty() || running.stream().anyMatch(service -> !service.limitAnnounced())) {
+            return OptionalInt.empty();
+        }
+        return OptionalInt.of(running.stream().mapToInt(ServiceCount::max).sum());
+    }
+
     /** The running services of a task; empty whenever they are unknown. */
     List<ServiceCount> services(String task) {
         if (this.counts.isEmpty() || !this.counts.get().supports(SourceType.TASK)) {

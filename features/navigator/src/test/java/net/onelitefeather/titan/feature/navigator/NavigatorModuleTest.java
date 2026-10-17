@@ -18,9 +18,7 @@ package net.onelitefeather.titan.feature.navigator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.minestom.server.component.DataComponents;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.inventory.InventoryPreClickEvent;
@@ -68,21 +66,21 @@ class NavigatorModuleTest {
 
             Assertions.assertNotNull(openInventory, "the navigator must open synchronously, without a tick");
             Assertions.assertInstanceOf(Inventory.class, openInventory);
-            Assertions.assertEquals(InventoryType.CHEST_1_ROW, ((Inventory) openInventory).getInventoryType());
-            Assertions.assertEquals(Material.ELYTRA, openInventory.getItemStack(0).material());
-            Assertions.assertEquals(Material.COMPASS, openInventory.getItemStack(2).material());
-            Assertions.assertEquals(Material.GRASS_BLOCK, openInventory.getItemStack(4).material());
-            Assertions.assertEquals(Material.ENDERMAN_SPAWN_EGG, openInventory.getItemStack(5).material());
-            Assertions.assertEquals(Material.WOODEN_AXE, openInventory.getItemStack(8).material());
-            for (int slot : List.of(1, 3, 6, 7)) {
+            Assertions.assertEquals(InventoryType.CHEST_4_ROW, ((Inventory) openInventory).getInventoryType());
+            Assertions.assertEquals(Material.ELYTRA, openInventory.getItemStack(11).material());
+            Assertions.assertEquals(Material.COMPASS, openInventory.getItemStack(31).material());
+            Assertions.assertEquals(Material.GRASS_BLOCK, openInventory.getItemStack(20).material());
+            Assertions.assertEquals(Material.ENDERMAN_SPAWN_EGG, openInventory.getItemStack(15).material());
+            Assertions.assertEquals(Material.WOODEN_AXE, openInventory.getItemStack(22).material());
+            for (int slot : List.of(10, 12, 13, 14, 16, 19, 21, 23, 24, 25)) {
                 Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, openInventory.getItemStack(slot).material(), "slot " + slot + " should be a blank glass pane");
             }
         }
     }
 
-    @DisplayName("Clicking ElytraRace forwards to the ElytraRace task and closes the inventory")
+    @DisplayName("Clicking ElytraRace with no running service opens the server list and sends nobody")
     @Test
-    void clickingElytraRaceForwardsToElytraRace(Env env) {
+    void clickingElytraRaceWithoutServiceOpensTheList(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
         try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"))) {
             Instance instance = env.createFlatInstance();
@@ -90,14 +88,13 @@ class NavigatorModuleTest {
             fixture.equip(player);
             AbstractInventory openInventory = openNavigator(fixture, player);
 
-            InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(0));
+            InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(Destination.ELYTRA_RACE.slot()));
             env.process().eventHandler().call(clickEvent);
             env.tick();
 
             Assertions.assertTrue(clickEvent.isCancelled(), "the click must be cancelled so the icon stays in place");
-            Assertions.assertEquals(1, deliver.deliveries().size(), "exactly one delivery must be recorded");
-            Assertions.assertEquals("ElytraRace", deliver.deliveries().get(0).taskName());
-            Assertions.assertNotSame(openInventory, player.getOpenInventory(), "the navigator must close after a click");
+            Assertions.assertTrue(deliver.deliveries().isEmpty(), "with no joinable service nobody is sent");
+            Assertions.assertNotSame(openInventory, player.getOpenInventory(), "the server list replaces the navigator");
         }
     }
 
@@ -111,7 +108,7 @@ class NavigatorModuleTest {
             fixture.equip(player);
             AbstractInventory openInventory = openNavigator(fixture, player);
 
-            InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(4));
+            InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(20));
             env.process().eventHandler().call(clickEvent);
 
             Assertions.assertTrue(clickEvent.isCancelled());
@@ -121,9 +118,9 @@ class NavigatorModuleTest {
         }
     }
 
-    @DisplayName("Clicking Slender forwards to the Slender task and closes the inventory")
+    @DisplayName("Clicking Slender with no running service opens the server list and sends nobody")
     @Test
-    void clickingSlenderForwardsToSlender(Env env) {
+    void clickingSlenderWithoutServiceOpensTheList(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
         try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"))) {
             Instance instance = env.createFlatInstance();
@@ -131,13 +128,12 @@ class NavigatorModuleTest {
             fixture.equip(player);
             AbstractInventory openInventory = openNavigator(fixture, player);
 
-            InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(5));
+            InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(15));
             env.process().eventHandler().call(clickEvent);
             env.tick();
 
             Assertions.assertTrue(clickEvent.isCancelled());
-            Assertions.assertEquals(1, deliver.deliveries().size());
-            Assertions.assertEquals("Slender", deliver.deliveries().get(0).taskName());
+            Assertions.assertTrue(deliver.deliveries().isEmpty(), "with no joinable Slender service nobody is sent");
             Assertions.assertNotSame(openInventory, player.getOpenInventory());
         }
     }
@@ -152,7 +148,7 @@ class NavigatorModuleTest {
             fixture.equip(player);
             AbstractInventory openInventory = openNavigator(fixture, player);
 
-            InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(8));
+            InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(22));
             env.process().eventHandler().call(clickEvent);
 
             Assertions.assertTrue(clickEvent.isCancelled());
@@ -191,7 +187,7 @@ class NavigatorModuleTest {
             fixture.equip(player);
             AbstractInventory openInventory = openNavigator(fixture, player);
 
-            InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(2));
+            InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(31));
             env.process().eventHandler().call(clickEvent);
 
             Assertions.assertTrue(clickEvent.isCancelled(), "the click must be cancelled so the icon stays in the navigator");
@@ -199,8 +195,8 @@ class NavigatorModuleTest {
             Assertions.assertEquals(0, spawnReturn.sendCalls(), "the click must use sendToSpawnAndTell, not sendToSpawn directly");
             Assertions.assertTrue(deliver.deliveries().isEmpty(), "Spawn must not trigger a Deliver redirect");
             Assertions.assertNotSame(openInventory, player.getOpenInventory(), "the navigator must close after the click");
-            Assertions.assertEquals(Material.COMPASS, openInventory.getItemStack(2).material(), "the icon must stay in the navigator");
-            Assertions.assertEquals(Component.text("Spawn", NamedTextColor.AQUA).decoration(TextDecoration.ITALIC, false), openInventory.getItemStack(2).get(DataComponents.CUSTOM_NAME), "the compass must be named Spawn, language-neutral");
+            Assertions.assertEquals(Material.COMPASS, openInventory.getItemStack(31).material(), "the icon must stay in the navigator");
+            Assertions.assertEquals("Spawn", PlainTextComponentSerializer.plainText().serialize(openInventory.getItemStack(31).get(DataComponents.CUSTOM_NAME)), "the compass must be named Spawn, language-neutral");
         }
     }
 
@@ -246,7 +242,7 @@ class NavigatorModuleTest {
 
             fixture.stopModule();
 
-            InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(4));
+            InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(20));
             env.process().eventHandler().call(clickEvent);
 
             Assertions.assertFalse(clickEvent.isCancelled(), "no feature code may run once the module has stopped");

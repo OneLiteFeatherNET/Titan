@@ -17,6 +17,8 @@ package net.onelitefeather.titan.feature.navigator;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
+import java.util.OptionalInt;
 import java.util.Set;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -27,33 +29,42 @@ import net.minestom.server.item.Material;
 import net.onelitefeather.titan.core.portal.ServiceCount;
 
 /**
- * The server picker: a left click on a mode that runs on several CloudNet services opens a list of
- * those services, and a click on one entry connects to exactly that service. Only the modes in
- * {@link #DESTINATIONS} offer it; every other mode, and every other click, works as before.
+ * The server picker: the list of the CloudNet services of a minigame, opened by its right click,
+ * and
+ * the target of a quick join that found no ready service. A click on one entry connects to exactly
+ * that service. Only the modes in {@link #DESTINATIONS} offer it.
  */
 final class ServerPicker {
 
-    /** The modes whose left click opens the picker when they run on several services. */
+    /** The minigames: the modes that offer the server choice and the quick join. */
     static final Set<Destination> DESTINATIONS = Set.of(Destination.ELYTRA_RACE, Destination.SLENDER);
 
     static final int COLUMNS = 9;
     static final int MAX_ROWS = 6;
 
-    private static final String GRADIENT = "<gradient:#00ddff:#ffffff>";
+    private static final String BRAND = "<gradient:#00ddff:#ffffff>";
 
     private ServerPicker() {
     }
 
-    /** The title of the picker's inventory. */
-    static Component title() {
-        return MiniMessage.miniMessage().deserialize(GRADIENT + "Choose a server</gradient>");
+    /** The state of an entry, which sets its icon and its state line. */
+    private enum State {
+        FULL(Material.RED_CONCRETE, NavigatorMessages.PICKER_FULL, "red"), NOT_READY(Material.YELLOW_CONCRETE, NavigatorMessages.PICKER_NOT_READY, "yellow"), JOINABLE(Material.LIME_CONCRETE, NavigatorMessages.PICKER_JOIN, "green");
+
+        private final Material material;
+        private final String key;
+        private final String color;
+
+        State(Material material, String key, String color) {
+            this.material = material;
+            this.key = key;
+            this.color = color;
+        }
     }
 
-    /**
-     * A left click opens the picker only with a choice: one service, or none, connects to the task.
-     */
-    static boolean opensFor(Destination destination, List<ServiceCount> running) {
-        return DESTINATIONS.contains(destination) && running.size() > 1;
+    /** The title of the picker's inventory in {@code locale}. */
+    static Component title(Locale locale) {
+        return NavigatorMessages.text(NavigatorMessages.PICKER_TITLE, locale);
     }
 
     /** The services the picker lists, by name, at most as many as six rows hold. */
@@ -70,36 +81,52 @@ final class ServerPicker {
     }
 
     /**
-     * One entry: its name, its players against the limit, and the state as the colour of its icon.
+     * One entry: the service's name in its destination's gradient, with the lore of {@link #lore}.
      */
-    static ItemStack item(ServiceCount service) {
-        MiniMessage mini = MiniMessage.miniMessage();
+    static ItemStack item(Destination destination, ServiceCount service, Locale locale) {
+        return ItemStack.builder(material(service)).customName(name(destination, service)).lore(lore(service, locale)).build();
+    }
+
+    /** The name of an entry, in the gradient of the destination it belongs to. */
+    static Component name(Destination destination, ServiceCount service) {
         TagResolver name = Placeholder.unparsed("name", service.name());
-        TagResolver online = Placeholder.unparsed("online", String.valueOf(service.online()));
-        TagResolver max = Placeholder.unparsed("max", service.limitAnnounced() ? String.valueOf(service.max()) : "?");
-        Material material;
-        String state;
-        if (service.full()) {
-            material = Material.RED_CONCRETE;
-            state = "<red>Full</red>";
-        } else if (!service.limitAnnounced()) {
-            material = Material.YELLOW_CONCRETE;
-            state = "<yellow>Not ready yet</yellow>";
-        } else {
-            material = Material.LIME_CONCRETE;
-            state = "<green>Click to join</green>";
-        }
-        return ItemStack.builder(material).customName(mini.deserialize("<!i>" + GRADIENT + "<name></gradient>", name)).lore(List.of(mini.deserialize("<!i><gray>Players: <white><online></white>/<white><max></white></gray>", online, max), mini.deserialize("<!i>" + state))).build();
+        return MiniMessage.miniMessage().deserialize("<!i>" + destination.gradient() + "<name></gradient>", name);
+    }
+
+    /**
+     * The players of the service against its limit, a blank line, and the state as a line of its
+     * own.
+     */
+    static List<Component> lore(ServiceCount service, Locale locale) {
+        State state = stateOf(service);
+        OptionalInt max = service.limitAnnounced() ? OptionalInt.of(service.max()) : OptionalInt.empty();
+        Component stateLine = MiniMessage.miniMessage().deserialize("<!i>" + NavigatorMessages.ARROW + "<" + state.color + "><state></" + state.color + ">", Placeholder.component("state", NavigatorMessages.text(state.key, locale)));
+        return List.of(NavigatorMessages.playersLine(service.online(), max, locale), Component.empty(), stateLine);
+    }
+
+    /**
+     * The icon colour of an entry: red when full, yellow when it has no limit yet, lime when it can
+     * be joined.
+     */
+    static Material material(ServiceCount service) {
+        return stateOf(service).material;
     }
 
     /** What the player is told when a picked server cannot be joined. */
-    static Component refusal(ServiceCount service) {
-        String reason = service.limitAnnounced() ? "That server is full." : "That server is not ready yet.";
-        return MiniMessage.miniMessage().deserialize(GRADIENT + "Servers</gradient> <gray>»</gray> <red>" + reason + "</red>");
+    static Component refusal(ServiceCount service, Locale locale) {
+        String reason = service.limitAnnounced() ? NavigatorMessages.REFUSAL_FULL : NavigatorMessages.REFUSAL_NOT_READY;
+        return MiniMessage.miniMessage().deserialize(BRAND + "Servers</gradient> <gray>»</gray> <red><reason></red>", Placeholder.component("reason", NavigatorMessages.text(reason, locale)));
     }
 
-    /** Whether a picked server can be joined: it has announced a limit and has a free slot. */
+    /** Whether a service can be joined: it has announced a limit and has a free slot. */
     static boolean joinable(ServiceCount service) {
         return service.limitAnnounced() && !service.full();
+    }
+
+    private static State stateOf(ServiceCount service) {
+        if (service.full()) {
+            return State.FULL;
+        }
+        return service.limitAnnounced() ? State.JOINABLE : State.NOT_READY;
     }
 }

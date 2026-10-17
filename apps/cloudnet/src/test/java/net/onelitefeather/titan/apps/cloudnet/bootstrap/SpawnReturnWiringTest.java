@@ -52,7 +52,7 @@ import org.mockito.Mockito;
 
 /**
  * Cross-column acceptance for returning to the spawn: with every column wired through the real
- * {@link BeanScope}, {@code /spawn} and the navigator's spawn entry (slot 2) each end a running
+ * {@link BeanScope}, {@code /spawn} and the navigator's spawn entry (slot 31) each end a running
  * Jump &amp; Run and put the player at the lobby spawn.
  *
  * <p>The scope is bound to {@code env}'s own instance and command manager, so nothing global is
@@ -138,7 +138,7 @@ class SpawnReturnWiringTest {
         }
     }
 
-    @DisplayName("Clicking the navigator's spawn entry (slot 2) during a run ends it and puts the player at the lobby spawn")
+    @DisplayName("Clicking the navigator's spawn entry (slot 31) during a run ends it and puts the player at the lobby spawn")
     @Test
     void navigatorSlotTwoEndsTheRunAndReturnsThePlayer(Env env) {
         try (Scene scene = Scene.start(env)) {
@@ -147,9 +147,9 @@ class SpawnReturnWiringTest {
             env.process().eventHandler().call(new PlayerUseItemEvent(scene.player(), PlayerHand.MAIN, scene.feather(), 0L));
             AbstractInventory navigator = scene.player().getOpenInventory();
             Assertions.assertNotNull(navigator, "the feather must open the navigator");
-            Assertions.assertEquals(Material.COMPASS, navigator.getItemStack(2).material(), "navigator slot 2 must be the spawn entry");
+            Assertions.assertEquals(Material.COMPASS, navigator.getItemStack(31).material(), "navigator slot 31 must be the spawn entry");
 
-            env.process().eventHandler().call(new InventoryPreClickEvent(navigator, scene.player(), new Click.Left(2)));
+            env.process().eventHandler().call(new InventoryPreClickEvent(navigator, scene.player(), new Click.Left(31)));
             settle(env);
 
             Assertions.assertEquals(0, scene.runBlocks(), "no run block may remain after the click");

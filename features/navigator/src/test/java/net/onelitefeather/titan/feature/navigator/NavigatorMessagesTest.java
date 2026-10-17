@@ -15,7 +15,6 @@
  */
 package net.onelitefeather.titan.feature.navigator;
 
-import java.util.List;
 import java.util.Locale;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.junit.jupiter.api.AfterEach;
@@ -40,64 +39,40 @@ class NavigatorMessagesTest {
         this.messages.close();
     }
 
-    private List<String> plain(Locale locale, boolean serverPicker, boolean portal) {
-        return this.messages.clickHints(locale, serverPicker, portal).stream().map(line -> PlainTextComponentSerializer.plainText().serialize(line)).toList();
+    private static String plain(String key, Locale locale) {
+        return PlainTextComponentSerializer.plainText().serialize(NavigatorMessages.text(key, locale));
     }
 
-    @DisplayName("Every click hint line renders non-empty in German and in English")
+    @DisplayName("Every key renders non-empty in German and in English")
     @Test
-    void everyHintIsNonEmptyInBothLocales() {
+    void everyKeyIsNonEmptyInBothLocales() {
         for (Locale locale : new Locale[]{Locale.GERMAN, Locale.ENGLISH}) {
-            for (boolean serverPicker : new boolean[]{true, false}) {
-                for (boolean portal : new boolean[]{true, false}) {
-                    List<String> lines = plain(locale, serverPicker, portal);
-                    String combination = locale + " picker=" + serverPicker + " portal=" + portal;
-                    Assertions.assertFalse(lines.isEmpty(), "no hint line for " + combination);
-                    for (String line : lines) {
-                        Assertions.assertFalse(line.isBlank(), "empty hint line for " + combination);
-                    }
-                }
+            for (String key : NavigatorMessages.KEYS) {
+                Assertions.assertFalse(plain(key, locale).isBlank(), "the key " + key + " renders empty in " + locale);
             }
         }
     }
 
-    @DisplayName("The German hints differ from the English ones for every combination")
+    @DisplayName("The German texts differ from the English ones, except the title, which is the same word in both")
     @Test
     void germanDiffersFromEnglish() {
-        for (boolean serverPicker : new boolean[]{true, false}) {
-            for (boolean portal : new boolean[]{true, false}) {
-                Assertions.assertNotEquals(plain(Locale.ENGLISH, serverPicker, portal), plain(Locale.GERMAN, serverPicker, portal), "the bundles must differ, otherwise this test proves nothing");
+        for (String key : NavigatorMessages.KEYS) {
+            if (!NavigatorMessages.TITLE.equals(key)) {
+                Assertions.assertNotEquals(plain(key, Locale.ENGLISH), plain(key, Locale.GERMAN), "the bundles must differ for " + key + ", otherwise this test proves nothing");
             }
         }
     }
 
-    @DisplayName("A picker mode without portal has only the server-choice line in English")
-    @Test
-    void pickerHintInEnglish() {
-        Assertions.assertEquals(List.of("Left click: choose a server"), plain(Locale.ENGLISH, true, false));
-    }
-
-    @DisplayName("A picker mode without portal has only the server-choice line in German")
-    @Test
-    void pickerHintInGerman() {
-        Assertions.assertEquals(List.of("Linksklick: Server wählen"), plain(Locale.GERMAN, true, false));
-    }
-
-    @DisplayName("A connect mode with portal has the connect line and the portal line in English, on separate lines")
-    @Test
-    void connectAndPortalHintInEnglish() {
-        Assertions.assertEquals(List.of("Left click: connect", "Right click: walk to portal"), plain(Locale.ENGLISH, false, true));
-    }
-
-    @DisplayName("A picker mode with portal has the server-choice line and the portal line in German, on separate lines")
-    @Test
-    void pickerAndPortalHintInGerman() {
-        Assertions.assertEquals(List.of("Linksklick: Server wählen", "Rechtsklick: zum Portal laufen"), plain(Locale.GERMAN, true, true));
-    }
-
-    @DisplayName("A locale without a bundle falls back to English")
+    @DisplayName("A locale without a bundle reads the English text")
     @Test
     void unknownLocaleFallsBackToEnglish() {
-        Assertions.assertEquals(List.of("Left click: connect"), plain(Locale.JAPAN, false, false), "a locale without a bundle must read the English text");
+        Assertions.assertEquals("Connect", plain(NavigatorMessages.ACTION_CONNECT, Locale.JAPAN), "a locale without a bundle must read the English text");
+    }
+
+    @DisplayName("The shift line is named Shift click in English and Shift-Klick in German")
+    @Test
+    void shiftLineIsNamedInBothLanguages() {
+        Assertions.assertEquals("Shift click", plain(NavigatorMessages.KEY_SHIFT, Locale.ENGLISH), "the English key of the shift line");
+        Assertions.assertEquals("Shift-Klick", plain(NavigatorMessages.KEY_SHIFT, Locale.GERMAN), "the German key of the shift line");
     }
 }

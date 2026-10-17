@@ -15,10 +15,8 @@
  */
 package net.onelitefeather.titan.feature.navigator;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.OptionalInt;
 import java.util.Set;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -28,29 +26,41 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * One destination shown in the shared navigator inventories, fixed in code as a Java {@code enum}
- * since destinations change rarely. {@link #SLENDER} and {@link #BUILD} are each gated behind a
- * permission; the others are always visible.
+ * since destinations change rarely. The minigames ({@code ELYTRA_RACE}, {@code SLENDER}) sit in row
+ * one of the grid, the servers in row two. {@link #SLENDER} and {@link #BUILD} are each gated
+ * behind
+ * a permission; the others are always visible.
  */
 enum Destination {
 
-    ELYTRA_RACE(0, Material.ELYTRA, "<!i><gradient:#fcba03:#03fc8c>ElytraRace</gradient>", "ElytraRace", null), SURVIVAL(4, Material.GRASS_BLOCK, "<!i><green>Survival", "Survival", null), SLENDER(5, Material.ENDERMAN_SPAWN_EGG, "<!i><gradient:#616161:#e80000>Slender</gradient>", "Slender", "titan.navigator.slender"), BUILD(7, Material.SCAFFOLDING, "<!i><gold>Build", "Team-Build", "titan.navigator.buildserver"), CREATIVE(8, Material.WOODEN_AXE, "<!i><rainbow>Creative</rainbow>", "MemberBuild", null);
+    ELYTRA_RACE(11, Material.ELYTRA, "<gradient:#fcba03:#03fc8c>", "ElytraRace", "ElytraRace", null), SLENDER(15, Material.ENDERMAN_SPAWN_EGG, "<gradient:#616161:#e80000>", "Slender", "Slender", "titan.navigator.slender"), SURVIVAL(20, Material.GRASS_BLOCK, "<gradient:#7CFC00:#00C853>", "Survival", "Survival", null), CREATIVE(22, Material.WOODEN_AXE, "<gradient:#ff6ec7:#7873f5>", "Creative", "MemberBuild", null), BUILD(24, Material.SCAFFOLDING, "<gradient:#FFD700:#FF8C00>", "Build", "Team-Build", "titan.navigator.buildserver");
 
     private final int slot;
     private final Material icon;
-    private final String displayName;
+    private final String gradient;
+    private final String label;
     private final String task;
     private final @Nullable String permission;
 
-    Destination(int slot, Material icon, String displayName, String task, @Nullable String permission) {
+    Destination(int slot, Material icon, String gradient, String label, String task, @Nullable String permission) {
         this.slot = slot;
         this.icon = icon;
-        this.displayName = displayName;
+        this.gradient = gradient;
+        this.label = label;
         this.task = task;
         this.permission = permission;
     }
 
     int slot() {
         return this.slot;
+    }
+
+    /**
+     * The MiniMessage gradient opening tag of this destination; its colours style the name,
+     * separators and picker entries.
+     */
+    String gradient() {
+        return this.gradient;
     }
 
     String task() {
@@ -62,21 +72,13 @@ enum Destination {
         return this.permission;
     }
 
-    // Rebuilds the icon on every call so callers never share one ItemStack instance. An unknown count
-    // adds no line, so it never reads as an empty lobby; the players line comes before the hints.
-    ItemStack item(OptionalInt online, List<Component> clickHints) {
-        ItemStack.Builder builder = ItemStack.builder(this.icon).customName(MiniMessage.miniMessage().deserialize(this.displayName));
-        List<Component> lore = new ArrayList<>();
-        if (online.isPresent()) {
-            lore.add(playersLine(online.getAsInt()));
-        }
-        lore.addAll(clickHints);
-        return builder.lore(lore).build();
-    }
-
-    static Component playersLine(int online) {
-        String count = online > 0 ? "<green>" + online + "</green>" : String.valueOf(online);
-        return MiniMessage.miniMessage().deserialize("<!i><gray>" + count + " online</gray>");
+    /**
+     * The entry with its gradient name and the given lore. Rebuilt on every call, so no two callers
+     * share a stack.
+     */
+    ItemStack item(List<Component> lore) {
+        Component name = MiniMessage.miniMessage().deserialize("<!i>" + this.gradient + this.label + "</gradient>");
+        return ItemStack.builder(this.icon).customName(name).lore(lore).build();
     }
 
     static List<Destination> permissioned() {
