@@ -160,7 +160,8 @@ class JumprunModeTest {
             fixture.useItem(player);
 
             assertTrue(labelText(instance).endsWith("Jump & Run · Rainbow · 0"), "rainbow in the head label: " + labelText(instance));
-            fixture.stopRun(player);
+            fixture.tickPastGrace();
+            fixture.useItem(player);
             fixture.settle();
             sneakUse(fixture, player);
             fixture.useItem(player);
@@ -182,7 +183,8 @@ class JumprunModeTest {
             fixture.useItem(player);
             Collector<SystemChatPacket> chat = connection.trackIncoming(SystemChatPacket.class);
 
-            fixture.stopRun(player);
+            fixture.tickPastGrace();
+            fixture.useItem(player);
 
             Component expected = fixture.messages().endScore(player.getLocale(), Mode.EASY, 0);
             chat.assertSingle(packet -> assertEquals(expected, packet.message()));
@@ -194,7 +196,8 @@ class JumprunModeTest {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             StartedRun run = StartedRun.start(env, fixture);
 
-            fixture.stopRun(run.player());
+            fixture.tickPastGrace();
+            fixture.useItem(run.player());
             sneakUse(fixture, run.player());
 
             assertEquals(Mode.HARD, fixture.module().modeOf(run.player()), "the choice is made between runs");
@@ -233,9 +236,7 @@ class JumprunModeTest {
             Player player = standingPlayer(env, JumprunFixture.loadedInstance(env));
 
             fixture.sneakUse(player);
-            for (int tick = 0; tick < JumprunModule.MODE_SWITCH_DEBOUNCE_TICKS; tick++) {
-                env.tick();
-            }
+            fixture.tick(JumprunModule.MODE_SWITCH_DEBOUNCE_TICKS);
             fixture.sneakUse(player);
 
             assertEquals(Mode.RAINBOW, fixture.module().modeOf(player), "the window is over");
@@ -263,11 +264,9 @@ class JumprunModeTest {
     void theDebounceOfAPlayerWhoLeftDoesNotBlockTheNextSession(Env env) {
         Instance instance = JumprunFixture.loadedInstance(env);
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
-            UUID id = UUID.randomUUID();
+            UUID id = UUID.fromString("6f1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d");
             Player first = env.createConnection(new GameProfile(id, "Alex")).connect(instance, StartedRun.STAND);
-            for (int tick = 0; tick < 3 * JumprunModule.MODE_SWITCH_DEBOUNCE_TICKS; tick++) {
-                env.tick();
-            }
+            fixture.tick(3 * JumprunModule.MODE_SWITCH_DEBOUNCE_TICKS);
             fixture.sneakUse(first);
             env.process().eventHandler().call(new PlayerDisconnectEvent(first));
 

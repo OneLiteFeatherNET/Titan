@@ -187,9 +187,19 @@ public final class JumprunFixture implements AutoCloseable {
      * gone.
      */
     void settle() {
-        for (int tick = 0; tick < AnimatedBlock.ANIMATION_TICKS + 2; tick++) {
+        tick(AnimatedBlock.ANIMATION_TICKS + 2);
+    }
+
+    /** Lets {@code ticks} server ticks pass, driven by the test instead of the clock. */
+    void tick(int ticks) {
+        for (int tick = 0; tick < ticks; tick++) {
             env.tick();
         }
+    }
+
+    /** Lets the start grace period of a run pass, so the next use is a deliberate click. */
+    void tickPastGrace() {
+        tick(JumprunModule.RUN_GRACE_TICKS);
     }
 
     /** Ends the run as a click after the grace period would, without waiting for it. */
@@ -201,9 +211,7 @@ public final class JumprunFixture implements AutoCloseable {
      * A deliberate mode switch: waits out the debounce of the last one, then sneak-uses the item.
      */
     void switchMode(Player player) {
-        for (int tick = 0; tick < JumprunModule.MODE_SWITCH_DEBOUNCE_TICKS; tick++) {
-            env.tick();
-        }
+        tick(JumprunModule.MODE_SWITCH_DEBOUNCE_TICKS);
         sneakUse(player);
     }
 

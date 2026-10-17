@@ -54,12 +54,6 @@ class JumprunClickTest {
         return new ClientPlayerBlockPlacementPacket(PlayerHand.MAIN, block, BlockFace.TOP, 0.5f, 1f, 0.5f, false, false, SEQUENCE);
     }
 
-    private static void tickPastGrace(Env env) {
-        for (int tick = 0; tick < JumprunModule.RUN_GRACE_TICKS; tick++) {
-            env.tick();
-        }
-    }
-
     private static ClientUseItemPacket useItem() {
         return new ClientUseItemPacket(PlayerHand.MAIN, SEQUENCE, 0f, 0f);
     }
@@ -112,7 +106,7 @@ class JumprunClickTest {
         try (JumprunFixture fixture = JumprunFixture.start(env)) {
             StartedRun run = StartedRun.start(env, fixture);
             run.player().setItemInMainHand(fixture.item().itemStack());
-            tickPastGrace(env);
+            fixture.tickPastGrace();
 
             fixture.sendClientPacket(run.player(), useItem());
             env.tick();
@@ -145,7 +139,7 @@ class JumprunClickTest {
             StartedRun run = StartedRun.start(env, fixture);
             run.player().setItemInMainHand(fixture.item().itemStack());
             fixture.sendClientPacket(run.player(), useOn(run.ahead().peekFirst().blockPosition()));
-            tickPastGrace(env);
+            fixture.tickPastGrace();
 
             fixture.sendClientPacket(run.player(), useItem());
             env.tick();
