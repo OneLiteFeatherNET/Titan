@@ -17,10 +17,12 @@ package net.onelitefeather.titan.feature.lobbyswitcher;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.minestom.server.component.DataComponents;
 import net.minestom.server.entity.Player;
+import net.minestom.server.event.inventory.InventoryOpenEvent;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
 import net.minestom.testing.Env;
@@ -181,7 +183,7 @@ class SwitcherPagingTest {
         }
     }
 
-    @DisplayName("A refresh with the same size keeps the menu open")
+    @DisplayName("A refresh with the same size keeps the menu open and shows the new lobby count")
     @Test
     void sameSizeKeepsTheMenuOpen(Env env) {
         try (SwitcherFixture fixture = SwitcherFixture.active(env)) {
@@ -191,6 +193,11 @@ class SwitcherPagingTest {
             tick(env, PERIOD_TICKS + 10);
 
             Assertions.assertNotNull(player.getOpenInventory(), "100 and 120 lobbies are both three pages");
+            fixture.click(player, SwitcherLayout.NEXT_SLOT);
+            fixture.settle();
+            fixture.click(player, SwitcherLayout.NEXT_SLOT);
+            fixture.settle();
+            Assertions.assertEquals("Lobby-100", name(player.getOpenInventory().getItemStack(10)), "the third page of 120 lobbies holds Lobby-100 in slot 10");
         }
     }
 
@@ -239,6 +246,31 @@ class SwitcherPagingTest {
             tick(env, PERIOD_TICKS * 3);
 
             Assertions.assertEquals(reads, fixture.counts().reads(), "no viewer, no read");
+        }
+    }
+
+    @DisplayName("Closing the list after a page turn that failed stops the refresh")
+    @Test
+    void closeAfterFailedTurnStopsTheRefresh(Env env) {
+        try (SwitcherFixture fixture = SwitcherFixture.active(env)) {
+            Player player = openWith(fixture, 100);
+            AtomicBoolean failing = new AtomicBoolean();
+            env.process().eventHandler().addListener(InventoryOpenEvent.class, event -> {
+                if (failing.get()) {
+                    throw new IllegalStateException("the next page cannot be opened");
+                }
+            });
+
+            failing.set(true);
+            // The Env reports a server-side exception as a thrown error; that is how the failed turn reaches the test.
+            Assertions.assertThrows(Throwable.class, () -> fixture.click(player, SwitcherLayout.NEXT_SLOT));
+            failing.set(false);
+            player.closeInventory();
+            int reads = fixture.counts().reads();
+
+            tick(env, PERIOD_TICKS * 3);
+
+            Assertions.assertEquals(reads, fixture.counts().reads(), "the only viewer closed the list, so nothing is read any more");
         }
     }
 }
