@@ -15,93 +15,53 @@
  */
 package net.onelitefeather.titan.feature.lobbyswitcher;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import java.util.List;
 import java.util.stream.IntStream;
-import org.junit.jupiter.api.AfterEach;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
-import org.slf4j.LoggerFactory;
+import org.junit.jupiter.api.TestFactory;
 
 class SwitcherLayoutTest {
 
-    private final SwitcherLayout layout = new SwitcherLayout();
-    private final Logger layoutLogger = (Logger) LoggerFactory.getLogger(SwitcherLayout.class);
-    private final ListAppender<ILoggingEvent> lines = new ListAppender<>();
-
-    @BeforeEach
-    void captureLog() {
-        this.lines.start();
-        this.layoutLogger.addAppender(this.lines);
+    private record Case(int entries, int rows, int pages) {
     }
 
-    @AfterEach
-    void releaseLog() {
-        this.layoutLogger.detachAppender(this.lines);
-        this.lines.stop();
+    @DisplayName("Rows follow the entries up to six; more entries need pages of five content rows")
+    @TestFactory
+    Stream<DynamicTest> rowsAndPages() {
+        return Stream.of(new Case(0, 1, 1), new Case(1, 1, 1), new Case(9, 1, 1), new Case(10, 2, 1), new Case(45, 5, 1), new Case(46, 6, 1), new Case(54, 6, 1), new Case(55, 6, 2), new Case(90, 6, 2), new Case(91, 6, 3), new Case(100, 6, 3)).map(c -> DynamicTest.dynamicTest(c.entries() + " entries", () -> {
+            SwitcherLayout layout = SwitcherLayout.of(c.entries());
+            Assertions.assertEquals(c.rows(), layout.rows(), "rows for " + c.entries());
+            Assertions.assertEquals(c.pages(), layout.pages(), "pages for " + c.entries());
+        }));
     }
 
-    private static List<SwitcherEntry> entries(int count) {
-        // Zero-padded so that name order equals creation order.
-        return IntStream.range(0, count).mapToObj(i -> new SwitcherEntry("Lobby-%03d".formatted(i), 1, 50, SwitcherState.JOINABLE)).toList();
-    }
-
-    @DisplayName("Up to 54 entries are kept and nothing is logged")
+    @DisplayName("Navigation exists only when there is more than one page")
     @Test
-    void fittingEntriesAreKeptSilently() {
-        List<SwitcherEntry> fitted = this.layout.fit(entries(54));
-
-        Assertions.assertEquals(54, fitted.size());
-        Assertions.assertTrue(this.lines.list.isEmpty(), "nothing was cut, nothing is logged");
+    void navigationOnlyWhenPaged() {
+        Assertions.assertFalse(SwitcherLayout.of(54).paged(), "54 entries fit six rows");
+        Assertions.assertTrue(SwitcherLayout.of(55).paged(), "55 entries need a second page");
     }
 
-    @DisplayName("More than 54 entries are cut to the first 54 by name")
+    @DisplayName("A page holds 45 entries in name order; the last page holds the rest")
     @Test
-    void excessEntriesAreCutByName() {
-        List<SwitcherEntry> shuffled = entries(60).reversed();
+    void pageSlices() {
+        List<Integer> entries = IntStream.range(0, 100).boxed().toList();
+        SwitcherLayout layout = SwitcherLayout.of(entries.size());
 
-        List<SwitcherEntry> fitted = this.layout.fit(shuffled);
-
-        Assertions.assertEquals(54, fitted.size(), "capped at six rows");
-        Assertions.assertEquals("Lobby-000", fitted.getFirst().name(), "sorted ascending");
-        Assertions.assertEquals("Lobby-053", fitted.getLast().name(), "the last six names are dropped");
+        Assertions.assertEquals(entries.subList(0, 45), layout.page(entries, 0));
+        Assertions.assertEquals(entries.subList(45, 90), layout.page(entries, 1));
+        Assertions.assertEquals(entries.subList(90, 100), layout.page(entries, 2));
     }
 
-    @DisplayName("Cutting entries is reported once per call with the numbers")
+    @DisplayName("Without paging the single page holds every entry")
     @Test
-    void cuttingIsLogged() {
-        this.layout.fit(entries(60));
+    void singlePageHoldsAll() {
+        List<Integer> entries = IntStream.range(0, 54).boxed().toList();
 
-        Assertions.assertEquals(1, this.lines.list.size(), "one line");
-        ILoggingEvent line = this.lines.list.getFirst();
-        Assertions.assertEquals(Level.WARN, line.getLevel());
-        Assertions.assertTrue(line.getFormattedMessage().contains("60"), "names the number of lobbies: " + line.getFormattedMessage());
-        Assertions.assertTrue(line.getFormattedMessage().contains("54"), "names the cap: " + line.getFormattedMessage());
-    }
-
-    @DisplayName("Cutting entries is reported once, not on every refresh")
-    @Test
-    void cuttingIsLoggedOnlyOnce() {
-        this.layout.fit(entries(60));
-        this.layout.fit(entries(60));
-        this.layout.fit(entries(61));
-
-        Assertions.assertEquals(1, this.lines.list.size(), "repeated cuts log a single line");
-    }
-
-    @DisplayName("Cutting warns again after the list fitted in between")
-    @Test
-    void cuttingWarnsAgainAfterFitting() {
-        this.layout.fit(entries(60));
-        this.layout.fit(entries(10));
-
-        this.layout.fit(entries(60));
-
-        Assertions.assertEquals(2, this.lines.list.size(), "a new overflow is news again");
+        Assertions.assertEquals(entries, SwitcherLayout.of(54).page(entries, 0));
     }
 }

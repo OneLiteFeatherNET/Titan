@@ -45,6 +45,9 @@ final class LobbySwitcherMessages implements AutoCloseable {
     static final String STATE_FULL = "titan.lobbyswitcher.state.full";
     static final String STATE_NOT_READY = "titan.lobbyswitcher.state.not_ready";
     static final String STATE_UNAVAILABLE = "titan.lobbyswitcher.state.unavailable";
+    static final String PAGE_PREVIOUS = "titan.lobbyswitcher.page.previous";
+    static final String PAGE_NEXT = "titan.lobbyswitcher.page.next";
+    static final String PAGE_INDICATOR = "titan.lobbyswitcher.page.indicator";
     static final String MESSAGE_SENT = "titan.lobbyswitcher.message.sent";
     static final String MESSAGE_CURRENT = "titan.lobbyswitcher.message.current";
     static final String MESSAGE_FULL = "titan.lobbyswitcher.message.full";
@@ -53,7 +56,7 @@ final class LobbySwitcherMessages implements AutoCloseable {
     static final String MESSAGE_UNAVAILABLE = "titan.lobbyswitcher.message.unavailable";
 
     /** Every key this class renders; the bundle test checks them against the property files. */
-    static final List<String> KEYS = List.of(TITLE, ITEM_NAME, ENTRY_NAME, ENTRY_COUNT, STATE_CURRENT, STATE_FULL, STATE_NOT_READY, STATE_UNAVAILABLE, MESSAGE_SENT, MESSAGE_CURRENT, MESSAGE_FULL, MESSAGE_NOT_READY, MESSAGE_GONE, MESSAGE_UNAVAILABLE);
+    static final List<String> KEYS = List.of(TITLE, ITEM_NAME, ENTRY_NAME, ENTRY_COUNT, STATE_CURRENT, STATE_FULL, STATE_NOT_READY, STATE_UNAVAILABLE, PAGE_PREVIOUS, PAGE_NEXT, PAGE_INDICATOR, MESSAGE_SENT, MESSAGE_CURRENT, MESSAGE_FULL, MESSAGE_NOT_READY, MESSAGE_GONE, MESSAGE_UNAVAILABLE);
 
     private final MiniMessageTranslationStore store = MiniMessageTranslationStore.create(Key.key("titan", "lobbyswitcher"));
     private boolean registered;
