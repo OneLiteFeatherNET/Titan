@@ -20,8 +20,8 @@ Zweig: `feat/navigator-slender-permission` von `origin/main`. Vor dem Abhaken ei
 
 ## 4. Verifikation
 
-- [ ] 4.1 `./gradlew spotlessApply` und `./gradlew build` sind grün.
+- [x] 4.1 `./gradlew spotlessApply` und `./gradlew build` sind grün (CI auf PR #425 grün, gemergt).
 
 ## 5. Pull Request
 
-- [ ] 5.1 Pull Request #425 auf `main` mit dem Titel `feat(navigator)!: gate slender behind a permission` (Titel und Beschreibung Englisch). Die Beschreibung nennt den BREAKING-Hinweis und die Betreiber-Schritte, und die CI läuft grün.
+- [x] 5.1 Pull Request #425 auf `main` mit dem Titel `feat(navigator)!: gate slender behind a permission` (Titel und Beschreibung Englisch). Die Beschreibung nennt den BREAKING-Hinweis und die Betreiber-Schritte, und die CI läuft grün.

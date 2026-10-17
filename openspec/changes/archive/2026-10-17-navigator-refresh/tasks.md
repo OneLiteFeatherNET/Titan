@@ -32,7 +32,7 @@ Zweig: `feat/navigator-refresh`, Basis `main` (der Stapel auf `feat/navigator-sl
 
 ## 5. Pull Request
 
-- [ ] 5.1 Pull Request auf die Basis `main` mit dem Titel `feat(navigator): refresh the navigator with gradients, rows and quick join` (Titel und Beschreibung Englisch). Die Beschreibung nennt das Layout, die Klicktabelle, die Regel für den Schnellbeitritt, die Verhaltensänderung des Rechtsklicks und den Testplan. Die CI läuft grün.
+- [x] 5.1 Pull Request #450 auf die Basis `main` mit dem Titel `feat(navigator): refresh the navigator with gradients, rows and quick join` (Titel und Beschreibung Englisch). Die Beschreibung nennt das Layout, die Klicktabelle, die Regel für den Schnellbeitritt, die Verhaltensänderung des Rechtsklicks und den Testplan. Die CI läuft grün.
 
 ## 6. Korrekturen aus dem Review
 
