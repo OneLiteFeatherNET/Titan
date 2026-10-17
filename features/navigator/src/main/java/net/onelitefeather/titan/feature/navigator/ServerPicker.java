@@ -41,6 +41,8 @@ final class ServerPicker {
 
     static final int COLUMNS = 9;
     static final int MAX_ROWS = 6;
+    /** The slot of the explanation when the picker lists no service: the middle of its one row. */
+    static final int EMPTY_SLOT = COLUMNS / 2;
 
     private static final String BRAND = "<gradient:#00ddff:#ffffff>";
 
@@ -112,10 +114,27 @@ final class ServerPicker {
         return stateOf(service).material;
     }
 
+    /**
+     * The one entry of a picker that lists no service: it says that nothing runs and does nothing
+     * when clicked.
+     */
+    static ItemStack emptyItem(Locale locale) {
+        Component name = MiniMessage.miniMessage().deserialize("<!i><gray><text></gray>", Placeholder.component("text", NavigatorMessages.text(NavigatorMessages.PICKER_EMPTY, locale)));
+        return ItemStack.builder(Material.BARRIER).customName(name).build();
+    }
+
     /** What the player is told when a picked server cannot be joined. */
     static Component refusal(ServiceCount service, Locale locale) {
-        String reason = service.limitAnnounced() ? NavigatorMessages.REFUSAL_FULL : NavigatorMessages.REFUSAL_NOT_READY;
-        return MiniMessage.miniMessage().deserialize(BRAND + "Servers</gradient> <gray>»</gray> <red><reason></red>", Placeholder.component("reason", NavigatorMessages.text(reason, locale)));
+        return refusalOf(service.limitAnnounced() ? NavigatorMessages.REFUSAL_FULL : NavigatorMessages.REFUSAL_NOT_READY, locale);
+    }
+
+    /** What the player is told when the services could not be read, so no list or join follows. */
+    static Component unavailable(Locale locale) {
+        return refusalOf(NavigatorMessages.REFUSAL_UNAVAILABLE, locale);
+    }
+
+    private static Component refusalOf(String key, Locale locale) {
+        return MiniMessage.miniMessage().deserialize(BRAND + "Servers</gradient> <gray>»</gray> <red><reason></red>", Placeholder.component("reason", NavigatorMessages.text(key, locale)));
     }
 
     /** Whether a service can be joined: it has announced a limit and has a free slot. */

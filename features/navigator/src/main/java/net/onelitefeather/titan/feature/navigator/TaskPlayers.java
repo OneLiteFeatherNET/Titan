@@ -26,8 +26,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * The players on a CloudNet task, read from the running services of the {@link PlayerCounts}
- * provider and summed in {@link #online}. Empty whenever the number is unknown: no provider, a
- * task that is not running, or a lookup that failed.
+ * provider and summed in {@link #online}. A count is unknown while the task runs nowhere; the
+ * services themselves are unreadable (see {@link #services}) when there is no provider or the
+ * lookup fails, which is not the same as a task that runs nowhere.
  */
 final class TaskPlayers {
 
@@ -58,16 +59,19 @@ final class TaskPlayers {
         return OptionalInt.of(running.stream().mapToInt(ServiceCount::max).sum());
     }
 
-    /** The running services of a task; empty whenever they are unknown. */
-    List<ServiceCount> services(String task) {
+    /**
+     * The running services of a task: an empty list when the task runs nowhere, and an empty
+     * Optional when they cannot be read, because there is no provider or the lookup failed.
+     */
+    Optional<List<ServiceCount>> services(String task) {
         if (this.counts.isEmpty() || !this.counts.get().supports(SourceType.TASK)) {
-            return List.of();
+            return Optional.empty();
         }
         try {
-            return this.counts.get().running(SourceType.TASK, task);
+            return Optional.of(this.counts.get().running(SourceType.TASK, task));
         } catch (RuntimeException e) {
             LOGGER.debug("Reading the services of task '{}' failed", task, e);
-            return List.of();
+            return Optional.empty();
         }
     }
 }

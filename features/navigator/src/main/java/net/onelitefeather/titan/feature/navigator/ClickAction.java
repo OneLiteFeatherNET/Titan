@@ -17,6 +17,7 @@ package net.onelitefeather.titan.feature.navigator;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import net.minestom.server.inventory.click.Click;
 
 /**
@@ -54,16 +55,28 @@ enum ClickAction {
 
     /**
      * The action of one click on an entry; {@code minigame} is whether the entry offers the server
-     * choice.
+     * choice. Empty when no action is named for the click: only the left and right clicks, with or
+     * without shift, are named, every other click does nothing.
      */
-    static ClickAction of(boolean minigame, Click click, boolean portal) {
+    static Optional<ClickAction> of(boolean minigame, Click click, boolean portal) {
+        if (!isNamed(click)) {
+            return Optional.empty();
+        }
         if (portal && isShift(click)) {
-            return PORTAL;
+            return Optional.of(PORTAL);
         }
         if (!minigame) {
-            return CONNECT;
+            return Optional.of(CONNECT);
         }
-        return isRight(click) ? PICK_SERVER : QUICK_JOIN;
+        return Optional.of(isRight(click) ? PICK_SERVER : QUICK_JOIN);
+    }
+
+    /**
+     * Whether the click is one an action is named for: a left or right click, with or without
+     * shift.
+     */
+    static boolean isNamed(Click click) {
+        return click instanceof Click.Left || click instanceof Click.Right || isShift(click);
     }
 
     /**

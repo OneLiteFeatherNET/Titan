@@ -54,9 +54,11 @@ final class NavigatorMessages implements AutoCloseable {
     static final String PICKER_JOIN = "titan.navigator.picker.join";
     static final String REFUSAL_FULL = "titan.navigator.picker.refusal.full";
     static final String REFUSAL_NOT_READY = "titan.navigator.picker.refusal.not_ready";
+    static final String REFUSAL_UNAVAILABLE = "titan.navigator.picker.refusal.unavailable";
+    static final String PICKER_EMPTY = "titan.navigator.picker.empty";
 
     /** Every key the navigator renders; the bundle test checks the property files against it. */
-    static final List<String> KEYS = List.of(TITLE, PICKER_TITLE, PLAYERS, KEY_LEFT, KEY_RIGHT, KEY_SHIFT, ACTION_QUICK_JOIN, ACTION_CHOOSE_SERVER, ACTION_CONNECT, ACTION_PORTAL, PICKER_FULL, PICKER_NOT_READY, PICKER_JOIN, REFUSAL_FULL, REFUSAL_NOT_READY);
+    static final List<String> KEYS = List.of(TITLE, PICKER_TITLE, PLAYERS, KEY_LEFT, KEY_RIGHT, KEY_SHIFT, ACTION_QUICK_JOIN, ACTION_CHOOSE_SERVER, ACTION_CONNECT, ACTION_PORTAL, PICKER_FULL, PICKER_NOT_READY, PICKER_JOIN, REFUSAL_FULL, REFUSAL_NOT_READY, REFUSAL_UNAVAILABLE, PICKER_EMPTY);
 
     private static final String BUNDLE = "titan.navigator.messages";
     private static final String SEPARATOR = "━━━━━━━━━━━━";

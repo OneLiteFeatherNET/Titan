@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import net.kyori.adventure.text.Component;
@@ -71,8 +72,10 @@ import net.theevilreaper.aves.inventory.layout.InventoryLayout;
  * subset of them and language. Opening picks by permission.
  *
  * <p>A minigame's left click joins its best ready service (see {@link QuickJoin}), its right click
- * lists the services (see {@link ServerPicker}); a server connects on any unshifted click. A shift
- * click walks to the lobby's portal for the entry when there is one (see {@link ClickAction}).
+ * lists the services (see {@link ServerPicker}); a server connects on a left or right click. A
+ * shift
+ * click walks to the lobby's portal for the entry when there is one. Every other click type is
+ * cancelled and does nothing (see {@link ClickAction}).
  *
  * <p>Aves maps its click listener directly onto each built {@code GlobalInventoryBuilder} inventory
  * and dispatches it before any regular event node's listeners, so this click handling always
@@ -244,7 +247,7 @@ public final class NavigatorModule {
                 try {
                     Map<Destination, List<ServiceCount>> read = new EnumMap<>(Destination.class);
                     for (Destination destination : Destination.values()) {
-                        read.put(destination, this.players.services(destination.task()));
+                        read.put(destination, this.players.services(destination.task()).orElse(List.of()));
                     }
                     this.scheduler.scheduleNextTick(() -> showCounts(read));
                 } finally {
@@ -315,12 +318,16 @@ public final class NavigatorModule {
     }
 
     // Decides the click first: a join or the server list needs the services read, a connect or a
-    // walk to the portal happens at once.
+    // walk to the portal happens at once. A click no action is named for does nothing.
     private void clickDestination(Player player, Destination destination, Click click, Locale language) {
         Optional<Portal> portal = portalFor(destination);
-        ClickAction action = ClickAction.of(ServerPicker.DESTINATIONS.contains(destination), click, portal.isPresent());
+        Optional<ClickAction> named = ClickAction.of(ServerPicker.DESTINATIONS.contains(destination), click, portal.isPresent());
+        if (named.isEmpty()) {
+            return;
+        }
+        ClickAction action = named.get();
         if (action == ClickAction.QUICK_JOIN || action == ClickAction.PICK_SERVER) {
-            chooseServer(player, destination, action, language);
+            readServices(player, destination, (viewer, running) -> conclude(viewer, destination, action, language, running));
             return;
         }
         this.navigatorTelemetry.select(player.getUuid(), destination.name(), () -> {
@@ -347,55 +354,78 @@ public final class NavigatorModule {
         return NavigatorTelemetry.Selection.SENT;
     }
 
-    // The services are read off the tick; the decision follows on the next tick, so neither the join
-    // nor the list ever opens with a stale or empty reading.
-    private void chooseServer(Player player, Destination destination, ClickAction action, Locale language) {
+    // The services are read off the tick, and the decision follows on the next tick with that reading,
+    // so neither the join, the list nor a pick ever acts on a stale or missing reading. An empty
+    // Optional means the read failed. A second click by the same player meanwhile is ignored.
+    private void readServices(Player player, Destination destination, BiConsumer<Player, Optional<List<ServiceCount>>> decision) {
         if (!this.choosing.add(player.getUuid())) {
             return;
         }
         try {
             this.reads.execute(() -> {
-                List<ServiceCount> running = this.players.services(destination.task());
-                this.scheduler.scheduleNextTick(() -> conclude(player, destination, action, language, running));
+                Optional<List<ServiceCount>> running = this.players.services(destination.task());
+                this.scheduler.scheduleNextTick(() -> {
+                    this.choosing.remove(player.getUuid());
+                    if (this.stopped || !player.isOnline()) {
+                        return;
+                    }
+                    decision.accept(player, running);
+                });
             });
         } catch (RuntimeException e) {
-            conclude(player, destination, action, language, List.of());
+            this.choosing.remove(player.getUuid());
+            decision.accept(player, Optional.empty());
         }
     }
 
-    private void conclude(Player player, Destination destination, ClickAction action, Locale language, List<ServiceCount> running) {
-        this.choosing.remove(player.getUuid());
-        if (this.stopped || !player.isOnline()) {
-            return;
-        }
+    private void conclude(Player player, Destination destination, ClickAction action, Locale language, Optional<List<ServiceCount>> read) {
         this.navigatorTelemetry.select(player.getUuid(), destination.name(), () -> {
             if (!isAllowed(player, destination)) {
                 player.closeInventory();
                 return NavigatorTelemetry.Selection.DENIED;
             }
+            if (read.isEmpty()) {
+                player.sendMessage(ServerPicker.unavailable(language));
+                return NavigatorTelemetry.Selection.REFUSED;
+            }
             if (action == ClickAction.QUICK_JOIN) {
-                Optional<ServiceCount> service = QuickJoin.pick(running);
+                Optional<ServiceCount> service = QuickJoin.pick(read.get());
                 if (service.isPresent()) {
                     return joinService(player, service.get());
                 }
             }
-            player.openInventory(this.pickers.get(new Picker(destination, language)).show(destination, ServerPicker.entries(running), (viewer, service) -> pick(viewer, destination, language, service)));
+            player.openInventory(this.pickers.get(new Picker(destination, language)).show(destination, ServerPicker.entries(read.get()), (viewer, service) -> pick(viewer, destination, language, service)));
             return NavigatorTelemetry.Selection.PICKER;
         });
     }
 
-    private void pick(Player player, Destination destination, Locale language, ServiceCount service) {
+    // A picked entry is joined only if it still qualifies now, so the list is read again first.
+    private void pick(Player player, Destination destination, Locale language, ServiceCount picked) {
+        readServices(player, destination, (viewer, read) -> decidePick(viewer, destination, language, picked, read));
+    }
+
+    private void decidePick(Player player, Destination destination, Locale language, ServiceCount picked, Optional<List<ServiceCount>> read) {
         this.navigatorTelemetry.select(player.getUuid(), destination.name(), () -> {
             if (!isAllowed(player, destination)) {
                 player.closeInventory();
                 return NavigatorTelemetry.Selection.DENIED;
             }
-            if (!ServerPicker.joinable(service)) {
-                player.sendMessage(ServerPicker.refusal(service, language));
+            if (read.isEmpty()) {
+                player.sendMessage(ServerPicker.unavailable(language));
                 return NavigatorTelemetry.Selection.REFUSED;
             }
-            return joinService(player, service);
+            ServiceCount current = currentOf(picked, read.get());
+            if (!ServerPicker.joinable(current)) {
+                player.sendMessage(ServerPicker.refusal(current, language));
+                return NavigatorTelemetry.Selection.REFUSED;
+            }
+            return joinService(player, current);
         });
+    }
+
+    // The picked service as it runs now; one that has stopped reads as not ready, which is refused.
+    private static ServiceCount currentOf(ServiceCount picked, List<ServiceCount> running) {
+        return running.stream().filter(service -> service.name().equals(picked.name())).findFirst().orElse(new ServiceCount(picked.name(), 0, 0));
     }
 
     private NavigatorTelemetry.Selection joinService(Player player, ServiceCount service) {

@@ -31,8 +31,8 @@ import net.theevilreaper.aves.inventory.layout.InventoryLayout;
 /**
  * The server list of one minigame in one language, shared by every player who opens it. Aves fixes
  * an inventory's size when it is built, so there is one {@link GlobalInventoryBuilder} per row
- * count,
- * each created on first use with the title of the language and registered with Aves at that point.
+ * count, each created on first use with the title of the language and registered with Aves at that
+ * point.
  */
 final class SharedServerPicker {
 
@@ -54,8 +54,8 @@ final class SharedServerPicker {
 
     /**
      * Lays out {@code entries} of {@code destination} in the inventory for their row count and
-     * returns
-     * it; {@code onPick} gets the entry a click lands on. Call on the tick thread.
+     * returns it; {@code onPick} gets the entry a named click lands on. With no entries the middle
+     * slot says that nothing runs. Call on the tick thread.
      */
     Inventory show(Destination destination, List<ServiceCount> entries, PickHandler onPick) {
         int index = ServerPicker.rows(entries.size()) - 1;
@@ -63,11 +63,16 @@ final class SharedServerPicker {
         for (int slot = 0; slot < layout.getSize(); slot++) {
             layout.setItem(slot, BLANK);
         }
+        if (entries.isEmpty()) {
+            layout.setItem(ServerPicker.EMPTY_SLOT, ServerPicker.emptyItem(this.language), (player, clickedSlot, click, stack, result) -> result.accept(ClickHolder.cancelClick()));
+        }
         for (int slot = 0; slot < entries.size(); slot++) {
             ServiceCount service = entries.get(slot);
             layout.setItem(slot, ServerPicker.item(destination, service, this.language), (player, clickedSlot, click, stack, result) -> {
                 result.accept(ClickHolder.cancelClick());
-                onPick.pick(player, service);
+                if (ClickAction.isNamed(click)) {
+                    onPick.pick(player, service);
+                }
             });
         }
         GlobalInventoryBuilder builder = this.builders[index];
