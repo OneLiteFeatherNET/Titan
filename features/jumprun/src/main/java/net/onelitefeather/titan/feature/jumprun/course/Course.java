@@ -163,6 +163,12 @@ public final class Course {
         return lowest - FALL_DISTANCE;
     }
 
+    /** Horizontal distance from the point to the middle of the current block. */
+    public double distanceToCurrent(Point point) {
+        BlockPos pos = current().pos();
+        return Math.hypot(point.x() - (pos.x() + 0.5), point.z() - (pos.z() + 0.5));
+    }
+
     public boolean hasFallen(double y) {
         return y < fallThreshold();
     }

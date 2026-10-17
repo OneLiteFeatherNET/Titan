@@ -39,7 +39,7 @@ class RunTelemetryTest {
 
     private static final UUID PLAYER = UUID.fromString("00000000-0000-0000-0000-00000000a1ec");
     private static final String PLAYER_NAME = "Alex";
-    private static final RunTelemetry.Fall FALL = new RunTelemetry.Fall(31.5, 33.0, 7);
+    private static final RunTelemetry.Fall FALL = new RunTelemetry.Fall(31.5, 33.0, 7, 4.5, -2.5, "minecraft:stone", 2.25);
 
     private final TestTelemetry testTelemetry = TestTelemetry.create();
     private final RunTelemetry telemetry = new RunTelemetry(testTelemetry.telemetry());
@@ -73,6 +73,10 @@ class RunTelemetryTest {
         assertEquals(31.5, testTelemetry.attribute(span, AttributeKey.doubleKey("jumprun.fall.y")), "fall height");
         assertEquals(33.0, testTelemetry.attribute(span, AttributeKey.doubleKey("jumprun.fall.threshold")), "fall threshold");
         assertEquals(7L, testTelemetry.attribute(span, AttributeKey.longKey("jumprun.fall.course_index")), "last block");
+        assertEquals(4.5, testTelemetry.attribute(span, AttributeKey.doubleKey("jumprun.fall.x")), "fall x");
+        assertEquals(-2.5, testTelemetry.attribute(span, AttributeKey.doubleKey("jumprun.fall.z")), "fall z");
+        assertEquals("minecraft:stone", testTelemetry.attribute(span, AttributeKey.stringKey("jumprun.fall.block_below")), "block under the feet");
+        assertEquals(2.25, testTelemetry.attribute(span, AttributeKey.doubleKey("jumprun.fall.distance")), "distance to the current block");
         assertEquals(StatusCode.UNSET, span.getStatus().getStatusCode(), "a fall is no error");
     }
 

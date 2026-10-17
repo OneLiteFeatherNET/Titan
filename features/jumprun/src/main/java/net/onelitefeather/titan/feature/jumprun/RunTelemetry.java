@@ -47,6 +47,10 @@ final class RunTelemetry {
     private static final AttributeKey<Double> FALL_Y = AttributeKey.doubleKey("jumprun.fall.y");
     private static final AttributeKey<Double> FALL_THRESHOLD = AttributeKey.doubleKey("jumprun.fall.threshold");
     private static final AttributeKey<Long> FALL_COURSE_INDEX = AttributeKey.longKey("jumprun.fall.course_index");
+    private static final AttributeKey<Double> FALL_X = AttributeKey.doubleKey("jumprun.fall.x");
+    private static final AttributeKey<Double> FALL_Z = AttributeKey.doubleKey("jumprun.fall.z");
+    private static final AttributeKey<String> FALL_BLOCK_BELOW = AttributeKey.stringKey("jumprun.fall.block_below");
+    private static final AttributeKey<Double> FALL_DISTANCE = AttributeKey.doubleKey("jumprun.fall.distance");
     private static final AttributeKey<String> START_OUTCOME = AttributeKey.stringKey("jumprun.start.outcome");
     private static final AttributeKey<Long> RUNS_SHOWN = AttributeKey.longKey("jumprun.leaderboard.runs_shown");
 
@@ -57,8 +61,12 @@ final class RunTelemetry {
     private static final String STARTED = "started";
     private static final String NO_ROOM = "no_room";
 
-    /** Where and how far below the course a run fell. */
-    record Fall(double y, double threshold, int courseIndex) {
+    /**
+     * Where and how far below the course a run fell: the position, the block key under the feet
+     * ({@code air} when none) and the horizontal distance to the current course block.
+     */
+    record Fall(double y, double threshold, int courseIndex, double x, double z, String blockBelow,
+                double distance) {
     }
 
     record Ending(UUID player, Mode mode, EndReason reason, int score, Optional<Fall> fall) {
@@ -86,7 +94,7 @@ final class RunTelemetry {
         this.ended.add(1, Attributes.of(METRIC_REASON, ending.reason().name(), METRIC_MODE, ending.mode().name()));
         this.score.record(ending.score(), Attributes.of(METRIC_MODE, ending.mode().name()));
         AttributesBuilder attributes = Attributes.builder().put(Telemetry.USER_ID, ending.player().toString()).put(END_REASON, ending.reason().name()).put(MODE, ending.mode().name()).put(SCORE, (long) ending.score());
-        ending.fall().ifPresent(fall -> attributes.put(FALL_Y, fall.y()).put(FALL_THRESHOLD, fall.threshold()).put(FALL_COURSE_INDEX, (long) fall.courseIndex()));
+        ending.fall().ifPresent(fall -> attributes.put(FALL_Y, fall.y()).put(FALL_THRESHOLD, fall.threshold()).put(FALL_COURSE_INDEX, (long) fall.courseIndex()).put(FALL_X, fall.x()).put(FALL_Z, fall.z()).put(FALL_BLOCK_BELOW, fall.blockBelow()).put(FALL_DISTANCE, fall.distance()));
         return this.telemetry.inSpan(END_SPAN, attributes.build(), () -> {
             boolean record = submit.getAsBoolean();
             Span.current().setAttribute(RECORD, record);

@@ -83,6 +83,10 @@ final class Run {
         return course.hasFallen(y);
     }
 
+    synchronized double distanceToCurrent(Pos feet) {
+        return course.distanceToCurrent(feet);
+    }
+
     synchronized double fallThreshold() {
         return course.fallThreshold();
     }
