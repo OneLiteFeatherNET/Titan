@@ -78,7 +78,7 @@ interface LobbyIdentities { Optional<LobbyIdentity> self(); }
 
 - `GlobalTranslatedInventoryBuilder` (eine Instanz pro Modul), `register()` in `@PostConstruct`, `unregister()` in `@PreDestroy`. Das folgt der Konvention „ein Builder pro Modul, register/unregister im Lebenszyklus“ und dem Navigator.
 - Übersetzte Texte je Spieler-Locale über `getInventory(Locale)`, damit Titel und Itemnamen in der Sprache des Viewers erscheinen. Ob Aves die Item-Namen je Locale rendert, entscheidet der Spike (Q7). Rückfall: übersetzter Titel, englische Itemnamen.
-- Größe: Zeilen nach Anzahl Einträge, mindestens eine, höchstens sechs (54 Plätze). Mehr Einträge werden abgeschnitten und protokolliert (Q6).
+- Größe: Zeilen nach Anzahl Einträge, mindestens eine, höchstens sechs. Mehr als 54 Einträge werden auf Seiten zu 45 verteilt; die sechste Zeile trägt Vorige, Seitenanzeige und Nächste (Q6). Ein Builder hat eine feste Größe, deshalb hat jede Seite und jede Größe einen eigenen Builder (siehe Abweichungen).
 - Layout: Einträge über `setDataLayoutFunction`, Aktualisierung über `invalidateDataLayout()`. Ob `invalidateDataLayout()` den Inhalt eines geöffneten Inventars aktualisiert, entscheidet der Spike (Task 1.1).
 - **Alternative:** `PersonalTranslatedInventoryBuilder` je Öffnen: passt zu „ein Viewer, ein Inventar“, bricht aber die Regel „ein Builder pro Modul“ und erzeugt Listener je Öffnen. Verworfen.
 - **Alternative:** `GlobalInventoryBuilder` mit englischen Texten wie der Navigator: einfacher, widerspricht der i18n-Regel. Verworfen.
@@ -124,7 +124,7 @@ Jeder Eintrag hat genau einen Zustand, aus dem Zählerstand und der eigenen Iden
 
 ### D9 Texte
 
-- `titan/lobbyswitcher/messages_en.properties` und `messages_de.properties`, Schlüssel unter `titan.lobbyswitcher.*`: Titel, Zustandsnamen (`current`, `full`, `not_ready`), Zeilen für Zähler, Meldungen für die Klicks (`sent`, `current`, `full`, `not_ready`, `gone`) und für Fehler (`unavailable`, auch bei fehlgeschlagener Klick-Prüfung). Log-Zeilen bleiben englisch.
+- `titan/lobbyswitcher/messages_en.properties` und `messages_de.properties`, Schlüssel unter `titan.lobbyswitcher.*`: Titel, Zustandsnamen (`current`, `full`, `not_ready`), Seitentexte (`page.previous`, `page.next`, `page.indicator`), Zeilen für Zähler, Meldungen für die Klicks (`sent`, `current`, `full`, `not_ready`, `gone`) und für Fehler (`unavailable`, auch bei fehlgeschlagener Klick-Prüfung). Log-Zeilen bleiben englisch.
 - Gerendert wie `SpawnMessages`: eigener `MiniMessageTranslationStore`, `GlobalTranslator` mit explizitem Render (Minestom 26.1 zeigt übersetzbare Komponenten ohne Render-Flag leer, s. Memory „Minestom 26.1 Thread-/Übersetzungs-Fallen“).
 - Bundle-Test: beide Dateien haben dieselben Schlüssel, und jeder Schlüssel aus `KEYS` steht im englischen Bundle.
 
@@ -176,7 +176,7 @@ Die Bridge bleibt der einzige Ort, der CloudNet-Typen kennt. `core` bekommt nur 
 - **Q3 Muster teilen.** Entschieden: kein Refactor, eigene kleine Aktualisierung im Modul (D5b). Der vorgelagerte Refactor-PR entfällt.
 - **Q4 Standard des Flags.** Entschieden: `true` im CloudNet-Profil (`features.LOBBYSWITCHER: true` in `runtime/.../features.yaml`).
 - **Q5 Klick-Wettlauf.** Entschieden: Der Zieldienst wird beim Klick frisch geprüft; voll, nicht bereit oder nicht mehr gelistet heißt: nicht senden, Meldung, Ansicht aktualisieren (D6).
-- **Q6 Mehr als 54 Lobbys.** Entschieden: Abschneiden nach Namen sortiert, Log-Zeile, keine Paginierung.
+- **Q6 Mehr als 54 Lobbys.** Entschieden: Paginierung nach Namen sortiert, 45 Einträge je Seite und eine Navigationszeile. Das frühere Abschneiden entfiel, weil abgeschnittene Lobbys weder zu sehen noch beitretbar waren.
 - **Q7 Aves und Locale.** Offen bis zum Spike (Task 1.1). Ergebnis unter „Spike-Ergebnis“.
 - **Q8 Intervall.** Entschieden: eigener Schlüssel `lobbyswitcher.refreshSeconds` (Standard `5`).
 - **Q9 Fehlerzähler.** Entschieden: kein eigener Lookup-Zähler. Fehler sind über `titan.lobbyswitcher.selections{result=error}` und den Span-Status sichtbar.
@@ -184,7 +184,7 @@ Die Bridge bleibt der einzige Ort, der CloudNet-Typen kennt. `core` bekommt nur 
 
 ## Abweichungen bei der Umsetzung
 
-- Das Inventar hat immer sechs Zeilen, weil ein Aves-Builder eine feste Größe hat; ungenutzte Slots tragen eine Glasscheibe (D4 sah Zeilen nach Eintragsanzahl vor).
+- Ein Aves-Builder hat eine feste Größe. Deshalb gibt es je Seite und Größe einen eigenen `GlobalTranslatedInventoryBuilder` (D4 sah einen je Modul vor); eine Größenänderung ersetzt Layout und Builder als ein Wertobjekt. Ein Seitenwechsel öffnet das Inventar der Nachbarseite, ohne den Viewer zu zählen. Ungenutzte Slots tragen eine Glasscheibe.
 - Die eigene Lobby ist ein `NETHER_STAR`, kein verzaubertes Item, weil Aves `TranslatedItem` den Glint verwirft (D6 sah markiert/Glint vor).
 - Klick- und Schließ-Events leitet der `FeatureNode` des Moduls an `SwitcherInventory` weiter, weil Aves-Listener bei Inventaren je Locale nie feuern (der Spike nahm das Gegenteil an); die Liste aktualisiert sich dadurch einen Tick später.
 - Die Telemetrie liegt beim Klick- und Refresh-Code, nicht in einem eigenen Commit.

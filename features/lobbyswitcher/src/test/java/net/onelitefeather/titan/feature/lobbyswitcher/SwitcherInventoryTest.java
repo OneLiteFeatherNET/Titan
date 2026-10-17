@@ -73,9 +73,9 @@ class SwitcherInventoryTest {
         try (SwitcherFixture fixture = SwitcherFixture.active(env)) {
             AbstractInventory inventory = opened(fixture, env);
 
-            Assertions.assertEquals(Material.NETHER_STAR, inventory.getItemStack(1).material(), "Lobby-2 is this lobby");
+            Assertions.assertEquals(Material.PLAYER_HEAD, inventory.getItemStack(1).material(), "Lobby-2 is this lobby");
             Assertions.assertTrue(lore(inventory.getItemStack(1)).contains("You are here"), "current lore: " + lore(inventory.getItemStack(1)));
-            Assertions.assertNotEquals(Material.NETHER_STAR, inventory.getItemStack(0).material(), "Lobby-1 is not this lobby");
+            Assertions.assertNotEquals(Material.PLAYER_HEAD, inventory.getItemStack(0).material(), "Lobby-1 is not this lobby");
         }
     }
 

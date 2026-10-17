@@ -15,40 +15,39 @@
  */
 package net.onelitefeather.titan.feature.lobbyswitcher;
 
-import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-/** Which entries of a lobby list still fit into the six rows of the inventory. */
-final class SwitcherLayout {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(SwitcherLayout.class);
+/**
+ * How many rows and pages a lobby list needs. Up to {@value #MAX_ROWS} rows hold the list as it
+ * is; beyond that every page keeps five content rows and the sixth row is the navigation.
+ */
+record SwitcherLayout(int rows, int pages) {
 
     static final int SLOTS_PER_ROW = 9;
     static final int MAX_ROWS = 6;
     static final int MAX_ENTRIES = SLOTS_PER_ROW * MAX_ROWS;
+    static final int PAGE_ENTRIES = MAX_ENTRIES - SLOTS_PER_ROW;
+    static final int PREVIOUS_SLOT = PAGE_ENTRIES;
+    static final int INDICATOR_SLOT = PAGE_ENTRIES + SLOTS_PER_ROW / 2;
+    static final int NEXT_SLOT = MAX_ENTRIES - 1;
 
-    // The list is fitted on every refresh; an overflow is reported once until it fits again.
-    private final AtomicBoolean cutReported = new AtomicBoolean();
-
-    SwitcherLayout() {
+    static SwitcherLayout of(int entries) {
+        if (entries > MAX_ENTRIES) {
+            return new SwitcherLayout(MAX_ROWS, Math.ceilDiv(entries, PAGE_ENTRIES));
+        }
+        return new SwitcherLayout(Math.max(1, Math.ceilDiv(entries, SLOTS_PER_ROW)), 1);
     }
 
-    /**
-     * The first {@value #MAX_ENTRIES} entries by name; reports it once when some had to be left
-     * out, and again after the list fitted in between.
-     */
-    List<SwitcherEntry> fit(List<SwitcherEntry> entries) {
-        List<SwitcherEntry> byName = entries.stream().sorted(Comparator.comparing(SwitcherEntry::name)).toList();
-        if (byName.size() <= MAX_ENTRIES) {
-            this.cutReported.set(false);
-            return byName;
+    boolean paged() {
+        return this.pages > 1;
+    }
+
+    /** The entries shown on {@code page}, counted from zero. */
+    <T> List<T> page(List<T> entries, int page) {
+        if (!paged()) {
+            return entries;
         }
-        if (this.cutReported.compareAndSet(false, true)) {
-            LOGGER.warn("Lobby switcher lists {} lobbies but fits {}; the others are left out", byName.size(), MAX_ENTRIES);
-        }
-        return byName.subList(0, MAX_ENTRIES);
+        int from = Math.min(page * PAGE_ENTRIES, entries.size());
+        return entries.subList(from, Math.min(from + PAGE_ENTRIES, entries.size()));
     }
 }
