@@ -263,7 +263,7 @@ package-privaten `enum Destination` (s. `openspec/changes/navigator-entries-in-c
 bzw. `titan.navigator.buildserver`), keiner an einer Feature-Flag; `NavigatorModule` bekommt dafür
 keine `FeatureFlags` mehr.
 
-Auf Platz 2 beider Inventare liegt der feste Eintrag „Spawn“ (Kompass), kein `Destination`: Der
+Auf Platz 31 (Mitte der unteren Reihe, dort wo sonst der Rahmen liegt) beider Inventare liegt der feste Eintrag „Spawn“ (Kompass), kein `Destination`: Der
 Klick schickt den Spieler über `SpawnReturn#sendToSpawnAndTell` zurück an den Spawn und leitet nicht
 weiter. Das Modul holt `SpawnReturn` über einen `Provider`, damit zwischen den Columns `spawn` und
 `navigator` kein Zyklus entsteht.
