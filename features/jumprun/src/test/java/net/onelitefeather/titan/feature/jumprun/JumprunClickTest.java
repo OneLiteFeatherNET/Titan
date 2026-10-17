@@ -15,15 +15,21 @@
  */
 package net.onelitefeather.titan.feature.jumprun;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import net.kyori.adventure.text.Component;
 import net.minestom.server.coordinate.Point;
 import net.minestom.server.coordinate.Pos;
+import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.GameMode;
+import net.minestom.server.entity.Player;
 import net.minestom.server.entity.PlayerHand;
+import net.minestom.server.event.EventDispatcher;
+import net.minestom.server.event.player.PlayerDeathEvent;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.instance.block.BlockFace;
 import net.minestom.server.item.ItemStack;
@@ -34,6 +40,8 @@ import net.minestom.server.network.packet.server.play.BlockChangePacket;
 import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.core.module.LobbyReturnToSpawnEvent;
+import net.onelitefeather.titan.feature.jumprun.course.Mode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -45,6 +53,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 class JumprunClickTest {
 
     private static final int SEQUENCE = 7;
+    /** A stone block of the lobby floor, under the spawn. */
+    private static final Point LOBBY_FLOOR = new Vec(0, JumprunFixture.GROUND_Y - 1, 0);
 
     private static ClientPlayerActionPacket dig(ClientPlayerActionPacket.Status status, Point block) {
         return new ClientPlayerActionPacket(status, block, BlockFace.TOP, SEQUENCE);
@@ -188,6 +198,61 @@ class JumprunClickTest {
             run.player().setInstance(env.createFlatInstance(), new Pos(0, 40, 0)).join();
 
             assertFalse(fixture.module().suppressesUse(run.player()), "nothing of the old click is left");
+        }
+    }
+
+    @Test
+    void theItemStartsARunAfterAClickOnALobbyBlock(Env env) {
+        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+            Player player = JumprunFixture.standingPlayer(env, JumprunFixture.loadedInstance(env));
+            player.setItemInMainHand(fixture.item().itemStack());
+
+            fixture.sendClientPacket(player, useOn(LOBBY_FLOOR));
+            fixture.sendClientPacket(player, useItem());
+            env.tick();
+
+            assertTrue(fixture.module().isRunning(player), "a click on a lobby block before the item does not keep the run from starting");
+        }
+    }
+
+    @Test
+    void aSneakUseAfterAClickOnALobbyBlockSwitchesTheMode(Env env) {
+        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+            Player player = JumprunFixture.standingPlayer(env, JumprunFixture.loadedInstance(env));
+            player.setItemInMainHand(fixture.item().itemStack());
+            player.setSneaking(true);
+
+            fixture.sendClientPacket(player, useOn(LOBBY_FLOOR));
+            fixture.sendClientPacket(player, useItem());
+            env.tick();
+
+            assertEquals(Mode.HARD, fixture.module().modeOf(player), "a sneak click after a click on a lobby block still switches the mode");
+        }
+    }
+
+    @Test
+    void aRunEndedByDeathLeavesNoGraceForTheNextStart(Env env) {
+        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+            StartedRun run = StartedRun.startFalling(env, fixture, JumprunFixture.loadedInstance(env), StartedRun.STAND);
+            env.process().eventHandler().call(new PlayerDeathEvent(run.player(), Component.empty(), Component.empty()));
+            run.player().refreshOnGround(true);
+
+            fixture.useItem(run.player());
+
+            assertTrue(fixture.module().isRunning(run.player()), "the start grace of the ended run does not block the next start");
+        }
+    }
+
+    @Test
+    void aRunEndedByReturningToSpawnLeavesNoGraceForTheNextStart(Env env) {
+        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+            StartedRun run = StartedRun.startFalling(env, fixture, JumprunFixture.loadedInstance(env), StartedRun.STAND);
+            EventDispatcher.call(new LobbyReturnToSpawnEvent(run.player()));
+            run.player().refreshOnGround(true);
+
+            fixture.useItem(run.player());
+
+            assertTrue(fixture.module().isRunning(run.player()), "the start grace of the ended run does not block the next start");
         }
     }
 
