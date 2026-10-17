@@ -58,7 +58,7 @@ class DefaultsMergerTest {
     @DisplayName("Two files claiming the same top-level section fail, naming both files and the key")
     @Test
     void twoFilesClaimingTheSameTopLevelSectionFail(@TempDir Path dir) throws IOException {
-        File first = writeFile(dir, "navigator.yaml", "features:\n  NAVIGATOR_SLENDER: false\n");
+        File first = writeFile(dir, "navigator.yaml", "features:\n  LOBBYSWITCHER: false\n");
         File second = writeFile(dir, "other.yaml", "features:\n  OTHER_FLAG: true\n");
 
         DefaultsConflictException thrown = Assertions.assertThrows(DefaultsConflictException.class, () -> DefaultsMerger.merge(List.of(first, second)));

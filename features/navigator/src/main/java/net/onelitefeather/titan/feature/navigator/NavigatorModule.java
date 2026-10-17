@@ -20,7 +20,9 @@ import io.avaje.inject.PreDestroy;
 import jakarta.inject.Named;
 import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
+import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -33,6 +35,7 @@ import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.minestom.server.ServerFlag;
@@ -49,7 +52,6 @@ import net.minestom.server.timer.Task;
 import net.minestom.server.timer.TaskSchedule;
 import net.onelitefeather.titan.api.deliver.DeliverComponent;
 import net.onelitefeather.titan.api.deliver.Deliver;
-import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.module.SpawnReturn;
 import net.onelitefeather.titan.core.permission.PermissionResult;
@@ -64,9 +66,10 @@ import net.theevilreaper.aves.inventory.click.ClickHolder;
 import net.theevilreaper.aves.inventory.layout.InventoryLayout;
 
 /**
- * The lobby's navigator: a feather in hotbar slot 4 that opens one of two Aves-built inventories,
- * each shared by every player who gets it: the public one, or the team one that adds the
- * permissioned {@code BUILD} destination fixed in {@link Destination}. Opening picks by permission.
+ * The lobby's navigator: a feather in hotbar slot 4 that opens one of the Aves-built inventories,
+ * each shared by every player who gets it. A menu is fixed by the permissioned destinations
+ * ({@code SLENDER}, {@code BUILD}, see {@link Destination}) a player holds, so there is one per
+ * subset of them and language. Opening picks by permission.
  *
  * <p>A right click on a destination walks the player to the lobby's portal for that task instead
  * of connecting, when the map has one; a left click on a mode that runs on several services opens
@@ -92,7 +95,6 @@ public final class NavigatorModule {
 
     private final EventNode<Event> titan;
     private final Deliver deliver;
-    private final FeatureFlags featureFlags;
     private final PermissionService permissions;
     private final NavigatorMessages messages;
     // One shared inventory per menu and language: the click hint is translated, and a shared
@@ -120,10 +122,9 @@ public final class NavigatorModule {
     private FeatureNode node;
     private Task refreshTask;
 
-    public NavigatorModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Deliver deliver, FeatureFlags featureFlags, PermissionService permissions, Provider<SpawnReturn> spawnReturnProvider, LobbyPortals portals, Telemetry telemetry, Optional<PlayerCounts> counts, Scheduler scheduler, @Named(NavigatorBeans.READS) Executor reads, NavigatorSettings settings, NavigatorMessages messages) {
+    public NavigatorModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Deliver deliver, PermissionService permissions, Provider<SpawnReturn> spawnReturnProvider, LobbyPortals portals, Telemetry telemetry, Optional<PlayerCounts> counts, Scheduler scheduler, @Named(NavigatorBeans.READS) Executor reads, NavigatorSettings settings, NavigatorMessages messages) {
         this.titan = Objects.requireNonNull(titan, "titan must not be null");
         this.deliver = Objects.requireNonNull(deliver, "deliver must not be null");
-        this.featureFlags = Objects.requireNonNull(featureFlags, "featureFlags must not be null");
         this.permissions = Objects.requireNonNull(permissions, "permissions must not be null");
         this.messages = Objects.requireNonNull(messages, "messages must not be null");
         this.spawnReturnProvider = Objects.requireNonNull(spawnReturnProvider, "spawnReturnProvider must not be null");
@@ -134,9 +135,10 @@ public final class NavigatorModule {
         this.players = new TaskPlayers(Objects.requireNonNull(counts, "counts must not be null"));
         this.settings = Objects.requireNonNull(settings, "settings must not be null");
         this.navigatorTelemetry = new NavigatorTelemetry(this.telemetry);
-        for (Locale language : LANGUAGES) {
-            this.menus.put(new Menu(false, language), new SharedNavigator(false, this.telemetry));
-            this.menus.put(new Menu(true, language), new SharedNavigator(true, this.telemetry));
+        for (Set<Destination> granted : grantCombinations()) {
+            for (Locale language : LANGUAGES) {
+                this.menus.put(new Menu(granted, language), new SharedNavigator(granted, this.telemetry));
+            }
         }
         for (Destination destination : ServerPicker.DESTINATIONS) {
             this.pickers.put(destination, new SharedServerPicker());
@@ -150,7 +152,7 @@ public final class NavigatorModule {
         // and the leak test; Aves handles every inventory click itself.
         this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry);
         this.menus.forEach((menu, navigator) -> {
-            navigator.applyLayoutIfChanged(this.featureFlags, layoutFor(menu.language()));
+            navigator.applyLayout(layoutFor(menu.language()));
             navigator.register();
         });
         // Tick-based on purpose: Minestom's time-based schedules run on a wall-clock timer outside the tick.
@@ -168,21 +170,21 @@ public final class NavigatorModule {
     }
 
     void open(Player player) {
-        boolean team = isAllowed(player, Destination.BUILD);
-        Menu menu = new Menu(team, languageOf(player));
+        Set<Destination> granted = grantedBy(player);
+        Menu menu = new Menu(granted, languageOf(player));
         SharedNavigator navigator = this.menus.get(menu);
         // The destinations plus the fixed spawn entry.
-        int entries = Destination.visible(this.featureFlags, team).size() + 1;
-        this.navigatorTelemetry.open(player.getUuid(), team, entries, () -> {
-            navigator.applyLayoutIfChanged(this.featureFlags, layoutFor(menu.language()));
+        int entries = Destination.visible(granted).size() + 1;
+        this.navigatorTelemetry.open(player.getUuid(), granted.contains(Destination.BUILD), entries, () -> {
             // A portal added since the last refresh must already show in the hint when the menu opens.
             navigator.showItems(destination -> itemOf(destination, menu.language()));
             player.openInventory(navigator.inventory());
         });
     }
 
-    // Test-only: returns the live menu inventory for one language, so a leak test can read its
-    // event node and stacks. English is the language a player without a locale gets.
+    // Test-only: the live menu inventories for one language, so a leak test can read their event
+    // nodes and stacks. The public menu is the one with no permissioned destination granted, the
+    // team menu the one with all of them. English is the language a player without a locale gets.
     Inventory publicInventory() {
         return publicInventory(Locale.ENGLISH);
     }
@@ -192,15 +194,36 @@ public final class NavigatorModule {
     }
 
     Inventory publicInventory(Locale language) {
-        return inventory(false, language);
+        return inventory(Set.of(), language);
     }
 
     Inventory teamInventory(Locale language) {
-        return inventory(true, language);
+        return inventory(Set.copyOf(Destination.permissioned()), language);
     }
 
-    private Inventory inventory(boolean team, Locale language) {
-        return this.menus.get(new Menu(team, language)).inventory();
+    private Inventory inventory(Set<Destination> granted, Locale language) {
+        return this.menus.get(new Menu(granted, language)).inventory();
+    }
+
+    // The permissioned destinations this player may use right now; NOT_SET counts as not granted.
+    private Set<Destination> grantedBy(Player player) {
+        return Destination.permissioned().stream().filter(destination -> isAllowed(player, destination)).collect(Collectors.toUnmodifiableSet());
+    }
+
+    // Every subset of the permissioned destinations: each is one menu a player can be shown.
+    private static List<Set<Destination>> grantCombinations() {
+        List<Destination> permissioned = Destination.permissioned();
+        List<Set<Destination>> combinations = new ArrayList<>();
+        for (int mask = 0; mask < 1 << permissioned.size(); mask++) {
+            Set<Destination> granted = EnumSet.noneOf(Destination.class);
+            for (int bit = 0; bit < permissioned.size(); bit++) {
+                if ((mask & 1 << bit) != 0) {
+                    granted.add(permissioned.get(bit));
+                }
+            }
+            combinations.add(Set.copyOf(granted));
+        }
+        return combinations;
     }
 
     // A player whose language has no bundle reads English.
@@ -368,8 +391,8 @@ public final class NavigatorModule {
         });
     }
 
-    /** One shared inventory: the public or the team menu, in one language. */
-    private record Menu(boolean team, Locale language) {
+    /** One shared inventory: the permissioned destinations it shows, in one language. */
+    private record Menu(Set<Destination> granted, Locale language) {
     }
 
     // Spawn is a fixed entry, not a Destination: it returns the player instead of redirecting them.

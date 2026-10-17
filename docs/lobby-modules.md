@@ -259,24 +259,27 @@ Feature selbst aushändigt (`ElytraModule`s Feuerwerk).
 
 Der Navigator ist der einzige Sonderfall ohne Andockpunkt: Seine Ziele stehen fest im
 package-privaten `enum Destination` (s. `openspec/changes/navigator-entries-in-code/design.md`).
-Nur `Destination.SLENDER` bleibt hinter der Feature-Flag `NAVIGATOR_SLENDER` versteckt, ausgewertet
-über `FeatureFlags`, dem `NavigatorModule` per Konstruktor übergeben.
+`Destination.SLENDER` und `Destination.BUILD` hängen je an einem Recht (`titan.navigator.slender`
+bzw. `titan.navigator.buildserver`), keiner an einer Feature-Flag; `NavigatorModule` bekommt dafür
+keine `FeatureFlags` mehr.
 
 Auf Platz 2 beider Inventare liegt der feste Eintrag „Spawn“ (Kompass), kein `Destination`: Der
 Klick schickt den Spieler über `SpawnReturn#sendToSpawnAndTell` zurück an den Spawn und leitet nicht
 weiter. Das Modul holt `SpawnReturn` über einen `Provider`, damit zwischen den Columns `spawn` und
 `navigator` kein Zyklus entsteht.
 
-Der Navigator besitzt zwei geteilte Aves-Inventare: das öffentliche (unverändert) und das
-Team-Inventar (öffentlich plus `Destination.BUILD`). Das Recht `titan.navigator.buildserver`
-entscheidet beim Öffnen, welches sich öffnet: `PermissionService#check` liefert `ALLOWED` ->
-Team-Inventar, `NOT_SET` und `DENIED` -> öffentliches. `BUILD` liegt auf Platz 7 und leitet an den
-CloudNet-Task `Build` weiter (getrennt von `MemberBuild` des Creative-Ziels). Beim Klick wird das
-Recht erneut geprüft; ist es inzwischen weg, gibt es keine Weiterleitung, das Inventar schließt.
+Der Navigator besitzt je Sprache ein geteiltes Aves-Inventar pro Kombination der Rechte, die ein
+Spieler hat: ohne Recht das öffentliche, mit `titan.navigator.buildserver` das Team-Inventar,
+mit `titan.navigator.slender` das Slender-Inventar, mit beiden das volle (vier Varianten je Sprache,
+acht Inventare insgesamt). `PermissionService#check` liefert nur `ALLOWED` als erteilt; `NOT_SET` und
+`DENIED` zählen als nicht erteilt. Beim Öffnen wird die Kombination gelesen und das passende Inventar
+geöffnet. `BUILD` liegt auf Platz 7 und leitet an den CloudNet-Task `Team-Build` weiter, `SLENDER`
+auf Platz 5 an `Slender` (getrennt von `MemberBuild` des Creative-Ziels). Beim Klick wird das Recht
+erneut geprüft; ist es inzwischen weg, gibt es keine Weiterleitung, das Inventar schließt.
 
-Betrieb: Der CloudNet-Task `Build` muss existieren, und das LuckPerms-Recht
-`titan.navigator.buildserver` wird der Team-Gruppe erteilt. In der lokalen Variante gilt
-`deny-all` (`DenyAllPermissionService`), dort sieht niemand das Ziel.
+Betrieb: Die CloudNet-Tasks `Team-Build` und `Slender` müssen existieren. Die LuckPerms-Rechte
+`titan.navigator.buildserver` und `titan.navigator.slender` werden den jeweiligen Gruppen erteilt. In
+der lokalen Variante gilt `deny-all` (`DenyAllPermissionService`), dort sieht niemand die beiden Ziele.
 
 ## Tasks über den injizierten `Scheduler`
 
@@ -338,7 +341,7 @@ Abschalten oder erneutes `start()`.
 Jede konfigurierbare Column liefert ihre eigenen Standardwerte als
 `src/main/resources/titan/defaults/<column>.yaml`, kommentiert, mit genau ihrem Abschnitt (z. B.
 `features/spawn/src/main/resources/titan/defaults/spawn.yaml` mit dem Abschnitt `spawn`;
-`navigator` liefert den Abschnitt `features` mit genau der Flag `NAVIGATOR_SLENDER`). `runtime` liefert
+`navigator` liefert `navigator.yaml` mit `navigator.refreshSeconds`, ohne Flag). `runtime` liefert
 `runtime/src/main/resources/titan/defaults/runtime.yaml` (`config.watch.*`). Eine Column ohne
 eigene Konfiguration (`protection`, `respawn`, `hotbar`, `admin`) liefert keine Default-Datei.
 

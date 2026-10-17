@@ -40,10 +40,7 @@ class NavigatorBuildDestinationTest {
 
     private static final int BUILD_SLOT = 7;
     private static final String BUILD_PERMISSION = "titan.navigator.buildserver";
-
-    private static FakeFeatureFlags slenderActive() {
-        return new FakeFeatureFlags().declare(Destination.SLENDER_FLAG, true);
-    }
+    private static final String SLENDER_PERMISSION = "titan.navigator.slender";
 
     private static AbstractInventory openNavigator(NavigatorFixture fixture, Player player) {
         fixture.useFeather(player);
@@ -72,8 +69,8 @@ class NavigatorBuildDestinationTest {
     void permittedPlayerSeesBuildOnSlotSeven(Env env) {
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
-        FakePermissionService permissions = new FakePermissionService().set(player.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), permissions)) {
+        FakePermissionService permissions = new FakePermissionService().allowEveryone("titan.navigator.slender").set(player.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED);
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions)) {
             fixture.equip(player);
 
             AbstractInventory inventory = openNavigator(fixture, player);
@@ -93,7 +90,7 @@ class NavigatorBuildDestinationTest {
     @DisplayName("A player whose build permission is not set gets the public menu, glass on slot 7")
     @Test
     void notSetPlayerSeesThePublicMenu(Env env) {
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), new FakePermissionService())) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"))) {
             Player player = env.createPlayer(env.createFlatInstance());
             fixture.equip(player);
 
@@ -108,8 +105,8 @@ class NavigatorBuildDestinationTest {
     void deniedPlayerSeesThePublicMenu(Env env) {
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
-        FakePermissionService permissions = new FakePermissionService().set(player.getUuid(), BUILD_PERMISSION, PermissionResult.DENIED);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), permissions)) {
+        FakePermissionService permissions = new FakePermissionService().allowEveryone("titan.navigator.slender").set(player.getUuid(), BUILD_PERMISSION, PermissionResult.DENIED);
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions)) {
             fixture.equip(player);
 
             AbstractInventory inventory = openNavigator(fixture, player);
@@ -124,8 +121,8 @@ class NavigatorBuildDestinationTest {
         RecordingDeliver deliver = new RecordingDeliver();
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
-        FakePermissionService permissions = new FakePermissionService().set(player.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), permissions)) {
+        FakePermissionService permissions = new FakePermissionService().allowEveryone("titan.navigator.slender").set(player.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED);
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, permissions)) {
             fixture.equip(player);
             AbstractInventory inventory = openNavigator(fixture, player);
 
@@ -144,8 +141,8 @@ class NavigatorBuildDestinationTest {
         RecordingDeliver deliver = new RecordingDeliver();
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance);
-        FakePermissionService permissions = new FakePermissionService().set(player.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), permissions)) {
+        FakePermissionService permissions = new FakePermissionService().allowEveryone("titan.navigator.slender").set(player.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED);
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, permissions)) {
             fixture.equip(player);
             AbstractInventory inventory = openNavigator(fixture, player);
             permissions.set(player.getUuid(), BUILD_PERMISSION, PermissionResult.NOT_SET);
@@ -162,7 +159,7 @@ class NavigatorBuildDestinationTest {
     @Test
     void clickingTheGlassPaneOnSlotSevenDoesNothing(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService())) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"))) {
             Player player = env.createPlayer(env.createFlatInstance());
             fixture.equip(player);
             AbstractInventory inventory = openNavigator(fixture, player);
@@ -174,39 +171,38 @@ class NavigatorBuildDestinationTest {
         }
     }
 
-    @DisplayName("A flag change shows in the public menu on the next open")
+    @DisplayName("A Slender grant between opens shows in the public menu on the next open")
     @Test
-    void flagChangeReachesThePublicMenu(Env env) {
-        FakeFeatureFlags flags = new FakeFeatureFlags().declare(Destination.SLENDER_FLAG, false);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), flags, new FakePermissionService())) {
+    void slenderGrantReachesThePublicMenu(Env env) {
+        FakePermissionService permissions = new FakePermissionService();
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions)) {
             Player player = env.createPlayer(env.createFlatInstance());
             fixture.equip(player);
             assertPublicMenu(openNavigator(fixture, player), false);
             player.closeInventory();
 
-            flags.set(Destination.SLENDER_FLAG, true);
+            permissions.set(player.getUuid(), SLENDER_PERMISSION, PermissionResult.ALLOWED);
 
             assertPublicMenu(openNavigator(fixture, player), true);
         }
     }
 
-    @DisplayName("A flag change shows in the team menu on the next open")
+    @DisplayName("A Slender grant between opens shows in the team menu on the next open")
     @Test
-    void flagChangeReachesTheTeamMenu(Env env) {
-        FakeFeatureFlags flags = new FakeFeatureFlags().declare(Destination.SLENDER_FLAG, false);
+    void slenderGrantReachesTheTeamMenu(Env env) {
         Player player = env.createPlayer(env.createFlatInstance());
         FakePermissionService permissions = new FakePermissionService().set(player.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), flags, permissions)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions)) {
             fixture.equip(player);
             AbstractInventory first = openNavigator(fixture, player);
-            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, first.getItemStack(5).material(), "slot 5 must be blank while the flag is off");
+            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, first.getItemStack(5).material(), "slot 5 must be blank without the Slender grant");
             Assertions.assertEquals(Material.SCAFFOLDING, first.getItemStack(BUILD_SLOT).material());
             player.closeInventory();
 
-            flags.set(Destination.SLENDER_FLAG, true);
+            permissions.set(player.getUuid(), SLENDER_PERMISSION, PermissionResult.ALLOWED);
 
             AbstractInventory second = openNavigator(fixture, player);
-            Assertions.assertEquals(Material.ENDERMAN_SPAWN_EGG, second.getItemStack(5).material(), "slot 5 must show Slender after the flag flipped");
+            Assertions.assertEquals(Material.ENDERMAN_SPAWN_EGG, second.getItemStack(5).material(), "slot 5 must show Slender after the grant");
             Assertions.assertEquals(Material.SCAFFOLDING, second.getItemStack(BUILD_SLOT).material(), "Build must survive the relayout");
         }
     }
@@ -215,7 +211,7 @@ class NavigatorBuildDestinationTest {
     @Test
     void publicInventoryIsDeadAfterStop(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService())) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"))) {
             Player player = env.createPlayer(env.createFlatInstance());
             fixture.equip(player);
             AbstractInventory inventory = openNavigator(fixture, player);
@@ -233,8 +229,8 @@ class NavigatorBuildDestinationTest {
     void teamInventoryIsDeadAfterStop(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
         Player player = env.createPlayer(env.createFlatInstance());
-        FakePermissionService permissions = new FakePermissionService().set(player.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), permissions)) {
+        FakePermissionService permissions = new FakePermissionService().allowEveryone("titan.navigator.slender").set(player.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED);
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, permissions)) {
             fixture.equip(player);
             AbstractInventory inventory = openNavigator(fixture, player);
 

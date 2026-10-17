@@ -17,31 +17,30 @@ package net.onelitefeather.titan.feature.navigator;
 
 import io.opentelemetry.api.common.Attributes;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.minestom.server.inventory.Inventory;
 import net.minestom.server.inventory.InventoryType;
 import net.minestom.server.item.ItemStack;
-import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.theevilreaper.aves.inventory.GlobalInventoryBuilder;
 import net.theevilreaper.aves.inventory.layout.InventoryLayout;
 
 /**
  * One inventory shared by every player who gets this menu, plus the layout state that belongs to
- * it. Each instance rebuilds independently, so the public and the team menu never see each
- * other's layout.
+ * it. Each instance lays out independently, so no two menus see each other's layout.
  */
 final class SharedNavigator {
 
     private final GlobalInventoryBuilder builder;
-    private final boolean withPermissioned;
+    private final Set<Destination> granted;
     private final Telemetry telemetry;
     private List<Destination> appliedVisible;
 
-    SharedNavigator(boolean withPermissioned, Telemetry telemetry) {
+    SharedNavigator(Set<Destination> granted, Telemetry telemetry) {
         this.builder = new GlobalInventoryBuilder(MiniMessage.miniMessage().deserialize("<yellow>Navigator"), InventoryType.CHEST_1_ROW);
-        this.withPermissioned = withPermissioned;
+        this.granted = granted;
         this.telemetry = telemetry;
     }
 
@@ -57,13 +56,10 @@ final class SharedNavigator {
         return this.builder.getInventory();
     }
 
-    // Synchronized so two threads opening the navigator at once can't observe, or trigger, half of
-    // a rebuild.
-    synchronized void applyLayoutIfChanged(FeatureFlags featureFlags, Function<List<Destination>, InventoryLayout> layoutFor) {
-        List<Destination> visible = Destination.visible(featureFlags, this.withPermissioned);
-        if (visible.equals(this.appliedVisible)) {
-            return;
-        }
+    // The visible destinations depend only on the grants this menu was built for, so the layout is
+    // applied once. Synchronized so a refresh never reads the layout half-built.
+    synchronized void applyLayout(Function<List<Destination>, InventoryLayout> layoutFor) {
+        List<Destination> visible = Destination.visible(this.granted);
         this.telemetry.inSpan(NavigatorTelemetry.LAYOUT_SPAN, Attributes.empty(), () -> {
             this.builder.setLayout(layoutFor.apply(visible));
             this.builder.invalidateLayout();

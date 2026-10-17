@@ -49,10 +49,6 @@ class NavigatorPortalTeleportTest {
     private static final Box AREA = new Box(new Vec(10, 40, 20), new Vec(12, 42, 22));
     private static final LobbyPortals SURVIVAL_PORTAL = () -> List.of(new Portal("survival", AREA, "Survival", null));
 
-    private static FakeFeatureFlags slenderActive() {
-        return new FakeFeatureFlags().declare(Destination.SLENDER_FLAG, true);
-    }
-
     private static AbstractInventory open(NavigatorFixture fixture, Player player) {
         fixture.equip(player);
         fixture.useFeather(player);
@@ -71,7 +67,7 @@ class NavigatorPortalTeleportTest {
         RecordingDeliver deliver = new RecordingDeliver();
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance, new Pos(11.5, 40, 60));
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService(), SURVIVAL_PORTAL)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), SURVIVAL_PORTAL)) {
             AbstractInventory inventory = open(fixture, player);
 
             InventoryPreClickEvent event = click(env, inventory, player, new Click.Right(SURVIVAL_SLOT));
@@ -90,7 +86,7 @@ class NavigatorPortalTeleportTest {
     void theSpotIsOutsideTheTrigger(Env env) {
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance, new Pos(11.5, 40, 60));
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), new FakePermissionService(), SURVIVAL_PORTAL)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), SURVIVAL_PORTAL)) {
             AbstractInventory inventory = open(fixture, player);
 
             click(env, inventory, player, new Click.Right(SURVIVAL_SLOT));
@@ -107,7 +103,7 @@ class NavigatorPortalTeleportTest {
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance, new Pos(11.5, 40, 60));
         LobbyPortals otherTask = () -> List.of(new Portal("race", AREA, "ElytraRace", null));
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService(), otherTask)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), otherTask)) {
             AbstractInventory inventory = open(fixture, player);
 
             click(env, inventory, player, new Click.Right(SURVIVAL_SLOT));
@@ -126,7 +122,7 @@ class NavigatorPortalTeleportTest {
         RecordingDeliver deliver = new RecordingDeliver();
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance, new Pos(11.5, 40, 60));
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService(), SURVIVAL_PORTAL)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), SURVIVAL_PORTAL)) {
             AbstractInventory inventory = open(fixture, player);
 
             click(env, inventory, player, new Click.Left(SURVIVAL_SLOT));
@@ -143,7 +139,7 @@ class NavigatorPortalTeleportTest {
         RecordingDeliver deliver = new RecordingDeliver();
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance, new Pos(11.5, 40, 60));
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService(), SURVIVAL_PORTAL)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), SURVIVAL_PORTAL)) {
             AbstractInventory inventory = open(fixture, player);
 
             click(env, inventory, player, new Click.LeftShift(SURVIVAL_SLOT));
@@ -160,9 +156,9 @@ class NavigatorPortalTeleportTest {
         RecordingDeliver deliver = new RecordingDeliver();
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance, new Pos(11.5, 40, 60));
-        FakePermissionService permissions = new FakePermissionService().set(player.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED);
+        FakePermissionService permissions = new FakePermissionService().allowEveryone("titan.navigator.slender").set(player.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED);
         LobbyPortals buildPortal = () -> List.of(new Portal("build", AREA, "Team-Build", BUILD_PERMISSION));
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), permissions, buildPortal)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, permissions, buildPortal)) {
             AbstractInventory inventory = open(fixture, player);
             permissions.set(player.getUuid(), BUILD_PERMISSION, PermissionResult.NOT_SET);
 
@@ -181,9 +177,9 @@ class NavigatorPortalTeleportTest {
         RecordingDeliver deliver = new RecordingDeliver();
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance, new Pos(11.5, 40, 60));
-        FakePermissionService permissions = new FakePermissionService().set(player.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED);
+        FakePermissionService permissions = new FakePermissionService().allowEveryone("titan.navigator.slender").set(player.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED);
         LobbyPortals buildPortal = () -> List.of(new Portal("build", AREA, "Team-Build", BUILD_PERMISSION));
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), permissions, buildPortal)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, permissions, buildPortal)) {
             AbstractInventory inventory = open(fixture, player);
             permissions.set(player.getUuid(), BUILD_PERMISSION, PermissionResult.DENIED);
 

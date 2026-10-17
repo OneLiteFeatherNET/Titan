@@ -197,7 +197,7 @@ portal:
   labelRefreshSeconds: 5
 
 features:
-  NAVIGATOR_SLENDER: false
+  LOBBYSWITCHER: true
 ```
 
 ### Configuration Options Explained
@@ -226,9 +226,10 @@ features:
 The navigator - a feather in hotbar slot 4 opening a shared inventory with ElytraRace, Survival,
 Slender and Creative - has no configuration section: its title and destinations are fixed in code
 (`NavigatorModule`/`Destination`), not read from `application.yaml`. A `navigator.*` key set here
-or anywhere else has no effect. Only Slender is gated behind a flag, `features.NAVIGATOR_SLENDER`
-(see "Feature flags" below) - toggling it takes effect the next time a player opens the navigator,
-with no restart of the navigator or the lobby.
+or anywhere else has no effect. Slender and Build are gated behind permissions, not flags:
+`titan.navigator.slender` and `titan.navigator.buildserver`. A player sees each one only while they
+hold its permission; granting or revoking it takes effect the next time they open the navigator,
+with no restart of the navigator or the lobby, and a click checks the permission again.
 
 ### Environment variable reference
 
@@ -248,8 +249,8 @@ with no restart of the navigator or the lobby.
 | `lobbyswitcher.refreshSeconds` | `LOBBYSWITCHER_REFRESHSECONDS` |
 | `features.<NAME>` | `FEATURES_<NAME>` |
 
-`<NAME>` is a feature flag's own name, upper-cased - e.g. `features.NAVIGATOR_SLENDER` becomes
-`FEATURES_NAVIGATOR_SLENDER`. There is no environment variable for the navigator's title or
+`<NAME>` is a feature flag's own name, upper-cased - e.g. `features.LOBBYSWITCHER` becomes
+`FEATURES_LOBBYSWITCHER`. There is no environment variable for the navigator's title or
 destinations - they are fixed in code, not configuration (see "Configuration Options Explained"
 above).
 
@@ -275,8 +276,8 @@ reads its settings live, at the moment it needs them, rather than once at startu
 `tickle.cooldownMillis` on every attack, sit reads `sit.offset.*`/`sit.allowedBlocks` on every block
 interaction, elytra reads `elytra.burnDurationTicks`/`elytra.cooldownTicks` on every boost, spawn
 reads `spawn.minHeight`/`spawn.maxHeight` on every height check and `spawn.simulationDistance` on
-every join, and the navigator evaluates `features.NAVIGATOR_SLENDER` every time it is opened - its
-title and destinations are otherwise fixed in code, not read from configuration at all.
+every join, and the navigator checks the player's Slender and Build permissions every time it is
+opened - its title and destinations are otherwise fixed in code, not read from configuration at all.
 Once the watcher applies a change behind the facade, the very next such read sees the new value.
 Because nothing restarts, no in-flight, per-player state is ever lost - a player who is already
 sitting stays sitting even if `sit.offset.*` changes underneath them, and a player mid-elytra-boost
@@ -306,14 +307,15 @@ SLF4J-backed logs) and applies no value from it; every other changed file is sti
 ## Feature flags
 
 Feature flags are plain booleans under the `features` section, one per flag name (e.g.
-`features.NAVIGATOR_SLENDER: true`), with the same sources and override order as every other
+`features.LOBBYSWITCHER: false`), with the same sources and override order as every other
 configuration key - a profile's file, an external file, an environment variable
-(`FEATURES_NAVIGATOR_SLENDER`), or a system property. The navigator ships with one flag, `false` by
-default: `NAVIGATOR_SLENDER`, which gates the navigator's Slender destination. Changing its value
-takes effect the next time a player opens the navigator, without restarting any module or the
-lobby. The flags `NAVIGATOR_CREATIVE`, `NAVIGATOR_MANIS`, `NAVIGATOR_SURVIVAL` and
-`NAVIGATOR_ELYTRA` were never wired to anything; a setting of them is unknown to the lobby and has
-no effect, so such a line can be deleted.
+(`FEATURES_LOBBYSWITCHER`), or a system property. The flags the lobby knows are listed in the
+shipped defaults. The navigator has no flag: its Slender destination needs the permission
+`titan.navigator.slender`, and its Build destination needs `titan.navigator.buildserver`. A
+`features.NAVIGATOR_SLENDER` setting (or `FEATURES_NAVIGATOR_SLENDER`) is unknown to the lobby and has
+no effect any more, so such a line can be deleted once the players who should see Slender hold the
+permission. The flags `NAVIGATOR_CREATIVE`, `NAVIGATOR_MANIS`, `NAVIGATOR_SURVIVAL` and
+`NAVIGATOR_ELYTRA` were never wired to anything and have no effect either.
 
 `LOBBYSWITCHER` gates the lobby switcher: the clock item in hotbar slot 8 and the inventory behind
 it. It is effective only in the CloudNet variant; the local variant has no switcher whatever the
@@ -331,15 +333,14 @@ a restart (an exception to the no-restart rule above).
 Remove `flags.properties` from the working directory once its values are migrated - a leftover
 copy has no effect any more.
 
-### Local testing with Slender on
+### Local testing
 
-For local testing, create an `application-local.yaml` next to `application.yaml` with Slender
-turned on. It also turns on the file watcher from "Runtime reloading" above, so a flag flipped
-back off in the file takes effect without a restart while testing:
+The local variant denies every permission (`DenyAllPermissionService`), so neither Slender nor
+Build is shown there. To try the navigator with the permission-gated destinations, use the CloudNet
+variant with the permission granted. To turn on the file watcher from "Runtime reloading" above
+while testing locally, create an `application-local.yaml` next to `application.yaml`:
 
 ```yaml
-features:
-  NAVIGATOR_SLENDER: true
 config.watch.enabled: true
 ```
 

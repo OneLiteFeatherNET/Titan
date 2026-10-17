@@ -30,25 +30,25 @@ class ConfigFeatureFlagsTest {
     @DisplayName("A known, active flag is active")
     @Test
     void aKnownActiveFlagIsActive() {
-        ConfigFeatureFlags flags = new ConfigFeatureFlags(Set.of("NAVIGATOR_SLENDER"), name -> true);
+        ConfigFeatureFlags flags = new ConfigFeatureFlags(Set.of("LOBBYSWITCHER"), name -> true);
 
-        Assertions.assertTrue(flags.exists("NAVIGATOR_SLENDER"), "a known flag must exist");
-        Assertions.assertTrue(flags.isActive("NAVIGATOR_SLENDER"), "the predicate said this flag is on");
+        Assertions.assertTrue(flags.exists("LOBBYSWITCHER"), "a known flag must exist");
+        Assertions.assertTrue(flags.isActive("LOBBYSWITCHER"), "the predicate said this flag is on");
     }
 
     @DisplayName("A known, inactive flag exists but is not active")
     @Test
     void aKnownInactiveFlagIsNotActive() {
-        ConfigFeatureFlags flags = new ConfigFeatureFlags(Set.of("NAVIGATOR_SLENDER"), name -> false);
+        ConfigFeatureFlags flags = new ConfigFeatureFlags(Set.of("LOBBYSWITCHER"), name -> false);
 
-        Assertions.assertTrue(flags.exists("NAVIGATOR_SLENDER"), "a known flag must exist");
-        Assertions.assertFalse(flags.isActive("NAVIGATOR_SLENDER"), "the predicate said this flag is off");
+        Assertions.assertTrue(flags.exists("LOBBYSWITCHER"), "a known flag must exist");
+        Assertions.assertFalse(flags.isActive("LOBBYSWITCHER"), "the predicate said this flag is off");
     }
 
     @DisplayName("An unknown name does not exist, even if the predicate would say yes")
     @Test
     void anUnknownNameDoesNotExist() {
-        ConfigFeatureFlags flags = new ConfigFeatureFlags(Set.of("NAVIGATOR_SLENDER"), name -> true);
+        ConfigFeatureFlags flags = new ConfigFeatureFlags(Set.of("LOBBYSWITCHER"), name -> true);
 
         Assertions.assertFalse(flags.exists("GIBT_ES_NICHT"), "an unknown name must not exist");
     }
@@ -56,7 +56,7 @@ class ConfigFeatureFlagsTest {
     @DisplayName("An unknown name is never active, even if the predicate would say yes")
     @Test
     void anUnknownNameIsNeverActive() {
-        ConfigFeatureFlags flags = new ConfigFeatureFlags(Set.of("NAVIGATOR_SLENDER"), name -> true);
+        ConfigFeatureFlags flags = new ConfigFeatureFlags(Set.of("LOBBYSWITCHER"), name -> true);
 
         Assertions.assertFalse(flags.isActive("GIBT_ES_NICHT"), "an unknown name must never be active");
     }
@@ -68,23 +68,22 @@ class ConfigFeatureFlagsTest {
         Set<String> known = ConfigFeatureFlags.knownFlagsIn("titan/defaults/features.yaml", classLoader);
 
         Assertions.assertTrue(known.contains("LOBBYSWITCHER"), "LOBBYSWITCHER must be a known flag");
-        Assertions.assertTrue(known.contains("NAVIGATOR_SLENDER"), "the navigator flags must move along unchanged");
+        Assertions.assertTrue(known.stream().noneMatch(flag -> flag.startsWith("NAVIGATOR_")), "the navigator ships no feature flag");
     }
 
-    @DisplayName("The navigator flags stay off by default, the lobby switcher flag is on")
+    @DisplayName("The lobby switcher flag is on by default")
     @Test
     void theShippedDefaultValuesAreAsDocumented() {
         Configuration defaults = Configuration.builder().resourceLoader(ConfigFeatureFlagsTest.class.getClassLoader()::getResourceAsStream).load("titan/defaults/features.yaml").build();
 
         Assertions.assertTrue(defaults.getBool("features.LOBBYSWITCHER", false), "LOBBYSWITCHER must default to true");
-        Assertions.assertFalse(defaults.getBool("features.NAVIGATOR_SLENDER", true), "NAVIGATOR_SLENDER must default to false");
     }
 
     @DisplayName("A missing value is treated as off")
     @Test
     void aMissingValueIsOff() {
-        ConfigFeatureFlags flags = new ConfigFeatureFlags(Set.of("NAVIGATOR_SLENDER"), name -> false);
+        ConfigFeatureFlags flags = new ConfigFeatureFlags(Set.of("LOBBYSWITCHER"), name -> false);
 
-        Assertions.assertFalse(flags.isActive("NAVIGATOR_SLENDER"), "a missing/unset value must be off");
+        Assertions.assertFalse(flags.isActive("LOBBYSWITCHER"), "a missing/unset value must be off");
     }
 }

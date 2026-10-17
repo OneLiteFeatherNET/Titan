@@ -54,10 +54,6 @@ class NavigatorServerPickerTest {
     private static final ServiceCount RACE_ONE = new ServiceCount("ElytraRace-1", 3, 50);
     private static final ServiceCount RACE_TWO = new ServiceCount("ElytraRace-2", 10, 50);
 
-    private static FakeFeatureFlags slenderActive() {
-        return new FakeFeatureFlags().declare(Destination.SLENDER_FLAG, true);
-    }
-
     private static AbstractInventory openNavigator(NavigatorFixture fixture, Player player) {
         fixture.equip(player);
         fixture.useFeather(player);
@@ -83,7 +79,7 @@ class NavigatorServerPickerTest {
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.serveServices("ElytraRace", RACE_TWO, RACE_ONE);
         Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService(), counts, NO_PORTALS)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), counts, NO_PORTALS)) {
             AbstractInventory navigator = openNavigator(fixture, player);
 
             click(env, navigator, player, new Click.Left(ELYTRA_RACE_SLOT));
@@ -104,7 +100,7 @@ class NavigatorServerPickerTest {
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.serveServices("ElytraRace", RACE_ONE, RACE_TWO);
         Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService(), counts, NO_PORTALS)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), counts, NO_PORTALS)) {
             openNavigator(fixture, player);
             click(env, player.getOpenInventory(), player, new Click.Left(ELYTRA_RACE_SLOT));
             env.tick();
@@ -127,7 +123,7 @@ class NavigatorServerPickerTest {
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.serveServices("ElytraRace", RACE_ONE);
         Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService(), counts, NO_PORTALS)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), counts, NO_PORTALS)) {
             AbstractInventory navigator = openNavigator(fixture, player);
 
             click(env, navigator, player, new Click.Left(ELYTRA_RACE_SLOT));
@@ -143,7 +139,7 @@ class NavigatorServerPickerTest {
     void noServiceConnectsDirectly(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
         Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService(), new FakePlayerCounts(), NO_PORTALS)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), new FakePlayerCounts(), NO_PORTALS)) {
             AbstractInventory navigator = openNavigator(fixture, player);
 
             click(env, navigator, player, new Click.Left(ELYTRA_RACE_SLOT));
@@ -160,7 +156,7 @@ class NavigatorServerPickerTest {
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.failWith(new IllegalStateException("bridge gone"));
         Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService(), counts, NO_PORTALS)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), counts, NO_PORTALS)) {
             AbstractInventory navigator = openNavigator(fixture, player);
 
             click(env, navigator, player, new Click.Left(ELYTRA_RACE_SLOT));
@@ -177,7 +173,7 @@ class NavigatorServerPickerTest {
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.serveServices("ElytraRace", RACE_ONE, RACE_TWO);
         Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService(), counts, RACE_PORTAL)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), counts, RACE_PORTAL)) {
             AbstractInventory navigator = openNavigator(fixture, player);
 
             click(env, navigator, player, new Click.Right(ELYTRA_RACE_SLOT));
@@ -197,7 +193,7 @@ class NavigatorServerPickerTest {
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.serveServices("Survival", RACE_ONE, RACE_TWO);
         Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService(), counts, NO_PORTALS)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), counts, NO_PORTALS)) {
             AbstractInventory navigator = openNavigator(fixture, player);
 
             click(env, navigator, player, new Click.Left(SURVIVAL_SLOT));
@@ -214,7 +210,7 @@ class NavigatorServerPickerTest {
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.serveServices("Slender", RACE_ONE, RACE_TWO);
         Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService(), counts, NO_PORTALS)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), counts, NO_PORTALS)) {
             AbstractInventory navigator = openNavigator(fixture, player);
 
             click(env, navigator, player, new Click.Left(SLENDER_SLOT));
@@ -232,7 +228,7 @@ class NavigatorServerPickerTest {
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.serveServices("ElytraRace", new ServiceCount("ElytraRace-1", 50, 50), RACE_TWO);
         Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService(), counts, NO_PORTALS)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), counts, NO_PORTALS)) {
             openNavigator(fixture, player);
             click(env, player.getOpenInventory(), player, new Click.Left(ELYTRA_RACE_SLOT));
             env.tick();
@@ -253,7 +249,7 @@ class NavigatorServerPickerTest {
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.serveServices("ElytraRace", new ServiceCount("ElytraRace-1", 0, 0), RACE_TWO);
         Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService(), counts, NO_PORTALS)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), counts, NO_PORTALS)) {
             openNavigator(fixture, player);
             click(env, player.getOpenInventory(), player, new Click.Left(ELYTRA_RACE_SLOT));
             env.tick();
@@ -272,7 +268,7 @@ class NavigatorServerPickerTest {
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.serveServices("ElytraRace", RACE_ONE);
         Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, slenderActive(), new FakePermissionService(), counts, NO_PORTALS)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), counts, NO_PORTALS)) {
             AbstractInventory navigator = openNavigator(fixture, player);
 
             click(env, navigator, player, new Click.Left(ELYTRA_RACE_SLOT));

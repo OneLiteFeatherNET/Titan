@@ -65,12 +65,8 @@ class NavigatorTelemetryTest {
         testTelemetry.close();
     }
 
-    private static FakeFeatureFlags slenderActive() {
-        return new FakeFeatureFlags().declare(Destination.SLENDER_FLAG, true);
-    }
-
     private NavigatorFixture start(Env env, RecordingDeliver deliver, FakePermissionService permissions) {
-        return NavigatorFixture.start(env, deliver, slenderActive(), permissions, new FakeSpawnReturn(), testTelemetry.telemetry());
+        return NavigatorFixture.start(env, deliver, permissions, new FakeSpawnReturn(), testTelemetry.telemetry());
     }
 
     private static void click(Env env, Player player, AbstractInventory inventory, int slot) {
@@ -80,7 +76,7 @@ class NavigatorTelemetryTest {
     @DisplayName("Opening the public navigator spans its kind and its entries, the spawn entry included")
     @Test
     void openingThePublicNavigatorSpansKindAndEntries(Env env) {
-        try (NavigatorFixture fixture = start(env, new RecordingDeliver(), new FakePermissionService())) {
+        try (NavigatorFixture fixture = start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"))) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);
@@ -97,7 +93,7 @@ class NavigatorTelemetryTest {
     @DisplayName("Opening the navigator as a permitted player spans the team kind with the permissioned destination")
     @Test
     void openingAsAPermittedPlayerSpansTheTeamKind(Env env) {
-        FakePermissionService permissions = new FakePermissionService();
+        FakePermissionService permissions = new FakePermissionService().allowEveryone("titan.navigator.slender");
         try (NavigatorFixture fixture = start(env, new RecordingDeliver(), permissions)) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
@@ -117,7 +113,7 @@ class NavigatorTelemetryTest {
     @Test
     void selectingAnAllowedDestinationSpansSent(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
-        try (NavigatorFixture fixture = start(env, deliver, new FakePermissionService())) {
+        try (NavigatorFixture fixture = start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"))) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);
@@ -137,7 +133,7 @@ class NavigatorTelemetryTest {
     @Test
     void selectingADeniedDestinationSpansDenied(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
-        FakePermissionService permissions = new FakePermissionService();
+        FakePermissionService permissions = new FakePermissionService().allowEveryone("titan.navigator.slender");
         try (NavigatorFixture fixture = start(env, deliver, permissions)) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
@@ -159,7 +155,7 @@ class NavigatorTelemetryTest {
     @DisplayName("Selecting the spawn entry spans spawn with its own destination value")
     @Test
     void selectingTheSpawnEntrySpansSpawn(Env env) {
-        try (NavigatorFixture fixture = start(env, new RecordingDeliver(), new FakePermissionService())) {
+        try (NavigatorFixture fixture = start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"))) {
             Instance instance = env.createFlatInstance();
             Player player = env.createPlayer(instance);
             fixture.equip(player);
@@ -179,7 +175,7 @@ class NavigatorTelemetryTest {
     @Test
     void rightClickTeleportSpansTeleported(Env env) {
         LobbyPortals portals = () -> List.of(new Portal("survival", new Box(new Vec(10, 40, 20), new Vec(12, 42, 22)), "Survival", null));
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), slenderActive(), new FakePermissionService(), new FakeSpawnReturn(), testTelemetry.telemetry(), portals)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), new FakeSpawnReturn(), testTelemetry.telemetry(), portals)) {
             Player player = env.createPlayer(env.createFlatInstance());
             fixture.equip(player);
             fixture.useFeather(player);
@@ -195,7 +191,7 @@ class NavigatorTelemetryTest {
     @DisplayName("A right click without a portal reports the fallback as sent")
     @Test
     void rightClickFallbackSpansSent(Env env) {
-        try (NavigatorFixture fixture = start(env, new RecordingDeliver(), new FakePermissionService())) {
+        try (NavigatorFixture fixture = start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"))) {
             Player player = env.createPlayer(env.createFlatInstance());
             fixture.equip(player);
             fixture.useFeather(player);

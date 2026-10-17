@@ -22,13 +22,13 @@ import net.onelitefeather.titan.core.feature.FeatureFlags;
  * The child process entry point {@link ConfigFileWatchIntegrationTest} launches for its
  * feature-flag scenarios: builds the production {@link FeatureFlags} exactly like
  * {@code PlatformBeans#featureFlags()} does - {@link ConfigFeatureFlags#fromClasspathDefaults()} -
- * and prints whether {@code NAVIGATOR_SLENDER} is active, then exits. Proves an environment
- * variable ({@code FEATURES_NAVIGATOR_SLENDER}) turns the flag on, and that a leftover
+ * and prints whether {@code LOBBYSWITCHER} is active, then exits. Proves an environment
+ * variable ({@code FEATURES_LOBBYSWITCHER}) turns the flag on, and that a leftover
  * {@code flags.properties} in the working directory has no effect.
  */
 public final class FeatureFlagChildMain {
 
-    private static final String FLAG_NAME = "NAVIGATOR_SLENDER";
+    private static final String FLAG_NAME = "LOBBYSWITCHER";
 
     private FeatureFlagChildMain() {
     }

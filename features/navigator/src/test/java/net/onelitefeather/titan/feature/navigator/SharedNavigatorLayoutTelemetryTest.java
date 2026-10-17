@@ -16,7 +16,9 @@
 package net.onelitefeather.titan.feature.navigator;
 
 import io.opentelemetry.sdk.trace.data.SpanData;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import net.minestom.server.inventory.InventoryType;
 import net.onelitefeather.titan.core.testfixtures.TestTelemetry;
 import net.theevilreaper.aves.inventory.layout.InventoryLayout;
@@ -47,38 +49,27 @@ class SharedNavigatorLayoutTelemetryTest {
         return testTelemetry.spans().stream().map(SpanData::getName).filter(LAYOUT_SPAN::equals).count();
     }
 
-    @DisplayName("The first layout for a menu is applied inside a navigator.layout.apply span")
+    @DisplayName("The layout of a menu is applied inside a navigator.layout.apply span")
     @Test
-    void firstLayoutIsSpanned() {
-        SharedNavigator navigator = new SharedNavigator(false, testTelemetry.telemetry());
+    void layoutIsSpanned() {
+        SharedNavigator navigator = new SharedNavigator(Set.of(), testTelemetry.telemetry());
 
-        navigator.applyLayoutIfChanged(new FakeFeatureFlags(), SharedNavigatorLayoutTelemetryTest::emptyLayout);
+        navigator.applyLayout(SharedNavigatorLayoutTelemetryTest::emptyLayout);
 
-        Assertions.assertEquals(1, layoutSpans(), "the first application must produce one layout span");
+        Assertions.assertEquals(1, layoutSpans(), "applying the layout must produce one layout span");
     }
 
-    @DisplayName("Applying an unchanged layout again produces no layout span")
+    @DisplayName("A menu lays out the destinations its grants allow, Slender included")
     @Test
-    void unchangedLayoutProducesNoSpan() {
-        SharedNavigator navigator = new SharedNavigator(false, testTelemetry.telemetry());
-        FakeFeatureFlags flags = new FakeFeatureFlags();
-        navigator.applyLayoutIfChanged(flags, SharedNavigatorLayoutTelemetryTest::emptyLayout);
+    void layoutFollowsTheGrants() {
+        SharedNavigator navigator = new SharedNavigator(Set.of(Destination.SLENDER), testTelemetry.telemetry());
+        List<List<Destination>> laidOut = new ArrayList<>();
 
-        navigator.applyLayoutIfChanged(flags, SharedNavigatorLayoutTelemetryTest::emptyLayout);
+        navigator.applyLayout(visible -> {
+            laidOut.add(visible);
+            return emptyLayout(visible);
+        });
 
-        Assertions.assertEquals(1, layoutSpans(), "the second, unchanged application must not produce a span");
-    }
-
-    @DisplayName("A changed set of visible destinations applies a new layout and spans it")
-    @Test
-    void changedLayoutIsSpannedAgain() {
-        SharedNavigator navigator = new SharedNavigator(false, testTelemetry.telemetry());
-        FakeFeatureFlags flags = new FakeFeatureFlags().declare(Destination.SLENDER_FLAG, false);
-        navigator.applyLayoutIfChanged(flags, SharedNavigatorLayoutTelemetryTest::emptyLayout);
-
-        flags.set(Destination.SLENDER_FLAG, true);
-        navigator.applyLayoutIfChanged(flags, SharedNavigatorLayoutTelemetryTest::emptyLayout);
-
-        Assertions.assertEquals(2, layoutSpans(), "a changed layout must produce a span again");
+        Assertions.assertEquals(List.of(Destination.visible(Set.of(Destination.SLENDER))), laidOut, "the layout must list exactly the destinations the grants allow");
     }
 }
