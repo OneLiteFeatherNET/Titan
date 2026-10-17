@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.stream.IntStream;
@@ -75,10 +77,10 @@ final class SwitcherInventory {
     private final Queue<Player> opening = new ConcurrentLinkedQueue<>();
     private volatile SwitcherReading.Outcome outcome = new SwitcherReading.Unavailable();
     private volatile LobbyIdentity own;
-    // The pages of the current layout; rebuilt on the tick thread only.
-    private volatile SwitcherLayout layout = SwitcherLayout.of(0);
-    private volatile List<GlobalTranslatedInventoryBuilder> pages = List.of();
-    private Player turning;
+    // Replaced as one value on the tick thread; each operation reads it once and works on that copy.
+    private volatile Pages pages = new Pages(SwitcherLayout.of(0), List.of());
+    // Viewers whose page turn is opening another page; their close is not a viewer leaving.
+    private final Set<Player> turning = ConcurrentHashMap.newKeySet();
     private volatile boolean stopped;
     private boolean registered;
 
@@ -94,7 +96,8 @@ final class SwitcherInventory {
 
     @PostConstruct
     void start() {
-        this.pages = build(this.layout);
+        SwitcherLayout initial = SwitcherLayout.of(0);
+        this.pages = new Pages(initial, build(initial));
         this.registered = true;
     }
 
@@ -106,7 +109,7 @@ final class SwitcherInventory {
         this.viewers.stop();
         if (this.registered) {
             this.registered = false;
-            this.pages.forEach(GlobalTranslatedInventoryBuilder::unregister);
+            this.pages.builders().forEach(GlobalTranslatedInventoryBuilder::unregister);
         }
     }
 
@@ -131,23 +134,24 @@ final class SwitcherInventory {
      * these two events here instead.
      */
     void onClick(InventoryPreClickEvent event) {
-        if (!isOurs(event.getInventory())) {
+        Pages snapshot = this.pages;
+        int page = snapshot.indexOf(event.getInventory());
+        if (page < 0) {
             return;
         }
         event.setCancelled(true);
-        int page = pageOf(event.getInventory());
         int slot = event.getSlot();
-        if (this.layout.paged() && turn(event.getPlayer(), page, slot)) {
+        if (snapshot.layout().paged() && turn(event.getPlayer(), snapshot, page, slot)) {
             return;
         }
-        List<SwitcherEntry> entries = this.layout.page(entries(), page);
+        List<SwitcherEntry> entries = snapshot.layout().page(entries(), page);
         if (this.own != null && slot >= 0 && slot < entries.size()) {
             this.selection.select(event.getPlayer(), this.own, entries.get(slot).name());
         }
     }
 
     // True when the slot is in the navigation row, whether or not its arrow is shown.
-    private boolean turn(Player player, int page, int slot) {
+    private boolean turn(Player player, Pages snapshot, int page, int slot) {
         if (slot < SwitcherLayout.PAGE_ENTRIES) {
             return false;
         }
@@ -156,18 +160,21 @@ final class SwitcherInventory {
             case SwitcherLayout.NEXT_SLOT -> page + 1;
             default -> -1;
         };
-        if (target >= 0 && target < this.layout.pages()) {
+        if (target >= 0 && target < snapshot.layout().pages()) {
             // Opening replaces the open inventory, which must not count as the viewer leaving.
-            this.turning = player;
-            player.openInventory(this.pages.get(target).getInventory(localeOf(player)));
-            this.turning = null;
+            this.turning.add(player);
+            try {
+                player.openInventory(snapshot.builders().get(target).getInventory(localeOf(player)));
+            } finally {
+                this.turning.remove(player);
+            }
         }
         return true;
     }
 
     /** A viewer left the list; the last one stops the period. */
     void onClose(InventoryCloseEvent event) {
-        if (isOurs(event.getInventory()) && event.getPlayer() != this.turning) {
+        if (isOurs(event.getInventory()) && !this.turning.contains(event.getPlayer())) {
             this.viewers.closed();
         }
     }
@@ -184,15 +191,7 @@ final class SwitcherInventory {
     }
 
     private boolean isOurs(AbstractInventory inventory) {
-        return pageOf(inventory) >= 0;
-    }
-
-    // The page the inventory shows, or -1 when it is none of ours.
-    private int pageOf(AbstractInventory inventory) {
-        if (inventory instanceof CustomInventory custom && custom.getHolder() instanceof InventoryHolderImpl holder) {
-            return this.pages.indexOf(holder.inventoryBuilder());
-        }
-        return -1;
+        return this.pages.indexOf(inventory) >= 0;
     }
 
     // Tick thread: the only place the inventory content changes.
@@ -202,11 +201,12 @@ final class SwitcherInventory {
         }
         this.outcome = read;
         resize(SwitcherLayout.of(entries().size()));
-        this.pages.forEach(GlobalTranslatedInventoryBuilder::invalidateDataLayout);
+        Pages current = this.pages;
+        current.builders().forEach(GlobalTranslatedInventoryBuilder::invalidateDataLayout);
         if (!this.opening.isEmpty()) {
             // Aves recomputes the content on the next tick, and only once an inventory asks for
             // it; asking now and opening on that tick shows the new content.
-            this.opening.forEach(player -> this.pages.getFirst().getInventory(localeOf(player)));
+            this.opening.forEach(player -> current.builders().getFirst().getInventory(localeOf(player)));
             this.scheduler.scheduleNextTick(this::showOpening);
         }
     }
@@ -226,11 +226,15 @@ final class SwitcherInventory {
             this.viewers.closed();
             return;
         }
-        this.telemetry.open(player.getUuid(), entries().size(), () -> player.openInventory(this.pages.getFirst().getInventory(localeOf(player))));
+        this.telemetry.open(player.getUuid(), entries().size(), () -> player.openInventory(this.pages.builders().getFirst().getInventory(localeOf(player))));
     }
 
     private List<SwitcherEntry> entries() {
-        return switch (this.outcome) {
+        return entries(this.outcome);
+    }
+
+    private List<SwitcherEntry> entries(SwitcherReading.Outcome read) {
+        return switch (read) {
             case SwitcherReading.Fresh fresh ->
                 SwitcherEntry.sorted(fresh.services(), this.own);
             case SwitcherReading.Stale stale ->
@@ -241,15 +245,16 @@ final class SwitcherInventory {
 
     // A new size cannot be applied to a builder, so the old pages go; their viewers are closed.
     private void resize(SwitcherLayout wanted) {
-        if (wanted.equals(this.layout)) {
+        Pages current = this.pages;
+        if (wanted.equals(current.layout())) {
             return;
         }
         // Aves still recomputes a retired page; it must not lay out entries it has no room for.
-        InventoryLayout empty = InventoryLayout.fromType(TYPES.get(this.layout.rows() - 1));
-        this.pages.forEach(page -> page.setDataLayoutFunction(previous -> empty));
-        this.pages.forEach(GlobalTranslatedInventoryBuilder::unregister);
-        this.layout = wanted;
-        this.pages = build(wanted);
+        InventoryLayout empty = InventoryLayout.fromType(TYPES.get(current.layout().rows() - 1));
+        current.builders().forEach(page -> page.setDataLayoutFunction(previous -> empty));
+        // The close events of these viewers are matched against the old pages, so they go first.
+        current.builders().forEach(GlobalTranslatedInventoryBuilder::unregister);
+        this.pages = new Pages(wanted, build(wanted));
     }
 
     private List<GlobalTranslatedInventoryBuilder> build(SwitcherLayout wanted) {
@@ -258,39 +263,41 @@ final class SwitcherInventory {
             GlobalTranslatedInventoryBuilder builder = new EnglishWithoutLocale(type);
             builder.setTitleData(new TextData(LobbySwitcherMessages.TITLE));
             builder.setLayout(InventoryLayout.fromType(type));
-            builder.setDataLayoutFunction(previous -> pageLayout(type, page));
+            builder.setDataLayoutFunction(previous -> pageLayout(wanted, type, page));
             builder.register();
             return builder;
         }).toList();
     }
 
-    private InventoryLayout pageLayout(InventoryType type, int page) {
+    // Built for the size the builder was made for, never for whatever size is current by then.
+    private InventoryLayout pageLayout(SwitcherLayout shape, InventoryType type, int page) {
         InventoryLayout layout = InventoryLayout.fromType(type);
         for (int slot = 0; slot < layout.getSize(); slot++) {
             layout.setItem(slot, FILLER);
         }
-        if (this.outcome instanceof SwitcherReading.Unavailable) {
+        SwitcherReading.Outcome read = this.outcome;
+        if (read instanceof SwitcherReading.Unavailable) {
             layout.setItem(0, TranslatedItem.of(Material.BARRIER).setDisplayName(new TextData(LobbySwitcherMessages.STATE_UNAVAILABLE)).toNonClickSlot());
             return layout;
         }
-        List<SwitcherEntry> entries = this.layout.page(entries(), page);
+        List<SwitcherEntry> entries = shape.page(entries(read), page);
         for (int slot = 0; slot < entries.size(); slot++) {
             layout.setItem(slot, item(entries.get(slot)).toNonClickSlot());
         }
-        if (this.layout.paged()) {
-            navigation(layout, page);
+        if (shape.paged()) {
+            navigation(layout, shape, page);
         }
         return layout;
     }
 
-    private void navigation(InventoryLayout layout, int page) {
+    private static void navigation(InventoryLayout layout, SwitcherLayout shape, int page) {
         String current = String.valueOf(page + 1);
-        String total = String.valueOf(this.layout.pages());
+        String total = String.valueOf(shape.pages());
         layout.setItem(SwitcherLayout.INDICATOR_SLOT, TranslatedItem.of(Material.PAPER).setDisplayName(new TextData(LobbySwitcherMessages.PAGE_INDICATOR, current, total)).toNonClickSlot());
         if (page > 0) {
             layout.setItem(SwitcherLayout.PREVIOUS_SLOT, TranslatedItem.of(Material.ARROW).setDisplayName(new TextData(LobbySwitcherMessages.PAGE_PREVIOUS)).toNonClickSlot());
         }
-        if (page < this.layout.pages() - 1) {
+        if (page < shape.pages() - 1) {
             layout.setItem(SwitcherLayout.NEXT_SLOT, TranslatedItem.of(Material.ARROW).setDisplayName(new TextData(LobbySwitcherMessages.PAGE_NEXT)).toNonClickSlot());
         }
     }
@@ -314,6 +321,21 @@ final class SwitcherInventory {
 
     private static TranslatedItem row(Material material, SwitcherEntry entry, TextData lore) {
         return TranslatedItem.of(material).setDisplayName(new TextData(LobbySwitcherMessages.ENTRY_NAME, entry.name())).setLore(lore);
+    }
+
+    /**
+     * One layout and the builders that show it. A resize replaces both in one write, so no reader
+     * can pair the new layout with the old pages.
+     */
+    private record Pages(SwitcherLayout layout, List<GlobalTranslatedInventoryBuilder> builders) {
+
+        // The page the inventory shows, or -1 when it is none of ours.
+        int indexOf(AbstractInventory inventory) {
+            if (inventory instanceof CustomInventory custom && custom.getHolder() instanceof InventoryHolderImpl holder) {
+                return this.builders.indexOf(holder.inventoryBuilder());
+            }
+            return -1;
+        }
     }
 
     /**
