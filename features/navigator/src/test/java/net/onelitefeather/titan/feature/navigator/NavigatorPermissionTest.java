@@ -24,6 +24,7 @@ import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.core.permission.PermissionResult;
+import net.onelitefeather.titan.core.portal.ServiceCount;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,8 +40,8 @@ class NavigatorPermissionTest {
 
     private static final String SLENDER_PERMISSION = "titan.navigator.slender";
     private static final String BUILD_PERMISSION = "titan.navigator.buildserver";
-    private static final int SLENDER_SLOT = 5;
-    private static final int BUILD_SLOT = 7;
+    private static final int SLENDER_SLOT = 15;
+    private static final int BUILD_SLOT = 24;
 
     private static NavigatorFixture start(Env env, Deliver deliver, FakePermissionService permissions) {
         return NavigatorFixture.start(env, deliver, permissions);
@@ -66,8 +67,8 @@ class NavigatorPermissionTest {
 
             AbstractInventory menu = openNavigator(fixture, player);
 
-            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, menu.getItemStack(SLENDER_SLOT).material(), "slot 5 must be blank without the Slender permission");
-            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, menu.getItemStack(BUILD_SLOT).material(), "slot 7 must be blank without the Build permission");
+            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, menu.getItemStack(SLENDER_SLOT).material(), "slot 15 must be blank without the Slender permission");
+            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, menu.getItemStack(BUILD_SLOT).material(), "slot 24 must be blank without the Build permission");
         }
     }
 
@@ -81,8 +82,8 @@ class NavigatorPermissionTest {
 
             AbstractInventory menu = openNavigator(fixture, player);
 
-            Assertions.assertEquals(Material.ENDERMAN_SPAWN_EGG, menu.getItemStack(SLENDER_SLOT).material(), "slot 5 must show Slender");
-            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, menu.getItemStack(BUILD_SLOT).material(), "slot 7 must be blank without the Build permission");
+            Assertions.assertEquals(Material.ENDERMAN_SPAWN_EGG, menu.getItemStack(SLENDER_SLOT).material(), "slot 15 must show Slender");
+            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, menu.getItemStack(BUILD_SLOT).material(), "slot 24 must be blank without the Build permission");
         }
     }
 
@@ -96,8 +97,8 @@ class NavigatorPermissionTest {
 
             AbstractInventory menu = openNavigator(fixture, player);
 
-            Assertions.assertEquals(Material.SCAFFOLDING, menu.getItemStack(BUILD_SLOT).material(), "slot 7 must show Build");
-            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, menu.getItemStack(SLENDER_SLOT).material(), "slot 5 must be blank without the Slender permission");
+            Assertions.assertEquals(Material.SCAFFOLDING, menu.getItemStack(BUILD_SLOT).material(), "slot 24 must show Build");
+            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, menu.getItemStack(SLENDER_SLOT).material(), "slot 15 must be blank without the Slender permission");
         }
     }
 
@@ -111,8 +112,8 @@ class NavigatorPermissionTest {
 
             AbstractInventory menu = openNavigator(fixture, player);
 
-            Assertions.assertEquals(Material.ENDERMAN_SPAWN_EGG, menu.getItemStack(SLENDER_SLOT).material(), "slot 5 must show Slender");
-            Assertions.assertEquals(Material.SCAFFOLDING, menu.getItemStack(BUILD_SLOT).material(), "slot 7 must show Build");
+            Assertions.assertEquals(Material.ENDERMAN_SPAWN_EGG, menu.getItemStack(SLENDER_SLOT).material(), "slot 15 must show Slender");
+            Assertions.assertEquals(Material.SCAFFOLDING, menu.getItemStack(BUILD_SLOT).material(), "slot 24 must show Build");
         }
     }
 
@@ -126,7 +127,7 @@ class NavigatorPermissionTest {
 
             AbstractInventory menu = openNavigator(fixture, player);
 
-            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, menu.getItemStack(SLENDER_SLOT).material(), "slot 5 must be blank when the permission is denied");
+            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, menu.getItemStack(SLENDER_SLOT).material(), "slot 15 must be blank when the permission is denied");
         }
     }
 
@@ -142,7 +143,7 @@ class NavigatorPermissionTest {
 
             permissions.set(player.getUuid(), SLENDER_PERMISSION, PermissionResult.ALLOWED);
 
-            Assertions.assertEquals(Material.ENDERMAN_SPAWN_EGG, openNavigator(fixture, player).getItemStack(SLENDER_SLOT).material(), "slot 5 must show Slender on the second open");
+            Assertions.assertEquals(Material.ENDERMAN_SPAWN_EGG, openNavigator(fixture, player).getItemStack(SLENDER_SLOT).material(), "slot 15 must show Slender on the second open");
         }
     }
 
@@ -152,7 +153,9 @@ class NavigatorPermissionTest {
         RecordingDeliver deliver = new RecordingDeliver();
         Player player = env.createPlayer(env.createFlatInstance());
         FakePermissionService permissions = new FakePermissionService().set(player.getUuid(), SLENDER_PERMISSION, PermissionResult.ALLOWED);
-        try (NavigatorFixture fixture = start(env, deliver, permissions)) {
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.serveServices("Slender", new ServiceCount("Slender-1", 2, 10));
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, permissions, counts)) {
             fixture.equip(player);
             AbstractInventory menu = openNavigator(fixture, player);
 
@@ -160,7 +163,7 @@ class NavigatorPermissionTest {
             NavigatorFixture.tick(env, 1);
 
             Assertions.assertEquals(1, deliver.deliveries().size(), "a click on Slender with its permission must forward once");
-            Assertions.assertEquals("Slender", deliver.deliveries().get(0).taskName());
+            Assertions.assertEquals("Slender-1", deliver.deliveries().get(0).serverName(), "the quick join goes to the ready Slender service");
         }
     }
 
@@ -234,7 +237,7 @@ class NavigatorPermissionTest {
             AbstractInventory plainMenu = openNavigator(fixture, plain);
 
             Assertions.assertNotSame(grantedMenu, plainMenu, "a menu that shows Slender must not be the one a player without it sees");
-            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, plainMenu.getItemStack(SLENDER_SLOT).material(), "the plain player's menu must keep slot 5 blank");
+            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, plainMenu.getItemStack(SLENDER_SLOT).material(), "the plain player's menu must keep slot 15 blank");
         }
     }
 }

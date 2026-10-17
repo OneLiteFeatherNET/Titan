@@ -19,7 +19,7 @@ import io.opentelemetry.sdk.trace.data.SpanData;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import net.minestom.server.inventory.InventoryType;
+import net.kyori.adventure.text.Component;
 import net.onelitefeather.titan.core.testfixtures.TestTelemetry;
 import net.theevilreaper.aves.inventory.layout.InventoryLayout;
 import org.junit.jupiter.api.AfterEach;
@@ -42,7 +42,7 @@ class SharedNavigatorLayoutTelemetryTest {
     }
 
     private static InventoryLayout emptyLayout(List<Destination> visible) {
-        return InventoryLayout.fromType(InventoryType.CHEST_1_ROW);
+        return InventoryLayout.fromType(NavigatorLayout.TYPE);
     }
 
     private long layoutSpans() {
@@ -52,7 +52,7 @@ class SharedNavigatorLayoutTelemetryTest {
     @DisplayName("The layout of a menu is applied inside a navigator.layout.apply span")
     @Test
     void layoutIsSpanned() {
-        SharedNavigator navigator = new SharedNavigator(Set.of(), testTelemetry.telemetry());
+        SharedNavigator navigator = new SharedNavigator(Component.empty(), Set.of(), testTelemetry.telemetry());
 
         navigator.applyLayout(SharedNavigatorLayoutTelemetryTest::emptyLayout);
 
@@ -62,7 +62,7 @@ class SharedNavigatorLayoutTelemetryTest {
     @DisplayName("A menu lays out the destinations its grants allow, Slender included")
     @Test
     void layoutFollowsTheGrants() {
-        SharedNavigator navigator = new SharedNavigator(Set.of(Destination.SLENDER), testTelemetry.telemetry());
+        SharedNavigator navigator = new SharedNavigator(Component.empty(), Set.of(Destination.SLENDER), testTelemetry.telemetry());
         List<List<Destination>> laidOut = new ArrayList<>();
 
         navigator.applyLayout(visible -> {

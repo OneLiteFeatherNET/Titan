@@ -42,15 +42,17 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * The click hint as a player sees it in the opened navigator: the Aves inventory of the player's
- * language, with the portal of the lobby map decided at each refresh.
+ * The lore of each entry as a player sees it in the opened navigator: the Aves inventory of the
+ * player's language, with the portal of the lobby map decided when the menu opens.
  */
 @ExtendWith(MicrotusExtension.class)
 class NavigatorClickHintTest {
 
-    private static final int ELYTRA_RACE_SLOT = 0;
-    private static final int SPAWN_SLOT = 2;
-    private static final int SURVIVAL_SLOT = 4;
+    private static final int ELYTRA_RACE_SLOT = Destination.ELYTRA_RACE.slot();
+    private static final int SPAWN_SLOT = NavigatorLayout.SPAWN_SLOT;
+    private static final int SURVIVAL_SLOT = Destination.SURVIVAL.slot();
+    private static final int BUILD_SLOT = Destination.BUILD.slot();
+    private static final String SEPARATOR = "━━━━━━━━━━━━";
     private static final Box AREA = new Box(new Vec(10, 40, 20), new Vec(12, 42, 22));
     private static final LobbyPortals NO_PORTALS = List::of;
     private static final LobbyPortals SURVIVAL_PORTAL = () -> List.of(new Portal("survival", AREA, "Survival", null));
@@ -60,6 +62,7 @@ class NavigatorClickHintTest {
     // One refresh period; a test ticks this long so the refresh it needs has run.
     private static final int REFRESH_TICKS = NavigatorFixture.REFRESH_SECONDS * ServerFlag.SERVER_TICKS_PER_SECOND;
     private static final String BUILD_PERMISSION = "titan.navigator.buildserver";
+    private static final String SLENDER_PERMISSION = "titan.navigator.slender";
 
     private static List<String> lore(ItemStack item) {
         return Optional.ofNullable(item.get(DataComponents.LORE)).orElse(List.of()).stream().map(line -> PlainTextComponentSerializer.plainText().serialize(line)).toList();
@@ -77,134 +80,134 @@ class NavigatorClickHintTest {
         return player;
     }
 
-    @DisplayName("With a portal, Survival names the left click and the right click")
+    @DisplayName("With a portal, Survival lists the left click and the shift click, after a blank line")
     @Test
-    void survivalWithPortalNamesBothClicks(Env env) {
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), SURVIVAL_PORTAL)) {
+    void survivalWithPortalListsBothClicks(Env env) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone(SLENDER_PERMISSION), SURVIVAL_PORTAL)) {
             AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
 
-            Assertions.assertEquals(List.of("Left click: connect", "Right click: walk to portal"), lore(inventory.getItemStack(SURVIVAL_SLOT)));
+            Assertions.assertEquals(List.of(SEPARATOR, "", "▸ Left click  Connect", "▸ Shift click  Walk to portal"), lore(inventory.getItemStack(SURVIVAL_SLOT)), "a server with a portal lists connect and the walk to the portal");
         }
     }
 
-    @DisplayName("Without a portal, Survival names only the left click")
+    @DisplayName("Without a portal, Survival lists only the connect")
     @Test
-    void survivalWithoutPortalNamesOnlyTheLeftClick(Env env) {
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), NO_PORTALS)) {
+    void survivalWithoutPortalListsOnlyTheConnect(Env env) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone(SLENDER_PERMISSION), NO_PORTALS)) {
             AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
 
-            Assertions.assertEquals(List.of("Left click: connect"), lore(inventory.getItemStack(SURVIVAL_SLOT)));
+            Assertions.assertEquals(List.of(SEPARATOR, "", "▸ Left click  Connect"), lore(inventory.getItemStack(SURVIVAL_SLOT)), "without a portal there is no shift line");
         }
     }
 
-    @DisplayName("ElytraRace running on several services names the server choice on the left click")
+    @DisplayName("ElytraRace lists quick join and the server choice even with several services")
     @Test
-    void elytraRaceWithSeveralServicesNamesTheServerChoice(Env env) {
+    void elytraRaceWithSeveralServicesListsQuickJoinAndPicker(Env env) {
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.serveServices("ElytraRace", RACE_ONE, RACE_TWO);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), counts, NO_PORTALS)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone(SLENDER_PERMISSION), counts, NO_PORTALS)) {
             tick(env, REFRESH_TICKS);
             AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
 
-            Assertions.assertEquals(List.of("13 online", "Left click: choose a server"), lore(inventory.getItemStack(ELYTRA_RACE_SLOT)), "the picker opens for several services, so the hint names it");
+            Assertions.assertEquals(List.of(SEPARATOR, "Players  13 / 100", "", "▸ Left click  Quick join", "▸ Right click  Choose a server"), lore(inventory.getItemStack(ELYTRA_RACE_SLOT)), "the players are summed and the maximum is known for both services");
         }
     }
 
-    @DisplayName("ElytraRace running on several services with a portal names the server choice and the walk-to-portal on separate lines")
+    @DisplayName("ElytraRace with one service lists the same clicks, because the right click always opens the picker")
     @Test
-    void elytraRaceWithSeveralServicesAndPortalNamesBothClicks(Env env) {
-        FakePlayerCounts counts = new FakePlayerCounts();
-        counts.serveServices("ElytraRace", RACE_ONE, RACE_TWO);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), counts, RACE_PORTAL)) {
-            tick(env, REFRESH_TICKS);
-            AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
-
-            Assertions.assertEquals(List.of("13 online", "Left click: choose a server", "Right click: walk to portal"), lore(inventory.getItemStack(ELYTRA_RACE_SLOT)), "a picker with a portal must name both clicks, each on its own line");
-        }
-    }
-
-    @DisplayName("ElytraRace running on one service names the connect on the left click, because the click connects directly")
-    @Test
-    void elytraRaceWithOneServiceNamesTheConnect(Env env) {
+    void elytraRaceWithOneServiceListsTheSameClicks(Env env) {
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.serveServices("ElytraRace", RACE_ONE);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), counts, NO_PORTALS)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone(SLENDER_PERMISSION), counts, NO_PORTALS)) {
             tick(env, REFRESH_TICKS);
             AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
 
-            Assertions.assertEquals(List.of("3 online", "Left click: connect"), lore(inventory.getItemStack(ELYTRA_RACE_SLOT)), "one service never opens the picker, so the hint must not promise it");
+            Assertions.assertEquals(List.of(SEPARATOR, "Players  3 / 50", "", "▸ Left click  Quick join", "▸ Right click  Choose a server"), lore(inventory.getItemStack(ELYTRA_RACE_SLOT)), "the hint no longer depends on how many services run");
         }
     }
 
-    @DisplayName("ElytraRace running nowhere names the connect on the left click")
+    @DisplayName("ElytraRace running nowhere lists the same clicks without a players line")
     @Test
-    void elytraRaceWithoutServicesNamesTheConnect(Env env) {
+    void elytraRaceWithoutServicesListsTheSameClicks(Env env) {
         FakePlayerCounts counts = new FakePlayerCounts();
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), counts, NO_PORTALS)) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone(SLENDER_PERMISSION), counts, NO_PORTALS)) {
             tick(env, REFRESH_TICKS);
             AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
 
-            Assertions.assertEquals(List.of("Left click: connect"), lore(inventory.getItemStack(ELYTRA_RACE_SLOT)), "nothing running means a plain connect, as before the picker");
+            Assertions.assertEquals(List.of(SEPARATOR, "", "▸ Left click  Quick join", "▸ Right click  Choose a server"), lore(inventory.getItemStack(ELYTRA_RACE_SLOT)), "an unknown count adds no players line");
         }
     }
 
-    @DisplayName("Opening right after a portal was added shows the walk-to-portal hint without waiting for a refresh")
+    @DisplayName("ElytraRace with a portal lists the shift line last")
+    @Test
+    void elytraRaceWithPortalListsTheShiftLineLast(Env env) {
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.serveServices("ElytraRace", RACE_ONE, RACE_TWO);
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone(SLENDER_PERMISSION), counts, RACE_PORTAL)) {
+            tick(env, REFRESH_TICKS);
+            AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
+
+            Assertions.assertEquals(List.of(SEPARATOR, "Players  13 / 100", "", "▸ Left click  Quick join", "▸ Right click  Choose a server", "▸ Shift click  Walk to portal"), lore(inventory.getItemStack(ELYTRA_RACE_SLOT)), "the portal line follows the two click lines");
+        }
+    }
+
+    @DisplayName("Opening right after a portal was added shows the walk-to-portal line without waiting for a refresh")
     @Test
     void hintIsFreshWhenOpenedRightAfterPortalAdded(Env env) {
         AtomicReference<List<Portal>> portals = new AtomicReference<>(List.of());
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), () -> portals.get())) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone(SLENDER_PERMISSION), () -> portals.get())) {
             tick(env, REFRESH_TICKS);
             portals.set(List.of(new Portal("survival", AREA, "Survival", null)));
 
             AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
 
-            Assertions.assertEquals(List.of("Left click: connect", "Right click: walk to portal"), lore(inventory.getItemStack(SURVIVAL_SLOT)), "the menu must show the portal that exists when it opens, not the one the last refresh saw");
+            Assertions.assertEquals(List.of(SEPARATOR, "", "▸ Left click  Connect", "▸ Shift click  Walk to portal"), lore(inventory.getItemStack(SURVIVAL_SLOT)), "the menu must show the portal that exists when it opens, not the one the last refresh saw");
         }
     }
 
-    @DisplayName("The spawn entry has no click hint")
+    @DisplayName("The spawn entry has no lore")
     @Test
-    void spawnHasNoClickHint(Env env) {
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), SURVIVAL_PORTAL)) {
+    void spawnHasNoLore(Env env) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone(SLENDER_PERMISSION), SURVIVAL_PORTAL)) {
             AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
 
-            Assertions.assertTrue(lore(inventory.getItemStack(SPAWN_SLOT)).isEmpty(), "spawn must show no click hint, because its click does not depend on the mouse button");
+            Assertions.assertTrue(lore(inventory.getItemStack(SPAWN_SLOT)).isEmpty(), "spawn must show no click lines, because its click does not depend on the mouse button");
         }
     }
 
-    @DisplayName("A German player reads the German click hint")
+    @DisplayName("A German player reads the German lines")
     @Test
-    void germanPlayerReadsGermanHint(Env env) {
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), SURVIVAL_PORTAL)) {
+    void germanPlayerReadsGermanLines(Env env) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone(SLENDER_PERMISSION), SURVIVAL_PORTAL)) {
             AbstractInventory inventory = open(fixture, player(env, Locale.GERMANY));
 
-            Assertions.assertEquals(List.of("Linksklick: verbinden", "Rechtsklick: zum Portal laufen"), lore(inventory.getItemStack(SURVIVAL_SLOT)));
+            Assertions.assertEquals(List.of(SEPARATOR, "", "▸ Linksklick  Verbinden", "▸ Shift-Klick  Zum Portal laufen"), lore(inventory.getItemStack(SURVIVAL_SLOT)), "the German player must read the German lines");
         }
     }
 
-    @DisplayName("Removing the portal drops the right click from the hint at the next refresh")
+    @DisplayName("Removing the portal drops the shift line at the next refresh")
     @Test
-    void removedPortalDropsRightClickAtNextRefresh(Env env) {
+    void removedPortalDropsTheShiftLineAtNextRefresh(Env env) {
         AtomicReference<List<Portal>> portals = new AtomicReference<>(List.of(new Portal("survival", AREA, "Survival", null)));
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), () -> portals.get())) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone(SLENDER_PERMISSION), () -> portals.get())) {
             AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
             portals.set(List.of());
 
             tick(env, REFRESH_TICKS + 1);
 
-            Assertions.assertEquals(List.of("Left click: connect"), lore(inventory.getItemStack(SURVIVAL_SLOT)), "the right click must be gone once a refresh has seen the portal removed");
+            Assertions.assertEquals(List.of(SEPARATOR, "", "▸ Left click  Connect"), lore(inventory.getItemStack(SURVIVAL_SLOT)), "the shift line must be gone once a refresh has seen the portal removed");
         }
     }
 
-    @DisplayName("A German player with the build permission reads the German hint on Build in the team menu")
+    @DisplayName("A German player with the build permission reads the German connect on Build in the team menu")
     @Test
-    void germanTeamPlayerReadsGermanHintOnBuild(Env env) {
+    void germanTeamPlayerReadsGermanConnectOnBuild(Env env) {
         Player player = player(env, Locale.GERMANY);
-        FakePermissionService permissions = new FakePermissionService().allowEveryone("titan.navigator.slender").set(player.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED);
+        FakePermissionService permissions = new FakePermissionService().allowEveryone(SLENDER_PERMISSION).set(player.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED);
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions, NO_PORTALS)) {
             AbstractInventory inventory = open(fixture, player);
 
-            Assertions.assertEquals(List.of("Linksklick: verbinden"), lore(inventory.getItemStack(Destination.BUILD.slot())), "the team menu in German must name the connect in German");
+            Assertions.assertEquals(List.of(SEPARATOR, "", "▸ Linksklick  Verbinden"), lore(inventory.getItemStack(BUILD_SLOT)), "the team menu in German must name the connect in German");
         }
     }
 }

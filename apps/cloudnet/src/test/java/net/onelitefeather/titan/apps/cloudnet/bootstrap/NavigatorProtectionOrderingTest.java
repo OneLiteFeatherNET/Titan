@@ -89,7 +89,7 @@ class NavigatorProtectionOrderingTest {
             AbstractInventory openInventory = player.getOpenInventory();
             Assertions.assertNotNull(openInventory, "the navigator must open");
 
-            InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(4));
+            InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(20));
             env.process().eventHandler().call(clickEvent);
 
             Assertions.assertTrue(clickEvent.isCancelled(), "ProtectionModule must still cancel the click");

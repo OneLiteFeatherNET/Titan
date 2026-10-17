@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.OptionalInt;
 import java.util.Set;
 import java.util.stream.Collectors;
 import net.kyori.adventure.text.Component;
@@ -47,11 +46,11 @@ class NavigatorDestinationTest {
     @DisplayName("Every destination occupies the slot the lobby-navigator spec fixes for it")
     @Test
     void destinationsOccupyTheirFixedSlots() {
-        Assertions.assertEquals(0, Destination.ELYTRA_RACE.slot());
-        Assertions.assertEquals(4, Destination.SURVIVAL.slot());
-        Assertions.assertEquals(5, Destination.SLENDER.slot());
-        Assertions.assertEquals(7, Destination.BUILD.slot());
-        Assertions.assertEquals(8, Destination.CREATIVE.slot());
+        Assertions.assertEquals(11, Destination.ELYTRA_RACE.slot());
+        Assertions.assertEquals(20, Destination.SURVIVAL.slot());
+        Assertions.assertEquals(15, Destination.SLENDER.slot());
+        Assertions.assertEquals(24, Destination.BUILD.slot());
+        Assertions.assertEquals(22, Destination.CREATIVE.slot());
     }
 
     @DisplayName("Build forwards to the Team-Build task and needs titan.navigator.buildserver")
@@ -117,7 +116,7 @@ class NavigatorDestinationTest {
     @Test
     void slenderNameFadesFromGrayToDeepRed(Env env) {
         List<TextColor> letterColors = new ArrayList<>();
-        collectLetterColors(Destination.SLENDER.item(OptionalInt.empty(), List.of(Component.empty())).get(DataComponents.CUSTOM_NAME), null, letterColors);
+        collectLetterColors(Destination.SLENDER.item(List.of(Component.empty())).get(DataComponents.CUSTOM_NAME), null, letterColors);
 
         Assertions.assertEquals(TextColor.color(0x616161), letterColors.getFirst(), "the first letter of Slender must be #616161");
         Assertions.assertEquals(TextColor.color(0xe80000), letterColors.getLast(), "the last letter of Slender must be #e80000, not a value cut off from an invalid hex literal");

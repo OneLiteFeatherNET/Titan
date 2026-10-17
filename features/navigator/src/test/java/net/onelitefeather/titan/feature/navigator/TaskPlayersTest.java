@@ -45,37 +45,45 @@ class TaskPlayersTest {
         Assertions.assertTrue(TaskPlayers.online(List.of()).isEmpty(), "no service means no count line");
     }
 
+    @DisplayName("A task that runs nowhere is readable and lists no services")
+    @Test
+    void nothingRunningIsAnEmptyReading() {
+        FakePlayerCounts counts = new FakePlayerCounts();
+
+        Assertions.assertEquals(Optional.of(List.of()), new TaskPlayers(Optional.of(counts)).services("Survival"), "a read that finds nothing running is an empty list, not a failure");
+    }
+
     @DisplayName("A running task lists its services")
     @Test
     void runningTaskListsItsServices() {
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.serveServices("Survival", new ServiceCount("Survival-1", 7, 20));
 
-        Assertions.assertEquals(List.of(new ServiceCount("Survival-1", 7, 20)), new TaskPlayers(Optional.of(counts)).services("Survival"), "the services as the provider reports them");
+        Assertions.assertEquals(Optional.of(List.of(new ServiceCount("Survival-1", 7, 20))), new TaskPlayers(Optional.of(counts)).services("Survival"), "the services as the provider reports them");
     }
 
-    @DisplayName("Without a provider every task lists no services")
+    @DisplayName("Without a provider the services of a task cannot be read")
     @Test
-    void noProviderListsNoServices() {
-        Assertions.assertTrue(new TaskPlayers(Optional.empty()).services("Survival").isEmpty(), "nothing can be listed without a provider");
+    void noProviderCannotReadServices() {
+        Assertions.assertEquals(Optional.empty(), new TaskPlayers(Optional.empty()).services("Survival"), "nothing can be read without a provider, which is not the same as nothing running");
     }
 
-    @DisplayName("A provider that cannot serve tasks lists no services")
+    @DisplayName("A provider that cannot serve tasks leaves the services of a task unreadable")
     @Test
-    void unsupportedTasksListNoServices() {
+    void unsupportedTasksCannotReadServices() {
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.serve("Survival", 7);
         counts.doNotSupportTasks();
 
-        Assertions.assertTrue(new TaskPlayers(Optional.of(counts)).services("Survival").isEmpty(), "a provider without task support lists nothing");
+        Assertions.assertEquals(Optional.empty(), new TaskPlayers(Optional.of(counts)).services("Survival"), "a provider without task support cannot be asked, so nothing is read");
     }
 
-    @DisplayName("A failing lookup lists no services instead of throwing")
+    @DisplayName("A failing lookup reports the services as unreadable instead of throwing or looking empty")
     @Test
-    void failingLookupListsNoServices() {
+    void failingLookupIsUnreadable() {
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.failWith(new IllegalStateException("bridge down"));
 
-        Assertions.assertTrue(new TaskPlayers(Optional.of(counts)).services("Survival").isEmpty(), "a failed read is treated as nothing running");
+        Assertions.assertEquals(Optional.empty(), new TaskPlayers(Optional.of(counts)).services("Survival"), "a failed read must not look like a task that runs nowhere");
     }
 }

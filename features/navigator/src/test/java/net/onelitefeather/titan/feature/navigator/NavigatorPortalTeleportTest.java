@@ -36,15 +36,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * End-to-end coverage for the click types on a destination: a left click connects, a right click
- * walks the player to the matching portal of the lobby map, and falls back to connecting when the
- * map has none.
+ * End-to-end coverage for the click types on a server entry: a left or right click connects, a
+ * shift click walks the player to the matching portal of the lobby map and falls back to connecting
+ * when the map has none, and every other click type does nothing.
  */
 @ExtendWith(MicrotusExtension.class)
 class NavigatorPortalTeleportTest {
 
-    private static final int SURVIVAL_SLOT = 4;
-    private static final int BUILD_SLOT = 7;
+    private static final int SURVIVAL_SLOT = 20;
+    private static final int BUILD_SLOT = 24;
     private static final String BUILD_PERMISSION = "titan.navigator.buildserver";
     private static final Box AREA = new Box(new Vec(10, 40, 20), new Vec(12, 42, 22));
     private static final LobbyPortals SURVIVAL_PORTAL = () -> List.of(new Portal("survival", AREA, "Survival", null));
@@ -61,16 +61,16 @@ class NavigatorPortalTeleportTest {
         return event;
     }
 
-    @DisplayName("A right click teleports the player in front of the portal of that task, facing it, and sends nobody")
+    @DisplayName("A shift click teleports the player in front of the portal of that task, facing it, and sends nobody")
     @Test
-    void rightClickTeleportsInFrontOfTheMatchingPortal(Env env) {
+    void shiftClickTeleportsInFrontOfTheMatchingPortal(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance, new Pos(11.5, 40, 60));
         try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), SURVIVAL_PORTAL)) {
             AbstractInventory inventory = open(fixture, player);
 
-            InventoryPreClickEvent event = click(env, inventory, player, new Click.Right(SURVIVAL_SLOT));
+            InventoryPreClickEvent event = click(env, inventory, player, new Click.LeftShift(SURVIVAL_SLOT));
             env.tick();
 
             Pos expected = PortalApproach.standingBefore(SURVIVAL_PORTAL.portals().getFirst(), new Pos(11.5, 40, 60));
@@ -89,7 +89,7 @@ class NavigatorPortalTeleportTest {
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), SURVIVAL_PORTAL)) {
             AbstractInventory inventory = open(fixture, player);
 
-            click(env, inventory, player, new Click.Right(SURVIVAL_SLOT));
+            click(env, inventory, player, new Click.LeftShift(SURVIVAL_SLOT));
             env.tick();
 
             Assertions.assertFalse(AREA.crossedBy(player.getPosition(), player.getPosition()), "landing inside the trigger would send the player away again");
@@ -133,20 +133,51 @@ class NavigatorPortalTeleportTest {
         }
     }
 
-    @DisplayName("Other click types connect like a left click")
+    @DisplayName("A middle click on a server does nothing: it connects nobody, moves nobody and keeps the navigator open")
     @Test
-    void otherClickTypesConnect(Env env) {
+    void middleClickOnServerDoesNothing(Env env) {
+        assertUnnamedClickDoesNothing(env, new Click.Middle(SURVIVAL_SLOT));
+    }
+
+    @DisplayName("A number-key swap on a server does nothing")
+    @Test
+    void hotbarSwapOnServerDoesNothing(Env env) {
+        assertUnnamedClickDoesNothing(env, new Click.HotbarSwap(0, SURVIVAL_SLOT));
+    }
+
+    @DisplayName("A Q drop on a server does nothing")
+    @Test
+    void dropSlotOnServerDoesNothing(Env env) {
+        assertUnnamedClickDoesNothing(env, new Click.DropSlot(SURVIVAL_SLOT, false));
+    }
+
+    @DisplayName("A double click on a server does nothing")
+    @Test
+    void doubleClickOnServerDoesNothing(Env env) {
+        assertUnnamedClickDoesNothing(env, new Click.Double(SURVIVAL_SLOT));
+    }
+
+    @DisplayName("An F swap on a server does nothing")
+    @Test
+    void offhandSwapOnServerDoesNothing(Env env) {
+        assertUnnamedClickDoesNothing(env, new Click.OffhandSwap(SURVIVAL_SLOT));
+    }
+
+    // The click is cancelled, and no unnamed click type connects, teleports or closes the navigator.
+    private static void assertUnnamedClickDoesNothing(Env env, Click unnamed) {
         RecordingDeliver deliver = new RecordingDeliver();
         Instance instance = env.createFlatInstance();
         Player player = env.createPlayer(instance, new Pos(11.5, 40, 60));
         try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone("titan.navigator.slender"), SURVIVAL_PORTAL)) {
             AbstractInventory inventory = open(fixture, player);
 
-            click(env, inventory, player, new Click.LeftShift(SURVIVAL_SLOT));
+            InventoryPreClickEvent event = click(env, inventory, player, unnamed);
             env.tick();
 
-            Assertions.assertEquals(1, deliver.deliveries().size(), "a shift click connects");
-            Assertions.assertEquals(new Pos(11.5, 40, 60), player.getPosition(), "the player must not move");
+            Assertions.assertTrue(event.isCancelled(), "the click must be cancelled so no icon moves");
+            Assertions.assertTrue(deliver.deliveries().isEmpty(), "an unnamed click must not connect");
+            Assertions.assertEquals(new Pos(11.5, 40, 60), player.getPosition(), "an unnamed click must not move the player");
+            Assertions.assertSame(inventory, player.getOpenInventory(), "an unnamed click must leave the navigator open");
         }
     }
 

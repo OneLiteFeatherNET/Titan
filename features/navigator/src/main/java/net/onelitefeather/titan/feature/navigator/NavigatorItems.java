@@ -41,7 +41,7 @@ final class NavigatorItems {
 
     @Bean
     LobbyItem navigatorFeather(NavigatorModule navigator) {
-        ItemStack feather = ItemStack.builder(Material.FEATHER).customName(MiniMessage.miniMessage().deserialize("<!i><aqua>Navigator")).build();
+        ItemStack feather = ItemStack.builder(Material.FEATHER).customName(MiniMessage.miniMessage().deserialize("<!i><gradient:#00ddff:#ffffff>Navigator</gradient>")).build();
         return new LobbyItem(FEATURE_ID, ITEM_KEY, feather, ItemSlot.hotbar(HOTBAR_SLOT), (player, event) -> navigator.open(player));
     }
 }

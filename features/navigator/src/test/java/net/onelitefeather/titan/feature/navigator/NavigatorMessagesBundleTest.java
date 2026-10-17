@@ -28,15 +28,9 @@ import org.junit.jupiter.api.Test;
 
 class NavigatorMessagesBundleTest {
 
-    /** Every key any click hint can request, over all picker and portal combinations. */
+    /** Every key the navigator renders, as declared by NavigatorMessages. */
     private static Set<String> renderedKeys() {
-        Set<String> keys = new HashSet<>();
-        for (boolean serverPicker : new boolean[]{true, false}) {
-            for (boolean portal : new boolean[]{true, false}) {
-                keys.addAll(NavigatorMessages.keysFor(serverPicker, portal));
-            }
-        }
-        return keys;
+        return new HashSet<>(NavigatorMessages.KEYS);
     }
 
     private static Properties load(String file) throws IOException {

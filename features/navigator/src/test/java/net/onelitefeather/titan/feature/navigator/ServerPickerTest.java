@@ -22,34 +22,16 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ServerPickerTest {
 
     private static final ServiceCount ONE = new ServiceCount("ElytraRace-1", 1, 50);
     private static final ServiceCount TWO = new ServiceCount("ElytraRace-2", 2, 50);
 
-    @DisplayName("A picker destination with two running services opens the picker")
+    @DisplayName("Only the minigames ElytraRace and Slender offer the server choice")
     @Test
-    void twoServicesOpenThePicker() {
-        assertTrue(ServerPicker.opensFor(Destination.ELYTRA_RACE, List.of(ONE, TWO)), "two services are a choice");
-        assertTrue(ServerPicker.opensFor(Destination.SLENDER, List.of(ONE, TWO)), "two services are a choice");
-    }
-
-    @DisplayName("A picker destination with one or no running service connects directly")
-    @Test
-    void oneOrNoServiceConnectsDirectly() {
-        assertFalse(ServerPicker.opensFor(Destination.ELYTRA_RACE, List.of(ONE)), "one service leaves nothing to choose");
-        assertFalse(ServerPicker.opensFor(Destination.ELYTRA_RACE, List.of()), "no service connects to the task as today");
-    }
-
-    @DisplayName("A destination without a picker always connects directly")
-    @Test
-    void destinationsWithoutPickerConnectDirectly() {
-        assertFalse(ServerPicker.opensFor(Destination.SURVIVAL, List.of(ONE, TWO)), "Survival stays direct");
-        assertFalse(ServerPicker.opensFor(Destination.BUILD, List.of(ONE, TWO)), "Build stays direct");
-        assertFalse(ServerPicker.opensFor(Destination.CREATIVE, List.of(ONE, TWO)), "Creative stays direct");
+    void onlyMinigamesOfferTheChoice() {
+        assertEquals(java.util.Set.of(Destination.ELYTRA_RACE, Destination.SLENDER), ServerPicker.DESTINATIONS, "servers never open the picker");
     }
 
     @DisplayName("The picker lists the services sorted by name")

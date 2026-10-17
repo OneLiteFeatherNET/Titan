@@ -36,7 +36,7 @@ published.
 ### Player commands
 
 - `/spawn`: return to the lobby spawn at once (everyone, no permission); also available as the
-  compass in navigator slot 2. `/lobby` and `/hub` are left to the proxy.
+  compass in navigator slot 31. `/lobby` and `/hub` are left to the proxy.
 
 ## Permissions
 
@@ -230,6 +230,13 @@ or anywhere else has no effect. Slender and Build are gated behind permissions, 
 `titan.navigator.slender` and `titan.navigator.buildserver`. A player sees each one only while they
 hold its permission; granting or revoking it takes effect the next time they open the navigator,
 with no restart of the navigator or the lobby, and a click checks the permission again.
+
+The menu has four rows with a glass frame. ElytraRace (slot 11) and Slender (slot 15) are the
+minigames in row two; Survival (20), Creative (22) and Build (24) are the servers in row three; spawn
+sits in the bottom middle (31). On a minigame, a left click quick-joins its best ready service, a
+right click lists its services, and a shift click walks to the lobby portal when one exists. On a
+server, a left or right click connects, and a shift click walks to its portal when one exists. Any
+other click (number keys, Q, F, middle and double clicks) does nothing.
 
 ### Environment variable reference
 
