@@ -235,7 +235,8 @@ The menu has four rows with a glass frame. ElytraRace (slot 11) and Slender (slo
 minigames in row two; Survival (20), Creative (22) and Build (24) are the servers in row three; spawn
 sits in the bottom middle (31). On a minigame, a left click quick-joins its best ready service, a
 right click lists its services, and a shift click walks to the lobby portal when one exists. On a
-server, a click connects, and a shift click walks to its portal when one exists.
+server, a left or right click connects, and a shift click walks to its portal when one exists. Any
+other click (number keys, Q, F, middle and double clicks) does nothing.
 
 ### Environment variable reference
 

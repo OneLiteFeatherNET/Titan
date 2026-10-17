@@ -234,7 +234,7 @@ final class NavigatorItems {
     @Bean
     LobbyItem navigatorFeather(NavigatorModule navigator) {
         ItemStack feather = ItemStack.builder(Material.FEATHER)
-                .customName(MiniMessage.miniMessage().deserialize("<!i><aqua>Navigator")).build();
+                .customName(MiniMessage.miniMessage().deserialize("<!i><gradient:#00ddff:#ffffff>Navigator</gradient>")).build();
         return new LobbyItem("navigator", Key.key("titan:navigator"), feather,
                 ItemSlot.hotbar(4), (player, event) -> navigator.open(player));
     }
@@ -273,9 +273,14 @@ Spieler hat: ohne Recht das öffentliche, mit `titan.navigator.buildserver` das 
 mit `titan.navigator.slender` das Slender-Inventar, mit beiden das volle (vier Varianten je Sprache,
 acht Inventare insgesamt). `PermissionService#check` liefert nur `ALLOWED` als erteilt; `NOT_SET` und
 `DENIED` zählen als nicht erteilt. Beim Öffnen wird die Kombination gelesen und das passende Inventar
-geöffnet. `BUILD` liegt auf Platz 7 und leitet an den CloudNet-Task `Team-Build` weiter, `SLENDER`
-auf Platz 5 an `Slender` (getrennt von `MemberBuild` des Creative-Ziels). Beim Klick wird das Recht
+geöffnet. `BUILD` liegt auf Platz 24 und leitet an den CloudNet-Task `Team-Build` weiter, `SLENDER`
+auf Platz 15 an `Slender` (getrennt von `MemberBuild` des Creative-Ziels). Beim Klick wird das Recht
 erneut geprüft; ist es inzwischen weg, gibt es keine Weiterleitung, das Inventar schließt.
+
+Nur Links- und Rechtsklick, auch mit Shift, lösen eine Aktion aus. Jeder andere Klicktyp (Zahlentasten,
+Q, F, Mittelklick, Doppelklick, Ziehen) wird abgebrochen und tut nichts. Die Serverliste liest die
+Dienste beim Klick frisch; ein Server, der inzwischen voll oder nicht mehr da ist, wird abgelehnt.
+Kann die Liste nicht gelesen werden, erscheint eine Chat-Meldung statt einer Liste.
 
 Betrieb: Die CloudNet-Tasks `Team-Build` und `Slender` müssen existieren. Die LuckPerms-Rechte
 `titan.navigator.buildserver` und `titan.navigator.slender` werden den jeweiligen Gruppen erteilt. In
