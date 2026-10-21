@@ -56,9 +56,18 @@ final class NavigatorMessages implements AutoCloseable {
     static final String REFUSAL_NOT_READY = "titan.navigator.picker.refusal.not_ready";
     static final String REFUSAL_UNAVAILABLE = "titan.navigator.picker.refusal.unavailable";
     static final String PICKER_EMPTY = "titan.navigator.picker.empty";
+    static final String SORT_ITEM = "titan.navigator.picker.sort.item";
+    static final String SORT_NAME = "titan.navigator.picker.sort.name";
+    static final String SORT_MOST_PLAYERS = "titan.navigator.picker.sort.most_players";
+    static final String SORT_MOST_FREE = "titan.navigator.picker.sort.most_free";
+    static final String SORT_STATUS = "titan.navigator.picker.sort.status";
+    static final String SORT_HINT = "titan.navigator.picker.sort.hint";
+    static final String PAGE_PREVIOUS = "titan.navigator.picker.page.previous";
+    static final String PAGE_NEXT = "titan.navigator.picker.page.next";
+    static final String PAGE_INDICATOR = "titan.navigator.picker.page.indicator";
 
     /** Every key the navigator renders; the bundle test checks the property files against it. */
-    static final List<String> KEYS = List.of(TITLE, PICKER_TITLE, PLAYERS, KEY_LEFT, KEY_RIGHT, KEY_SHIFT, ACTION_QUICK_JOIN, ACTION_CHOOSE_SERVER, ACTION_CONNECT, ACTION_PORTAL, PICKER_FULL, PICKER_NOT_READY, PICKER_JOIN, REFUSAL_FULL, REFUSAL_NOT_READY, REFUSAL_UNAVAILABLE, PICKER_EMPTY);
+    static final List<String> KEYS = List.of(TITLE, PICKER_TITLE, PLAYERS, KEY_LEFT, KEY_RIGHT, KEY_SHIFT, ACTION_QUICK_JOIN, ACTION_CHOOSE_SERVER, ACTION_CONNECT, ACTION_PORTAL, PICKER_FULL, PICKER_NOT_READY, PICKER_JOIN, REFUSAL_FULL, REFUSAL_NOT_READY, REFUSAL_UNAVAILABLE, PICKER_EMPTY, SORT_ITEM, SORT_NAME, SORT_MOST_PLAYERS, SORT_MOST_FREE, SORT_STATUS, SORT_HINT, PAGE_PREVIOUS, PAGE_NEXT, PAGE_INDICATOR);
 
     private static final String BUNDLE = "titan.navigator.messages";
     private static final String SEPARATOR = "━━━━━━━━━━━━";
@@ -93,9 +102,12 @@ final class NavigatorMessages implements AutoCloseable {
         }
     }
 
-    /** One translated text, rendered for {@code locale}. */
-    static Component text(String key, Locale locale) {
-        return GlobalTranslator.render(Component.translatable(key), locale);
+    /**
+     * One translated text, rendered for {@code locale}; {@code arguments} fill its {@code <arg:n>}
+     * tags.
+     */
+    static Component text(String key, Locale locale, Component... arguments) {
+        return GlobalTranslator.render(Component.translatable(key).arguments(arguments), locale);
     }
 
     /**

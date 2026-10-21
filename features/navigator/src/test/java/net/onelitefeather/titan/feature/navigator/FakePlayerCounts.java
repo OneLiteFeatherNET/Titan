@@ -30,6 +30,7 @@ final class FakePlayerCounts implements PlayerCounts {
     private final Map<String, List<ServiceCount>> services = new HashMap<>();
     private boolean supportsTasks = true;
     private RuntimeException failure;
+    private int reads;
 
     /**
      * One running service of {@code task} with {@code online} players, as a provider with a single
@@ -46,6 +47,13 @@ final class FakePlayerCounts implements PlayerCounts {
 
     void doNotSupportTasks() {
         this.supportsTasks = false;
+    }
+
+    /**
+     * How many times the running services were read, so a test can count the reads of one click.
+     */
+    int reads() {
+        return this.reads;
     }
 
     void failWith(RuntimeException failure) {
@@ -68,6 +76,7 @@ final class FakePlayerCounts implements PlayerCounts {
 
     @Override
     public @NotNull List<ServiceCount> running(@NotNull SourceType type, @NotNull String name) {
+        this.reads++;
         if (this.failure != null) {
             throw this.failure;
         }

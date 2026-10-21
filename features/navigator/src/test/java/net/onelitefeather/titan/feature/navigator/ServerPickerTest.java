@@ -34,31 +34,21 @@ class ServerPickerTest {
         assertEquals(java.util.Set.of(Destination.ELYTRA_RACE, Destination.SLENDER, Destination.BOUNCE), ServerPicker.DESTINATIONS, "servers never open the picker");
     }
 
-    @DisplayName("The picker lists the services sorted by name")
+    @DisplayName("The picker lists the services in the order of its sort, by name first")
     @Test
-    void entriesAreSortedByName() {
-        List<ServiceCount> entries = ServerPicker.entries(List.of(TWO, ONE));
-
-        assertEquals(List.of(ONE, TWO), entries, "ElytraRace-1 comes before ElytraRace-2");
+    void entriesFollowTheSort() {
+        assertEquals(List.of(ONE, TWO), ServerPicker.entries(List.of(TWO, ONE), PickerSort.NAME), "ElytraRace-1 comes before ElytraRace-2");
+        assertEquals(List.of(TWO, ONE), ServerPicker.entries(List.of(ONE, TWO), PickerSort.MOST_PLAYERS), "the service with more players comes first");
     }
 
-    @DisplayName("The picker holds at most six rows of services")
+    @DisplayName("The picker keeps every running service, however many there are")
     @Test
-    void entriesAreCappedAtSixRows() {
+    void entriesAreNotCapped() {
         List<ServiceCount> many = new ArrayList<>();
-        for (int i = 0; i < 60; i++) {
-            many.add(new ServiceCount("ElytraRace-" + String.format("%02d", i), 0, 50));
+        for (int i = 0; i < 200; i++) {
+            many.add(new ServiceCount("ElytraRace-" + String.format("%03d", i), 0, 50));
         }
 
-        assertEquals(54, ServerPicker.entries(many).size(), "six rows of nine slots");
-    }
-
-    @DisplayName("The picker has one row per nine services, at least one and at most six")
-    @Test
-    void rowsFollowTheEntryCount() {
-        assertEquals(1, ServerPicker.rows(2), "two services fit one row");
-        assertEquals(1, ServerPicker.rows(9), "nine services fit one row");
-        assertEquals(2, ServerPicker.rows(10), "ten services need two rows");
-        assertEquals(6, ServerPicker.rows(54), "54 services fill six rows");
+        assertEquals(200, ServerPicker.entries(many, PickerSort.NAME).size(), "no service is dropped");
     }
 }

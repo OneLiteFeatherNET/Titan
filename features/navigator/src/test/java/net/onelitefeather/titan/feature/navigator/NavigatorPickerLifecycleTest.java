@@ -15,16 +15,18 @@
  */
 package net.onelitefeather.titan.feature.navigator;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
-import net.minestom.server.event.inventory.InventoryPreClickEvent;
 import net.minestom.server.event.trait.InventoryEvent;
 import net.minestom.server.inventory.Inventory;
 import net.minestom.server.inventory.click.Click;
+import net.minestom.server.inventory.AbstractInventory;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.portal.ServiceCount;
@@ -48,6 +50,9 @@ class NavigatorPickerLifecycleTest {
     private static final Pos SPAWN = new Pos(11.5, 40, 60);
     private static final ServiceCount RACE_ONE = new ServiceCount("ElytraRace-1", 3, 50);
     private static final int OPEN_CLOSE_COUNT = 20;
+    private static final int PREVIOUS_SLOT = 45;
+    private static final int SORT_SLOT = 47;
+    private static final int NEXT_SLOT = 53;
 
     private static EventNode<Event> navigatorNode(Env env) {
         List<EventNode<Event>> children = env.process().eventHandler().findChildren("titan/navigator");
@@ -55,13 +60,8 @@ class NavigatorPickerLifecycleTest {
         return children.get(0);
     }
 
-    // Opens the navigator with the feather, then right clicks ElytraRace, which opens its server list.
     private static Inventory openPicker(Env env, NavigatorFixture fixture, Player player) {
-        fixture.useFeather(player);
-        Inventory navigator = (Inventory) player.getOpenInventory();
-        env.process().eventHandler().call(new InventoryPreClickEvent(navigator, player, new Click.Right(ELYTRA_RACE_SLOT)));
-        env.tick();
-        return (Inventory) player.getOpenInventory();
+        return (Inventory) PickerTestSupport.openPicker(env, fixture, player);
     }
 
     @DisplayName("Opening and closing the server list 20 times reuses one list and registers no extra listeners")
@@ -113,5 +113,69 @@ class NavigatorPickerLifecycleTest {
             Assertions.assertEquals(0, EventListenerCounter.countListeners(englishPicker.eventNode()), "a stopped module must leave no click listener on the English server list");
             Assertions.assertEquals(0, EventListenerCounter.countListeners(germanPicker.eventNode()), "a stopped module must leave no click listener on the German server list");
         }
+    }
+
+    @DisplayName("Sorting and paging through every order twice adds no listener after the first round")
+    @Test
+    void sortingAndPagingRegisterNoListenersAfterTheFirstRound(Env env) {
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.serveServices("ElytraRace", PickerTestSupport.services(60));
+        Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
+        FakePermissionService permissions = new FakePermissionService().allowEveryone(SLENDER_PERMISSION);
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions, counts)) {
+            Set<Inventory> views = new LinkedHashSet<>();
+            views.add(openPicker(env, fixture, player));
+            sweepEveryOrderAndPage(env, player, views);
+            int afterFirstRound = listenersOf(env, views);
+
+            sweepEveryOrderAndPage(env, player, views);
+
+            Assertions.assertTrue(afterFirstRound > 0, "the views must listen for clicks before the comparison, or the check proves nothing");
+            Assertions.assertEquals(afterFirstRound, listenersOf(env, views), "a second round over the same views must register no listener");
+        }
+    }
+
+    @DisplayName("Stopping the module unregisters every server list view that sorting and paging created")
+    @Test
+    void stoppingTheModuleUnregistersEverySortedAndPagedView(Env env) {
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.serveServices("ElytraRace", PickerTestSupport.services(60));
+        Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
+        FakePermissionService permissions = new FakePermissionService().allowEveryone(SLENDER_PERMISSION);
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions, counts)) {
+            Set<Inventory> views = new LinkedHashSet<>();
+            views.add(openPicker(env, fixture, player));
+            sweepEveryOrderAndPage(env, player, views);
+            Assertions.assertTrue(views.size() > 1, "the sweep must open more than one view, or the check proves nothing");
+
+            fixture.stopModule();
+
+            for (Inventory view : views) {
+                Assertions.assertEquals(0, EventListenerCounter.countListeners(view.eventNode()), "a stopped module must leave no click listener on any server list view");
+            }
+        }
+    }
+
+    // Every order once with its second page and back, so that each view of the sweep is built.
+    private static void sweepEveryOrderAndPage(Env env, Player player, Set<Inventory> views) {
+        for (int order = 0; order < PickerSort.values().length; order++) {
+            visit(env, player, views, NEXT_SLOT);
+            visit(env, player, views, PREVIOUS_SLOT);
+            visit(env, player, views, SORT_SLOT);
+        }
+    }
+
+    private static void visit(Env env, Player player, Set<Inventory> views, int slot) {
+        AbstractInventory open = player.getOpenInventory();
+        PickerTestSupport.clickAndTick(env, open, player, new Click.Left(slot));
+        views.add((Inventory) player.getOpenInventory());
+    }
+
+    private static int listenersOf(Env env, Set<Inventory> views) {
+        int total = EventListenerCounter.countListeners(navigatorNode(env));
+        for (Inventory view : views) {
+            total += EventListenerCounter.countListeners(view.eventNode());
+        }
+        return total;
     }
 }

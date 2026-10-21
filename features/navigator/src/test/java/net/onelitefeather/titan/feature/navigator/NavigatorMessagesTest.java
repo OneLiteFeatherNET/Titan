@@ -53,11 +53,11 @@ class NavigatorMessagesTest {
         }
     }
 
-    @DisplayName("The German texts differ from the English ones, except the title, which is the same word in both")
+    @DisplayName("The German texts differ from the English ones, except the title and the status order, which are the same word in both")
     @Test
     void germanDiffersFromEnglish() {
         for (String key : NavigatorMessages.KEYS) {
-            if (!NavigatorMessages.TITLE.equals(key)) {
+            if (!NavigatorMessages.TITLE.equals(key) && !NavigatorMessages.SORT_STATUS.equals(key)) {
                 Assertions.assertNotEquals(plain(key, Locale.ENGLISH), plain(key, Locale.GERMAN), "the bundles must differ for " + key + ", otherwise this test proves nothing");
             }
         }
