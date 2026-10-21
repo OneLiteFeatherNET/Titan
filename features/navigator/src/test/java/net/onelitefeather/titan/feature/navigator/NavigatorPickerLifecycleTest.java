@@ -158,7 +158,7 @@ class NavigatorPickerLifecycleTest {
 
     // Every order once with its second page and back, so that each view of the sweep is built.
     private static void sweepEveryOrderAndPage(Env env, Player player, Set<Inventory> views) {
-        for (int order = 0; order < PickerSort.values().length; order++) {
+        for (int step = 0; step < PickerSort.values().length; step++) {
             visit(env, player, views, NEXT_SLOT);
             visit(env, player, views, PREVIOUS_SLOT);
             visit(env, player, views, SORT_SLOT);

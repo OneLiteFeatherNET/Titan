@@ -22,6 +22,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PickerSortTest {
 
@@ -76,6 +77,15 @@ class PickerSortTest {
     @Test
     void statusTieGoesToTheName() {
         assertEquals(List.of("A", "B"), order(PickerSort.STATUS, new ServiceCount("B", 5, 50), new ServiceCount("A", 9, 50)), "two joinable services sort by name");
+    }
+
+    @DisplayName("Every picker state has a status rank, so no state is left out of the status order")
+    @Test
+    void everyStateHasAStatusRank() {
+        for (ServerPicker.State state : ServerPicker.State.values()) {
+            int rank = PickerSort.statusRank(state);
+            assertTrue(rank >= 0 && rank < ServerPicker.STATUS_ORDER.size(), "the state " + state + " must have a rank in the status order");
+        }
     }
 
     @DisplayName("The sort order cycles from status back to name, and four clicks return to the start")

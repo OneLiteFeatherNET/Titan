@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.feature.navigator;
 
+import net.onelitefeather.titan.core.paging.Pagination;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -41,6 +42,12 @@ class PickerLayoutTest {
         assertEquals(1, PickerLayout.of(45).pages(), "45 services fit one page");
         assertEquals(2, PickerLayout.of(46).pages(), "46 services need two pages");
         assertEquals(2, PickerLayout.of(90).pages(), "90 services fill two pages");
+    }
+
+    @DisplayName("A page is five rows of services, with the sixth row kept for navigation")
+    @Test
+    void pageSizeIsFiveContentRows() {
+        assertEquals(5 * ServerPicker.COLUMNS, Pagination.PAGE_SIZE, "a page holds five content rows of 9 services (45 entries); the sixth row is the navigation row");
     }
 
     @DisplayName("The navigation row holds the sort item in its third slot")

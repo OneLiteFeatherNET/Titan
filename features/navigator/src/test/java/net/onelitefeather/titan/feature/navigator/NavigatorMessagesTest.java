@@ -16,6 +16,7 @@
 package net.onelitefeather.titan.feature.navigator;
 
 import java.util.Locale;
+import java.util.Set;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -25,6 +26,9 @@ import org.junit.jupiter.api.Test;
 
 /** Each test registers its own message store and removes it again, so no test sees another's. */
 class NavigatorMessagesTest {
+
+    // The title and the status sort name are the same word in both languages, so they have no own German text.
+    private static final Set<String> SAME_IN_BOTH_LANGUAGES = Set.of(NavigatorMessages.TITLE, NavigatorMessages.SORT_STATUS);
 
     private NavigatorMessages messages;
 
@@ -57,7 +61,7 @@ class NavigatorMessagesTest {
     @Test
     void germanDiffersFromEnglish() {
         for (String key : NavigatorMessages.KEYS) {
-            if (!NavigatorMessages.TITLE.equals(key) && !NavigatorMessages.SORT_STATUS.equals(key)) {
+            if (!SAME_IN_BOTH_LANGUAGES.contains(key)) {
                 Assertions.assertNotEquals(plain(key, Locale.ENGLISH), plain(key, Locale.GERMAN), "the bundles must differ for " + key + ", otherwise this test proves nothing");
             }
         }

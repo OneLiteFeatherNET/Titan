@@ -149,6 +149,8 @@ class NavigatorPickerViewsTest {
             Assertions.assertEquals("ElytraRace-000", nameOf(secondPicker, 0), "the second player starts with the first service by name");
             Assertions.assertEquals("▸ Name (A–Z)", loreOf(secondPicker, SORT_SLOT).get(0), "the second player's order is name");
             Assertions.assertEquals("Page 1/3", nameOf(secondPicker, INDICATOR_SLOT), "the second player is on the first page");
+            Assertions.assertEquals("▸ Status", loreOf(first.getOpenInventory(), SORT_SLOT).get(3), "the first player stays on status after the second player opened the list");
+            Assertions.assertEquals("Page 2/3", nameOf(first.getOpenInventory(), INDICATOR_SLOT), "the first player stays on page 2 after the second player opened the list");
         }
     }
 
