@@ -16,17 +16,17 @@ Welle 1 bis 3 laufen nacheinander, weil sie dieselben Navigator-Dateien berühre
 
 ## 1. Tests zuerst (rot)
 
-- [ ] 1.1 Unit (`NavigatorDestinationTest`): `BOUNCE` liegt auf Platz 13, Icon `SLIME_BALL`, Aufgabe `Bounce`, Recht `titan.navigator.bounce`; der erste Buchstabe des Verlaufs ist `#00FA9A`, der letzte genau `#40E0D0`; `permissioned()` enthält Slender, Build und Bounce; `visible(Set.of())` enthält Bounce nicht, `visible(Set.of(BOUNCE))` enthält ihn. Nachweis: die Tests schlagen auf dem Stand vor 2.1 fehl.
-- [ ] 1.2 Unit (`ServerPickerTest`, `NavigatorClickHintTest`): `ServerPicker.DESTINATIONS` enthält `BOUNCE`; die Lore von Bounce zeigt „▸ Linksklick  Schnell beitreten“ und „▸ Rechtsklick  Server wählen“ und ohne Portal keine Shift-Zeile. Nachweis: rot vor 2.2.
-- [ ] 1.3 Integration (`NavigatorPermissionTest`, Env mit `FakePermissionService`, Ticks explizit): `ALLOWED` zeigt Bounce auf Platz 13, und der Linksklick übergibt an die beste bereite Bounce-Runde; `DENIED` und `NOT_SET` zeigen auf Platz 13 eine graue Glasscheibe und lösen beim Klick keine Weiterleitung und keine Chat-Nachricht aus; Recht zwischen zwei Öffnungen erteilt; Recht zwischen Öffnen und Klick entzogen; Start legt sechzehn Inventare an (acht je Sprache). Nachweis: rot vor 2.3.
-- [ ] 1.4 Unit/Integration (`NavigatorLayoutTest`, `NavigatorRenderedLayoutTest`): gerendertes Menü mit Bounce-Recht zeigt Bounce auf Platz 13 zwischen ElytraRace (11) und Slender (15); ohne Recht ist Platz 13 eine graue Glasscheibe und der Rahmen unverändert. Nachweis: rot vor 2.3.
+- [x] 1.1 Unit (`NavigatorDestinationTest`): `BOUNCE` liegt auf Platz 13, Icon `SLIME_BALL`, Aufgabe `Bounce`, Recht `titan.navigator.bounce`; der erste Buchstabe des Verlaufs ist `#00FA9A`, der letzte genau `#40E0D0`; `permissioned()` enthält Slender, Build und Bounce; `visible(Set.of())` enthält Bounce nicht, `visible(Set.of(BOUNCE))` enthält ihn. Nachweis: die Tests schlagen auf dem Stand vor 2.1 fehl.
+- [x] 1.2 Unit (`ServerPickerTest`, `NavigatorClickHintTest`): `ServerPicker.DESTINATIONS` enthält `BOUNCE`; die Lore von Bounce zeigt „▸ Linksklick  Schnell beitreten“ und „▸ Rechtsklick  Server wählen“ und ohne Portal keine Shift-Zeile. Nachweis: rot vor 2.2.
+- [x] 1.3 Integration (`NavigatorPermissionTest`, Env mit `FakePermissionService`, Ticks explizit): `ALLOWED` zeigt Bounce auf Platz 13, und der Linksklick übergibt an die beste bereite Bounce-Runde; `DENIED` und `NOT_SET` zeigen auf Platz 13 eine graue Glasscheibe und lösen beim Klick keine Weiterleitung und keine Chat-Nachricht aus; Recht zwischen zwei Öffnungen erteilt; Recht zwischen Öffnen und Klick entzogen; Start legt sechzehn Inventare an (acht je Sprache). Nachweis: rot vor 2.3.
+- [x] 1.4 Unit/Integration (`NavigatorLayoutTest`, `NavigatorRenderedLayoutTest`): gerendertes Menü mit Bounce-Recht zeigt Bounce auf Platz 13 zwischen ElytraRace (11) und Slender (15); ohne Recht ist Platz 13 eine graue Glasscheibe und der Rahmen unverändert. Nachweis: rot vor 2.3.
 
 ## 2. Umsetzung (grün)
 
-- [ ] 2.1 `Destination`: Eintrag `BOUNCE(13, Material.SLIME_BALL, "<gradient:#00FA9A:#40E0D0>", "Bounce", "Bounce", "titan.navigator.bounce")`; die Klassen-Javadoc nennt Reihe zwei für die Minispiele und die drei gebundenen Ziele. Prüfung: 1.1 grün.
-- [ ] 2.2 `ServerPicker.DESTINATIONS` um `Destination.BOUNCE` erweitern. Prüfung: 1.2 grün.
-- [ ] 2.3 `NavigatorModule` und `SharedNavigator`: die Teilmengen-Schleife bleibt unverändert und erzeugt sechzehn Inventare; die Javadoc von `NavigatorModule` nennt Bounce neben Slender und Build. Keine neue Klasse, kein Listener, kein Lazy-Cache. Prüfung: 1.3 und 1.4 grün, `NavigatorModuleLeakTest` grün.
-- [ ] 2.4 Refactor: die Tests mit festen Slot-Listen (`NavigatorModuleTest` Zeile 75, `NavigatorLayoutTest` Zeile 37) an den Bounce-Slot anpassen, ohne die Aussage für das öffentliche Menü zu ändern; alle Modultests grün (`./gradlew :features:navigator:test`).
+- [x] 2.1 `Destination`: Eintrag `BOUNCE(13, Material.SLIME_BALL, "<gradient:#00FA9A:#40E0D0>", "Bounce", "Bounce", "titan.navigator.bounce")`; die Klassen-Javadoc nennt Reihe zwei für die Minispiele und die drei gebundenen Ziele. Prüfung: 1.1 grün.
+- [x] 2.2 `ServerPicker.DESTINATIONS` um `Destination.BOUNCE` erweitern. Prüfung: 1.2 grün.
+- [x] 2.3 `NavigatorModule` und `SharedNavigator`: die Teilmengen-Schleife bleibt unverändert und erzeugt sechzehn Inventare; die Javadoc von `NavigatorModule` nennt Bounce neben Slender und Build. Keine neue Klasse, kein Listener, kein Lazy-Cache. Prüfung: 1.3 und 1.4 grün, `NavigatorModuleLeakTest` grün.
+- [x] 2.4 Refactor: die Tests mit festen Slot-Listen (`NavigatorModuleTest` Zeile 75, `NavigatorLayoutTest` Zeile 37) an den Bounce-Slot anpassen, ohne die Aussage für das öffentliche Menü zu ändern; alle Modultests grün (`./gradlew :features:navigator:test`).
 
 ## 3. Doku
 
@@ -35,7 +35,7 @@ Welle 1 bis 3 laufen nacheinander, weil sie dieselben Navigator-Dateien berühre
 
 ## 4. Verifikation
 
-- [ ] 4.1 `./gradlew spotlessApply` und `./gradlew build` sind grün; der Build ist die Grundlage für das Abhaken aller Aufgaben in 1 bis 3.
+- [x] 4.1 `./gradlew spotlessApply` und `./gradlew build` sind grün; der Build ist die Grundlage für das Abhaken aller Aufgaben in 1 bis 3.
 - [ ] 4.2 Manuelle Abnahme auf einem lokalen Testserver: mit LuckPerms das Recht `titan.navigator.bounce` für einen Testspieler setzen, den Navigator öffnen und prüfen, dass Bounce auf Platz 13 steht, Links- und Rechtsklick wie beschrieben wirken und ohne Recht der Platz grau bleibt. Das lokale Jar wird aus einer Kopie gebaut, nicht im laufenden Worktree (siehe Betriebsnotiz zu `titan-local.jar`).
 - [ ] 4.3 Commits je Typ: Tests und Umsetzung als `feat(navigator): add bounce behind a permission`, Doku als `docs(navigator): document the bounce permission`. Jeder Commit hat einen Typ und endet mit der Zeile `Claude-Session: https://claude.ai/code/session_01AM6yGQ33vvJqWg39vCAcYt`. Das Archiv der Change folgt nach dem Merge als `docs(openspec): archive navigator-bounce`.
 

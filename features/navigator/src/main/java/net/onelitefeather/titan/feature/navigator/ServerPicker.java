@@ -37,7 +37,7 @@ import net.onelitefeather.titan.core.portal.ServiceCount;
 final class ServerPicker {
 
     /** The minigames: the modes that offer the server choice and the quick join. */
-    static final Set<Destination> DESTINATIONS = Set.of(Destination.ELYTRA_RACE, Destination.SLENDER);
+    static final Set<Destination> DESTINATIONS = Set.of(Destination.ELYTRA_RACE, Destination.SLENDER, Destination.BOUNCE);
 
     static final int COLUMNS = 9;
     static final int MAX_ROWS = 6;

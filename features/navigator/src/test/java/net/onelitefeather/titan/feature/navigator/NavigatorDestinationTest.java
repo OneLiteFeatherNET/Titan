@@ -25,6 +25,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.TextColor;
 import net.minestom.server.component.DataComponents;
+import net.minestom.server.item.Material;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import net.minestom.testing.Env;
@@ -51,6 +52,20 @@ class NavigatorDestinationTest {
         Assertions.assertEquals(15, Destination.SLENDER.slot());
         Assertions.assertEquals(24, Destination.BUILD.slot());
         Assertions.assertEquals(22, Destination.CREATIVE.slot());
+        Assertions.assertEquals(13, Destination.BOUNCE.slot());
+    }
+
+    @DisplayName("Bounce forwards to the Bounce task and needs titan.navigator.bounce")
+    @Test
+    void bounceForwardsToTheBounceTaskBehindItsPermission() {
+        Assertions.assertEquals("Bounce", Destination.BOUNCE.task());
+        Assertions.assertEquals("titan.navigator.bounce", Destination.BOUNCE.permission(), "Bounce must be gated by its permission");
+    }
+
+    @DisplayName("Bounce is shown with the slime ball icon")
+    @Test
+    void bounceUsesTheSlimeBallIcon(Env env) {
+        Assertions.assertEquals(Material.SLIME_BALL, Destination.BOUNCE.item(List.of(Component.empty())).material());
     }
 
     @DisplayName("Build forwards to the Team-Build task and needs titan.navigator.buildserver")
@@ -67,12 +82,12 @@ class NavigatorDestinationTest {
         Assertions.assertEquals("titan.navigator.slender", Destination.SLENDER.permission(), "Slender must be gated by its permission, not by a feature flag");
     }
 
-    @DisplayName("Only Slender and Build need a permission")
+    @DisplayName("Only Slender, Bounce and Build need a permission")
     @Test
-    void onlySlenderAndBuildNeedAPermission() {
+    void onlySlenderBounceAndBuildNeedAPermission() {
         Set<Destination> permissioned = Arrays.stream(Destination.values()).filter(destination -> destination.permission() != null).collect(Collectors.toSet());
 
-        Assertions.assertEquals(Set.of(Destination.SLENDER, Destination.BUILD), permissioned);
+        Assertions.assertEquals(Set.of(Destination.SLENDER, Destination.BOUNCE, Destination.BUILD), permissioned);
     }
 
     @DisplayName("No two destinations share a slot")
@@ -110,6 +125,23 @@ class NavigatorDestinationTest {
         List<Destination> visible = Destination.visible(Set.copyOf(Destination.permissioned()));
 
         Assertions.assertEquals(Set.copyOf(Arrays.asList(Destination.values())), Set.copyOf(visible), "every destination must be visible with both grants, was: " + visible.stream().map(Enum::name).collect(Collectors.joining(", ")));
+    }
+
+    @DisplayName("visible() without the Bounce grant hides Bounce, and with it shows Bounce")
+    @Test
+    void bounceIsVisibleOnlyWithItsGrant() {
+        Assertions.assertFalse(Destination.visible(Set.of()).contains(Destination.BOUNCE), "Bounce must not be visible without titan.navigator.bounce");
+        Assertions.assertTrue(Destination.visible(Set.of(Destination.BOUNCE)).contains(Destination.BOUNCE), "Bounce must be visible with titan.navigator.bounce");
+    }
+
+    @DisplayName("Bounce's name fades from #00FA9A to #40E0D0 across its letters")
+    @Test
+    void bounceNameFadesFromSpringGreenToTurquoise(Env env) {
+        List<TextColor> letterColors = new ArrayList<>();
+        collectLetterColors(Destination.BOUNCE.item(List.of(Component.empty())).get(DataComponents.CUSTOM_NAME), null, letterColors);
+
+        Assertions.assertEquals(TextColor.color(0x00FA9A), letterColors.getFirst(), "the first letter of Bounce must be #00FA9A");
+        Assertions.assertEquals(TextColor.color(0x40E0D0), letterColors.getLast(), "the last letter of Bounce must be #40E0D0");
     }
 
     @DisplayName("Slender's name fades from #616161 to #e80000 across its letters")

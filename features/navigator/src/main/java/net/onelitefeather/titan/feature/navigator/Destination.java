@@ -27,13 +27,12 @@ import org.jetbrains.annotations.Nullable;
 /**
  * One destination shown in the shared navigator inventories, fixed in code as a Java {@code enum}
  * since destinations change rarely. The minigames ({@code ELYTRA_RACE}, {@code SLENDER}) sit in row
- * one of the grid, the servers in row two. {@link #SLENDER} and {@link #BUILD} are each gated
- * behind
- * a permission; the others are always visible.
+ * one of the grid, the servers in row two. {@link #SLENDER}, {@link #BOUNCE} and {@link #BUILD} are
+ * each gated behind a permission; the others are always visible.
  */
 enum Destination {
 
-    ELYTRA_RACE(11, Material.ELYTRA, "<gradient:#fcba03:#03fc8c>", "ElytraRace", "ElytraRace", null), SLENDER(15, Material.ENDERMAN_SPAWN_EGG, "<gradient:#616161:#e80000>", "Slender", "Slender", "titan.navigator.slender"), SURVIVAL(20, Material.GRASS_BLOCK, "<gradient:#7CFC00:#00C853>", "Survival", "Survival", null), CREATIVE(22, Material.WOODEN_AXE, "<gradient:#ff6ec7:#7873f5>", "Creative", "MemberBuild", null), BUILD(24, Material.SCAFFOLDING, "<gradient:#FFD700:#FF8C00>", "Build", "Team-Build", "titan.navigator.buildserver");
+    ELYTRA_RACE(11, Material.ELYTRA, "<gradient:#fcba03:#03fc8c>", "ElytraRace", "ElytraRace", null), SLENDER(15, Material.ENDERMAN_SPAWN_EGG, "<gradient:#616161:#e80000>", "Slender", "Slender", "titan.navigator.slender"), BOUNCE(13, Material.SLIME_BALL, "<gradient:#00FA9A:#40E0D0>", "Bounce", "Bounce", "titan.navigator.bounce"), SURVIVAL(20, Material.GRASS_BLOCK, "<gradient:#7CFC00:#00C853>", "Survival", "Survival", null), CREATIVE(22, Material.WOODEN_AXE, "<gradient:#ff6ec7:#7873f5>", "Creative", "MemberBuild", null), BUILD(24, Material.SCAFFOLDING, "<gradient:#FFD700:#FF8C00>", "Build", "Team-Build", "titan.navigator.buildserver");
 
     private final int slot;
     private final Material icon;
