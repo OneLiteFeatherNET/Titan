@@ -24,7 +24,7 @@ import net.onelitefeather.titan.core.portal.ServiceCount;
  */
 enum PickerSort {
 
-    NAME(NavigatorMessages.SORT_NAME, Comparator.comparing(ServiceCount::name)), MOST_PLAYERS(NavigatorMessages.SORT_MOST_PLAYERS, Comparator.comparingInt(ServiceCount::online).reversed().thenComparing(ServiceCount::name)), MOST_FREE(NavigatorMessages.SORT_MOST_FREE, Comparator.comparing(ServiceCount::limitAnnounced).reversed().thenComparing(Comparator.comparingInt(PickerSort::freePlaces).reversed()).thenComparing(ServiceCount::name)), STATUS(NavigatorMessages.SORT_STATUS, Comparator.comparingInt(PickerSort::statusRank).thenComparing(ServiceCount::name));
+    NAME(NavigatorMessages.SORT_NAME, Comparator.comparing(ServiceCount::name)), MOST_PLAYERS(NavigatorMessages.SORT_MOST_PLAYERS, Comparator.comparingInt(ServiceCount::online).reversed().thenComparing(ServiceCount::name)), MOST_FREE(NavigatorMessages.SORT_MOST_FREE, Comparator.comparing(ServiceCount::limitAnnounced).reversed().thenComparing(Comparator.comparingInt(PickerSort::freePlaces).reversed()).thenComparing(ServiceCount::name)), STATUS(NavigatorMessages.SORT_STATUS, Comparator.comparingInt((ServiceCount service) -> statusRank(ServerPicker.stateOf(service))).thenComparing(ServiceCount::name));
 
     private final String key;
     private final Comparator<ServiceCount> comparator;
@@ -54,7 +54,12 @@ enum PickerSort {
         return service.limitAnnounced() ? service.max() - service.online() : 0;
     }
 
-    private static int statusRank(ServiceCount service) {
-        return ServerPicker.STATUS_ORDER.indexOf(ServerPicker.stateOf(service));
+    // indexOf answers -1 for an unlisted state, which would sort it before every ranked one; fail instead.
+    static int statusRank(ServerPicker.State state) {
+        int rank = ServerPicker.STATUS_ORDER.indexOf(state);
+        if (rank < 0) {
+            throw new IllegalStateException("No status rank for " + state + ": add it to ServerPicker.STATUS_ORDER");
+        }
+        return rank;
     }
 }
