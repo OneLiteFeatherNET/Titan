@@ -259,32 +259,34 @@ Feature selbst aushändigt (`ElytraModule`s Feuerwerk).
 
 Der Navigator ist der einzige Sonderfall ohne Andockpunkt: Seine Ziele stehen fest im
 package-privaten `enum Destination` (s. `openspec/changes/navigator-entries-in-code/design.md`).
-`Destination.SLENDER` und `Destination.BUILD` hängen je an einem Recht (`titan.navigator.slender`
-bzw. `titan.navigator.buildserver`), keiner an einer Feature-Flag; `NavigatorModule` bekommt dafür
-keine `FeatureFlags` mehr.
+`Destination.SLENDER`, `Destination.BOUNCE` und `Destination.BUILD` hängen je an einem Recht
+(`titan.navigator.slender`, `titan.navigator.bounce` bzw. `titan.navigator.buildserver`), keiner an
+einer Feature-Flag; `NavigatorModule` bekommt dafür keine `FeatureFlags` mehr.
 
 Auf Platz 31 (Mitte der unteren Reihe, dort wo sonst der Rahmen liegt) beider Inventare liegt der feste Eintrag „Spawn“ (Kompass), kein `Destination`: Der
 Klick schickt den Spieler über `SpawnReturn#sendToSpawnAndTell` zurück an den Spawn und leitet nicht
 weiter. Das Modul holt `SpawnReturn` über einen `Provider`, damit zwischen den Columns `spawn` und
 `navigator` kein Zyklus entsteht.
 
-Der Navigator besitzt je Sprache ein geteiltes Aves-Inventar pro Kombination der Rechte, die ein
-Spieler hat: ohne Recht das öffentliche, mit `titan.navigator.buildserver` das Team-Inventar,
-mit `titan.navigator.slender` das Slender-Inventar, mit beiden das volle (vier Varianten je Sprache,
-acht Inventare insgesamt). `PermissionService#check` liefert nur `ALLOWED` als erteilt; `NOT_SET` und
-`DENIED` zählen als nicht erteilt. Beim Öffnen wird die Kombination gelesen und das passende Inventar
+Der Navigator besitzt je Sprache ein geteiltes Aves-Inventar pro Teilmenge der drei Rechte, die ein
+Spieler hat: `titan.navigator.slender`, `titan.navigator.bounce` und `titan.navigator.buildserver`.
+Das sind acht Teilmengen je Sprache, also sechzehn Inventare beim Start; ohne Recht ist es das
+öffentliche Menü. `PermissionService#check` liefert nur `ALLOWED` als erteilt; `NOT_SET` und
+`DENIED` zählen als nicht erteilt. Beim Öffnen wird die Teilmenge gelesen und das passende Inventar
 geöffnet. `BUILD` liegt auf Platz 24 und leitet an den CloudNet-Task `Team-Build` weiter, `SLENDER`
-auf Platz 15 an `Slender` (getrennt von `MemberBuild` des Creative-Ziels). Beim Klick wird das Recht
-erneut geprüft; ist es inzwischen weg, gibt es keine Weiterleitung, das Inventar schließt.
+auf Platz 15 an `Slender` (getrennt von `MemberBuild` des Creative-Ziels), `BOUNCE` auf Platz 13 an
+`Bounce`. Beim Klick wird das Recht erneut geprüft; ist es inzwischen weg, gibt es keine
+Weiterleitung, das Inventar schließt.
 
 Nur Links- und Rechtsklick, auch mit Shift, lösen eine Aktion aus. Jeder andere Klicktyp (Zahlentasten,
 Q, F, Mittelklick, Doppelklick, Ziehen) wird abgebrochen und tut nichts. Die Serverliste liest die
 Dienste beim Klick frisch; ein Server, der inzwischen voll oder nicht mehr da ist, wird abgelehnt.
 Kann die Liste nicht gelesen werden, erscheint eine Chat-Meldung statt einer Liste.
 
-Betrieb: Die CloudNet-Tasks `Team-Build` und `Slender` müssen existieren. Die LuckPerms-Rechte
-`titan.navigator.buildserver` und `titan.navigator.slender` werden den jeweiligen Gruppen erteilt. In
-der lokalen Variante gilt `deny-all` (`DenyAllPermissionService`), dort sieht niemand die beiden Ziele.
+Betrieb: Die CloudNet-Tasks `Team-Build`, `Slender` und `Bounce` müssen existieren. Die LuckPerms-Rechte
+`titan.navigator.buildserver`, `titan.navigator.slender` und `titan.navigator.bounce` werden den
+jeweiligen Gruppen erteilt. In der lokalen Variante gilt `deny-all` (`DenyAllPermissionService`), dort
+sieht niemand die drei Ziele.
 
 ## Tasks über den injizierten `Scheduler`
 

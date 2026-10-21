@@ -30,8 +30,8 @@ Welle 1 bis 3 laufen nacheinander, weil sie dieselben Navigator-Dateien berühre
 
 ## 3. Doku
 
-- [ ] 3.1 `README.md`, Abschnitt zum Navigator: Bounce mit Slot 13, Recht `titan.navigator.bounce`, die Betreiber-Schritte (CloudNet-Task `Bounce`, Recht in LuckPerms den Gruppen erteilen), sechzehn Inventare je Sprache mit acht Rechte-Kombinationen. Prüfung: `grep -n "titan.navigator.bounce" README.md` trifft den Abschnitt.
-- [ ] 3.2 `docs/lobby-modules.md`, Navigator-Abschnitt: Liste der gebundenen Ziele (Slender, Build, Bounce), Liste der Rechte, Varianten (acht je Sprache, sechzehn gesamt), Task `Bounce`. Prüfung: `grep -n "titan.navigator.bounce" docs/lobby-modules.md` trifft den Abschnitt, und die Zahl der Varianten stimmt mit dem Spec-Requirement überein.
+- [x] 3.1 `README.md`, Abschnitt zum Navigator: Bounce mit Slot 13, Recht `titan.navigator.bounce`, die Betreiber-Schritte (CloudNet-Task `Bounce`, Recht in LuckPerms den Gruppen erteilen), sechzehn Inventare je Sprache mit acht Rechte-Kombinationen. Prüfung: `grep -n "titan.navigator.bounce" README.md` trifft den Abschnitt.
+- [x] 3.2 `docs/lobby-modules.md`, Navigator-Abschnitt: Liste der gebundenen Ziele (Slender, Build, Bounce), Liste der Rechte, Varianten (acht je Sprache, sechzehn gesamt), Task `Bounce`. Prüfung: `grep -n "titan.navigator.bounce" docs/lobby-modules.md` trifft den Abschnitt, und die Zahl der Varianten stimmt mit dem Spec-Requirement überein.
 
 ## 4. Verifikation
 
