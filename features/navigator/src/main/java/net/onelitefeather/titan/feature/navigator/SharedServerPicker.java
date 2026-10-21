@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.entity.Player;
+import net.minestom.server.inventory.AbstractInventory;
 import net.minestom.server.inventory.Inventory;
 import net.minestom.server.inventory.InventoryType;
 import net.minestom.server.inventory.click.Click;
@@ -91,6 +92,11 @@ final class SharedServerPicker {
             builder.invalidateLayout();
         }
         return builder.getInventory();
+    }
+
+    /** Whether {@code inventory} is one of this list's views. */
+    boolean owns(AbstractInventory inventory) {
+        return this.builders.values().stream().anyMatch(builder -> builder.getInventory() == inventory);
     }
 
     /** Removes every view from Aves; idempotent. */

@@ -43,6 +43,7 @@ import net.minestom.server.ServerFlag;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
+import net.minestom.server.inventory.AbstractInventory;
 import net.minestom.server.inventory.Inventory;
 import net.minestom.server.inventory.click.Click;
 import net.minestom.server.item.ItemStack;
@@ -416,8 +417,18 @@ public final class NavigatorModule {
         });
     }
 
+    // A read that completes after the player closed the menu must not bring the list back, so the list
+    // opens only while one of this module's inventories is still the one the player has open.
     private void openList(Player player, Destination destination, Locale language, PickerSort sort, int page, List<ServiceCount> running) {
+        if (!showsOwnInventory(player)) {
+            return;
+        }
         player.openInventory(this.pickers.get(new Picker(destination, language)).show(destination, sort, page, running, new PickerClicks(destination, language)));
+    }
+
+    private boolean showsOwnInventory(Player player) {
+        AbstractInventory open = player.getOpenInventory();
+        return open != null && (this.menus.values().stream().anyMatch(navigator -> navigator.inventory() == open) || this.pickers.values().stream().anyMatch(picker -> picker.owns(open)));
     }
 
     // A picked entry is joined only if it still qualifies now, so the list is read again first.

@@ -17,6 +17,7 @@ package net.onelitefeather.titan.feature.navigator;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Executor;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.PlayerHand;
 import net.minestom.server.event.player.PlayerUseItemEvent;
@@ -92,11 +93,20 @@ final class NavigatorFixture implements AutoCloseable {
         return start(env, deliver, permissions, new FakeSpawnReturn(), Telemetry.noop(), portals, Optional.of(counts));
     }
 
+    /** Reads the running services on {@code reads}, so a test decides when a read completes. */
+    static NavigatorFixture startReadingOn(Env env, Deliver deliver, PermissionService permissions, PlayerCounts counts, Executor reads) {
+        return start(env, deliver, permissions, new FakeSpawnReturn(), Telemetry.noop(), List::of, Optional.of(counts), reads);
+    }
+
     private static NavigatorFixture start(Env env, Deliver deliver, PermissionService permissions, SpawnReturn spawnReturn, Telemetry telemetry, LobbyPortals portals, Optional<PlayerCounts> counts) {
+        return start(env, deliver, permissions, spawnReturn, telemetry, portals, counts, Runnable::run);
+    }
+
+    private static NavigatorFixture start(Env env, Deliver deliver, PermissionService permissions, SpawnReturn spawnReturn, Telemetry telemetry, LobbyPortals portals, Optional<PlayerCounts> counts, Executor reads) {
         TestTitanNode titan = TestTitanNode.attach(env);
         NavigatorMessages messages = new NavigatorMessages();
         messages.register();
-        NavigatorModule module = new NavigatorModule(titan.node(), deliver, permissions, () -> spawnReturn, portals, telemetry, counts, env.process().scheduler(), Runnable::run, new NavigatorSettings(REFRESH_SECONDS), messages);
+        NavigatorModule module = new NavigatorModule(titan.node(), deliver, permissions, () -> spawnReturn, portals, telemetry, counts, env.process().scheduler(), reads, new NavigatorSettings(REFRESH_SECONDS), messages);
         module.start();
         LobbyItem feather = new NavigatorItems().navigatorFeather(module);
         return new NavigatorFixture(titan, module, feather, messages);

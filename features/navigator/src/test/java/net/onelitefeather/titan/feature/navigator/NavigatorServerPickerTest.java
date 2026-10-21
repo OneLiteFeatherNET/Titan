@@ -15,7 +15,9 @@
  */
 package net.onelitefeather.titan.feature.navigator;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.minestom.server.component.DataComponents;
 import net.minestom.server.coordinate.Pos;
@@ -556,6 +558,65 @@ class NavigatorServerPickerTest {
 
             Assertions.assertEquals(1, deliver.deliveries().size(), "exactly one delivery");
             Assertions.assertEquals("ElytraRace-046", deliver.deliveries().getFirst().serverName(), "the second entry of the second page is the 47th service");
+        }
+    }
+
+    @DisplayName("A sort click whose read completes after the player closed the list does not reopen it")
+    @Test
+    void sortReadCompletingAfterCloseLeavesThePlayerWithNoInventory(Env env) {
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.serveServices("ElytraRace", RACE_ONE, RACE_TWO);
+        HeldReads reads = new HeldReads();
+        Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
+        try (NavigatorFixture fixture = NavigatorFixture.startReadingOn(env, new RecordingDeliver(), new FakePermissionService().allowEveryone(SLENDER_PERMISSION), counts, reads)) {
+            AbstractInventory navigator = openNavigator(fixture, player);
+            click(env, navigator, player, new Click.Right(ELYTRA_RACE_SLOT));
+            reads.completeAll();
+            env.tick();
+            AbstractInventory picker = player.getOpenInventory();
+            Assertions.assertNotNull(picker, "the right click must open the list before the sort click, or the check proves nothing");
+
+            click(env, picker, player, new Click.Left(SORT_SLOT));
+            player.closeInventory();
+            reads.completeAll();
+            env.tick();
+
+            Assertions.assertNull(player.getOpenInventory(), "a re-read that completes after the player closed the list must not open it again");
+        }
+    }
+
+    @DisplayName("A right click whose read completes after the player closed the navigator opens no list")
+    @Test
+    void rightClickReadCompletingAfterCloseOpensNoList(Env env) {
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.serveServices("ElytraRace", RACE_ONE, RACE_TWO);
+        HeldReads reads = new HeldReads();
+        Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
+        try (NavigatorFixture fixture = NavigatorFixture.startReadingOn(env, new RecordingDeliver(), new FakePermissionService().allowEveryone(SLENDER_PERMISSION), counts, reads)) {
+            AbstractInventory navigator = openNavigator(fixture, player);
+            click(env, navigator, player, new Click.Right(ELYTRA_RACE_SLOT));
+            player.closeInventory();
+            reads.completeAll();
+            env.tick();
+
+            Assertions.assertNull(player.getOpenInventory(), "a list whose read completes after the player closed the navigator must not open");
+        }
+    }
+
+    /** Holds every read until the test completes it, so a test decides when a read finishes. */
+    private static final class HeldReads implements Executor {
+
+        private final List<Runnable> held = new ArrayList<>();
+
+        @Override
+        public void execute(Runnable read) {
+            this.held.add(read);
+        }
+
+        void completeAll() {
+            List<Runnable> reads = List.copyOf(this.held);
+            this.held.clear();
+            reads.forEach(Runnable::run);
         }
     }
 }
