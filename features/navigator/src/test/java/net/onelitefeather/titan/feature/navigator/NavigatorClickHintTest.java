@@ -63,6 +63,8 @@ class NavigatorClickHintTest {
     private static final int REFRESH_TICKS = NavigatorFixture.REFRESH_SECONDS * ServerFlag.SERVER_TICKS_PER_SECOND;
     private static final String BUILD_PERMISSION = "titan.navigator.buildserver";
     private static final String SLENDER_PERMISSION = "titan.navigator.slender";
+    private static final String BOUNCE_PERMISSION = "titan.navigator.bounce";
+    private static final int BOUNCE_SLOT = Destination.BOUNCE.slot();
 
     private static List<String> lore(ItemStack item) {
         return Optional.ofNullable(item.get(DataComponents.LORE)).orElse(List.of()).stream().map(line -> PlainTextComponentSerializer.plainText().serialize(line)).toList();
@@ -110,6 +112,18 @@ class NavigatorClickHintTest {
             AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
 
             Assertions.assertEquals(List.of(SEPARATOR, "Players  13 / 100", "", "▸ Left click  Quick join", "▸ Right click  Choose a server"), lore(inventory.getItemStack(ELYTRA_RACE_SLOT)), "the players are summed and the maximum is known for both services");
+        }
+    }
+
+    @DisplayName("Bounce running nowhere lists quick join and the server choice, and no shift line without a portal")
+    @Test
+    void bounceWithoutServicesListsQuickJoinAndPickerOnly(Env env) {
+        FakePlayerCounts counts = new FakePlayerCounts();
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone(BOUNCE_PERMISSION), counts, NO_PORTALS)) {
+            tick(env, REFRESH_TICKS);
+            AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
+
+            Assertions.assertEquals(List.of(SEPARATOR, "", "▸ Left click  Quick join", "▸ Right click  Choose a server"), lore(inventory.getItemStack(BOUNCE_SLOT)), "Bounce lists the same clicks as ElytraRace and no players line while it runs nowhere");
         }
     }
 

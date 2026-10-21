@@ -34,7 +34,7 @@ class NavigatorLayoutTest {
         for (int slot : new int[]{0, 4, 8, 9, 17, 18, 26, 27, 31, 35}) {
             Assertions.assertTrue(NavigatorLayout.isFrame(slot), "slot " + slot + " belongs to the frame");
         }
-        for (int slot : new int[]{10, 11, 15, 16, 19, 20, 22, 24, 25}) {
+        for (int slot : new int[]{10, 11, 13, 15, 16, 19, 20, 22, 24, 25}) {
             Assertions.assertFalse(NavigatorLayout.isFrame(slot), "slot " + slot + " is inside the frame");
         }
     }
@@ -53,6 +53,7 @@ class NavigatorLayoutTest {
     @Test
     void destinationsSitOnTheirRows() {
         Assertions.assertEquals(11, Destination.ELYTRA_RACE.slot(), "ElytraRace is in row one");
+        Assertions.assertEquals(13, Destination.BOUNCE.slot(), "Bounce is in row one, between ElytraRace and Slender");
         Assertions.assertEquals(15, Destination.SLENDER.slot(), "Slender is in row one");
         Assertions.assertEquals(20, Destination.SURVIVAL.slot(), "Survival is in row two");
         Assertions.assertEquals(22, Destination.CREATIVE.slot(), "Creative is in row two");

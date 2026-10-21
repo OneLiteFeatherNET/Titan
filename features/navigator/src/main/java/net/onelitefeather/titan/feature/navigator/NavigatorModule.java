@@ -68,8 +68,8 @@ import net.theevilreaper.aves.inventory.layout.InventoryLayout;
 /**
  * The lobby's navigator: a feather in hotbar slot 4 that opens one of the Aves-built inventories,
  * each shared by every player who gets it. A menu is fixed by the permissioned destinations
- * ({@code SLENDER}, {@code BUILD}, see {@link Destination}) a player holds, so there is one per
- * subset of them and language. Opening picks by permission.
+ * ({@code SLENDER}, {@code BOUNCE}, {@code BUILD}, see {@link Destination}) a player holds,
+ * so there is one per subset of them and language. Opening picks by permission.
  *
  * <p>A minigame's left click joins its best ready service (see {@link QuickJoin}), its right click
  * lists the services (see {@link ServerPicker}); a server connects on a left or right click. A
@@ -205,7 +205,8 @@ public final class NavigatorModule {
         return inventory(Set.copyOf(Destination.permissioned()), language);
     }
 
-    private Inventory inventory(Set<Destination> granted, Locale language) {
+    // Test-only seam: the shared menu for one grant set and language, so a test can count them.
+    Inventory inventory(Set<Destination> granted, Locale language) {
         return this.menus.get(new Menu(granted, language)).inventory();
     }
 

@@ -35,6 +35,7 @@ class NavigatorRenderedLayoutTest {
 
     private static final String SLENDER_PERMISSION = "titan.navigator.slender";
     private static final String BUILD_PERMISSION = "titan.navigator.buildserver";
+    private static final String BOUNCE_PERMISSION = "titan.navigator.bounce";
 
     private static AbstractInventory openNavigator(NavigatorFixture fixture, Player player) {
         fixture.equip(player);
@@ -102,6 +103,29 @@ class NavigatorRenderedLayoutTest {
         FakePermissionService permissions = new FakePermissionService().set(player.getUuid(), SLENDER_PERMISSION, PermissionResult.ALLOWED);
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions)) {
             Assertions.assertEquals(Material.ENDERMAN_SPAWN_EGG, openNavigator(fixture, player).getItemStack(15).material(), "a granted Slender is on slot 15");
+        }
+    }
+
+    @DisplayName("With the Bounce and Slender permissions Bounce sits on slot 13 between ElytraRace and Slender")
+    @Test
+    void grantedBounceShowsOnSlot13BetweenRaceAndSlender(Env env) {
+        Player player = env.createPlayer(env.createFlatInstance());
+        FakePermissionService permissions = new FakePermissionService().set(player.getUuid(), BOUNCE_PERMISSION, PermissionResult.ALLOWED).set(player.getUuid(), SLENDER_PERMISSION, PermissionResult.ALLOWED);
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions)) {
+            AbstractInventory menu = openNavigator(fixture, player);
+
+            Assertions.assertEquals(Material.ELYTRA, menu.getItemStack(11).material(), "ElytraRace is on slot 11");
+            Assertions.assertEquals(Material.SLIME_BALL, menu.getItemStack(13).material(), "a granted Bounce is on slot 13");
+            Assertions.assertEquals(Material.ENDERMAN_SPAWN_EGG, menu.getItemStack(15).material(), "Slender is on slot 15");
+        }
+    }
+
+    @DisplayName("Without the Bounce permission slot 13 is a grey pane")
+    @Test
+    void hiddenBounceLeavesGreyPaneOnSlot13(Env env) {
+        Player player = env.createPlayer(env.createFlatInstance());
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService())) {
+            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, openNavigator(fixture, player).getItemStack(13).material(), "a hidden Bounce leaves slot 13 blank");
         }
     }
 
