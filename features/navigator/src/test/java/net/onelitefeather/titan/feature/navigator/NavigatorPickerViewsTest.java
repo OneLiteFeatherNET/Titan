@@ -43,18 +43,19 @@ class NavigatorPickerViewsTest {
 
     private static final String SLENDER_PERMISSION = "titan.navigator.slender";
     private static final Pos SPAWN = new Pos(11.5, 40, 60);
-    // The sort item of a list that fits one row: the third slot of its navigation row.
-    private static final int ONE_ROW_SORT_SLOT = 11;
+    // The sort item of a list that fits one row: the middle slot of its navigation row.
+    private static final int ONE_ROW_SORT_SLOT = 13;
     private static final int PREVIOUS_SLOT = 45;
-    private static final int SORT_SLOT = 47;
-    private static final int INDICATOR_SLOT = 49;
+    private static final int SORT_SLOT = 49;
     private static final int NEXT_SLOT = 53;
+    // The sort item's lore: four orders, a blank line, the page line when paged, then the click hint.
+    private static final int PAGE_LINE = 5;
 
     private static NavigatorFixture start(Env env, FakePlayerCounts counts) {
         return NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone(SLENDER_PERMISSION), counts);
     }
 
-    @DisplayName("A hundred services open a first page of 45 with a page indicator and a next arrow only")
+    @DisplayName("A hundred services open a first page of 45 with the page in the sort item and a next arrow only")
     @Test
     void firstPageOfAHundredServices(Env env) {
         FakePlayerCounts counts = new FakePlayerCounts();
@@ -67,12 +68,12 @@ class NavigatorPickerViewsTest {
             Assertions.assertEquals("ElytraRace-000", nameOf(picker, 0), "the first page starts with the first service by name");
             Assertions.assertEquals("ElytraRace-044", nameOf(picker, 44), "the 45th service is the last one on the first page");
             Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, picker.getItemStack(PREVIOUS_SLOT).material(), "there is no page before the first");
-            Assertions.assertEquals("Seite 1/3", nameOf(picker, INDICATOR_SLOT), "the indicator shows the page and the page count");
-            Assertions.assertEquals(Material.ARROW, picker.getItemStack(NEXT_SLOT).material(), "a page follows, so the next arrow shows");
+            Assertions.assertEquals("Nächste Seite · Seite 2/3", nameOf(picker, NEXT_SLOT), "the next arrow names the page it leads to");
+            Assertions.assertEquals("Seite 1/3", loreOf(picker, SORT_SLOT).get(PAGE_LINE), "the sort item's lore shows the page and the page count");
         }
     }
 
-    @DisplayName("The second page has an arrow back and an arrow on")
+    @DisplayName("The second page has an arrow back and an arrow on, each naming its page")
     @Test
     void middlePageHasArrowsBothWays(Env env) {
         FakePlayerCounts counts = new FakePlayerCounts();
@@ -86,9 +87,9 @@ class NavigatorPickerViewsTest {
 
             AbstractInventory picker = player.getOpenInventory();
             Assertions.assertEquals("ElytraRace-045", nameOf(picker, 0), "the second page starts with the 46th service");
-            Assertions.assertEquals(Material.ARROW, picker.getItemStack(PREVIOUS_SLOT).material(), "an arrow back shows from the second page on");
-            Assertions.assertEquals(Material.ARROW, picker.getItemStack(NEXT_SLOT).material(), "a page still follows");
-            Assertions.assertEquals("Seite 2/3", nameOf(picker, INDICATOR_SLOT), "the indicator moves with the page");
+            Assertions.assertEquals("Vorige Seite · Seite 1/3", nameOf(picker, PREVIOUS_SLOT), "an arrow back shows from the second page on and names the page before");
+            Assertions.assertEquals("Nächste Seite · Seite 3/3", nameOf(picker, NEXT_SLOT), "a page still follows, so the next arrow names the page after");
+            Assertions.assertEquals("Seite 2/3", loreOf(picker, SORT_SLOT).get(PAGE_LINE), "the sort item's lore moves with the page");
         }
     }
 
@@ -106,15 +107,36 @@ class NavigatorPickerViewsTest {
 
             AbstractInventory picker = player.getOpenInventory();
             Assertions.assertEquals("ElytraRace-090", nameOf(picker, 0), "the third page starts with the 91st service");
-            Assertions.assertEquals("ElytraRace-099", nameOf(picker, 9), "the last service is on the last page");
+            Assertions.assertEquals("ElytraRace-099", nameOf(picker, 13), "the last service is on the last page, in the second row's centre column");
             Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, picker.getItemStack(NEXT_SLOT).material(), "no page follows the last one");
-            Assertions.assertEquals("Seite 3/3", nameOf(picker, INDICATOR_SLOT), "the indicator shows the last page");
+            Assertions.assertEquals("Vorige Seite · Seite 2/3", nameOf(picker, PREVIOUS_SLOT), "the arrow back names the page before the last one");
+            Assertions.assertEquals("Seite 3/3", loreOf(picker, SORT_SLOT).get(PAGE_LINE), "the sort item's lore shows the last page");
         }
     }
 
-    @DisplayName("A short list has no page navigation, only the sort item under its services")
+    @DisplayName("One running service is centred in the first row, with the sort item in the middle of the navigation row and no arrows")
     @Test
-    void shortListShowsOnlyTheSortItem(Env env) {
+    void oneServiceIsCentredWithoutArrows(Env env) {
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.serveServices("ElytraRace", services(1));
+        Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
+        player.setLocale(Locale.GERMANY);
+        try (NavigatorFixture fixture = start(env, counts)) {
+            AbstractInventory picker = openPicker(env, fixture, player);
+
+            Assertions.assertEquals(18, picker.getSize(), "one row of services and the navigation row under it");
+            Assertions.assertEquals("ElytraRace-000", nameOf(picker, 4), "the one entry is in column four, the middle of the first row");
+            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, picker.getItemStack(3).material(), "the columns beside the one entry stay empty");
+            Assertions.assertEquals("Sortierung: Name (A bis Z)", nameOf(picker, ONE_ROW_SORT_SLOT), "the sort item is the middle slot of the navigation row, navigation start + 4");
+            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, picker.getItemStack(9).material(), "no previous arrow without pages");
+            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, picker.getItemStack(17).material(), "no next arrow without pages");
+            Assertions.assertEquals(6, loreOf(picker, ONE_ROW_SORT_SLOT).size(), "no page line in the sort item's lore without pages");
+        }
+    }
+
+    @DisplayName("A short list is centred in its row: six entries start in column one")
+    @Test
+    void shortListIsCentredAndShowsOnlyTheSortItem(Env env) {
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.serveServices("ElytraRace", services(6));
         Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
@@ -123,7 +145,9 @@ class NavigatorPickerViewsTest {
             AbstractInventory picker = openPicker(env, fixture, player);
 
             Assertions.assertEquals(18, picker.getSize(), "one row of services and the navigation row under it");
-            Assertions.assertEquals("Sortierung: Name (A bis Z)", nameOf(picker, 11), "the sort item is the third slot of the navigation row");
+            Assertions.assertEquals("ElytraRace-000", nameOf(picker, 1), "(9 - 6) / 2 = 1: the first of six entries is in column one");
+            Assertions.assertEquals("ElytraRace-005", nameOf(picker, 6), "the sixth entry is in column six");
+            Assertions.assertEquals("Sortierung: Name (A bis Z)", nameOf(picker, ONE_ROW_SORT_SLOT), "the sort item is the middle slot of the navigation row");
             Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, picker.getItemStack(9).material(), "no previous arrow without pages");
         }
     }
@@ -148,9 +172,9 @@ class NavigatorPickerViewsTest {
 
             Assertions.assertEquals("ElytraRace-000", nameOf(secondPicker, 0), "the second player starts with the first service by name");
             Assertions.assertEquals("▸ Name (A–Z)", loreOf(secondPicker, SORT_SLOT).get(0), "the second player's order is name");
-            Assertions.assertEquals("Page 1/3", nameOf(secondPicker, INDICATOR_SLOT), "the second player is on the first page");
+            Assertions.assertEquals("Page 1/3", loreOf(secondPicker, SORT_SLOT).get(PAGE_LINE), "the second player is on the first page");
             Assertions.assertEquals("▸ Status", loreOf(first.getOpenInventory(), SORT_SLOT).get(3), "the first player stays on status after the second player opened the list");
-            Assertions.assertEquals("Page 2/3", nameOf(first.getOpenInventory(), INDICATOR_SLOT), "the first player stays on page 2 after the second player opened the list");
+            Assertions.assertEquals("Page 2/3", loreOf(first.getOpenInventory(), SORT_SLOT).get(PAGE_LINE), "the first player stays on page 2 after the second player opened the list");
         }
     }
 

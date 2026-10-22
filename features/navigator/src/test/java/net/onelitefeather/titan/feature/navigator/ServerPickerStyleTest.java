@@ -133,21 +133,27 @@ class ServerPickerStyleTest {
     @DisplayName("The sort item is named after the order that is active, in German and in English")
     @Test
     void sortItemNamesTheActiveOrder(Env env) {
-        Assertions.assertEquals("Sortierung: Freie Plätze", nameOf(ServerPicker.sortItem(PickerSort.MOST_FREE, Locale.GERMAN)), "the German name of the sort item");
-        Assertions.assertEquals("Sort: Free slots", nameOf(ServerPicker.sortItem(PickerSort.MOST_FREE, Locale.ENGLISH)), "the English name of the sort item");
+        Assertions.assertEquals("Sortierung: Freie Plätze", nameOf(ServerPicker.sortItem(PickerSort.MOST_FREE, Locale.GERMAN, 0, 1)), "the German name of the sort item");
+        Assertions.assertEquals("Sort: Free slots", nameOf(ServerPicker.sortItem(PickerSort.MOST_FREE, Locale.ENGLISH, 0, 1)), "the English name of the sort item");
     }
 
     @DisplayName("The sort item's lore lists all four orders and marks only the active one")
     @Test
     void sortLoreListsEveryOrder() {
-        Assertions.assertEquals(List.of("  Name (A bis Z)", "  Meiste Spieler", "  Freie Plätze", "▸ Status", "", "▸ Klicken, um die Ordnung zu wechseln"), plain(ServerPicker.sortLore(PickerSort.STATUS, Locale.GERMAN)), "German: status is the active order");
-        Assertions.assertEquals(List.of("▸ Name (A–Z)", "  Most players", "  Free slots", "  Status", "", "▸ Click to change the order"), plain(ServerPicker.sortLore(PickerSort.NAME, Locale.ENGLISH)), "English: name is the active order");
+        Assertions.assertEquals(List.of("  Name (A bis Z)", "  Meiste Spieler", "  Freie Plätze", "▸ Status", "", "▸ Klicken, um die Ordnung zu wechseln"), plain(ServerPicker.sortLore(PickerSort.STATUS, Locale.GERMAN, 0, 1)), "German: status is the active order");
+        Assertions.assertEquals(List.of("▸ Name (A–Z)", "  Most players", "  Free slots", "  Status", "", "▸ Click to change the order"), plain(ServerPicker.sortLore(PickerSort.NAME, Locale.ENGLISH, 0, 1)), "English: name is the active order");
+    }
+
+    @DisplayName("The sort item's lore shows the page between the orders and the hint only when there is more than one page")
+    @Test
+    void sortLoreShowsThePageWhenPaged() {
+        Assertions.assertEquals(List.of("▸ Name (A–Z)", "  Most players", "  Free slots", "  Status", "", "Page 2/3", "▸ Click to change the order"), plain(ServerPicker.sortLore(PickerSort.NAME, Locale.ENGLISH, 1, 3)), "a paged list names the page in its lore");
     }
 
     @DisplayName("The active order of the sort item is cyan, the others are grey")
     @Test
     void sortLoreColoursTheActiveOrder() {
-        List<Component> lore = ServerPicker.sortLore(PickerSort.MOST_PLAYERS, Locale.ENGLISH);
+        List<Component> lore = ServerPicker.sortLore(PickerSort.MOST_PLAYERS, Locale.ENGLISH, 0, 1);
 
         Assertions.assertEquals(TextColor.fromHexString("#00ddff"), firstColor(lore.get(1), null), "the active order is cyan");
         Assertions.assertEquals(NamedTextColor.GRAY, firstColor(lore.get(0), null), "an inactive order is grey");

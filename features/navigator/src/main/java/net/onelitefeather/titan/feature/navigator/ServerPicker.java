@@ -117,17 +117,20 @@ final class ServerPicker {
         return ItemStack.builder(Material.BARRIER).customName(name).build();
     }
 
-    /** The sort item: its name carries the active order, its lore lists all four. */
-    static ItemStack sortItem(PickerSort active, Locale locale) {
+    /**
+     * The sort item: its name carries the active order, its lore lists all four and, when there is
+     * more than one page, the page. {@code page} is counted from zero.
+     */
+    static ItemStack sortItem(PickerSort active, Locale locale, int page, int pages) {
         Component name = NavigatorMessages.text(NavigatorMessages.SORT_ITEM, locale, NavigatorMessages.text(active.key(), locale));
-        return ItemStack.builder(Material.COMPARATOR).customName(name).lore(sortLore(active, locale)).build();
+        return ItemStack.builder(Material.COMPARATOR).customName(name).lore(sortLore(active, locale, page, pages)).build();
     }
 
     /**
      * Every order in the sort order, the active one marked with the arrow and in cyan, the others
-     * grey, then a blank line and the click line.
+     * grey, then a blank line, the page when there is more than one, and the click line.
      */
-    static List<Component> sortLore(PickerSort active, Locale locale) {
+    static List<Component> sortLore(PickerSort active, Locale locale, int page, int pages) {
         MiniMessage mini = MiniMessage.miniMessage();
         List<Component> lore = new ArrayList<>();
         for (PickerSort sort : PickerSort.values()) {
@@ -139,23 +142,36 @@ final class ServerPicker {
             }
         }
         lore.add(Component.empty());
+        if (pages > 1) {
+            lore.add(pageText(page, pages, locale));
+        }
         lore.add(mini.deserialize("<!i>" + NavigatorMessages.ARROW + "<gray><hint></gray>", Placeholder.component("hint", NavigatorMessages.text(NavigatorMessages.SORT_HINT, locale))));
         return List.copyOf(lore);
     }
 
-    static ItemStack previousItem(Locale locale) {
-        return ItemStack.builder(Material.ARROW).customName(NavigatorMessages.text(NavigatorMessages.PAGE_PREVIOUS, locale)).build();
+    /**
+     * The previous arrow, which names the page it leads to. {@code page} is the page shown, counted
+     * from zero.
+     */
+    static ItemStack previousItem(int page, int pages, Locale locale) {
+        return pageArrow(NavigatorMessages.PAGE_PREVIOUS, page - 1, pages, locale);
     }
 
-    static ItemStack nextItem(Locale locale) {
-        return ItemStack.builder(Material.ARROW).customName(NavigatorMessages.text(NavigatorMessages.PAGE_NEXT, locale)).build();
+    /**
+     * The next arrow, which names the page it leads to. {@code page} is the page shown, counted
+     * from zero.
+     */
+    static ItemStack nextItem(int page, int pages, Locale locale) {
+        return pageArrow(NavigatorMessages.PAGE_NEXT, page + 1, pages, locale);
     }
 
-    /** The page indicator; {@code page} is counted from zero and shown from one. */
-    static ItemStack indicatorItem(int page, int pages, Locale locale) {
-        Component current = Component.text(String.valueOf(page + 1));
-        Component total = Component.text(String.valueOf(pages));
-        return ItemStack.builder(Material.PAPER).customName(NavigatorMessages.text(NavigatorMessages.PAGE_INDICATOR, locale, current, total)).build();
+    private static ItemStack pageArrow(String key, int target, int pages, Locale locale) {
+        return ItemStack.builder(Material.ARROW).customName(NavigatorMessages.text(key, locale, pageText(target, pages, locale))).build();
+    }
+
+    /** "Page x/y" in {@code locale}; {@code page} is counted from zero and shown from one. */
+    private static Component pageText(int page, int pages, Locale locale) {
+        return NavigatorMessages.text(NavigatorMessages.PAGE_INDICATOR, locale, Component.text(String.valueOf(page + 1)), Component.text(String.valueOf(pages)));
     }
 
     /** What the player is told when a picked server cannot be joined. */

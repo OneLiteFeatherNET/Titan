@@ -80,8 +80,9 @@ Motivation und Anforderungen stehen in `proposal.md` und `specs/lobby-navigator/
 ### D6 Layout
 
 - `PickerLayout(int rows, int pages)` (rein): `pages = Pagination.pageCount(n)` wenn `n > 45`, sonst `1`. Zeilen: mit mehreren Seiten immer 6; ohne Seiten `min(5, max(1, ceil(n / 9))) + 1`, also Inhaltsreihen plus Navigationszeile. Ein leerer Dienststand bekommt eine Inhaltsreihe mit dem Hinweis in der Mitte (`EMPTY_SLOT`) und die Navigationszeile.
-- Navigationszeile: Slot 45 Vorige-Pfeil (nur ab Seite 2), Slot 47 Sortier-Item (immer), Slot 49 Seitenanzeige (nur mit mehr als einer Seite), Slot 53 Nächste-Pfeil (nur wenn eine Seite folgt). Die Slots 45, 49 und 53 entsprechen dem Switcher. Freie Plätze der Navigationszeile sind graue Glasscheiben ohne Namen.
-- **Test:** `PickerLayoutTest` (JUnit, rein): Zeilen für 0, 1, 9, 10, 45 und 46 Dienste; Seiten für 45, 46, 90; Slots der Navigation je Seite.
+- Navigationszeile (Startslot `(Zeilen − 1) × 9`): Vorige-Pfeil im ersten Slot (nur ab Seite 2), Sortier-Item in der Mitte, also Start + 4 (immer), Nächste-Pfeil im letzten Slot, also Start + 8 (nur wenn eine Seite folgt). Auf einer Seite mit sechs Reihen sind das Slots 45, 49 und 53; eine Seitenanzeige als eigenes Item gibt es nicht mehr, die Seite steht in der Lore des Sortier-Items und in den Pfeilnamen. Freie Plätze der Navigationszeile sind graue Glasscheiben ohne Namen.
+- **Zentrierung:** `PickerLayout.serviceSlot(index, count)` ist die einzige Stelle, die den Slot eines Eintrags auf seiner Seite bestimmt; Rendern und Klicks nutzen denselben Wert. Eine Reihe mit `n` Einträgen beginnt in Spalte `(9 − n) / 2` (ganzzahlig), volle Reihen bleiben unverändert. Die Zählung gilt je Seite, also auch für die letzte Reihe einer Seite. Beispiel: ein Dienst in Spalte 4, zwei in den Spalten 3 und 4.
+- **Test:** `PickerLayoutTest` (JUnit, rein): Zeilen für 0, 1, 9, 10, 45 und 46 Dienste; Seiten für 45, 46, 90; Slots der Navigation je Seite; Zentrierung für 1, 2, 8, 9, 10, 45 Einträge und für eine letzte Seite mit 14 Einträgen. Env-Tests: ein Dienst in Slot 4 und Sortier-Item in Slot 13 ohne Pfeile; Pfeile an 45 und 53 mit Sortier-Item in 49; Klick auf den zentrierten Eintrag verbindet mit dem richtigen Dienst.
 
 ### D7 Klick-Behandlung
 
@@ -96,7 +97,7 @@ Motivation und Anforderungen stehen in `proposal.md` und `specs/lobby-navigator/
 - Neue Schlüssel in `NavigatorMessages` (in `KEYS` aufgenommen), übersetzt in `messages_en.properties` und `messages_de.properties`:
   - `titan.navigator.picker.sort.item` (Name des Items mit aktiver Ordnung), `…sort.name`, `…sort.most_players`, `…sort.most_free`, `…sort.status`.
   - `…sort.hint` (Klickzeile in der Art der Klickzeilen des Navigators).
-  - `…page.previous`, `…page.next`, `…page.indicator` (mit Platzhaltern für Seite und Gesamtzahl).
+  - `…page.previous`, `…page.next`: Pfeilnamen mit „· Seite x/y“ der Zielseite; `…page.indicator` (Platzhalter für Seite und Gesamtzahl): „Seite x/y“ in der Lore des Sortier-Items und als Teil der Pfeilnamen. Keine Schlüssel entfallen.
 - Die aktive Ordnung in der Lore: Pfeilmarkierung und Farbe; die übrigen grau.
 - Der Test `NavigatorMessagesBundleTest` prüft Gleichheit der Schlüssel; `ServerPickerStyleTest` die Lore-Zeilen.
 
