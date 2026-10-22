@@ -1,5 +1,20 @@
 # Changelog
 
+## [4.1.0](https://github.com/OneLiteFeatherNET/Titan/compare/v4.0.0...v4.1.0) (2026-10-22)
+
+
+### Features
+
+* **navigator:** add bounce behind a permission ([#456](https://github.com/OneLiteFeatherNET/Titan/issues/456)) ([21b23e1](https://github.com/OneLiteFeatherNET/Titan/commit/21b23e1d3837ad76ecb89a42c9603b4038dc4697))
+* **navigator:** page and sort the server picker ([#457](https://github.com/OneLiteFeatherNET/Titan/issues/457)) ([1e3d683](https://github.com/OneLiteFeatherNET/Titan/commit/1e3d6833afc0e5758142651bcdc7110eb91e2ec2))
+
+
+### Bug Fixes
+
+* **deps:** update dependency io.sentry:sentry-bom to v8.61.1 ([#458](https://github.com/OneLiteFeatherNET/Titan/issues/458)) ([748043b](https://github.com/OneLiteFeatherNET/Titan/commit/748043b14e94e768fc8663ff5b77324d5ecb7321))
+* **deps:** update flyway to v13.11.0 ([#453](https://github.com/OneLiteFeatherNET/Titan/issues/453)) ([a88c267](https://github.com/OneLiteFeatherNET/Titan/commit/a88c26775d2b32ce1f3ab9611235b3723cbe3d79))
+* **deps:** update flyway to v13.11.1 ([#455](https://github.com/OneLiteFeatherNET/Titan/issues/455)) ([c5cd124](https://github.com/OneLiteFeatherNET/Titan/commit/c5cd124f27c293720d2966cd8f5a4ea4e626bf1e))
+
 ## [4.0.0](https://github.com/OneLiteFeatherNET/Titan/compare/v3.3.0...v4.0.0) (2026-10-17)
 
 
