@@ -19,19 +19,26 @@ import java.util.List;
 import java.util.Locale;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import net.minestom.server.component.DataComponents;
+import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
+import net.minestom.testing.Env;
+import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.portal.ServiceCount;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * The server picker in the navigator's style, checked as plain text so the wording is in the test.
  */
+@ExtendWith(MicrotusExtension.class)
 class ServerPickerStyleTest {
 
     private static final ServiceCount JOINABLE = new ServiceCount("ElytraRace-1", 13, 40);
@@ -53,6 +60,10 @@ class ServerPickerStyleTest {
 
     private static List<String> plain(List<Component> lines) {
         return lines.stream().map(line -> PlainTextComponentSerializer.plainText().serialize(line)).toList();
+    }
+
+    private static String nameOf(ItemStack stack) {
+        return PlainTextComponentSerializer.plainText().serialize(stack.get(DataComponents.CUSTOM_NAME));
     }
 
     private static TextColor firstColor(Component component, TextColor inherited) {
@@ -117,5 +128,29 @@ class ServerPickerStyleTest {
     void refusalIsTranslated() {
         Assertions.assertEquals("Servers » Dieser Server ist voll.", PlainTextComponentSerializer.plainText().serialize(ServerPicker.refusal(FULL, Locale.GERMAN)), "the German refusal of a full server");
         Assertions.assertEquals("Servers » That server is not ready yet.", PlainTextComponentSerializer.plainText().serialize(ServerPicker.refusal(NOT_READY, Locale.ENGLISH)), "the English refusal of a server without a limit");
+    }
+
+    @DisplayName("The sort item is named after the order that is active, in German and in English")
+    @Test
+    void sortItemNamesTheActiveOrder(Env env) {
+        Assertions.assertEquals("Sortierung: Freie Plätze", nameOf(ServerPicker.sortItem(PickerSort.MOST_FREE, Locale.GERMAN)), "the German name of the sort item");
+        Assertions.assertEquals("Sort: Free slots", nameOf(ServerPicker.sortItem(PickerSort.MOST_FREE, Locale.ENGLISH)), "the English name of the sort item");
+    }
+
+    @DisplayName("The sort item's lore lists all four orders and marks only the active one")
+    @Test
+    void sortLoreListsEveryOrder() {
+        Assertions.assertEquals(List.of("  Name (A bis Z)", "  Meiste Spieler", "  Freie Plätze", "▸ Status", "", "▸ Klicken, um die Ordnung zu wechseln"), plain(ServerPicker.sortLore(PickerSort.STATUS, Locale.GERMAN)), "German: status is the active order");
+        Assertions.assertEquals(List.of("▸ Name (A–Z)", "  Most players", "  Free slots", "  Status", "", "▸ Click to change the order"), plain(ServerPicker.sortLore(PickerSort.NAME, Locale.ENGLISH)), "English: name is the active order");
+    }
+
+    @DisplayName("The active order of the sort item is cyan, the others are grey")
+    @Test
+    void sortLoreColoursTheActiveOrder() {
+        List<Component> lore = ServerPicker.sortLore(PickerSort.MOST_PLAYERS, Locale.ENGLISH);
+
+        Assertions.assertEquals(TextColor.fromHexString("#00ddff"), firstColor(lore.get(1), null), "the active order is cyan");
+        Assertions.assertEquals(NamedTextColor.GRAY, firstColor(lore.get(0), null), "an inactive order is grey");
+        Assertions.assertEquals(NamedTextColor.GRAY, firstColor(lore.get(3), null), "every inactive order is grey");
     }
 }

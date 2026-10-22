@@ -15,7 +15,9 @@
  */
 package net.onelitefeather.titan.feature.navigator;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.minestom.server.component.DataComponents;
 import net.minestom.server.coordinate.Pos;
@@ -52,6 +54,9 @@ class NavigatorServerPickerTest {
     private static final int ELYTRA_RACE_SLOT = Destination.ELYTRA_RACE.slot();
     private static final int SURVIVAL_SLOT = Destination.SURVIVAL.slot();
     private static final int SLENDER_SLOT = Destination.SLENDER.slot();
+    // The sort item of a list that fits one row: the third slot of its navigation row.
+    private static final int SORT_SLOT = 11;
+    private static final int NEXT_SLOT = 53;
     private static final Pos SPAWN = new Pos(11.5, 40, 60);
     private static final Box AREA = new Box(new Vec(10, 40, 20), new Vec(12, 42, 22));
     private static final LobbyPortals RACE_PORTAL = () -> List.of(new Portal("race", AREA, "ElytraRace", null));
@@ -514,6 +519,104 @@ class NavigatorServerPickerTest {
             env.tick();
 
             Assertions.assertEquals(1, deliver.deliveries().size(), "the second click must not send the player again");
+        }
+    }
+
+    @DisplayName("A click on the sort item reads the services once and lists the next order from the top")
+    @Test
+    void sortClickReadsOnceAndListsTheNextOrder(Env env) {
+        RecordingDeliver deliver = new RecordingDeliver();
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.serveServices("ElytraRace", RACE_ONE, RACE_TWO);
+        Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
+        try (NavigatorFixture fixture = start(env, deliver, counts, NO_PORTALS)) {
+            AbstractInventory picker = PickerTestSupport.openPicker(env, fixture, player);
+            int readsBefore = counts.reads();
+
+            PickerTestSupport.clickAndTick(env, picker, player, new Click.Left(SORT_SLOT));
+
+            AbstractInventory sorted = player.getOpenInventory();
+            Assertions.assertEquals(readsBefore + 1, counts.reads(), "the sort click reads the services exactly once");
+            Assertions.assertEquals("ElytraRace-2", nameOf(sorted, 0), "most players comes first: ElytraRace-2 has 10 against 3");
+            Assertions.assertEquals("▸ Most players", PickerTestSupport.loreOf(sorted, SORT_SLOT).get(1), "the second order is the active one");
+            Assertions.assertTrue(deliver.deliveries().isEmpty(), "sorting connects nobody");
+        }
+    }
+
+    @DisplayName("A click on an entry of the second page connects to exactly that service")
+    @Test
+    void clickingAnEntryOnTheSecondPageConnectsToIt(Env env) {
+        RecordingDeliver deliver = new RecordingDeliver();
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.serveServices("ElytraRace", PickerTestSupport.services(100));
+        Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
+        try (NavigatorFixture fixture = start(env, deliver, counts, NO_PORTALS)) {
+            AbstractInventory picker = PickerTestSupport.openPicker(env, fixture, player);
+            PickerTestSupport.clickAndTick(env, picker, player, new Click.Left(NEXT_SLOT));
+
+            PickerTestSupport.clickAndTick(env, player.getOpenInventory(), player, new Click.Left(1));
+
+            Assertions.assertEquals(1, deliver.deliveries().size(), "exactly one delivery");
+            Assertions.assertEquals("ElytraRace-046", deliver.deliveries().getFirst().serverName(), "the second entry of the second page is the 47th service");
+        }
+    }
+
+    @DisplayName("A sort click whose read completes after the player closed the list does not reopen it")
+    @Test
+    void sortReadCompletingAfterCloseLeavesThePlayerWithNoInventory(Env env) {
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.serveServices("ElytraRace", RACE_ONE, RACE_TWO);
+        HeldReads reads = new HeldReads();
+        Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
+        try (NavigatorFixture fixture = NavigatorFixture.startReadingOn(env, new RecordingDeliver(), new FakePermissionService().allowEveryone(SLENDER_PERMISSION), counts, reads)) {
+            AbstractInventory navigator = openNavigator(fixture, player);
+            click(env, navigator, player, new Click.Right(ELYTRA_RACE_SLOT));
+            reads.completeAll();
+            env.tick();
+            AbstractInventory picker = player.getOpenInventory();
+            Assertions.assertNotNull(picker, "the right click must open the list before the sort click, or the check proves nothing");
+
+            click(env, picker, player, new Click.Left(SORT_SLOT));
+            player.closeInventory();
+            reads.completeAll();
+            env.tick();
+
+            Assertions.assertNull(player.getOpenInventory(), "a re-read that completes after the player closed the list must not open it again");
+        }
+    }
+
+    @DisplayName("A right click whose read completes after the player closed the navigator opens no list")
+    @Test
+    void rightClickReadCompletingAfterCloseOpensNoList(Env env) {
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.serveServices("ElytraRace", RACE_ONE, RACE_TWO);
+        HeldReads reads = new HeldReads();
+        Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
+        try (NavigatorFixture fixture = NavigatorFixture.startReadingOn(env, new RecordingDeliver(), new FakePermissionService().allowEveryone(SLENDER_PERMISSION), counts, reads)) {
+            AbstractInventory navigator = openNavigator(fixture, player);
+            click(env, navigator, player, new Click.Right(ELYTRA_RACE_SLOT));
+            player.closeInventory();
+            reads.completeAll();
+            env.tick();
+
+            Assertions.assertNull(player.getOpenInventory(), "a list whose read completes after the player closed the navigator must not open");
+        }
+    }
+
+    /** Holds every read until the test completes it, so a test decides when a read finishes. */
+    private static final class HeldReads implements Executor {
+
+        private final List<Runnable> held = new ArrayList<>();
+
+        @Override
+        public void execute(Runnable read) {
+            this.held.add(read);
+        }
+
+        void completeAll() {
+            List<Runnable> reads = List.copyOf(this.held);
+            this.held.clear();
+            reads.forEach(Runnable::run);
         }
     }
 }

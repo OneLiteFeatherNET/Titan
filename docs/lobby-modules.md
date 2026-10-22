@@ -283,6 +283,20 @@ Q, F, Mittelklick, Doppelklick, Ziehen) wird abgebrochen und tut nichts. Die Ser
 Dienste beim Klick frisch; ein Server, der inzwischen voll oder nicht mehr da ist, wird abgelehnt.
 Kann die Liste nicht gelesen werden, erscheint eine Chat-Meldung statt einer Liste.
 
+Die Serverliste blättert in Seiten zu 45 Diensten (`core`: `Pagination`, gemeinsam mit dem Lobbyswitcher).
+Die unterste Reihe ist immer die Navigationszeile: Vorige-Pfeil (ab Seite 2), Sortier-Item, Seitenanzeige
+„Seite x/y“ (nur bei mehr als einer Seite) und Nächste-Pfeil (nur wenn eine Seite folgt). Das Sortier-Item
+liegt im dritten Slot dieser Reihe: bei sechs Reihen (ab 37 Diensten) in Slot 47.
+Jeder Klick auf das Sortier-Item schaltet die Ordnung weiter: Name (A–Z, Standard), Meiste Spieler, Freie
+Plätze (Dienste ohne gemeldetes Limit zuletzt) und Status (beitretbar, nicht bereit, voll); bei Gleichstand
+entscheidet der Name. Ein Wechsel der Ordnung springt auf Seite 1. Die Texte stehen unter
+`titan.navigator.picker.sort.*` und `titan.navigator.picker.page.*`.
+
+Ordnung und Seite gelten nur für das Inventar, das der Spieler offen hat; die Lobby speichert sie nicht je
+Spieler. Die Serverliste liest die Dienste beim Öffnen, bei jedem Seiten- und Ordnungswechsel und beim Klick
+auf einen Eintrag neu, nicht periodisch. Die Inventare sind je Ziel, Sprache, Ordnung, Seite und Zeilenzahl
+geteilt, entstehen beim ersten Bedarf und werden bei `stop()` entfernt.
+
 Betrieb: Die CloudNet-Tasks `Team-Build`, `Slender` und `Bounce` müssen existieren. Die LuckPerms-Rechte
 `titan.navigator.buildserver`, `titan.navigator.slender` und `titan.navigator.bounce` werden den
 jeweiligen Gruppen erteilt. In der lokalen Variante gilt `deny-all` (`DenyAllPermissionService`), dort

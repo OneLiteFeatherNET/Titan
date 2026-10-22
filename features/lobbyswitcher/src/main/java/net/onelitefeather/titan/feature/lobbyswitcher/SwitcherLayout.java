@@ -16,6 +16,7 @@
 package net.onelitefeather.titan.feature.lobbyswitcher;
 
 import java.util.List;
+import net.onelitefeather.titan.core.paging.Pagination;
 
 /**
  * How many rows and pages a lobby list needs. Up to {@value #MAX_ROWS} rows hold the list as it
@@ -26,14 +27,14 @@ record SwitcherLayout(int rows, int pages) {
     static final int SLOTS_PER_ROW = 9;
     static final int MAX_ROWS = 6;
     static final int MAX_ENTRIES = SLOTS_PER_ROW * MAX_ROWS;
-    static final int PAGE_ENTRIES = MAX_ENTRIES - SLOTS_PER_ROW;
+    static final int PAGE_ENTRIES = Pagination.PAGE_SIZE;
     static final int PREVIOUS_SLOT = PAGE_ENTRIES;
     static final int INDICATOR_SLOT = PAGE_ENTRIES + SLOTS_PER_ROW / 2;
     static final int NEXT_SLOT = MAX_ENTRIES - 1;
 
     static SwitcherLayout of(int entries) {
         if (entries > MAX_ENTRIES) {
-            return new SwitcherLayout(MAX_ROWS, Math.ceilDiv(entries, PAGE_ENTRIES));
+            return new SwitcherLayout(MAX_ROWS, Pagination.pageCount(entries));
         }
         return new SwitcherLayout(Math.max(1, Math.ceilDiv(entries, SLOTS_PER_ROW)), 1);
     }
@@ -47,7 +48,6 @@ record SwitcherLayout(int rows, int pages) {
         if (!paged()) {
             return entries;
         }
-        int from = Math.min(page * PAGE_ENTRIES, entries.size());
-        return entries.subList(from, Math.min(from + PAGE_ENTRIES, entries.size()));
+        return Pagination.slice(entries, page);
     }
 }

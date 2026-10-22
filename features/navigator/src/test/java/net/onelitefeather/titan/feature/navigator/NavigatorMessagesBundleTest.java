@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import org.junit.jupiter.api.Assertions;
@@ -52,6 +53,15 @@ class NavigatorMessagesBundleTest {
     @Test
     void fallbackBundleHasNoUnusedKey() throws IOException {
         Assertions.assertEquals(renderedKeys(), load("messages_en.properties").stringPropertyNames(), "every key in messages_en.properties must be rendered, and every rendered key must be defined");
+    }
+
+    @DisplayName("The server list's sort and page texts are rendered and defined in both bundles")
+    @Test
+    void serverListTextsAreRenderedAndDefined() throws IOException {
+        List<String> pickerKeys = List.of(NavigatorMessages.SORT_ITEM, NavigatorMessages.SORT_NAME, NavigatorMessages.SORT_MOST_PLAYERS, NavigatorMessages.SORT_MOST_FREE, NavigatorMessages.SORT_STATUS, NavigatorMessages.SORT_HINT, NavigatorMessages.PAGE_PREVIOUS, NavigatorMessages.PAGE_NEXT, NavigatorMessages.PAGE_INDICATOR);
+
+        Assertions.assertTrue(renderedKeys().containsAll(pickerKeys), "NavigatorMessages.KEYS must list every sort and page text");
+        Assertions.assertTrue(load("messages_de.properties").stringPropertyNames().containsAll(pickerKeys), "messages_de.properties must define every sort and page text");
     }
 
     @DisplayName("The German bundle has exactly the keys of the fallback bundle")

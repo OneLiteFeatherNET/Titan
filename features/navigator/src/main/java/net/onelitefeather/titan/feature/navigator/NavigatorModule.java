@@ -43,6 +43,7 @@ import net.minestom.server.ServerFlag;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
+import net.minestom.server.inventory.AbstractInventory;
 import net.minestom.server.inventory.Inventory;
 import net.minestom.server.inventory.click.Click;
 import net.minestom.server.item.ItemStack;
@@ -395,9 +396,39 @@ public final class NavigatorModule {
                     return joinService(player, service.get());
                 }
             }
-            player.openInventory(this.pickers.get(new Picker(destination, language)).show(destination, ServerPicker.entries(read.get()), (viewer, service) -> pick(viewer, destination, language, service)));
+            openList(player, destination, language, PickerSort.NAME, 0, read.get());
             return NavigatorTelemetry.Selection.PICKER;
         });
+    }
+
+    // A sort or page change reads the services again and shows the list it asks for. It is not a
+    // selection, so it is not recorded as one.
+    private void relist(Player player, Destination destination, Locale language, PickerSort sort, int page) {
+        readServices(player, destination, (viewer, read) -> {
+            if (!isAllowed(viewer, destination)) {
+                viewer.closeInventory();
+                return;
+            }
+            if (read.isEmpty()) {
+                viewer.sendMessage(ServerPicker.unavailable(language));
+                return;
+            }
+            openList(viewer, destination, language, sort, page, read.get());
+        });
+    }
+
+    // A read that completes after the player closed the menu must not bring the list back, so the list
+    // opens only while one of this module's inventories is still the one the player has open.
+    private void openList(Player player, Destination destination, Locale language, PickerSort sort, int page, List<ServiceCount> running) {
+        if (!showsOwnInventory(player)) {
+            return;
+        }
+        player.openInventory(this.pickers.get(new Picker(destination, language)).show(destination, sort, page, running, new PickerClicks(destination, language)));
+    }
+
+    private boolean showsOwnInventory(Player player) {
+        AbstractInventory open = player.getOpenInventory();
+        return open != null && (this.menus.values().stream().anyMatch(navigator -> navigator.inventory() == open) || this.pickers.values().stream().anyMatch(picker -> picker.owns(open)));
     }
 
     // A picked entry is joined only if it still qualifies now, so the list is read again first.
@@ -441,6 +472,33 @@ public final class NavigatorModule {
 
     /** One shared server list: the minigame it lists, in one language. */
     private record Picker(Destination destination, Locale language) {
+    }
+
+    /** The clicks of one server list, which know the minigame and the language it lists. */
+    private final class PickerClicks implements SharedServerPicker.Clicks {
+
+        private final Destination destination;
+        private final Locale language;
+
+        PickerClicks(Destination destination, Locale language) {
+            this.destination = destination;
+            this.language = language;
+        }
+
+        @Override
+        public void pick(Player player, ServiceCount service) {
+            NavigatorModule.this.pick(player, this.destination, this.language, service);
+        }
+
+        @Override
+        public void sort(Player player, PickerSort current) {
+            relist(player, this.destination, this.language, current.next(), 0);
+        }
+
+        @Override
+        public void turn(Player player, PickerSort current, int page) {
+            relist(player, this.destination, this.language, current, page);
+        }
     }
 
     // Spawn is a fixed entry, not a Destination: it returns the player instead of redirecting them.

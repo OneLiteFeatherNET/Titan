@@ -15,7 +15,7 @@
  */
 package net.onelitefeather.titan.feature.navigator;
 
-import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.OptionalInt;
@@ -40,9 +40,11 @@ final class ServerPicker {
     static final Set<Destination> DESTINATIONS = Set.of(Destination.ELYTRA_RACE, Destination.SLENDER, Destination.BOUNCE);
 
     static final int COLUMNS = 9;
-    static final int MAX_ROWS = 6;
     /** The slot of the explanation when the picker lists no service: the middle of its one row. */
     static final int EMPTY_SLOT = COLUMNS / 2;
+
+    /** The states in the order of the status sort: joinable first, then not ready, then full. */
+    static final List<State> STATUS_ORDER = List.of(State.JOINABLE, State.NOT_READY, State.FULL);
 
     private static final String BRAND = "<gradient:#00ddff:#ffffff>";
 
@@ -50,7 +52,7 @@ final class ServerPicker {
     }
 
     /** The state of an entry, which sets its icon and its state line. */
-    private enum State {
+    enum State {
         FULL(Material.RED_CONCRETE, NavigatorMessages.PICKER_FULL, "red"), NOT_READY(Material.YELLOW_CONCRETE, NavigatorMessages.PICKER_NOT_READY, "yellow"), JOINABLE(Material.LIME_CONCRETE, NavigatorMessages.PICKER_JOIN, "green");
 
         private final Material material;
@@ -69,17 +71,9 @@ final class ServerPicker {
         return NavigatorMessages.text(NavigatorMessages.PICKER_TITLE, locale);
     }
 
-    /** The services the picker lists, by name, at most as many as six rows hold. */
-    static List<ServiceCount> entries(List<ServiceCount> running) {
-        return running.stream().sorted(Comparator.comparing(ServiceCount::name)).limit((long) COLUMNS * MAX_ROWS).toList();
-    }
-
-    /**
-     * The inventory rows that hold {@code entries} services: at least one, at most
-     * {@link #MAX_ROWS}.
-     */
-    static int rows(int entries) {
-        return Math.clamp((entries + COLUMNS - 1) / COLUMNS, 1, MAX_ROWS);
+    /** Every service the picker lists, in the order {@code sort} gives. */
+    static List<ServiceCount> entries(List<ServiceCount> running, PickerSort sort) {
+        return running.stream().sorted(sort.comparator()).toList();
     }
 
     /**
@@ -123,6 +117,47 @@ final class ServerPicker {
         return ItemStack.builder(Material.BARRIER).customName(name).build();
     }
 
+    /** The sort item: its name carries the active order, its lore lists all four. */
+    static ItemStack sortItem(PickerSort active, Locale locale) {
+        Component name = NavigatorMessages.text(NavigatorMessages.SORT_ITEM, locale, NavigatorMessages.text(active.key(), locale));
+        return ItemStack.builder(Material.COMPARATOR).customName(name).lore(sortLore(active, locale)).build();
+    }
+
+    /**
+     * Every order in the sort order, the active one marked with the arrow and in cyan, the others
+     * grey, then a blank line and the click line.
+     */
+    static List<Component> sortLore(PickerSort active, Locale locale) {
+        MiniMessage mini = MiniMessage.miniMessage();
+        List<Component> lore = new ArrayList<>();
+        for (PickerSort sort : PickerSort.values()) {
+            TagResolver order = Placeholder.component("order", NavigatorMessages.text(sort.key(), locale));
+            if (sort == active) {
+                lore.add(mini.deserialize("<!i>" + NavigatorMessages.ARROW + "<white><order></white>", order));
+            } else {
+                lore.add(mini.deserialize("<!i><gray>  <order></gray>", order));
+            }
+        }
+        lore.add(Component.empty());
+        lore.add(mini.deserialize("<!i>" + NavigatorMessages.ARROW + "<gray><hint></gray>", Placeholder.component("hint", NavigatorMessages.text(NavigatorMessages.SORT_HINT, locale))));
+        return List.copyOf(lore);
+    }
+
+    static ItemStack previousItem(Locale locale) {
+        return ItemStack.builder(Material.ARROW).customName(NavigatorMessages.text(NavigatorMessages.PAGE_PREVIOUS, locale)).build();
+    }
+
+    static ItemStack nextItem(Locale locale) {
+        return ItemStack.builder(Material.ARROW).customName(NavigatorMessages.text(NavigatorMessages.PAGE_NEXT, locale)).build();
+    }
+
+    /** The page indicator; {@code page} is counted from zero and shown from one. */
+    static ItemStack indicatorItem(int page, int pages, Locale locale) {
+        Component current = Component.text(String.valueOf(page + 1));
+        Component total = Component.text(String.valueOf(pages));
+        return ItemStack.builder(Material.PAPER).customName(NavigatorMessages.text(NavigatorMessages.PAGE_INDICATOR, locale, current, total)).build();
+    }
+
     /** What the player is told when a picked server cannot be joined. */
     static Component refusal(ServiceCount service, Locale locale) {
         return refusalOf(service.limitAnnounced() ? NavigatorMessages.REFUSAL_FULL : NavigatorMessages.REFUSAL_NOT_READY, locale);
@@ -142,7 +177,7 @@ final class ServerPicker {
         return service.limitAnnounced() && !service.full();
     }
 
-    private static State stateOf(ServiceCount service) {
+    static State stateOf(ServiceCount service) {
         if (service.full()) {
             return State.FULL;
         }
