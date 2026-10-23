@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.1.1](https://github.com/OneLiteFeatherNET/Titan/compare/v4.1.0...v4.1.1) (2026-10-23)
+
+
+### Bug Fixes
+
+* **navigator:** center the server picker controls ([#459](https://github.com/OneLiteFeatherNET/Titan/issues/459)) ([d0ccbf7](https://github.com/OneLiteFeatherNET/Titan/commit/d0ccbf7a5d10df940ab48b218b482dbe8163a035))
+
 ## [4.1.0](https://github.com/OneLiteFeatherNET/Titan/compare/v4.0.0...v4.1.0) (2026-10-22)
 
 
