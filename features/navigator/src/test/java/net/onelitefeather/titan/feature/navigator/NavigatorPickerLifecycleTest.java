@@ -50,9 +50,11 @@ class NavigatorPickerLifecycleTest {
     private static final Pos SPAWN = new Pos(11.5, 40, 60);
     private static final ServiceCount RACE_ONE = new ServiceCount("ElytraRace-1", 3, 50);
     private static final int OPEN_CLOSE_COUNT = 20;
-    private static final int PREVIOUS_SLOT = 45;
+    // The back button of a list that fits one content row: the first slot of its two-row navigation row.
+    private static final int ONE_ROW_BACK_SLOT = 9;
+    private static final int PREVIOUS_SLOT = 48;
     private static final int SORT_SLOT = 49;
-    private static final int NEXT_SLOT = 53;
+    private static final int NEXT_SLOT = 50;
 
     private static EventNode<Event> navigatorNode(Env env) {
         List<EventNode<Event>> children = env.process().eventHandler().findChildren("titan/navigator");
@@ -88,6 +90,34 @@ class NavigatorPickerLifecycleTest {
 
             Assertions.assertEquals(moduleListenersBefore, EventListenerCounter.countListeners(navigatorNode), "opening the server list must never register another listener on the module's own node");
             Assertions.assertEquals(pickerListenersBefore, EventListenerCounter.countListeners(pickerNode), "opening the server list must never register another listener on the server list's node");
+        }
+    }
+
+    @DisplayName("Going back to the navigator from the server list 20 times registers no extra listeners")
+    @Test
+    void repeatedBackRegistersNoExtraListeners(Env env) {
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.serveServices("ElytraRace", RACE_ONE);
+        Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
+        FakePermissionService permissions = new FakePermissionService().allowEveryone(SLENDER_PERMISSION);
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions, counts)) {
+            fixture.equip(player);
+            Inventory picker = openPicker(env, fixture, player);
+            Inventory navigator = fixture.module().inventory(Set.of(Destination.SLENDER), Locale.ENGLISH);
+            EventNode<Event> navigatorNode = navigatorNode(env);
+            int moduleListenersBefore = EventListenerCounter.countListeners(navigatorNode);
+            int pickerListenersBefore = EventListenerCounter.countListeners(picker.eventNode());
+            int navigatorListenersBefore = EventListenerCounter.countListeners(navigator.eventNode());
+
+            for (int i = 0; i < OPEN_CLOSE_COUNT; i++) {
+                PickerTestSupport.clickAndTick(env, player.getOpenInventory(), player, new Click.Left(ONE_ROW_BACK_SLOT));
+                Assertions.assertSame(navigator, player.getOpenInventory(), "the back button must open the navigator on pass " + i + ", or the leak check proves nothing");
+                openPicker(env, fixture, player);
+            }
+
+            Assertions.assertEquals(moduleListenersBefore, EventListenerCounter.countListeners(navigatorNode), "going back must never register another listener on the module's own node");
+            Assertions.assertEquals(pickerListenersBefore, EventListenerCounter.countListeners(picker.eventNode()), "going back must never register another listener on the server list's node");
+            Assertions.assertEquals(navigatorListenersBefore, EventListenerCounter.countListeners(navigator.eventNode()), "opening the navigator again must never register another listener on the navigator's node");
         }
     }
 

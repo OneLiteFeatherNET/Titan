@@ -55,10 +55,10 @@ class NavigatorMessagesBundleTest {
         Assertions.assertEquals(renderedKeys(), load("messages_en.properties").stringPropertyNames(), "every key in messages_en.properties must be rendered, and every rendered key must be defined");
     }
 
-    @DisplayName("The server list's sort and page texts are rendered and defined in both bundles")
+    @DisplayName("The server list's sort, page and back texts are rendered and defined in both bundles")
     @Test
     void serverListTextsAreRenderedAndDefined() throws IOException {
-        List<String> pickerKeys = List.of(NavigatorMessages.SORT_ITEM, NavigatorMessages.SORT_NAME, NavigatorMessages.SORT_MOST_PLAYERS, NavigatorMessages.SORT_MOST_FREE, NavigatorMessages.SORT_STATUS, NavigatorMessages.SORT_HINT, NavigatorMessages.PAGE_PREVIOUS, NavigatorMessages.PAGE_NEXT, NavigatorMessages.PAGE_INDICATOR);
+        List<String> pickerKeys = List.of(NavigatorMessages.SORT_ITEM, NavigatorMessages.SORT_NAME, NavigatorMessages.SORT_MOST_PLAYERS, NavigatorMessages.SORT_MOST_FREE, NavigatorMessages.SORT_STATUS, NavigatorMessages.SORT_HINT, NavigatorMessages.PAGE_PREVIOUS, NavigatorMessages.PAGE_NEXT, NavigatorMessages.PAGE_INDICATOR, NavigatorMessages.PICKER_BACK);
 
         Assertions.assertTrue(renderedKeys().containsAll(pickerKeys), "NavigatorMessages.KEYS must list every sort and page text");
         Assertions.assertTrue(load("messages_de.properties").stringPropertyNames().containsAll(pickerKeys), "messages_de.properties must define every sort and page text");

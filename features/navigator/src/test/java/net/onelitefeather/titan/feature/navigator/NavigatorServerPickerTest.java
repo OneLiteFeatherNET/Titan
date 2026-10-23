@@ -17,6 +17,8 @@ package net.onelitefeather.titan.feature.navigator;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.minestom.server.component.DataComponents;
@@ -32,6 +34,7 @@ import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.TestConnection;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.core.permission.PermissionResult;
 import net.onelitefeather.titan.core.portal.Box;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
 import net.onelitefeather.titan.core.portal.Portal;
@@ -56,7 +59,10 @@ class NavigatorServerPickerTest {
     private static final int SLENDER_SLOT = Destination.SLENDER.slot();
     // The sort item of a list that fits one row: the middle slot of its navigation row.
     private static final int SORT_SLOT = 13;
-    private static final int NEXT_SLOT = 53;
+    private static final int NEXT_SLOT = 50;
+    // The back button is the first slot of the navigation row: 45 on six rows, 9 on two rows.
+    private static final int BACK_SLOT = 45;
+    private static final int ONE_ROW_BACK_SLOT = 9;
     private static final Pos SPAWN = new Pos(11.5, 40, 60);
     private static final Box AREA = new Box(new Vec(10, 40, 20), new Vec(12, 42, 22));
     private static final LobbyPortals RACE_PORTAL = () -> List.of(new Portal("race", AREA, "ElytraRace", null));
@@ -621,6 +627,101 @@ class NavigatorServerPickerTest {
             env.tick();
 
             Assertions.assertNull(player.getOpenInventory(), "a list whose read completes after the player closed the navigator must not open");
+        }
+    }
+
+    @DisplayName("The back button on the first page opens the navigator with the menu of the player's permissions")
+    @Test
+    void backOnFirstPageOpensTheNavigatorOfThePlayersPermissions(Env env) {
+        RecordingDeliver deliver = new RecordingDeliver();
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.serveServices("ElytraRace", RACE_ONE, RACE_TWO);
+        Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
+        try (NavigatorFixture fixture = start(env, deliver, counts, NO_PORTALS)) {
+            PickerTestSupport.openPicker(env, fixture, player);
+
+            PickerTestSupport.clickAndTick(env, player.getOpenInventory(), player, new Click.Left(ONE_ROW_BACK_SLOT));
+
+            Assertions.assertSame(fixture.module().inventory(Set.of(Destination.SLENDER), Locale.ENGLISH), player.getOpenInventory(), "the back button must open the navigator menu that matches the player's permissions");
+            Assertions.assertTrue(deliver.deliveries().isEmpty(), "going back connects nobody");
+        }
+    }
+
+    @DisplayName("The back button on the second page opens the navigator, not the first page of the list")
+    @Test
+    void backOnSecondPageOpensTheNavigator(Env env) {
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.serveServices("ElytraRace", PickerTestSupport.services(100));
+        Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
+        try (NavigatorFixture fixture = start(env, new RecordingDeliver(), counts, NO_PORTALS)) {
+            PickerTestSupport.openPicker(env, fixture, player);
+            PickerTestSupport.clickAndTick(env, player.getOpenInventory(), player, new Click.Left(NEXT_SLOT));
+
+            PickerTestSupport.clickAndTick(env, player.getOpenInventory(), player, new Click.Left(BACK_SLOT));
+
+            Assertions.assertSame(fixture.module().inventory(Set.of(Destination.SLENDER), Locale.ENGLISH), player.getOpenInventory(), "the back button on the second page must open the navigator");
+        }
+    }
+
+    @DisplayName("The back button of an empty server list opens the navigator")
+    @Test
+    void backOnEmptyListOpensTheNavigator(Env env) {
+        FakePlayerCounts counts = new FakePlayerCounts();
+        Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
+        try (NavigatorFixture fixture = start(env, new RecordingDeliver(), counts, NO_PORTALS)) {
+            PickerTestSupport.openPicker(env, fixture, player);
+
+            PickerTestSupport.clickAndTick(env, player.getOpenInventory(), player, new Click.Left(ONE_ROW_BACK_SLOT));
+
+            Assertions.assertSame(fixture.module().inventory(Set.of(Destination.SLENDER), Locale.ENGLISH), player.getOpenInventory(), "the back button of an empty list must open the navigator");
+        }
+    }
+
+    @DisplayName("A permission revoked while the list is open is checked again on the back click")
+    @Test
+    void backChecksThePermissionAgain(Env env) {
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.serveServices("ElytraRace", RACE_ONE);
+        Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
+        FakePermissionService permissions = new FakePermissionService().allowEveryone(SLENDER_PERMISSION);
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions, counts, NO_PORTALS)) {
+            AbstractInventory picker = PickerTestSupport.openPicker(env, fixture, player);
+            permissions.set(player.getUuid(), SLENDER_PERMISSION, PermissionResult.DENIED);
+
+            PickerTestSupport.clickAndTick(env, picker, player, new Click.Left(ONE_ROW_BACK_SLOT));
+
+            Assertions.assertSame(fixture.module().inventory(Set.of(), Locale.ENGLISH), player.getOpenInventory(), "a player who lost the permission gets the menu without the slender entry");
+        }
+    }
+
+    @DisplayName("The back button opens the German navigator for a German player")
+    @Test
+    void backOpensTheLanguageOfThePlayer(Env env) {
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.serveServices("ElytraRace", RACE_ONE);
+        Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
+        player.setLocale(Locale.GERMANY);
+        try (NavigatorFixture fixture = start(env, new RecordingDeliver(), counts, NO_PORTALS)) {
+            PickerTestSupport.openPicker(env, fixture, player);
+
+            PickerTestSupport.clickAndTick(env, player.getOpenInventory(), player, new Click.Left(ONE_ROW_BACK_SLOT));
+
+            Assertions.assertSame(fixture.module().inventory(Set.of(Destination.SLENDER), Locale.GERMAN), player.getOpenInventory(), "a German player gets the German navigator back");
+        }
+    }
+
+    @DisplayName("A middle click on the back button keeps the server list open")
+    @Test
+    void middleClickOnBackKeepsTheList(Env env) {
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.serveServices("ElytraRace", PickerTestSupport.services(100));
+        Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
+        try (NavigatorFixture fixture = start(env, new RecordingDeliver(), counts, NO_PORTALS)) {
+            AbstractInventory picker = PickerTestSupport.openPicker(env, fixture, player);
+
+            PickerTestSupport.clickAndTick(env, picker, player, new Click.Middle(BACK_SLOT));
+
+            Assertions.assertSame(picker, player.getOpenInventory(), "only a named click acts, so the list stays open");
         }
     }
 

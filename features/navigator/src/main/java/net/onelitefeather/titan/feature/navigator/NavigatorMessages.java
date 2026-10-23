@@ -65,9 +65,10 @@ final class NavigatorMessages implements AutoCloseable {
     static final String PAGE_PREVIOUS = "titan.navigator.picker.page.previous";
     static final String PAGE_NEXT = "titan.navigator.picker.page.next";
     static final String PAGE_INDICATOR = "titan.navigator.picker.page.indicator";
+    static final String PICKER_BACK = "titan.navigator.picker.back";
 
     /** Every key the navigator renders; the bundle test checks the property files against it. */
-    static final List<String> KEYS = List.of(TITLE, PICKER_TITLE, PLAYERS, KEY_LEFT, KEY_RIGHT, KEY_SHIFT, ACTION_QUICK_JOIN, ACTION_CHOOSE_SERVER, ACTION_CONNECT, ACTION_PORTAL, PICKER_FULL, PICKER_NOT_READY, PICKER_JOIN, REFUSAL_FULL, REFUSAL_NOT_READY, REFUSAL_UNAVAILABLE, PICKER_EMPTY, SORT_ITEM, SORT_NAME, SORT_MOST_PLAYERS, SORT_MOST_FREE, SORT_STATUS, SORT_HINT, PAGE_PREVIOUS, PAGE_NEXT, PAGE_INDICATOR);
+    static final List<String> KEYS = List.of(TITLE, PICKER_TITLE, PLAYERS, KEY_LEFT, KEY_RIGHT, KEY_SHIFT, ACTION_QUICK_JOIN, ACTION_CHOOSE_SERVER, ACTION_CONNECT, ACTION_PORTAL, PICKER_FULL, PICKER_NOT_READY, PICKER_JOIN, REFUSAL_FULL, REFUSAL_NOT_READY, REFUSAL_UNAVAILABLE, PICKER_EMPTY, SORT_ITEM, SORT_NAME, SORT_MOST_PLAYERS, SORT_MOST_FREE, SORT_STATUS, SORT_HINT, PAGE_PREVIOUS, PAGE_NEXT, PAGE_INDICATOR, PICKER_BACK);
 
     private static final String BUNDLE = "titan.navigator.messages";
     private static final String SEPARATOR = "━━━━━━━━━━━━";

@@ -88,6 +88,11 @@ final class NavigatorFixture implements AutoCloseable {
         return start(env, deliver, permissions, new FakeSpawnReturn(), Telemetry.noop(), List::of, Optional.of(counts));
     }
 
+    /** Reads the services on the calling thread and traces to {@code telemetry}, for span tests. */
+    static NavigatorFixture start(Env env, Deliver deliver, PermissionService permissions, Telemetry telemetry, PlayerCounts counts) {
+        return start(env, deliver, permissions, new FakeSpawnReturn(), telemetry, List::of, Optional.of(counts));
+    }
+
     /** Reads the running services on the calling thread, so a test drives the picker with ticks. */
     static NavigatorFixture start(Env env, Deliver deliver, PermissionService permissions, PlayerCounts counts, LobbyPortals portals) {
         return start(env, deliver, permissions, new FakeSpawnReturn(), Telemetry.noop(), portals, Optional.of(counts));

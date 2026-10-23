@@ -50,6 +50,9 @@ final class SharedServerPicker {
 
         void pick(Player player, ServiceCount service);
 
+        /** The back button was clicked: the player gets the navigator again. */
+        void back(Player player);
+
         /** The sort item was clicked while {@code current} was the order. */
         void sort(Player player, PickerSort current);
 
@@ -117,6 +120,7 @@ final class SharedServerPicker {
             ServiceCount service = services.get(index);
             button(layout, PickerLayout.serviceSlot(index, services.size()), ServerPicker.item(destination, service, this.language), (player, click) -> clicks.pick(player, service));
         }
+        button(layout, shape.backSlot(), ServerPicker.backItem(this.language), (player, click) -> clicks.back(player));
         button(layout, shape.sortSlot(), ServerPicker.sortItem(view.sort(), this.language, view.page(), shape.pages()), (player, click) -> clicks.sort(player, view.sort()));
         if (shape.previousShown(view.page())) {
             button(layout, shape.previousSlot(), ServerPicker.previousItem(view.page(), shape.pages(), this.language), (player, click) -> clicks.turn(player, view.sort(), view.page() - 1));

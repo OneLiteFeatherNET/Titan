@@ -44,10 +44,15 @@ class NavigatorPickerViewsTest {
     private static final String SLENDER_PERMISSION = "titan.navigator.slender";
     private static final Pos SPAWN = new Pos(11.5, 40, 60);
     // The sort item of a list that fits one row: the middle slot of its navigation row.
+    private static final int ONE_ROW_BACK_SLOT = 9;
     private static final int ONE_ROW_SORT_SLOT = 13;
-    private static final int PREVIOUS_SLOT = 45;
+    private static final int ONE_ROW_PREVIOUS_SLOT = 12;
+    private static final int ONE_ROW_NEXT_SLOT = 14;
+    private static final int BACK_SLOT = 45;
+    private static final int PREVIOUS_SLOT = 48;
     private static final int SORT_SLOT = 49;
-    private static final int NEXT_SLOT = 53;
+    private static final int NEXT_SLOT = 50;
+    private static final String BACK_NAME_DE = "Zurück zum Navigator";
     // The sort item's lore: four orders, a blank line, the page line when paged, then the click hint.
     private static final int PAGE_LINE = 5;
 
@@ -69,6 +74,7 @@ class NavigatorPickerViewsTest {
             Assertions.assertEquals("ElytraRace-044", nameOf(picker, 44), "the 45th service is the last one on the first page");
             Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, picker.getItemStack(PREVIOUS_SLOT).material(), "there is no page before the first");
             Assertions.assertEquals("Nächste Seite · Seite 2/3", nameOf(picker, NEXT_SLOT), "the next arrow names the page it leads to");
+            Assertions.assertEquals(BACK_NAME_DE, nameOf(picker, BACK_SLOT), "the back button sits at the start of the navigation row on the first page");
             Assertions.assertEquals("Seite 1/3", loreOf(picker, SORT_SLOT).get(PAGE_LINE), "the sort item's lore shows the page and the page count");
         }
     }
@@ -89,6 +95,7 @@ class NavigatorPickerViewsTest {
             Assertions.assertEquals("ElytraRace-045", nameOf(picker, 0), "the second page starts with the 46th service");
             Assertions.assertEquals("Vorige Seite · Seite 1/3", nameOf(picker, PREVIOUS_SLOT), "an arrow back shows from the second page on and names the page before");
             Assertions.assertEquals("Nächste Seite · Seite 3/3", nameOf(picker, NEXT_SLOT), "a page still follows, so the next arrow names the page after");
+            Assertions.assertEquals(BACK_NAME_DE, nameOf(picker, BACK_SLOT), "the back button stays at the start of the navigation row on the second page");
             Assertions.assertEquals("Seite 2/3", loreOf(picker, SORT_SLOT).get(PAGE_LINE), "the sort item's lore moves with the page");
         }
     }
@@ -111,6 +118,7 @@ class NavigatorPickerViewsTest {
             Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, picker.getItemStack(NEXT_SLOT).material(), "no page follows the last one");
             Assertions.assertEquals("Vorige Seite · Seite 2/3", nameOf(picker, PREVIOUS_SLOT), "the arrow back names the page before the last one");
             Assertions.assertEquals("Seite 3/3", loreOf(picker, SORT_SLOT).get(PAGE_LINE), "the sort item's lore shows the last page");
+            Assertions.assertEquals(BACK_NAME_DE, nameOf(picker, BACK_SLOT), "the back button stays at the start of the navigation row on the last page");
         }
     }
 
@@ -128,8 +136,9 @@ class NavigatorPickerViewsTest {
             Assertions.assertEquals("ElytraRace-000", nameOf(picker, 4), "the one entry is in column four, the middle of the first row");
             Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, picker.getItemStack(3).material(), "the columns beside the one entry stay empty");
             Assertions.assertEquals("Sortierung: Name (A bis Z)", nameOf(picker, ONE_ROW_SORT_SLOT), "the sort item is the middle slot of the navigation row, navigation start + 4");
-            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, picker.getItemStack(9).material(), "no previous arrow without pages");
-            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, picker.getItemStack(17).material(), "no next arrow without pages");
+            Assertions.assertEquals(BACK_NAME_DE, nameOf(picker, ONE_ROW_BACK_SLOT), "the back button is the first slot of the navigation row, even without pages");
+            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, picker.getItemStack(ONE_ROW_PREVIOUS_SLOT).material(), "no previous arrow without pages");
+            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, picker.getItemStack(ONE_ROW_NEXT_SLOT).material(), "no next arrow without pages");
             Assertions.assertEquals(6, loreOf(picker, ONE_ROW_SORT_SLOT).size(), "no page line in the sort item's lore without pages");
         }
     }
@@ -148,7 +157,24 @@ class NavigatorPickerViewsTest {
             Assertions.assertEquals("ElytraRace-000", nameOf(picker, 1), "(9 - 6) / 2 = 1: the first of six entries is in column one");
             Assertions.assertEquals("ElytraRace-005", nameOf(picker, 6), "the sixth entry is in column six");
             Assertions.assertEquals("Sortierung: Name (A bis Z)", nameOf(picker, ONE_ROW_SORT_SLOT), "the sort item is the middle slot of the navigation row");
-            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, picker.getItemStack(9).material(), "no previous arrow without pages");
+            Assertions.assertEquals(BACK_NAME_DE, nameOf(picker, ONE_ROW_BACK_SLOT), "the back button is in the navigation row of a short list too");
+            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, picker.getItemStack(ONE_ROW_PREVIOUS_SLOT).material(), "no previous arrow without pages");
+        }
+    }
+
+    @DisplayName("An empty list explains itself in the first row and still shows the back button at the start of the navigation row")
+    @Test
+    void emptyListShowsTheBackButton(Env env) {
+        FakePlayerCounts counts = new FakePlayerCounts();
+        Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
+        player.setLocale(Locale.GERMANY);
+        try (NavigatorFixture fixture = start(env, counts)) {
+            AbstractInventory picker = openPicker(env, fixture, player);
+
+            Assertions.assertEquals(18, picker.getSize(), "one explanation row and the navigation row under it");
+            Assertions.assertEquals("Gerade läuft kein Server.", nameOf(picker, ServerPicker.EMPTY_SLOT), "the explanation is in the middle of the first row");
+            Assertions.assertEquals(BACK_NAME_DE, nameOf(picker, ONE_ROW_BACK_SLOT), "the back button is at the start of the navigation row on an empty list");
+            Assertions.assertEquals("Sortierung: Name (A bis Z)", nameOf(picker, ONE_ROW_SORT_SLOT), "the sort item stays in the middle of the navigation row");
         }
     }
 
