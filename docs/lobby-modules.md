@@ -284,10 +284,13 @@ Dienste beim Klick frisch; ein Server, der inzwischen voll oder nicht mehr da is
 Kann die Liste nicht gelesen werden, erscheint eine Chat-Meldung statt einer Liste.
 
 Die Serverliste blättert in Seiten zu 45 Diensten (`core`: `Pagination`, gemeinsam mit dem Lobbyswitcher).
-Die unterste Reihe ist immer die Navigationszeile: Vorige-Pfeil im ersten Slot (nur ab Seite 2), Sortier-Item
-in der Mitte (Slot 13 bei zwei Reihen, Slot 49 bei sechs Reihen) und Nächste-Pfeil im letzten Slot (nur wenn
-eine Seite folgt). Ab zwei Seiten nennen die Pfeile ihre Zielseite, und die Lore des Sortier-Items zeigt
-„Seite x/y“. Eine nicht volle Reihe, also die letzte oder einzige Reihe einer Seite, ist zentriert: ihre `n`
+Die unterste Reihe ist immer die Navigationszeile, auch bei leerer Liste: Zurück-Taste im ersten Slot (Start + 0,
+Slot 45 bei sechs Reihen, Slot 9 bei zwei Reihen), Vorige-Pfeil auf Start + 3 (nur ab Seite 2), Sortier-Item in
+der Mitte auf Start + 4 (Slot 13 bei zwei Reihen, Slot 49 bei sechs Reihen) und Nächste-Pfeil auf Start + 5 (nur
+wenn eine Seite folgt, Slot 50 bei sechs Reihen). Die Zurück-Taste (`titan.navigator.picker.back`, `DARK_OAK_DOOR`)
+öffnet den Navigator über denselben Weg wie das Feder-Item (`NavigatorModule#open`), also mit den Rechten und der
+Sprache, die der Spieler im Moment des Klicks hat. Ab zwei Seiten nennen die Pfeile ihre Zielseite, und die Lore des
+Sortier-Items zeigt „Seite x/y“. Eine nicht volle Reihe, also die letzte oder einzige Reihe einer Seite, ist zentriert: ihre `n`
 Einträge beginnen in Spalte `(9 − n) / 2`, ein einzelner Dienst steht in Spalte 4.
 Jeder Klick auf das Sortier-Item schaltet die Ordnung weiter: Name (A–Z, Standard), Meiste Spieler, Freie
 Plätze (Dienste ohne gemeldetes Limit zuletzt) und Status (beitretbar, nicht bereit, voll); bei Gleichstand
