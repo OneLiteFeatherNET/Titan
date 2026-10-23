@@ -41,6 +41,7 @@ dependencyResolutionManagement {
 
             version("guava", "33.7.2-jre")
             version("minestom-extensions", "2.2.0")
+            version("pica", "0.1.5")
 
             version("mockito", "5.24.0")
             version("archunit", "1.5.1")
@@ -94,6 +95,7 @@ dependencyResolutionManagement {
             library("luckperms.minestom.loader", "net.luckperms", "minestom-loader").versionRef("luckperms")
 
             library("cyano", "net.onelitefeather", "cyano").withoutVersion()
+            library("pica", "net.onelitefeather", "pica").versionRef("pica")
             library("mockito", "org.mockito", "mockito-core").versionRef("mockito")
             library("archunit", "com.tngtech.archunit", "archunit-junit5").versionRef("archunit")
 
