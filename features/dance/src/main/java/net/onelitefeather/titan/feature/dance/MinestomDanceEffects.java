@@ -15,11 +15,14 @@
  */
 package net.onelitefeather.titan.feature.dance;
 
+import java.util.List;
+import java.util.function.Consumer;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.EntityPose;
+import net.minestom.server.entity.LivingEntity;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.metadata.LivingEntityMeta;
 import net.minestom.server.instance.Instance;
@@ -27,8 +30,9 @@ import net.minestom.server.network.packet.server.play.ParticlePacket;
 import net.minestom.server.particle.Particle;
 
 /**
- * Performs dance actions on a real player with vanilla packets only: poses, arm swings, head
- * rotation, a small hop, particles and note block sounds.
+ * Performs dance actions on the dancer and on his NPC with vanilla packets only: poses, arm swings,
+ * head rotation, a small hop, particles and note block sounds. Other players see the real player
+ * dance; the dancer sees the NPC dance from the camera.
  */
 final class MinestomDanceEffects implements DanceEffects {
 
@@ -46,23 +50,30 @@ final class MinestomDanceEffects implements DanceEffects {
     private static final double PARTICLE_HEIGHT = 2.0;
 
     private final Player dancer;
+    private final List<LivingEntity> bodies;
     private int notesPlayed;
 
-    MinestomDanceEffects(Player dancer) {
+    /**
+     * @param dancer the real player
+     * @param npc    the mannequin that stands in for him in the dancer's view
+     */
+    MinestomDanceEffects(Player dancer, LivingEntity npc) {
         this.dancer = dancer;
+        this.bodies = List.of(dancer, npc);
     }
 
     @Override
     public void apply(DanceAction action, Pos anchor) {
         switch (action) {
-            case SWING_MAIN_HAND -> this.dancer.swingMainHand();
-            case SWING_OFF_HAND -> this.dancer.swingOffHand();
-            case HEAD_DOWN -> this.dancer.setView(anchor.yaw(), HEAD_DOWN_PITCH);
-            case HEAD_UP -> this.dancer.setView(anchor.yaw(), HEAD_UP_PITCH);
-            case SNEAK -> this.dancer.setSneaking(true);
-            case STAND -> stand();
-            case SPIN -> riptideSpin(true);
-            case JUMP -> this.dancer.setVelocity(new Vec(0, HOP_VELOCITY, 0));
+            case SWING_MAIN_HAND -> each(body -> body.swingMainHand());
+            case SWING_OFF_HAND -> each(body -> body.swingOffHand());
+            case HEAD_DOWN -> each(body -> body.setView(anchor.yaw(), HEAD_DOWN_PITCH));
+            case HEAD_UP -> each(body -> body.setView(anchor.yaw(), HEAD_UP_PITCH));
+            case SNEAK -> each(body -> body.setSneaking(true));
+            case STAND -> each(MinestomDanceEffects::stand);
+            case SPIN -> each(MinestomDanceEffects::spin);
+            // The NPC keeps gravity, so the hop comes back down to the floor.
+            case JUMP -> each(body -> body.setVelocity(new Vec(0, HOP_VELOCITY, 0)));
             case NOTE -> note();
             case HEART -> particle(Particle.HEART);
         }
@@ -70,24 +81,39 @@ final class MinestomDanceEffects implements DanceEffects {
 
     @Override
     public void reset(Pos anchor) {
-        stand();
-        // The flags take effect on the next tick; the pose is set now, so the dancer is standing at once.
-        this.dancer.setPose(EntityPose.STANDING);
-        this.dancer.setView(anchor.yaw(), anchor.pitch());
+        each(body -> {
+            stand(body);
+            // Set directly as well: the NPC has no tick that would derive the pose from the flags.
+            body.setPose(EntityPose.STANDING);
+            body.setView(anchor.yaw(), anchor.pitch());
+        });
     }
 
     /**
-     * Minestom derives the pose from the sneak and riptide flags on every tick, so a pose set
-     * directly is overwritten at once; the flags are what keep the pose.
+     * Sneaking re-derives the pose from the flags, so the riptide flag goes first and the pose
+     * drops
+     * to standing with the sneak flag.
      */
-    private void stand() {
-        this.dancer.setSneaking(false);
-        riptideSpin(false);
+    private static void stand(LivingEntity body) {
+        setRiptide(body, false);
+        body.setSneaking(false);
     }
 
-    private void riptideSpin(boolean spinning) {
-        if (this.dancer.getEntityMeta() instanceof LivingEntityMeta living) {
+    private static void spin(LivingEntity body) {
+        setRiptide(body, true);
+        // A player's tick derives the pose from the flag; the NPC has no such tick, so set it here.
+        body.setPose(EntityPose.SPIN_ATTACK);
+    }
+
+    private static void setRiptide(LivingEntity body, boolean spinning) {
+        if (body.getEntityMeta() instanceof LivingEntityMeta living) {
             living.setInRiptideSpinAttack(spinning);
+        }
+    }
+
+    private void each(Consumer<LivingEntity> step) {
+        for (LivingEntity body : this.bodies) {
+            step.accept(body);
         }
     }
 

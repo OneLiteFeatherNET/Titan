@@ -22,38 +22,40 @@ import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
 
 /**
- * The dancer's outside view: an invisible marker entity that only the dancer can see, placed by
+ * The dancer's outside view: an invisible camera entity that only the dancer can see, placed by
  * {@link CameraPlacement}, which the dancer's client is set to look through. {@link #close()} gives
  * the view back to the dancer and removes the entity; it is safe to call once in every stop path.
  */
 final class DanceCamera {
 
     private final Player dancer;
-    private final Entity marker;
+    private final Entity camera;
 
-    private DanceCamera(Player dancer, Entity marker) {
+    private DanceCamera(Player dancer, Entity camera) {
         this.dancer = dancer;
-        this.marker = marker;
+        this.camera = camera;
     }
 
     /**
      * Spawns the camera for {@code dancer} and switches his view to it.
      *
-     * @throws RuntimeException if the switch fails; the marker is removed again first
+     * @throws RuntimeException if the switch fails; the camera entity is removed again first
      */
     static DanceCamera open(Player dancer, Instance instance, Pos dancerPosition) {
-        Entity marker = new Entity(EntityType.MARKER);
-        marker.setAutoViewable(false);
-        marker.setNoGravity(true);
+        // An item display without an item renders nothing and has no size, so the client uses the
+        // position as given; vanilla servers never send the marker entity the camera used before.
+        Entity camera = new Entity(EntityType.ITEM_DISPLAY);
+        camera.setAutoViewable(false);
+        camera.setNoGravity(true);
         try {
-            marker.setInstance(instance, CameraPlacement.place(dancerPosition, dancer.getEyeHeight())).join();
-            marker.addViewer(dancer);
-            dancer.spectate(marker);
+            camera.setInstance(instance, CameraPlacement.place(dancerPosition, dancer.getEyeHeight())).join();
+            camera.addViewer(dancer);
+            dancer.spectate(camera);
         } catch (RuntimeException e) {
-            marker.remove();
+            camera.remove();
             throw e;
         }
-        return new DanceCamera(dancer, marker);
+        return new DanceCamera(dancer, camera);
     }
 
     /** Gives the dancer his own view back, then removes the camera entity. */
@@ -61,12 +63,7 @@ final class DanceCamera {
         try {
             this.dancer.stopSpectating();
         } finally {
-            this.marker.remove();
+            this.camera.remove();
         }
-    }
-
-    /** @return the marker entity the dancer looks through */
-    Entity marker() {
-        return this.marker;
     }
 }
