@@ -1,5 +1,11 @@
 name: Build PR
-on: [pull_request]
+on:
+  pull_request:
+  # The reusable workflow only writes Gradle caches on the default branch; PR runs are
+  # read-only. Building main seeds the build cache that PR runs restore, so a PR only
+  # re-runs the modules it touches and their dependents.
+  push:
+    branches: [main]
 
 jobs:
   build:
