@@ -57,11 +57,11 @@ class PortalTriggerTest {
     }
 
     private void move(PortalTrigger trigger, UUID player, Point from, Point to) {
-        trigger.onMove(player, from, to).ifPresent(portal -> this.delivered.add(portal.task()));
+        trigger.onMove(player, from, to, portal -> this.denied.add(portal.id())).ifPresent(portal -> this.delivered.add(portal.task()));
     }
 
     private PortalTrigger trigger(Portal... portals) {
-        return new PortalTrigger(new PortalIndex(List.of(portals)), this.permissions, this.clock, portal -> this.denied.add(portal.id()));
+        return new PortalTrigger(new PortalIndex(List.of(portals)), this.permissions, this.clock);
     }
 
     @DisplayName("Walking into a box delivers the player to the portal's task exactly once")
@@ -211,7 +211,7 @@ class PortalTriggerTest {
             FakePermissionService localPermissions = new FakePermissionService();
             Portal restricted = box("vip", new Vec(0, 64, 0), new Vec(1, 65, 1), "Vip", "titan.portal.vip");
             Portal open = box("survival", new Vec(20, 64, 0), new Vec(21, 65, 1), "Survival", null);
-            PortalTrigger trigger = new PortalTrigger(new PortalIndex(List.of(restricted, open)), localPermissions, this.clock, portal -> this.denied.add(portal.id()));
+            PortalTrigger trigger = new PortalTrigger(new PortalIndex(List.of(restricted, open)), localPermissions, this.clock);
             UUID player = player();
             localPermissions.set(player, "titan.portal.vip", missing);
 

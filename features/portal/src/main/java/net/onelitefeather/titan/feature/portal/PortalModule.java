@@ -91,12 +91,12 @@ public final class PortalModule {
     void start() {
         List<Portal> all = this.portals.portals();
         LOGGER.info("Portal column started with {} portal(s)", all.size());
-        PortalTrigger trigger = new PortalTrigger(new PortalIndex(all), this.permissions, this.clock, this.portalTelemetry::denied);
+        PortalTrigger trigger = new PortalTrigger(new PortalIndex(all), this.permissions, this.clock);
         // The player's current position is still the old one while PlayerMoveEvent runs, so
         // (position, newPosition) is the segment the player is about to travel.
         this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry).on(PlayerMoveEvent.class, event -> {
             Player player = event.getPlayer();
-            trigger.onMove(player.getUuid(), player.getPosition(), event.getNewPosition()).ifPresent(portal -> deliver(player, portal));
+            trigger.onMove(player.getUuid(), player.getPosition(), event.getNewPosition(), portal -> refused(player, portal)).ifPresent(portal -> deliver(player, portal));
         }).on(PlayerDisconnectEvent.class, event -> trigger.forget(event.getPlayer().getUuid()));
         try {
             startLabels(all);
@@ -123,8 +123,15 @@ public final class PortalModule {
         }
     }
 
+    private void refused(Player player, Portal portal) {
+        this.portalTelemetry.denied(portal);
+        PortalSounds.refused(player);
+    }
+
     private void deliver(Player player, Portal portal) {
         LOGGER.debug("Player {} entered portal '{}', delivering to task '{}'", player.getUuid(), portal.id(), portal.task());
+        // Before the hand-over: once the transfer is sent, the player is on their way out.
+        PortalSounds.passed(player, portal);
         this.portalTelemetry.transfer(player.getUuid(), portal, () -> this.deliver.sendPlayer(player, DeliverComponent.taskBuilder().taskName(portal.task()).player(player).build()));
     }
 

@@ -54,27 +54,23 @@ final class PortalTrigger {
     private final PortalIndex index;
     private final PermissionService permissions;
     private final Clock clock;
-    private final Consumer<Portal> onDenied;
     private final Map<UUID, PlayerState> states = new ConcurrentHashMap<>();
 
-    /**
-     * @param onDenied told each portal a player entered without the permission; a refusal during
-     *                 the cooldown is not reported
-     */
-    PortalTrigger(PortalIndex index, PermissionService permissions, Clock clock, Consumer<Portal> onDenied) {
+    PortalTrigger(PortalIndex index, PermissionService permissions, Clock clock) {
         this.index = Objects.requireNonNull(index, "index");
         this.permissions = Objects.requireNonNull(permissions, "permissions");
         this.clock = Objects.requireNonNull(clock, "clock");
-        this.onDenied = Objects.requireNonNull(onDenied, "onDenied");
     }
 
     /**
      * Handles one move from {@code from} (the player's current feet) to {@code to}.
      *
+     * @param onDenied told each portal the player entered without the permission; a refusal during
+     *                 the cooldown is not reported
      * @return the portal to deliver the player to; the cooldown starts with it, so the caller has
      *         to deliver
      */
-    Optional<Portal> onMove(UUID playerId, Point from, Point to) {
+    Optional<Portal> onMove(UUID playerId, Point from, Point to, Consumer<Portal> onDenied) {
         PlayerState state = this.states.computeIfAbsent(playerId, id -> new PlayerState());
         Instant now = this.clock.instant();
         boolean coolingDown = now.isBefore(state.cooldownUntil);
@@ -90,7 +86,7 @@ final class PortalTrigger {
             }
             if (!mayUse(playerId, portal)) {
                 if (!coolingDown) {
-                    this.onDenied.accept(portal);
+                    onDenied.accept(portal);
                 }
             } else if (entered == null) {
                 entered = portal;

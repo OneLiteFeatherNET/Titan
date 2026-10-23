@@ -466,8 +466,11 @@ betreten, an einen CloudNet-Task.
   Elytra-Schritt durch eine dünne Scheibe löst also aus. Es entscheidet der Fußpunkt.
 - Ein Portal löst einmal je Betreten aus; wer drinnen bleibt, löst nicht erneut aus. Nach einer
   Weiterleitung gilt 3 s Abklingzeit.
-- Mit `permission` schickt das Portal nur Spieler mit diesem Recht weiter; ohne Recht passiert
-  nichts und keine Abklingzeit läuft.
+- Töne (nur Vanilla, nur für den Spieler selbst): Ein Durchgang spielt bei einer Box einen
+  Teleport-Ton, bei einer Scheibe einen Ring-Ton. Ein abgewiesener Betritt spielt einmal einen
+  tiefen Ton, außer während der Abklingzeit.
+- Mit `permission` schickt das Portal nur Spieler mit diesem Recht weiter; ohne Recht wird
+  nichts weitergeleitet und keine Abklingzeit gestartet.
 - Ein ungültiges Portal (leere `id` oder `task`, doppelte `id`, `radius <= 0`, `min > max`) bricht
   den Start mit Welt, Id und Grund ab.
 

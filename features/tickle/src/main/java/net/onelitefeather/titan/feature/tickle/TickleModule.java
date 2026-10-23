@@ -23,6 +23,8 @@ import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import java.time.Clock;
 import java.util.Objects;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.random.RandomGenerator;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.event.entity.EntityAttackEvent;
@@ -43,13 +45,20 @@ public final class TickleModule {
     private final EventNode<Event> titan;
     private final Clock clock;
     private final Telemetry telemetry;
+    private final RandomGenerator random;
     private FeatureNode node;
 
     @Inject
     public TickleModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Clock clock, Telemetry telemetry) {
+        this(titan, clock, telemetry, ThreadLocalRandom.current());
+    }
+
+    /** The random source picks each tickle's pitch; tests pass a seeded one. */
+    TickleModule(EventNode<Event> titan, Clock clock, Telemetry telemetry, RandomGenerator random) {
         this.titan = Objects.requireNonNull(titan, "titan");
         this.clock = Objects.requireNonNull(clock, "clock");
         this.telemetry = Objects.requireNonNull(telemetry, "telemetry");
+        this.random = Objects.requireNonNull(random, "random");
     }
 
     @PostConstruct
@@ -57,7 +66,8 @@ public final class TickleModule {
         // Abort startup on an invalid value; the parsed value itself is discarded -
         // TickleAttackHandler reads the live value again on every attack.
         Config.getAs(TickleSettings.COOLDOWN_KEY, TickleSettings::cooldownMillis);
-        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry).on(EntityAttackEvent.class, new TickleAttackHandler(this.clock, this.telemetry));
+        TickleSounds sounds = new TickleSounds(new TicklePairLimiter(this.clock), this.random);
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry).on(EntityAttackEvent.class, new TickleAttackHandler(this.clock, this.telemetry, sounds));
     }
 
     @PreDestroy

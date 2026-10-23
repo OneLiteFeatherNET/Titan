@@ -54,10 +54,12 @@ final class TickleAttackHandler implements Consumer<EntityAttackEvent> {
 
     private final Clock clock;
     private final LongCounter attacks;
+    private final TickleSounds sounds;
 
-    TickleAttackHandler(Clock clock, Telemetry telemetry) {
+    TickleAttackHandler(Clock clock, Telemetry telemetry, TickleSounds sounds) {
         this.clock = clock;
         this.attacks = telemetry.meter().counterBuilder("titan.tickle.attacks").setUnit("{attack}").build();
+        this.sounds = sounds;
     }
 
     @Override
@@ -97,6 +99,7 @@ final class TickleAttackHandler implements Consumer<EntityAttackEvent> {
 
         Component message = MiniMessage.miniMessage().deserialize(TICKLE_MESSAGE, Placeholder.component("player", Optional.ofNullable(player.getDisplayName()).orElse(player.getName())), Placeholder.component("target", Optional.ofNullable(target.getDisplayName()).orElse(target.getName())));
         instance.sendMessage(message);
+        this.sounds.tickle(player, target);
     }
 
     private static boolean hasFeatherItem(Player player) {
