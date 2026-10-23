@@ -39,6 +39,7 @@ import net.minestom.server.event.player.PlayerEntityInteractEvent;
 import net.minestom.server.event.player.PlayerHandAnimationEvent;
 import net.minestom.server.event.player.PlayerMoveEvent;
 import net.minestom.server.event.player.PlayerPacketEvent;
+import net.minestom.server.event.player.PlayerSpawnEvent;
 import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.server.network.packet.client.play.ClientInputPacket;
 import net.minestom.server.timer.Scheduler;
@@ -47,6 +48,7 @@ import net.onelitefeather.titan.core.permission.PermissionService;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.onelitefeather.titan.feature.dance.DanceService.StartResult;
 import net.onelitefeather.titan.feature.dance.DanceService.StopReason;
+import net.onelitefeather.pica.dialog.tag.DialogTagRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,6 +71,7 @@ public final class DanceModule {
     private final DanceMessages messages;
     private final DanceMenu menu;
     private final DanceService service;
+    private DialogTagRegistry dialogTags;
     private FeatureNode node;
 
     @Inject
@@ -89,10 +92,11 @@ public final class DanceModule {
     void start() {
         // Runs while the BeanScope is built, before the server accepts a connection: registry
         // data is sent to every client during the configuration phase.
-        QuickActionRegistration.register(MinecraftServer.getDialogRegistry());
+        this.dialogTags = DialogTagRegistry.of(MinecraftServer.getDialogRegistry());
+        this.dialogTags.addQuickAction(DanceKeys.DIALOG, QuickActionDialog.quickAction());
         this.messages.register();
 
-        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry).on(PlayerCustomClickEvent.class, this::onCustomClick).on(PlayerPacketEvent.class, this::onPacket).on(PlayerMoveEvent.class, event -> this.service.onMove(event.getPlayer().getUuid(), event.getNewPosition())).onIncludingCancelled(EntityAttackEvent.class, event -> stopIfPlayer(event.getEntity(), StopReason.INTERACTED)).onIncludingCancelled(PlayerHandAnimationEvent.class, event -> stopIfPlayer(event.getPlayer(), StopReason.INTERACTED)).onIncludingCancelled(PlayerBlockInteractEvent.class, event -> stopIfPlayer(event.getPlayer(), StopReason.INTERACTED)).onIncludingCancelled(PlayerUseItemEvent.class, event -> stopIfPlayer(event.getPlayer(), StopReason.INTERACTED)).onIncludingCancelled(PlayerEntityInteractEvent.class, event -> stopIfPlayer(event.getPlayer(), StopReason.INTERACTED)).on(RemoveEntityFromInstanceEvent.class, event -> stopIfPlayer(event.getEntity(), StopReason.LEFT_INSTANCE)).on(PlayerDisconnectEvent.class, event -> this.service.disconnected(event.getPlayer().getUuid()));
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry).on(PlayerCustomClickEvent.class, this::onCustomClick).on(PlayerPacketEvent.class, this::onPacket).on(PlayerSpawnEvent.class, this::onSpawn).on(PlayerMoveEvent.class, event -> this.service.onMove(event.getPlayer().getUuid(), event.getNewPosition())).onIncludingCancelled(EntityAttackEvent.class, event -> stopIfPlayer(event.getEntity(), StopReason.INTERACTED)).onIncludingCancelled(PlayerHandAnimationEvent.class, event -> stopIfPlayer(event.getPlayer(), StopReason.INTERACTED)).onIncludingCancelled(PlayerBlockInteractEvent.class, event -> stopIfPlayer(event.getPlayer(), StopReason.INTERACTED)).onIncludingCancelled(PlayerUseItemEvent.class, event -> stopIfPlayer(event.getPlayer(), StopReason.INTERACTED)).onIncludingCancelled(PlayerEntityInteractEvent.class, event -> stopIfPlayer(event.getPlayer(), StopReason.INTERACTED)).on(RemoveEntityFromInstanceEvent.class, event -> stopIfPlayer(event.getEntity(), StopReason.LEFT_INSTANCE)).on(PlayerDisconnectEvent.class, event -> this.service.disconnected(event.getPlayer().getUuid()));
     }
 
     @PreDestroy
@@ -139,6 +143,13 @@ public final class DanceModule {
             case STARTED -> {
                 // The dance has started; nothing to tell the player.
             }
+        }
+    }
+
+    // Pica's eventNode() would do the same, but features may not attach nodes to the event tree.
+    private void onSpawn(PlayerSpawnEvent event) {
+        if (event.isFirstSpawn()) {
+            this.dialogTags.sendTags(event.getPlayer());
         }
     }
 
