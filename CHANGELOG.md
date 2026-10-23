@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.3.1](https://github.com/OneLiteFeatherNET/Titan/compare/v4.3.0...v4.3.1) (2026-10-23)
+
+
+### Bug Fixes
+
+* **dance:** show a dancing npc in the camera view ([#469](https://github.com/OneLiteFeatherNET/Titan/issues/469)) ([36c2845](https://github.com/OneLiteFeatherNET/Titan/commit/36c28451d34aaf74a6a86e40ff61f87d1df9195e))
+
 ## [4.3.0](https://github.com/OneLiteFeatherNET/Titan/compare/v4.2.0...v4.3.0) (2026-10-23)
 
 
