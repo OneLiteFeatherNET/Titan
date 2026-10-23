@@ -113,19 +113,16 @@ final class SharedServerPicker {
         if (services.isEmpty()) {
             inert(layout, ServerPicker.EMPTY_SLOT, ServerPicker.emptyItem(this.language));
         }
-        for (int slot = 0; slot < services.size(); slot++) {
-            ServiceCount service = services.get(slot);
-            button(layout, slot, ServerPicker.item(destination, service, this.language), (player, click) -> clicks.pick(player, service));
+        for (int index = 0; index < services.size(); index++) {
+            ServiceCount service = services.get(index);
+            button(layout, PickerLayout.serviceSlot(index, services.size()), ServerPicker.item(destination, service, this.language), (player, click) -> clicks.pick(player, service));
         }
-        button(layout, shape.sortSlot(), ServerPicker.sortItem(view.sort(), this.language), (player, click) -> clicks.sort(player, view.sort()));
+        button(layout, shape.sortSlot(), ServerPicker.sortItem(view.sort(), this.language, view.page(), shape.pages()), (player, click) -> clicks.sort(player, view.sort()));
         if (shape.previousShown(view.page())) {
-            button(layout, shape.previousSlot(), ServerPicker.previousItem(this.language), (player, click) -> clicks.turn(player, view.sort(), view.page() - 1));
+            button(layout, shape.previousSlot(), ServerPicker.previousItem(view.page(), shape.pages(), this.language), (player, click) -> clicks.turn(player, view.sort(), view.page() - 1));
         }
         if (shape.nextShown(view.page())) {
-            button(layout, shape.nextSlot(), ServerPicker.nextItem(this.language), (player, click) -> clicks.turn(player, view.sort(), view.page() + 1));
-        }
-        if (shape.indicatorShown()) {
-            inert(layout, shape.indicatorSlot(), ServerPicker.indicatorItem(view.page(), shape.pages(), this.language));
+            button(layout, shape.nextSlot(), ServerPicker.nextItem(view.page(), shape.pages(), this.language), (player, click) -> clicks.turn(player, view.sort(), view.page() + 1));
         }
         return layout;
     }

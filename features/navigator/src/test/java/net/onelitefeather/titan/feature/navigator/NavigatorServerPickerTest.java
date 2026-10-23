@@ -54,8 +54,8 @@ class NavigatorServerPickerTest {
     private static final int ELYTRA_RACE_SLOT = Destination.ELYTRA_RACE.slot();
     private static final int SURVIVAL_SLOT = Destination.SURVIVAL.slot();
     private static final int SLENDER_SLOT = Destination.SLENDER.slot();
-    // The sort item of a list that fits one row: the third slot of its navigation row.
-    private static final int SORT_SLOT = 11;
+    // The sort item of a list that fits one row: the middle slot of its navigation row.
+    private static final int SORT_SLOT = 13;
     private static final int NEXT_SLOT = 53;
     private static final Pos SPAWN = new Pos(11.5, 40, 60);
     private static final Box AREA = new Box(new Vec(10, 40, 20), new Vec(12, 42, 22));
@@ -102,8 +102,8 @@ class NavigatorServerPickerTest {
             AbstractInventory picker = player.getOpenInventory();
             Assertions.assertNotSame(navigator, picker, "the picker replaces the navigator");
             Assertions.assertTrue(deliver.deliveries().isEmpty(), "opening the picker must not connect");
-            Assertions.assertEquals("ElytraRace-1", nameOf(picker, 0), "the first entry is the service that sorts first");
-            Assertions.assertEquals("ElytraRace-2", nameOf(picker, 1), "the second entry follows by name");
+            Assertions.assertEquals("ElytraRace-1", nameOf(picker, 3), "the first entry is the service that sorts first");
+            Assertions.assertEquals("ElytraRace-2", nameOf(picker, 4), "the second entry follows by name");
         }
     }
 
@@ -121,7 +121,28 @@ class NavigatorServerPickerTest {
             env.tick();
 
             Assertions.assertTrue(deliver.deliveries().isEmpty(), "the picker opens instead of connecting");
-            Assertions.assertEquals("ElytraRace-1", nameOf(player.getOpenInventory(), 0), "the picker lists the one service");
+            Assertions.assertEquals("ElytraRace-1", nameOf(player.getOpenInventory(), 4), "the picker lists the one service");
+        }
+    }
+
+    @DisplayName("A click on the centred entry of a single running service connects to that service")
+    @Test
+    void clickingTheCentredSingleEntryDeliversToIt(Env env) {
+        RecordingDeliver deliver = new RecordingDeliver();
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.serveServices("ElytraRace", RACE_ONE);
+        Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
+        try (NavigatorFixture fixture = start(env, deliver, counts, NO_PORTALS)) {
+            openNavigator(fixture, player);
+            click(env, player.getOpenInventory(), player, new Click.Right(ELYTRA_RACE_SLOT));
+            env.tick();
+            AbstractInventory picker = player.getOpenInventory();
+
+            click(env, picker, player, new Click.Left(4));
+            env.tick();
+
+            Assertions.assertEquals(1, deliver.deliveries().size(), "exactly one delivery");
+            Assertions.assertEquals("ElytraRace-1", deliver.deliveries().getFirst().serverName(), "the single entry sits in column four and connects to its service");
         }
     }
 
@@ -138,7 +159,7 @@ class NavigatorServerPickerTest {
             env.tick();
             AbstractInventory picker = player.getOpenInventory();
 
-            click(env, picker, player, new Click.Left(1));
+            click(env, picker, player, new Click.Left(4));
             env.tick();
 
             Assertions.assertEquals(1, deliver.deliveries().size(), "exactly one delivery");
@@ -181,7 +202,7 @@ class NavigatorServerPickerTest {
             env.tick();
 
             Assertions.assertTrue(deliver.deliveries().isEmpty(), "no ready service means nobody is sent");
-            Assertions.assertEquals("ElytraRace-1", nameOf(player.getOpenInventory(), 0), "the picker lists the full and the not ready services");
+            Assertions.assertEquals("ElytraRace-1", nameOf(player.getOpenInventory(), 3), "the picker lists the full and the not ready services");
         }
     }
 
@@ -277,7 +298,7 @@ class NavigatorServerPickerTest {
             AbstractInventory picker = player.getOpenInventory();
             counts.serveServices("ElytraRace", new ServiceCount("ElytraRace-1", 50, 50), RACE_TWO);
 
-            click(env, picker, player, new Click.Left(0));
+            click(env, picker, player, new Click.Left(3));
             env.tick();
 
             Assertions.assertTrue(deliver.deliveries().isEmpty(), "a server that filled up since the picker opened must not be joined");
@@ -299,7 +320,7 @@ class NavigatorServerPickerTest {
             AbstractInventory picker = player.getOpenInventory();
             counts.serveServices("ElytraRace", RACE_TWO);
 
-            click(env, picker, player, new Click.Left(0));
+            click(env, picker, player, new Click.Left(3));
             env.tick();
 
             Assertions.assertTrue(deliver.deliveries().isEmpty(), "a server that is gone must not be joined");
@@ -319,7 +340,7 @@ class NavigatorServerPickerTest {
             env.tick();
             AbstractInventory picker = player.getOpenInventory();
 
-            click(env, picker, player, new Click.Left(1));
+            click(env, picker, player, new Click.Left(4));
             env.tick();
 
             Assertions.assertEquals("ElytraRace-2", deliver.deliveries().getFirst().serverName(), "the picked server is joined when it still qualifies");
@@ -339,7 +360,7 @@ class NavigatorServerPickerTest {
             env.tick();
             AbstractInventory picker = player.getOpenInventory();
 
-            InventoryPreClickEvent event = click(env, picker, player, new Click.Middle(0));
+            InventoryPreClickEvent event = click(env, picker, player, new Click.Middle(4));
             env.tick();
 
             Assertions.assertTrue(event.isCancelled(), "the click must be cancelled so no icon moves");
@@ -477,7 +498,7 @@ class NavigatorServerPickerTest {
             env.tick();
             AbstractInventory picker = player.getOpenInventory();
 
-            click(env, picker, player, new Click.Left(0));
+            click(env, picker, player, new Click.Left(3));
             env.tick();
 
             Assertions.assertTrue(deliver.deliveries().isEmpty(), "a full server must not be joined");
@@ -497,7 +518,7 @@ class NavigatorServerPickerTest {
             click(env, player.getOpenInventory(), player, new Click.Right(ELYTRA_RACE_SLOT));
             env.tick();
 
-            click(env, player.getOpenInventory(), player, new Click.Left(0));
+            click(env, player.getOpenInventory(), player, new Click.Left(3));
             env.tick();
 
             Assertions.assertTrue(deliver.deliveries().isEmpty(), "a server that is not ready must not be joined");
@@ -537,7 +558,7 @@ class NavigatorServerPickerTest {
 
             AbstractInventory sorted = player.getOpenInventory();
             Assertions.assertEquals(readsBefore + 1, counts.reads(), "the sort click reads the services exactly once");
-            Assertions.assertEquals("ElytraRace-2", nameOf(sorted, 0), "most players comes first: ElytraRace-2 has 10 against 3");
+            Assertions.assertEquals("ElytraRace-2", nameOf(sorted, 3), "most players comes first: ElytraRace-2 has 10 against 3");
             Assertions.assertEquals("▸ Most players", PickerTestSupport.loreOf(sorted, SORT_SLOT).get(1), "the second order is the active one");
             Assertions.assertTrue(deliver.deliveries().isEmpty(), "sorting connects nobody");
         }

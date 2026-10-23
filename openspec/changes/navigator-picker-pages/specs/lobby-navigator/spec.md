@@ -5,16 +5,22 @@
 ### Requirement: Serverauswahl blättert durch alle Dienste
 _The server list MUST show every running service on pages of at most 45 entries, with the navigation row at the bottom._
 
-Die Serverauswahl MUSS jeden laufenden Dienst des Ziels zeigen, auf Seiten zu höchstens 45 Einträgen. Die unterste Reihe ist immer die Navigationszeile mit dem Sortier-Item. Ab zwei Seiten zeigt sie den Vorige-Pfeil, die Anzeige „Seite x/y“ und den Nächste-Pfeil; ein Pfeil erscheint nur, wenn es in seine Richtung eine Seite gibt.
+Die Serverauswahl MUSS jeden laufenden Dienst des Ziels zeigen, auf Seiten zu höchstens 45 Einträgen. Die unterste Reihe ist immer die Navigationszeile: Der Vorige-Pfeil steht im ersten Slot, das Sortier-Item in der Mitte und der Nächste-Pfeil im letzten. Ein Pfeil erscheint nur, wenn es in seine Richtung eine Seite gibt. Ab zwei Seiten nennen die Pfeile ihre Zielseite, und die Lore des Sortier-Items zeigt „Seite x/y“. Eine nicht volle Reihe, also die letzte oder einzige Reihe einer Seite, MUSS zentriert sein: ihre `n` Einträge beginnen in Spalte `(9 − n) / 2`, ganzzahlig. Volle Reihen bleiben unverschoben.
 
 #### Scenario: Wenige Dienste ohne Seiten
 - **WHEN** sechs Dienste eines Minispiels laufen und ein Spieler die Serverauswahl öffnet
-- **THEN** zeigt das Inventar eine Reihe Einträge und darunter die Navigationszeile mit dem Sortier-Item
-- **AND** es erscheinen keine Pfeile und keine Seitenanzeige
+- **THEN** zeigt das Inventar eine Reihe Einträge in den Spalten eins bis sechs und darunter die Navigationszeile mit dem Sortier-Item in Slot 13
+- **AND** es erscheinen keine Pfeile und keine Seitenanzeige in der Lore
+
+#### Scenario: Ein Dienst steht in der Mitte
+- **WHEN** genau ein Dienst läuft und ein Spieler die Serverauswahl öffnet
+- **THEN** steht der Dienst in Slot 4, der Mitte der ersten Reihe
+- **AND** das Sortier-Item steht in Slot 13, der Mitte der Navigationszeile, und es erscheinen keine Pfeile
 
 #### Scenario: Mehr Dienste als eine Seite fasst
 - **WHEN** 100 Dienste laufen und ein Spieler die Serverauswahl öffnet
-- **THEN** zeigt Seite 1 die ersten 45 Einträge der aktiven Ordnung, die Anzeige „Seite 1/3“ und einen Pfeil nach rechts, aber keinen nach links
+- **THEN** zeigt Seite 1 die ersten 45 Einträge der aktiven Ordnung, in den Slots 0 bis 44
+- **AND** der Nächste-Pfeil in Slot 53 nennt „Nächste Seite · Seite 2/3“, das Sortier-Item in Slot 49 zeigt in seiner Lore „Seite 1/3“, und es gibt keinen Vorige-Pfeil in Slot 45
 
 #### Scenario: Seite zurück
 - **WHEN** der Spieler auf Seite 2 den Pfeil nach links anklickt
@@ -34,7 +40,7 @@ Die Serverauswahl MUSS jeden laufenden Dienst des Ziels zeigen, auf Seiten zu h�
 
 #### Scenario: Mehr als 54 Dienste werden nicht abgeschnitten
 - **WHEN** 60 Dienste laufen und der Spieler auf Seite 2 wechselt
-- **THEN** zeigt Seite 2 die restlichen 15 Dienste und die Anzeige „Seite 2/2“
+- **THEN** zeigt Seite 2 die restlichen 15 Dienste und die Lore des Sortier-Items „Seite 2/2“
 
 ### Requirement: Sortier-Item schaltet die Ordnung weiter
 _The sort item MUST cycle through four orders on each named click, start at name and return to page one on every change._

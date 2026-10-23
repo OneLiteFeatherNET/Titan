@@ -51,10 +51,10 @@ class NavigatorPickerPagingTest {
     private static final Pos SPAWN = new Pos(11.5, 40, 60);
     private static final LobbyPortals NO_PORTALS = List::of;
     private static final int PREVIOUS_SLOT = 45;
-    private static final int SORT_SLOT = 47;
+    private static final int SORT_SLOT = 49;
     private static final int NEXT_SLOT = 53;
-    // The sort item of a list that fits one row: the third slot of its navigation row.
-    private static final int ONE_ROW_SORT_SLOT = 11;
+    // The sort item of a list that fits one row: the middle slot of its navigation row.
+    private static final int ONE_ROW_SORT_SLOT = 13;
     private static final int SERVICE_SLOTS = 45;
     private static final String SERVICE_PREFIX = "ElytraRace-";
 
@@ -194,7 +194,7 @@ class NavigatorPickerPagingTest {
 
             NavigatorFixture.tick(env, NavigatorFixture.REFRESH_SECONDS * ServerFlag.SERVER_TICKS_PER_SECOND * 2);
 
-            Assertions.assertEquals("ElytraRace-001", nameOf(picker, 1), "a service that stopped stays listed until a click reads again");
+            Assertions.assertEquals("ElytraRace-001", nameOf(picker, 4), "a service that stopped stays listed until a click reads again: two entries are centred in columns three and four");
         }
     }
 

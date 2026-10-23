@@ -33,7 +33,7 @@ Regeln für alle Agenten:
 
 - [x] 2.1 Test zuerst (Unit, `PickerSortTest`): NAME (A–Z); MOST_PLAYERS absteigend mit Gleichstand nach Name; MOST_FREE mit Diensten ohne Limit zuletzt und Gleichstand nach Name; STATUS mit JOINABLE, dann NOT_READY, dann FULL und Gleichstand nach Name; `next()` von STATUS führt zu NAME, vier Schritte führen zurück. Verifikation: rot vor 2.2.
 - [x] 2.2 `PickerSort` (Enum mit Komparatoren und `next()`); `ServerPicker.stateOf` wird paketsichtbar; `STATUS_ORDER = List.of(JOINABLE, NOT_READY, FULL)` in `ServerPicker`; `ServerPicker.entries` ohne `limit` und mit Ordnung als Parameter. Verifikation: `./gradlew :features:navigator:test --tests '*PickerSortTest'` grün.
-- [x] 2.3 Test zuerst (Unit, `PickerLayoutTest`): Zeilen für 0, 1, 9, 10, 45 und 46 Dienste; Seiten für 45, 46 und 90; Slots der Navigationszeile je Seite (45 Vorige nur ab Seite 2, 47 Sortier-Item immer, 49 Seitenanzeige nur bei mehreren Seiten, 53 Nächste nur wenn eine Seite folgt). Dann `PickerLayout(rows, pages)` mit `Pagination`. Verifikation: `./gradlew :features:navigator:test --tests '*PickerLayoutTest'` grün.
+- [x] 2.3 Test zuerst (Unit, `PickerLayoutTest`): Zeilen für 0, 1, 9, 10, 45 und 46 Dienste; Seiten für 45, 46 und 90; Slots der Navigationszeile je Seite (45 Vorige nur ab Seite 2, 49 Sortier-Item immer, 53 Nächste nur wenn eine Seite folgt) und Zentrierung nicht voller Reihen (`serviceSlot`). Dann `PickerLayout(rows, pages)` mit `Pagination`. Verifikation: `./gradlew :features:navigator:test --tests '*PickerLayoutTest'` grün.
 - [x] 2.4 Test zuerst (Unit, `ServerPickerStyleTest` erweitert): die Lore des Sortier-Items nennt alle vier Ordnungen, markiert genau die aktive mit Pfeil und Farbe, die übrigen grau; Name des Items enthält die aktive Ordnung. Verifikation: rot, dann grün.
 - [x] 2.5 Verifikation der Welle: `./gradlew :features:navigator:test` für die reinen Klassen grün; Prüfung von Sleeps und Systemzeit in den neuen Tests (keine Treffer).
 
@@ -59,7 +59,7 @@ Regeln für alle Agenten:
 
 ## 6. Dokumentation und Nachweise
 
-- [x] 6.1 `docs/lobby-modules.md` im Abschnitt zum Navigator: Seiten zu 45 Einträgen, Navigationszeile mit Sortier-Item, die vier Ordnungen, Neulesen auf Klick. Commit `docs(navigator): describe paging and sorting of the server picker`. Verifikation: Werte (45, Slot 47, Schlüsselnamen, Ordnungsnamen) stimmen mit Code und Bundles überein.
+- [x] 6.1 `docs/lobby-modules.md` im Abschnitt zum Navigator: Seiten zu 45 Einträgen, Navigationszeile mit Sortier-Item, die vier Ordnungen, Neulesen auf Klick. Commit `docs(navigator): describe paging and sorting of the server picker`. Verifikation: Werte (45, Slot 49, Schlüsselnamen, Ordnungsnamen) stimmen mit Code und Bundles überein.
 - [x] 6.2 Review gegen die Spec (Haiku, effort medium, ohne Anteil am Code): jeder Szenario-Titel aus `specs/lobby-navigator/spec.md` ist durch einen Test abgedeckt; keine Sleeps und keine Systemzeit in den neuen Tests. Verifikation: Liste im Review-Ergebnis, keine offenen Punkte.
 - [x] 6.3 `./gradlew build` grün; `ColumnArchitectureTest` grün (die Column hängt nur an `core`); `openspec validate navigator-picker-pages --strict` grün. Der Archiv-Schritt (`docs(openspec): archive navigator-picker-pages`) folgt nach dem Merge durch den Nutzer und ist nicht Teil dieser Liste.
 

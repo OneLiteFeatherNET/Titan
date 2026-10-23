@@ -18,12 +18,10 @@ package net.onelitefeather.titan.feature.navigator;
 import net.onelitefeather.titan.core.paging.Pagination;
 
 /**
- * How many rows and pages the server picker needs, and where its navigation row sits. The bottom
- * row is always the navigation row: the previous arrow, the sort item, the page indicator and the
- * next arrow. A list that fits one page has only the rows its services need above it.
- *
- * <p>The sort item stays in the third slot of that row, so a paged list and a single page put it in
- * the same place relative to the row.
+ * How many rows and pages the server picker needs, where its navigation row sits and where each
+ * entry goes. The bottom row is always the navigation row: the previous arrow in its first slot,
+ * the sort item in its middle slot and the next arrow in its last. A list that fits one page has
+ * only the rows its services need above it.
  */
 record PickerLayout(int rows, int pages) {
 
@@ -39,24 +37,28 @@ record PickerLayout(int rows, int pages) {
         return new PickerLayout(contentRows + 1, 1);
     }
 
-    boolean paged() {
-        return this.pages > 1;
-    }
-
     int previousSlot() {
         return navigationStart();
     }
 
     int sortSlot() {
-        return navigationStart() + 2;
-    }
-
-    int indicatorSlot() {
-        return navigationStart() + 4;
+        return navigationStart() + ServerPicker.COLUMNS / 2;
     }
 
     int nextSlot() {
         return navigationStart() + ServerPicker.COLUMNS - 1;
+    }
+
+    /**
+     * The slot of entry {@code index} among the {@code count} entries of its page. A row that is
+     * not full is centred: its entries start in column {@code (COLUMNS - n) / 2}, so one entry sits
+     * in the middle column. Rendering and clicks both take the slot from here.
+     */
+    static int serviceSlot(int index, int count) {
+        int row = index / ServerPicker.COLUMNS;
+        int rowEntries = Math.min(ServerPicker.COLUMNS, count - row * ServerPicker.COLUMNS);
+        int offset = (ServerPicker.COLUMNS - rowEntries) / 2;
+        return row * ServerPicker.COLUMNS + offset + index % ServerPicker.COLUMNS;
     }
 
     /** The previous arrow shows on every page after the first, counted from zero. */
@@ -67,10 +69,6 @@ record PickerLayout(int rows, int pages) {
     /** The next arrow shows while a page follows {@code page}. */
     boolean nextShown(int page) {
         return page < this.pages - 1;
-    }
-
-    boolean indicatorShown() {
-        return paged();
     }
 
     private int navigationStart() {

@@ -284,9 +284,11 @@ Dienste beim Klick frisch; ein Server, der inzwischen voll oder nicht mehr da is
 Kann die Liste nicht gelesen werden, erscheint eine Chat-Meldung statt einer Liste.
 
 Die Serverliste blättert in Seiten zu 45 Diensten (`core`: `Pagination`, gemeinsam mit dem Lobbyswitcher).
-Die unterste Reihe ist immer die Navigationszeile: Vorige-Pfeil (ab Seite 2), Sortier-Item, Seitenanzeige
-„Seite x/y“ (nur bei mehr als einer Seite) und Nächste-Pfeil (nur wenn eine Seite folgt). Das Sortier-Item
-liegt im dritten Slot dieser Reihe: bei sechs Reihen (ab 37 Diensten) in Slot 47.
+Die unterste Reihe ist immer die Navigationszeile: Vorige-Pfeil im ersten Slot (nur ab Seite 2), Sortier-Item
+in der Mitte (Slot 13 bei zwei Reihen, Slot 49 bei sechs Reihen) und Nächste-Pfeil im letzten Slot (nur wenn
+eine Seite folgt). Ab zwei Seiten nennen die Pfeile ihre Zielseite, und die Lore des Sortier-Items zeigt
+„Seite x/y“. Eine nicht volle Reihe, also die letzte oder einzige Reihe einer Seite, ist zentriert: ihre `n`
+Einträge beginnen in Spalte `(9 − n) / 2`, ein einzelner Dienst steht in Spalte 4.
 Jeder Klick auf das Sortier-Item schaltet die Ordnung weiter: Name (A–Z, Standard), Meiste Spieler, Freie
 Plätze (Dienste ohne gemeldetes Limit zuletzt) und Status (beitretbar, nicht bereit, voll); bei Gleichstand
 entscheidet der Name. Ein Wechsel der Ordnung springt auf Seite 1. Die Texte stehen unter

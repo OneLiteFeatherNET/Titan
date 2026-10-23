@@ -51,7 +51,7 @@ class NavigatorPickerLifecycleTest {
     private static final ServiceCount RACE_ONE = new ServiceCount("ElytraRace-1", 3, 50);
     private static final int OPEN_CLOSE_COUNT = 20;
     private static final int PREVIOUS_SLOT = 45;
-    private static final int SORT_SLOT = 47;
+    private static final int SORT_SLOT = 49;
     private static final int NEXT_SLOT = 53;
 
     private static EventNode<Event> navigatorNode(Env env) {
