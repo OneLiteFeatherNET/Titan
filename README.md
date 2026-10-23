@@ -528,6 +528,26 @@ one the calendar wants, and stops only when nobody is online so the supervisor s
 busy service therefore waits; an operator can end it sooner with `/stop`. `apps/local` does not
 include this feature.
 
+#### Seasonal fog
+
+A season can give the lobby the fog of Slender's waiting lobby with `atmosphere: slender-fog`.
+The values are fixed in code (`LobbyDimensions`), and the season still needs its own world
+directory:
+
+```yaml
+seasons:
+  halloween:
+    world: halloween              # worlds/halloween/ with its map.json
+    from: "2026-10-25T00:00:00"   # example dates
+    to: "2026-11-02T00:00:00"
+    atmosphere: slender-fog       # optional; the only value; unknown values are logged and ignored
+```
+
+The atmosphere is read at startup, together with the world. The season's start and end change the
+world and restart the lobby, so the fog appears and disappears with the window. Changing
+`atmosphere` on a running season takes effect at the next start. Without the key the lobby keeps
+the plain overworld.
+
 ## Development
 
 ### Building from Source

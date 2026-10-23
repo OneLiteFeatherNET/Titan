@@ -26,4 +26,14 @@ public interface LobbyWorldChoice {
 
     /** @return the directory name under {@code worlds/}; empty for the default world */
     Optional<String> worldName();
+
+    /**
+     * Read at the same time as the world, before the lobby instance exists: the dimension has to
+     * be registered before any player can join it.
+     *
+     * @return the atmosphere the lobby's dimension carries; empty for the plain overworld
+     */
+    default Optional<LobbyAtmosphere> atmosphere() {
+        return Optional.empty();
+    }
 }

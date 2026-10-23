@@ -44,11 +44,11 @@ Die Atmosphäre fließt nicht in `RestartPolicy`, der Vergleich bleibt bei der W
 
 ### D4 Dimension in `common`, Werte als Konstanten
 
-`common/.../dimension/LobbyDimensions` registriert die Dimension und hält die Werte. Es gibt keine Konfiguration dafür; die Werte stehen als `static final` mit einem Kommentar, der die Quelle nennt (Cygnus `BlendedAtmosphere`, `share 0.3`). `LobbyDimensions.register(Optional<LobbyAtmosphere>)` liefert den `RegistryKey`; ohne Atmosphäre `DimensionType.OVERWORLD`.
+`common/.../dimension/LobbyDimensions` registriert die Dimension und hält die Werte. Es gibt keine Konfiguration dafür; die Werte stehen als `static final` mit einem Kommentar, der die Quelle nennt (Cygnus `BlendedAtmosphere`, `share 0.3`). `LobbyDimensions.register(Registries, Optional<LobbyAtmosphere>)` liefert den `RegistryKey`; ohne Atmosphäre `DimensionType.OVERWORLD`.
 
 Die Werte sind Literale in Titan, nicht aus Cygnus importiert: Titan hängt nicht von Cygnus ab. Ein Test rechnet die Mischung aus den Quellwerten (BRIGHT und Granskoga) mit `float`-Arithmetik nach und vergleicht mit den Konstanten. So ist die Quelle im Test sichtbar, und eine Abweichung fällt auf.
 
-`defaultClock` wird aus `MinecraftServer.getDimensionTypeRegistry().get(DimensionType.OVERWORLD).defaultClock()` übernommen, wie Cygnus es tut. Ohne die Uhr hätte die Dimension die Standarduhr des Builders, und `daytime` würde ins Leere greifen.
+`defaultClock` wird aus `registries.dimensionType().get(DimensionType.OVERWORLD).defaultClock()` übernommen, wie Cygnus es tut. Ohne die Uhr hätte die Dimension die Standarduhr des Builders, und `daytime` würde ins Leere greifen.
 
 Die Dimension bekommt `SUN_ANGLE` und `MOON_ANGLE` = 180 wie in Cygnus. Das fixiert den Sonnenstand im Nebel; eine Sichtprüfung auf dem Testserver ist Teil der Aufgaben.
 

@@ -418,6 +418,28 @@ prüft jede Minute und nach jedem Verlassen, ob die gestartete von der gewünsch
 und stoppt die Lobby erst, wenn kein Spieler mehr online ist. Ein belegter Dienst kann daher
 länger warten; ein Betreiber kann ihn mit `/stop` sofort beenden.
 
+### Saison-Atmosphäre (Nebel)
+
+Eine Saison kann der Lobby den Nebel der wartenden Slender-Lobby geben:
+`atmosphere: slender-fog`. Die Werte sind im Code festgelegt (`LobbyDimensions` in `common`,
+hergeleitet aus Cygnus: Granskoga-Atmosphäre zu 30 % in Richtung `BRIGHT` gemischt). Die Saison
+braucht trotzdem eine eigene Welt.
+
+```yaml
+seasons:
+  halloween:
+    world: halloween              # worlds/halloween/ mit map.json
+    from: "2026-10-25T00:00:00"   # Beispieldaten
+    to: "2026-11-02T00:00:00"
+    atmosphere: slender-fog       # optional; einziger Wert; unbekannte Werte werden geloggt und ignoriert
+```
+
+Die Atmosphäre wird beim Start zusammen mit der Welt gelesen. Beginn und Ende der Saison ändern
+die Welt und starten die Lobby neu, damit kommt und geht der Nebel mit dem Fenster. Eine Änderung
+von `atmosphere` an einer laufenden Saison wirkt erst beim nächsten Start. Ohne den Schlüssel
+bleibt die Lobby in der Overworld. Die Dimension wird vor der Lobby-Instanz registriert; die
+Overworld-Uhr bleibt ihre Uhr, damit `daytime` weiter funktioniert.
+
 ## Portale (`portal`)
 
 Portale sind Kartendaten: Die Liste `portals` steht in der `map.json` der Welt (auch der einer

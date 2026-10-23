@@ -29,6 +29,7 @@ final class SeasonSettings {
     static final String FROM_FIELD = "from";
     static final String TO_FIELD = "to";
     static final String ENABLED_FIELD = "enabled";
+    static final String ATMOSPHERE_FIELD = "atmosphere";
 
     static final String WORLDS_DIRECTORY = "worlds";
     // Kept here because a column sees only core; an apps test pins it to MapEntry.MAP_FILE_NAME.

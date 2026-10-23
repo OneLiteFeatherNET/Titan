@@ -23,11 +23,14 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
 import java.util.ServiceLoader;
 import net.minestom.server.instance.InstanceContainer;
+import net.minestom.server.world.DimensionType;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.common.map.MapProvider;
+import net.onelitefeather.titan.core.module.LobbyAtmosphere;
 import net.onelitefeather.titan.core.module.LobbyWorldChoice;
 import net.onelitefeather.titan.feature.season.SeasonChoices;
 import org.junit.jupiter.api.AfterEach;
@@ -90,6 +93,31 @@ class SeasonLobbyWorldTest {
     @Test
     void outsideTheWindowTheDefaultWorldIsLoaded(Env env) {
         Assertions.assertEquals("world", load(env, IN_SUMMER).getActiveLobby().name(), "no active season must keep the default world");
+    }
+
+    @DisplayName("Inside a window with an atmosphere the lobby instance is created in the fog dimension")
+    @Test
+    void insideTheWindowTheFogDimensionIsUsed(Env env) {
+        Config.setProperty("seasons.winter.atmosphere", "slender-fog");
+
+        InstanceContainer lobby = createLobby(env, IN_WINTER);
+
+        Assertions.assertNotEquals(DimensionType.OVERWORLD, lobby.getDimensionType(), "the season's atmosphere must put the lobby into its own dimension");
+    }
+
+    @DisplayName("Outside the window the lobby instance stays in the overworld, even with an atmosphere configured")
+    @Test
+    void outsideTheWindowTheOverworldIsUsed(Env env) {
+        Config.setProperty("seasons.winter.atmosphere", "slender-fog");
+
+        InstanceContainer lobby = createLobby(env, IN_SUMMER);
+
+        Assertions.assertEquals(DimensionType.OVERWORLD, lobby.getDimensionType(), "a season that is not active must not give its atmosphere");
+    }
+
+    private InstanceContainer createLobby(Env env, Clock clock) {
+        Optional<LobbyAtmosphere> atmosphere = PlatformBeans.lobbyAtmosphere(List.of(SeasonChoices.at(clock, this.base.resolve("worlds"))));
+        return PlatformBeans.createLobbyInstance(env.process(), env.process().instance(), atmosphere);
     }
 
     @DisplayName("The service loader finds exactly the season choice on the cloudnet classpath")

@@ -8,4 +8,5 @@ seasons:
   #   from: "2026-12-01T00:00:00"   # inclusive, local time in seasons.zone
   #   to: "2027-01-07T00:00:00"     # exclusive
   #   enabled: true                 # switch that takes effect without restarting the configuration
+  #   atmosphere: slender-fog       # optional, read at startup; the only value; unknown values are logged
   # Date-times must be quoted: an unquoted value is dropped by the YAML loader and reported as missing.

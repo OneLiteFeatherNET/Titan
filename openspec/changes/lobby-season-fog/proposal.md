@@ -38,7 +38,7 @@ Keine. Die Atmosphäre ist eine Eigenschaft der Saison und gehört in die besteh
 - **Code:**
   - `core`: `LobbyAtmosphere` (Enum mit Konfigurationsschlüssel), Default-Methode `atmosphere()` in `LobbyWorldChoice`.
   - `features/season`: Lesen von `seasons.<id>.atmosphere` (`SeasonAtmospheres`), `SeasonWorldChoice` liefert die Atmosphäre, `SeasonSettings` mit dem Feldnamen. Die Column hängt weiter nur an `core`.
-  - `common`: `LobbyDimensions` registriert die Dimension über `MinecraftServer.getDimensionTypeRegistry()` und baut sie aus den Konstanten.
+  - `common`: `LobbyDimensions` registriert die Dimension über `Registries.dimensionType()` und baut sie aus den Konstanten.
   - `runtime`: `PlatformBeans` wählt die Atmosphäre aus derselben Auswahl wie die Welt, registriert die Dimension und legt die Instanz damit an.
 - **Abhängigkeiten:** keine neuen Bibliotheken. Minestom bleibt bei 26.2 (`DimensionType.builder()`, `EnvironmentAttribute`).
 - **Nutzertexte:** neue Warnung im Log (Englisch, wie die übrigen Season-Logs). Keine Spieltexte.
