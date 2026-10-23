@@ -97,17 +97,34 @@ Ein Spieler MUSS höchstens einen Tanz gleichzeitig ausführen. Zwischen zwei St
 - **THEN** startet der Tanz
 
 ### Requirement: Die Kamera zeigt den Tanzenden von außen
-_While dancing, the dancer views himself from a fixed camera entity that is removed again on stop._
+_While dancing, the dancer views his NPC from a fixed camera entity that is removed again on stop._
 
-Beim Start eines Tanzes MUSS die Lobby eine unsichtbare Kameraentität erzeugen, die nur dem Tanzenden sichtbar ist, etwa 3,5 Blöcke vor ihm auf Augenhöhe steht und auf ihn blickt. Die Lobby MUSS dem Spieler mit `CameraPacket` diese Entität als Kamera setzen. Jeder Stopp-Pfad MUSS die Kamera mit `CameraPacket` wieder auf den Spieler setzen und die Entität entfernen.
+Beim Start eines Tanzes MUSS die Lobby eine unsichtbare Kameraentität erzeugen, die nur dem Tanzenden sichtbar ist, etwa 3,5 Blöcke vor dem NPC auf Augenhöhe steht und auf dessen Augen blickt. Die Kameraentität MUSS vom Typ `ITEM_DISPLAY` ohne Item sein, weil dieser Typ keine Größe hat und nichts rendert. Die Lobby MUSS dem Spieler mit `CameraPacket` diese Entität als Kamera setzen. Jeder Stopp-Pfad MUSS die Kamera mit `CameraPacket` wieder auf den Spieler setzen und die Entität entfernen.
 
 #### Scenario: Kamera beim Start
 - **WHEN** ein Spieler einen Tanz startet
-- **THEN** sieht er die Lobby aus der Kameraentität, die auf ihn blickt, und nur er kennt diese Entität
+- **THEN** sieht er über die Kameraentität seinen NPC, die Kamera steht davor und blickt auf dessen Augen, und nur er kennt diese Entität
 
 #### Scenario: Kamera nach dem Stopp
 - **WHEN** ein Tanz stoppt
 - **THEN** ist die Kamera wieder der Spieler, und die Kameraentität existiert nicht mehr
+
+### Requirement: Ein NPC tanzt in der Sicht des Tanzenden
+_The dancer sees a mannequin in his skin dance in front of the camera; other players only see the real player._
+
+Beim Start eines Tanzes MUSS die Lobby genau einen NPC vom Typ `MANNEQUIN` an der Position und mit der Blickrichtung des Tanzenden erzeugen. Der NPC MUSS das Profil des Tanzenden tragen (seinen Skin, sonst Name und Id), unbeweglich sein und nur dem Tanzenden angezeigt werden. Jeder Tanzschritt MUSS sowohl den Spieler als auch den NPC erreichen. Jeder Stopp-Pfad MUSS den NPC entfernen.
+
+#### Scenario: NPC beim Start
+- **WHEN** ein Spieler einen Tanz startet
+- **THEN** existiert genau ein NPC an seiner Position, mit seinem Skin, und nur er sieht ihn
+
+#### Scenario: Schritt erreicht den NPC
+- **WHEN** der Tanz einen Armschwung oder das Ducken ausführt
+- **THEN** schwingt der NPC den Arm beziehungsweise duckt sich, während der echte Spieler die gleiche Bewegung ausführt
+
+#### Scenario: Der NPC verschwindet mit dem Tanz
+- **WHEN** ein Tanz stoppt, aus welchem Grund auch immer
+- **THEN** ist der NPC aus der Instanz entfernt, und andere Spieler haben ihn nie gesehen
 
 ### Requirement: Stopp-Auslöser beenden den Tanz
 _Movement, input, attacks, interactions, leaving the instance, disconnects, the stop button and errors all end a dance._
@@ -141,7 +158,7 @@ Ein Tanz MUSS enden, wenn der Spieler sich über eine kleine Schwelle bewegt, ei
 ### Requirement: Jeder Stopp stellt Pose, Kamera und Aufgabe wieder her
 _Whatever ends a dance, the player is left standing with his own camera, and a failure never leaves the camera behind._
 
-Bei jedem Ende MUSS die Pose auf `STANDING` stehen, der Spieler wieder die eigene Kamera haben und die Kameraentität entfernt sein. Ein Fehler im Tanz DARF weder die Kamera noch die Aufgabe des Tanzes zurücklassen; ein doppelter Stopp DARF nichts verändern.
+Bei jedem Ende MUSS die Pose auf `STANDING` stehen, der Spieler wieder die eigene Kamera haben, die Kameraentität und der NPC entfernt sein. Ein Fehler im Tanz DARF weder die Kamera noch die Aufgabe des Tanzes zurücklassen; ein doppelter Stopp DARF nichts verändern.
 
 #### Scenario: Scheitert das Zurücksetzen der Pose
 - **WHEN** das Zurücksetzen der Pose beim Stopp eine Ausnahme wirft
