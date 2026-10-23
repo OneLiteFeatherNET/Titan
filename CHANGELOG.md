@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.3.2](https://github.com/OneLiteFeatherNET/Titan/compare/v4.3.1...v4.3.2) (2026-10-23)
+
+
+### Bug Fixes
+
+* **dance:** dance through a public npc and open the dance list from quick actions ([#476](https://github.com/OneLiteFeatherNET/Titan/issues/476)) ([02da30d](https://github.com/OneLiteFeatherNET/Titan/commit/02da30d947088171876848dc34bb3d322f6bddd8))
+
 ## [4.3.1](https://github.com/OneLiteFeatherNET/Titan/compare/v4.3.0...v4.3.1) (2026-10-23)
 
 
