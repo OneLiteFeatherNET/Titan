@@ -7,8 +7,8 @@
 
 ## 2. Schnellaktion und Befehl (`features/dance`)
 
-- [x] 2.1 Test zuerst (Unit, `QuickActionRegistrationTest`): Nach der Registrierung enthält `Registry#getTag(DialogTags.QUICK_ACTIONS)` den Schlüssel `titan:dances`; der Dialog ist ein `Dialog.Notice` mit genau einem Knopf, dessen Aktion `DialogAction.Custom` mit `titan:dances/open` ist. Verifikation: rot, dann grün.
-- [x] 2.2 `QuickActionRegistration`: Dialog registrieren, Tag über die einzige reflektierte Methode `add` eintragen; schlägt die Reflexion fehl, WARN-Zeile und weiter. Der Warnpfad ist nicht eigens getestet; der Test `QuickActionRegistrationTest` prüft den Erfolgsweg gegen die gepinnte Minestom-Version.
+- [x] 2.1 Test zuerst (Unit, `QuickActionDialogTest`): Nach der Registrierung enthält `Registry#getTag(DialogTags.QUICK_ACTIONS)` den Schlüssel `titan:dances`; der Dialog ist ein `Dialog.Notice` mit genau einem Knopf, dessen Aktion `DialogAction.Custom` mit `titan:dances/open` ist. Verifikation: rot, dann grün.
+- [x] 2.2 Dialog über Pica 0.1.5 (`DialogTagRegistry#addQuickAction`) registrieren; beim ersten Spawn schickt `DanceModule` jedem Spieler per `sendTags` das `TagsPacket` mit `minecraft:quick_actions`. Ohne Reflexion. Geprüft von `QuickActionTagsIntegrationTest` (Versand nur beim ersten Spawn).
 - [x] 2.3 Test zuerst (Unit, `DanceMenuTest`): Dialog zeigt nur erlaubte Tänze (Berechtigung `spin` fehlt → kein Knopf), enthält immer Stopp, jeder Tanz-Knopf sendet `titan:dance` mit `{id}`; Texte in Deutsch und Englisch. Verifikation: rot, dann grün.
 - [x] 2.4 `DanceMenu`, `DanceKeys`, `DanceMessages` mit `titan/dance/messages_de.properties` und `messages_en.properties`; Bundle-Test (gleiche Schlüssel in beiden Dateien, alle Schlüssel gerendert).
 - [x] 2.5 Test zuerst (Unit, `DancePayloadTest`): gültige Id → Tanz; fehlende Id, unbekannte Id, falscher Typ, `null`-Payload → leer. Verifikation: rot, dann grün.
@@ -43,7 +43,7 @@
 
 ## 7. Dokumentation
 
-- [x] 7.1 `docs/lobby-modules.md`: Abschnitt „Tanz (`dance`)“ mit Schnellaktion, Befehl, Stopp-Pfaden und Hinweis auf die Minestom-Reflexion.
+- [x] 7.1 `docs/lobby-modules.md`: Abschnitt „Tanz (`dance`)“ mit Schnellaktion, Befehl, Stopp-Pfaden und Hinweis auf die Tag-Registry von Pica.
 - [x] 7.2 `README.md`: Liste der Befehle um `/tanz` (Alias `/dance`) ergänzen, sofern dort Befehle aufgeführt sind.
 - [x] 7.3 Spec-Delta mit der Implementierung abgleichen (Szenario-Titel, Ids, Abklingzeit, Schwelle, Priorität).
 
@@ -56,4 +56,4 @@
 
 - [x] 9.1 Commit `docs(openspec): propose lobby-dances` (Artefakte und Aufgaben).
 - [ ] 9.2 Commit `feat(dance): add lobby dances with quick-action dialog and camera view` (Code, Tests, Dokumentation, abgehakte Aufgaben).
-- [ ] 9.3 Pull Request öffnen mit dem Titel `feat(dance): add lobby dances with quick-action dialog and camera view`. Beschreibung auf Englisch: Schnellaktion und Tag-Eintrag (Reflexion, Begründung), Tänze, Stopp-Pfade, Kamera, Testnachweis, offene Sichtprüfung. Abschließend `https://claude.ai/code/session_01AM6yGQ33vvJqWg39vCAcYt`. Danach nur auf grüne CI warten (`gh pr checks --watch`); Merge und Release macht der Nutzer.
+- [ ] 9.3 Pull Request öffnen mit dem Titel `feat(dance): add lobby dances with quick-action dialog and camera view`. Beschreibung auf Englisch: Schnellaktion und Tag-Eintrag (Pica-Tag-Registry, TagsPacket je Spieler beim ersten Spawn, ohne Reflexion), Tänze, Stopp-Pfade, Kamera, Testnachweis, offene Sichtprüfung. Abschließend `https://claude.ai/code/session_01AM6yGQ33vvJqWg39vCAcYt`. Danach nur auf grüne CI warten (`gh pr checks --watch`); Merge und Release macht der Nutzer.

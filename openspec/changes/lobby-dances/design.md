@@ -26,11 +26,11 @@ Minestom `2026.10.07-26.2` bringt die Dialog-API mit: `MinecraftServer.getDialog
 
 Die Column registriert Dialog und Tag selbst, beim Aufbau des `BeanScope`. Das erfüllt die Anforderung „vor dem Serverstart“: Der Aufbau liegt vor `bootstrap.start()`. Eine Registrierung in `common` oder `PlatformBeans` wäre nur nötig, wenn eine andere Komponente den Eintrag bräuchte; das braucht keine. Die Column bleibt dadurch bei `core` als einziger Abhängigkeit.
 
-### D2 Tag-Eintrag über eine reflektierte Methode
+### D2 Tag-Eintrag über Pica
 
-Minestom `2026.10.07-26.2` hat keine öffentliche Methode, um Einträge in einen Tag zu schreiben. `Registry#getOrCreateTag` liefert ein `RegistryTagImpl.Backed`, dessen einzige Schreibmethode `add(RegistryKey)` paketprivat und `@ApiStatus.Internal` ist (per `javap` im Jar geprüft; die Tags des Dialog-Registrys kommen sonst nur aus Minestoms eigenen Ressourcen). Die Column ruft diese eine Methode per Reflexion auf: `Class.forName("net.minestom.server.registry.RegistryTagImpl$Backed")`, `getDeclaredMethod("add", RegistryKey.class)`, `setAccessible(true)`. Auf dem Klassenpfad (Shadow-Jar) liegt Minestom im unbenannten Modul, dort ist das ohne `--add-opens` möglich.
+Minestom `2026.10.07-26.2` hat keine öffentliche Methode, um Einträge in einen Tag zu schreiben. Die Column nutzt `DialogTagRegistry` aus Pica 0.1.5 (`net.onelitefeather:pica`, gleiche Minestom-Version): `addQuickAction` registriert den Dialog und merkt sich die Mitgliedschaft. Beim ersten Spawn schickt `DanceModule` dem Spieler per `sendTags` ein `TagsPacket` mit `minecraft:quick_actions`. Pica bietet dafür `eventNode()`; die Column hängt diesen Knoten nicht an, weil ArchUnit `EventNode#addChild` in Features verbietet, und ruft `sendTags` aus einem FeatureNode-Listener auf. Keine Reflexion.
 
-Schlägt die Reflexion fehl, protokolliert die Column eine WARN-Zeile und läuft weiter: Der Befehl `/tanz` funktioniert dann trotzdem. Ein Test sichert den Weg für die gepinnte Minestom-Version ab, damit ein Versionssprung auffällt. Die Reflexion wird entfernt, sobald Minestom einen öffentlichen Weg bietet.
+Der Test `QuickActionTagsIntegrationTest` prüft Versand beim ersten Spawn und kein erneuter Versand beim Nicht-Erststart.
 
 ### D3 Schnellaktion als `Dialog.Notice`
 
@@ -93,7 +93,7 @@ Die Tänze stehen im Code; eine Konfigurationsdatei und ein `features.*`-Flag si
 
 ## Risks / Trade-offs
 
-- **Reflexion auf Minestom-Interna**: Ein Versionssprung kann `add` umbenennen. Die WARN-Zeile und der Test fangen das ab; der Befehl bleibt nutzbar.
+- **Abhängigkeit Pica**: Pica 0.1.5 hängt an derselben Minestom-Version wie die Lobby; ein Versionssprung wird über die Catalog-Version gemeinsam gehoben.
 - **Kamera-Blick fest**: Die Kamera steht an der Startposition und schaut auf den Tanzenden; Kopfnicken dreht den Körper, nicht die Kamera. Die Pose wird also von der Seite gesehen, nicht von vorne.
 - **`setInstance(...).join()`**: Das Blockieren auf dem Tick-Thread ist nur harmlos, wenn die Chunks der Lobby geladen sind; die Lobby lädt sie beim Start.
 - **Notenblock-Töne für alle**: Töne gehen an alle Spieler in der Instanz, nicht nur an den Tanzenden. Das ist beabsichtigt, weil die Lobby gemeinsam genutzt wird.

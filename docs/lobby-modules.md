@@ -532,9 +532,9 @@ Berechtigung erneut.
   Riptide-Drehflag neu. Ein direktes `setPose` hält deshalb nicht; die Column setzt die Flags
   (`MinestomDanceEffects`).
 - **Schnellaktion eintragen:** Minestom 2026.10.07-26.2 bietet keine öffentliche Methode, um einen Tag
-  zu befüllen. `QuickActionRegistration` ruft die paketprivate `RegistryTagImpl.Backed#add` einmal per
-  Reflexion auf. Schlägt das fehl, loggt die Lobby eine Warnung; `/tanz` funktioniert weiter.
-  `QuickActionRegistrationTest` prüft den Weg bei jedem Build, damit ein Versionssprung auffällt.
+  zu befüllen. Die Lobby nutzt dafür `DialogTagRegistry` aus Pica 0.1.5: Der Dialog wird registriert und
+  jedem Spieler beim ersten Spawn als `TagsPacket` mit `minecraft:quick_actions` geschickt (`DanceModule`).
+  `QuickActionDialogTest` prüft den Knopf, `QuickActionTagsIntegrationTest` den Versand beim ersten Spawn.
 - **Telemetrie:** Zähler `titan.dance.started{dance}`, kein Span (Starts sind selten, die Schritte
   zu häufig für einen Span).
 
