@@ -33,11 +33,11 @@ Nicht Teil dieser Änderung:
 **Otis-Voraussetzungen (eigene Changes in `OneLiteFeatherNET/Otis`, nicht Teil dieser Änderung):**
 
 1. **Dienst-Authentifizierung (blockierend für die Produktion):** Otis hat heute keine Authentifizierung, auch nicht für Schreibzugriffe auf `/v1/players/{uuid}/settings`. Vor dem Einschalten in Produktion braucht Otis einen Mechanismus (z. B. Bearer-Token je Dienst). Titan sendet das Token, sobald `otis.token` gesetzt ist. Bis dahin gilt das Netz als einzige Schranke, siehe `design.md`, Sicherheit.
-2. **Produktionsmigration prüfen (blockierend):** Die Tabelle `player_setting` kommt aus der Flyway-Migration V2, die mit 1.17.0 eingeführt wurde. Der Stand der Produktion ist nicht verifiziert. Die Konfiguration `hbm2ddl.auto: update` ist im Repository gesetzt; der Prod-Override ist nicht eingesehen.
-3. **Otis-Version ausgerollt (blockierend):** Otis mit der Settings-API (ab 1.17.0) muss in Produktion laufen. Die Client-Abhängigkeit `net.onelitefeather.otis:otis-client` muss eine Version mit den Settings-Pfaden liefern. Das Repository ist anonym nicht lesbar; die Version ist zu prüfen.
+2. **Produktionsmigration (erledigt, Stand 2026-10-24):** `GET /v1/players/{uuid}/settings` liefert in Produktion 200 mit `[]`. Die Tabelle `player_setting` aus Flyway V2 ist damit angelegt.
+3. **Otis-Version ausgerollt (erledigt, Stand 2026-10-24):** Produktion läuft Otis 1.17.0 (`harbor.onelitefeather.dev/onelitefeather/otis:1.17.0`). Der Client ist eine eigene JSON-Abbildung, keine Abhängigkeit auf `net.onelitefeather.otis:otis-client` (siehe `design.md`, D12).
 4. **Optional, nicht blockierend:** `If-Match` mit Versionskonflikt (409). Ohne sie gilt Last-Write-Wins je Schlüssel, was hier genügt, weil ein Spieler immer nur auf einer Lobby ist.
 
-**Lobby-seitig:** Das Hotbar-Item braucht einen freien Slot (Vorschlag: Slot 7). Die Hotbar-Konfliktprüfung meldet einen Konflikt beim Start.
+**Lobby-seitig:** Das Hotbar-Item liegt auf Slot 7, der frei ist (siehe `design.md`, D14). Die Hotbar-Konfliktprüfung meldet einen Konflikt beim Start.
 
 ## Capabilities
 
@@ -56,7 +56,7 @@ Der Pull-Request-Titel und der Squash-Commit lauten `feat(settings): add a lobby
 ## Impact
 
 - **Code:** neues Modul `features/settings` (Column `settingsColumn`, Paket `net.onelitefeather.titan.feature.settings`); neues Modul `platform/otis` (Adapter, Paket `net.onelitefeather.titan.platform.otis`); neue Typen im Paket `net.onelitefeather.titan.core.settings` in `core`. Die Column hängt nur an `core`, wie jede Column.
-- **Abhängigkeiten:** keine neuen Bibliotheken. `java.net.http` aus dem JDK; für Tests ein JDK-HTTP-Server auf einem freien Port in `integrationTest`. Otis-Client nur, wenn die Prüfung in den Voraussetzungen ergibt, dass er lauffähig ist; sonst eigene minimale JSON-Abbildung.
+- **Abhängigkeiten:** keine neuen Bibliotheken. `java.net.http` aus dem JDK; für Tests ein JDK-HTTP-Server auf einem freien Port in `integrationTest`. Kein Otis-Client. Die JSON-Abbildung nutzt Gson, das `common` bereits verwendet; im neuen Modul wird die Abhängigkeit explizit deklariert.
 - **Betrieb:** Neue Konfigurationsschlüssel mit Standardwert `settings.enabled: false`. Produktion schaltet die Funktion nach den Otis-Voraussetzungen ein. Neues Secret `TITAN_OTIS_TOKEN` (nur Umgebungsvariable, nie geloggt).
 - **Nutzertexte:** `titan/settings/messages_de.properties` und `messages_en.properties`.
 - **Hotbar:** Slot 7 wird für das Einstellungs-Item belegt; Slot 0 (Jump and Run), 4 (Navigator) und 8 (Lobby-Switcher, nur Profil `cloudnet`) bleiben unverändert.

@@ -47,7 +47,7 @@ Die Lobby MUSS dem Spieler über das Hotbar-Item in Slot 7 und über `/settings`
 ### Requirement: Ein Klick schaltet die Option um und wirkt sofort
 _A click flips the value in memory at once; saving happens in the background._
 
-Ein Klick auf das Item einer Option MUSS den Wert dieser Option für den Spieler umschalten, das Item neu zeichnen und sofort die Listener benachrichtigen. Die Umschaltung darf nicht auf das Speichern warten. Andere Optionen des Spielers MÜSSEN unverändert bleiben.
+Ein Klick auf das Item einer Option MUSS den Wert dieser Option für den Spieler umschalten, das Menü auf den neuen Zustand umstellen und sofort die Listener benachrichtigen. Die Umschaltung darf nicht auf das Speichern warten. Andere Optionen des Spielers MÜSSEN unverändert bleiben.
 
 #### Scenario: Umschalten
 - **WHEN** ein Spieler eine aus stehende Option anklickt
@@ -169,7 +169,7 @@ Die Lobby MUSS die Ladedauer als Histogramm `titan.settings.load` mit dem Attrib
 - **WHEN** ein Spieler `titan:tag.enabled` umschaltet
 - **THEN** wird `titan.settings.toggled` mit dem Attribut `key=titan:tag.enabled` erhöht, ohne Spieler-UUID
 
-### Requirement: Der Befehl und das Menü sind englisch benannt
+### Requirement: Der Befehl ist englisch benannt
 _Commands stay in English; only the menu texts are localized._
 
 Der Befehl MUSS `settings` heißen, ohne deutschen Alias. Die Befehlsnamen DÜRFEN nicht übersetzt werden.

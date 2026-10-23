@@ -71,7 +71,7 @@ Das Laden holt die Liste mit `?namespace=titan`, nicht einzelne Schlüssel. Eine
 `OtisSettingsStore` nutzt `java.net.http.HttpClient` (eine Instanz je Prozess, HTTP/1.1 reicht). Es gibt:
 
 - Timeouts: Verbindungsaufbau `otis.connectTimeoutMillis` (Standard 1000), Anfrage `otis.requestTimeoutMillis` (Standard 2000).
-- Wiederholungen: Laden `otis.loadRetries` (Standard 1, nur bei Netzfehlern und 5xx); Schreiben `otis.writeRetries` (Standard 3) mit festem Abstand 500 ms, nur bei Netzfehlern und 5xx. 4xx wird nicht wiederholt; `404 player-not-found` beim Schreiben wird als „später erneut versuchen“ behandelt, weil Velocity den Spieler anlegt (offene Frage, siehe unten).
+- Wiederholungen: Laden `otis.loadRetries` (Standard 1, nur bei Netzfehlern und 5xx); Schreiben `otis.writeRetries` (Standard 3) mit festem Abstand 500 ms, nur bei Netzfehlern und 5xx. 4xx wird nicht wiederholt; `404 player-not-found` beim Schreiben wird als „später erneut versuchen“ behandelt, weil Velocity den Spieler anlegt (siehe D11).
 - Circuit Breaker, selbst gebaut (keine neue Bibliothek): nach `otis.circuitFailureThreshold` (Standard 3) Fehlern in Folge ist er offen; Anfragen werden für `otis.circuitOpenMillis` (Standard 30000) nicht gesendet. Danach geht er in einen Halb-offen-Zustand, in dem genau eine Anfrage erlaubt ist. Die Zeit kommt aus `Clock`.
 - Fallback: Ist der Breaker offen oder schlägt das Laden fehl, bleiben die Standardwerte gesetzt. Bereits geladene Werte im Prozess bleiben erhalten, auch wenn Otis danach ausfällt.
 
@@ -85,9 +85,9 @@ Ein `If-Match` in Otis (Voraussetzung 4 in der Proposal) würde einen 409 liefer
 
 ### D6 Menü mit Aves
 
-Das Menü ist ein Aves-Inventar mit einer Zeile je Option, Zeile 1 mit Schließen. Je Option ein Vanilla-Item: `LIME_DYE` für an, `GRAY_DYE` für aus; Name und Beschreibung aus den Übersetzungsschlüsseln `settings.<key>.name` und `settings.<key>.description`. Ein Klick ruft `toggle` auf, rendert nur das betroffene Item neu und schreibt mit Verzögerung (D7).
+Das Menü ist ein Aves-Inventar mit einer Zeile je Option, Zeile 1 mit Schließen. Je Option ein Vanilla-Item: `LIME_DYE` für an, `GRAY_DYE` für aus; Name und Beschreibung aus den Übersetzungsschlüsseln `settings.<key>.name` und `settings.<key>.description`. Ein Klick ruft `toggle` auf und schreibt mit Verzögerung (D7); danach öffnet der Spieler das Inventar der neuen Zustandskombination.
 
-Die Anzeige ist spielerspezifisch, daher wird das Inventar beim Öffnen gebaut und beim Schließen aus Aves entfernt. Ein Builder je Modul, register/unregister im Lebenszyklus, wie in `features/navigator` und `features/lobbyswitcher`. Zu prüfen in Aufgabe 1.1: ob Aves je Betrachter unterschiedliche Items erlaubt oder ob je Spieler ein eigener Inventar-Eintrag nötig ist. Ergebnis fließt in diesen Abschnitt zurück.
+Inventare sind nicht spielerspezifisch. Sie werden je Zustandskombination der registrierten Optionen und je Sprache (`de`, `en`) gebaut: höchstens 2 · 2^n Inventare für n Optionen, dokumentierte Obergrenze etwa 6 Optionen (also höchstens 128). Sie entstehen einmal beim Start und werden wie die geteilten Ansichten des Navigators (`features/navigator`) verwendet. Es gibt keinen Listener pro Spieler; das Öffnen wählt das Inventar anhand des aktuellen Zustands und der Sprache. Ein Builder je Modul, register/unregister im Lebenszyklus. Überschreitet die Zahl der Optionen die Obergrenze, wird die Strategie in einem eigenen Change neu bewertet.
 
 Texte: `titan/settings/messages_de.properties` und `messages_en.properties`, gleiche Schlüssel, Test prüft beide Dateien.
 
@@ -137,6 +137,29 @@ Otis hat keine Authentifizierung. Jeder mit Netzwerkzugang zu Otis kann die Eins
 
 Vor dem Einschalten in Produktion muss die Otis-Authentifizierung (Voraussetzung 1) gelandet sein. Die Lobby sendet das Token dann bereits, sobald `otis.token` gesetzt ist. Ohne Token und mit Otis-Authentifizierung schlägt jeder Aufruf mit 401 fehl, was der Breaker als Fehler zählt und der Start als Warnung meldet.
 
+### D11 Otis-Stand in Produktion (verifiziert 2026-10-24)
+
+- Produktion läuft Otis 1.17.0 (`harbor.onelitefeather.dev/onelitefeather/otis:1.17.0`). Die Voraussetzung „Version ausgerollt“ ist erfüllt.
+- `GET /v1/players/{uuid}/settings` liefert 200 mit `[]`. Die Migration V2 (`player_setting`) ist damit in Produktion gelaufen.
+- Velocity legt den Spieler bei jedem Beitritt an (`/otis/update/{uuid}` in den Produktions-Access-Logs). Ein 404 beim ersten Schreiben ist daher nicht zu erwarten. Die Behandlung von `404 player-not-found` als „später erneut versuchen“ (D4) bleibt nur als defensiver Fallback.
+- Einzige blockierende Voraussetzung ist die Dienst-Authentifizierung in Otis. Sie ist ein eigener Change in `OneLiteFeatherNET/Otis`.
+
+### D12 Client: eigene JSON-Abbildung statt `otis-client`
+
+Der Adapter nutzt nur zwei Endpunkte: die Liste mit `?namespace=titan` und `PUT /v1/players/{uuid}/settings/{key}`. Er bildet deren JSON selbst mit Gson ab, das `common` bereits verwendet. Der generierte `otis-client` entfällt: seine Veröffentlichung ist nicht prüfbar (das Repository ist anonym nicht lesbar), und für zwei Endpunkte lohnt keine generierte Abhängigkeit.
+
+### D13 Gradle-Modul `platform/otis`
+
+Der Adapter liegt in einem eigenen Gradle-Modul `platform/otis` (Paket `net.onelitefeather.titan.platform.otis`). So bleiben `core` und die Columns frei von HTTP. Das Modul hängt von `core` und Gson ab; die Abhängigkeit wird explizit deklariert.
+
+### D14 Hotbar-Slot 7
+
+Belegt sind Slot 0 (Jump and Run), 4 (Navigator) und 8 (Lobby-Switcher, nur Profil `cloudnet`). Slot 7 ist frei und wird für das Einstellungs-Item verwendet. Die Konfliktprüfung beim Start bleibt als Absicherung.
+
+### D15 Verzögerung beim Schreiben
+
+Die Verzögerung von 2 Sekunden (`otis.writeDebounceMillis`, D8) ist akzeptiert.
+
 ## Failure modes
 
 | Fall | Verhalten |
@@ -151,11 +174,3 @@ Vor dem Einschalten in Produktion muss die Otis-Authentifizierung (Voraussetzung
 | Spieler verlässt Server während des Ladens | Ergebnis verworfen |
 | Option wird in Registry nicht gefunden (z. B. nach Entfernen) | `isEnabled` liefert Standard; Eintrag bleibt in Otis unberührt |
 
-## Open questions
-
-1. Erlaubt Aves je Betrachter unterschiedliche Items? Entscheidet über D6 (Aufgabe 1.1).
-2. Legt Velocity den Spieler in Otis verlässlich beim Beitritt an? Sonst scheitert das erste Schreiben mit 404 (D4). Eventuell braucht es eine Otis-Änderung, die den Spieler beim ersten Schreiben anlegt.
-3. Ist `net.onelitefeather.otis:otis-client` in einer Version mit Settings-Pfaden veröffentlicht? Das Repository ist anonym nicht lesbar; oder die JSON-Abbildung im Adapter bleibt die Lösung.
-4. Soll `platform/otis` ein eigenes Gradle-Modul sein oder im bestehenden Plattform-Modul liegen? Vorschlag: eigenes Modul, damit `core` und die Columns frei von HTTP bleiben.
-5. Slot 7 für das Hotbar-Item: frei? Die Hotbar-Konfliktprüfung meldet einen Konflikt beim Start; bei Konflikt entscheidet der Nutzer über den Slot.
-6. Wie viel Verzögerung ist beim Schreiben akzeptabel? Vorschlag 2 Sekunden.

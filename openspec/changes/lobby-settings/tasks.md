@@ -2,12 +2,14 @@
 
 Reihenfolge: zuerst die Schnittstelle und das Menü mit dem In-Memory-Speicher, dann der Otis-Adapter. Jede Aufgabe mit Test beginnt rot, dann grün, dann aufräumen. Unit-Tests ohne Server, Netz, Zeit und Dateisystem; `Clock` wird injiziert; kein `Thread.sleep`. Integrationstests mit Cyano-`Env` und `env.tick()`; der Otis-Adapter wird gegen einen JDK-HTTP-Server auf Port 0 getestet.
 
-## 1. Vorlauf
+## 1. Vorlauf (Entscheidungen in `design.md`, D11 bis D15)
 
-- [ ] 1.1 Aves-Spike: prüfen, ob ein Inventar je Betrachter unterschiedliche Items zeigen kann (Ergebnis in `design.md` D6 festhalten).
-- [ ] 1.2 Otis-Voraussetzungen prüfen, nur lesend: Dienst-Authentifizierung vorhanden? Produktionsmigration V2 (`player_setting`) angewendet? Velocity legt Spieler beim Beitritt in Otis an? Ergebnis in `proposal.md` und `design.md` festhalten. Keine schreibenden Aufrufe gegen Produktion.
-- [ ] 1.3 Client-Abhängigkeit: Version von `net.onelitefeather.otis:otis-client` mit Settings-Pfaden bestätigen, oder eigene JSON-Abbildung festlegen (`design.md`, Frage 3).
-- [ ] 1.4 Hotbar-Slot 7 gegen `features/hotbar` prüfen (Konfliktprüfung) und in `design.md` Frage 5 beantworten.
+- [x] 1.1 Otis-Produktionsstand verifiziert: Otis 1.17.0, `GET /v1/players/{uuid}/settings` liefert 200 `[]`, Velocity-Update in den Access-Logs (D11).
+- [x] 1.2 Client: eigene JSON-Abbildung mit Gson im neuen Modul `platform/otis`, kein `otis-client` (D12, D13).
+- [x] 1.3 Hotbar-Slot 7 ist frei (D14).
+- [x] 1.4 Aves: geteilte Inventare je Zustandskombination und Sprache, keine Listener pro Spieler (D6). Ein Spike entfällt.
+- [x] 1.5 Schreib-Verzögerung von 2 Sekunden akzeptiert (D15).
+- [ ] 1.6 Blockierend für die Produktion: Dienst-Authentifizierung in Otis als eigener Change in `OneLiteFeatherNET/Otis`. Titan sendet das Token nach dem Merge.
 
 ## 2. Schnittstelle in `core` (`net.onelitefeather.titan.core.settings`)
 
@@ -31,8 +33,8 @@ Reihenfolge: zuerst die Schnittstelle und das Menü mit dem In-Memory-Speicher, 
 
 ## 4. Menü, Befehl, Hotbar-Item (`features/settings`)
 
-- [ ] 4.1 Test zuerst (Unit, `SettingsMenuTest`): ein Item je Option; Lime bei an, Grau bei aus; Klick schaltet um und zeichnet nur das betroffene Item neu; Texte de und en. Verifikation: rot, dann grün.
-- [ ] 4.2 `SettingsMenu` (Aves, ein Builder im Modul, Inventar beim Öffnen gebaut und beim Schließen entfernt, je Ergebnis aus 1.1).
+- [ ] 4.1 Test zuerst (Unit, `SettingsMenuTest`): ein Item je Option; Lime bei an, Grau bei aus; Klick schaltet um und führt zum Inventar der neuen Kombination; Texte de und en. Verifikation: rot, dann grün.
+- [ ] 4.2 `SettingsMenu` (Aves, ein Builder im Modul, geteilte Inventare je Zustandskombination und Sprache, beim Start gebaut, register/unregister im Lebenszyklus; D6).
 - [ ] 4.3 `messages_de.properties` und `messages_en.properties` mit gleichen Schlüsseln; Bundle-Test prüft, dass alle Schlüssel in beiden Dateien stehen und gerendert werden.
 - [ ] 4.4 Test zuerst (Env, `SettingsCommandIntegrationTest`): `/settings` öffnet das Menü; `/einstellungen` ist unbekannt; Konsole erhält eine Meldung und nichts öffnet sich. Verifikation: rot, dann grün.
 - [ ] 4.5 `SettingsCommand` (`settings`, ohne Alias) mit Registrierung und Abmeldung im Lebenszyklus.
@@ -41,6 +43,7 @@ Reihenfolge: zuerst die Schnittstelle und das Menü mit dem In-Memory-Speicher, 
 
 ## 5. Otis-Adapter (`platform/otis`)
 
+- [ ] 5.0 Gradle-Modul `platform/otis` anlegen und in `settings.gradle.kts` einbinden; Abhängigkeiten `core` und Gson (explizit deklariert), kein `otis-client` (D12, D13).
 - [ ] 5.1 Test zuerst (Unit, `OtisJsonTest`): Antwort mit `key`, `value`, `version`, `updatedAt` lesen; unbekannte Felder ignorieren; Schreibanfrage als `{"value": …}`. Verifikation: rot, dann grün.
 - [ ] 5.2 `OtisSettingsStore` mit `java.net.http.HttpClient`, Timeouts aus Konfiguration.
 - [ ] 5.3 Test zuerst (Unit, `CircuitBreakerTest` mit `AdjustableClock`): nach drei Fehlern offen; nach 30 Sekunden halb offen mit genau einer Probe; Erfolg schließt; Fehler öffnet erneut. Verifikation: rot, dann grün.
