@@ -20,9 +20,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import net.onelitefeather.titan.core.portal.PlayerCounts;
 import net.onelitefeather.titan.core.portal.ServiceCount;
-import net.onelitefeather.titan.core.portal.SourceType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.onelitefeather.titan.core.portal.TaskJoin;
 
 /**
  * The players on a CloudNet task, read from the running services of the {@link PlayerCounts}
@@ -31,8 +29,6 @@ import org.slf4j.LoggerFactory;
  * lookup fails, which is not the same as a task that runs nowhere.
  */
 final class TaskPlayers {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(TaskPlayers.class);
 
     private final Optional<PlayerCounts> counts;
 
@@ -59,19 +55,8 @@ final class TaskPlayers {
         return OptionalInt.of(running.stream().mapToInt(ServiceCount::max).sum());
     }
 
-    /**
-     * The running services of a task: an empty list when the task runs nowhere, and an empty
-     * Optional when they cannot be read, because there is no provider or the lookup failed.
-     */
+    /** The running services of a task, read by the join rule shared with the join NPCs. */
     Optional<List<ServiceCount>> services(String task) {
-        if (this.counts.isEmpty() || !this.counts.get().supports(SourceType.TASK)) {
-            return Optional.empty();
-        }
-        try {
-            return Optional.of(this.counts.get().running(SourceType.TASK, task));
-        } catch (RuntimeException e) {
-            LOGGER.debug("Reading the services of task '{}' failed", task, e);
-            return Optional.empty();
-        }
+        return TaskJoin.services(this.counts, task);
     }
 }

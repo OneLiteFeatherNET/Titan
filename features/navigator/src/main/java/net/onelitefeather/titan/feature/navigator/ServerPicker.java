@@ -196,11 +196,6 @@ final class ServerPicker {
         return MiniMessage.miniMessage().deserialize(BRAND + "Servers</gradient> <gray>»</gray> <red><reason></red>", Placeholder.component("reason", NavigatorMessages.text(key, locale)));
     }
 
-    /** Whether a service can be joined: it has announced a limit and has a free slot. */
-    static boolean joinable(ServiceCount service) {
-        return service.limitAnnounced() && !service.full();
-    }
-
     static State stateOf(ServiceCount service) {
         if (service.full()) {
             return State.FULL;
