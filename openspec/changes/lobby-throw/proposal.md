@@ -8,14 +8,17 @@ Lobby-Spieler wollen sich gegenseitig necken, und Team-Mitglieder (Betreiber, He
 
 - Neues Feature-Modul `features/throw` (Gradle-Name und Column `throw`, Java-Paket `net.onelitefeather.titan.feature.throwing`, weil `throw` ein Java-Schlüsselwort ist).
 - **Aufnehmen:** Ein Spieler mit dem Recht `titan.throw` rechtsklickt (bei leerer Haupthand) einen anderen Spieler. Das Ziel sitzt danach als Passagier auf dem Kopf des Werfers.
-- **Werfen:** Der Werfer löst mit einem Linksklick den Wurf aus. Das Ziel fliegt in Blickrichtung mit begrenzter Geschwindigkeit. Die Geschwindigkeit setzt der Client des Ziels selbst um (wie beim bestehenden Feuerwerks-Boost), die Lobby schreibt nur den Impuls.
+- **Aufladen statt Sofortwurf:** Während der Trage hält der Werfer einen temporären vanilla Ladeträger (Stock mit Komponente `consumable`, Animation `bow`). Rechtsklick startet die Ladung, Loslassen wirft. Die Stärke wird linear auf die Geschwindigkeit abgebildet, mit Obergrenze von 1,5 s Ladezeit. Die Hand des Werfers wird nach jedem Pfad exakt wiederhergestellt. Begründung und verworfene Alternativen stehen in `design.md` (D1).
+- **Wurf:** Das Ziel fliegt in Blickrichtung mit Geschwindigkeit 8 bis 16 Blöcke/s, Standard 12. Die Geschwindigkeit setzt der Client des Ziels selbst um (wie beim bestehenden Feuerwerks-Boost), die Lobby schreibt nur den Impuls.
+- **Flugbahnvorschau:** Während des Ladens sieht nur der Werfer die vorhergesagte Flugbahn als vanilla Partikel, mit Landemarker. Die Vorschau ist eine Näherung.
+- **Fortschritt:** Actionbar-Leiste und steigender vanilla Ton, nur für den Werfer.
 - **Abbruch durch das Ziel:** Schleicht das Ziel, steigt es ab. Das zählt als Ablehnung und setzt eine kurze Sperre zwischen diesem Werfer und diesem Ziel.
-- **Opt-out (neu, Abhängigkeit `lobby-settings`):** Jeder Spieler kann in den Einstellungen „Kann geworfen werden“ ausschalten (Standard: an, Schlüssel `titan:throw.target`). Ein abgemeldeter Spieler kann nicht aufgenommen werden; der Werfer erhält eine kurze Nachricht. Das Schleudern selbst bleibt an das Recht `titan.throw` gebunden.
+- **Opt-out (Abhängigkeit `lobby-settings`):** Jeder Spieler kann in den Einstellungen „Kann geworfen werden“ ausschalten (Standard: an, Schlüssel `titan:throw.target`). Ein abgemeldeter Spieler kann nicht aufgenommen werden; der Werfer erhält eine kurze Nachricht. Schaltet ein Ziel den Opt-out während einer Trage ein, wird es sofort ohne Impuls freigegeben. Das Schleudern selbst bleibt an das Recht `titan.throw` gebunden.
 - **Immunität:** Spieler mit `titan.throw.immune` (z. B. Team-Mitglieder über LuckPerms) können nicht aufgenommen werden. Der Werfer erhält dieselbe kurze Nachricht.
 - **Sperren:** Cooldowns pro Werfer, pro Paar und ein Auto-Drop nach maximaler Tragzeit.
 - **Flugschutz:** Geworfene Spieler lösen während des Flugs und einer kurzen Landephase keine Portale aus.
-- **Rückmeldung:** Vanilla-Töne und -Partikel (keine Resource Pack), Actionbar-Hinweis „Linksklick zum Werfen“ für den Werfer.
-- **Telemetrie:** Zähler für Aufnahmen, Würfe, Abbrüche durch das Ziel und Ablehnungen.
+- **Rückmeldung:** Vanilla-Töne und -Partikel (keine Resource Pack), Actionbar mit Ladeleiste und Hinweis „Rechtsklick halten zum Aufladen, loslassen zum Werfen“ für den Werfer.
+- **Telemetrie:** Zähler für Aufnahmen, Würfe, Abbrüche durch das Ziel, Ablehnungen und Ladeabbrüche.
 - **Texte:** Deutsch und Englisch über Message-Bundles nach dem Muster von `DanceMessages`.
 
 ## Capabilities
@@ -30,7 +33,7 @@ Keine. Der Opt-out liest über das neue Settings-Port aus `lobby-settings`; dies
 
 ## Dependencies
 
-- **Voraussetzung `lobby-settings` (Reihenfolge fest):** `lobby-settings` (Otis-Speicherung, typisierter Settings-Port in `core`) wird zuerst implementiert und auf `main` gemergt. Erst danach startet die Umsetzung von `lobby-throw`. Der Opt-out `titan:throw.target` ist eine Option, die auf diesem Port aufsetzt; er ist kein eigenständiger Speicher. Die Tests des Kernfeatures laufen ohne den Port (Fake im Test), der Opt-out wird gegen den echten Port integriert und getestet.
+- **Voraussetzung `lobby-settings` (Reihenfolge fest):** `lobby-settings` (Otis-Speicherung, typisierter Settings-Port in `core`) wird zuerst implementiert und auf `main` gemergt. Erst danach startet die Umsetzung von `lobby-throw`. Der Opt-out `titan:throw.target` ist eine Option, die auf diesem Port aufsetzt; er ist kein eigenständiger Speicher. Der Port braucht zusätzlich eine Änderungsbenachrichtigung, damit das Freigeben einer Trage sofort wirkt (Ergänzung zu `lobby-settings`, siehe `design.md` D9).
 
 ## Impact
 
