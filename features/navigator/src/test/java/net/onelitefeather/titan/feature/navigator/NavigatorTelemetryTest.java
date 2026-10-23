@@ -31,6 +31,7 @@ import net.onelitefeather.titan.core.permission.PermissionResult;
 import net.onelitefeather.titan.core.portal.Box;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
 import net.onelitefeather.titan.core.portal.Portal;
+import net.onelitefeather.titan.core.portal.ServiceCount;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.onelitefeather.titan.core.testfixtures.TestTelemetry;
 import org.junit.jupiter.api.AfterEach;
@@ -50,6 +51,8 @@ class NavigatorTelemetryTest {
     private static final int SURVIVAL_SLOT = 20;
     private static final int BUILD_SLOT = 24;
     private static final int SPAWN_SLOT = 31;
+    // The back button of a server list that fits one content row: the first slot of its navigation row.
+    private static final int ONE_ROW_BACK_SLOT = 9;
 
     private static final AttributeKey<String> KIND = AttributeKey.stringKey("navigator.kind");
     private static final AttributeKey<Long> ENTRIES = AttributeKey.longKey("navigator.entries");
@@ -106,6 +109,27 @@ class NavigatorTelemetryTest {
             Assertions.assertEquals("team", testTelemetry.attribute(span, KIND), "a permitted player gets the team menu");
             Assertions.assertEquals(player.getUuid().toString(), testTelemetry.attribute(span, Telemetry.USER_ID), "the player UUID is the user.id");
             Assertions.assertEquals(6L, testTelemetry.attribute(span, ENTRIES), "five destinations including Build, plus the spawn entry");
+        }
+    }
+
+    @DisplayName("Going back from the server list spans one more navigator opening, the same as the feather")
+    @Test
+    void backFromTheServerListSpansAnOpening(Env env) {
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.serveServices("ElytraRace", new ServiceCount("ElytraRace-1", 3, 50));
+        FakePermissionService permissions = new FakePermissionService().allowEveryone("titan.navigator.slender");
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions, testTelemetry.telemetry(), counts)) {
+            Player player = env.createPlayer(env.createFlatInstance());
+            fixture.equip(player);
+            fixture.useFeather(player);
+            PickerTestSupport.clickAndTick(env, player.getOpenInventory(), player, new Click.Right(Destination.ELYTRA_RACE.slot()));
+
+            PickerTestSupport.clickAndTick(env, player.getOpenInventory(), player, new Click.Left(ONE_ROW_BACK_SLOT));
+
+            List<SpanData> openings = testTelemetry.spans().stream().filter(span -> span.getName().equals("navigator.open")).toList();
+            Assertions.assertEquals(2, openings.size(), "the feather and the back button each open the navigator once, so each is spanned");
+            Assertions.assertEquals(testTelemetry.attribute(openings.get(0), KIND), testTelemetry.attribute(openings.get(1), KIND), "the back button opens the same kind of menu the feather did");
+            Assertions.assertEquals(player.getUuid().toString(), testTelemetry.attribute(openings.get(1), Telemetry.USER_ID), "the back button's opening names the same player");
         }
     }
 

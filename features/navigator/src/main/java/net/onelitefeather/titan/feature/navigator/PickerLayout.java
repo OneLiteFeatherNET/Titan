@@ -19,9 +19,9 @@ import net.onelitefeather.titan.core.paging.Pagination;
 
 /**
  * How many rows and pages the server picker needs, where its navigation row sits and where each
- * entry goes. The bottom row is always the navigation row: the previous arrow in its first slot,
- * the sort item in its middle slot and the next arrow in its last. A list that fits one page has
- * only the rows its services need above it.
+ * entry goes. The bottom row is always the navigation row: the back button in its first slot, the
+ * arrows beside the sort item in its middle slot. A list that fits one page has only the rows its
+ * services need above it.
  */
 record PickerLayout(int rows, int pages) {
 
@@ -37,8 +37,13 @@ record PickerLayout(int rows, int pages) {
         return new PickerLayout(contentRows + 1, 1);
     }
 
-    int previousSlot() {
+    /** The back button is always the first slot of the navigation row, on every page. */
+    int backSlot() {
         return navigationStart();
+    }
+
+    int previousSlot() {
+        return sortSlot() - 1;
     }
 
     int sortSlot() {
@@ -46,7 +51,7 @@ record PickerLayout(int rows, int pages) {
     }
 
     int nextSlot() {
-        return navigationStart() + ServerPicker.COLUMNS - 1;
+        return sortSlot() + 1;
     }
 
     /**

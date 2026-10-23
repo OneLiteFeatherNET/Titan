@@ -50,24 +50,48 @@ class PickerLayoutTest {
         assertEquals(5 * ServerPicker.COLUMNS, Pagination.PAGE_SIZE, "a page holds five content rows of 9 services (45 entries); the sixth row is the navigation row");
     }
 
-    @DisplayName("The navigation row holds the arrows at its ends and the sort item in its middle")
+    @DisplayName("Six rows with pages: the back button at navigation start, the arrows beside the sort item")
     @Test
-    void navigationRowHoldsArrowsAndSortItem() {
+    void navigationRowOfAPagedList() {
         PickerLayout paged = PickerLayout.of(100);
 
-        assertEquals(45, paged.previousSlot(), "the previous arrow is the first slot of the navigation row");
+        assertEquals(45, paged.backSlot(), "the back button is the first slot of the navigation row, navigation start + 0");
+        assertEquals(48, paged.previousSlot(), "the previous arrow is navigation start + 3, next to the sort item");
         assertEquals(49, paged.sortSlot(), "the sort item is the middle slot of the navigation row, navigation start + 4");
-        assertEquals(53, paged.nextSlot(), "the next arrow is the last slot of the navigation row, navigation start + 8");
+        assertEquals(50, paged.nextSlot(), "the next arrow is navigation start + 5, next to the sort item");
     }
 
-    @DisplayName("Without pages the navigation row is the bottom row of the smaller inventory, with the same layout")
+    @DisplayName("Three rows without pages: the back button and the arrows keep the same offsets from the row start")
     @Test
-    void navigationRowFollowsTheRows() {
+    void navigationRowOfThreeRows() {
         PickerLayout small = PickerLayout.of(10);
 
-        assertEquals(18, small.previousSlot(), "the navigation row of three rows starts after 18 slots");
+        assertEquals(3, small.rows(), "ten services need two content rows and the navigation row");
+        assertEquals(18, small.backSlot(), "the back button is the first slot of the navigation row of three rows");
+        assertEquals(21, small.previousSlot(), "the previous arrow is navigation start + 3");
         assertEquals(22, small.sortSlot(), "the sort item is the middle slot of that row");
-        assertEquals(26, small.nextSlot(), "the last slot of that row is the next arrow's place");
+        assertEquals(23, small.nextSlot(), "the next arrow is navigation start + 5");
+    }
+
+    @DisplayName("Two rows with one content row: the back button in slot nine, the sort item in slot thirteen")
+    @Test
+    void navigationRowOfTwoRows() {
+        PickerLayout single = PickerLayout.of(1);
+
+        assertEquals(2, single.rows(), "one service needs one content row and the navigation row");
+        assertEquals(9, single.backSlot(), "the back button is the first slot of the navigation row of two rows");
+        assertEquals(12, single.previousSlot(), "the previous arrow is navigation start + 3");
+        assertEquals(13, single.sortSlot(), "the sort item is the middle slot of the navigation row");
+        assertEquals(14, single.nextSlot(), "the next arrow is navigation start + 5");
+    }
+
+    @DisplayName("An empty list keeps the back button in the navigation row")
+    @Test
+    void emptyListKeepsTheBackButton() {
+        PickerLayout empty = PickerLayout.of(0);
+
+        assertEquals(9, empty.backSlot(), "the back button is in the navigation row of the explanation's two rows");
+        assertEquals(13, empty.sortSlot(), "the sort item is still in the middle of that row");
     }
 
     @DisplayName("The previous arrow shows from the second page on")

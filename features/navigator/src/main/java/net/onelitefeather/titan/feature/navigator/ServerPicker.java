@@ -150,6 +150,14 @@ final class ServerPicker {
     }
 
     /**
+     * The back button: it leads to the navigator, not to a page, so it does not name one. Its
+     * material differs from the arrows' so that the two are told apart at a glance.
+     */
+    static ItemStack backItem(Locale locale) {
+        return ItemStack.builder(Material.DARK_OAK_DOOR).customName(NavigatorMessages.text(NavigatorMessages.PICKER_BACK, locale)).build();
+    }
+
+    /**
      * The previous arrow, which names the page it leads to. {@code page} is the page shown, counted
      * from zero.
      */

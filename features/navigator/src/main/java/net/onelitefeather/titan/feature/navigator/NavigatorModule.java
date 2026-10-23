@@ -491,6 +491,12 @@ public final class NavigatorModule {
         }
 
         @Override
+        public void back(Player player) {
+            // The same path as the feather, so the menu follows the permissions and language now.
+            NavigatorModule.this.open(player);
+        }
+
+        @Override
         public void sort(Player player, PickerSort current) {
             relist(player, this.destination, this.language, current.next(), 0);
         }

@@ -50,9 +50,9 @@ class NavigatorPickerPagingTest {
     private static final String SLENDER_PERMISSION = "titan.navigator.slender";
     private static final Pos SPAWN = new Pos(11.5, 40, 60);
     private static final LobbyPortals NO_PORTALS = List::of;
-    private static final int PREVIOUS_SLOT = 45;
+    private static final int PREVIOUS_SLOT = 48;
     private static final int SORT_SLOT = 49;
-    private static final int NEXT_SLOT = 53;
+    private static final int NEXT_SLOT = 50;
     // The sort item of a list that fits one row: the middle slot of its navigation row.
     private static final int ONE_ROW_SORT_SLOT = 13;
     private static final int SERVICE_SLOTS = 45;
