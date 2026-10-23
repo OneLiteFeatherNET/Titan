@@ -22,6 +22,10 @@ Ein Inventar MUSS so viele Inhaltszeilen haben, wie seine Einträge brauchen (mi
 - **WHEN** der Task eine laufende Lobby hat und ein Spieler das Inventar öffnet
 - **THEN** hat das Inventar zwei Zeilen: eine Inhaltszeile und die Navigationszeile
 
+#### Scenario: Zwei Lobbys
+- **WHEN** der Task zwei laufende Dienste hat und ein Spieler das Inventar öffnet
+- **THEN** hat das Inventar zwei Zeilen: eine Inhaltszeile und die Navigationszeile
+
 #### Scenario: Zwölf Lobbys
 - **WHEN** der Task zwölf laufende Dienste hat und ein Spieler das Inventar öffnet
 - **THEN** hat das Inventar drei Zeilen: zwei Inhaltszeilen und die Navigationszeile
