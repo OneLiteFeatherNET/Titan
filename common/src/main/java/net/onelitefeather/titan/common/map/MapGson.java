@@ -19,6 +19,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
+import net.onelitefeather.titan.core.ambience.AmbienceZone;
+import net.onelitefeather.titan.core.npc.LobbyNpc;
 import net.onelitefeather.titan.core.portal.Portal;
 import net.theevilreaper.aves.file.gson.PositionGsonAdapter;
 
@@ -30,6 +32,6 @@ final class MapGson {
 
     static Gson create() {
         var positionAdapter = new PositionGsonAdapter();
-        return new GsonBuilder().registerTypeAdapter(Pos.class, positionAdapter).registerTypeAdapter(Vec.class, positionAdapter).registerTypeAdapter(Portal.class, new PortalGsonAdapter()).create();
+        return new GsonBuilder().registerTypeAdapter(Pos.class, positionAdapter).registerTypeAdapter(Vec.class, positionAdapter).registerTypeAdapter(Portal.class, new PortalGsonAdapter()).registerTypeAdapter(LobbyNpc.class, new NpcGsonAdapter()).registerTypeAdapter(AmbienceZone.class, new AmbienceGsonAdapter()).create();
     }
 }

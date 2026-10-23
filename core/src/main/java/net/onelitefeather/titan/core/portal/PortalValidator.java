@@ -108,21 +108,24 @@ public final class PortalValidator {
     }
 
     private static void checkLabel(String id, int index, PortalLabel label, List<PortalProblem> problems) {
-        if (label.position() == null) {
-            problems.add(new PortalProblem(id, index, "label.position is missing"));
-        }
-        checkText(id, index, "label.text", label.text(), problems);
-        if (label.offlineText() != null) {
-            checkText(id, index, "label.offlineText", label.offlineText(), problems);
-        }
-        sourceProblems(label.source()).forEach(reason -> problems.add(new PortalProblem(id, index, reason)));
-        if (label.billboard() == Billboard.UNKNOWN) {
-            problems.add(new PortalProblem(id, index, "label.billboard is unknown (expected center or fixed)"));
-        }
+        labelProblems(label).forEach(reason -> problems.add(new PortalProblem(id, index, reason)));
     }
 
-    private static void checkText(String id, int index, String field, @Nullable String text, List<PortalProblem> problems) {
-        textProblems(field, text).forEach(reason -> problems.add(new PortalProblem(id, index, reason)));
+    /** Every reason a label is unusable, each naming its field; empty if it is fine. */
+    public static List<String> labelProblems(PortalLabel label) {
+        List<String> problems = new ArrayList<>();
+        if (label.position() == null) {
+            problems.add("label.position is missing");
+        }
+        problems.addAll(textProblems("label.text", label.text()));
+        if (label.offlineText() != null) {
+            problems.addAll(textProblems("label.offlineText", label.offlineText()));
+        }
+        problems.addAll(sourceProblems(label.source()));
+        if (label.billboard() == Billboard.UNKNOWN) {
+            problems.add("label.billboard is unknown (expected center or fixed)");
+        }
+        return problems;
     }
 
     /**

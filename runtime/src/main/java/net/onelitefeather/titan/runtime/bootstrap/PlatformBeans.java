@@ -44,6 +44,8 @@ import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.module.LobbyAtmosphere;
 import net.onelitefeather.titan.core.module.LobbySpawn;
 import net.onelitefeather.titan.core.module.LobbyWorldChoice;
+import net.onelitefeather.titan.core.ambience.LobbyAmbiences;
+import net.onelitefeather.titan.core.npc.LobbyNpcs;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.onelitefeather.titan.common.deliver.HolderPlayerCounts;
@@ -121,6 +123,24 @@ public final class PlatformBeans {
     @Bean
     public LobbyPortals lobbyPortals(MapProvider mapProvider) {
         return () -> mapProvider.getActiveLobby().portals();
+    }
+
+    /**
+     * Read per call like {@link #lobbyPortals}: a seasonal world brings the NPCs of its own
+     * map.json.
+     */
+    @Bean
+    public LobbyNpcs lobbyNpcs(MapProvider mapProvider) {
+        return () -> mapProvider.getActiveLobby().npcs();
+    }
+
+    /**
+     * Read per call like {@link #lobbyPortals}: a seasonal world brings the ambience zones of its
+     * own map.json.
+     */
+    @Bean
+    public LobbyAmbiences lobbyAmbiences(MapProvider mapProvider) {
+        return () -> mapProvider.getActiveLobby().ambience();
     }
 
     /**

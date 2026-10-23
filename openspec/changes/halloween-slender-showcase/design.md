@@ -64,7 +64,7 @@ Zu „ingame“: Die Dienstbeschreibung `ServiceCount` kennt keinen Zustand „i
 
 ### D5 NPC-Figur und Klick
 
-Der NPC ist eine `Mannequin` mit `setProfile(ResolvableProfile)` (Skin optional), `setImmovable(true)`, ohne Schwerkraft und unverwundbar. Rechts- und Linksklick auf den NPC lösen den Beitritt aus (`PlayerEntityInteractEvent` und `EntityAttackEvent`). Die Abklingzeit pro Spieler kommt aus einem injizierten `Clock`; ein zweiter Klick innerhalb der Abklingzeit wird still abgewiesen, nur der Zähler zählt. Das Recht wird bei jedem Klick erneut geprüft. Ein NPC mit `lookAtPlayers` dreht den Kopf zum nächsten Spieler im Umkreis von 8 Blöcken, über einen Takt pro Zone-Ticker.
+Der NPC ist eine `Mannequin` mit `setProfile(ResolvableProfile)` (Skin optional), `setImmovable(true)`, ohne Schwerkraft und unverwundbar. Rechts- und Linksklick auf den NPC lösen den Beitritt aus (`PlayerEntityInteractEvent` und `EntityAttackEvent`). Die Abklingzeit pro Spieler kommt aus einem injizierten `Clock`; ein zweiter Klick innerhalb der Abklingzeit wird still abgewiesen, nur der Zähler zählt. Das Recht wird bei jedem Klick erneut geprüft. Ein NPC mit `lookAtPlayers` dreht den Kopf zum nächsten Spieler im Umkreis von 8 Blöcken; der Blick wird alle 5 Ticks neu gesetzt.
 
 ### D6 Zonen: ein Takt je Zone, Pakete nur nahe Spieler
 
@@ -75,7 +75,7 @@ Der NPC ist eine `Mannequin` mit `setProfile(ResolvableProfile)` (Skin optional)
 - Texttafeln und schwebende Seiten: gemeinsame Entitäten in der Welt (`TEXT_DISPLAY`, `ITEM_DISPLAY` mit Papier). Sie sind für alle sichtbar und werden nur einmal gespawnt, beim Start.
 - Erscheinung: je Spieler und Erscheinungspunkt eine Mannequin-Figur mit `setAutoViewable(false)`, nur diesem Spieler über `addViewer` gezeigt. Sie erscheint, wenn der Spieler innerhalb von 14 Blöcken steht, spielt `entity.enderman.stare` und verschwindet, sobald der Spieler innerhalb von 4 Blöcken ist, die Zone verlässt oder die Verbindung endet. Jeder Punkt erscheint pro Spieler höchstens einmal, damit der Gang nicht zum Dauerauftritt wird.
 
-Die Auswahl der Spieler liegt in einem reinen Rechenteil (`ZoneVisitors`), die Entitäten und Pakete in einem dünnen Teil. So prüfen Unit-Tests die Regeln ohne Server.
+Die Geometrie liegt in `ZoneArea`, die Erscheinungen in `ApparitionRules`, die Geräusche in `SoundSchedule`; alle drei sind reine Rechenteile, die Unit-Tests ohne Server prüfen. Entitäten und Pakete liegen in `ZoneRuntime`.
 
 ### D7 Telemetrie und Texte
 

@@ -4,37 +4,37 @@ Zweig: `feat/halloween-slender-showcase` von `origin/main`. Jeder Commit hat gen
 
 ## 1. Vorlauf (`docs(openspec)`)
 
-- [x] 1.1 Koordinaten der Halloween-Welt aus einer Kopie der Live-Welt bestimmen (Anvil-Ladung, Blockprofil). Nachweis: Begründung je Punkt in `docs/halloween-slender-showcase.md`, Abschnitt 5.1.
-- [x] 1.2 OpenSpec-Artefakte (`proposal.md`, `design.md`, `specs/npc-join`, `specs/lobby-ambience`, `tasks.md`) schreiben und mit `openspec validate --strict halloween-slender-showcase` prüfen. Commit `docs(openspec): propose halloween-slender-showcase`.
+- [x] 1.1 Koordinaten der Halloween-Welt aus einer Kopie der Live-Welt bestimmen (Anvil-Ladung, Blockprofil). Nachweis: Begründung je Punkt in `docs/halloween-slender-showcase.md`, Abschnitt „Ergebnis der Blockanalyse“.
+- [x] 1.2 OpenSpec-Artefakte schreiben und mit `openspec validate --strict halloween-slender-showcase` prüfen (nur Warnungen zu den deutschen Formulierungen, wie bei den übrigen Änderungen). Commit `docs(openspec): propose halloween-slender-showcase`.
 
 ## 2. Gemeinsame Auswahl nach `core` (`refactor(core)`)
 
-- [ ] 2.1 Test zuerst (Unit, `TaskJoinTest` in `core`): `pick` nimmt den fertigen, nicht vollen Dienst mit den meisten Spielern, bei Gleichstand den kleinsten Namen; `joinable` verlangt angekündigtes Limit und nicht voll; leere Liste liefert leer. Verifikation: rot, dann grün.
-- [ ] 2.2 `TaskJoin` nach `core.portal` verschieben (`pick`, `joinable`, `services(counts, task)`); `QuickJoin` und `ServerPicker.joinable` im Navigator rufen sie auf; `TaskPlayers.services` delegiert. Nachweis: `features/navigator`-Tests grün, Verhalten unverändert.
-- [ ] 2.3 Commit `refactor(core): move the task join selection to core`.
+- [x] 2.1 Test zuerst (`TaskJoinTest` in `core`): `pick` nimmt den fertigen, nicht vollen Dienst mit den meisten Spielern, bei Gleichstand den kleinsten Namen; `joinable` verlangt angekündigtes Limit und nicht voll.
+- [x] 2.2 `TaskJoin` nach `core.portal` verschoben; `QuickJoin` und `ServerPicker.joinable` entfallen, `TaskPlayers.services` delegiert. Nachweis: 264 Tests in `features/navigator` und `TaskJoinTest` grün.
+- [x] 2.3 Commit `refactor(core): move the task join selection to core`.
 
 ## 3. Kartenmodell und Lesen (`core`, `common`, `runtime`, `setup`)
 
-- [ ] 3.1 Test zuerst (Unit): `NpcValidator` und `AmbienceValidator` liefern Probleme für fehlende Pflichtfelder, falsche Typen, verkehrte Quader, unbekannte Partikel und Geräusche. Verifikation: rot, dann grün.
-- [ ] 3.2 Test zuerst (Unit, `common`): `NpcGsonAdapter` und `AmbienceGsonAdapter` lesen die Beispiel-Karte; fehlende Felder bleiben `null`/leer; das Schild nutzt die Portal-Lesung. Verifikation: rot, dann grün.
-- [ ] 3.3 `LobbyNpcs` und `LobbyAmbiences` in `core`, Felder in `LobbyMap` und `LobbyMapBuilder`, Kopierpfad `lobbyMapBuilder(map)` übernimmt sie; `PlatformBeans` liefert die Ports. Test zuerst (Unit, `LobbyMapBuilderTest`): ein Speichern mit `setspawn` lässt `npcs` und `ambience` unverändert.
+- [x] 3.1 Test zuerst (`NpcValidatorTest`, `AmbienceValidatorTest` in `core`): fehlende Pflichtfelder, verkehrte Quader, unbekannte Partikel und Geräusche, fehlende Schildschlüssel.
+- [x] 3.2 Test zuerst (`NpcAmbienceMapTest` in `common`): die Beispiel-Karte wird gelesen; fehlende Felder bleiben `null` oder leer; Schreiben und Lesen halten die Liste.
+- [x] 3.3 `LobbyNpcs` und `LobbyAmbiences` in `core`; Felder in `LobbyMap` und `LobbyMapBuilder`; der Kopierpfad `lobbyMapBuilder(map)` übernimmt sie (Test `copyKeepsNpcsAndZones`); `PlatformBeans` liefert die Ports.
 
 ## 4. Die Column `features/npc` (`feat(npc)`)
 
-- [ ] 4.1 Test zuerst (Unit): `ClickCooldown` mit injiziertem `Clock`: zweiter Klick innerhalb der Abklingzeit wird abgewiesen, danach wieder erlaubt.
-- [ ] 4.2 Test zuerst (Unit): `JoinChoice` über `TaskJoin`: fertiger Dienst wird gewählt; kein fertiger Dienst ergibt `none_ready`; nicht lesbar ergibt `unavailable`; ohne Recht `denied`.
-- [ ] 4.3 Test zuerst (Unit): `ZoneVisitors` wählt Spieler im Quader oder höchstens 6 Blöcke davor; `ApparitionRules` zeigt im 14-Block-Umkreis, entfernt innerhalb von 4 Blöcken, nie zweimal pro Spieler.
-- [ ] 4.4 Test zuerst (Env, `NpcSpawnTest`): ein NPC steht an der Position mit Profil und ist unverwundbar; nach 100 `env.tick()` unverändert. Dann `NpcModule`.
-- [ ] 4.5 Test zuerst (Env, `NpcJoinTest`): Klick (Rechts und Links) führt zu genau einem Beitritt mit einem Test-Double für `Deliver`; zweiter Klick innerhalb der Abklingzeit führt zu keinem Beitritt; Zähler `titan.npc.interactions` wird erhöht.
-- [ ] 4.6 Test zuerst (Env, `AmbienceModuleTest`): Partikel und Geräusche werden nur an Spieler in der Zone gesendet; Erscheinung nur dem betroffenen Spieler sichtbar; Verschwinden bei Nähe, Verlassen und Verbindungsende; Schilder und Seiten sind einmal gespawnt.
-- [ ] 4.7 Übersetzungen `de` und `en` für `titan.npc.*` und `titan.ambience.*`; Test (Bundle): jeder Schlüssel in beiden Sprachen.
-- [ ] 4.8 `ColumnArchitectureTest` für `features/npc` (nur `core`).
-- [ ] 4.9 Commit `feat(npc): add join npcs and ambience zones from map data`.
+- [x] 4.1 `ClickCooldownTest`: zweiter Klick innerhalb der Abklingzeit abgewiesen, danach wieder erlaubt; pro Spieler getrennt. Injiziertes `Clock`.
+- [x] 4.2 `JoinChoiceTest`: fertiger Dienst gewählt; kein fertiger Dienst ergibt `NONE_READY`; nicht lesbar ergibt `UNAVAILABLE`; ohne Recht `DENIED`.
+- [x] 4.3 `ZoneAreaTest`, `ApparitionRulesTest`, `SoundScheduleTest`: Quader und Umkreis; Erscheinung ab 14 Blöcken, verschwunden ab 4 Blöcken, nie zweimal je Spieler; Geräuschtakt mit Grenzen.
+- [x] 4.4 `NpcModuleTest` (Env): NPC steht an der Position mit Profil; 100 Ticks ohne Bewegung; Klick joint den bereiten Dienst; zweiter Klick in der Abklingzeit wirkt nicht; ohne Recht und ohne bereiten oder lesbaren Dienst niemand gesendet; anderes Entity ist kein NPC.
+- [x] 4.5 `AmbienceModuleTest` (Env): Erscheinung nur für den Spieler in der Nähe; verschwunden bei Annäherung; Verbindungsende entfernt sie; Partikel und Geräusche nur an Spieler in oder nahe der Zone.
+- [x] 4.6 `NpcMessagesBundleTest`: jeder Schlüssel in Deutsch und Englisch; Sprache folgt dem Client.
+- [x] 4.7 `MapDataSkipTest`: ungültige NPCs und Zonen werden mit WARN übersprungen, der unbekannte Schildschlüssel entfernt nur das Schild (Log über Appender geprüft).
+- [x] 4.8 `ColumnArchitectureTest` für `features/npc`.
+- [x] 4.9 Commit `feat(npc): add join npcs and ambience zones from map data`.
 
 ## 5. Beispiel und Dokumentation (`feat(npc)`)
 
-- [ ] 5.1 `docs/halloween-slender-showcase.md`: ein `npcs`- und `ambience`-Block für `halloween_lobbyleyna` zum Einfügen in die Live-`map.json` (Koordinaten aus der Blockanalyse, Begründung je Punkt, Hinweis zum fehlenden Skin und zu den Vanilla-Grenzen). Nachweis: JSON gegen den Validator geprüft.
-- [ ] 5.2 Abschnitt in `docs/lobby-modules.md` zu `npcs` und `ambience`, kurz.
+- [x] 5.1 `docs/halloween-slender-showcase.md`: Beispielblock für `halloween_lobbyleyna` mit Begründung der Koordinaten. Geprüft: der Block wird über `MapGson` gelesen und von beiden Validatoren ohne Problem akzeptiert (Prüfung einmalig, Test danach entfernt).
+- [x] 5.2 Abschnitt „Join-NPCs und Lebendige Zonen (`npc`)“ in `docs/lobby-modules.md`.
 
 ## 6. Pull Request
 

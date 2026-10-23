@@ -85,7 +85,7 @@ final class PortalGsonAdapter implements JsonDeserializer<Portal>, JsonSerialize
         }
     }
 
-    private static PortalLabel label(JsonElement element) {
+    static PortalLabel label(JsonElement element) {
         if (element == null || element.isJsonNull()) {
             return null;
         }
@@ -140,7 +140,7 @@ final class PortalGsonAdapter implements JsonDeserializer<Portal>, JsonSerialize
         return object;
     }
 
-    private static JsonObject label(PortalLabel label) {
+    static JsonObject label(PortalLabel label) {
         JsonObject object = new JsonObject();
         if (label.position() != null) {
             object.add(POSITION, point(label.position()));
@@ -196,7 +196,7 @@ final class PortalGsonAdapter implements JsonDeserializer<Portal>, JsonSerialize
         return object;
     }
 
-    private static JsonObject point(Vec vec) {
+    static JsonObject point(Vec vec) {
         JsonObject object = new JsonObject();
         object.addProperty(X, vec.x());
         object.addProperty(Y, vec.y());
@@ -204,12 +204,12 @@ final class PortalGsonAdapter implements JsonDeserializer<Portal>, JsonSerialize
         return object;
     }
 
-    private static Vec point(JsonObject parent, String name) {
+    static Vec point(JsonObject parent, String name) {
         JsonObject point = asObject(parent.get(name), "'" + name + "'");
         return new Vec(number(point, X, name), number(point, Y, name), number(point, Z, name));
     }
 
-    private static double number(JsonObject object, String name, String parent) {
+    static double number(JsonObject object, String name, String parent) {
         JsonElement value = object.get(name);
         if (value == null || value.isJsonNull()) {
             throw new JsonParseException("missing '" + (parent == null ? name : parent + "." + name) + "'");
@@ -224,17 +224,17 @@ final class PortalGsonAdapter implements JsonDeserializer<Portal>, JsonSerialize
         }
     }
 
-    private static boolean isPresent(JsonObject object, String name) {
+    static boolean isPresent(JsonObject object, String name) {
         JsonElement value = object.get(name);
         return value != null && !value.isJsonNull();
     }
 
-    private static String string(JsonObject object, String name) {
+    static String string(JsonObject object, String name) {
         JsonElement value = object.get(name);
         return value == null || value.isJsonNull() ? null : value.getAsString();
     }
 
-    private static JsonObject asObject(JsonElement element, String what) {
+    static JsonObject asObject(JsonElement element, String what) {
         if (element == null || !element.isJsonObject()) {
             throw new JsonParseException("missing or malformed " + what);
         }

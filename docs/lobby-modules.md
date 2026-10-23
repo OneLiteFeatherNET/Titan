@@ -488,6 +488,28 @@ wird nur beim Start gelesen. Im Setup-Server bearbeitet `/setup portal` die Port
 - `portal.labels.refresh` (Span je Label-Zyklus, nicht je Portal): `portal.labels.count` und
   `portal.labels.failed`.
 
+## Join-NPCs und Lebendige Zonen (`npc`)
+
+Beide Teile sind Kartendaten der Welt: Die Liste `npcs` und die Liste `ambience` stehen in der
+`map.json`, auf oberster Ebene neben `portals`. Die Column `npc` liest beide beim Start. Ein
+ungültiger Eintrag wird mit einer WARN-Zeile übersprungen; die übrigen starten. Ein Beispiel mit
+Begründung der Koordinaten steht in [halloween-slender-showcase](halloween-slender-showcase.md).
+
+- `npcs[]`: `id`, `task` und `position` (`x`, `y`, `z`, `yaw`, `pitch`) sind Pflicht. Optional:
+  `skin` (`value`, `signature`; ohne Skin die Standardfigur), `label` (wie bei Portalen, mit
+  `<online>`/`<max>` und Offline-Text), `lookAtPlayers` (der Kopf folgt dem nächsten Spieler im
+  Umkreis von 8 Blöcken) und `permission` (ohne Recht passiert nichts außer einer Meldung).
+- Ein Klick (links oder rechts) auf den NPC schickt in den Dienst, den der Schnellbeitritt des
+  Navigators wählen würde (`core.portal.TaskJoin`). Eine Abklingzeit von 2 s je Spieler.
+- `ambience[]`: `id` und `area` (Quader mit `min` und `max`) sind Pflicht. Optional: `particles`
+  (`type`, `count`), `sounds` (`key`, `minSeconds`, `maxSeconds`), `signs` (`position`, `key`;
+  Schlüssel `titan.ambience.sign.*`), `pages` (Papier schwebt), `apparitions` (Punkte, an denen
+  eine Silhouette einem einzelnen Spieler erscheint) und `apparitionSkin`.
+- Nur Vanilla-Inhalte: Partikel, Geräusche und Gegenstände kommen aus dem Vanilla-Client; ein
+  Ressourcenpaket gibt es nicht. Andere Namen lehnt die Validierung ab.
+- Zähler: `titan.npc.interactions{npc, result}` (`joined`, `none_ready`, `unavailable`, `denied`,
+  `cooldown`) und `titan.ambience.apparitions{zone}`.
+
 ## Lobbyswitcher (`lobbyswitcher`, nur `cloudnet`)
 
 Die Uhr in Hotbar-Slot 8 öffnet die Liste der laufenden Lobbys des eigenen Tasks; ein Klick wechselt
