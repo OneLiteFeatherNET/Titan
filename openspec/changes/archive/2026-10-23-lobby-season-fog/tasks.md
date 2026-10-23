@@ -37,4 +37,4 @@
 ## 7. Commits und Pull Request
 
 - [x] 7.1 Commit `feat(season): add the slender fog as a season atmosphere` (Code, Tests, Dokumentation, abgehakte Aufgaben).
-- [ ] 7.2 Pull Request öffnen mit dem Titel `feat(season): add the slender fog as a season atmosphere`. Beschreibung auf Englisch: Quelle der Werte, Konfigurationsbeispiel für `halloween`, Aktivierung auf dem Server, Verhalten bei Saisonwechsel, Testnachweis. Abschließend `https://claude.ai/code/session_01AM6yGQ33vvJqWg39vCAcYt`. Danach nur auf grüne CI warten; Merge und Release macht der Nutzer.
+- [x] 7.2 Pull Request öffnen mit dem Titel `feat(season): add the slender fog as a season atmosphere`. Beschreibung auf Englisch: Quelle der Werte, Konfigurationsbeispiel für `halloween`, Aktivierung auf dem Server, Verhalten bei Saisonwechsel, Testnachweis. Abschließend `https://claude.ai/code/session_01AM6yGQ33vvJqWg39vCAcYt`. Danach nur auf grüne CI warten; Merge und Release macht der Nutzer.

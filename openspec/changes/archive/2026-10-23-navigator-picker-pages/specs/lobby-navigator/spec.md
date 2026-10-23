@@ -116,10 +116,15 @@ Die Serverauswahl DARF Ordnung und Seite eines Spielers nicht speichern. Die Ord
 
 ## MODIFIED Requirements
 
-### Requirement: Menü-Varianten bleiben acht geteilte Inventare
+### Requirement: Menü-Varianten bleiben sechzehn geteilte Inventare
 _The navigator MUST keep one shared inventory per combination of permissions and language, and the server list one per destination, language, order, page and row count; opening, paging and sorting MUST NOT create a new inventory or listener once it exists._
 
-Der Navigator MUSS je Kombination aus Rechten und Sprache genau ein geteiltes Inventar haben, beim Start angelegt, mit dem Titel in dieser Sprache. Die Serverauswahl MUSS je Ziel, Sprache, Ordnung, Seite und Zeilenzahl höchstens ein geteiltes Inventar haben. Ein Serverauswahl-Inventar entsteht, wenn seine Ansicht zum ersten Mal gebraucht wird, und wird danach wiederverwendet. Das Öffnen, Blättern und Sortieren DARF, wenn das Inventar schon existiert, KEIN neues Inventar und keinen neuen Listener erzeugen.
+Der Navigator MUSS je Kombination aus Rechten und Sprache genau ein geteiltes Inventar haben, beim Start angelegt, mit dem Titel in dieser Sprache. Die Rechte sind `titan.navigator.slender`, `titan.navigator.buildserver` und `titan.navigator.bounce`; jede Teilmenge dieser drei Rechte ergibt ein Menü, also acht je Sprache und sechzehn bei zwei Sprachen. Die Serverauswahl MUSS je Ziel, Sprache, Ordnung, Seite und Zeilenzahl höchstens ein geteiltes Inventar haben. Ein Serverauswahl-Inventar entsteht, wenn seine Ansicht zum ersten Mal gebraucht wird, und wird danach wiederverwendet. Das Öffnen, Blättern und Sortieren DARF, wenn das Inventar schon existiert, KEIN neues Inventar und keinen neuen Listener erzeugen.
+
+#### Scenario: Sechzehn Inventare beim Start
+
+- **WHEN** das Navigator-Modul startet
+- **THEN** existieren genau sechzehn Navigator-Inventare, acht je Sprache, und jedes trägt die Ziele, die seiner Rechte-Kombination entsprechen
 
 #### Scenario: Titel je Sprache
 

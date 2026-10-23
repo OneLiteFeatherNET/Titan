@@ -65,4 +65,4 @@ Regeln für alle Agenten:
 
 ## 7. Pull Request
 
-- [ ] 7.1 Pull Request öffnen mit dem Titel `feat(navigator): page and sort the server picker` (Squash-Commit des Titels, Conventional Commit). Beschreibung auf Englisch: Zusammenfassung (Seiten, Sortierung, Ansichten, Begrenzung der Inventare), Testnachweis (`./gradlew build`), Verweis auf `openspec/changes/navigator-picker-pages`, abschließend `https://claude.ai/code/session_01AM6yGQ33vvJqWg39vCAcYt`. Danach nur auf grüne CI warten; Merge und Release macht der Nutzer.
+- [x] 7.1 Pull Request öffnen mit dem Titel `feat(navigator): page and sort the server picker` (Squash-Commit des Titels, Conventional Commit). Beschreibung auf Englisch: Zusammenfassung (Seiten, Sortierung, Ansichten, Begrenzung der Inventare), Testnachweis (`./gradlew build`), Verweis auf `openspec/changes/navigator-picker-pages`, abschließend `https://claude.ai/code/session_01AM6yGQ33vvJqWg39vCAcYt`. Danach nur auf grüne CI warten; Merge und Release macht der Nutzer.

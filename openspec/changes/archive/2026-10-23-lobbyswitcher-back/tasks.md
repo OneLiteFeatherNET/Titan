@@ -31,4 +31,4 @@ Vorbedingung fürs Archivieren: `lobby-switcher` ist zuerst archiviert. Erst dan
 - [x] 4.2 `docs/lobby-modules.md`: Abschnitt zum Switcher-Layout (Zeilen, Slots, Schwelle 45) ergänzen; Verweis auf `Pagination`.
 - [x] 4.3 `./gradlew spotlessApply` und `./gradlew build` grün.
 - [x] 4.4 `openspec validate lobbyswitcher-back --strict` grün; `openspec validate lobby-switcher --strict` grün.
-- [ ] 4.5 PR öffnen: Titel `feat(lobbyswitcher): add a back button to the switcher`; englische Beschreibung mit den ASCII-Layouts; CI bis grün beobachten. Nicht mergen.
+- [x] 4.5 PR öffnen: Titel `feat(lobbyswitcher): add a back button to the switcher`; englische Beschreibung mit den ASCII-Layouts; CI bis grün beobachten. Nicht mergen.
