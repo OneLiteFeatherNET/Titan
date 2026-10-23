@@ -19,24 +19,45 @@ import java.util.List;
 import net.onelitefeather.titan.core.paging.Pagination;
 
 /**
- * How many rows and pages a lobby list needs. Up to {@value #MAX_ROWS} rows hold the list as it
- * is; beyond that every page keeps five content rows and the sixth row is the navigation.
+ * How many rows and pages a lobby list needs. The last row is always the navigation row, so
+ * {@code rows} counts it too; the content above it is one to five rows, and a list beyond
+ * {@link Pagination#PAGE_SIZE} entries pages with five content rows on every page.
  */
 record SwitcherLayout(int rows, int pages) {
 
     static final int SLOTS_PER_ROW = 9;
     static final int MAX_ROWS = 6;
-    static final int MAX_ENTRIES = SLOTS_PER_ROW * MAX_ROWS;
-    static final int PAGE_ENTRIES = Pagination.PAGE_SIZE;
-    static final int PREVIOUS_SLOT = PAGE_ENTRIES;
-    static final int INDICATOR_SLOT = PAGE_ENTRIES + SLOTS_PER_ROW / 2;
-    static final int NEXT_SLOT = MAX_ENTRIES - 1;
 
     static SwitcherLayout of(int entries) {
-        if (entries > MAX_ENTRIES) {
+        if (entries > Pagination.PAGE_SIZE) {
             return new SwitcherLayout(MAX_ROWS, Pagination.pageCount(entries));
         }
-        return new SwitcherLayout(Math.max(1, Math.ceilDiv(entries, SLOTS_PER_ROW)), 1);
+        return new SwitcherLayout(Math.max(1, Math.ceilDiv(entries, SLOTS_PER_ROW)) + 1, 1);
+    }
+
+    /** The first slot of the navigation row. */
+    int navigationStart() {
+        return (this.rows - 1) * SLOTS_PER_ROW;
+    }
+
+    /** Closes the list; always the first slot of the navigation row, whatever the page. */
+    int closeSlot() {
+        return navigationStart();
+    }
+
+    /** The previous-page arrow, three slots after the close button. */
+    int previousSlot() {
+        return navigationStart() + 3;
+    }
+
+    /** The page indicator, in the centre of the navigation row. */
+    int indicatorSlot() {
+        return navigationStart() + 4;
+    }
+
+    /** The next-page arrow, five slots after the close button. */
+    int nextSlot() {
+        return navigationStart() + 5;
     }
 
     boolean paged() {

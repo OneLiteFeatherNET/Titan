@@ -18,6 +18,9 @@ package net.onelitefeather.titan.feature.lobbyswitcher;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.stream.IntStream;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import net.minestom.server.component.DataComponents;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.PlayerHand;
 import net.minestom.server.event.Event;
@@ -26,6 +29,7 @@ import net.minestom.server.event.inventory.InventoryPreClickEvent;
 import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.server.inventory.click.Click;
 import net.minestom.server.instance.Instance;
+import net.minestom.server.item.ItemStack;
 import net.minestom.testing.Env;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.core.lobby.LobbyIdentities;
@@ -132,6 +136,16 @@ final class SwitcherFixture implements AutoCloseable {
     /** {@code null} when the flag or the identity said no. */
     LobbyItem item() {
         return this.item;
+    }
+
+    /** Zero-padded so that name order equals creation order; none of them is this lobby. */
+    static ServiceCount[] lobbies(int count) {
+        return IntStream.range(0, count).mapToObj(i -> new ServiceCount("Lobby-%03d".formatted(i), 1, 50)).toArray(ServiceCount[]::new);
+    }
+
+    /** The plain text of the custom name of {@code stack}. */
+    static String name(ItemStack stack) {
+        return PlainTextComponentSerializer.plainText().serialize(stack.get(DataComponents.CUSTOM_NAME));
     }
 
     Player join(Instance instance) {

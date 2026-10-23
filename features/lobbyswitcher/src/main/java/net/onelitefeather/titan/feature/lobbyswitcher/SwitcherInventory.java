@@ -141,26 +141,33 @@ final class SwitcherInventory {
         }
         event.setCancelled(true);
         int slot = event.getSlot();
-        if (snapshot.layout().paged() && turn(event.getPlayer(), snapshot, page, slot)) {
+        SwitcherLayout layout = snapshot.layout();
+        if (slot >= layout.navigationStart()) {
+            navigate(event.getPlayer(), snapshot, page, slot);
             return;
         }
-        List<SwitcherEntry> entries = snapshot.layout().page(entries(), page);
+        List<SwitcherEntry> entries = layout.page(entries(), page);
         if (this.own != null && slot >= 0 && slot < entries.size()) {
             this.selection.select(event.getPlayer(), this.own, entries.get(slot).name());
         }
     }
 
-    // True when the slot is in the navigation row, whether or not its arrow is shown.
-    private boolean turn(Player player, Pages snapshot, int page, int slot) {
-        if (slot < SwitcherLayout.PAGE_ENTRIES) {
-            return false;
+    // The navigation row: the close button closes the list, the arrows turn the page, the rest does nothing.
+    private void navigate(Player player, Pages snapshot, int page, int slot) {
+        SwitcherLayout layout = snapshot.layout();
+        if (slot == layout.closeSlot()) {
+            player.closeInventory();
+            return;
         }
-        int target = switch (slot) {
-            case SwitcherLayout.PREVIOUS_SLOT -> page - 1;
-            case SwitcherLayout.NEXT_SLOT -> page + 1;
-            default -> -1;
-        };
-        if (target >= 0 && target < snapshot.layout().pages()) {
+        int target;
+        if (slot == layout.previousSlot()) {
+            target = page - 1;
+        } else if (slot == layout.nextSlot()) {
+            target = page + 1;
+        } else {
+            return;
+        }
+        if (target >= 0 && target < layout.pages()) {
             // Opening replaces the open inventory, which must not count as the viewer leaving.
             this.turning.add(player);
             try {
@@ -169,7 +176,6 @@ final class SwitcherInventory {
                 this.turning.remove(player);
             }
         }
-        return true;
     }
 
     /** A viewer left the list; the last one stops the period. */
@@ -278,27 +284,30 @@ final class SwitcherInventory {
         SwitcherReading.Outcome read = this.outcome;
         if (read instanceof SwitcherReading.Unavailable) {
             layout.setItem(0, TranslatedItem.of(Material.BARRIER).setDisplayName(new TextData(LobbySwitcherMessages.STATE_UNAVAILABLE)).toNonClickSlot());
-            return layout;
+        } else {
+            List<SwitcherEntry> entries = shape.page(entries(read), page);
+            for (int slot = 0; slot < entries.size(); slot++) {
+                layout.setItem(slot, item(entries.get(slot)).toNonClickSlot());
+            }
         }
-        List<SwitcherEntry> entries = shape.page(entries(read), page);
-        for (int slot = 0; slot < entries.size(); slot++) {
-            layout.setItem(slot, item(entries.get(slot)).toNonClickSlot());
-        }
-        if (shape.paged()) {
-            navigation(layout, shape, page);
-        }
+        navigation(layout, shape, page);
         return layout;
     }
 
+    // The close button is always there; the indicator and the arrows only when there is more than one page.
     private static void navigation(InventoryLayout layout, SwitcherLayout shape, int page) {
+        layout.setItem(shape.closeSlot(), TranslatedItem.of(Material.BARRIER).setDisplayName(new TextData(LobbySwitcherMessages.CLOSE)).toNonClickSlot());
+        if (!shape.paged()) {
+            return;
+        }
         String current = String.valueOf(page + 1);
         String total = String.valueOf(shape.pages());
-        layout.setItem(SwitcherLayout.INDICATOR_SLOT, TranslatedItem.of(Material.PAPER).setDisplayName(new TextData(LobbySwitcherMessages.PAGE_INDICATOR, current, total)).toNonClickSlot());
+        layout.setItem(shape.indicatorSlot(), TranslatedItem.of(Material.PAPER).setDisplayName(new TextData(LobbySwitcherMessages.PAGE_INDICATOR, current, total)).toNonClickSlot());
         if (page > 0) {
-            layout.setItem(SwitcherLayout.PREVIOUS_SLOT, TranslatedItem.of(Material.ARROW).setDisplayName(new TextData(LobbySwitcherMessages.PAGE_PREVIOUS)).toNonClickSlot());
+            layout.setItem(shape.previousSlot(), TranslatedItem.of(Material.ARROW).setDisplayName(new TextData(LobbySwitcherMessages.PAGE_PREVIOUS)).toNonClickSlot());
         }
         if (page < shape.pages() - 1) {
-            layout.setItem(SwitcherLayout.NEXT_SLOT, TranslatedItem.of(Material.ARROW).setDisplayName(new TextData(LobbySwitcherMessages.PAGE_NEXT)).toNonClickSlot());
+            layout.setItem(shape.nextSlot(), TranslatedItem.of(Material.ARROW).setDisplayName(new TextData(LobbySwitcherMessages.PAGE_NEXT)).toNonClickSlot());
         }
     }
 

@@ -463,6 +463,25 @@ wird nur beim Start gelesen. Im Setup-Server bearbeitet `/setup portal` die Port
 - `portal.labels.refresh` (Span je Label-Zyklus, nicht je Portal): `portal.labels.count` und
   `portal.labels.failed`.
 
+## Lobbyswitcher (`lobbyswitcher`, nur `cloudnet`)
+
+Die Uhr in Hotbar-Slot 8 öffnet die Liste der laufenden Lobbys des eigenen Tasks; ein Klick wechselt
+dorthin. Die Liste endet immer mit einer Navigationszeile, auch bei einer einzigen Seite. Ihr erster Slot
+ist der Schließen-Knopf (`BARRIER`, „Schließen“), der das Inventar schließt; eine übergeordnete Ansicht
+gibt es nicht, deshalb führt er nirgendwohin.
+
+| Slot relativ zum Anfang der Navigationszeile | Inhalt |
+|---|---|
+| +0 | Schließen-Knopf, immer |
+| +3 | Vorige Seite, nur wenn es eine gibt |
+| +4 | „Seite x/y“, nur bei mehr als einer Seite; sonst leer |
+| +5 | Nächste Seite, nur wenn eine folgt |
+
+Die Liste hat `max(1, ceil(n/9))` Inhaltszeilen, höchstens fünf, plus die Navigationszeile in der letzten
+Zeile. Bei mehr als 45 Lobbys (`core`: `Pagination`) werden Seiten zu 45 Einträgen gebildet, jede mit fünf
+Inhaltszeilen. Die Navigationszeile beginnt damit bei Slot 9 (eine Inhaltszeile), 18 (zwei), 27 (drei),
+36 (vier) und 45 (fünf oder mehr Zeilen, also jede Seite ab 46 Lobbys).
+
 ## Erwartete Columns einer Variante
 
 `titan.app-variant` schreibt beim Bauen die Avaje-Modulnamen aller in eine Variante eingebundenen
