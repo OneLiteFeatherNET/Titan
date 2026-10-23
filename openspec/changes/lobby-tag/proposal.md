@@ -12,10 +12,10 @@ Die Teilnahme ist freiwillig. Wer nicht mitspielen will, wird nie betroffen, und
 - **Befehl:** `/tag` schaltet dieselbe Einstellung um. Er ist eine Abkürzung, keine zweite Quelle der Wahrheit. Konsole erhält eine Meldung, dass nur Spieler mitspielen können.
 - **Aktive Spieler:** Ein Spieler ist aktiv, wenn er die Einstellung auf „an“ hat, in der Lobby-Instanz ist und gerade nicht in einem Sprungtest-Lauf steckt und nicht in der Übergabe zu einem anderen Server ist (Details in `design.md`).
 - **Genau ein Fänger pro Instanz:** Ab zwei aktiven Spielern gibt es immer genau einen Fänger. Verlässt er die Gruppe, schaltet ab oder wird inaktiv, wird zufällig ein anderer aktiver Spieler Fänger. Bei weniger als zwei aktiven Spielern gibt es keinen Fänger, und die Actionbar sagt das.
-- **Sichtbarkeit ohne Resource Pack:** Der Fänger leuchtet (Glowing) in Rot, sein Name bekommt ein rotes Team-Präfix, und er hat rote Partikel um sich. Alles über Vanilla-Mittel.
+- **Sichtbarkeit ohne Resource Pack:** Der Fänger leuchtet (Glowing, Standardfarbe weiß) und hat rote Partikel um sich. Dazu zeigt die Actionbar, wer Fänger ist. Ein eigenes Scoreboard-Team gibt es nicht, damit keine Konflikte mit den Namenspräfixen von Butterfly entstehen. Alles über Vanilla-Mittel.
 - **Treffer:** Ein Nahkampftreffer des Fängers auf einen anderen aktiven Spieler übergibt die Rolle. Der Treffer macht keinen Schaden und keinen Rückstoß, nur eine kurze Trefferanimation und einen Ton. Der frisch gefangene Spieler bekommt einen Titel, beide hören einen Ton. Zurück zum vorherigen Fänger geht es für 5 Sekunden nicht.
 - **Andere Treffer:** Nahkampftreffer zwischen zwei aktiven Spielern, bei denen nicht der Fänger angreift, werden ebenfalls ohne Schaden abgebrochen. Für Spieler außerhalb des Spiels bleibt der Schutz unverändert.
-- **Inaktivität des Fängers:** Hat der Fänger 120 Sekunden lang weder sich bewegt noch getroffen, wird die Rolle neu vergeben, damit das Spiel nicht an einem AFK-Fänger hängen bleibt.
+- **Inaktivität des Fängers:** Hat der Fänger 120 Sekunden lang weder sich bewegt noch getroffen, wird die Rolle an einen anderen aktiven Spieler vergeben, damit das Spiel nicht an einem AFK-Fänger hängen bleibt. Inaktive Nicht-Fänger bleiben im Spiel und können getroffen werden.
 - **Interaktionen:** Tanz, Sitzen, Elytra, Sprungtest und Serverwechsel sind in `design.md` entschieden.
 - **Telemetrie:** Zähler `titan.tag.tags{result}` (`tagged`, `cooldown`) und `titan.tag.toggles{state}` (`on`, `off`), ohne Spieler-Id.
 - **Meldungen:** Deutsch und Englisch in `titan/tag/messages_de.properties` und `messages_en.properties`.
@@ -36,7 +36,7 @@ Der Pull-Request-Titel und der Squash-Commit der späteren Umsetzung sind `feat(
 ## Abhängigkeiten
 
 - **`lobby-settings` (Voraussetzung, wird zuerst umgesetzt):** `lobby-tag` baut auf `lobby-settings` auf. Die Einstellung `titan:tag.enabled`, die Settings-Schnittstelle in `core` und die Otis-Anbindung kommen aus `lobby-settings`. Mit der Umsetzung von `lobby-tag` wird erst begonnen, wenn `lobby-settings` gemerged ist. Die Reihenfolge steht in `tasks.md`, Abschnitt 0.
-- **Zusätzlich berührt:** `jumprun` und `portal` senden ein neues Core-Ereignis `LobbyPlayerBusyEvent` (siehe `design.md` D4). Das ist eine kleine Änderung in diesen Columns, keine Abhängigkeit von Fangen auf sie.
+- **Zusätzlich berührt:** `jumprun` und `portal` senden ein neues Core-Ereignis `LobbyPlayerBusyEvent` (siehe `design.md` D4). Das ist eine kleine Änderung in diesen Columns, keine Abhängigkeit von Fangen auf sie. Das Ereignis ist allgemein benannt, damit `lobby-throw` es ebenfalls nutzen kann.
 
 ## Capabilities
 

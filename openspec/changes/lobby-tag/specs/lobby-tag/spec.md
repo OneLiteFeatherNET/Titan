@@ -50,13 +50,13 @@ Die Lobby MUSS in jeder Instanz bei zwei oder mehr aktiven Spielern genau einen 
 - **THEN** gibt es keinen Fänger, und dieser Spieler sieht den Hinweis, dass er auf einen zweiten Spieler wartet
 
 ### Requirement: Der Fänger ist ohne Ressourcenpaket erkennbar
-_Visibility uses vanilla means only: glowing, a red team and red particles._
+_Visibility uses vanilla means only: glowing, red particles and the actionbar, no own scoreboard team._
 
-Die Lobby MUSS den Fänger für alle Zuschauer der Instanz hervorheben, nur mit Vanilla-Mitteln: Leuchten, rote Farbe und rote Partikel. Die Actionbar aller aktiven Spieler MUSS anzeigen, wer Fänger ist.
+Die Lobby MUSS den Fänger für alle Zuschauer der Instanz hervorheben, nur mit Vanilla-Mitteln: Leuchten (Standardfarbe) und rote Partikel. Die Lobby MUSS kein eigenes Scoreboard-Team für den Fänger anlegen, damit es nicht mit Namenspräfixen anderer Module kollidiert. Die Actionbar aller aktiven Spieler MUSS anzeigen, wer Fänger ist.
 
 #### Scenario: Fänger sichtbar
 - **WHEN** ein Spieler Fänger wird
-- **THEN** leuchtet er rot, und die Actionbar aller aktiven Spieler nennt ihn
+- **THEN** leuchtet er, hat rote Partikel, und die Actionbar aller aktiven Spieler nennt ihn
 
 ### Requirement: Ein Treffer des Fängers übergibt die Rolle
 _A melee hit by the tagger on another active player passes the role, with no damage and no knockback._
@@ -91,7 +91,11 @@ Hat der Fänger 120 Sekunden lang weder sich bewegt, getroffen noch eine Eingabe
 
 #### Scenario: Fänger bleibt still
 - **WHEN** der Fänger 120 Sekunden ohne Bewegung, Treffer und Eingabe ist
-- **THEN** wird ein anderer aktiver Spieler Fänger
+- **THEN** wird ein anderer aktiver Spieler Fänger, nicht derselbe Spieler
+
+#### Scenario: Inaktiver Nicht-Fänger
+- **WHEN** ein aktiver Spieler ohne Rolle 120 Sekunden still ist
+- **THEN** bleibt er im Spiel, und er kann getroffen werden
 
 ### Requirement: Tanz, Sitzen, Elytra, Sprungtest und Serverwechsel
 _Each feature has a fixed rule for the tag game; none of them is ignored._

@@ -9,7 +9,7 @@
 
 - [x] 1.1 OpenSpec-Artefakte (`proposal.md`, `design.md`, `specs/lobby-tag/spec.md`, `tasks.md`) schreiben und mit `openspec validate --strict lobby-tag` prüfen. Commit `docs(openspec): propose lobby-tag`.
 - [ ] 1.2 Minestom-Schnittstellen per `javap` prüfen (`setGlowing`, Team-Farbe, `EntityAnimationPacket` Schaden, `EntityAttackEvent`, `PlayerStartFlyingWithElytraEvent`); Ergebnis in `design.md` festhalten.
-- [ ] 1.3 Offene Fragen aus `design.md` (Team und Butterfly, Zeitwerte) mit dem Nutzer klären.
+- [x] 1.3 Offene Fragen entschieden: kein eigenes Scoreboard-Team (Glowing in Standardfarbe, rote Partikel, Actionbar); 120 s Inaktivität und 5 s Rücktausch-Sperre; inaktive Nicht-Fänger bleiben im Spiel; `LobbyPlayerBusyEvent` akzeptiert und für `lobby-throw` nutzbar.
 
 ## 2. Core-Ereignis und Opt-in (`core`, `features/tag`)
 
@@ -29,10 +29,10 @@
 ## 4. Minestom-Verdrahtung (`features/tag`)
 
 - [ ] 4.1 Test zuerst (Env, `TagModuleIntegrationTest`, `env.tick()`, je ein Verhalten pro Test): Treffer zwischen aktiven Spielern ohne Schaden und Rückstoß; Treffer des Fängers überträgt Rolle mit Ton und Titel; inaktiver Spieler wird nicht verändert; Disconnect entfernt Spieler; Instanzwechsel entfernt Spieler.
-- [ ] 4.2 Test zuerst (Env): Fänger leuchtet rot, Actionbar nennt ihn; Partikel laufen nur für die Instanz.
+- [ ] 4.2 Test zuerst (Env): Fänger leuchtet, Actionbar nennt ihn; Partikel laufen nur für die Instanz; kein Scoreboard-Team wird angelegt.
 - [ ] 4.3 Test zuerst (Env): Tanz (Fänger endet, Ziel läuft weiter), Sitzen (Teilnahme unverändert), Gleitflug (Treffer zählt nicht), `LobbyPlayerBusyEvent` (Fänger verliert Rolle).
 - [ ] 4.4 `TagModule` (`@PostConstruct`: `FeatureNode` mit Priorität 620; Listener für `EntityAttackEvent` (`onIncludingCancelled`), `PlayerMoveEvent`, `PlayerDisconnectEvent`, `RemoveEntityFromInstanceEvent`, `LobbyPlayerBusyEvent`, `PlayerStartFlyingWithElytraEvent`, `PlayerStopFlyingWithElytraEvent`; `@PreDestroy`: Knoten schließen, Zustand aufräumen).
-- [ ] 4.5 `TagEffects` (Glowing, Team-Farbe nach Entscheidung aus 1.3, Partikel, Ton, Titel, Actionbar, Trefferanimation).
+- [ ] 4.5 `TagEffects` (Glowing in Standardfarbe, Partikel, Ton, Titel, Actionbar, Trefferanimation; kein Team).
 - [ ] 4.6 Test zuerst (Env): Nach `close()` löst kein Event mehr Code des Moduls aus (Muster `SpawnModuleTest#stopLeavesNoListenerBehind`).
 - [ ] 4.7 `package-info.java` mit `@InjectModule(name = "tagColumn", ...)`, `ColumnArchitectureTest` (wie bei den übrigen Columns).
 
@@ -57,7 +57,7 @@
 ## 8. Prüfung
 
 - [ ] 8.1 `./gradlew spotlessApply` und `./gradlew build` grün; `openspec validate --strict lobby-tag` grün.
-- [ ] 8.2 Sichtprüfung auf einem Testserver: Opt-in über das Menü, `/tag`, Glow und Actionbar, Treffer ohne Schaden. Nicht ausgeführt, falls kein Testserver verfügbar; im PR als offen vermerken.
+- [ ] 8.2 Sichtprüfung auf einem Testserver: Opt-in über das Menü, `/tag`, Glow, Partikel und Actionbar, Treffer ohne Schaden, Butterfly-Präfixe unverändert. Nicht ausgeführt, falls kein Testserver verfügbar; im PR als offen vermerken.
 
 ## 9. Commits und Pull Request
 

@@ -74,13 +74,13 @@ Ein Spieler verlässt das Spiel (wird inaktiv) bei:
 - von `jumprun` beim Start eines Laufs mit `busy=true` und beim Ende mit `busy=false`,
 - von `portal` beim Start einer Übergabe zu einem anderen Server mit `busy=true`. Die Übergabe endet mit dem Verbindungsabbruch.
 
-So bleibt `features/tag` nur von `core` abhängig, und keine Column ruft eine andere auf. Der Lauf ist ein Einzelspieler-Modus, in dem der Spieler nicht gejagt werden soll, und die Übergabe verlässt die Lobby.
+So bleibt `features/tag` nur von `core` abhängig, und keine Column ruft eine andere auf. Der Lauf ist ein Einzelspieler-Modus, in dem der Spieler nicht gejagt werden soll, und die Übergabe verlässt die Lobby. Das Ereignis ist allgemein benannt; `lobby-throw` kann es ebenfalls nutzen.
 
 Ein Spieler, der aus dem Spiel fällt, während er Fänger ist, verliert die Rolle. Die Rolle geht dann zufällig an einen verbleibenden aktiven Spieler, wenn es noch zwei gibt. Kommt er zurück, ist er ein normaler aktiver Spieler (keine Rückkehr in die Rolle).
 
 ### D5 Inaktivität des Fängers
 
-Der Fänger verliert die Rolle nach 120 Sekunden ohne Bewegung, Treffer oder Eingabe. Die Zeit kommt aus der injizierten `Clock`. Geprüft wird jede Sekunde über einen Task (`Scheduler`). Ein nicht fangender Spieler kann nicht inaktiv werden, denn seine Rolle hängt nicht an ihm.
+Der Fänger verliert die Rolle nach 120 Sekunden ohne Bewegung, Treffer oder Eingabe. Die Zeit kommt aus der injizierten `Clock`. Geprüft wird jede Sekunde über einen Task (`Scheduler`). Inaktive Nicht-Fänger bleiben im Spiel und können getroffen werden. Läuft die Frist eines Fängers ab, geht die Rolle an einen anderen aktiven Spieler, nie an denselben.
 
 Warum nicht ohne Regel: Ein AFK-Fänger würde das Spiel für alle anderen dauerhaft blockieren. Warum 120 Sekunden: lang genug, um still zu stehen und zu lesen, kurz genug, damit niemand eine Lobby lang festhängt. Die Zahl ist eine Konstante im Code, wie die anderen Abklingzeiten.
 
@@ -100,9 +100,7 @@ Das Spiel kennt keine AFK-Erkennung der Lobby. Die Regel nutzt nur die Bewegung,
 
 ### D7 Sichtbarkeit ohne Ressourcenpaket
 
-Der Fänger bekommt `setGlowing(true)` und ein Team mit roter Farbe; der Name bekommt dadurch ein rotes Präfix und das Leuchten die rote Umrandung. Alle anderen behalten ihr Team. Alle 10 Ticks spawnen rote Partikel (`ParticlePacket`) um den Fänger, an die Zuschauer der Instanz.
-
-Ein Spieler kann nur in einem Team sein. Wer schon ein Team hat (z. B. Butterfly für Präfixe), dessen Präfix wird durch das Fangen-Team überschrieben. Das ist offen, siehe unten.
+Der Fänger bekommt `setGlowing(true)` mit der Standardfarbe (weiß). Es gibt kein eigenes Scoreboard-Team und keine Team-Farbe. Ein Team würde mit den Namenspräfixen von Butterfly kollidieren, weil ein Spieler nur in einem Team sein kann. Alle 10 Ticks spawnen rote Partikel (`ParticlePacket`) um den Fänger, an die Zuschauer der Instanz. Die Actionbar aller aktiven Spieler nennt den Fänger.
 
 ### D8 Telemetrie
 
@@ -124,9 +122,4 @@ Ein Spieler kann nur in einem Team sein. Wer schon ein Team hat (z. B. Butterfly
 
 ## Offene Fragen
 
-1. **Team und Butterfly:** Butterfly setzt Präfixe über Teams. Das Fangen-Team kann das überschreiben oder umgekehrt. Vorschlag: Fangen setzt nur Glowing und Partikel, kein eigenes Team, und die Farbe kommt über die Team-Farbe des Spielers, falls Butterfly sie nicht setzt. Zu klären, bevor die Umsetzung startet.
-2. **Inaktivität:** 120 Sekunden ist eine Setzung. Passt das?
-3. **Rücktausch:** 5 Sekunden ist eine Setzung.
-4. **Nicht fangende Inaktive:** Sie bleiben im Spiel und können getroffen werden. Soll das anders sein?
-5. **Core-Ereignis:** `LobbyPlayerBusyEvent` ist eine Änderung an `jumprun` und `portal`, die außerhalb dieses Moduls liegt. Akzeptiert?
-6. **Settings-Menü:** Die Position des Schalters im Menü legt `lobby-settings` fest.
+1. **Settings-Menü:** Die Position des Schalters im Menü legt `lobby-settings` fest.
