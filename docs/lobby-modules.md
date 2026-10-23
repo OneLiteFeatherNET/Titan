@@ -507,6 +507,37 @@ Zeile. Bei mehr als 45 Lobbys (`core`: `Pagination`) werden Seiten zu 45 Einträ
 Inhaltszeilen. Die Navigationszeile beginnt damit bei Slot 9 (eine Inhaltszeile), 18 (zwei), 27 (drei),
 36 (vier) und 45 (fünf oder mehr Zeilen, also jede Seite ab 46 Lobbys).
 
+## Tanz (`dance`)
+
+Ein Spieler tanzt über die Schnellaktion (Taste G, Client 1.21.6 oder neuer) oder den Befehl `/tanz`
+(Alias `/dance`). Die Schnellaktion ist der Dialog `titan:dances` mit genau einem Knopf; er steht beim
+Start in `minecraft:quick_actions` und geht identisch an jeden Client, deshalb ist sein Text nicht
+übersetzt. Der Knopf öffnet dem Spieler persönlich die Auswahl: nur die Tänze, die er nutzen darf, und
+„Stopp“. Jeder Tanz-Knopf sendet `titan:dance` mit der Id als Payload; die Lobby prüft Id und
+Berechtigung erneut.
+
+- **Tänze** sind im Code festgelegt (`Dance`, Schritte in Ticks in `DanceSequence`): `wave`, `groove`
+  und `party` sind frei, `spin` braucht `titan.dance.spin`.
+- **Ein Tanz je Spieler gleichzeitig**, danach drei Sekunden Pause (`DanceCooldown.PAUSE`, aus der
+  injizierten `Clock`).
+- **Kamera:** Während des Tanzes sieht der Spieler sich über eine unsichtbare Markerentität
+  (`DanceCamera`, `CameraPacket` über `Player#spectate`) 3,5 Blöcke vor sich auf Augenhöhe
+  (`CameraPlacement`). Beim Ende setzt die Lobby die Kamera zurück und entfernt die Entität.
+- **Stopp-Pfade** (`DanceService#stop`): Ende der Dauer, horizontale Bewegung über 0,25 Blöcke
+  (`DanceSession.MOVE_THRESHOLD`), Bewegungstasten, Angriff oder Interaktion (auch wenn ein anderes
+  Modul sie abgebrochen hat), Instanzwechsel, Verbindungsabbruch, Stopp-Knopf, Fehler in einem
+  Schritt und Herunterfahren. Jeder Pfad stellt Pose und Blick wieder her und entfernt die Entität,
+  auch wenn der Schritt davor geworfen hat.
+- **Pose über Flags:** Minestom berechnet die Pose jeden Tick aus dem Ducken- und dem
+  Riptide-Drehflag neu. Ein direktes `setPose` hält deshalb nicht; die Column setzt die Flags
+  (`MinestomDanceEffects`).
+- **Schnellaktion eintragen:** Minestom 2026.10.07-26.2 bietet keine öffentliche Methode, um einen Tag
+  zu befüllen. `QuickActionRegistration` ruft die paketprivate `RegistryTagImpl.Backed#add` einmal per
+  Reflexion auf. Schlägt das fehl, loggt die Lobby eine Warnung; `/tanz` funktioniert weiter.
+  `QuickActionRegistrationTest` prüft den Weg bei jedem Build, damit ein Versionssprung auffällt.
+- **Telemetrie:** Zähler `titan.dance.started{dance}`, kein Span (Starts sind selten, die Schritte
+  zu häufig für einen Span).
+
 ## Erwartete Columns einer Variante
 
 `titan.app-variant` schreibt beim Bauen die Avaje-Modulnamen aller in eine Variante eingebundenen

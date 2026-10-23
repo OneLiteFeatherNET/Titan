@@ -56,6 +56,7 @@ Die Tanzdefinitionen (Länge in Ticks):
 `DanceSession` (ohne Minestom) zählt die Ticks, liefert pro Tick die Aktionen und meldet das Ende. Die Grenzen zwischen Verantwortungen:
 
 - `DanceEffects` führt die Aktionen am Spieler aus (Pose, Schwung, Blickrichtung, Sprung über `setVelocity`, Partikel über `ParticlePacket`, Ton über `Instance#playSoundExcept(null, ...)`).
+  Die Pose setzt die Column über die Flags Ducken (`setSneaking`) und Riptide-Drehung (`LivingEntityMeta#setInRiptideSpinAttack`), nicht über `setPose`: Minestom berechnet die Pose in jedem Tick aus diesen Flags neu, ein direktes `setPose` hält nicht.
 - `DanceCamera` besitzt die Kameraentität: erzeugt sie (`EntityTypes.MARKER`, `setAutoViewable(false)`, `setInstance(...).join()`, `addViewer(player)`), setzt die Kamera per `Player#spectate`, und `close()` ruft `stopSpectating()` und danach `remove()`.
 - `CameraPlacement` berechnet den Standort: Augenhöhe des Tanzenden plus 3,5 Blöcke in Blickrichtung, Blick per `Pos#withLookAt` auf den Tanzenden.
 - `DanceService` hält die Sitzungen je Spieler (`Map<UUID, ActiveDance>`), prüft Berechtigung, Abklingzeit und Einzelstart, startet den Tick-Task über `Scheduler#submitTask` und zählt den Start.
