@@ -34,10 +34,14 @@ import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.instance.InstanceContainer;
+import net.minestom.server.instance.InstanceManager;
+import net.minestom.server.registry.Registries;
 import net.minestom.server.timer.Scheduler;
 import net.onelitefeather.titan.common.deliver.TitanLobbyIdentity;
+import net.onelitefeather.titan.common.dimension.LobbyDimensions;
 import net.onelitefeather.titan.core.lobby.LobbyIdentities;
 import net.onelitefeather.titan.core.module.FeatureNode;
+import net.onelitefeather.titan.core.module.LobbyAtmosphere;
 import net.onelitefeather.titan.core.module.LobbySpawn;
 import net.onelitefeather.titan.core.module.LobbyWorldChoice;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
@@ -59,12 +63,23 @@ import net.onelitefeather.titan.common.map.MapProvider;
 @Factory
 public final class PlatformBeans {
 
-    /** Also satisfies a bean lookup for the narrower {@link Instance} type. */
+    /**
+     * Also satisfies a bean lookup for the narrower {@link Instance} type. Its dimension carries
+     * the atmosphere of the chosen world, so it is registered before the instance exists.
+     */
     @Bean
     public InstanceContainer instanceContainer() {
-        InstanceContainer instance = MinecraftServer.getInstanceManager().createInstanceContainer();
-        MinecraftServer.getInstanceManager().registerInstance(instance);
+        return createLobbyInstance(MinecraftServer.getRegistries(), MinecraftServer.getInstanceManager(), lobbyAtmosphere(ServiceLoader.load(LobbyWorldChoice.class)));
+    }
+
+    static InstanceContainer createLobbyInstance(Registries registries, InstanceManager instances, Optional<LobbyAtmosphere> atmosphere) {
+        InstanceContainer instance = instances.createInstanceContainer(registries, LobbyDimensions.register(registries, atmosphere));
+        instances.registerInstance(instance);
         return instance;
+    }
+
+    static Optional<LobbyAtmosphere> lobbyAtmosphere(Iterable<LobbyWorldChoice> choices) {
+        return onlyChoice(choices).flatMap(LobbyWorldChoice::atmosphere);
     }
 
     /**
@@ -78,6 +93,12 @@ public final class PlatformBeans {
     }
 
     static MapProvider loadMapProvider(Path base, InstanceContainer instance, Iterable<LobbyWorldChoice> choices) {
+        Optional<String> worldName = onlyChoice(choices).flatMap(LobbyWorldChoice::worldName);
+        return MapProvider.create(base, instance, worldName);
+    }
+
+    /** @throws IllegalStateException if more than one choice is registered */
+    private static Optional<LobbyWorldChoice> onlyChoice(Iterable<LobbyWorldChoice> choices) {
         List<LobbyWorldChoice> found = new ArrayList<>();
         choices.forEach(found::add);
         if (found.size() > 1) {
@@ -85,8 +106,7 @@ public final class PlatformBeans {
             String names = found.stream().map(choice -> choice.getClass().getName()).collect(Collectors.joining(", "));
             throw new IllegalStateException("More than one LobbyWorldChoice found: " + names);
         }
-        Optional<String> worldName = found.stream().findFirst().flatMap(LobbyWorldChoice::worldName);
-        return MapProvider.create(base, instance, worldName);
+        return found.stream().findFirst();
     }
 
     @Bean

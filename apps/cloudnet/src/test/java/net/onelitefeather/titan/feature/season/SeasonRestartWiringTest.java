@@ -30,6 +30,8 @@ import java.time.ZoneOffset;
 import java.util.concurrent.atomic.AtomicInteger;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
+import net.minestom.server.instance.Instance;
+import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.timer.Scheduler;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
@@ -133,8 +135,10 @@ class SeasonRestartWiringTest {
     private void startScope() {
         ServerStop stop = this.stops::incrementAndGet;
         OnlinePlayers players = () -> this.online;
+        // The lobby instance is only a dependency here; its season atmosphere is not under test.
+        InstanceContainer lobby = this.env.process().instance().createInstanceContainer();
         // Named mock, not the plain mock(Type) overload - see docs/lobby-modules.md, "Permission-Plattform".
-        this.scope = BeanScope.builder().forTesting().mock(MapProvider.class, ActiveLobby.empty()).mock(FeatureFlags.class).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).bean(Clock.class, this.clock).bean(Scheduler.class, this.env.process().scheduler()).bean(FeatureNode.TITAN_NODE, EventNode.class, (EventNode<Event>) this.titan.node()).bean(SeasonSchedule.class, new SeasonSchedule(this.clock, this.worlds)).bean(ServerStop.class, stop).bean(OnlinePlayers.class, players).build();
+        this.scope = BeanScope.builder().forTesting().mock(MapProvider.class, ActiveLobby.empty()).mock(FeatureFlags.class).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).bean(Clock.class, this.clock).bean(Scheduler.class, this.env.process().scheduler()).bean(FeatureNode.TITAN_NODE, EventNode.class, (EventNode<Event>) this.titan.node()).bean(SeasonSchedule.class, new SeasonSchedule(this.clock, this.worlds)).bean(InstanceContainer.class, lobby).bean(Instance.class, lobby).bean(ServerStop.class, stop).bean(OnlinePlayers.class, players).build();
     }
 
     private void tickOneMinute() {

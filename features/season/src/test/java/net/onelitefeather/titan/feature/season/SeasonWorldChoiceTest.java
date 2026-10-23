@@ -23,6 +23,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Optional;
 import java.util.ServiceLoader;
+import net.onelitefeather.titan.core.module.LobbyAtmosphere;
 import net.onelitefeather.titan.core.module.LobbyWorldChoice;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -71,6 +72,32 @@ class SeasonWorldChoiceTest {
         configureWinter(true);
 
         Assertions.assertEquals(Optional.of("winter-map"), choiceAt("2026-12-24T12:00:00Z").worldName());
+    }
+
+    @DisplayName("The atmosphere of the season active now is chosen with its world")
+    @Test
+    void activeSeasonsAtmosphereIsChosen() throws IOException {
+        configureWinter(true);
+        Config.setProperty(SeasonSettings.key("winter", SeasonSettings.ATMOSPHERE_FIELD), "slender-fog");
+
+        Assertions.assertEquals(Optional.of(LobbyAtmosphere.SLENDER_FOG), choiceAt("2026-12-24T12:00:00Z").atmosphere(), "the active season's atmosphere must be chosen");
+    }
+
+    @DisplayName("An active season without an atmosphere chooses none")
+    @Test
+    void activeSeasonWithoutAtmosphereChoosesNone() throws IOException {
+        configureWinter(true);
+
+        Assertions.assertEquals(Optional.empty(), choiceAt("2026-12-24T12:00:00Z").atmosphere(), "a season without seasons.winter.atmosphere must choose no atmosphere");
+    }
+
+    @DisplayName("An atmosphere of a season outside its window is not chosen")
+    @Test
+    void inactiveSeasonsAtmosphereIsNotChosen() throws IOException {
+        configureWinter(true);
+        Config.setProperty(SeasonSettings.key("winter", SeasonSettings.ATMOSPHERE_FIELD), "slender-fog");
+
+        Assertions.assertEquals(Optional.empty(), choiceAt("2026-06-01T12:00:00Z").atmosphere(), "outside the window the default world has no atmosphere");
     }
 
     @DisplayName("Outside every window the default world is left to the platform")
