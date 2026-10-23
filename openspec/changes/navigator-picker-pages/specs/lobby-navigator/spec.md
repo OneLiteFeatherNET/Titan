@@ -5,25 +5,25 @@
 ### Requirement: Serverauswahl blättert durch alle Dienste
 _The server list MUST show every running service on pages of at most 45 entries, with the navigation row at the bottom._
 
-Die Serverauswahl MUSS jeden laufenden Dienst des Ziels zeigen, auf Seiten zu höchstens 45 Einträgen. Die unterste Reihe ist immer die Navigationszeile: Der Vorige-Pfeil steht im ersten Slot, das Sortier-Item in der Mitte und der Nächste-Pfeil im letzten. Ein Pfeil erscheint nur, wenn es in seine Richtung eine Seite gibt. Ab zwei Seiten nennen die Pfeile ihre Zielseite, und die Lore des Sortier-Items zeigt „Seite x/y“. Eine nicht volle Reihe, also die letzte oder einzige Reihe einer Seite, MUSS zentriert sein: ihre `n` Einträge beginnen in Spalte `(9 − n) / 2`, ganzzahlig. Volle Reihen bleiben unverschoben.
+Die Serverauswahl MUSS jeden laufenden Dienst des Ziels zeigen, auf Seiten zu höchstens 45 Einträgen. Die unterste Reihe ist immer die Navigationszeile, auch bei leerer Liste. Auf ihrem Startslot steht die Zurück-Taste, danach folgen der Vorige-Pfeil auf Startslot + 3, das Sortier-Item auf Startslot + 4 und der Nächste-Pfeil auf Startslot + 5. Ein Pfeil erscheint nur, wenn es in seine Richtung eine Seite gibt. Ab zwei Seiten nennen die Pfeile ihre Zielseite, und die Lore des Sortier-Items zeigt „Seite x/y“. Eine nicht volle Reihe, also die letzte oder einzige Reihe einer Seite, MUSS zentriert sein: ihre `n` Einträge beginnen in Spalte `(9 − n) / 2`, ganzzahlig. Volle Reihen bleiben unverschoben.
 
 #### Scenario: Wenige Dienste ohne Seiten
 - **WHEN** sechs Dienste eines Minispiels laufen und ein Spieler die Serverauswahl öffnet
-- **THEN** zeigt das Inventar eine Reihe Einträge in den Spalten eins bis sechs und darunter die Navigationszeile mit dem Sortier-Item in Slot 13
+- **THEN** zeigt das Inventar eine Reihe Einträge in den Slots 1 bis 6 und darunter die Navigationszeile mit der Zurück-Taste in Slot 9 und dem Sortier-Item in Slot 13
 - **AND** es erscheinen keine Pfeile und keine Seitenanzeige in der Lore
 
 #### Scenario: Ein Dienst steht in der Mitte
 - **WHEN** genau ein Dienst läuft und ein Spieler die Serverauswahl öffnet
 - **THEN** steht der Dienst in Slot 4, der Mitte der ersten Reihe
-- **AND** das Sortier-Item steht in Slot 13, der Mitte der Navigationszeile, und es erscheinen keine Pfeile
+- **AND** die Zurück-Taste steht in Slot 9, das Sortier-Item in Slot 13, der Mitte der Navigationszeile, und es erscheinen keine Pfeile
 
 #### Scenario: Mehr Dienste als eine Seite fasst
 - **WHEN** 100 Dienste laufen und ein Spieler die Serverauswahl öffnet
 - **THEN** zeigt Seite 1 die ersten 45 Einträge der aktiven Ordnung, in den Slots 0 bis 44
-- **AND** der Nächste-Pfeil in Slot 53 nennt „Nächste Seite · Seite 2/3“, das Sortier-Item in Slot 49 zeigt in seiner Lore „Seite 1/3“, und es gibt keinen Vorige-Pfeil in Slot 45
+- **AND** der Nächste-Pfeil in Slot 50 nennt „Nächste Seite · Seite 2/3“, das Sortier-Item in Slot 49 zeigt in seiner Lore „Seite 1/3“, die Zurück-Taste steht in Slot 45, und es gibt keinen Vorige-Pfeil in Slot 48
 
 #### Scenario: Seite zurück
-- **WHEN** der Spieler auf Seite 2 den Pfeil nach links anklickt
+- **WHEN** der Spieler auf Seite 2 den Pfeil nach links in Slot 48 anklickt
 - **THEN** zeigt die Serverauswahl Seite 1 wieder, mit der aktiven Ordnung
 
 #### Scenario: Letzte Seite
@@ -142,9 +142,9 @@ Der Navigator MUSS je Kombination aus Rechten und Sprache genau ein geteiltes In
 - **THEN** hat keine dieser Serverauswahlen mehr einen Klick-Listener
 
 ### Requirement: Nur benannte Klicks wirken
-_The navigator and its server list MUST cancel every click, act only on left and right clicks, and apply the same rule to the sort item and the page arrows._
+_The navigator and its server list MUST cancel every click, act only on left and right clicks, and apply the same rule to the sort item, the page arrows and the back button._
 
-Der Navigator und seine Serverauswahl MÜSSEN jeden Klick abbrechen. Gewirkt wird nur bei Links- und Rechtsklick, mit oder ohne Shift. Jeder andere Klicktyp (Zahlentasten, Q, F, Mittelklick, Doppelklick, Ziehen) DARF weder schnell beitreten, eine Serverauswahl öffnen, verbinden, zum Portal laufen, die Ordnung wechseln noch eine Seite wechseln; das Inventar MUSS dabei offen bleiben. Das gilt für Minispiele, Server, die Einträge der Serverauswahl, das Sortier-Item und die Pfeile.
+Der Navigator und seine Serverauswahl MÜSSEN jeden Klick abbrechen. Gewirkt wird nur bei Links- und Rechtsklick, mit oder ohne Shift. Jeder andere Klicktyp (Zahlentasten, Q, F, Mittelklick, Doppelklick, Ziehen) DARF weder schnell beitreten, eine Serverauswahl öffnen, verbinden, zum Portal laufen, den Navigator öffnen, die Ordnung wechseln noch eine Seite wechseln; das Inventar MUSS dabei offen bleiben. Das gilt für Minispiele, Server, die Einträge der Serverauswahl, das Sortier-Item, die Pfeile und die Zurück-Taste.
 
 #### Scenario: Zahlentaste auf einem Minispiel
 
@@ -165,3 +165,8 @@ Der Navigator und seine Serverauswahl MÜSSEN jeden Klick abbrechen. Gewirkt wir
 
 - **WHEN** ein Spieler in der Serverauswahl auf das Sortier-Item die Zahlentaste drückt
 - **THEN** bleibt die Ordnung unverändert, und die Serverauswahl bleibt offen
+
+#### Scenario: Zahlentaste auf der Zurück-Taste
+
+- **WHEN** ein Spieler in der Serverauswahl auf die Zurück-Taste die Zahlentaste drückt
+- **THEN** öffnet sich der Navigator nicht, und die Serverauswahl bleibt offen
