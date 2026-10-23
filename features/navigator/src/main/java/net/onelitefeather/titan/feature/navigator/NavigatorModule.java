@@ -62,6 +62,7 @@ import net.onelitefeather.titan.core.portal.PlayerCounts;
 import net.onelitefeather.titan.core.portal.Portal;
 import net.onelitefeather.titan.core.portal.PortalApproach;
 import net.onelitefeather.titan.core.portal.ServiceCount;
+import net.onelitefeather.titan.core.portal.TaskJoin;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.theevilreaper.aves.inventory.click.ClickHolder;
 import net.theevilreaper.aves.inventory.layout.InventoryLayout;
@@ -72,7 +73,7 @@ import net.theevilreaper.aves.inventory.layout.InventoryLayout;
  * ({@code SLENDER}, {@code BOUNCE}, {@code BUILD}, see {@link Destination}) a player holds,
  * so there is one per subset of them and language. Opening picks by permission.
  *
- * <p>A minigame's left click joins its best ready service (see {@link QuickJoin}), its right click
+ * <p>A minigame's left click joins its best ready service (see {@link TaskJoin}), its right click
  * lists the services (see {@link ServerPicker}); a server connects on a left or right click. A
  * shift
  * click walks to the lobby's portal for the entry when there is one. Every other click type is
@@ -391,7 +392,7 @@ public final class NavigatorModule {
                 return NavigatorTelemetry.Selection.REFUSED;
             }
             if (action == ClickAction.QUICK_JOIN) {
-                Optional<ServiceCount> service = QuickJoin.pick(read.get());
+                Optional<ServiceCount> service = TaskJoin.pick(read.get());
                 if (service.isPresent()) {
                     return joinService(player, service.get());
                 }
@@ -447,7 +448,7 @@ public final class NavigatorModule {
                 return NavigatorTelemetry.Selection.REFUSED;
             }
             ServiceCount current = currentOf(picked, read.get());
-            if (!ServerPicker.joinable(current)) {
+            if (!TaskJoin.joinable(current)) {
                 player.sendMessage(ServerPicker.refusal(current, language));
                 return NavigatorTelemetry.Selection.REFUSED;
             }
