@@ -1,5 +1,14 @@
 # Changelog
 
+## [4.2.0](https://github.com/OneLiteFeatherNET/Titan/compare/v4.1.1...v4.2.0) (2026-10-23)
+
+
+### Features
+
+* **lobbyswitcher:** add a back button to the switcher ([#461](https://github.com/OneLiteFeatherNET/Titan/issues/461)) ([e5abfa9](https://github.com/OneLiteFeatherNET/Titan/commit/e5abfa909263d09955695bb12d24a77e92e6d0ac))
+* **navigator:** add a back button to the server picker ([#462](https://github.com/OneLiteFeatherNET/Titan/issues/462)) ([e5e5296](https://github.com/OneLiteFeatherNET/Titan/commit/e5e5296592073deaaa73c266ac6427dac0d73311))
+* **season:** add the slender fog as a season atmosphere ([#463](https://github.com/OneLiteFeatherNET/Titan/issues/463)) ([cd675a8](https://github.com/OneLiteFeatherNET/Titan/commit/cd675a886bb761d36451d7ffb0b0668b0f217712))
+
 ## [4.1.1](https://github.com/OneLiteFeatherNET/Titan/compare/v4.1.0...v4.1.1) (2026-10-23)
 
 
