@@ -10,7 +10,7 @@ Die Zahlen gibt es bereits: Die Portal-Labels lesen sie über den `PlayerCounts`
 
 - Neue Column `features/lobbyswitcher` (Paket `net.onelitefeather.titan.feature.lobbyswitcher`, Scope `lobbyswitcher`).
 - Ein Hotbar-Item (Slot 8, frei; Slots 0 und 4 sind belegt) öffnet ein Aves-Inventar mit allen laufenden Lobbys des CloudNet-Tasks der eigenen Lobby, sortiert nach Dienstnamen. Jeder Eintrag zeigt Namen und Spielerzahl (`online/max`).
-- Das Inventar hat so viele Zeilen wie Lobbys (eine bis sechs). Mehr als 54 Lobbys werden auf Seiten zu 45 Einträgen verteilt; die sechste Zeile trägt dann Vorige, Seitenanzeige und Nächste.
+- Das Inventar hat so viele Inhaltszeilen wie Lobbys (eine bis fünf) und darunter immer eine Navigationszeile. Mehr als 45 Lobbys werden auf Seiten zu 45 Einträgen verteilt; die Navigationszeile trägt dann Vorige, Seitenanzeige und Nächste (Details in `lobbyswitcher-back`).
 - Die eigene Lobby ist markiert und nicht anklickbar. Volle Lobbys sind als voll gekennzeichnet und nicht anklickbar. Ein Klick auf eine andere beitretbare Lobby leitet den Spieler über den bestehenden `Deliver` an genau diesen Dienst weiter.
 - Die Zahlen kommen aus derselben CloudNet-Anbindung wie die Portal-Labels. Die Anbindung wird um eine Auflistung der laufenden Dienste eines Tasks erweitert; es entsteht kein zweiter Zugriffspfad.
 - Das offene Inventar aktualisiert sich periodisch und nur, solange es offen ist.
@@ -22,7 +22,7 @@ Die Zahlen gibt es bereits: Die Portal-Labels lesen sie über den `PlayerCounts`
 ## Non-Goals
 
 - Kein Wechsel zwischen Tasks (z. B. zu Survival oder Build). Das bleibt Aufgabe des Navigators und der Portale.
-- Keine Suche und kein Filter. Mehr als 54 Lobbys werden auf Seiten verteilt, nicht gekürzt.
+- Keine Suche und kein Filter. Mehr als 45 Lobbys werden auf Seiten verteilt, nicht gekürzt.
 - Keine Warteschlange und keine Reservierung eines Platzes in einer Lobby. Volle Lobbys sind nicht beitretbar; der Server bleibt die letzte Instanz.
 - Kein Befehl (`/lobbys`). Der Einstieg ist nur das Hotbar-Item.
 - Keine Änderung am Portal-Verhalten und an den Portal-Zahlen.

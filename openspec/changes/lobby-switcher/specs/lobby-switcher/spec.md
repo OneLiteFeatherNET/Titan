@@ -38,24 +38,24 @@ Ein geöffnetes Inventar MUSS alle laufenden Dienste des Tasks der eigenen Lobby
 - **THEN** erscheint er nicht in der Liste
 
 ### Requirement: Größe der Liste
-_The menu MUST have as many rows as its entries need, and MUST close when a refresh changes its row or page count._
+_The menu MUST have as many content rows as its entries need, up to five, plus one navigation row, and MUST close when a refresh changes its row or page count._
 
-Ein Inventar MUSS so viele Zeilen haben, wie seine Einträge brauchen (eine bis sechs). Ändert eine Aktualisierung die Zeilen- oder Seitenzahl, MUSS das offene Inventar geschlossen werden; der Spieler öffnet es neu. Bleibt die Größe gleich, bleibt es offen und zeigt den neuen Stand.
+Ein Inventar MUSS so viele Inhaltszeilen haben, wie seine Einträge brauchen (mindestens eine, höchstens fünf), und darunter immer die Navigationszeile. Ändert eine Aktualisierung die Zeilen- oder Seitenzahl, MUSS das offene Inventar geschlossen werden. Bleibt die Größe gleich, bleibt es offen und zeigt den neuen Stand.
 
 #### Scenario: Zwei Lobbys
 - **WHEN** der Task zwei laufende Dienste hat und ein Spieler das Inventar öffnet
-- **THEN** hat das Inventar eine Zeile
+- **THEN** hat das Inventar zwei Zeilen: eine Inhaltszeile und die Navigationszeile
 
 #### Scenario: Größenänderung bei der Aktualisierung
 - **WHEN** die Lobbys von zwei auf zwölf steigen, während ein Spieler das Inventar offen hat
-- **THEN** wird das Inventar geschlossen, und beim nächsten Öffnen hat es zwei Zeilen
+- **THEN** wird das Inventar geschlossen, und beim nächsten Öffnen hat es drei Zeilen
 
-### Requirement: Seiten bei mehr als 54 Lobbys
-_More than 54 entries MUST be paged, with a navigation row in the sixth line._
+### Requirement: Seiten bei mehr als 45 Lobbys
+_More than 45 entries MUST be paged, five content rows and the navigation row on every page._
 
-Mehr als 54 Einträge MÜSSEN auf Seiten zu 45 verteilt werden. Die sechste Zeile trägt dann die Navigation: vorherige Seite, Seitenanzeige „Seite x/y“, nächste Seite. Ein Pfeil erscheint nur, wenn es in seine Richtung eine Seite gibt. Ein Klick auf einen Eintrag MUSS den Dienst dieses Eintrags betreffen, auf jeder Seite.
+Mehr als 45 Einträge MÜSSEN auf Seiten zu 45 verteilt werden. Jede Seite hat fünf Inhaltszeilen und die Navigationszeile; die Navigation trägt vorherige Seite, Seitenanzeige „Seite x/y“, nächste Seite. Ein Pfeil erscheint nur, wenn es in seine Richtung eine Seite gibt. Ein Klick auf einen Eintrag MUSS den Dienst dieses Eintrags betreffen, auf jeder Seite.
 
-#### Scenario: Mehr als 54 Lobbys
+#### Scenario: Mehr als 45 Lobbys
 - **WHEN** der Task 100 laufende Dienste hat und ein Spieler das Inventar öffnet
 - **THEN** zeigt Seite 1 die ersten 45 Lobbys, einen Pfeil nach rechts, keinen nach links, und die Anzeige „Seite 1/3“
 
