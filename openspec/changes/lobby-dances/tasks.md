@@ -7,12 +7,12 @@
 
 ## 2. Schnellaktion und Befehl (`features/dance`)
 
-- [x] 2.1 Test zuerst (Unit, `QuickActionDialogTest`): Nach der Registrierung enthält `Registry#getTag(DialogTags.QUICK_ACTIONS)` den Schlüssel `titan:dances`; der Dialog ist ein `Dialog.Notice` mit genau einem Knopf, dessen Aktion `DialogAction.Custom` mit `titan:dances/open` ist. Verifikation: rot, dann grün.
-- [x] 2.2 Dialog über Pica 0.1.5 (`DialogTagRegistry#addQuickAction`) registrieren; beim ersten Spawn schickt `DanceModule` jedem Spieler per `sendTags` das `TagsPacket` mit `minecraft:quick_actions`. Ohne Reflexion. Geprüft von `QuickActionTagsIntegrationTest` (Versand nur beim ersten Spawn).
+- [x] 2.1 Test zuerst (Unit, `DanceListTest`): Die Listen haben Schlüssel je Sprache und Berechtigungsvariante, Fallback auf Englisch, und jede registrierte Liste bietet genau ihre erlaubten Tänze plus Stopp. Verifikation: rot, dann grün.
+- [x] 2.2 Listen je Sprache und Berechtigung beim Start registrieren (`DanceMenu#register`); je Spieler ein eigenes `TagsPacket` für `minecraft:quick_actions` (`QuickActionTags`, öffentliche Minestom-API). Geprüft von `QuickActionTagsIntegrationTest`. Ersetzt die Pica-Registry (siehe Nachbesserung 10).
 - [x] 2.3 Test zuerst (Unit, `DanceMenuTest`): Dialog zeigt nur erlaubte Tänze (Berechtigung `spin` fehlt → kein Knopf), enthält immer Stopp, jeder Tanz-Knopf sendet `titan:dance` mit `{id}`; Texte in Deutsch und Englisch. Verifikation: rot, dann grün.
 - [x] 2.4 `DanceMenu`, `DanceKeys`, `DanceMessages` mit `titan/dance/messages_de.properties` und `messages_en.properties`; Bundle-Test (gleiche Schlüssel in beiden Dateien, alle Schlüssel gerendert).
 - [x] 2.5 Test zuerst (Unit, `DancePayloadTest`): gültige Id → Tanz; fehlende Id, unbekannte Id, falscher Typ, `null`-Payload → leer. Verifikation: rot, dann grün.
-- [x] 2.6 `DanceCommand` (`tanz`, Alias `dance`) und `DanceCommands` (`@Singleton`, registriert und meldet ab). Test (Env): Spieler öffnet Dialog, Konsole erhält Meldung.
+- [x] 2.6 `DanceCommand` (`dance`, ohne Alias) und `DanceCommands` (`@Singleton`, registriert und meldet ab). Test (Env): Spieler öffnet Dialog, Konsole erhält Meldung.
 
 ## 3. Tänze (`features/dance`, rein)
 
@@ -43,8 +43,8 @@
 
 ## 7. Dokumentation
 
-- [x] 7.1 `docs/lobby-modules.md`: Abschnitt „Tanz (`dance`)“ mit Schnellaktion, Befehl, Stopp-Pfaden und Hinweis auf die Tag-Registry von Pica.
-- [x] 7.2 `README.md`: Liste der Befehle um `/tanz` (Alias `/dance`) ergänzen, sofern dort Befehle aufgeführt sind.
+- [x] 7.1 `docs/lobby-modules.md`: Abschnitt „Tanz (`dance`)“ mit Schnellaktion, Befehl, NPC, Stopp-Pfaden und Tag-Versand je Spieler.
+- [x] 7.2 `README.md`: Befehl `/dance` in der Befehlsliste.
 - [x] 7.3 Spec-Delta mit der Implementierung abgleichen (Szenario-Titel, Ids, Abklingzeit, Schwelle, Priorität).
 
 ## 8. Prüfung
@@ -57,3 +57,10 @@
 - [x] 9.1 Commit `docs(openspec): propose lobby-dances` (Artefakte und Aufgaben).
 - [ ] 9.2 Commit `feat(dance): add lobby dances with quick-action dialog and camera view` (Code, Tests, Dokumentation, abgehakte Aufgaben).
 - [ ] 9.3 Pull Request öffnen mit dem Titel `feat(dance): add lobby dances with quick-action dialog and camera view`. Beschreibung auf Englisch: Schnellaktion und Tag-Eintrag (Pica-Tag-Registry, TagsPacket je Spieler beim ersten Spawn, ohne Reflexion), Tänze, Stopp-Pfade, Kamera, Testnachweis, offene Sichtprüfung. Abschließend `https://claude.ai/code/session_01AM6yGQ33vvJqWg39vCAcYt`. Danach nur auf grüne CI warten (`gh pr checks --watch`); Merge und Release macht der Nutzer.
+
+## 10. Nachbesserung: öffentlicher NPC, Liste direkt
+
+- [x] 10.1 Test zuerst (Env, `DanceNpcIntegrationTest`): der echte Spieler ist für andere unsichtbar, auch für Spieler, die während des Tanzes dazukommen; der NPC ist für alle sichtbar; Sprung und Drehung bewegen nur den NPC; die Drehung hebt den NPC um `SPIN_LIFT` und lässt ihn nach der Schwebe landen. Verifikation: rot, dann grün.
+- [x] 10.2 Die Stopp-Pfade stellen die Sichtbarkeit wieder her (`DanceStopIntegrationTest`, der andere Spieler sieht den echten Tanzenden danach wieder).
+- [x] 10.3 Tag-Versand je Spieler über `QuickActionTags` statt Pica; `/tanz` entfällt, `/dance` ist der einzige Befehl; Pica-Abhängigkeit aus `features/dance` entfernt.
+- [x] 10.4 `docs(openspec)`- und Doku-Änderungen auf den neuen Stand gebracht.

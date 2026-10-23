@@ -8,9 +8,9 @@ Beim Tanzen sieht der Spieler sich selbst von außen: Eine Kamera steht vor ihm 
 
 ## What Changes
 
-- Beim Start registriert die Column den Dialog `titan:dances` in der Dialog-Registry und trägt ihn in den Tag `minecraft:quick_actions` ein. Der Dialog hat genau einen Knopf mit der Aktion `titan:dances/open`. Registry und Tags gehen beim Verbinden an jeden Client gleich, deshalb ist der Text kurz und nicht übersetzt.
+- Beim Start registriert die Column die Tanzlisten (je Sprache und Berechtigungsvariante) in der Dialog-Registry. Jeder Spieler bekommt per Tag `minecraft:quick_actions` genau die Liste seiner Sprache und seiner Rechte; die Schnellaktion zeigt sie direkt.
 - Ein Klick auf den Knopf öffnet dem Spieler persönlich einen Mehrfach-Dialog: nur die Tänze, die er nutzen darf, dazu „Stopp“. Die Texte gibt es auf Deutsch und Englisch, wie in den anderen Modulen. Jeder Tanz-Knopf sendet `titan:dance` mit der Id des Tanzes als Payload. Die Lobby prüft Id und Berechtigung erneut, bevor sie startet.
-- Der Befehl `/tanz` (Alias `/dance`) öffnet denselben Dialog.
+- Der Befehl `/dance` (ohne Alias, englisch) öffnet dieselbe Liste.
 - Vier Tänze, im Code festgelegt: `wave` (Winken), `groove`, `party` und `spin`. Die ersten drei sind frei, `spin` braucht `titan.dance.spin`. Ein Tanz ist eine feste Folge von Schritten über Ticks: Armschwünge, Kopfnicken, Ducken, kleine Sprünge, Noten- und Herzpartikel und Notenblock-Töne.
 - Ein Spieler tanzt höchstens einen Tanz gleichzeitig. Zwischen zwei Starts liegt eine feste Abklingzeit von 3 Sekunden.
 - Während eines Tanzes sieht der Spieler über die Kamera-Ansicht (`CameraPacket`) eine unsichtbare Kameraentität, die etwa 3,5 Blöcke vor ihm auf Augenhöhe steht und auf ihn blickt. Jeder Stopp-Pfad setzt die Kamera auf den Spieler zurück und entfernt die Entität.
@@ -21,9 +21,8 @@ Nicht Teil dieser Änderung:
 
 - Konfiguration der Tänze, Abklingzeit oder Kameradistanz. Die Werte stehen im Code, bis ein Betreiber sie braucht.
 - Eigene Tanzanimationen über Resource Packs oder Mods.
-- Übersetzter Text auf der Schnellaktion. Registry-Daten sind für alle Clients gleich; der Text dort ist neutral.
 - Kamerafahrt (Umkreisen des Spielers). Die Kamera steht fest.
-- Tänze für andere Spieler als Zuschauer-Ansicht. Andere Spieler sehen die Pose als normale Entität.
+- Tänze für andere Spieler als Zuschauer-Ansicht. Andere Spieler sehen nur den NPC, nicht den echten Spieler.
 
 ## Delivery
 
@@ -43,5 +42,5 @@ Keine.
 
 - **Code:** neues Modul `features/dance` (Column `danceColumn`, Paket `net.onelitefeather.titan.feature.dance`). Es hängt nur an `core`, wie jede Column. Keine Änderung an `core`, `common` oder `runtime`; die Column findet sich über den Verzeichnis-Scan in `settings.gradle.kts`.
 - **Abhängigkeiten:** keine neuen Bibliotheken. Minestom bleibt bei `2026.10.07-26.2`. Die Tag-Eintragung nutzt eine reflektierte, paketprivate Methode von Minestom; das ist im Design begründet und durch einen Test abgesichert.
-- **Nutzertexte:** Dialog- und Befehlstexte in `titan/dance/messages_de.properties` und `messages_en.properties`; die Schnellaktion ist neutral und unübersetzt.
-- **Betrieb:** Keine neue Konfiguration und keine Welt. Der Client braucht 1.21.6 oder neuer für die Schnellaktion; ältere Clients erreichen den Dialog über `/tanz`.
+- **Nutzertexte:** Dialogtexte in `titan/dance/messages_de.properties` und `messages_en.properties`; der Befehl heißt immer `dance`.
+- **Betrieb:** Keine neue Konfiguration und keine Welt. Der Client braucht 1.21.6 oder neuer für die Schnellaktion; ältere Clients erreichen die Liste über `/dance`.

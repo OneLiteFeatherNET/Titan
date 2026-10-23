@@ -26,38 +26,40 @@ Minestom `2026.10.07-26.2` bringt die Dialog-API mit: `MinecraftServer.getDialog
 
 Die Column registriert Dialog und Tag selbst, beim Aufbau des `BeanScope`. Das erfüllt die Anforderung „vor dem Serverstart“: Der Aufbau liegt vor `bootstrap.start()`. Eine Registrierung in `common` oder `PlatformBeans` wäre nur nötig, wenn eine andere Komponente den Eintrag bräuchte; das braucht keine. Die Column bleibt dadurch bei `core` als einziger Abhängigkeit.
 
-### D2 Tag-Eintrag über Pica
+### D2 Tag pro Spieler, ohne Pica
 
-Minestom `2026.10.07-26.2` hat keine öffentliche Methode, um Einträge in einen Tag zu schreiben. Die Column nutzt `DialogTagRegistry` aus Pica 0.1.5 (`net.onelitefeather:pica`, gleiche Minestom-Version): `addQuickAction` registriert den Dialog und merkt sich die Mitgliedschaft. Beim ersten Spawn schickt `DanceModule` dem Spieler per `sendTags` ein `TagsPacket` mit `minecraft:quick_actions`. Pica bietet dafür `eventNode()`; die Column hängt diesen Knoten nicht an, weil ArchUnit `EventNode#addChild` in Features verbietet, und ruft `sendTags` aus einem FeatureNode-Listener auf. Keine Reflexion.
+Minestom `2026.10.07-26.2` hat keine öffentliche Methode, um Einträge in einen Tag zu schreiben, und Pica 0.1.5 (`DialogTagRegistry`) schickt denselben Tag an jeden Spieler. Die Listen brauchen aber je Sprache und Berechtigung einen eigenen Eintrag. Deshalb registriert `DanceMenu` die Listen beim Start einmal in `MinecraftServer.getDialogRegistry()` (`DanceList`: je Sprache, Deutsch sonst Englisch, und je Kombination der berechtigungsgebundenen Tänze). Jeder Spieler bekommt per `QuickActionTags` ein eigenes `TagsPacket` für `minecraft:dialog` mit dem Tag `minecraft:quick_actions`, das nur die Id seiner Liste enthält. Das Paket baut Minestom öffentlich, ohne Reflexion. Versand: beim ersten Spawn, bei `PlayerSettingsChangeEvent` (Sprachwechsel) und bei jedem `/dance`. Die Abhängigkeit auf Pica entfällt.
 
-Der Test `QuickActionTagsIntegrationTest` prüft Versand beim ersten Spawn und kein erneuter Versand beim Nicht-Erststart.
+Die Anzahl der Listen bleibt klein: Sprachen mal 2^k, k ist die Zahl der berechtigungsgebundenen Tänze (heute einer, `spin`), also vier Listen.
 
-### D3 Schnellaktion als `Dialog.Notice`
+Die Tests `QuickActionTagsIntegrationTest` prüfen die Id je Sprache und Berechtigung, den Versand beim Sprachwechsel und den Nicht-Erststart; `DanceListTest` prüft Schlüssel und Inhalt der Listen.
 
-`Dialog.Notice` hat genau einen Knopf (`DialogActionButton`), also passt er zur Vorgabe „ein Knopf“. Titel und Knopf sind feste Komponenten ohne Übersetzungsschlüssel, weil ein unbekannter Schlüssel beim Client als Rohtext erscheinen würde.
+### D3 Die Schnellaktion ist die Tanzliste
 
-### D4 Pro Spieler: `Dialog.MultiAction` nach dem Klick
+Die Schnellaktion zeigt direkt die Liste des Spielers (`Dialog.MultiAction`, siehe D4). Ein Zwischenschritt mit einem „Öffnen“-Knopf ist nicht nötig; die Liste ist bereits übersetzt, weil jede Sprache eine eigene registrierte Liste hat.
 
-Auf den Klick hin baut `DanceMenu` einen `Dialog.MultiAction` für genau diesen Spieler: Titel und Knopftexte über `GlobalTranslator.render` mit `player.getLocale()`, Knöpfe nur für erlaubte Tänze, dazu der Stopp-Knopf. `DialogAction.Custom(titan:dance, {id: "<id>"})` für Tänze, `DialogAction.Custom(titan:dances/stop, null)` für Stopp. Die Berechtigung wird beim Bauen und beim Starten geprüft; die Auswahl ist nur eine Anzeige.
+### D4 Listen mit Knöpfen pro Tanz
+
+`DanceMenu` baut für eine Sprache und eine Menge erlaubter Tänze einen `Dialog.MultiAction`: Titel und Knopftexte über `GlobalTranslator.render` mit der Sprache der Liste, ein Knopf je erlaubtem Tanz, dazu der Stopp-Knopf. `DialogAction.Custom(titan:dance, {id: "<id>"})` für Tänze, `DialogAction.Custom(titan:dances/stop, null)` für Stopp. Die Berechtigung wird beim Bauen des Tag-Eintrags und beim Starten geprüft; die Liste ist nur eine Anzeige. Ein `/dance` zeigt dieselbe Liste per `showDialog`.
 
 ### D5 Tanz als Folge von Schritten
 
-Ein `Dance` ist ein Enum mit Id, optionaler Berechtigung, Textschlüssel und `DanceSequence`. Eine `DanceSequence` hat eine Länge in Ticks und eine Liste von `DanceStep(tick, action)`. Ein `DanceAction` ist eines von: `SWING_MAIN_HAND`, `SWING_OFF_HAND`, `HEAD_DOWN`, `HEAD_UP`, `SNEAK`, `STAND`, `SPIN`, `JUMP`, `NOTE`, `HEART`. Die Sequenz liefert `actionsAt(tick)` als reine Funktion; Wiederholung geschieht über Helfer (`every(period, from, to, action)`, `alternating(period, from, to, a, b)`), damit die Tanzdefinition lesbar bleibt.
+Ein `Dance` ist ein Enum mit Id, optionaler Berechtigung, Textschlüssel und `DanceSequence`. Eine `DanceSequence` hat eine Länge in Ticks und eine Liste von `DanceStep(tick, action)`. Ein `DanceAction` ist eines von: `SWING_MAIN_HAND`, `SWING_OFF_HAND`, `HEAD_DOWN`, `HEAD_UP`, `SNEAK`, `STAND`, `SPIN`, `SPIN_LAND`, `JUMP`, `NOTE`, `HEART`. Die Sequenz liefert `actionsAt(tick)` als reine Funktion; Wiederholung geschieht über Helfer (`every(period, from, to, action)`, `alternating(period, from, to, a, b)`), damit die Tanzdefinition lesbar bleibt.
 
 Die Tanzdefinitionen (Länge in Ticks):
 
 - `wave` (60): Hauptarm alle 20 Ticks, Kopf wechselt alle 10 Ticks zwischen `HEAD_DOWN` und `HEAD_UP`.
 - `groove` (80): `SNEAK` und `STAND` wechseln alle 10 Ticks, Arme alternierend alle 10 Ticks, `NOTE` alle 5 Ticks.
 - `party` (80): `JUMP` alle 20 Ticks, `NOTE` alle 10 Ticks, `HEART` alle 20 Ticks versetzt.
-- `spin` (60): `SPIN` bei Tick 0, `HEART` alle 10 Ticks.
+- `spin` (60): `SPIN` bei Tick 0 (der NPC hebt sich 1,25 Blöcke und schwebt), `HEART` alle 10 Ticks, `SPIN_LAND` bei Tick 40 (Schwebe endet, Schwerkraft, Drehung endet).
 
 ### D6 Zustand pur, Effekte an Minestom gebunden
 
 `DanceSession` (ohne Minestom) zählt die Ticks, liefert pro Tick die Aktionen und meldet das Ende. Die Grenzen zwischen Verantwortungen:
 
-- `DanceEffects` führt die Aktionen am Spieler und an seinem NPC aus (Pose, Schwung, Blickrichtung, Sprung über `setVelocity`, Partikel über `ParticlePacket`, Ton über `Instance#playSoundExcept(null, ...)`).
-  Die Pose setzt die Column über die Flags Ducken (`setSneaking`) und Riptide-Drehung (`LivingEntityMeta#setInRiptideSpinAttack`), nicht über `setPose`: Minestom berechnet die Pose in jedem Tick aus diesen Flags neu, ein direktes `setPose` hält nicht.
-- `DanceNpc` besitzt den NPC: `LivingEntity` vom Typ `MANNEQUIN` mit `MannequinMeta` (Profil aus dem Skin des Spielers, sonst Name und Id; `setImmovable(true)`), `setAutoViewable(false)`, `setInstance(...).join()`, `addViewer(player)`. Der NPC behält die Schwerkraft, damit der Sprung zurück auf den Boden fällt.
+- `DanceEffects` führt die Aktionen nur am NPC aus (Pose, Schwung, Blickrichtung, Sprung über `setVelocity`, Schweben über `setNoGravity` und `teleport`, Partikel über `ParticlePacket`, Ton über `Instance#playSoundExcept(null, ...)`). Der echte Spieler bekommt keine Geschwindigkeit und keine Pose.
+  Die Pose setzt die Column am NPC über das Ducken (`setSneaking`) bzw. `setPose` und die Riptide-Drehung über `LivingEntityMeta#setInRiptideSpinAttack`. Der NPC hat keinen Spieler-Tick, der die Pose aus den Flags neu berechnet; `Entity#updatePose` läuft nur bei `setSneaking` und ähnlichen Aufrufen.
+- `DanceNpc` besitzt den NPC: `LivingEntity` vom Typ `MANNEQUIN` mit `MannequinMeta` (Profil aus dem Skin des Spielers, sonst Name und Id; `setImmovable(true)`), Namensschild über `DataComponents.CUSTOM_NAME` und `setCustomNameVisible(true)`, auto-sichtbar für alle Spieler der Instanz (`setInstance(...).join()`). Der NPC behält die Schwerkraft, damit der Sprung zurück auf den Boden fällt. Der echte Spieler wird per `updateViewableRule(viewer -> false)` für alle anderen unsichtbar; das gilt auch für Spieler, die während des Tanzes dazukommen, weil Minestom die Regel beim Hinzufügen eines Betrachters prüft. `close()` setzt die Regel mit `updateViewableRule(null)` zurück.
 - `DanceCamera` besitzt die Kameraentität: erzeugt sie (`EntityTypes.ITEM_DISPLAY` ohne Item, `setAutoViewable(false)`, `setInstance(...).join()`, `addViewer(player)`), setzt die Kamera per `Player#spectate`, und `close()` ruft `stopSpectating()` und danach `remove()`. Ein Marker ist für Vanilla-Server kein Kameraziel, das der Client sicher annimmt; ein Display ohne Item hat keine Größe und rendert nichts.
 - `CameraPlacement` berechnet den Standort: Augenhöhe des Tanzenden plus 3,5 Blöcke in Blickrichtung, Blick per `Pos#withLookAt` auf den Tanzenden.
 - `DanceService` hält die Sitzungen je Spieler (`Map<UUID, ActiveDance>`), prüft Berechtigung, Abklingzeit und Einzelstart, startet den Tick-Task über `Scheduler#submitTask` und zählt den Start.
@@ -78,7 +80,7 @@ Angriff und Interaktion hören mit `onIncludingCancelled`, weil Schutzmodule Kli
 
 ### D9 Priorität und Befehl
 
-`EVENT_PRIORITY = 650`: zwischen Tickle (600) und Elytra (700) frei. Der Befehl `DanceCommand` (Name `tanz`, Alias `dance`) wird von `DanceCommands` (`@Singleton`, wie `AdminCommands`) über `CommandManager` registriert und in `@PreDestroy` abgemeldet.
+`EVENT_PRIORITY = 650`: zwischen Tickle (600) und Elytra (700) frei. Der Befehl `DanceCommand` (Name `dance`, ohne Alias; Befehlsnamen sind immer englisch) wird von `DanceCommands` (`@Singleton`, wie `AdminCommands`) über `CommandManager` registriert und in `@PreDestroy` abgemeldet.
 
 ### D10 Telemetrie und Fehlerbehandlung
 
@@ -94,7 +96,7 @@ Die Tänze stehen im Code; eine Konfigurationsdatei und ein `features.*`-Flag si
 
 ## Risks / Trade-offs
 
-- **Abhängigkeit Pica**: Pica 0.1.5 hängt an derselben Minestom-Version wie die Lobby; ein Versionssprung wird über die Catalog-Version gemeinsam gehoben.
+- **Keine Abhängigkeit auf Pica mehr**: Die Tag-Einträge baut die Column selbst (D2).
 - **Kamera-Blick fest**: Die Kamera steht an der Startposition des NPCs und schaut auf dessen Augen; Kopfnicken dreht den Kopf des NPCs, nicht die Kamera. Der Tanz wird also von vorne gesehen.
 - **Kein Resource Pack**: NPC (Mannequin mit Skin), Kameraentität (leeres Display), Partikel und Töne sind alles Vanilla-Inhalte; der Tanz braucht keinen Client-Mod und kein Pack.
 - **`setInstance(...).join()`**: Das Blockieren auf dem Tick-Thread ist nur harmlos, wenn die Chunks der Lobby geladen sind; die Lobby lädt sie beim Start.

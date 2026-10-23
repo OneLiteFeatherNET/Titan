@@ -2,23 +2,31 @@
 
 ## ADDED Requirements
 
-### Requirement: Die Schnellaktion öffnet die Tanzauswahl
-_The quick action is a static entry; the per-player choice follows on click._
+### Requirement: Die Schnellaktion öffnet die Tanzliste direkt
+_The quick action is the dance list itself: one step, in the player's language._
 
-Die Lobby MUSS beim Start den Dialog `titan:dances` mit genau einem Knopf in den Tag `minecraft:quick_actions` eintragen, bevor ein Spieler sich verbinden kann. Der Knopf löst `titan:dances/open` aus. Der Text ist neutral und nicht übersetzt, weil Registry-Daten für alle Clients gleich sind.
+Die Lobby MUSS jedem Spieler beim ersten Spawn, bei einer Änderung seiner Sprache und bei jedem `/dance` ein eigenes `TagsPacket` für die Dialog-Registry senden, das den Tag `minecraft:quick_actions` genau auf die Tanzliste seiner Variante setzt. Eine Variante ist die Sprache (Deutsch, sonst Englisch) zusammen mit den Tänzen, die der Spieler nutzen darf. Die Listen MUSS die Lobby beim Start einmal registrieren; jeder Text ist in der Sprache der Liste gerendert, weil der Client unsere Schlüssel nicht übersetzt.
 
 #### Scenario: Schnellaktion im Client
 - **WHEN** ein Client mit Version 1.21.6 oder neuer die Schnellaktion öffnet
-- **THEN** erscheint der Eintrag der Lobby-Tänze mit genau einem Knopf
+- **THEN** erscheint direkt die Tanzliste mit den Tänzen des Spielers, ohne einen weiteren Schritt
 
-#### Scenario: Klick auf den Schnellaktions-Knopf
-- **WHEN** ein Spieler den Knopf `titan:dances/open` auslöst
-- **THEN** zeigt die Lobby ihm die Tanzauswahl, und kein anderer Spieler erhält sie
+#### Scenario: Sprache des Spielers
+- **WHEN** ein deutscher Spieler die Schnellaktion öffnet
+- **THEN** ist die Liste auf Deutsch, und ein Spieler mit einer nicht unterstützten Sprache sieht Englisch
+
+#### Scenario: Sonderrecht
+- **WHEN** ein Spieler mit `titan.dance.spin` die Schnellaktion öffnet
+- **THEN** enthält die Liste Drehen, ein Spieler ohne das Recht nicht
+
+#### Scenario: Sprachwechsel
+- **WHEN** ein Spieler seine Sprache ändert
+- **THEN** sendet die Lobby ihm die Schnellaktion für die neue Sprache erneut
 
 ### Requirement: Die Tanzauswahl zeigt nur erlaubte Tänze
 _The per-player dialog lists only the dances this player may use, plus Stop._
 
-Die Tanzauswahl MUSS jedem Spieler nur die Tänze anbieten, die er nutzen darf, und immer einen Stopp-Knopf enthalten. Die Texte MUSS sie in der Sprache des Spielers zeigen, Deutsch oder Englisch; ohne passende Sprache gilt Englisch. Jeder Tanz-Knopf MUSS die Aktion `titan:dance` mit der Id des Tanzes als Payload senden.
+Die Tanzliste MUSS jedem Spieler nur die Tänze anbieten, die er nutzen darf, und immer einen Stopp-Knopf enthalten. Die Texte MUSS sie in der Sprache des Spielers zeigen, Deutsch oder Englisch; ohne passende Sprache gilt Englisch. Jeder Tanz-Knopf MUSS die Aktion `titan:dance` mit der Id des Tanzes als Payload senden.
 
 #### Scenario: Spieler ohne Sonderrecht
 - **WHEN** ein Spieler ohne `titan.dance.spin` die Tanzauswahl öffnet
@@ -32,14 +40,14 @@ Die Tanzauswahl MUSS jedem Spieler nur die Tänze anbieten, die er nutzen darf, 
 - **WHEN** ein deutscher Spieler die Tanzauswahl öffnet
 - **THEN** sind die Texte auf Deutsch
 
-### Requirement: Der Befehl öffnet dieselbe Auswahl
-_The /tanz command is the fallback for clients without quick actions._
+### Requirement: Der Befehl öffnet dieselbe Liste
+_The /dance command is the fallback for clients without quick actions. It is English on every server._
 
-Der Befehl `/tanz` (Alias `/dance`) MUSS dem Spieler dieselbe Tanzauswahl öffnen wie die Schnellaktion. Ein Befehl aus der Konsole MUSS eine verständliche Meldung erhalten und nichts öffnen.
+Der Befehl `/dance` MUSS dem Spieler dieselbe Tanzliste öffnen wie die Schnellaktion und dabei seine Schnellaktion neu senden. Es gibt keinen weiteren Befehl. Ein Befehl aus der Konsole MUSS eine verständliche Meldung erhalten und nichts öffnen.
 
 #### Scenario: Befehl im Spiel
-- **WHEN** ein Spieler `/tanz` eingibt
-- **THEN** öffnet sich ihm dieselbe Tanzauswahl wie über die Schnellaktion
+- **WHEN** ein Spieler `/dance` eingibt
+- **THEN** öffnet sich ihm dieselbe Tanzliste wie über die Schnellaktion
 
 #### Scenario: Befehl aus der Konsole
 - **WHEN** die Konsole `dance` ausführt
@@ -73,11 +81,11 @@ Ein Tanz MUSS aus festen Schritten bestehen, die innerhalb seiner Länge in Tick
 
 #### Scenario: Drehen
 - **WHEN** ein Spieler mit Berechtigung `spin` startet
-- **THEN** nimmt er die Drehpose ein und sieht Herzpartikel
+- **THEN** nimmt der NPC die Drehpose ein, hebt sich einen Block und mehr über den Boden, landet nach 40 Ticks und sieht Herzpartikel
 
 #### Scenario: Ende des Tanzes
 - **WHEN** ein Tanz die letzte Tick seiner Länge erreicht
-- **THEN** endet er, und die Pose kehrt auf stehend zurück
+- **THEN** endet er, und der NPC steht wieder auf dem Boden
 
 ### Requirement: Ein Spieler tanzt nur einen Tanz gleichzeitig, mit Abklingzeit
 _At most one dance at a time; a fixed cooldown of three seconds between starts._
@@ -109,22 +117,26 @@ Beim Start eines Tanzes MUSS die Lobby eine unsichtbare Kameraentität erzeugen,
 - **WHEN** ein Tanz stoppt
 - **THEN** ist die Kamera wieder der Spieler, und die Kameraentität existiert nicht mehr
 
-### Requirement: Ein NPC tanzt in der Sicht des Tanzenden
-_The dancer sees a mannequin in his skin dance in front of the camera; other players only see the real player._
+### Requirement: Ein NPC tanzt an Stelle des Spielers
+_While dancing, the real player is hidden from everyone; a mannequin in his skin is what everyone sees dance._
 
-Beim Start eines Tanzes MUSS die Lobby genau einen NPC vom Typ `MANNEQUIN` an der Position und mit der Blickrichtung des Tanzenden erzeugen. Der NPC MUSS das Profil des Tanzenden tragen (seinen Skin, sonst Name und Id), unbeweglich sein und nur dem Tanzenden angezeigt werden. Jeder Tanzschritt MUSS sowohl den Spieler als auch den NPC erreichen. Jeder Stopp-Pfad MUSS den NPC entfernen.
+Beim Start eines Tanzes MUSS die Lobby genau einen NPC vom Typ `MANNEQUIN` an der Position und mit der Blickrichtung des Tanzenden erzeugen. Der NPC MUSS das Profil des Tanzenden tragen (seinen Skin, sonst Name und Id), unbeweglich sein, seinen Namen über dem Kopf zeigen und für alle Spieler der Instanz sichtbar sein, auch für den Tanzenden. Der echte Spieler MUSS für alle anderen Spieler unsichtbar sein, auch für solche, die während des Tanzes die Instanz betreten. Jeder Tanzschritt MUSS nur den NPC bewegen, nie den Spieler. Jeder Stopp-Pfad MUSS den NPC entfernen und den Spieler wieder für alle sichtbar machen.
 
 #### Scenario: NPC beim Start
 - **WHEN** ein Spieler einen Tanz startet
-- **THEN** existiert genau ein NPC an seiner Position, mit seinem Skin, und nur er sieht ihn
+- **THEN** existiert genau ein NPC an seiner Position, mit seinem Skin und seinem Namen darüber, und alle Spieler der Instanz sehen ihn
+
+#### Scenario: Der echte Spieler ist unsichtbar
+- **WHEN** ein anderer Spieler während des Tanzes die Instanz betritt
+- **THEN** sieht er den NPC, aber nicht den echten Tanzenden
 
 #### Scenario: Schritt erreicht den NPC
-- **WHEN** der Tanz einen Armschwung oder das Ducken ausführt
-- **THEN** schwingt der NPC den Arm beziehungsweise duckt sich, während der echte Spieler die gleiche Bewegung ausführt
+- **WHEN** der Tanz einen Armschwung, das Ducken, den Sprung oder die Drehung ausführt
+- **THEN** führt der NPC die Bewegung aus, und der echte Spieler erhält keine Geschwindigkeit und keine Pose
 
 #### Scenario: Der NPC verschwindet mit dem Tanz
 - **WHEN** ein Tanz stoppt, aus welchem Grund auch immer
-- **THEN** ist der NPC aus der Instanz entfernt, und andere Spieler haben ihn nie gesehen
+- **THEN** ist der NPC aus der Instanz entfernt, und der echte Spieler ist wieder für alle sichtbar
 
 ### Requirement: Stopp-Auslöser beenden den Tanz
 _Movement, input, attacks, interactions, leaving the instance, disconnects, the stop button and errors all end a dance._
@@ -133,7 +145,7 @@ Ein Tanz MUSS enden, wenn der Spieler sich über eine kleine Schwelle bewegt, ei
 
 #### Scenario: Bewegung beendet den Tanz
 - **WHEN** ein tanzender Spieler sich über die Schwelle bewegt
-- **THEN** endet der Tanz, die Pose ist stehend, die Kamera gehört dem Spieler, und die Kameraentität ist entfernt
+- **THEN** endet der Tanz, der Spieler ist wieder für alle sichtbar, die Kamera gehört ihm, und die Kameraentität ist entfernt
 
 #### Scenario: Bewegungseingabe beendet den Tanz
 - **WHEN** ein tanzender Spieler die Taste für vorwärts sendet
@@ -155,14 +167,14 @@ Ein Tanz MUSS enden, wenn der Spieler sich über eine kleine Schwelle bewegt, ei
 - **WHEN** ein Schritt des Tanzes einen Fehler auslöst
 - **THEN** endet der Tanz, der Spieler hat wieder seine Kamera, und die Kameraentität ist entfernt
 
-### Requirement: Jeder Stopp stellt Pose, Kamera und Aufgabe wieder her
-_Whatever ends a dance, the player is left standing with his own camera, and a failure never leaves the camera behind._
+### Requirement: Jeder Stopp stellt Kamera, Sichtbarkeit und Aufgabe wieder her
+_Whatever ends a dance, the player is seen again and has his own camera, and a failure never leaves either behind._
 
-Bei jedem Ende MUSS die Pose auf `STANDING` stehen, der Spieler wieder die eigene Kamera haben, die Kameraentität und der NPC entfernt sein. Ein Fehler im Tanz DARF weder die Kamera noch die Aufgabe des Tanzes zurücklassen; ein doppelter Stopp DARF nichts verändern.
+Bei jedem Ende MUSS der Spieler wieder die eigene Kamera haben, die Kameraentität und der NPC entfernt sein und der echte Spieler für alle wieder sichtbar sein. Ein Fehler im Tanz DARF weder die Kamera noch die Sichtbarkeit noch die Aufgabe des Tanzes zurücklassen; ein doppelter Stopp DARF nichts verändern.
 
-#### Scenario: Scheitert das Zurücksetzen der Pose
-- **WHEN** das Zurücksetzen der Pose beim Stopp eine Ausnahme wirft
-- **THEN** gehört dem Spieler trotzdem wieder seine Kamera, und die Kameraentität ist entfernt
+#### Scenario: Scheitert das Zurücksetzen des NPC
+- **WHEN** das Zurücksetzen des NPC beim Stopp eine Ausnahme wirft
+- **THEN** gehört dem Spieler trotzdem wieder seine Kamera, der NPC und die Kameraentität sind entfernt, und der Spieler ist wieder für alle sichtbar
 
 #### Scenario: Doppelter Stopp
 - **WHEN** ein Tanz bereits gestoppt ist und ein weiterer Stopp-Auslöser eintritt
