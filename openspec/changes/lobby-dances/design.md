@@ -55,9 +55,10 @@ Die Tanzdefinitionen (Länge in Ticks):
 
 `DanceSession` (ohne Minestom) zählt die Ticks, liefert pro Tick die Aktionen und meldet das Ende. Die Grenzen zwischen Verantwortungen:
 
-- `DanceEffects` führt die Aktionen am Spieler aus (Pose, Schwung, Blickrichtung, Sprung über `setVelocity`, Partikel über `ParticlePacket`, Ton über `Instance#playSoundExcept(null, ...)`).
+- `DanceEffects` führt die Aktionen am Spieler und an seinem NPC aus (Pose, Schwung, Blickrichtung, Sprung über `setVelocity`, Partikel über `ParticlePacket`, Ton über `Instance#playSoundExcept(null, ...)`).
   Die Pose setzt die Column über die Flags Ducken (`setSneaking`) und Riptide-Drehung (`LivingEntityMeta#setInRiptideSpinAttack`), nicht über `setPose`: Minestom berechnet die Pose in jedem Tick aus diesen Flags neu, ein direktes `setPose` hält nicht.
-- `DanceCamera` besitzt die Kameraentität: erzeugt sie (`EntityTypes.MARKER`, `setAutoViewable(false)`, `setInstance(...).join()`, `addViewer(player)`), setzt die Kamera per `Player#spectate`, und `close()` ruft `stopSpectating()` und danach `remove()`.
+- `DanceNpc` besitzt den NPC: `LivingEntity` vom Typ `MANNEQUIN` mit `MannequinMeta` (Profil aus dem Skin des Spielers, sonst Name und Id; `setImmovable(true)`), `setAutoViewable(false)`, `setInstance(...).join()`, `addViewer(player)`. Der NPC behält die Schwerkraft, damit der Sprung zurück auf den Boden fällt.
+- `DanceCamera` besitzt die Kameraentität: erzeugt sie (`EntityTypes.ITEM_DISPLAY` ohne Item, `setAutoViewable(false)`, `setInstance(...).join()`, `addViewer(player)`), setzt die Kamera per `Player#spectate`, und `close()` ruft `stopSpectating()` und danach `remove()`. Ein Marker ist für Vanilla-Server kein Kameraziel, das der Client sicher annimmt; ein Display ohne Item hat keine Größe und rendert nichts.
 - `CameraPlacement` berechnet den Standort: Augenhöhe des Tanzenden plus 3,5 Blöcke in Blickrichtung, Blick per `Pos#withLookAt` auf den Tanzenden.
 - `DanceService` hält die Sitzungen je Spieler (`Map<UUID, ActiveDance>`), prüft Berechtigung, Abklingzeit und Einzelstart, startet den Tick-Task über `Scheduler#submitTask` und zählt den Start.
 
@@ -94,7 +95,8 @@ Die Tänze stehen im Code; eine Konfigurationsdatei und ein `features.*`-Flag si
 ## Risks / Trade-offs
 
 - **Abhängigkeit Pica**: Pica 0.1.5 hängt an derselben Minestom-Version wie die Lobby; ein Versionssprung wird über die Catalog-Version gemeinsam gehoben.
-- **Kamera-Blick fest**: Die Kamera steht an der Startposition und schaut auf den Tanzenden; Kopfnicken dreht den Körper, nicht die Kamera. Die Pose wird also von der Seite gesehen, nicht von vorne.
+- **Kamera-Blick fest**: Die Kamera steht an der Startposition des NPCs und schaut auf dessen Augen; Kopfnicken dreht den Kopf des NPCs, nicht die Kamera. Der Tanz wird also von vorne gesehen.
+- **Kein Resource Pack**: NPC (Mannequin mit Skin), Kameraentität (leeres Display), Partikel und Töne sind alles Vanilla-Inhalte; der Tanz braucht keinen Client-Mod und kein Pack.
 - **`setInstance(...).join()`**: Das Blockieren auf dem Tick-Thread ist nur harmlos, wenn die Chunks der Lobby geladen sind; die Lobby lädt sie beim Start.
 - **Notenblock-Töne für alle**: Töne gehen an alle Spieler in der Instanz, nicht nur an den Tanzenden. Das ist beabsichtigt, weil die Lobby gemeinsam genutzt wird.
 - **Kein echter Client getestet**: Die Sichtprüfung (Schnellaktion im Client, Kamerabild, Pose) ist Teil der Aufgaben und im PR als offen vermerkt, falls sie nicht stattfindet.

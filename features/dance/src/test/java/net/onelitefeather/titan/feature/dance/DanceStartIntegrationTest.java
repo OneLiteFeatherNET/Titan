@@ -40,7 +40,7 @@ class DanceStartIntegrationTest {
 
     private static final Instant NOW = Instant.parse("2026-10-23T12:00:00Z");
 
-    @DisplayName("Starting a dance switches the dancer to a marker entity that stands in front of him")
+    @DisplayName("Starting a dance switches the dancer to a camera entity that stands in front of him")
     @Test
     void startingADanceSetsTheCamera(Env env) {
         Instance instance = env.createFlatInstance();
@@ -52,8 +52,8 @@ class DanceStartIntegrationTest {
             try {
                 env.process().eventHandler().call(DanceFixtures.danceClick(dancer.player(), Dance.WAVE));
 
-                Assertions.assertEquals(1, DanceFixtures.markers(instance), "exactly one camera marker must exist while dancing");
-                Assertions.assertNotEquals(dancer.player().getEntityId(), dancer.cameras().collect().getFirst().cameraId(), "the camera must be the marker, not the dancer");
+                Assertions.assertEquals(1, DanceFixtures.cameras(instance), "exactly one camera entity must exist while dancing");
+                Assertions.assertNotEquals(dancer.player().getEntityId(), dancer.cameras().collect().getFirst().cameraId(), "the camera must be the camera entity, not the dancer");
             } finally {
                 module.stop();
             }
@@ -93,7 +93,7 @@ class DanceStartIntegrationTest {
                 env.process().eventHandler().call(DanceFixtures.danceClick(dancer.player(), Dance.WAVE));
                 env.process().eventHandler().call(DanceFixtures.danceClick(dancer.player(), Dance.PARTY));
 
-                Assertions.assertEquals(1, DanceFixtures.markers(instance), "a second dance must not add a second camera");
+                Assertions.assertEquals(1, DanceFixtures.cameras(instance), "a second dance must not add a second camera");
                 Assertions.assertEquals(1, dancer.cameras().collect().size(), "a second dance must not switch the camera again");
             } finally {
                 module.stop();
@@ -117,7 +117,7 @@ class DanceStartIntegrationTest {
                 clock.advance(Duration.ofSeconds(2));
                 env.process().eventHandler().call(DanceFixtures.danceClick(dancer.player(), Dance.WAVE));
 
-                Assertions.assertEquals(0, DanceFixtures.markers(instance), "a start inside the pause must not create a camera");
+                Assertions.assertEquals(0, DanceFixtures.cameras(instance), "a start inside the pause must not create a camera");
             } finally {
                 module.stop();
             }
@@ -140,7 +140,7 @@ class DanceStartIntegrationTest {
                 clock.advance(Duration.ofSeconds(3));
                 env.process().eventHandler().call(DanceFixtures.danceClick(dancer.player(), Dance.WAVE));
 
-                Assertions.assertEquals(1, DanceFixtures.markers(instance), "a start after the pause must create the camera again");
+                Assertions.assertEquals(1, DanceFixtures.cameras(instance), "a start after the pause must create the camera again");
             } finally {
                 module.stop();
             }
@@ -161,7 +161,7 @@ class DanceStartIntegrationTest {
                 env.process().eventHandler().call(DanceFixtures.danceClick(dancer.player(), Dance.SPIN));
                 env.tick();
 
-                Assertions.assertEquals(0, DanceFixtures.markers(instance), "a refused dance must not create a camera");
+                Assertions.assertEquals(0, DanceFixtures.cameras(instance), "a refused dance must not create a camera");
                 Assertions.assertEquals(EntityPose.STANDING, dancer.player().getPose(), "a refused dance must not change the pose");
                 Assertions.assertEquals(before, dancer.player().getPosition(), "a refused dance must not move the player");
                 Assertions.assertTrue(dancer.cameras().collect().isEmpty(), "a refused dance must send no camera packet");
@@ -203,7 +203,7 @@ class DanceStartIntegrationTest {
             try {
                 env.process().eventHandler().call(new PlayerCustomClickEvent(dancer.player(), DanceKeys.DANCE, CompoundBinaryTag.builder().putString("id", "moonwalk").build()));
 
-                Assertions.assertEquals(0, DanceFixtures.markers(instance), "an unknown dance id must not create a camera");
+                Assertions.assertEquals(0, DanceFixtures.cameras(instance), "an unknown dance id must not create a camera");
             } finally {
                 module.stop();
             }

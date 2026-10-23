@@ -16,13 +16,17 @@
 package net.onelitefeather.titan.feature.dance;
 
 import java.time.Clock;
-import java.util.function.Function;
+import java.util.List;
+import java.util.function.BiFunction;
 import net.minestom.server.coordinate.Pos;
+import net.minestom.server.entity.Entity;
 import net.minestom.server.entity.EntityType;
+import net.minestom.server.entity.LivingEntity;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.player.PlayerCustomClickEvent;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.network.packet.server.play.CameraPacket;
+import net.minestom.server.network.packet.server.play.EntityAnimationPacket;
 import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.TestConnection;
@@ -42,7 +46,7 @@ final class DanceFixtures {
         return module(env, titan, permissions, clock, telemetry, MinestomDanceEffects::new);
     }
 
-    static DanceModule module(Env env, TestTitanNode titan, PermissionService permissions, Clock clock, Telemetry telemetry, Function<Player, DanceEffects> effects) {
+    static DanceModule module(Env env, TestTitanNode titan, PermissionService permissions, Clock clock, Telemetry telemetry, BiFunction<Player, LivingEntity, DanceEffects> effects) {
         return new DanceModule(titan.node(), permissions, env.process().scheduler(), clock, telemetry, effects);
     }
 
@@ -59,22 +63,52 @@ final class DanceFixtures {
         return new PlayerCustomClickEvent(player, DanceKeys.OPEN, null);
     }
 
-    /** A player on a real test connection, with his camera packets tracked from now on. */
+    /**
+     * A player on a real test connection, with his camera and animation packets tracked from now
+     * on.
+     */
     static Dancer connect(Env env, Instance instance) {
         TestConnection connection = env.createConnection();
         Player player = connection.connect(instance);
         // Above the flat floor: a pose only sticks where the player's body fits.
         player.teleport(OPEN_AIR);
         Collector<CameraPacket> cameras = connection.trackIncoming(CameraPacket.class);
-        return new Dancer(player, cameras);
+        Collector<EntityAnimationPacket> animations = connection.trackIncoming(EntityAnimationPacket.class);
+        return new Dancer(player, cameras, animations);
     }
 
-    /** The number of camera marker entities currently in {@code instance}. */
-    static long markers(Instance instance) {
-        return instance.getEntities().stream().filter(entity -> entity.getEntityType() == EntityType.MARKER).count();
+    /** The number of camera entities currently in {@code instance}. */
+    static long cameras(Instance instance) {
+        return instance.getEntities().stream().filter(entity -> entity.getEntityType() == EntityType.ITEM_DISPLAY).count();
     }
 
-    /** A player and the camera packets sent to him. */
-    record Dancer(Player player, Collector<CameraPacket> cameras) {
+    /** The number of NPCs currently in {@code instance}. */
+    static long npcs(Instance instance) {
+        return instance.getEntities().stream().filter(entity -> entity.getEntityType() == EntityType.MANNEQUIN).count();
+    }
+
+    /**
+     * The NPC of the single dance running in {@code instance}; fails if there is not exactly one.
+     */
+    static LivingEntity npc(Instance instance) {
+        List<Entity> npcs = instance.getEntities().stream().filter(entity -> entity.getEntityType() == EntityType.MANNEQUIN).toList();
+        if (npcs.size() != 1) {
+            throw new AssertionError("expected exactly one NPC in the instance, found " + npcs.size());
+        }
+        return (LivingEntity) npcs.getFirst();
+    }
+
+    /**
+     * The camera entity the dancer's last camera packet points at, or {@code null} if it is the
+     * dancer himself.
+     */
+    static Entity cameraOf(Instance instance, Dancer dancer) {
+        int cameraId = dancer.cameras().collect().getLast().cameraId();
+        return instance.getEntities().stream().filter(entity -> entity.getEntityId() == cameraId).findFirst().orElse(null);
+    }
+
+    /** A player and the packets sent to him that the dance tests look at. */
+    record Dancer(Player player, Collector<CameraPacket> cameras,
+                  Collector<EntityAnimationPacket> animations) {
     }
 }

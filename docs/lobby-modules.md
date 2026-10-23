@@ -520,17 +520,21 @@ Berechtigung erneut.
   und `party` sind frei, `spin` braucht `titan.dance.spin`.
 - **Ein Tanz je Spieler gleichzeitig**, danach drei Sekunden Pause (`DanceCooldown.PAUSE`, aus der
   injizierten `Clock`).
-- **Kamera:** Während des Tanzes sieht der Spieler sich über eine unsichtbare Markerentität
-  (`DanceCamera`, `CameraPacket` über `Player#spectate`) 3,5 Blöcke vor sich auf Augenhöhe
-  (`CameraPlacement`). Beim Ende setzt die Lobby die Kamera zurück und entfernt die Entität.
+- **NPC:** Der Tanzende sieht seinen Tanz nicht an sich selbst, deshalb steht an seiner Position ein
+  Mannequin (`DanceNpc`, `MANNEQUIN`, unbeweglich) mit seinem Skin, nur ihm sichtbar. Ohne Skin trägt er
+  Name und Id. Jeder Tanzschritt läuft am Spieler und am NPC (`MinestomDanceEffects`).
+- **Kamera:** Während des Tanzes sieht der Spieler seinen NPC über eine unsichtbare Kameraentität
+  (`DanceCamera`, `ITEM_DISPLAY` ohne Item, `CameraPacket` über `Player#spectate`) 3,5 Blöcke vor dem
+  NPC auf Augenhöhe (`CameraPlacement`). Beim Ende setzt die Lobby die Kamera zurück und entfernt
+  Kameraentität und NPC.
 - **Stopp-Pfade** (`DanceService#stop`): Ende der Dauer, horizontale Bewegung über 0,25 Blöcke
   (`DanceSession.MOVE_THRESHOLD`), Bewegungstasten, Angriff oder Interaktion (auch wenn ein anderes
   Modul sie abgebrochen hat), Instanzwechsel, Verbindungsabbruch, Stopp-Knopf, Fehler in einem
-  Schritt und Herunterfahren. Jeder Pfad stellt Pose und Blick wieder her und entfernt die Entität,
+  Schritt und Herunterfahren. Jeder Pfad stellt Pose und Blick wieder her und entfernt Kamera und NPC,
   auch wenn der Schritt davor geworfen hat.
-- **Pose über Flags:** Minestom berechnet die Pose jeden Tick aus dem Ducken- und dem
-  Riptide-Drehflag neu. Ein direktes `setPose` hält deshalb nicht; die Column setzt die Flags
-  (`MinestomDanceEffects`).
+- **Pose:** Der Spieler bekommt seine Pose über die Flags Ducken und Riptide-Drehung, denn Minestom
+  berechnet sie für Spieler in jedem Tick neu. Der NPC hat keinen solchen Tick, deshalb setzt die
+  Column dort zusätzlich `setPose` (`MinestomDanceEffects`).
 - **Schnellaktion eintragen:** Minestom 2026.10.07-26.2 bietet keine öffentliche Methode, um einen Tag
   zu befüllen. Die Lobby nutzt dafür `DialogTagRegistry` aus Pica 0.1.5: Der Dialog wird registriert und
   jedem Spieler beim ersten Spawn als `TagsPacket` mit `minecraft:quick_actions` geschickt (`DanceModule`).

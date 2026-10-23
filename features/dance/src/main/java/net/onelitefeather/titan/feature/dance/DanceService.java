@@ -19,8 +19,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import net.minestom.server.coordinate.Pos;
+import net.minestom.server.entity.LivingEntity;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.timer.Scheduler;
@@ -30,9 +31,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Runs the dances of all players: at most one per player, a pause between starts, and a camera
- * the dancer looks through while he dances. Every way a dance ends goes through {@link #stop},
- * which hands the view back and removes the camera even if a step before has failed.
+ * Runs the dances of all players: at most one per player, a pause between starts, a camera the
+ * dancer looks through, and an NPC that dances in his place for that view. Every way a dance ends
+ * goes through {@link #stop}, which hands the view back and removes camera and NPC even if a step
+ * before has failed.
  */
 final class DanceService {
 
@@ -52,10 +54,10 @@ final class DanceService {
     private final DanceCooldown cooldown;
     private final DancePermissions permissions;
     private final DanceTelemetry telemetry;
-    private final Function<Player, DanceEffects> effectsFor;
+    private final BiFunction<Player, LivingEntity, DanceEffects> effectsFor;
     private final Map<UUID, ActiveDance> active = new HashMap<>();
 
-    DanceService(Scheduler scheduler, DanceCooldown cooldown, DancePermissions permissions, DanceTelemetry telemetry, Function<Player, DanceEffects> effectsFor) {
+    DanceService(Scheduler scheduler, DanceCooldown cooldown, DancePermissions permissions, DanceTelemetry telemetry, BiFunction<Player, LivingEntity, DanceEffects> effectsFor) {
         this.scheduler = scheduler;
         this.cooldown = cooldown;
         this.permissions = permissions;
@@ -83,9 +85,16 @@ final class DanceService {
             return StartResult.UNAVAILABLE;
         }
         Pos anchor = player.getPosition();
-        DanceEffects effects = this.effectsFor.apply(player);
-        DanceCamera camera = DanceCamera.open(player, instance, anchor);
-        ActiveDance started = new ActiveDance(new DanceSession(dance), effects, anchor, camera);
+        DanceNpc npc = DanceNpc.spawn(player, instance, anchor);
+        DanceCamera camera;
+        try {
+            camera = DanceCamera.open(player, instance, anchor);
+        } catch (RuntimeException e) {
+            npc.close();
+            throw e;
+        }
+        DanceEffects effects = this.effectsFor.apply(player, npc.entity());
+        ActiveDance started = new ActiveDance(new DanceSession(dance), effects, anchor, camera, npc);
         this.active.put(id, started);
         try {
             started.task = this.scheduler.submitTask(() -> tick(id, started));
@@ -115,10 +124,22 @@ final class DanceService {
                 dance.task.cancel();
             }
         } finally {
+            endView(dance);
+        }
+    }
+
+    /**
+     * Stands the dancer and his NPC up, hands the view back and removes both, even if one step
+     * fails.
+     */
+    private static void endView(ActiveDance dance) {
+        try {
+            dance.effects.reset(dance.anchor);
+        } finally {
             try {
-                dance.effects.reset(dance.anchor);
-            } finally {
                 dance.camera.close();
+            } finally {
+                dance.npc.close();
             }
         }
     }
@@ -176,13 +197,15 @@ final class DanceService {
         private final DanceEffects effects;
         private final Pos anchor;
         private final DanceCamera camera;
+        private final DanceNpc npc;
         private Task task;
 
-        ActiveDance(DanceSession session, DanceEffects effects, Pos anchor, DanceCamera camera) {
+        ActiveDance(DanceSession session, DanceEffects effects, Pos anchor, DanceCamera camera, DanceNpc npc) {
             this.session = session;
             this.effects = effects;
             this.anchor = anchor;
             this.camera = camera;
+            this.npc = npc;
         }
     }
 }

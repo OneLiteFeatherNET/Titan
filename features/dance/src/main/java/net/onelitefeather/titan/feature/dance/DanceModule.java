@@ -23,10 +23,11 @@ import jakarta.inject.Singleton;
 import java.time.Clock;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import net.kyori.adventure.key.Key;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.entity.Entity;
+import net.minestom.server.entity.LivingEntity;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
@@ -79,7 +80,7 @@ public final class DanceModule {
         this(titan, permissions, scheduler, clock, telemetry, MinestomDanceEffects::new);
     }
 
-    DanceModule(EventNode<Event> titan, PermissionService permissions, Scheduler scheduler, Clock clock, Telemetry telemetry, Function<Player, DanceEffects> effectsFor) {
+    DanceModule(EventNode<Event> titan, PermissionService permissions, Scheduler scheduler, Clock clock, Telemetry telemetry, BiFunction<Player, LivingEntity, DanceEffects> effectsFor) {
         this.titan = Objects.requireNonNull(titan, "titan");
         this.telemetry = Objects.requireNonNull(telemetry, "telemetry");
         this.messages = new DanceMessages();

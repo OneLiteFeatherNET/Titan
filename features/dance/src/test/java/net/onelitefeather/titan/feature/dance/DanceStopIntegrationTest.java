@@ -18,12 +18,13 @@ package net.onelitefeather.titan.feature.dance;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import net.kyori.adventure.nbt.CompoundBinaryTag;
 import net.minestom.server.coordinate.BlockVec;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.EntityPose;
+import net.minestom.server.entity.LivingEntity;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.PlayerHand;
 import net.minestom.server.event.entity.EntityAttackEvent;
@@ -49,8 +50,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Every way a dance ends: the dancer is standing again, has his own view back, and no camera
- * marker is left in the instance.
+ * Every way a dance ends: the dancer is standing again, has his own view back, and neither the
+ * camera entity nor the NPC is left in the instance.
  */
 @ExtendWith(MicrotusExtension.class)
 class DanceStopIntegrationTest {
@@ -58,7 +59,7 @@ class DanceStopIntegrationTest {
     private static final Instant NOW = Instant.parse("2026-10-23T12:00:00Z");
     private static final PermissionService NO_PERMISSIONS = new FakePermissionService();
 
-    private static DanceModule started(Env env, TestTitanNode titan, DanceFixtures.Dancer dancer, Function<Player, DanceEffects> effects) {
+    private static DanceModule started(Env env, TestTitanNode titan, DanceFixtures.Dancer dancer, BiFunction<Player, LivingEntity, DanceEffects> effects) {
         DanceModule module = DanceFixtures.module(env, titan, NO_PERMISSIONS, new AdjustableClock(NOW, ZoneOffset.UTC), Telemetry.noop(), effects);
         module.start();
         env.process().eventHandler().call(DanceFixtures.danceClick(dancer.player(), Dance.GROOVE));
@@ -71,7 +72,8 @@ class DanceStopIntegrationTest {
     }
 
     private static void assertStoppedAndRestored(Instance instance, DanceFixtures.Dancer dancer, String cause) {
-        Assertions.assertEquals(0, DanceFixtures.markers(instance), cause + ": the camera marker must be removed");
+        Assertions.assertEquals(0, DanceFixtures.cameras(instance), cause + ": the camera entity must be removed");
+        Assertions.assertEquals(0, DanceFixtures.npcs(instance), cause + ": the NPC must be removed");
         Assertions.assertEquals(EntityPose.STANDING, dancer.player().getPose(), cause + ": the dancer must be standing again");
         List<CameraPacket> cameras = dancer.cameras().collect();
         Assertions.assertEquals(dancer.player().getEntityId(), cameras.getLast().cameraId(), cause + ": the last camera packet must give the dancer his own view back");
@@ -108,7 +110,7 @@ class DanceStopIntegrationTest {
                 Pos drifted = dancer.player().getPosition().add(0.1, 0, 0);
                 env.process().eventHandler().call(new PlayerMoveEvent(dancer.player(), drifted, true));
 
-                Assertions.assertEquals(1, DanceFixtures.markers(instance), "a drift within the threshold must not end the dance");
+                Assertions.assertEquals(1, DanceFixtures.cameras(instance), "a drift within the threshold must not end the dance");
             } finally {
                 module.stop();
             }
@@ -144,7 +146,7 @@ class DanceStopIntegrationTest {
             try {
                 env.process().eventHandler().call(new PlayerPacketEvent(dancer.player(), new ClientInputPacket(false, false, false, false, false, true, false)));
 
-                Assertions.assertEquals(1, DanceFixtures.markers(instance), "the groove's own sneak must not end the dance");
+                Assertions.assertEquals(1, DanceFixtures.cameras(instance), "the groove's own sneak must not end the dance");
             } finally {
                 module.stop();
             }
@@ -219,14 +221,14 @@ class DanceStopIntegrationTest {
             try {
                 env.process().eventHandler().call(new RemoveEntityFromInstanceEvent(instance, dancer.player()));
 
-                Assertions.assertEquals(0, DanceFixtures.markers(instance), "leaving the instance must remove the camera marker");
+                assertStoppedAndRestored(instance, dancer, "leaving the instance");
             } finally {
                 module.stop();
             }
         }
     }
 
-    @DisplayName("A disconnect removes the camera marker")
+    @DisplayName("A disconnect ends the dance and removes the camera entity and the NPC")
     @Test
     void disconnectRemovesTheCamera(Env env) {
         Instance instance = env.createFlatInstance();
@@ -237,14 +239,14 @@ class DanceStopIntegrationTest {
             try {
                 env.process().eventHandler().call(new PlayerDisconnectEvent(dancer.player()));
 
-                Assertions.assertEquals(0, DanceFixtures.markers(instance), "a disconnect must remove the camera marker");
+                assertStoppedAndRestored(instance, dancer, "a disconnect");
             } finally {
                 module.stop();
             }
         }
     }
 
-    @DisplayName("A dance that runs to its end restores the dancer and removes the camera")
+    @DisplayName("A dance that runs to its end restores the dancer and removes the camera and the NPC")
     @Test
     void finishedDanceRestoresTheDancer(Env env) {
         Instance instance = env.createFlatInstance();
@@ -264,12 +266,12 @@ class DanceStopIntegrationTest {
         }
     }
 
-    @DisplayName("A failing dance step still gives the dancer his view back and removes the camera")
+    @DisplayName("A failing dance step still gives the dancer his view back and removes the camera and the NPC")
     @Test
     void failingStepStillRestoresTheCamera(Env env) {
         Instance instance = env.createFlatInstance();
         DanceFixtures.Dancer dancer = DanceFixtures.connect(env, instance);
-        Function<Player, DanceEffects> failing = player -> new DanceEffects() {
+        BiFunction<Player, LivingEntity, DanceEffects> failing = (player, npc) -> new DanceEffects() {
             @Override
             public void apply(DanceAction action, Pos anchor) {
                 throw new IllegalStateException("a step failed");
@@ -277,7 +279,7 @@ class DanceStopIntegrationTest {
 
             @Override
             public void reset(Pos anchor) {
-                new MinestomDanceEffects(player).reset(anchor);
+                new MinestomDanceEffects(player, npc).reset(anchor);
             }
         };
 
@@ -293,15 +295,15 @@ class DanceStopIntegrationTest {
         }
     }
 
-    @DisplayName("A failing pose reset still removes the camera marker")
+    @DisplayName("A failing pose reset still removes the camera entity and the NPC")
     @Test
     void failingResetStillRemovesTheCamera(Env env) {
         Instance instance = env.createFlatInstance();
         DanceFixtures.Dancer dancer = DanceFixtures.connect(env, instance);
-        Function<Player, DanceEffects> failingReset = player -> new DanceEffects() {
+        BiFunction<Player, LivingEntity, DanceEffects> failingReset = (player, npc) -> new DanceEffects() {
             @Override
             public void apply(DanceAction action, Pos anchor) {
-                new MinestomDanceEffects(player).apply(action, anchor);
+                new MinestomDanceEffects(player, npc).apply(action, anchor);
             }
 
             @Override
@@ -314,7 +316,9 @@ class DanceStopIntegrationTest {
             DanceModule module = started(env, titan, dancer, failingReset);
             module.stop();
 
-            Assertions.assertEquals(0, DanceFixtures.markers(instance), "a reset that throws must not leave the camera marker behind");
+            Assertions.assertEquals(0, DanceFixtures.cameras(instance), "a reset that throws must not leave the camera entity behind");
+            Assertions.assertEquals(0, DanceFixtures.npcs(instance), "a reset that throws must not leave the NPC behind");
+            Assertions.assertEquals(dancer.player().getEntityId(), dancer.cameras().collect().getLast().cameraId(), "a reset that throws must still give the dancer his view back");
         }
     }
 
@@ -345,7 +349,8 @@ class DanceStopIntegrationTest {
 
             env.process().eventHandler().call(new PlayerCustomClickEvent(dancer.player(), DanceKeys.DANCE, CompoundBinaryTag.builder().putString("id", Dance.WAVE.id()).build()));
 
-            Assertions.assertEquals(0, DanceFixtures.markers(instance), "a stopped column must not react to a dance click");
+            Assertions.assertEquals(0, DanceFixtures.cameras(instance), "a stopped column must not react to a dance click");
+            Assertions.assertEquals(0, DanceFixtures.npcs(instance), "a stopped column must not spawn an NPC");
         }
     }
 }
