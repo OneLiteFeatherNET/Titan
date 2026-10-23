@@ -8,7 +8,7 @@ Titan is a complete Minestom-based Minecraft lobby server that provides various 
 - **Tickle Mechanic**: Players can tickle each other using feathers, with cooldown periods
 - **Elytra Boost**: Provides boost functionality for players using elytra
 - **Jump & Run**: A random single-player jump and run in hotbar slot 0 with client-side blocks (2 behind, 2 ahead of the player); the difficulty rises with the score and records persist in the database when one is configured (otherwise in memory), and a sidebar shows score, record and the top three of the mode during a run; see [Database](docs/lobby-modules.md#datenbank-persistence)
-- **Lobby switcher** (CloudNet variant only): a clock in hotbar slot 8 opens an inventory listing the running lobbies of the own task with their player counts; a click sends the player there. Gated by the flag `LOBBYSWITCHER` (see "Feature flags" below)
+- **Lobby switcher** (CloudNet variant only): a clock in hotbar slot 8 opens an inventory listing the running lobbies of the own task with their player counts; a click sends the player there. The last row is a navigation row with a close button at its first slot; from 46 lobbies it pages. Gated by the flag `LOBBYSWITCHER` (see "Feature flags" below)
 - **Height Teleportation**: Automatically teleports players when they exceed certain height limits
 
 ## Requirements

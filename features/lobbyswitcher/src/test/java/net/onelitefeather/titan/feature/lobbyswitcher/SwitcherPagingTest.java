@@ -15,19 +15,17 @@
  */
 package net.onelitefeather.titan.feature.lobbyswitcher;
 
+import static net.onelitefeather.titan.feature.lobbyswitcher.SwitcherFixture.lobbies;
+import static net.onelitefeather.titan.feature.lobbyswitcher.SwitcherFixture.name;
+
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.IntStream;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
-import net.minestom.server.component.DataComponents;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.inventory.InventoryOpenEvent;
-import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.core.portal.ServiceCount;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,15 +36,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 class SwitcherPagingTest {
 
     private static final int PERIOD_TICKS = SwitcherFixture.REFRESH_SECONDS * ViewerCounter.TICKS_PER_SECOND;
-
-    /** Zero-padded so that name order equals creation order; none of them is this lobby. */
-    private static ServiceCount[] lobbies(int count) {
-        return IntStream.range(0, count).mapToObj(i -> new ServiceCount("Lobby-%03d".formatted(i), 1, 50)).toArray(ServiceCount[]::new);
-    }
-
-    private static String name(ItemStack stack) {
-        return PlainTextComponentSerializer.plainText().serialize(stack.get(DataComponents.CUSTOM_NAME));
-    }
+    /** The layout of 100 lobbies: three pages, so every arrow and the indicator are shown. */
+    private static final SwitcherLayout PAGED = SwitcherLayout.of(100);
 
     private static Player openWith(SwitcherFixture fixture, int lobbies) {
         fixture.counts().serve(lobbies(lobbies));
@@ -59,34 +50,35 @@ class SwitcherPagingTest {
         }
     }
 
-    @DisplayName("Two lobbies open a menu of one row")
+    @DisplayName("Two lobbies open a menu of one content row and the navigation row")
     @Test
-    void fewLobbiesNeedOneRow(Env env) {
+    void fewLobbiesNeedOneContentRow(Env env) {
         try (SwitcherFixture fixture = SwitcherFixture.active(env)) {
             Player player = openWith(fixture, 2);
 
-            Assertions.assertEquals(9, player.getOpenInventory().getSize(), "one row of nine slots");
+            Assertions.assertEquals(18, player.getOpenInventory().getSize(), "one content row of nine slots and the navigation row");
         }
     }
 
-    @DisplayName("Ten lobbies open a menu of two rows")
+    @DisplayName("Ten lobbies open a menu of two content rows and the navigation row")
     @Test
-    void tenLobbiesNeedTwoRows(Env env) {
+    void tenLobbiesNeedTwoContentRows(Env env) {
         try (SwitcherFixture fixture = SwitcherFixture.active(env)) {
             Player player = openWith(fixture, 10);
 
-            Assertions.assertEquals(18, player.getOpenInventory().getSize(), "ten entries need two rows");
+            Assertions.assertEquals(27, player.getOpenInventory().getSize(), "ten entries need two content rows and the navigation row");
         }
     }
 
-    @DisplayName("54 lobbies fill six rows without navigation")
+    @DisplayName("45 lobbies fill five content rows with the navigation row below them")
     @Test
-    void fullSixRowsHaveNoNavigation(Env env) {
+    void fullContentRowsAreAboveTheNavigation(Env env) {
         try (SwitcherFixture fixture = SwitcherFixture.active(env)) {
-            Player player = openWith(fixture, 54);
+            Player player = openWith(fixture, 45);
 
-            Assertions.assertEquals(54, player.getOpenInventory().getSize());
-            Assertions.assertEquals("Lobby-053", name(player.getOpenInventory().getItemStack(53)), "the last slot is the last lobby, not an arrow");
+            Assertions.assertEquals(54, player.getOpenInventory().getSize(), "five content rows and the navigation row");
+            Assertions.assertEquals("Lobby-044", name(player.getOpenInventory().getItemStack(44)), "slot 44 is the 45th lobby, the last content slot");
+            Assertions.assertEquals(Material.BARRIER, player.getOpenInventory().getItemStack(45).material(), "the first slot of the navigation row is the close button");
         }
     }
 
@@ -99,9 +91,9 @@ class SwitcherPagingTest {
             var inventory = player.getOpenInventory();
             Assertions.assertEquals(54, inventory.getSize());
             Assertions.assertEquals("Lobby-044", name(inventory.getItemStack(44)), "slot 44 is the 45th lobby");
-            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, inventory.getItemStack(SwitcherLayout.PREVIOUS_SLOT).material(), "no previous page");
-            Assertions.assertEquals(Material.ARROW, inventory.getItemStack(SwitcherLayout.NEXT_SLOT).material(), "next page");
-            Assertions.assertTrue(name(inventory.getItemStack(SwitcherLayout.INDICATOR_SLOT)).contains("1/3"), "indicator: " + name(inventory.getItemStack(SwitcherLayout.INDICATOR_SLOT)));
+            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, inventory.getItemStack(PAGED.previousSlot()).material(), "no previous page");
+            Assertions.assertEquals(Material.ARROW, inventory.getItemStack(PAGED.nextSlot()).material(), "next page");
+            Assertions.assertTrue(name(inventory.getItemStack(PAGED.indicatorSlot())).contains("1/3"), "indicator: " + name(inventory.getItemStack(PAGED.indicatorSlot())));
         }
     }
 
@@ -111,19 +103,19 @@ class SwitcherPagingTest {
         try (SwitcherFixture fixture = SwitcherFixture.active(env)) {
             Player player = openWith(fixture, 100);
 
-            fixture.click(player, SwitcherLayout.NEXT_SLOT);
+            fixture.click(player, PAGED.nextSlot());
             Assertions.assertEquals("Lobby-045", name(player.getOpenInventory().getItemStack(0)), "second page starts with the 46th lobby");
-            Assertions.assertEquals(Material.ARROW, player.getOpenInventory().getItemStack(SwitcherLayout.PREVIOUS_SLOT).material());
-            Assertions.assertEquals(Material.ARROW, player.getOpenInventory().getItemStack(SwitcherLayout.NEXT_SLOT).material());
+            Assertions.assertEquals(Material.ARROW, player.getOpenInventory().getItemStack(PAGED.previousSlot()).material());
+            Assertions.assertEquals(Material.ARROW, player.getOpenInventory().getItemStack(PAGED.nextSlot()).material());
 
-            fixture.click(player, SwitcherLayout.NEXT_SLOT);
+            fixture.click(player, PAGED.nextSlot());
             Assertions.assertEquals("Lobby-090", name(player.getOpenInventory().getItemStack(0)));
             Assertions.assertEquals("Lobby-099", name(player.getOpenInventory().getItemStack(9)), "the last page holds the remaining ten");
             Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, player.getOpenInventory().getItemStack(10).material());
-            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, player.getOpenInventory().getItemStack(SwitcherLayout.NEXT_SLOT).material(), "no page after the last");
+            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, player.getOpenInventory().getItemStack(PAGED.nextSlot()).material(), "no page after the last");
 
-            fixture.click(player, SwitcherLayout.PREVIOUS_SLOT);
-            fixture.click(player, SwitcherLayout.PREVIOUS_SLOT);
+            fixture.click(player, PAGED.previousSlot());
+            fixture.click(player, PAGED.previousSlot());
             Assertions.assertEquals("Lobby-000", name(player.getOpenInventory().getItemStack(0)), "back on the first page");
         }
     }
@@ -134,7 +126,7 @@ class SwitcherPagingTest {
         try (SwitcherFixture fixture = SwitcherFixture.active(env)) {
             Player player = openWith(fixture, 100);
 
-            fixture.click(player, SwitcherLayout.PREVIOUS_SLOT);
+            fixture.click(player, PAGED.previousSlot());
 
             Assertions.assertEquals("Lobby-000", name(player.getOpenInventory().getItemStack(0)));
             Assertions.assertTrue(fixture.deliver().deliveries().isEmpty(), "the filler is no lobby");
@@ -146,7 +138,7 @@ class SwitcherPagingTest {
     void secondPageClickJoinsThatLobby(Env env) {
         try (SwitcherFixture fixture = SwitcherFixture.active(env)) {
             Player player = openWith(fixture, 100);
-            fixture.click(player, SwitcherLayout.NEXT_SLOT);
+            fixture.click(player, PAGED.nextSlot());
 
             fixture.click(player, 2);
             env.tick();
@@ -160,7 +152,7 @@ class SwitcherPagingTest {
     void navigationKeepsTheRefreshPeriod(Env env) {
         try (SwitcherFixture fixture = SwitcherFixture.active(env)) {
             Player player = openWith(fixture, 100);
-            fixture.click(player, SwitcherLayout.NEXT_SLOT);
+            fixture.click(player, PAGED.nextSlot());
 
             tick(env, PERIOD_TICKS + 10);
 
@@ -178,8 +170,8 @@ class SwitcherPagingTest {
             fixture.use(player);
             fixture.settle();
 
-            Assertions.assertTrue(name(player.getOpenInventory().getItemStack(SwitcherLayout.NEXT_SLOT)).contains("Nächste"), name(player.getOpenInventory().getItemStack(SwitcherLayout.NEXT_SLOT)));
-            Assertions.assertTrue(name(player.getOpenInventory().getItemStack(SwitcherLayout.INDICATOR_SLOT)).contains("Seite"), name(player.getOpenInventory().getItemStack(SwitcherLayout.INDICATOR_SLOT)));
+            Assertions.assertTrue(name(player.getOpenInventory().getItemStack(PAGED.nextSlot())).contains("Nächste"), name(player.getOpenInventory().getItemStack(PAGED.nextSlot())));
+            Assertions.assertTrue(name(player.getOpenInventory().getItemStack(PAGED.indicatorSlot())).contains("Seite"), name(player.getOpenInventory().getItemStack(PAGED.indicatorSlot())));
         }
     }
 
@@ -193,9 +185,9 @@ class SwitcherPagingTest {
             tick(env, PERIOD_TICKS + 10);
 
             Assertions.assertNotNull(player.getOpenInventory(), "100 and 120 lobbies are both three pages");
-            fixture.click(player, SwitcherLayout.NEXT_SLOT);
+            fixture.click(player, PAGED.nextSlot());
             fixture.settle();
-            fixture.click(player, SwitcherLayout.NEXT_SLOT);
+            fixture.click(player, PAGED.nextSlot());
             fixture.settle();
             Assertions.assertEquals("Lobby-100", name(player.getOpenInventory().getItemStack(10)), "the third page of 120 lobbies holds Lobby-100 in slot 10");
         }
@@ -213,7 +205,7 @@ class SwitcherPagingTest {
             Assertions.assertNull(player.getOpenInventory(), "the nine-slot menu cannot show twelve lobbies");
             fixture.use(player);
             fixture.settle();
-            Assertions.assertEquals(18, player.getOpenInventory().getSize(), "reopened with two rows");
+            Assertions.assertEquals(27, player.getOpenInventory().getSize(), "reopened with two content rows and the navigation row");
             Assertions.assertEquals("Lobby-011", name(player.getOpenInventory().getItemStack(11)));
         }
     }
@@ -230,7 +222,7 @@ class SwitcherPagingTest {
             Assertions.assertNull(player.getOpenInventory(), "the paged menu is gone");
             fixture.use(player);
             fixture.settle();
-            Assertions.assertEquals(9, player.getOpenInventory().getSize());
+            Assertions.assertEquals(18, player.getOpenInventory().getSize(), "one content row and the navigation row");
         }
     }
 
@@ -263,7 +255,7 @@ class SwitcherPagingTest {
 
             failing.set(true);
             // The Env reports a server-side exception as a thrown error; that is how the failed turn reaches the test.
-            Assertions.assertThrows(Throwable.class, () -> fixture.click(player, SwitcherLayout.NEXT_SLOT));
+            Assertions.assertThrows(Throwable.class, () -> fixture.click(player, PAGED.nextSlot()));
             failing.set(false);
             player.closeInventory();
             int reads = fixture.counts().reads();
