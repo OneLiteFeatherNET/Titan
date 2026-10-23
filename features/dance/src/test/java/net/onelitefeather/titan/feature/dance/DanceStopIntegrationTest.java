@@ -293,6 +293,31 @@ class DanceStopIntegrationTest {
         }
     }
 
+    @DisplayName("A failing pose reset still removes the camera marker")
+    @Test
+    void failingResetStillRemovesTheCamera(Env env) {
+        Instance instance = env.createFlatInstance();
+        DanceFixtures.Dancer dancer = DanceFixtures.connect(env, instance);
+        Function<Player, DanceEffects> failingReset = player -> new DanceEffects() {
+            @Override
+            public void apply(DanceAction action, Pos anchor) {
+                new MinestomDanceEffects(player).apply(action, anchor);
+            }
+
+            @Override
+            public void reset(Pos anchor) {
+                throw new IllegalStateException("the reset failed");
+            }
+        };
+
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            DanceModule module = started(env, titan, dancer, failingReset);
+            module.stop();
+
+            Assertions.assertEquals(0, DanceFixtures.markers(instance), "a reset that throws must not leave the camera marker behind");
+        }
+    }
+
     @DisplayName("Shutting the column down ends a running dance and gives the view back")
     @Test
     void shutdownEndsTheDance(Env env) {
