@@ -37,6 +37,8 @@ published.
 
 - `/spawn`: return to the lobby spawn at once (everyone, no permission); also available as the
   compass in navigator slot 31. `/lobby` and `/hub` are left to the proxy.
+- `/tanz` (alias `/dance`): open the dance choice; the quick action (G, client 1.21.6 or newer)
+  opens the same choice. Dances are free, except `spin`, which needs `titan.dance.spin`.
 
 ## Permissions
 
