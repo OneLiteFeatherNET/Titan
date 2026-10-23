@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.3.0](https://github.com/OneLiteFeatherNET/Titan/compare/v4.2.0...v4.3.0) (2026-10-23)
+
+
+### Features
+
+* **dance:** add lobby dances with quick-action dialog and camera view ([#466](https://github.com/OneLiteFeatherNET/Titan/issues/466)) ([3e711db](https://github.com/OneLiteFeatherNET/Titan/commit/3e711db51bcded49abd5e210273db835b3d30e1a))
+
 ## [4.2.0](https://github.com/OneLiteFeatherNET/Titan/compare/v4.1.1...v4.2.0) (2026-10-23)
 
 
