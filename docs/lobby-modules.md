@@ -509,36 +509,43 @@ Inhaltszeilen. Die Navigationszeile beginnt damit bei Slot 9 (eine Inhaltszeile)
 
 ## Tanz (`dance`)
 
-Ein Spieler tanzt über die Schnellaktion (Taste G, Client 1.21.6 oder neuer) oder den Befehl `/tanz`
-(Alias `/dance`). Die Schnellaktion ist der Dialog `titan:dances` mit genau einem Knopf; er steht beim
-Start in `minecraft:quick_actions` und geht identisch an jeden Client, deshalb ist sein Text nicht
-übersetzt. Der Knopf öffnet dem Spieler persönlich die Auswahl: nur die Tänze, die er nutzen darf, und
-„Stopp“. Jeder Tanz-Knopf sendet `titan:dance` mit der Id als Payload; die Lobby prüft Id und
-Berechtigung erneut.
+Ein Spieler tanzt über die Schnellaktion (Taste G, Client 1.21.6 oder neuer) oder den Befehl `/dance`.
+Beide öffnen dieselbe Tanzliste in der Sprache des Spielers: nur die Tänze, die er nutzen darf, und
+„Stopp“. Ein Klick auf einen Tanz startet ihn; die Lobby prüft Id und Berechtigung erneut. Der Befehl
+heißt auf jedem Server `dance`, unabhängig von der Sprache; nur die Texte sind übersetzt.
 
 - **Tänze** sind im Code festgelegt (`Dance`, Schritte in Ticks in `DanceSequence`): `wave`, `groove`
   und `party` sind frei, `spin` braucht `titan.dance.spin`.
 - **Ein Tanz je Spieler gleichzeitig**, danach drei Sekunden Pause (`DanceCooldown.PAUSE`, aus der
   injizierten `Clock`).
-- **NPC:** Der Tanzende sieht seinen Tanz nicht an sich selbst, deshalb steht an seiner Position ein
-  Mannequin (`DanceNpc`, `MANNEQUIN`, unbeweglich) mit seinem Skin, nur ihm sichtbar. Ohne Skin trägt er
-  Name und Id. Jeder Tanzschritt läuft am Spieler und am NPC (`MinestomDanceEffects`).
-- **Kamera:** Während des Tanzes sieht der Spieler seinen NPC über eine unsichtbare Kameraentität
-  (`DanceCamera`, `ITEM_DISPLAY` ohne Item, `CameraPacket` über `Player#spectate`) 3,5 Blöcke vor dem
-  NPC auf Augenhöhe (`CameraPlacement`). Beim Ende setzt die Lobby die Kamera zurück und entfernt
-  Kameraentität und NPC.
+- **Der NPC tanzt, nicht der Spieler:** Während eines Tanzes ist der echte Spieler für alle anderen
+  unsichtbar (`Entity#updateViewableRule`, auch für Spieler, die während des Tanzes dazukommen). An
+  seiner Stelle steht ein Mannequin (`DanceNpc`, `MANNEQUIN`, unbeweglich) mit seinem Skin, für alle
+  sichtbar, mit seinem Namen darüber. Ohne Skin trägt es Name und Id. Jeder Tanzschritt läuft nur am
+  NPC (`MinestomDanceEffects`); der Spieler bekommt keine Geschwindigkeit und keine Pose.
+- **Kamera:** Der Tanzende sieht seinen NPC über eine unsichtbare Kameraentität (`DanceCamera`,
+  `ITEM_DISPLAY` ohne Item, `CameraPacket` über `Player#spectate`) 3,5 Blöcke vor dem NPC auf
+  Augenhöhe (`CameraPlacement`).
 - **Stopp-Pfade** (`DanceService#stop`): Ende der Dauer, horizontale Bewegung über 0,25 Blöcke
   (`DanceSession.MOVE_THRESHOLD`), Bewegungstasten, Angriff oder Interaktion (auch wenn ein anderes
   Modul sie abgebrochen hat), Instanzwechsel, Verbindungsabbruch, Stopp-Knopf, Fehler in einem
-  Schritt und Herunterfahren. Jeder Pfad stellt Pose und Blick wieder her und entfernt Kamera und NPC,
-  auch wenn der Schritt davor geworfen hat.
-- **Pose:** Der Spieler bekommt seine Pose über die Flags Ducken und Riptide-Drehung, denn Minestom
-  berechnet sie für Spieler in jedem Tick neu. Der NPC hat keinen solchen Tick, deshalb setzt die
-  Column dort zusätzlich `setPose` (`MinestomDanceEffects`).
-- **Schnellaktion eintragen:** Minestom 2026.10.07-26.2 bietet keine öffentliche Methode, um einen Tag
-  zu befüllen. Die Lobby nutzt dafür `DialogTagRegistry` aus Pica 0.1.5: Der Dialog wird registriert und
-  jedem Spieler beim ersten Spawn als `TagsPacket` mit `minecraft:quick_actions` geschickt (`DanceModule`).
-  `QuickActionDialogTest` prüft den Knopf, `QuickActionTagsIntegrationTest` den Versand beim ersten Spawn.
+  Schritt und Herunterfahren. Jeder Pfad entfernt NPC und Kamera und macht den Spieler wieder für alle
+  sichtbar, auch wenn der Schritt davor geworfen hat (`DanceNpc#close` in `finally`).
+- **Sprung und Drehung:** Der Sprung ist ein Geschwindigkeitsimpuls auf den NPC; der NPC behält die
+  Schwerkraft und fällt zurück. Die Drehung (`SPIN`) setzt das Riptide-Flag und die Pose
+  `SPIN_ATTACK` am NPC, weil der NPC keinen Tick hat, der die Pose aus den Flags ableitet. Die
+  Drehung hebt den NPC um `MinestomDanceEffects.SPIN_LIFT` (1,25 Blöcke) an und hält ihn dort 40
+  Ticks; `SPIN_LAND` beendet die Drehung, und die Schwerkraft bringt den NPC zurück auf den Boden.
+  Die Pose des Spielers bleibt unangetastet.
+- **Tanzliste registriert:** Die Listen liegen als statische Dialoge in der Dialog-Registry, eine je
+  Sprache (`de`, sonst `en`) und Berechtigungsvariante (`titan:dances/de`, `titan:dances/en_spin`; die
+  Zahl bleibt klein, weil es nur einen Tanz mit Berechtigung gibt). Ihre Texte rendert `DanceMessages`
+  beim Start, weil der Client unsere Schlüssel nicht übersetzt. Beim ersten Spawn, bei einer Änderung
+  der Sprache (`PlayerSettingsChangeEvent`) und bei jedem `/dance` schickt `DanceModule` dem Spieler
+  ein eigenes `TagsPacket` für `minecraft:dialog` mit dem Tag `minecraft:quick_actions`, das genau die
+  Liste seiner Variante enthält (`QuickActionTags`). Das Paket baut Minestom öffentlich; es gibt keine
+  Reflexion und keine Pica-Abhängigkeit mehr, weil Pica nur eine gemeinsame Tag-Liste für alle Spieler
+  führt.
 - **Telemetrie:** Zähler `titan.dance.started{dance}`, kein Span (Starts sind selten, die Schritte
   zu häufig für einen Span).
 

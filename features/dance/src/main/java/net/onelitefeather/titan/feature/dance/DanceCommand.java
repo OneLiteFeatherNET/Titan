@@ -20,16 +20,15 @@ import net.minestom.server.command.builder.Command;
 import net.minestom.server.entity.Player;
 
 /**
- * {@code /tanz} (alias {@code /dance}): the fallback for clients without quick actions. Opens the
- * same per-player choice as the quick action.
+ * {@code /dance}: the fallback for clients without quick actions. Opens the same dance list as the
+ * quick action. Commands are English on every server, whatever the player's language.
  */
 final class DanceCommand extends Command {
 
-    static final String NAME = "tanz";
-    static final String ALIAS = "dance";
+    static final String NAME = "dance";
 
     DanceCommand(DanceModule module) {
-        super(NAME, ALIAS);
+        super(NAME);
         setDefaultExecutor((sender, context) -> {
             if (sender instanceof Player player) {
                 module.openMenu(player);

@@ -17,10 +17,14 @@ package net.onelitefeather.titan.feature.dance;
 
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Locale;
 import net.minestom.server.command.CommandManager;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.network.packet.server.common.ShowDialogPacket;
+import net.minestom.server.network.packet.server.common.TagsPacket;
 import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.TestConnection;
@@ -32,15 +36,15 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-/** {@code /tanz} and its alias open the same per-player choice as the quick action. */
+/** {@code /dance} opens the same dance list as the quick action, and is the only dance command. */
 @ExtendWith(MicrotusExtension.class)
 class DanceCommandIntegrationTest {
 
     private static final Instant NOW = Instant.parse("2026-10-23T12:00:00Z");
 
-    @DisplayName("/tanz opens the dance choice for the player who typed it")
+    @DisplayName("/dance opens the dance list for the player who typed it")
     @Test
-    void tanzOpensTheChoice(Env env) {
+    void danceOpensTheList(Env env) {
         Instance instance = env.createFlatInstance();
         TestConnection connection = env.createConnection();
         Player player = connection.connect(instance);
@@ -55,7 +59,7 @@ class DanceCommandIntegrationTest {
             try {
                 commands.execute(player, DanceCommand.NAME);
 
-                Assertions.assertEquals(1, dialogs.collect().size(), "/tanz must show the dance choice once");
+                Assertions.assertEquals(1, dialogs.collect().size(), "/dance must show the dance list once");
             } finally {
                 registration.stop();
                 module.stop();
@@ -63,47 +67,31 @@ class DanceCommandIntegrationTest {
         }
     }
 
-    @DisplayName("The alias /dance opens the same choice")
+    @DisplayName("/dance resends the quick action for the player's language and permissions")
     @Test
-    void danceAliasOpensTheChoice(Env env) {
+    void danceResendsTheQuickAction(Env env) {
         Instance instance = env.createFlatInstance();
         TestConnection connection = env.createConnection();
         Player player = connection.connect(instance);
-        Collector<ShowDialogPacket> dialogs = connection.trackIncoming(ShowDialogPacket.class);
+        player.setLocale(Locale.GERMANY);
+        Collector<TagsPacket> tags = connection.trackIncoming(TagsPacket.class);
 
         CommandManager commands = env.process().command();
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            DanceModule module = DanceFixtures.module(env, titan, new FakePermissionService(), new AdjustableClock(NOW, ZoneOffset.UTC), Telemetry.noop());
+            DanceModule module = DanceFixtures.module(env, titan, new FakePermissionService().grant("titan.dance.spin"), new AdjustableClock(NOW, ZoneOffset.UTC), Telemetry.noop());
             module.start();
             DanceCommands registration = new DanceCommands(commands, module);
             registration.start();
             try {
-                commands.execute(player, DanceCommand.ALIAS);
+                commands.execute(player, DanceCommand.NAME);
 
-                Assertions.assertEquals(1, dialogs.collect().size(), "/dance must show the dance choice once");
+                // With the spin permission the German list offers every dance.
+                int expected = QuickActionTagsIntegrationTest.registeredId(DanceList.key(Locale.GERMAN, EnumSet.allOf(Dance.class)));
+                List<TagsPacket> sent = tags.collect();
+                Assertions.assertEquals(1, sent.size(), "/dance must send the player's quick action once");
+                Assertions.assertArrayEquals(new int[]{expected}, QuickActionTagsIntegrationTest.quickActionEntries(sent.getFirst()), "the quick action must be the German list with spin");
             } finally {
                 registration.stop();
-                module.stop();
-            }
-        }
-    }
-
-    @DisplayName("The quick action's button opens the choice for the clicking player")
-    @Test
-    void quickActionOpensTheChoice(Env env) {
-        Instance instance = env.createFlatInstance();
-        TestConnection connection = env.createConnection();
-        Player player = connection.connect(instance);
-        Collector<ShowDialogPacket> dialogs = connection.trackIncoming(ShowDialogPacket.class);
-
-        try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            DanceModule module = DanceFixtures.module(env, titan, new FakePermissionService(), new AdjustableClock(NOW, ZoneOffset.UTC), Telemetry.noop());
-            module.start();
-            try {
-                env.process().eventHandler().call(DanceFixtures.openClick(player));
-
-                Assertions.assertEquals(1, dialogs.collect().size(), "the quick action's button must show the choice to the clicking player");
-            } finally {
                 module.stop();
             }
         }

@@ -17,19 +17,13 @@ package net.onelitefeather.titan.feature.dance;
 
 import net.kyori.adventure.key.Key;
 
-/** The keys the dance dialogs and their buttons are known by. */
+/** The keys the dance lists and their buttons are known by. */
 final class DanceKeys {
 
-    /** The static dialog in the quick-action tag. */
-    static final Key DIALOG = Key.key("titan", "dances");
-
-    /** The one button of the quick-action dialog: opens the per-player choice. */
-    static final Key OPEN = Key.key("titan", "dances/open");
-
-    /** The stop button of the per-player choice. */
+    /** The stop button of the dance list. */
     static final Key STOP = Key.key("titan", "dances/stop");
 
-    /** A dance button of the per-player choice; its payload names the dance. */
+    /** A dance button of the dance list; its payload names the dance. */
     static final Key DANCE = Key.key("titan", "dance");
 
     private DanceKeys() {

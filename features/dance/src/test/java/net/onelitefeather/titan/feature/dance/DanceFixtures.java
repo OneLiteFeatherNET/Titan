@@ -17,7 +17,7 @@ package net.onelitefeather.titan.feature.dance;
 
 import java.time.Clock;
 import java.util.List;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Entity;
 import net.minestom.server.entity.EntityType;
@@ -39,6 +39,9 @@ final class DanceFixtures {
 
     private static final Pos OPEN_AIR = new Pos(0, 64, 0);
 
+    /** The top of the flat floor: the NPC stands here, and gravity holds it up. */
+    static final Pos FLOOR = new Pos(0, 40, 0);
+
     private DanceFixtures() {
     }
 
@@ -46,7 +49,7 @@ final class DanceFixtures {
         return module(env, titan, permissions, clock, telemetry, MinestomDanceEffects::new);
     }
 
-    static DanceModule module(Env env, TestTitanNode titan, PermissionService permissions, Clock clock, Telemetry telemetry, BiFunction<Player, LivingEntity, DanceEffects> effects) {
+    static DanceModule module(Env env, TestTitanNode titan, PermissionService permissions, Clock clock, Telemetry telemetry, Function<LivingEntity, DanceEffects> effects) {
         return new DanceModule(titan.node(), permissions, env.process().scheduler(), clock, telemetry, effects);
     }
 
@@ -59,19 +62,19 @@ final class DanceFixtures {
         return new PlayerCustomClickEvent(player, DanceKeys.STOP, null);
     }
 
-    static PlayerCustomClickEvent openClick(Player player) {
-        return new PlayerCustomClickEvent(player, DanceKeys.OPEN, null);
-    }
-
     /**
      * A player on a real test connection, with his camera and animation packets tracked from now
      * on.
      */
     static Dancer connect(Env env, Instance instance) {
+        return connect(env, instance, OPEN_AIR);
+    }
+
+    /** A player standing at {@code spot}, with his camera and animation packets tracked. */
+    static Dancer connect(Env env, Instance instance, Pos spot) {
         TestConnection connection = env.createConnection();
         Player player = connection.connect(instance);
-        // Above the flat floor: a pose only sticks where the player's body fits.
-        player.teleport(OPEN_AIR);
+        player.teleport(spot);
         Collector<CameraPacket> cameras = connection.trackIncoming(CameraPacket.class);
         Collector<EntityAnimationPacket> animations = connection.trackIncoming(EntityAnimationPacket.class);
         return new Dancer(player, cameras, animations);

@@ -18,23 +18,21 @@ package net.onelitefeather.titan.feature.dance;
 import net.minestom.server.coordinate.Pos;
 
 /**
- * What a dance does to its dancer and to the NPC that dances in his view.
- * {@link MinestomDanceEffects}
- * is the real one; the seam exists so a test can make a step fail and check that the stop path
- * still
+ * What a dance does to the NPC that dances in the dancer's place. {@link MinestomDanceEffects} is
+ * the real one; the seam exists so a test can make a step fail and check that the stop path still
  * cleans up.
  */
 interface DanceEffects {
 
     /**
-     * Performs {@code action} for the dancer and his NPC.
+     * Performs {@code action} on the NPC.
      *
      * @param anchor the dancer's position and view when the dance started
      */
     void apply(DanceAction action, Pos anchor);
 
     /**
-     * Brings the dancer back to standing and to the view he had when the dance started.
+     * Brings the NPC back to standing and to the view the dancer had when the dance started.
      *
      * @param anchor the dancer's position and view when the dance started
      */
