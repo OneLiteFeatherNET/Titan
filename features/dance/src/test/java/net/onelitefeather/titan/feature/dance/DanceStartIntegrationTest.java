@@ -60,7 +60,7 @@ class DanceStartIntegrationTest {
         }
     }
 
-    @DisplayName("Groove puts the dancer into the sneaking pose on the first tick")
+    @DisplayName("Groove makes the NPC sneak on the first tick, the real dancer keeps standing")
     @Test
     void grooveSneaksOnTheFirstTick(Env env) {
         Instance instance = env.createFlatInstance();
@@ -73,7 +73,8 @@ class DanceStartIntegrationTest {
                 env.process().eventHandler().call(DanceFixtures.danceClick(dancer.player(), Dance.GROOVE));
                 env.tick();
 
-                Assertions.assertEquals(EntityPose.SNEAKING, dancer.player().getPose(), "groove starts by sneaking");
+                Assertions.assertEquals(EntityPose.SNEAKING, DanceFixtures.npc(instance).getPose(), "groove starts by sneaking on the NPC");
+                Assertions.assertEquals(EntityPose.STANDING, dancer.player().getPose(), "the real dancer must not sneak");
             } finally {
                 module.stop();
             }
@@ -184,7 +185,7 @@ class DanceStartIntegrationTest {
                 env.process().eventHandler().call(DanceFixtures.danceClick(dancer.player(), Dance.SPIN));
                 env.tick();
 
-                Assertions.assertEquals(EntityPose.SPIN_ATTACK, dancer.player().getPose(), "spin with the permission turns into the spin pose");
+                Assertions.assertEquals(EntityPose.SPIN_ATTACK, DanceFixtures.npc(instance).getPose(), "spin with the permission turns the NPC into the spin pose");
             } finally {
                 module.stop();
             }

@@ -15,7 +15,10 @@
  */
 package net.onelitefeather.titan.feature.dance;
 
-/** One vanilla-visible thing a dancer does at a given tick; {@link DanceEffects} performs it. */
+/**
+ * One vanilla-visible thing a dancer does at a given tick; {@link DanceEffects} performs it. The
+ * dancer is the NPC: the real player is hidden from the others and is never moved by a step.
+ */
 enum DanceAction {
-    SWING_MAIN_HAND, SWING_OFF_HAND, HEAD_DOWN, HEAD_UP, SNEAK, STAND, SPIN, JUMP, NOTE, HEART
+    SWING_MAIN_HAND, SWING_OFF_HAND, HEAD_DOWN, HEAD_UP, SNEAK, STAND, SPIN, SPIN_LAND, JUMP, NOTE, HEART
 }

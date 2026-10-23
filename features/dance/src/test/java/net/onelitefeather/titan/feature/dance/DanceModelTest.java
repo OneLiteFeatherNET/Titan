@@ -115,6 +115,16 @@ class DanceModelTest {
         Assertions.assertEquals(List.of(), end.actions(), "a finished dance performs nothing");
     }
 
+    @DisplayName("The spin lands the NPC after its hover, and the dance runs on for a moment on the floor")
+    @Test
+    void spinLandsAfterItsHover() {
+        DanceSequence sequence = Dance.SPIN.sequence();
+
+        Assertions.assertTrue(sequence.actionsAt(40).contains(DanceAction.SPIN_LAND), "the landing comes at tick 40");
+        Assertions.assertTrue(sequence.lengthTicks() > 40, "the dance must still run after the landing");
+        Assertions.assertFalse(sequence.actionsAt(0).contains(DanceAction.SPIN_LAND), "the spin must not land on its first tick");
+    }
+
     @DisplayName("Movement within the threshold is not movement, however the dancer turns")
     @Test
     void smallMovementIsNotMovement() {

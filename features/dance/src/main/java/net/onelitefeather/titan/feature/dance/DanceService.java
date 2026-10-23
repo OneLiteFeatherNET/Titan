@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.LivingEntity;
 import net.minestom.server.entity.Player;
@@ -54,10 +54,10 @@ final class DanceService {
     private final DanceCooldown cooldown;
     private final DancePermissions permissions;
     private final DanceTelemetry telemetry;
-    private final BiFunction<Player, LivingEntity, DanceEffects> effectsFor;
+    private final Function<LivingEntity, DanceEffects> effectsFor;
     private final Map<UUID, ActiveDance> active = new HashMap<>();
 
-    DanceService(Scheduler scheduler, DanceCooldown cooldown, DancePermissions permissions, DanceTelemetry telemetry, BiFunction<Player, LivingEntity, DanceEffects> effectsFor) {
+    DanceService(Scheduler scheduler, DanceCooldown cooldown, DancePermissions permissions, DanceTelemetry telemetry, Function<LivingEntity, DanceEffects> effectsFor) {
         this.scheduler = scheduler;
         this.cooldown = cooldown;
         this.permissions = permissions;
@@ -93,7 +93,7 @@ final class DanceService {
             npc.close();
             throw e;
         }
-        DanceEffects effects = this.effectsFor.apply(player, npc.entity());
+        DanceEffects effects = this.effectsFor.apply(npc.entity());
         ActiveDance started = new ActiveDance(new DanceSession(dance), effects, anchor, camera, npc);
         this.active.put(id, started);
         try {

@@ -15,6 +15,9 @@
  */
 package net.onelitefeather.titan.feature.dance;
 
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.Set;
 import java.util.UUID;
 import net.onelitefeather.titan.core.permission.PermissionResult;
 import net.onelitefeather.titan.core.permission.PermissionService;
@@ -30,5 +33,16 @@ final class DancePermissions {
 
     boolean may(UUID playerId, Dance dance) {
         return dance.permission().map(node -> this.permissions.check(playerId, node) == PermissionResult.ALLOWED).orElse(true);
+    }
+
+    /** @return every dance {@code playerId} may use */
+    Set<Dance> permittedTo(UUID playerId) {
+        EnumSet<Dance> permitted = EnumSet.noneOf(Dance.class);
+        for (Dance dance : Dance.values()) {
+            if (may(playerId, dance)) {
+                permitted.add(dance);
+            }
+        }
+        return Collections.unmodifiableSet(permitted);
     }
 }

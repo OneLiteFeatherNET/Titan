@@ -16,6 +16,9 @@
 package net.onelitefeather.titan.feature.dance;
 
 import java.util.List;
+import java.util.function.Predicate;
+import net.kyori.adventure.text.Component;
+import net.minestom.server.component.DataComponents;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.EntityType;
 import net.minestom.server.entity.LivingEntity;
@@ -26,37 +29,50 @@ import net.minestom.server.instance.Instance;
 import net.minestom.server.network.player.ResolvableProfile;
 
 /**
- * The dancer's stand-in: a mannequin in his skin, standing where he stood and shown to him alone.
- * It takes every step the dancer takes, so the camera has a dancing figure to look at.
+ * The dancer as the others see him: a mannequin in his skin, standing where he stood, with his name
+ * above it. While it lives the real player is hidden from every other player, so the NPC is the
+ * only body that dances; the dancer's own view of it comes from the camera.
  */
 final class DanceNpc {
 
+    /** Hides the real dancer from every viewer; the NPC replaces him for all of them. */
+    private static final Predicate<Player> NOBODY = viewer -> false;
+
+    private final Player dancer;
     private final LivingEntity entity;
 
-    private DanceNpc(LivingEntity entity) {
+    private DanceNpc(Player dancer, LivingEntity entity) {
+        this.dancer = dancer;
         this.entity = entity;
     }
 
     /**
-     * Spawns the NPC at {@code anchor}, visible to {@code dancer} only.
+     * Spawns the NPC at {@code anchor} for everyone in the instance and hides the real dancer from
+     * the others, including players who join during the dance.
      *
-     * @throws RuntimeException if the spawn fails; the entity is removed again first
+     * @throws RuntimeException if the spawn fails; the entity is removed and the dancer shown again
      */
     static DanceNpc spawn(Player dancer, Instance instance, Pos anchor) {
         LivingEntity entity = new LivingEntity(EntityType.MANNEQUIN);
-        entity.setAutoViewable(false);
         MannequinMeta meta = (MannequinMeta) entity.getEntityMeta();
         meta.setProfile(profileOf(dancer));
         // Immovable: other players cannot push it off the spot where the dancer stands.
         meta.setImmovable(true);
+        // The client shows the name tag of any living entity that carries a visible custom name.
+        entity.set(DataComponents.CUSTOM_NAME, Component.text(dancer.getUsername()));
+        entity.setCustomNameVisible(true);
         try {
             entity.setInstance(instance, anchor).join();
-            entity.addViewer(dancer);
+            dancer.updateViewableRule(NOBODY);
         } catch (RuntimeException e) {
-            entity.remove();
+            try {
+                dancer.updateViewableRule(null);
+            } finally {
+                entity.remove();
+            }
             throw e;
         }
-        return new DanceNpc(entity);
+        return new DanceNpc(dancer, entity);
     }
 
     /**
@@ -76,8 +92,17 @@ final class DanceNpc {
         return this.entity;
     }
 
-    /** Removes the NPC from the instance and from the dancer's view. */
+    /**
+     * Removes the NPC and shows the real dancer to everyone again. The dancer's visibility is
+     * restored even if the removal fails.
+     */
     void close() {
-        this.entity.remove();
+        try {
+            this.entity.remove();
+        } finally {
+            if (this.dancer.isOnline()) {
+                this.dancer.updateViewableRule(null);
+            }
+        }
     }
 }

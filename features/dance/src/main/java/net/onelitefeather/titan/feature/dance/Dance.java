@@ -31,7 +31,8 @@ enum Dance {
 
     PARTY("party", null, "titan.dance.label.party", DanceSequence.lasting(80).every(20, 0, 80, DanceAction.JUMP).every(10, 0, 80, DanceAction.NOTE).every(20, 10, 80, DanceAction.HEART).build()),
 
-    SPIN("spin", "titan.dance.spin", "titan.dance.label.spin", DanceSequence.lasting(60).at(0, DanceAction.SPIN).every(10, 0, 60, DanceAction.HEART).build());
+    // The NPC hangs in the air for the first 40 ticks, then lands and the spin ends.
+    SPIN("spin", "titan.dance.spin", "titan.dance.label.spin", DanceSequence.lasting(60).at(0, DanceAction.SPIN).every(10, 0, 60, DanceAction.HEART).at(40, DanceAction.SPIN_LAND).build());
 
     private final String id;
     private final @Nullable String permission;

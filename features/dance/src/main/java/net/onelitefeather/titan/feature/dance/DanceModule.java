@@ -23,7 +23,7 @@ import jakarta.inject.Singleton;
 import java.time.Clock;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 import net.kyori.adventure.key.Key;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.entity.Entity;
@@ -40,6 +40,7 @@ import net.minestom.server.event.player.PlayerEntityInteractEvent;
 import net.minestom.server.event.player.PlayerHandAnimationEvent;
 import net.minestom.server.event.player.PlayerMoveEvent;
 import net.minestom.server.event.player.PlayerPacketEvent;
+import net.minestom.server.event.player.PlayerSettingsChangeEvent;
 import net.minestom.server.event.player.PlayerSpawnEvent;
 import net.minestom.server.event.player.PlayerUseItemEvent;
 import net.minestom.server.network.packet.client.play.ClientInputPacket;
@@ -49,14 +50,13 @@ import net.onelitefeather.titan.core.permission.PermissionService;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.onelitefeather.titan.feature.dance.DanceService.StartResult;
 import net.onelitefeather.titan.feature.dance.DanceService.StopReason;
-import net.onelitefeather.pica.dialog.tag.DialogTagRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Lets a player dance from the quick action (G) or {@code /tanz}: the quick action opens a
- * per-player choice, a click on a dance starts it, and any movement, input, attack, interaction,
- * leaving the instance or disconnect ends it. The dancing itself lives in {@link DanceService}.
+ * Lets a player dance from the quick action (G) or {@code /dance}: both open the dance list in his
+ * language, a click on a dance starts it, and any movement, input, attack, interaction, leaving the
+ * instance or disconnect ends it. The dancing itself lives in {@link DanceService}.
  */
 @Singleton
 public final class DanceModule {
@@ -72,7 +72,6 @@ public final class DanceModule {
     private final DanceMessages messages;
     private final DanceMenu menu;
     private final DanceService service;
-    private DialogTagRegistry dialogTags;
     private FeatureNode node;
 
     @Inject
@@ -80,7 +79,7 @@ public final class DanceModule {
         this(titan, permissions, scheduler, clock, telemetry, MinestomDanceEffects::new);
     }
 
-    DanceModule(EventNode<Event> titan, PermissionService permissions, Scheduler scheduler, Clock clock, Telemetry telemetry, BiFunction<Player, LivingEntity, DanceEffects> effectsFor) {
+    DanceModule(EventNode<Event> titan, PermissionService permissions, Scheduler scheduler, Clock clock, Telemetry telemetry, Function<LivingEntity, DanceEffects> effectsFor) {
         this.titan = Objects.requireNonNull(titan, "titan");
         this.telemetry = Objects.requireNonNull(telemetry, "telemetry");
         this.messages = new DanceMessages();
@@ -93,11 +92,10 @@ public final class DanceModule {
     void start() {
         // Runs while the BeanScope is built, before the server accepts a connection: registry
         // data is sent to every client during the configuration phase.
-        this.dialogTags = DialogTagRegistry.of(MinecraftServer.getDialogRegistry());
-        this.dialogTags.addQuickAction(DanceKeys.DIALOG, QuickActionDialog.quickAction());
         this.messages.register();
+        this.menu.register(MinecraftServer.getDialogRegistry());
 
-        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry).on(PlayerCustomClickEvent.class, this::onCustomClick).on(PlayerPacketEvent.class, this::onPacket).on(PlayerSpawnEvent.class, this::onSpawn).on(PlayerMoveEvent.class, event -> this.service.onMove(event.getPlayer().getUuid(), event.getNewPosition())).onIncludingCancelled(EntityAttackEvent.class, event -> stopIfPlayer(event.getEntity(), StopReason.INTERACTED)).onIncludingCancelled(PlayerHandAnimationEvent.class, event -> stopIfPlayer(event.getPlayer(), StopReason.INTERACTED)).onIncludingCancelled(PlayerBlockInteractEvent.class, event -> stopIfPlayer(event.getPlayer(), StopReason.INTERACTED)).onIncludingCancelled(PlayerUseItemEvent.class, event -> stopIfPlayer(event.getPlayer(), StopReason.INTERACTED)).onIncludingCancelled(PlayerEntityInteractEvent.class, event -> stopIfPlayer(event.getPlayer(), StopReason.INTERACTED)).on(RemoveEntityFromInstanceEvent.class, event -> stopIfPlayer(event.getEntity(), StopReason.LEFT_INSTANCE)).on(PlayerDisconnectEvent.class, event -> this.service.disconnected(event.getPlayer().getUuid()));
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry).on(PlayerCustomClickEvent.class, this::onCustomClick).on(PlayerPacketEvent.class, this::onPacket).on(PlayerSpawnEvent.class, this::onSpawn).on(PlayerSettingsChangeEvent.class, event -> sendQuickAction(event.getPlayer())).on(PlayerMoveEvent.class, event -> this.service.onMove(event.getPlayer().getUuid(), event.getNewPosition())).onIncludingCancelled(EntityAttackEvent.class, event -> stopIfPlayer(event.getEntity(), StopReason.INTERACTED)).onIncludingCancelled(PlayerHandAnimationEvent.class, event -> stopIfPlayer(event.getPlayer(), StopReason.INTERACTED)).onIncludingCancelled(PlayerBlockInteractEvent.class, event -> stopIfPlayer(event.getPlayer(), StopReason.INTERACTED)).onIncludingCancelled(PlayerUseItemEvent.class, event -> stopIfPlayer(event.getPlayer(), StopReason.INTERACTED)).onIncludingCancelled(PlayerEntityInteractEvent.class, event -> stopIfPlayer(event.getPlayer(), StopReason.INTERACTED)).on(RemoveEntityFromInstanceEvent.class, event -> stopIfPlayer(event.getEntity(), StopReason.LEFT_INSTANCE)).on(PlayerDisconnectEvent.class, event -> this.service.disconnected(event.getPlayer().getUuid()));
     }
 
     @PreDestroy
@@ -109,17 +107,16 @@ public final class DanceModule {
         this.messages.close();
     }
 
-    /** Opens the per-player choice for {@code player}; the {@code /tanz} command uses it too. */
+    /** Opens the dance list for {@code player}; the {@code /dance} command uses it too. */
     void openMenu(Player player) {
+        sendQuickAction(player);
         this.menu.show(player);
     }
 
     private void onCustomClick(PlayerCustomClickEvent event) {
         Player player = event.getPlayer();
         Key key = event.getKey();
-        if (DanceKeys.OPEN.equals(key)) {
-            this.menu.show(player);
-        } else if (DanceKeys.STOP.equals(key)) {
+        if (DanceKeys.STOP.equals(key)) {
             this.service.stop(player.getUuid(), StopReason.STOP_BUTTON);
         } else if (DanceKeys.DANCE.equals(key)) {
             requestDance(player, DancePayload.dance(event.getPayload()));
@@ -147,11 +144,20 @@ public final class DanceModule {
         }
     }
 
-    // Pica's eventNode() would do the same, but features may not attach nodes to the event tree.
     private void onSpawn(PlayerSpawnEvent event) {
         if (event.isFirstSpawn()) {
-            this.dialogTags.sendTags(event.getPlayer());
+            sendQuickAction(event.getPlayer());
         }
+    }
+
+    /**
+     * Makes the dance list in the player's language and permission variant his quick action. Sent
+     * on
+     * the first spawn, on a settings change (language) and whenever the list is opened.
+     */
+    private void sendQuickAction(Player player) {
+        Key key = this.menu.keyFor(player.getUuid(), player.getLocale());
+        player.sendPacket(QuickActionTags.onlyQuickAction(MinecraftServer.getDialogRegistry(), key));
     }
 
     private void onPacket(PlayerPacketEvent event) {

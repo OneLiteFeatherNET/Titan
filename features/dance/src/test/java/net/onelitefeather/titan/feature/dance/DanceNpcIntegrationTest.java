@@ -19,12 +19,16 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Set;
+import net.kyori.adventure.text.Component;
+import net.minestom.server.component.DataComponents;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.Entity;
 import net.minestom.server.entity.EntityPose;
 import net.minestom.server.entity.LivingEntity;
+import net.minestom.server.entity.Player;
 import net.minestom.server.entity.PlayerSkin;
+import net.minestom.server.entity.metadata.LivingEntityMeta;
 import net.minestom.server.entity.metadata.avatar.MannequinMeta;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.network.packet.server.play.EntityAnimationPacket;
@@ -40,8 +44,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * The NPC that dances in the dancer's place while the camera shows him the dance: who sees it, what
- * it looks like, which steps reach it, and where the camera stands.
+ * The NPC that dances in the dancer's place: who sees it and who does not, what it looks like,
+ * which steps reach it, and that the real player is left alone.
  */
 @ExtendWith(MicrotusExtension.class)
 class DanceNpcIntegrationTest {
@@ -72,13 +76,12 @@ class DanceNpcIntegrationTest {
         }
     }
 
-    @DisplayName("The NPC is shown to the dancer only, not to another player in the instance")
+    @DisplayName("The NPC is shown to every player in the instance, the dancer included")
     @Test
-    void npcIsViewableOnlyByTheDancer(Env env) {
+    void npcIsViewableByEveryone(Env env) {
         Instance instance = env.createFlatInstance();
         DanceFixtures.Dancer dancer = DanceFixtures.connect(env, instance);
-        // Another player in the same instance, who must not see the NPC.
-        env.createPlayer(instance);
+        Player other = env.createPlayer(instance);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
             DanceModule module = module(env, titan, new FakePermissionService());
@@ -86,7 +89,48 @@ class DanceNpcIntegrationTest {
             try {
                 env.process().eventHandler().call(DanceFixtures.danceClick(dancer.player(), Dance.WAVE));
 
-                Assertions.assertEquals(Set.of(dancer.player()), DanceFixtures.npc(instance).getViewers(), "the NPC must be viewable by the dancer alone");
+                Assertions.assertEquals(Set.of(dancer.player(), other), DanceFixtures.npc(instance).getViewers(), "the NPC must be viewable by the dancer and everyone else");
+            } finally {
+                module.stop();
+            }
+        }
+    }
+
+    @DisplayName("The real dancer is hidden from the other players while the NPC dances for them")
+    @Test
+    void realDancerIsHiddenFromOthers(Env env) {
+        Instance instance = env.createFlatInstance();
+        DanceFixtures.Dancer dancer = DanceFixtures.connect(env, instance);
+        Player other = env.createPlayer(instance);
+
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            DanceModule module = module(env, titan, new FakePermissionService());
+            module.start();
+            try {
+                env.process().eventHandler().call(DanceFixtures.danceClick(dancer.player(), Dance.WAVE));
+
+                Assertions.assertFalse(dancer.player().getViewers().contains(other), "the other player must not see the real dancer");
+            } finally {
+                module.stop();
+            }
+        }
+    }
+
+    @DisplayName("A player who joins during the dance does not see the real dancer, but sees the NPC")
+    @Test
+    void joinerDoesNotSeeTheRealDancer(Env env) {
+        Instance instance = env.createFlatInstance();
+        DanceFixtures.Dancer dancer = DanceFixtures.connect(env, instance);
+
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            DanceModule module = module(env, titan, new FakePermissionService());
+            module.start();
+            try {
+                env.process().eventHandler().call(DanceFixtures.danceClick(dancer.player(), Dance.WAVE));
+                Player joiner = env.createPlayer(instance);
+
+                Assertions.assertFalse(dancer.player().getViewers().contains(joiner), "a joiner must not see the real dancer");
+                Assertions.assertTrue(DanceFixtures.npc(instance).getViewers().contains(joiner), "a joiner must see the NPC");
             } finally {
                 module.stop();
             }
@@ -158,6 +202,27 @@ class DanceNpcIntegrationTest {
         }
     }
 
+    @DisplayName("The NPC shows the dancer's name above it, so the others know who dances")
+    @Test
+    void npcShowsTheDancersNameAsNameTag(Env env) {
+        Instance instance = env.createFlatInstance();
+        DanceFixtures.Dancer dancer = DanceFixtures.connect(env, instance);
+
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            DanceModule module = module(env, titan, new FakePermissionService());
+            module.start();
+            try {
+                env.process().eventHandler().call(DanceFixtures.danceClick(dancer.player(), Dance.WAVE));
+
+                LivingEntity npc = DanceFixtures.npc(instance);
+                Assertions.assertEquals(Component.text(dancer.player().getUsername()), npc.get(DataComponents.CUSTOM_NAME), "the NPC must carry the dancer's name");
+                Assertions.assertTrue(npc.isCustomNameVisible(), "the name must be shown above the NPC");
+            } finally {
+                module.stop();
+            }
+        }
+    }
+
     @DisplayName("The NPC cannot be pushed away from its spot")
     @Test
     void npcIsImmovable(Env env) {
@@ -190,18 +255,19 @@ class DanceNpcIntegrationTest {
                 env.process().eventHandler().call(DanceFixtures.danceClick(dancer.player(), Dance.GROOVE));
                 env.tick();
 
-                Assertions.assertEquals(EntityPose.SNEAKING, DanceFixtures.npc(instance).getPose(), "the groove must make the NPC sneak too");
+                Assertions.assertEquals(EntityPose.SNEAKING, DanceFixtures.npc(instance).getPose(), "the groove must make the NPC sneak");
             } finally {
                 module.stop();
             }
         }
     }
 
-    @DisplayName("An arm swing of the dance reaches the dancer's view of the NPC")
+    @DisplayName("An arm swing of the dance is seen by the dancer and by the others")
     @Test
-    void armSwingReachesTheNpc(Env env) {
+    void armSwingReachesTheDancerAndOthers(Env env) {
         Instance instance = env.createFlatInstance();
         DanceFixtures.Dancer dancer = DanceFixtures.connect(env, instance);
+        DanceFixtures.Dancer other = DanceFixtures.connect(env, instance);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
             DanceModule module = module(env, titan, new FakePermissionService());
@@ -211,15 +277,19 @@ class DanceNpcIntegrationTest {
                 env.tick();
 
                 int npcId = DanceFixtures.npc(instance).getEntityId();
-                boolean swung = dancer.animations().collect().stream().anyMatch(packet -> packet.entityId() == npcId && packet.animation() == EntityAnimationPacket.Animation.SWING_MAIN_ARM);
-                Assertions.assertTrue(swung, "the dancer must see the NPC swing its arm");
+                Assertions.assertTrue(swung(dancer, npcId), "the dancer must see the NPC swing its arm");
+                Assertions.assertTrue(swung(other, npcId), "the other player must see the NPC swing its arm");
             } finally {
                 module.stop();
             }
         }
     }
 
-    @DisplayName("The spin reaches the NPC")
+    private static boolean swung(DanceFixtures.Dancer watcher, int npcId) {
+        return watcher.animations().collect().stream().anyMatch(packet -> packet.entityId() == npcId && packet.animation() == EntityAnimationPacket.Animation.SWING_MAIN_ARM);
+    }
+
+    @DisplayName("The spin reaches the NPC: its pose and the riptide flag the client renders")
     @Test
     void spinReachesTheNpc(Env env) {
         Instance instance = env.createFlatInstance();
@@ -232,7 +302,101 @@ class DanceNpcIntegrationTest {
                 env.process().eventHandler().call(DanceFixtures.danceClick(dancer.player(), Dance.SPIN));
                 env.tick();
 
-                Assertions.assertEquals(EntityPose.SPIN_ATTACK, DanceFixtures.npc(instance).getPose(), "the spin must turn the NPC too");
+                LivingEntity npc = DanceFixtures.npc(instance);
+                Assertions.assertEquals(EntityPose.SPIN_ATTACK, npc.getPose(), "the spin must turn the NPC too");
+                Assertions.assertTrue(((LivingEntityMeta) npc.getEntityMeta()).isInRiptideSpinAttack(), "the riptide flag must be set on the NPC");
+            } finally {
+                module.stop();
+            }
+        }
+    }
+
+    @DisplayName("The spin lifts the NPC off the floor for the spin and lets it land again afterwards")
+    @Test
+    void spinLiftsTheNpcAndLandsIt(Env env) {
+        Instance instance = env.createFlatInstance();
+        DanceFixtures.Dancer dancer = DanceFixtures.connect(env, instance, DanceFixtures.FLOOR);
+
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            DanceModule module = module(env, titan, new FakePermissionService().grant("titan.dance.spin"));
+            module.start();
+            try {
+                double floor = dancer.player().getPosition().y();
+                env.process().eventHandler().call(DanceFixtures.danceClick(dancer.player(), Dance.SPIN));
+                LivingEntity npc = DanceFixtures.npc(instance);
+
+                env.tick();   // tick 0: the spin starts and lifts the NPC
+                Assertions.assertEquals(floor + MinestomDanceEffects.SPIN_LIFT, npc.getPosition().y(), 0.01, "the spin must lift the NPC by the spin lift");
+
+                for (int tick = 0; tick < 30; tick++) {
+                    env.tick();   // ticks 1 to 30: still hanging in the air
+                }
+                Assertions.assertTrue(npc.getPosition().y() > floor + 1.0, "the NPC must still be above the floor during the spin");
+
+                for (int tick = 0; tick < 20; tick++) {
+                    env.tick();   // ticks 31 to 50: the NPC lands at tick 40 and the dance still runs
+                }
+                Assertions.assertEquals(floor, npc.getPosition().y(), 0.05, "after the spin the NPC must be back on the floor");
+            } finally {
+                module.stop();
+            }
+        }
+    }
+
+    @DisplayName("A jump of the party lifts the NPC and lets it land again")
+    @Test
+    void jumpLiftsTheNpcAndItLands(Env env) {
+        Instance instance = env.createFlatInstance();
+        DanceFixtures.Dancer dancer = DanceFixtures.connect(env, instance, DanceFixtures.FLOOR);
+
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            DanceModule module = module(env, titan, new FakePermissionService());
+            module.start();
+            try {
+                double floor = dancer.player().getPosition().y();
+                env.process().eventHandler().call(DanceFixtures.danceClick(dancer.player(), Dance.PARTY));
+                LivingEntity npc = DanceFixtures.npc(instance);
+
+                env.tick();   // tick 0: the first hop starts
+                for (int tick = 0; tick < 3; tick++) {
+                    env.tick();
+                }
+                Assertions.assertTrue(npc.getPosition().y() > floor + 0.01, "the hop must lift the NPC");
+
+                for (int tick = 0; tick < 15; tick++) {
+                    env.tick();   // ticks 4 to 18: the hop has come down before the next one at tick 20
+                }
+                Assertions.assertEquals(floor, npc.getPosition().y(), 0.05, "the NPC must land back on the floor");
+            } finally {
+                module.stop();
+            }
+        }
+    }
+
+    @DisplayName("The dance moves neither the pose nor the velocity of the real player")
+    @Test
+    void danceLeavesTheRealPlayerAlone(Env env) {
+        Instance instance = env.createFlatInstance();
+        DanceFixtures.Dancer dancer = DanceFixtures.connect(env, instance, DanceFixtures.FLOOR);
+
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            DanceModule module = module(env, titan, new FakePermissionService());
+            module.start();
+            try {
+                Pos before = dancer.player().getPosition();
+                env.process().eventHandler().call(DanceFixtures.danceClick(dancer.player(), Dance.PARTY));
+                // Gravity pulls the test player down on its own; the dance must add no hop and no sideways push.
+                for (int tick = 0; tick < 25; tick++) {
+                    env.tick();
+                    Vec velocity = dancer.player().getVelocity();
+                    Assertions.assertTrue(velocity.y() <= 0, "no upward velocity may be applied to the real player on tick " + tick);
+                    Assertions.assertEquals(0, velocity.x(), 1e-9, "no sideways velocity may be applied to the real player");
+                    Assertions.assertEquals(0, velocity.z(), 1e-9, "no sideways velocity may be applied to the real player");
+                }
+
+                Assertions.assertEquals(EntityPose.STANDING, dancer.player().getPose(), "the real player must keep his own pose");
+                Assertions.assertEquals(before.x(), dancer.player().getPosition().x(), 1e-9, "the real player must not be moved sideways by the dance");
+                Assertions.assertEquals(before.z(), dancer.player().getPosition().z(), 1e-9, "the real player must not be moved sideways by the dance");
             } finally {
                 module.stop();
             }
