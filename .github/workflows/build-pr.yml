@@ -1,17 +1,15 @@
 name: Build PR
 on:
   pull_request:
-  # The reusable workflow only writes Gradle caches on the default branch; PR runs are
-  # read-only. Building main seeds the build cache that PR runs restore, so a PR only
-  # re-runs the modules it touches and their dependents.
-  push:
-    branches: [main]
 
+# Ubuntu runs the full build, including smokeTest (the variant scope and jar) and the Docker
+# integration tests. Windows and macOS run `test` in build-pr-cross-os.yml.
 jobs:
   build:
     uses: OneLiteFeatherNET/workflows/.github/workflows/gradle-build-pr.yml@v2.9.0
-    # Match the runtime LTS JDK (Temurin 25.0.3) used by the publish pipeline.
     with:
       java-version: "25.0.3"
       java-distribution: "temurin"
+      runs-on: '["ubuntu-latest"]'
+      gradle-task: build
     secrets: inherit
