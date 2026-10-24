@@ -46,7 +46,7 @@ final class Charge {
 
     /**
      * @param strength from {@link #strength(long)}; values outside 0 to 1 are clamped
-     * @return the horizontal speed in blocks per second
+     * @return the speed of the throw in blocks per second
      */
     static double speed(double strength) {
         double clamped = Math.max(0.0, Math.min(1.0, strength));
