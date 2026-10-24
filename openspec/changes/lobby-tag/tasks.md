@@ -45,8 +45,8 @@
 
 ## 6. Telemetrie
 
-- [ ] 6.1 Test zuerst (Unit, `TagTelemetryTest` mit `TestTelemetry`): `titan.tag.tags{result}` und `titan.tag.toggles{state}`, keine Spieler-Id im Attribut.
-- [ ] 6.2 `TagTelemetry` implementieren und in Treffer und Schalter verdrahten.
+- [x] 6.1 Test zuerst (Unit, `TagTelemetryTest` mit `TestTelemetry`): `titan.tag.tags{result}` und `titan.tag.toggles{state}`, keine Spieler-Id im Attribut.
+- [x] 6.2 `TagTelemetry` implementieren und in Treffer und Schalter verdrahten.
 
 ## 7. Dokumentation
 
