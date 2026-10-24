@@ -83,6 +83,7 @@ public final class TagModule {
     private final RandomGenerator random;
     private final TagMessages messages = new TagMessages();
     private final TagEffects effects = new TagEffects();
+    private final TagTelemetry tagTelemetry;
     private final Map<Instance, TagGame> games = new HashMap<>();
     /** The instance each player takes part in. */
     private final Map<UUID, Instance> members = new HashMap<>();
@@ -111,6 +112,7 @@ public final class TagModule {
         this.settings = Objects.requireNonNull(settings, "settings must not be null");
         this.registry = Objects.requireNonNull(registry, "registry must not be null");
         this.random = Objects.requireNonNull(random, "random must not be null");
+        this.tagTelemetry = new TagTelemetry(this.telemetry);
     }
 
     @PostConstruct
@@ -187,6 +189,7 @@ public final class TagModule {
         if (!this.open || !TagSettings.ENABLED.equals(setting)) {
             return;
         }
+        this.tagTelemetry.toggled(current);
         if (!current) {
             leave(player);
             return;
@@ -210,8 +213,10 @@ public final class TagModule {
         Optional<UUID> before = game.tagger();
         TagOutcome outcome = game.hit(attacker.getUuid(), target.getUuid(), now());
         if (outcome == TagOutcome.PASSED) {
+            this.tagTelemetry.tagged();
             this.effects.passed(attacker, target);
         } else if (outcome == TagOutcome.COOLDOWN) {
+            this.tagTelemetry.cooldown();
             this.effects.cooldown(attacker);
         }
         this.effects.taggerChanged(instance, game, before.orElse(null));
