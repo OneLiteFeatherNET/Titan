@@ -68,6 +68,9 @@ final class ThrowFixtures {
     /** Every action bar text the module sent, per player, in order. */
     static final class ActionBars {
 
+        /** The English start-of-carry hint, as the bundle renders it. */
+        static final String HINT = "Hold right click to charge, release to throw";
+
         private final List<UUID> players = new ArrayList<>();
         private final List<String> texts = new ArrayList<>();
 
@@ -79,6 +82,13 @@ final class ThrowFixtures {
         /** How many action bar texts went to {@code player}. */
         int countFor(Player player) {
             return (int) this.players.stream().filter(player.getUuid()::equals).count();
+        }
+
+        /**
+         * How many refusals went to {@code player}: neither the start-of-carry hint nor a meter.
+         */
+        int countRefusalsFor(Player player) {
+            return (int) textsFor(player).stream().filter(text -> !HINT.equals(text) && !text.endsWith("%")).count();
         }
 
         List<String> textsFor(Player player) {

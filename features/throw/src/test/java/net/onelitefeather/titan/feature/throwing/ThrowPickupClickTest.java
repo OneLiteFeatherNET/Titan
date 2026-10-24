@@ -57,7 +57,7 @@ class ThrowPickupClickTest {
 
                 Assertions.assertTrue(ThrowFixtures.carries(thrower, target), "the first interact of the click must pick the target up");
                 Assertions.assertEquals(1, testTelemetry.counter("titan.throw.pickups", Attributes.empty()), "the second interact of the same click must not start a second pickup");
-                Assertions.assertEquals(0, actionBars.countFor(thrower), "a second interact of the same click must not show a refusal");
+                Assertions.assertEquals(0, actionBars.countRefusalsFor(thrower), "a second interact of the same click must not show a refusal");
             } finally {
                 module.stop();
             }
@@ -89,8 +89,8 @@ class ThrowPickupClickTest {
                 }
 
                 Assertions.assertFalse(ThrowFixtures.carries(thrower, target), "the target escaped, so no carry runs");
-                Assertions.assertTrue(actionBars.countFor(thrower) >= 1, "the refused held click must be explained once");
-                Assertions.assertTrue(actionBars.countFor(thrower) <= 2, "two seconds of holding must show at most two refusals, showed " + actionBars.countFor(thrower));
+                Assertions.assertTrue(actionBars.countRefusalsFor(thrower) >= 1, "the refused held click must be explained once");
+                Assertions.assertTrue(actionBars.countRefusalsFor(thrower) <= 2, "two seconds of holding must show at most two refusals, showed " + actionBars.countRefusalsFor(thrower));
             } finally {
                 module.stop();
             }
@@ -112,7 +112,7 @@ class ThrowPickupClickTest {
                 ThrowFixtures.rightClick(env, thrower, target);
 
                 Assertions.assertFalse(ThrowFixtures.carries(thrower, target), "without the permission nobody is picked up");
-                Assertions.assertEquals(0, actionBars.countFor(thrower), "a player without the permission must not be told about a feature that is not theirs");
+                Assertions.assertEquals(0, actionBars.countRefusalsFor(thrower), "a player without the permission must not be told about a feature that is not theirs");
             } finally {
                 module.stop();
             }
@@ -135,7 +135,7 @@ class ThrowPickupClickTest {
             try {
                 ThrowFixtures.rightClick(env, thrower, target);
 
-                Assertions.assertEquals(1, actionBars.countFor(thrower), "the thrower must be told why the pickup failed, once");
+                Assertions.assertEquals(1, actionBars.countRefusalsFor(thrower), "the thrower must be told why the pickup failed, once");
                 Assertions.assertEquals(0, actionBars.countFor(target), "the target must not be told about a refused pickup");
             } finally {
                 module.stop();

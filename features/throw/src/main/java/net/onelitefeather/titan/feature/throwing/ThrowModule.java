@@ -29,8 +29,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import net.kyori.adventure.sound.Sound;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.coordinate.Point;
 import net.minestom.server.coordinate.Vec;
@@ -114,6 +112,8 @@ public final class ThrowModule {
     private final ThrowCooldowns cooldowns;
     private final FlightProtection flights = new FlightProtection();
     private final ThrowFeedback feedback;
+    private final ThrowFeedback.Sink actionBars;
+    private final ChargeMeter meter = new ChargeMeter();
     /**
      * When each thrower's last click was evaluated; the client's repeats within the grace are
      * ignored.
@@ -140,7 +140,8 @@ public final class ThrowModule {
         this.metrics = new ThrowTelemetry(this.telemetry);
         this.messages = new ThrowMessages();
         this.cooldowns = new ThrowCooldowns(clock);
-        this.feedback = new ThrowFeedback(clock, actionBars);
+        this.actionBars = Objects.requireNonNull(actionBars, "actionBars must not be null");
+        this.feedback = new ThrowFeedback(clock, this.actionBars);
     }
 
     @PostConstruct
@@ -227,6 +228,8 @@ public final class ThrowModule {
         this.cooldowns.targetPickedUp(targetId);
         this.metrics.pickedUp();
         thrower.playSound(Sound.sound(PICKUP_SOUND, Sound.Source.PLAYER, 1f, 1f));
+        // The hint is for the start of a carry only; the meter takes the action bar once charging.
+        this.actionBars.actionBar(thrower, ThrowMessages.text(ThrowMessages.HINT, thrower.getLocale()));
     }
 
     /**
@@ -259,6 +262,7 @@ public final class ThrowModule {
             return;
         }
         this.carries.setCharging(thrower.getUuid(), true);
+        this.meter.begin(thrower);
     }
 
     private void onCancelUse(PlayerCancelItemUseEvent event) {
@@ -301,6 +305,7 @@ public final class ThrowModule {
         }
         // The charge is cancelled, the carry stays: the item remains in its slot.
         this.carries.setCharging(event.getPlayer().getUuid(), false);
+        this.meter.end(event.getPlayer());
         this.metrics.chargeAborted();
     }
 
@@ -332,6 +337,7 @@ public final class ThrowModule {
         if (leaving) {
             this.flights.forget(id);
             this.feedback.forget(id);
+            this.meter.forget(id);
             this.lastPickupClick.remove(id);
         }
     }
@@ -359,6 +365,7 @@ public final class ThrowModule {
             target.updateViewableRule(null);
         }
         if (thrower != null) {
+            this.meter.end(thrower);
             thrower.getInventory().setItemStack(carry.slot(), carry.snapshot());
             if (target != null && target.getVehicle() == thrower) {
                 thrower.removePassenger(target);
@@ -395,7 +402,8 @@ public final class ThrowModule {
 
     private void showCharge(Player thrower, long useTicks) {
         double strength = Charge.strength(useTicks);
-        thrower.sendActionBar(Component.text(ChargeFeedback.bar(strength), NamedTextColor.GREEN).appendSpace().append(ThrowMessages.text(ThrowMessages.HINT, thrower.getLocale())));
+        this.actionBars.actionBar(thrower, ChargeFeedback.meter(strength));
+        this.meter.show(thrower, strength);
         if (ChargeFeedback.soundDue(useTicks)) {
             thrower.playSound(Sound.sound(CHARGE_SOUND, Sound.Source.PLAYER, 1f, ChargeFeedback.pitch(strength)));
         }
