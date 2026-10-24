@@ -44,6 +44,7 @@ import net.onelitefeather.titan.core.portal.Portal;
 import net.onelitefeather.titan.core.testfixtures.AdjustableClock;
 import net.onelitefeather.titan.core.testfixtures.FakePermissionService;
 import net.onelitefeather.titan.core.testfixtures.RecordingDeliver;
+import net.onelitefeather.titan.core.portal.PortalTransferGuard;
 import net.onelitefeather.titan.core.testfixtures.TestTelemetry;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 import org.junit.jupiter.api.AfterEach;
@@ -132,6 +133,21 @@ class PortalModuleTest {
     }
 
     @DisplayName("Staying in the box delivers no second time")
+    @Test
+    void refusingTransferGuardKeepsThePlayerHere(Env env) {
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            PortalTransferGuard refusesEveryone = playerId -> false;
+            PortalModule module = new PortalModule(titan.node(), () -> List.of(survivalBox()), this.deliver, this.permissions, this.clock, env.createFlatInstance(), env.process().scheduler(), Runnable::run, portal -> new LabelReading.Local(0), new PortalSettings(1), Optional.of(refusesEveryone), this.testTelemetry.telemetry());
+            module.start();
+            Player player = playerAt(env, OUTSIDE);
+
+            move(env, player, INSIDE);
+
+            Assertions.assertTrue(this.deliver.deliveries().isEmpty(), "a guard that refuses must keep the player from being handed over");
+            module.stop();
+        }
+    }
+
     @Test
     void stayingDoesNotDeliverAgain(Env env) {
         try (TestTitanNode titan = TestTitanNode.attach(env)) {

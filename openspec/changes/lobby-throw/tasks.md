@@ -4,17 +4,17 @@ Zweig: `feat/lobby-throw` von `origin/main`, nach dem Merge von `lobby-settings`
 
 ## 0. Voraussetzung (Blocker)
 
-- [ ] 0.1 `lobby-settings` (Otis) ist vollständig umgesetzt und auf `main` gemergt, inklusive Änderungsbenachrichtigung am Settings-Port (Ergänzung, siehe `design.md` D9). Erst danach beginnt der Zweig `feat/lobby-throw`. Der Integrationstest gegen den echten Port folgt in 4.4.
+- [x] 0.1 `lobby-settings` (Otis) ist vollständig umgesetzt und auf `main` gemergt, inklusive Änderungsbenachrichtigung am Settings-Port (Ergänzung, siehe `design.md` D9). Erst danach beginnt der Zweig `feat/lobby-throw`. Der Integrationstest gegen den echten Port folgt in 4.4.
 
 ## 1. Spike (Minestom-Verhalten prüfen)
 
-- [ ] 1.1 Ladeträger: Stock mit Komponente `consumable` (`consume_seconds` 3600, `animation` = `bow`, keine Partikel, kein Ton). Prüfen, dass `PlayerBeginItemUseEvent` die Animation `BOW` und die Dauer 72000 Ticks liefert und dass der Client die Zieh-Animation zeigt. Nachweis: Notiz im PR mit Screenshot oder Beschreibung.
-- [ ] 1.2 Loslassen: `PlayerCancelItemUseEvent.getUseDuration()` liefert die Ladezeit in Ticks. Prüfen, dass das Loslassen ein `UPDATE_ITEM_STATE` ist und kein Timeout.
-- [ ] 1.3 Hotbar-Platzwechsel während der Ladung: bestätigen, dass `PlayerHeldListener` die Nutzung still löscht (ohne Cancel-Event) und dass das Abbrechen über `PlayerChangeHeldSlotEvent` den Ladeträger im Platz hält.
-- [ ] 1.4 Geschwindigkeit: Einheit von `setVelocity` in Minestom 26.2 bestätigen; die Werte 8 bis 16 Blöcke/s gegen einen vanilla Knockback-Schlag vergleichen. Ergebnis fixiert `T_max` und die Grenzen aus `design.md` D2 und D3.
+- [x] 1.1 Ladeträger: Stock mit Komponente `consumable` (`consume_seconds` 3600, `animation` = `bow`, keine Partikel, kein Ton). Prüfen, dass `PlayerBeginItemUseEvent` die Animation `BOW` und die Dauer 72000 Ticks liefert und dass der Client die Zieh-Animation zeigt. Nachweis: Notiz im PR mit Screenshot oder Beschreibung.
+- [x] 1.2 Loslassen: `PlayerCancelItemUseEvent.getUseDuration()` liefert die Ladezeit in Ticks. Prüfen, dass das Loslassen ein `UPDATE_ITEM_STATE` ist und kein Timeout.
+- [x] 1.3 Hotbar-Platzwechsel während der Ladung: bestätigen, dass `PlayerHeldListener` die Nutzung still löscht (ohne Cancel-Event) und dass das Abbrechen über `PlayerChangeHeldSlotEvent` den Ladeträger im Platz hält.
+- [x] 1.4 Geschwindigkeit: Einheit von `setVelocity` in Minestom 26.2 bestätigen; die Werte 8 bis 16 Blöcke/s gegen einen vanilla Knockback-Schlag vergleichen. Ergebnis fixiert `T_max` und die Grenzen aus `design.md` D2 und D3.
 - [ ] 1.5 Vorschau-Physik: Gravitation 0,08 und Luftwiderstand 0,98 gegen eine echte Wurfbahn im Test-Env prüfen; Abweichung dokumentieren (die Vorschau ist eine Näherung).
-- [ ] 1.6 Partikel: `ParticlePacket` mit `end_rod` und `dust` über `player.sendPacket` nur an den Werfer; bestätigen, dass andere Spieler nichts erhalten.
-- [ ] 1.7 Eventfolge für `PlayerInstanceChangeEvent` (oder den Instanzwechsel-Event der Version) und Tod bestätigen, damit die Hand vor dem Wechsel zurückgesetzt wird.
+- [x] 1.6 Partikel: `ParticlePacket` mit `end_rod` und `dust` über `player.sendPacket` nur an den Werfer; bestätigen, dass andere Spieler nichts erhalten.
+- [x] 1.7 Eventfolge für `PlayerInstanceChangeEvent` (oder den Instanzwechsel-Event der Version) und Tod bestätigen, damit die Hand vor dem Wechsel zurückgesetzt wird.
 - [ ] 1.8 Fallback-Test: Falls 1.1 oder 1.2 unzuverlässig ist, Zwei-Klick-Aufladung (Linksklick startet, nächster Linksklick wirft, Ladezeit = Zeit zwischen Klicks) als Fallback prüfen und im PR begründen. Schleichen-Halten ist ausgeschlossen (siehe `design.md` D5).
 
 ## 2. Tests zuerst (rot)
@@ -24,17 +24,17 @@ Zweig: `feat/lobby-throw` von `origin/main`, nach dem Merge von `lobby-settings`
 - [x] 2.3 `ThrowCooldownsTest` mit fixer `Clock`: Werfer 5 s, Paar 60 s nach Abbruch, Ziel 20 s, Auto-Drop nach 15 s. Keine Zeitabhängigkeit ohne Clock.
 - [x] 2.4 `ThrowVelocityTest` (rein): Betrag im Bereich 8 bis 16, vertikal ≤ 10, bei Blick nach unten nicht negativ.
 - [x] 2.5 `ThrowTrajectoryTest` (rein, deterministisch): gleiche Eingabe liefert gleiche Punkte; höchstens 40 Punkte; Ende bei festem Block; Landemarker am Auftreffpunkt; Gravitation und Luftwiderstand pro Tick nach Formel.
-- [ ] 2.6 `ThrowStateTest` (rein): Übergänge Idle, Carrying, Charging, Thrown, Idle; ein Ziel in höchstens einem Zustand; ein Werfer trägt höchstens ein Ziel; Laden ohne Snapshot ist nicht erreichbar.
+- [x] 2.6 `ThrowStateTest` (umgesetzt als `CarryRegistryTest`, rein): Übergänge Idle, Carrying, Charging, Thrown, Idle; ein Ziel in höchstens einem Zustand; ein Werfer trägt höchstens ein Ziel; Laden ohne Snapshot ist nicht erreichbar.
 - [x] 2.7 `ChargeFeedbackTest` (rein): Tonhöhe steigt mit `p`; Ton nur alle 5 Ticks; Actionbar-Leiste wächst mit `p`.
 - [x] 2.8 `ThrowMessagesTest`: de- und en-Bundle haben dieselben Schlüssel.
-- [ ] 2.9 `ThrowModuleChargeTest` (Env, `env.tick()`): Rechtsklick startet Ladung, Loslassen nach N Ticks wirft mit erwarteter Geschwindigkeit; Loslassen ohne Ladung wirft nicht; Klick direkt nach der Aufnahme innerhalb 500 ms ignoriert.
-- [ ] 2.10 `ThrowModuleHandRestoreTest` (Env): Hand wird auf jedem Pfad exakt zurückgesetzt: Wurf, Schleichen, Auto-Drop, Opt-out, Immunität, Disconnect, Instanzwechsel, Tod, Modulstopp. Ein Test pro Pfad.
-- [ ] 2.11 `ThrowModuleHotbarAbortTest` (Env): Hotbar-Platzwechsel während der Ladung bricht ab, hält den Ladeträger im Platz, wirft nicht und erhöht `charge_aborts`.
-- [ ] 2.12 `ThrowPreviewRecipientTest` (Env): Vorschau-Pakete gehen nur an den Werfer; andere Spieler erhalten keines.
-- [ ] 2.13 `ThrowModuleOptOutTest` (Env, Fake-Settings-Port mit Änderungsbenachrichtigung): Opt-out blockiert neue Aufnahmen; Einschalten während der Trage gibt das Ziel sofort frei, ohne Impuls, mit Hand-Wiederherstellung.
-- [ ] 2.14 `ThrowModuleLifecycleTest` (Env): Disconnect und Instanzwechsel lösen die Trage ohne Impuls.
-- [ ] 2.15 `ThrowPortalGuardTest`: Portal-Übergabe während Flug und 2 s nach Landung verweigert; danach wieder erlaubt; Flugende nach 5 s.
-- [ ] 2.16 `ThrowTelemetryTest`: Zähler mit Attributen, ohne UUIDs, inklusive `charge_aborts`.
+- [x] 2.9 `ThrowModuleChargeTest` (Env, `env.tick()`): Rechtsklick startet Ladung, Loslassen nach N Ticks wirft mit erwarteter Geschwindigkeit; Loslassen ohne Ladung wirft nicht; Klick direkt nach der Aufnahme innerhalb 500 ms ignoriert.
+- [x] 2.10 `ThrowModuleHandRestoreTest` (Env): Hand wird auf jedem Pfad exakt zurückgesetzt: Wurf, Schleichen, Auto-Drop, Opt-out, Immunität, Disconnect, Instanzwechsel, Tod, Modulstopp. Ein Test pro Pfad.
+- [x] 2.11 `ThrowModuleHotbarAbortTest` (Env): Hotbar-Platzwechsel während der Ladung bricht ab, hält den Ladeträger im Platz, wirft nicht und erhöht `charge_aborts`.
+- [x] 2.12 `ThrowPreviewRecipientTest` (Env): Vorschau-Pakete gehen nur an den Werfer; andere Spieler erhalten keines.
+- [x] 2.13 `ThrowModuleOptOutTest` (Env, Fake-Settings-Port mit Änderungsbenachrichtigung): Opt-out blockiert neue Aufnahmen; Einschalten während der Trage gibt das Ziel sofort frei, ohne Impuls, mit Hand-Wiederherstellung.
+- [x] 2.14 `ThrowModuleLifecycleTest` (Env): Disconnect und Instanzwechsel lösen die Trage ohne Impuls.
+- [x] 2.15 `ThrowPortalGuardTest`: Portal-Übergabe während Flug und 2 s nach Landung verweigert; danach wieder erlaubt; Flugende nach 5 s.
+- [x] 2.16 `ThrowTelemetryTest`: Zähler mit Attributen, ohne UUIDs, inklusive `charge_aborts`.
 - [x] 2.17 `ColumnArchitectureTest`: Modul hängt nur von `core` ab, nicht von anderen Features.
 
 Nachweis: Die Tests schlagen vor der Umsetzung fehl.
@@ -43,15 +43,15 @@ Nachweis: Die Tests schlagen vor der Umsetzung fehl.
 
 - [x] 3.1 Modul `features/throw` mit `build.gradle.kts`, `package-info.java` (Column `throwColumn`), Eintrag in `settings.gradle.kts`.
 - [x] 3.2 Reine Logik: `ThrowRules`, `ThrowCooldowns` (Clock), `ThrowVelocity`, `Charge` (Stärke aus Ticks), `ThrowState`, `ThrowTrajectory` (Punkte und Landemarker).
-- [ ] 3.3 Ladeträger-Fabrik: Stock mit `consumable` gemäß 1.1; Snapshot und Wiederherstellung als eigene Klasse `HandSnapshot`.
-- [ ] 3.4 `ThrowModule` mit `FeatureNode`: Aufnahme über `PlayerEntityInteractEvent`, Ladung über `PlayerBeginItemUseEvent`, Wurf über `PlayerCancelItemUseEvent`, Schleichen über `PlayerPacketEvent`, Hotbar-Platzwechsel über `PlayerChangeHeldSlotEvent`, Abbau über `PlayerDisconnectEvent`, Instanzwechsel und Tod.
-- [ ] 3.5 Vorschau-Ausgabe über `player.sendPacket(...)`, Aktualisierung alle 2 Ticks, Obergrenze 40 Punkte.
-- [ ] 3.6 Fortschritt: Actionbar-Leiste, Ton alle 5 Ticks mit steigender Tonhöhe, nur für den Werfer.
-- [ ] 3.7 Portal-Schutz: kleine Abfrage vor der Übergabe im Portal-Modul, ohne Umbau des Portal-Moduls.
-- [ ] 3.8 Telemetrie `ThrowTelemetry` mit den fünf Zählern.
+- [x] 3.3 Ladeträger-Fabrik: Stock mit `consumable` gemäß 1.1; Snapshot als Feld `Carry.snapshot` statt eigener Klasse `HandSnapshot`.
+- [x] 3.4 `ThrowModule` mit `FeatureNode`: Aufnahme über `PlayerEntityInteractEvent`, Ladung über `PlayerBeginItemUseEvent`, Wurf über `PlayerCancelItemUseEvent`, Schleichen über `PlayerPacketEvent`, Hotbar-Platzwechsel über `PlayerChangeHeldSlotEvent`, Abbau über `PlayerDisconnectEvent`, Instanzwechsel und Tod.
+- [x] 3.5 Vorschau-Ausgabe über `player.sendPacket(...)`, Aktualisierung alle 2 Ticks, Obergrenze 40 Punkte.
+- [x] 3.6 Fortschritt: Actionbar-Leiste, Ton alle 5 Ticks mit steigender Tonhöhe, nur für den Werfer.
+- [x] 3.7 Portal-Schutz: kleine Abfrage vor der Übergabe im Portal-Modul, ohne Umbau des Portal-Moduls.
+- [x] 3.8 Telemetrie `ThrowTelemetry` mit den fünf Zählern.
 - [x] 3.9 Messages `messages_de.properties` und `messages_en.properties` nach dem Muster von `DanceMessages`; Actionbar-Hinweis.
-- [ ] 3.10 Settings-Schlüssel `titan:throw.target` über den Port aus `lobby-settings` (Standard an), inklusive sofortiger Freigabe bei Einschalten während der Trage.
-- [ ] 3.11 Immunität: Prüfung des Rechts `titan.throw.immune` bei Aufnahme und Wurf.
+- [x] 3.10 Settings-Schlüssel `titan:throw.target` über den Port aus `lobby-settings` (Standard an), inklusive sofortiger Freigabe bei Einschalten während der Trage.
+- [x] 3.11 Immunität: Prüfung des Rechts `titan.throw.immune` bei Aufnahme und Wurf.
 
 ## 4. Verifikation
 
@@ -62,7 +62,7 @@ Nachweis: Die Tests schlagen vor der Umsetzung fehl.
 
 ## 5. Doku
 
-- [ ] 5.1 `docs/lobby-modules.md` um das Modul und die Rechte `titan.throw`, `titan.throw.immune` ergänzen; Hinweis, dass lokal niemand werfen kann (`DenyAllPermissionService`).
+- [x] 5.1 `docs/lobby-modules.md` um das Modul und die Rechte `titan.throw`, `titan.throw.immune` ergänzen; Hinweis, dass lokal niemand werfen kann (`DenyAllPermissionService`).
 
 ## 6. Pull Request
 
