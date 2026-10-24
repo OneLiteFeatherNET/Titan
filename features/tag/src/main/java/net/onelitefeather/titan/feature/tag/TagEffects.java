@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -65,7 +65,9 @@ final class TagEffects {
         player.setGlowing(false);
     }
 
-    /** A hit passed the role: a sound for both, the title for the new tagger, and the hurt flash. */
+    /**
+     * A hit passed the role: a sound for both, the title for the new tagger, and the hurt flash.
+     */
     void passed(Player attacker, Player target) {
         attacker.playSound(Sound.sound(SOUND, Sound.Source.PLAYER, SOUND_VOLUME, SOUND_PITCH), attacker.getPosition());
         target.playSound(Sound.sound(SOUND, Sound.Source.PLAYER, SOUND_VOLUME, SOUND_PITCH), target.getPosition());
