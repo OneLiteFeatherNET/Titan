@@ -21,5 +21,6 @@ import java.util.UUID;
 @FunctionalInterface
 public interface SettingChangeListener {
 
+    /** Reports one effective value change; {@code previous} and {@code current} bracket it. */
     void changed(UUID player, BooleanSetting setting, boolean previous, boolean current);
 }

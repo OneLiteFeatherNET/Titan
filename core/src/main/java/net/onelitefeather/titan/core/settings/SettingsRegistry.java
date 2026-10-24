@@ -49,6 +49,7 @@ public final class SettingsRegistry {
         this.registrations.put(setting.key(), new Registration(owner, setting));
     }
 
+    /** @return the setting registered under the key, if any */
     public synchronized Optional<BooleanSetting> find(SettingKey key) {
         return Optional.ofNullable(this.registrations.get(key)).map(Registration::setting);
     }

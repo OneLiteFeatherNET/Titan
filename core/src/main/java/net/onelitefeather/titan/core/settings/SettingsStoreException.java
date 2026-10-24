@@ -49,10 +49,12 @@ public final class SettingsStoreException extends RuntimeException {
 
     private final Failure failure;
 
+    /** Creates a failure without an underlying cause. */
     public SettingsStoreException(Failure failure, String message) {
         this(failure, message, null);
     }
 
+    /** Creates a failure that wraps the cause that made the store fail. */
     public SettingsStoreException(Failure failure, String message, Throwable cause) {
         super(message, cause);
         this.failure = Objects.requireNonNull(failure, "failure must not be null");
