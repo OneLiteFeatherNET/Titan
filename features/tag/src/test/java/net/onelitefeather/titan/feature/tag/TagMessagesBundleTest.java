@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -58,7 +58,7 @@ class TagMessagesBundleTest {
         try (TagMessages messages = new TagMessages()) {
             messages.register();
             for (String key : TagMessages.KEYS) {
-                for (Locale locale : new Locale[] {Locale.GERMAN, Locale.ENGLISH}) {
+                for (Locale locale : new Locale[]{Locale.GERMAN, Locale.ENGLISH}) {
                     Assertions.assertFalse(TagMessages.text(key, locale).toString().contains(key), key + " must render to its text in " + locale + ", not to its key");
                 }
             }

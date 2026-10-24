@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -32,7 +32,9 @@ import java.util.random.RandomGenerator;
  */
 final class TagGame {
 
-    /** After a hand-over the new tagger may not hit the player who tagged them back for this long. */
+    /**
+     * After a hand-over the new tagger may not hit the player who tagged them back for this long.
+     */
     static final long HIT_COOLDOWN_MILLIS = 5_000L;
 
     /** A tagger who neither moves, hits nor sends input for this long loses the role. */
