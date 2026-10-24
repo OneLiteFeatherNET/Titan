@@ -44,10 +44,14 @@ Jedes Modul mit Produktionscode MUSS (MUST) einen Architekturtest haben, der die
 - **THEN** bricht der Build ab und nennt das Modul
 
 ### Requirement: Logger sind private, statisch und final
-Produktionscode MUSS (MUST) Logger als `private static final` deklarieren. Tests DÜRFEN Logger als Instanzfelder halten, um Log-Ausgaben zu erfassen.
+Produktionscode MUSS (MUST) Logger als `private static final` deklarieren. Produktionscode loggt über SLF4J; `System.getLogger` DARF NICHT (MUST NOT) verwendet werden. Tests DÜRFEN Logger als Instanzfelder halten, um Log-Ausgaben zu erfassen.
 
 #### Scenario: Logger als Instanzfeld im Produktionscode
 - **WHEN** eine Klasse unter `src/main` ein Logger-Feld ohne `static final` deklariert
+- **THEN** bricht der Build ab und nennt die Klasse
+
+#### Scenario: System.getLogger im Produktionscode
+- **WHEN** eine Klasse unter `src/main` `System.getLogger` aufruft
 - **THEN** bricht der Build ab und nennt die Klasse
 
 #### Scenario: Log-Erfassung im Test
@@ -147,15 +151,15 @@ Eine einzelne Ausnahme von einer Regel MUSS (MUST) im Code mit Regelnamen und Be
 - **THEN** ist die Ausnahme im Review nachvollziehbar
 
 ### Requirement: Öffentliche API von core ist dokumentiert
-Jeder öffentliche Typ und jede öffentliche Methode in den Paketen `net.onelitefeather.titan.core` und `net.onelitefeather.titan.api` des Moduls `core` MUSS (MUST) Javadoc haben. `:core:javadoc` MUSS ohne Warnungen laufen. Bestehende Lücken stehen in der Baseline.
+Jeder öffentliche Typ und jede öffentliche Methode in den Paketen `net.onelitefeather.titan.core` und `net.onelitefeather.titan.api` des Moduls `core` MUSS (MUST) einen Javadoc-Kommentar haben. Die Präsenz prüft PMD (`CommentRequired`) im Modul `core`; eine Bestandslücke steht nicht in einer Baseline, sie wird behoben. `:core:javadoc` MUSS (MUST) ohne Warnungen laufen, mit doclint ohne die Gruppe `missing`, die zusätzlich `@param` und `@return` verlangt.
 
 #### Scenario: Öffentliche Methode ohne Javadoc
-- **WHEN** eine öffentliche Methode in `core` keine Javadoc hat und nicht in der Baseline steht
-- **THEN** bricht `:core:javadoc` ab und nennt die Methode
+- **WHEN** eine öffentliche Methode in `core` keinen Javadoc-Kommentar hat
+- **THEN** bricht `:core:pmdRatchet` ab (Teil von `check`) und nennt Datei, Methode und Zeile
 
 #### Scenario: Öffentliche Methode mit Javadoc
-- **WHEN** jede öffentliche Methode in `core` eine Javadoc hat
-- **THEN** läuft `:core:javadoc` ohne Warnungen durch
+- **WHEN** jede öffentliche Methode in `core` einen Javadoc-Kommentar hat
+- **THEN** läuft `:core:javadoc` ohne Warnungen durch und `:core:pmdRatchet` ohne Fehler
 
 ### Requirement: Jede Column beschreibt ihren Zweck in package-info
 Jede Column MUSS (MUST) in `package-info.java` ihres Basispakets eine Javadoc mit Zweck und Abhängigkeiten haben. Eine README je Modul ist nicht vorgesehen.

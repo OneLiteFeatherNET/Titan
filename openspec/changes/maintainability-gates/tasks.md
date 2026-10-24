@@ -18,9 +18,9 @@ Regeln für alle Wellen: Test zuerst (rot, dann grün, dann aufräumen); F.I.R.S
 
 ## 1. Messen und Entscheidungen (Welle 1)
 
-- [ ] 1.1 PMD mit dem Regelset aus `design.md` (D4) über `src/main` aller Module laufen lassen, ohne Fehler zu erzeugen: Verstöße je Regel, Modul und Datei, CC und NCSS je Methode und Klasse, Laufzeit je Modul. Prüfen, dass Spotless an `check` hängt. Nachweis: Messtabelle in `design.md`.
-- [ ] 1.2 ArchUnit-Messung: Paketzyklen je Modul (`slices()`), Verstöße der Projektregeln aus `specs/maintainability` als Zählung (nicht als Test), Bridge-Abweichungen (`ServiceReadings`, `TitanBridgePermissionExtension`; ob der CloudNet-Classloader SLF4J bereitstellt), Speicherverhalten von `FreezingArchRule`. Nachweis: Tabelle in `design.md`.
-- [ ] 1.3 `:core:javadoc` mit doclint `missing` laufen lassen: Lücken bei Methoden zählen, Warnungsgruppen prüfen, ob Warnungen den Task abbrechen. Compiler-Warnungen (`-Xlint:deprecation,unchecked`) zählen. Nachweis: Zahlen in `design.md`.
+- [x] 1.1 PMD mit dem Regelset aus `design.md` (D4) über `src/main` aller Module laufen lassen, ohne Fehler zu erzeugen: Verstöße je Regel, Modul und Datei, CC und NCSS je Methode und Klasse, Laufzeit je Modul. Prüfen, dass Spotless an `check` hängt. Nachweis: Messtabelle in `design.md`.
+- [x] 1.2 ArchUnit-Messung: Paketzyklen je Modul (`slices()`), Verstöße der Projektregeln aus `specs/maintainability` als Zählung (nicht als Test), Bridge-Abweichungen (`ServiceReadings`, `TitanBridgePermissionExtension`; ob der CloudNet-Classloader SLF4J bereitstellt), Speicherverhalten von `FreezingArchRule`. Nachweis: Tabelle in `design.md`.
+- [x] 1.3 `:core:javadoc` mit doclint `missing` laufen lassen: Lücken bei Methoden zählen, Warnungsgruppen prüfen, ob Warnungen den Task abbrechen. Compiler-Warnungen (`-Xlint:deprecation,unchecked`) zählen. Nachweis: Zahlen in `design.md`.
 - [x] 1.4 Versionen festlegen: PMD-Version mit Java-25-Unterstützung (Release-Notes lesen; Regelnamen `ProperLogger`, `NcssCount`, `CyclomaticComplexity` in dieser Version bestätigen). Eintrag im Versionskatalog. Nachweis: lokaler Build mit den gepinnten Versionen grün, Link zu den Release-Notes im PR-Text.
 - [x] 1.5 Open Questions 1 bis 8 aus `design.md` mit dem Nutzer geklärt; die Antworten stehen in `design.md`, Abschnitt "Open Questions". Nachweis: keine offene Frage mehr, die 2.x oder 3.x blockiert.
 
@@ -57,8 +57,8 @@ Ungenutzte Abhängigkeiten (Dependency-Analysis-Plugin, SOLLTE) sind Folgearbeit
 
 ## 7. Verifikation (Welle 3, read-only)
 
-- [ ] 7.1 Jedes Scenario im Spec-Delta `specs/maintainability/spec.md` einem Test, einem Gradle-Lauf oder einer Review-Prüfung zuordnen. Neue Unit-Tests auf F.I.R.S.T. prüfen (kein `Thread.sleep`, keine Systemuhr, kein statischer Zustand, Reihenfolge egal). Baseline-Dateien gegen `origin/main` prüfen: nur die im Plan genannten Einträge, keine Erweiterungen ohne Begründung. Nachweis: Zuordnungstabelle im PR-Text.
-- [ ] 7.2 `./gradlew build` lokal grün, `openspec validate maintainability-gates --strict` ohne Fehler. Nachweis: Ausgabe der letzten Zeilen im PR-Text.
+- [x] 7.1 Jedes Scenario im Spec-Delta `specs/maintainability/spec.md` einem Test, einem Gradle-Lauf oder einer Review-Prüfung zuordnen. Neue Unit-Tests auf F.I.R.S.T. prüfen (kein `Thread.sleep`, keine Systemuhr, kein statischer Zustand, Reihenfolge egal). Baseline-Dateien gegen `origin/main` prüfen: nur die im Plan genannten Einträge, keine Erweiterungen ohne Begründung. Nachweis: Zuordnungstabelle im PR-Text.
+- [x] 7.2 `./gradlew build` lokal grün, `openspec validate maintainability-gates --strict` ohne Fehler. Nachweis: Ausgabe der letzten Zeilen im PR-Text.
 
 ## 8. Pull Request (Welle 4)
 

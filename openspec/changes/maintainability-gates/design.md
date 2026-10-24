@@ -91,6 +91,8 @@ Die Prüfung läuft auf allen Konfigurationen (`implementation`, `api`, `compile
 
 Entschieden (Open Question 1): Columns dürfen `persistence` deklarieren. `features/jumprun` bleibt, wie es ist; die Persistenz-Logik wird nicht verschoben.
 
+Ausnahme für `persistence`: Es hat keine Projekt-Abhängigkeit, braucht aber den Architekturtest mit den gemeinsamen Regeln aus `core`-Test-Fixtures. Die Tabelle erlaubt deshalb `core` für `persistence`. Dessen Produktionscode darf `core` trotzdem nicht importieren; das prüft der Architekturtest des Moduls (`mainCodeDoesNotDependOnCore`).
+
 Test: Die Prüffunktion ist rein (`violation(modulePath, targetPath) -> Optional<String>`) und wird in `buildSrc/src/test` mit fester Tabelle geprüft (Modul/Ziel-Paare). Ein Gradle-Lauf mit einer absichtlich falschen Abhängigkeit ist der Negativtest (Task 2.3, nicht committen). SOLID: DIP, die Regel hängt von einer Tabelle ab, nicht von Gradle-Typen in der Entscheidung.
 
 ### D3 Architekturregeln: gemeinsame Klasse, je Modul ein Testaufruf
@@ -123,11 +125,14 @@ Test: `PmdRatchet` bekommt XML-Fixtures (ein Bericht mit 2 Verstößen, Baseline
 
 ### D6 Javadoc der `core`-API
 
-`:core:javadoc` läuft mit doclint-Gruppe `missing` (und `syntax`, `reference`), Warnungen brechen den Task ab. Die 3 gemessenen Typen werden vor der Aktivierung dokumentiert; Methoden-Lücken werden in Task 1.3 gemessen. Liegen es mehr, führt der `PmdRatchet`-Mechanismus die doclint-Warnungen mit (gleiche Baseline-Logik, anderer Berichtsparser). `:core:check` hängt an `:core:javadoc`.
+Geändert gegenüber der ersten Fassung (Messung in Task 1.3): doclint-Gruppe `missing` fordert zusätzlich `@param` und `@return` auf jeder Methode, also 230 Warnungen in 46 Dateien statt der Presence-Lücke aus der Anforderung. Deshalb:
+
+- **Präsenz** (Anforderung): PMD `CommentRequired` im Modul `core`, eigene Regeldatei `config/quality/pmd-core-api-ruleset.xml`. Bestand: 30 Lücken, in `docs(core)` geschlossen, Baseline leer.
+- **`:core:javadoc`**: doclint mit allen Gruppen außer `missing`, `-Werror`. Bestand: 0 Warnungen, 2 Referenzfehler (`ItemConflicts` liegt in `features/hotbar`) in `docs(core)` behoben. `:core:check` hängt an `:core:javadoc`.
 
 Warum nicht Checkstyle: siehe D1. Warum nicht ein Javadoc-Linter: doclint ist im JDK.
 
-Test: Ein Negativtest mit einer öffentlichen Methode ohne Javadoc in einer Fixture im Testlauf von `:core:javadoc` ist zu aufwendig; stattdessen ein Task-Lauf auf einem Branch, der die Lücke absichtlich einbaut (Task 5.2, nicht committen).
+Test: Negativtests manuell (Task 5.2, nicht committen, im PR belegt): eine `{@link}` auf einen fehlenden Typ lässt `:core:javadoc` fehlschlagen; eine öffentliche Methode ohne Kommentar lässt `:core:pmdRatchet` fehlschlagen.
 
 ### D7 Ungenutzte Abhängigkeiten (SOLLTE): Folgearbeit
 
@@ -149,7 +154,58 @@ Hinweis zu "Zero changed lines outside the new module" (Requirement "Ein neues F
 
 Rollback: Revert des PR-Commits. Keine Laufzeitwirkung, keine Datenmigration.
 
-Die Messwerte aus Task 1.1 bis 1.3 (Verstöße je Regel und Modul, Zeiten, Javadoc-Lücken der Methoden) werden in diesen Abschnitt geschrieben, bevor der erste Gate-Commit entsteht.
+### Messergebnisse (Tasks 1.1 bis 1.3)
+
+Gemessen auf dem Stand von `origin/main` (Commit `03c09ae`), PMD 7.28.0 und Gradle 9.8.2, Java 25.
+
+**PMD (Task 1.1), Produktionscode aller Module**
+
+| Regel | Verstöße | Bemerkung |
+| --- | --- | --- |
+| `SystemPrintln`, `AvoidPrintStackTrace` | 0 | |
+| `UnusedPrivateMethod`, `EmptyCatchBlock` | 0 | |
+| `UnusedPrivateField` | 2 | `DanceMenu.messages`, `PortalCommand.sources`: Baseline |
+| `UnusedLocalVariable` | 1 | `SchemaMigrations.lock`: Baseline |
+| `CyclomaticComplexity` (Methode, > 15) | 0 | Höchster Wert 15 (`JumprunModule.end`). Bei Grenze 10: 4 Methoden (11, 12, 15, 11) |
+| `NcssCount` (Methode, > 60) | 0 | Höchster Wert 40 (Konstruktor `PortalCommand`) |
+| `NcssCount` (Klasse, > 500) | 0 | Höchster Wert 269 (`JumprunModule`) |
+| `ProperLogger` (nur Vergleich, nicht übernommen) | 41 | Erwartet `LOG` als Name; der Bestand nutzt `LOGGER` |
+| `CommentRequired` (nur Vergleich) | 197 | 30 davon in `core`; Rest in anderen Modulen, außerhalb des Scopes |
+
+PMD meldet einen Wert, sobald er die Report-Level erreicht. Die Grenzen 15, 60 und 500 bleiben deshalb als Report-Level 16, 61 und 501 eingetragen (bestätigt an der 15er-Methode und dem 40er-Konstruktor). Die Schwellen blockieren den Bestand nicht; sie bleiben unverändert.
+
+Ausführungszeit: `pmdMain` über alle Module etwa 33 s (warmer Daemon, parallel). Ganzer `./gradlew build` mit allen Gates: 7 min 45 s. Eine Laufzeit je Modul wurde nicht einzeln gemessen. PMD 7.28.0 parst alle Module mit Java 25 ohne Parse-Fehler.
+
+**ArchUnit (Task 1.2)**
+
+| Prüfpunkt | Ergebnis |
+| --- | --- |
+| Paketzyklen im Produktionscode (`slices`, ohne Testcode) | 0 in allen Modulen; Baseline leer |
+| Paketzyklen mit Testcode | 1 in `core` (Telemetrie-Tests und `testfixtures` hängen gegenseitig voneinander ab); deshalb ist Testcode ausgenommen |
+| Reflexion (`setAccessible`) in `src/main` und `src/testFixtures` | 2, beide in `EventListenerCounter` (benannte Ausnahme) |
+| Systemuhr in `src/main` | 0 |
+| `Thread.sleep` in Tests | 0 |
+| `Thread.sleep` in `src/main` | 1 (`TitanApplication`, AOT-Trainingslauf); keine Regel, weil Produktionscode |
+| Logger nicht `private static final` | 1 Instanzfeld (`ServiceReadings`) |
+| `System.getLogger` in `src/main` | 1 (`TitanBridgePermissionExtension`) |
+| `FreezingArchRule` | Speicher unter `src/test/resources/archunit_store`; Anlage und Aktualisierung in den Tests aus |
+
+Bridge (Entscheidung 6): Minestom deklariert `slf4j-api` mit `runtime`-Scope (POM `minestom-2026.09.12-26.2`, `slf4j-api` 2.0.18). Die Extension bekommt SLF4J deshalb vom Server-Classpath. Nicht geprüft: der Classloader eines laufenden CloudNet-Dienstes.
+
+**Javadoc (Task 1.3)**
+
+- `:core:javadoc` mit doclint `missing`: 230 Warnungen in 46 Dateien (44 ohne Kommentar, 120 ohne `@param`, 53 ohne `@return`, 9 ohne Hauptbeschreibung) und 2 Referenzfehler.
+- Nach dem Lauf der Gates: 30 Präsenz-Lücken dokumentiert (`docs(core)`), 0 Warnungen unter doclint ohne `missing` mit `-Werror`.
+- Compiler-Warnungen (`-Xlint:deprecation,unchecked`): keine im Lauf des vollen Builds. Die 19 Meldungen `Sharing is only supported ...` kommen von der JVM der Testprozesse, nicht von javac.
+- Dependency-Analysis: nicht gemessen; nach Entscheidung 4 ist sie nicht Teil dieser Umsetzung.
+
+**Abweichungen von der ersten Fassung, begründet**
+
+- Logger-Regeln als ArchUnit statt PMD `ProperLogger`: `ProperLogger` verlangt den Namen `LOG` und prüft nur einen Logger-Typ. Der Bestand nutzt `LOGGER` und mischt SLF4J mit `System.Logger`.
+- Persistence darf die Test-Fixtures von `core` nutzen (Ausnahme in der Modulgrenze), damit der Architekturtest des Moduls läuft. Der Architekturtest verbietet `core`-Imports im Produktionscode von `persistence`.
+- Paketzyklen laufen auf Produktionscode; Testcode ist ausgenommen (siehe oben).
+- Javadoc: doclint `missing` nicht als Gate, Präsenz über PMD (siehe D6).
+- Die Stores des Freeze-Mechanismus zählen Zeilen (Abhängigkeiten), keine Anzahl je Datei. Die Baseline der Paketzyklen ist ohnehin leer.
 
 ## Risks / Trade-offs
 
