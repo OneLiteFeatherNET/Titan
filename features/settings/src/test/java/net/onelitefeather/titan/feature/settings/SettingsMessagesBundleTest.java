@@ -67,7 +67,7 @@ class SettingsMessagesBundleTest {
      */
     private static Set<String> withoutOptionTexts(Properties properties) {
         return properties.stringPropertyNames().stream().filter(key -> !key.startsWith(OPTION_PREFIX)).collect(Collectors.toSet());
->    }
+    }
 
     @DisplayName("The German bundle has exactly the keys of the fallback bundle")
     @Test
