@@ -50,9 +50,9 @@
 
 ## 7. Dokumentation
 
-- [ ] 7.1 `docs/lobby-modules.md`: Abschnitt „Fangen (`tag`)“ mit Opt-in, Befehl, Regeln und Interaktionen; Ereignis `LobbyPlayerBusyEvent` in der Core-Liste.
-- [ ] 7.2 `README.md`: Befehl `/tag` ergänzen, sofern dort Befehle aufgeführt sind.
-- [ ] 7.3 Spec-Delta mit der Implementierung abgleichen (Szenario-Titel, Zeitwerte, Priorität).
+- [x] 7.1 `docs/lobby-modules.md`: Abschnitt „Fangen (`tag`)“ mit Opt-in, Befehl, Regeln und Interaktionen; Ereignis `LobbyPlayerBusyEvent` in der Core-Liste.
+- [x] 7.2 `README.md`: Befehl `/tag` ergänzen, sofern dort Befehle aufgeführt sind.
+- [x] 7.3 Spec-Delta mit der Implementierung abgleichen (Szenario-Titel, Zeitwerte, Priorität).
 
 ## 8. Prüfung
 
