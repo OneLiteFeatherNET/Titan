@@ -41,6 +41,8 @@ import net.onelitefeather.titan.feature.jumprun.space.SpaceProbe;
 import net.onelitefeather.titan.feature.jumprun.space.SpawnZone;
 import net.onelitefeather.titan.feature.jumprun.space.Steering;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
@@ -285,11 +287,15 @@ class CourseGeneratorTest {
 
     @Test
     void neverPlacesABlockIntoTheJumpRoomOfAnEarlierBlock() {
+        assertNeverPlacesABlockIntoTheJumpRoomOfAnEarlierBlock(PR_SEEDS);
+    }
+
+    private static void assertNeverPlacesABlockIntoTheJumpRoomOfAnEarlierBlock(long seeds) {
         CourseBlock earlier = TestBlocks.at(new BlockPos(0, 7, 0), Surface.FULL);
         CourseBlock last = TestBlocks.at(new BlockPos(2, 10, 0), Surface.FULL);
         Phase towardsTheEarlierBlock = new Phase.Ascent(Phase.MIN_ASCENT_JUMPS, new Heading(-1.0, 0.0));
 
-        for (long seed = 0; seed < 200; seed++) {
+        for (long seed = 0; seed < seeds; seed++) {
             CourseGenerator generator = TestBlocks.generator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(seed));
 
             BlockPos chosen = generator.next(List.of(earlier, last), towardsTheEarlierBlock).orElseThrow().pos();
@@ -301,10 +307,14 @@ class CourseGeneratorTest {
 
     @Test
     void everyGeneratedBlockHasRoomToJumpAndAFreeApexOnTheWay() {
+        assertEveryGeneratedBlockHasRoomToJumpAndAFreeApexOnTheWay(PR_SEEDS);
+    }
+
+    private static void assertEveryGeneratedBlockHasRoomToJumpAndAFreeApexOnTheWay(long seeds) {
         FakeSpaceProbe world = worldWithOverhangs();
         BlockedAnswers blocked = new BlockedAnswers(world);
         int blocksUnderAnOverhang = 0;
-        for (long seed = 0; seed < 200; seed++) {
+        for (long seed = 0; seed < seeds; seed++) {
             CourseGenerator generator = TestBlocks.generator(blocked, TestBlocks.FAR_SPAWN, seeded(seed));
 
             List<CourseBlock> course = walk(generator, SOURCE, new Phase.Scored(0, heading(seed)), 25);
@@ -324,6 +334,9 @@ class CourseGeneratorTest {
     }
 
     private static final int MIN_COURSE_BLOCKS = 5;
+    /** Seeds for the two overhang checks on the PR set; {@link LongSeedSweep} runs all 200. */
+    private static final long PR_SEEDS = 20;
+    private static final long SWEEP_SEEDS = 200;
 
     /**
      * Counts the questions the world answered with "occupied": the overhangs the generator ran
@@ -904,6 +917,22 @@ class CourseGeneratorTest {
                 course.add(next.get());
                 phase = generator.after(course, phase);
             }
+        }
+    }
+
+    /** The two overhang checks over the full 200 seeds, run by sweepTest on main and nightly. */
+    @Nested
+    @Tag("sweep")
+    class LongSeedSweep {
+
+        @Test
+        void neverPlacesABlockIntoTheJumpRoomOfAnEarlierBlock() {
+            assertNeverPlacesABlockIntoTheJumpRoomOfAnEarlierBlock(SWEEP_SEEDS);
+        }
+
+        @Test
+        void everyGeneratedBlockHasRoomToJumpAndAFreeApexOnTheWay() {
+            assertEveryGeneratedBlockHasRoomToJumpAndAFreeApexOnTheWay(SWEEP_SEEDS);
         }
     }
 }
