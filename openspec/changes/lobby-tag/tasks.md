@@ -13,8 +13,8 @@
 
 ## 2. Core-Ereignis und Opt-in (`core`, `features/tag`)
 
-- [ ] 2.1 Test zuerst (Unit, `LobbyPlayerBusyEventTest`): Record trägt Spieler und Zustand. Verifikation: rot, dann grün.
-- [ ] 2.2 `LobbyPlayerBusyEvent` in `core` (`net.onelitefeather.titan.core.module`).
+- [x] 2.1 Test zuerst (Unit, `LobbyPlayerBusyEventTest`): Record trägt Spieler und Zustand. Verifikation: rot, dann grün.
+- [x] 2.2 `LobbyPlayerBusyEvent` in `core` (`net.onelitefeather.titan.core.module`).
 - [ ] 2.3 Test zuerst (Unit, `TagOptInTest`): Standard aus; Umschalten über die Schnittstelle; `/tag` dreht den Wert; Schnittstelle nicht erreichbar lässt den Zustand unverändert und meldet.
 - [ ] 2.4 `TagOptIn` gegen die Schnittstelle aus Abschnitt 0; `TagCommand` (`tag`, englisch) und `TagCommands` (`@Singleton`, registriert und meldet ab). Konsole erhält Meldung.
 - [ ] 2.5 Meldungen `titan/tag/messages_de.properties` und `messages_en.properties`; Test `TagMessagesTest` (gleiche Schlüssel, alle gerendert).
