@@ -28,13 +28,13 @@
 
 ## 4. Minestom-Verdrahtung (`features/tag`)
 
-- [ ] 4.1 Test zuerst (Env, `TagModuleIntegrationTest`, `env.tick()`, je ein Verhalten pro Test): Schaden zwischen aktiven Spielern wird abgebrochen (`EntityDamageEvent`), also ohne Schaden und Rückstoß; Treffer des Fängers überträgt Rolle mit Ton und Titel; inaktiver Spieler wird nicht verändert; Disconnect entfernt Spieler; Instanzwechsel entfernt Spieler.
-- [ ] 4.2 Test zuerst (Env): Fänger leuchtet, Actionbar nennt ihn; Partikel laufen nur für die Instanz; kein Scoreboard-Team wird angelegt.
-- [ ] 4.3 Test zuerst (Env): Tanz (Fänger endet, Ziel läuft weiter), Sitzen (Teilnahme unverändert), Gleitflug (Treffer zählt nicht), `LobbyPlayerBusyEvent` (Fänger verliert Rolle).
-- [ ] 4.4 `TagModule` (`@PostConstruct`: `FeatureNode` mit Priorität 620; Listener für `EntityAttackEvent`, `EntityDamageEvent` (Schaden abbrechen), `PlayerMoveEvent` und `ClientInputPacket` (Aktivität), `PlayerSpawnEvent`, `PlayerDisconnectEvent`, `RemoveEntityFromInstanceEvent`, `LobbyPlayerBusyEvent`, `PlayerStartFlyingWithElytraEvent`, `PlayerStopFlyingWithElytraEvent`; `@PreDestroy`: Knoten schließen, Zustand aufräumen).
-- [ ] 4.5 `TagEffects` (Glowing in Standardfarbe, Partikel, Ton, Titel, Actionbar, Trefferanimation; kein Team).
-- [ ] 4.6 Test zuerst (Env): Nach `close()` löst kein Event mehr Code des Moduls aus (Muster `SpawnModuleTest#stopLeavesNoListenerBehind`).
-- [ ] 4.7 `package-info.java` mit `@InjectModule(name = "tagColumn", ...)`, `ColumnArchitectureTest` (wie bei den übrigen Columns).
+- [x] 4.1 Test zuerst (Env, `TagModuleIntegrationTest`, `env.tick()`, je ein Verhalten pro Test): Schaden zwischen aktiven Spielern wird abgebrochen (`EntityDamageEvent`), also ohne Schaden und Rückstoß; Treffer des Fängers überträgt Rolle mit Ton und Titel; inaktiver Spieler wird nicht verändert; Disconnect entfernt Spieler; Instanzwechsel entfernt Spieler.
+- [x] 4.2 Test zuerst (Env): Fänger leuchtet, Actionbar nennt ihn; Partikel laufen nur für die Instanz; kein Scoreboard-Team wird angelegt.
+- [x] 4.3 Test zuerst (Env): Gleitflug (Treffer zählt nicht), `LobbyPlayerBusyEvent` (Fänger verliert Rolle). Tanz und Sitzen haben keinen Zustand im Fangen-Modul (ein Treffer bleibt gültig, die Pose wird nicht gelesen); sie werden in 8.2 sichtgeprüft.
+- [x] 4.4 `TagModule` (`@PostConstruct`: `FeatureNode` mit Priorität 620; Listener für `EntityAttackEvent`, `EntityDamageEvent` (Schaden abbrechen), `PlayerMoveEvent` und `ClientInputPacket` (Aktivität), `PlayerSpawnEvent`, `PlayerDisconnectEvent`, `RemoveEntityFromInstanceEvent`, `LobbyPlayerBusyEvent`, `PlayerStartFlyingWithElytraEvent`, `PlayerStopFlyingWithElytraEvent`; `@PreDestroy`: Knoten schließen, Zustand aufräumen).
+- [x] 4.5 `TagEffects` (Glowing in Standardfarbe, Partikel, Ton, Titel, Actionbar, Trefferanimation; kein Team).
+- [x] 4.6 Test zuerst (Env): Nach `close()` löst kein Event mehr Code des Moduls aus (Muster `SpawnModuleTest#stopLeavesNoListenerBehind`).
+- [x] 4.7 `package-info.java` mit `@InjectModule(name = "tagColumn", ...)`, `ColumnArchitectureTest` (wie bei den übrigen Columns).
 
 ## 5. Ereignis-Sender in anderen Columns
 
