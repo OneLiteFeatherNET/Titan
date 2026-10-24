@@ -20,6 +20,7 @@ dependencies {
     annotationProcessor(libs.avaje.inject.generator)
 
     testImplementation(testFixtures(project(":core")))
+    testImplementation(libs.archunit)
     testImplementation(libs.junit.api)
     testImplementation(libs.junit.params)
     testImplementation(libs.junit.platform.launcher)
