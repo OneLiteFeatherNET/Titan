@@ -8,7 +8,7 @@
 ## 1. Vorlauf
 
 - [x] 1.1 OpenSpec-Artefakte (`proposal.md`, `design.md`, `specs/lobby-tag/spec.md`, `tasks.md`) schreiben und mit `openspec validate --strict lobby-tag` prüfen. Commit `docs(openspec): propose lobby-tag`.
-- [ ] 1.2 Minestom-Schnittstellen per `javap` prüfen (`setGlowing`, Team-Farbe, `EntityAnimationPacket` Schaden, `EntityAttackEvent`, `PlayerStartFlyingWithElytraEvent`); Ergebnis in `design.md` festhalten.
+- [x] 1.2 Minestom-Schnittstellen am Quelltext `2026.10.07-26.2` geprüft: `EntityAttackEvent` ist nicht abbrechbar (Abweichung, siehe `design.md` Kontext und D2); `EntityDamageEvent` ist abbrechbar; `Entity#setGlowing`, `Particles.DUST`, `EntityAnimationPacket.Animation.TAKE_DAMAGE`, `PlayerStart/StopFlyingWithElytraEvent` vorhanden; kein Team nötig.
 - [x] 1.3 Offene Fragen entschieden: kein eigenes Scoreboard-Team (Glowing in Standardfarbe, rote Partikel, Actionbar); 120 s Inaktivität und 5 s Rücktausch-Sperre; inaktive Nicht-Fänger bleiben im Spiel; `LobbyPlayerBusyEvent` akzeptiert und für `lobby-throw` nutzbar.
 
 ## 2. Core-Ereignis und Opt-in (`core`, `features/tag`)
@@ -28,10 +28,10 @@
 
 ## 4. Minestom-Verdrahtung (`features/tag`)
 
-- [ ] 4.1 Test zuerst (Env, `TagModuleIntegrationTest`, `env.tick()`, je ein Verhalten pro Test): Treffer zwischen aktiven Spielern ohne Schaden und Rückstoß; Treffer des Fängers überträgt Rolle mit Ton und Titel; inaktiver Spieler wird nicht verändert; Disconnect entfernt Spieler; Instanzwechsel entfernt Spieler.
+- [ ] 4.1 Test zuerst (Env, `TagModuleIntegrationTest`, `env.tick()`, je ein Verhalten pro Test): Schaden zwischen aktiven Spielern wird abgebrochen (`EntityDamageEvent`), also ohne Schaden und Rückstoß; Treffer des Fängers überträgt Rolle mit Ton und Titel; inaktiver Spieler wird nicht verändert; Disconnect entfernt Spieler; Instanzwechsel entfernt Spieler.
 - [ ] 4.2 Test zuerst (Env): Fänger leuchtet, Actionbar nennt ihn; Partikel laufen nur für die Instanz; kein Scoreboard-Team wird angelegt.
 - [ ] 4.3 Test zuerst (Env): Tanz (Fänger endet, Ziel läuft weiter), Sitzen (Teilnahme unverändert), Gleitflug (Treffer zählt nicht), `LobbyPlayerBusyEvent` (Fänger verliert Rolle).
-- [ ] 4.4 `TagModule` (`@PostConstruct`: `FeatureNode` mit Priorität 620; Listener für `EntityAttackEvent` (`onIncludingCancelled`), `PlayerMoveEvent`, `PlayerDisconnectEvent`, `RemoveEntityFromInstanceEvent`, `LobbyPlayerBusyEvent`, `PlayerStartFlyingWithElytraEvent`, `PlayerStopFlyingWithElytraEvent`; `@PreDestroy`: Knoten schließen, Zustand aufräumen).
+- [ ] 4.4 `TagModule` (`@PostConstruct`: `FeatureNode` mit Priorität 620; Listener für `EntityAttackEvent`, `EntityDamageEvent` (Schaden abbrechen), `PlayerMoveEvent` und `ClientInputPacket` (Aktivität), `PlayerSpawnEvent`, `PlayerDisconnectEvent`, `RemoveEntityFromInstanceEvent`, `LobbyPlayerBusyEvent`, `PlayerStartFlyingWithElytraEvent`, `PlayerStopFlyingWithElytraEvent`; `@PreDestroy`: Knoten schließen, Zustand aufräumen).
 - [ ] 4.5 `TagEffects` (Glowing in Standardfarbe, Partikel, Ton, Titel, Actionbar, Trefferanimation; kein Team).
 - [ ] 4.6 Test zuerst (Env): Nach `close()` löst kein Event mehr Code des Moduls aus (Muster `SpawnModuleTest#stopLeavesNoListenerBehind`).
 - [ ] 4.7 `package-info.java` mit `@InjectModule(name = "tagColumn", ...)`, `ColumnArchitectureTest` (wie bei den übrigen Columns).
