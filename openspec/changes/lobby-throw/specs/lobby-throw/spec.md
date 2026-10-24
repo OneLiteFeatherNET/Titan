@@ -56,17 +56,17 @@ Der Werfer MUSS den Wurf aufladen, indem er den Ladeträger rechtsklickt und hä
 
 ### Requirement: Stärke linear mit Obergrenze
 
-Die Stärke `p` MUSS `min(t, 30) / 30` für eine Ladezeit `t` in Ticks sein. Die Geschwindigkeit MUSS `8 + 8 * p` Blöcke pro Sekunde sein. Die vertikale Komponente DARF 10 Blöcke pro Sekunde nicht überschreiten. Ein Wurf unter 2 Ticks MUSS mit `p = 0` erfolgen.
+Die Stärke `p` MUSS `min(t, 30) / 30` für eine Ladezeit `t` in Ticks sein. Die Geschwindigkeit MUSS `18 + 32 * p` Blöcke pro Sekunde sein. Das ergibt bei 45 Grad etwa 6 Blöcke Reichweite für einen Tipp und etwa 20 für eine volle Ladung. Die vertikale Komponente DARF 10 Blöcke pro Sekunde nicht überschreiten. Ein Wurf unter 2 Ticks MUSS mit `p = 0` erfolgen.
 
 #### Scenario: Obergrenze
 
 - **WHEN** der Werfer den Ladeträger 90 Ticks hält und loslässt
-- **THEN** wird mit `p = 1` geworfen, also mit 16 Blöcken pro Sekunde
+- **THEN** wird mit `p = 1` geworfen, also mit 50 Blöcken pro Sekunde
 
 #### Scenario: Tippen
 
 - **WHEN** der Werfer den Ladeträger 1 Tick hält und loslässt
-- **THEN** wird mit `p = 0` geworfen, also mit 8 Blöcken pro Sekunde
+- **THEN** wird mit `p = 0` geworfen, also mit 18 Blöcken pro Sekunde
 
 #### Scenario: Wurf steil nach unten
 
@@ -80,11 +80,11 @@ Der Wurf MUSS das Ziel in Blickrichtung des Werfers bewegen. Die Lobby DARF den 
 #### Scenario: Wurf in Blickrichtung
 
 - **WHEN** der Werfer nach Osten blickt und mit Stärke 1 wirft
-- **THEN** erhält das Ziel einen Impuls nach Osten mit 16 Blöcken pro Sekunde
+- **THEN** erhält das Ziel einen Impuls nach Osten mit 50 Blöcken pro Sekunde
 
 ### Requirement: Flugbahnvorschau nur für den Werfer
 
-Während der Ladung MUSS der Werfer eine vorhergesagte Flugbahn als vanilla Partikel sehen, mit einem Landemarker. Die Vorschau MUSS aus Blickrichtung, aktueller Stärke, Gravitation 0,08 Blöcke pro Tick² und Luftwiderstand 0,98 pro Tick berechnet werden. Sie MUSS höchstens 40 Punkte pro Aktualisierung senden und alle 2 Ticks erneuern. Die Berechnung MUSS deterministisch sein: gleiche Eingabe ergibt gleiche Punkte.
+Während der Ladung MUSS der Werfer eine vorhergesagte Flugbahn als vanilla Partikel sehen, mit einem Landemarker. Die Vorschau MUSS aus Blickrichtung, aktueller Stärke, Gravitation 0,08 Blöcke pro Tick² berechnet werden, mit horizontalem Luftwiderstand 0,91 und vertikalem 0,98 pro Tick, in dieser Reihenfolge: erst bewegen, dann dämpfen. Dasselbe Modell bestimmt die Reichweite eines Wurfs. Sie MUSS höchstens 40 Punkte pro Aktualisierung senden und alle 2 Ticks erneuern. Die Berechnung MUSS deterministisch sein: gleiche Eingabe ergibt gleiche Punkte.
 
 Die Partikel-Pakete MUSS die Lobby ausschließlich an den Werfer senden. Andere Spieler DÜRFEN keine Vorschau-Pakete erhalten.
 
@@ -110,12 +110,12 @@ Die Partikel-Pakete MUSS die Lobby ausschließlich an den Werfer senden. Andere 
 
 ### Requirement: Fortschritt anzeigen
 
-Während der Ladung MUSS der Werfer eine Actionbar mit einer Ladeleiste sehen, die mit der Stärke wächst. Ein vanilla Ton MUSS alle 5 Ticks erklingen, dessen Tonhöhe mit der Stärke steigt. Beides MUSS nur dem Werfer gelten.
+Während der Ladung MUSS der Werfer die vanilla Erfahrungsleiste als Ladeanzeige sehen, die mit der Stärke wächst, und in der Actionbar ein Messgerät mit Prozentzahl, dessen Farbe von Grün über Gelb nach Rot wechselt. Ein vanilla Ton MUSS alle 5 Ticks erklingen, dessen Tonhöhe mit der Stärke steigt. Beides MUSS nur dem Werfer gelten. Der Hinweis zum Aufladen MUSS einmal zu Beginn der Trage erscheinen, nicht bei jeder Ladung. Nach jedem Ende der Ladung MUSS die Erfahrung des Werfers und sein Level wieder den Stand von davor haben.
 
 #### Scenario: Leiste wächst
 
 - **WHEN** der Werfer lädt
-- **THEN** wächst die Leiste in der Actionbar mit jeder Ladung
+- **THEN** wächst die Erfahrungsleiste mit jeder Ladung, und die Actionbar zeigt die Prozentzahl
 
 ### Requirement: Ziel kann sich durch Schleichen lösen
 
@@ -284,3 +284,54 @@ Die Lobby MUSS die Zähler `titan.throw.pickups`, `titan.throw.throws`, `titan.t
 
 - **WHEN** der Werfer während der Ladung den Hotbar-Platz wechselt
 - **THEN** zählt `titan.throw.charge_aborts` um eins
+
+### Requirement: Ein Klick, eine Aufnahme
+
+Ein Rechtsklick MUSS höchstens eine Aufnahme auslösen, auch wenn der Client die Interaktion mehrfach sendet oder die Taste gehalten wird. Während eine Trage des Werfers läuft, MUSS jede Interaktion des Werfers ignoriert werden. Innerhalb von 500 ms nach einer ausgewerteten Aufnahme DARF nicht erneut ausgewertet werden. Eine abgelehnte Aufnahme DARF keine Sperre auslösen.
+
+#### Scenario: Doppelte Interaktion eines Klicks
+
+- **WHEN** der Client zwei Interaktionen des Hauptarms in derselben Sekunde sendet
+- **THEN** wird genau eine Aufnahme ausgewertet
+
+#### Scenario: Ablehnung ohne Sperre
+
+- **WHEN** eine Aufnahme am Opt-out des Ziels scheitert und das Ziel danach zustimmt
+- **THEN** klappt die nächste Aufnahme ohne Wartezeit
+
+### Requirement: Ablehnungen nur in der Actionbar
+
+Eine Ablehnung MUSS dem Werfer in der Actionbar gemeldet werden, höchstens einmal pro Sekunde. Sie DARF nicht im Chat erscheinen. Ohne das Recht `titan.throw` DARF der Werfer keine Meldung erhalten.
+
+#### Scenario: Gehaltener Klick nach Abbruch
+
+- **WHEN** der Werfer 2 Sekunden lang die Taste hält, obwohl das Ziel nicht aufnehmbar ist
+- **THEN** erhält er höchstens zwei Meldungen
+
+#### Scenario: Ohne Recht
+
+- **WHEN** ein Spieler ohne `titan.throw` einen Spieler anklickt
+- **THEN** erscheint keine Meldung
+
+### Requirement: Der Werfer sieht das getragene Ziel nicht
+
+Während einer Trage MUSS das Ziel dem Werfer ausgeblendet sein. Andere Spieler DÜRFEN das Ziel weiterhin sehen. Jeder Pfad, der die Trage beendet, MUSS die Sichtbarkeit für den Werfer wiederherstellen.
+
+#### Scenario: Ausgeblendet
+
+- **WHEN** der Werfer ein Ziel aufnimmt
+- **THEN** sieht der Werfer das Ziel nicht, ein dritter Spieler sieht es
+
+#### Scenario: Wieder sichtbar nach dem Wurf
+
+- **WHEN** der Werfer wirft
+- **THEN** sieht der Werfer das Ziel wieder
+
+### Requirement: Tickle und Wurf teilen keine Eingabe
+
+Tickle DARF nur auf den Angriff reagieren, Wurf nur auf die Interaktion. Keines der beiden Module DARF das Ereignis des anderen konsumieren oder unterdrücken.
+
+#### Scenario: Feder mit Angriff
+
+- **WHEN** ein Spieler mit einer Feder einen anderen Spieler angreift
+- **THEN** tickelt er, und ein Rechtsklick auf denselben Spieler ist davon unabhängig
