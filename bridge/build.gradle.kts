@@ -20,6 +20,8 @@ dependencies {
     compileOnly(libs.minestom.extensions.processor)
     compileOnly(project(":common"))
     compileOnly(project(":core"))
+    // Minestom declares slf4j-api at runtime scope, so the extension gets it from the server's classpath.
+    compileOnly(libs.slf4j.api)
 
     compileOnly(platform(libs.cloudnet.bom))
     compileOnly(libs.cloudnet.driver.api)
@@ -29,8 +31,12 @@ dependencies {
 
     testImplementation(project(":common"))
     testImplementation(platform(libs.aonyx.bom))
+    testImplementation(libs.archunit)
+    testImplementation(testFixtures(project(":core")))
     testImplementation(libs.junit.api)
     testImplementation(libs.junit.platform.launcher)
+    // ListAppender, for capturing the warnings and infos ServiceReadings logs.
+    testImplementation(libs.logback.classic)
     testRuntimeOnly(libs.junit.engine)
 }
 

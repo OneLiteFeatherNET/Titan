@@ -24,5 +24,6 @@ import net.minestom.server.entity.Player;
  * @version 1.0.0
  */
 public interface Deliver {
+    /** Sends the player to the server or task that the component names. */
     void sendPlayer(Player player, DeliverComponent component);
 }

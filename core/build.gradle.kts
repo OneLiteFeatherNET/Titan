@@ -39,3 +39,20 @@ dependencies {
     testFixturesImplementation(libs.avaje.inject)
     testFixturesImplementation(libs.junit.api)
 }
+
+// The public API of core is documented (openspec maintainability-gates, design D6). The core-only ruleset
+// adds CommentRequired on top of the shared PMD rules.
+pmd {
+    ruleSetFiles = rootProject.files("config/quality/pmd-ruleset.xml", "config/quality/pmd-core-api-ruleset.xml")
+}
+
+// doclint's "missing" group would also demand @param and @return on every method, which the requirement does
+// not ask for; CommentRequired checks the presence of a comment. The remaining groups are errors in the docs.
+tasks.javadoc {
+    (options as StandardJavadocDocletOptions).addBooleanOption("Xdoclint:all,-missing", true)
+    (options as StandardJavadocDocletOptions).addBooleanOption("Werror", true)
+}
+
+tasks.check {
+    dependsOn(tasks.javadoc)
+}

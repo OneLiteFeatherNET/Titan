@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<!--
+  PMD rules for production code (src/main). Each rule needs a measured baseline before it is
+  enabled (openspec/changes/maintainability-gates, design.md D4). No style or naming rules: Spotless
+  owns formatting.
+-->
+<ruleset name="Titan maintainability gates"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+    <description>Maintainability rules Titan enforces on production code.</description>
+
+    <rule ref="category/java/bestpractices.xml/SystemPrintln"/>
+    <rule ref="category/java/bestpractices.xml/AvoidPrintStackTrace"/>
+    <rule ref="category/java/bestpractices.xml/UnusedPrivateMethod"/>
+    <rule ref="category/java/bestpractices.xml/UnusedPrivateField"/>
+    <rule ref="category/java/bestpractices.xml/UnusedLocalVariable"/>
+    <rule ref="category/java/errorprone.xml/EmptyCatchBlock"/>
+
+    <!--
+      PMD reports a metric once it reaches the report level, so the level is one above the agreed
+      maximum: CC 15 passes, 16 fails; NCSS 60 passes, 61 fails; class NCSS 500 passes, 501 fails.
+      Class-level complexity is not part of the agreed gates, so its level is out of reach.
+    -->
+    <rule ref="category/java/design.xml/CyclomaticComplexity">
+        <properties>
+            <property name="methodReportLevel" value="16"/>
+            <property name="classReportLevel" value="100000"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/design.xml/NcssCount">
+        <properties>
+            <property name="methodReportLevel" value="61"/>
+            <property name="classReportLevel" value="501"/>
+        </properties>
+    </rule>
+</ruleset>

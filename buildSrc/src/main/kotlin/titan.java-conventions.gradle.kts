@@ -2,14 +2,50 @@
 // each module build file: the toolchain five times, the test configuration four
 // times, and Jacoco into only two of the five modules.
 
+import net.onelitefeather.titan.buildsrc.architecture.ArchitectureTestGuard
+import net.onelitefeather.titan.buildsrc.architecture.ModuleBoundaries
+import org.gradle.api.GradleException
+import org.gradle.api.artifacts.VersionCatalogsExtension
+import org.gradle.api.artifacts.ProjectDependency
+
 plugins {
     java
     jacoco
+    pmd
 }
 
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(25))
+    }
+}
+
+// Production code only: the PMD gate covers src/main (openspec maintainability-gates, D4).
+pmd {
+    toolVersion = extensions.getByType<VersionCatalogsExtension>().named("libs").findVersion("pmd").get().requiredVersion
+    ruleSetFiles = rootProject.files("config/quality/pmd-ruleset.xml")
+    sourceSets = listOf(java.sourceSets.getByName("main"))
+    isConsoleOutput = true
+    isIgnoreFailures = true
+}
+
+tasks.withType<Pmd>().configureEach {
+    reports {
+        xml.required.set(true)
+        html.required.set(false)
+    }
+}
+
+// Checked while configuring, so a violation fails with the module named instead of surfacing later as a
+// compile or runtime problem: forbidden project dependencies (design D2) and a missing architecture test (D3).
+afterEvaluate {
+    val boundaryViolations = configurations
+        .flatMap { it.dependencies.withType(ProjectDependency::class.java) }
+        .mapNotNull { ModuleBoundaries.violation(project.path, it.path).orElse(null) }
+    val guardViolations = ArchitectureTestGuard.violation(projectDir.toPath(), project.path).stream().toList()
+    val violations = boundaryViolations + guardViolations
+    if (violations.isNotEmpty()) {
+        throw GradleException(violations.joinToString(separator = "\n"))
     }
 }
 
@@ -31,6 +67,12 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 tasks.withType<Test>().configureEach {
+    // ArchUnit freezing rules (openspec maintainability-gates, D5): the baseline is committed under
+    // src/test/resources and never created or rewritten by a normal build.
+    systemProperty("archunit.freeze.store.default.path", "src/test/resources/archunit_store")
+    systemProperty("archunit.freeze.store.default.allowStoreCreation", "false")
+    // Only a deliberate run changes a store: ./gradlew test -ParchunitStoreUpdate=true, then review the diff.
+    systemProperty("archunit.freeze.store.default.allowStoreUpdate", providers.gradleProperty("archunitStoreUpdate").getOrElse("false"))
     useJUnitPlatform()
     // Minestom refuses to initialise its registries outside a real server process
     // unless this flag is set.

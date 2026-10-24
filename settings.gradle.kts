@@ -45,6 +45,7 @@ dependencyResolutionManagement {
 
             version("mockito", "5.24.0")
             version("archunit", "1.5.1")
+            version("pmd", "7.28.0")
             version("avaje-inject", "12.7")
             version("avaje-config", "5.2")
             version("snakeyaml", "2.7")

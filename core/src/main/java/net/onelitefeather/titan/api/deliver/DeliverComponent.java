@@ -19,6 +19,10 @@ import net.minestom.server.entity.Player;
 
 import java.util.UUID;
 
+/**
+ * One delivery of one player to a task or a game server, built with {@link #taskBuilder()} or
+ * {@link #serverBuilder()}.
+ */
 public sealed interface DeliverComponent permits DeliverComponent.TaskComponent,
         DeliverComponent.ServerDeliverComponent, TaskComponentImpl, ServerDeliverComponentImpl {
     /**
@@ -28,41 +32,56 @@ public sealed interface DeliverComponent permits DeliverComponent.TaskComponent,
      */
     DeliverType type();
 
+    /** The UUID of the player to deliver. */
     UUID playerId();
 
+    /** Starts a delivery to a task; the task name is set on the returned builder. */
     static TaskBuilder taskBuilder() {
         return new TaskBuilderImpl();
     }
 
+    /** Starts a delivery to a game server; the server name is set on the returned builder. */
     static ServerBuilder serverBuilder() {
         return new ServerBuilderImpl();
     }
 
+    /** A delivery addressed to a task, the group of servers that the proxy picks from. */
     sealed interface TaskComponent extends DeliverComponent permits TaskComponentImpl {
+        /** The name of the task the player is delivered to. */
         String taskName();
     }
 
+    /** A delivery addressed to one named game server. */
     sealed interface ServerDeliverComponent extends DeliverComponent permits
             ServerDeliverComponentImpl {
+        /** The name of the game server the player is delivered to. */
         String gameServer();
     }
 
+    /** The steps every delivery builder shares: the player, then the build. */
     sealed interface Builder<T extends Builder<T>> {
 
+        /** Sets the player to deliver. */
         T playerId(UUID playerId);
 
+        /** Sets the player to deliver, taken from the player's UUID. */
         default T player(Player player) {
             return playerId(player.getUuid());
         }
 
+        /** Builds the component from the values set so far. */
         DeliverComponent build();
     }
 
+    /** Builder for a delivery to a task. */
     sealed interface TaskBuilder extends Builder<TaskBuilder> permits TaskBuilderImpl {
+        /** Sets the task to deliver to. */
         TaskBuilder taskName(String taskName);
     }
 
+    /** Builder for a delivery to a game server. */
     sealed interface ServerBuilder extends Builder<ServerBuilder> permits ServerBuilderImpl {
+        /** Sets the game server to deliver to. */
         ServerBuilder serverName(String serverName);
     }
 }

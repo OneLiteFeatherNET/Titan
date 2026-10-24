@@ -41,6 +41,7 @@ public final class SettingsTelemetry {
     private final LongCounter circuit;
     private final LongCounter started;
 
+    /** Creates the settings instruments on the telemetry's meter. */
     public SettingsTelemetry(Telemetry telemetry) {
         Objects.requireNonNull(telemetry, "telemetry must not be null");
         this.loads = telemetry.meter().histogramBuilder("titan.settings.load").setUnit("ms").build();
@@ -60,6 +61,7 @@ public final class SettingsTelemetry {
         this.writes.add(1, Attributes.of(OUTCOME, outcome));
     }
 
+    /** @param key the setting that the player toggled */
     public void toggled(SettingKey key) {
         this.toggles.add(1, Attributes.of(KEY, key.toString()));
     }

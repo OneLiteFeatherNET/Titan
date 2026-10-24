@@ -28,6 +28,8 @@ dependencies {
 
     testImplementation(testFixtures(project()))
     testImplementation(platform(libs.aonyx.bom))
+    testImplementation(libs.archunit)
+    testImplementation(testFixtures(project(":core")))
     testImplementation(libs.junit.api)
     testImplementation(libs.junit.params)
     testImplementation(libs.junit.platform.launcher)

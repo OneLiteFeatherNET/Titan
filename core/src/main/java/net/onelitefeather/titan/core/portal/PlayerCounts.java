@@ -24,10 +24,12 @@ import org.jetbrains.annotations.NotNull;
  */
 public interface PlayerCounts {
 
+    /** Whether this source counts players of the given type; every type by default. */
     default boolean supports(@NotNull SourceType type) {
         return true;
     }
 
+    /** The number of players currently on the named source of the given type. */
     @NotNull
     PlayerCount count(@NotNull SourceType type, @NotNull String name);
 

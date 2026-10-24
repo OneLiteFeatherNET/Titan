@@ -17,6 +17,7 @@ package net.onelitefeather.titan.api.deliver;
 
 import java.util.UUID;
 
+/** Builds a server delivery; reached through {@link DeliverComponent#serverBuilder()}. */
 final class ServerBuilderImpl implements DeliverComponent.ServerBuilder {
 
     private String serverName;

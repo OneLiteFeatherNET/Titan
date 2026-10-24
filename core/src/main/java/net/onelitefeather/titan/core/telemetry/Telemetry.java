@@ -40,10 +40,12 @@ public record Telemetry(Tracer tracer, Meter meter) {
     /** The player's UUID; never the name (see the privacy rule in docs/lobby-modules.md). */
     public static final AttributeKey<String> USER_ID = AttributeKey.stringKey("user.id");
 
+    /** Telemetry that records to the given OpenTelemetry instance. */
     public static Telemetry of(OpenTelemetry openTelemetry) {
         return new Telemetry(openTelemetry.getTracer(SCOPE), openTelemetry.getMeter(SCOPE));
     }
 
+    /** Telemetry that records nothing, for code paths without an OpenTelemetry SDK. */
     public static Telemetry noop() {
         return of(OpenTelemetry.noop());
     }
@@ -65,6 +67,7 @@ public record Telemetry(Tracer tracer, Meter meter) {
         }
     }
 
+    /** Runs the body inside a span with the given name and attributes. */
     public void inSpan(String name, Attributes attributes, Runnable body) {
         inSpan(name, attributes, () -> {
             body.run();
