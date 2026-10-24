@@ -9,7 +9,7 @@ Reihenfolge: zuerst die Schnittstelle und das Menü mit dem In-Memory-Speicher, 
 - [x] 1.3 Hotbar-Slot 7 ist frei (D14).
 - [x] 1.4 Aves: geteilte Inventare je Zustandskombination und Sprache, keine Listener pro Spieler (D6). Ein Spike entfällt.
 - [x] 1.5 Schreib-Verzögerung von 2 Sekunden akzeptiert (D15).
-- [ ] 1.6 Blockierend für die Produktion: Dienst-Authentifizierung in Otis als eigener Change in `OneLiteFeatherNET/Otis`. Titan sendet das Token nach dem Merge.
+- [x] 1.6 Entfällt: Otis ist nur Dienst-zu-Dienst im internen Netz erreichbar; Token bleibt optional (`TITAN_OTIS_TOKEN`).
 
 ## 2. Schnittstelle in `core` (`net.onelitefeather.titan.core.settings`)
 
@@ -90,4 +90,4 @@ Reihenfolge: zuerst die Schnittstelle und das Menü mit dem In-Memory-Speicher, 
 
 - [ ] 12.1 Commit `docs(openspec): propose lobby-settings` (Artefakte und Aufgaben).
 - [ ] 12.2 Commit `feat(settings): ...` für Code und Tests, Commit `docs(settings): ...` für `docs/`; abgehakte Aufgaben im selben Commit wie der zugehörige Code.
-- [ ] 12.3 Pull Request öffnen mit dem Titel `feat(settings): add a lobby settings menu backed by otis player settings`. Beschreibung auf Englisch: Schnittstelle, Menü, Otis-Anbindung und Fallback, Voraussetzungen in Otis, offene Fragen, Testnachweis, offene Sichtprüfung. Abschließend `https://claude.ai/code/session_01AM6yGQ33vvJqWg39vCAcYt`. Danach nur auf grüne CI warten; Merge und Release macht der Nutzer.
+- [ ] 12.3 Pull Request öffnen mit dem Titel `feat(settings): add a lobby settings menu backed by otis player settings`. Beschreibung auf Englisch: Schnittstelle, Menü, Otis-Anbindung und Fallback, optionales Token, offene Fragen, Testnachweis, offene Sichtprüfung. Abschließend `https://claude.ai/code/session_01AM6yGQ33vvJqWg39vCAcYt`. Danach nur auf grüne CI warten; Merge und Release macht der Nutzer.

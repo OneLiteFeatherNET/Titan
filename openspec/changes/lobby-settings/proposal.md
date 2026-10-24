@@ -21,7 +21,7 @@ Diese Änderung kommt zuerst. `lobby-tag` und `lobby-throw` folgen darauf und re
 Nicht Teil dieser Änderung:
 
 - Die Option Fangen (`lobby-tag`) und die Option Schleudern-Ziel sein (`lobby-throw`). Sie hängen von dieser Änderung ab und folgen als eigene Changes.
-- Jede Änderung in Otis. Dienst-Authentifizierung, Konfliktprüfung über `If-Match` und Prüfung der Produktionsmigration sind Voraussetzungen in Otis, siehe unten.
+- Jede Änderung in Otis. Die Konfliktprüfung über `If-Match` ist eine optionale Verbesserung in Otis, siehe unten.
 - Nicht-boolesche Einstellungen. Die Schnittstelle erlaubt später andere Typen, v1 kennt nur Schalter.
 - Synchronisation zwischen Lobby und Proxy. Velocity liest die Einstellungen nicht.
 - Ein lokaler Cache auf der Festplatte. Der Speicher lebt nur im Prozess.
@@ -32,7 +32,7 @@ Nicht Teil dieser Änderung:
 
 **Otis-Voraussetzungen (eigene Changes in `OneLiteFeatherNET/Otis`, nicht Teil dieser Änderung):**
 
-1. **Dienst-Authentifizierung (blockierend für die Produktion):** Otis hat heute keine Authentifizierung, auch nicht für Schreibzugriffe auf `/v1/players/{uuid}/settings`. Vor dem Einschalten in Produktion braucht Otis einen Mechanismus (z. B. Bearer-Token je Dienst). Titan sendet das Token, sobald `otis.token` gesetzt ist. Bis dahin gilt das Netz als einzige Schranke, siehe `design.md`, Sicherheit.
+1. **Dienst-Authentifizierung (entfällt):** Otis ist nur Dienst-zu-Dienst im internen Netz erreichbar; eine Authentifizierung ist deshalb keine Voraussetzung. Titan sendet ein Token, sobald `otis.token` gesetzt ist; das Token bleibt optional, siehe `design.md`, Sicherheit.
 2. **Produktionsmigration (erledigt, Stand 2026-10-24):** `GET /v1/players/{uuid}/settings` liefert in Produktion 200 mit `[]`. Die Tabelle `player_setting` aus Flyway V2 ist damit angelegt.
 3. **Otis-Version ausgerollt (erledigt, Stand 2026-10-24):** Produktion läuft Otis 1.17.0 (`harbor.onelitefeather.dev/onelitefeather/otis:1.17.0`). Der Client ist eine eigene JSON-Abbildung, keine Abhängigkeit auf `net.onelitefeather.otis:otis-client` (siehe `design.md`, D12).
 4. **Optional, nicht blockierend:** `If-Match` mit Versionskonflikt (409). Ohne sie gilt Last-Write-Wins je Schlüssel, was hier genügt, weil ein Spieler immer nur auf einer Lobby ist.
@@ -57,6 +57,6 @@ Der Pull-Request-Titel und der Squash-Commit lauten `feat(settings): add a lobby
 
 - **Code:** neues Modul `features/settings` (Column `settingsColumn`, Paket `net.onelitefeather.titan.feature.settings`); neues Modul `platform/otis` (Adapter, Paket `net.onelitefeather.titan.platform.otis`); neue Typen im Paket `net.onelitefeather.titan.core.settings` in `core`. Die Column hängt nur an `core`, wie jede Column.
 - **Abhängigkeiten:** keine neuen Bibliotheken. `java.net.http` aus dem JDK; für Tests ein JDK-HTTP-Server auf einem freien Port in `integrationTest`. Kein Otis-Client. Die JSON-Abbildung nutzt Gson, das `common` bereits verwendet; im neuen Modul wird die Abhängigkeit explizit deklariert.
-- **Betrieb:** Neue Konfigurationsschlüssel mit Standardwert `settings.enabled: false`. Produktion schaltet die Funktion nach den Otis-Voraussetzungen ein. Neues Secret `TITAN_OTIS_TOKEN` (nur Umgebungsvariable, nie geloggt).
+- **Betrieb:** Neue Konfigurationsschlüssel mit Standardwert `settings.enabled: false`. Produktion schaltet die Funktion ein, sobald die Lobby-Konfiguration es vorsieht. Optionales Secret `TITAN_OTIS_TOKEN` (nur Umgebungsvariable, nie geloggt).
 - **Nutzertexte:** `titan/settings/messages_de.properties` und `messages_en.properties`.
 - **Hotbar:** Slot 7 wird für das Einstellungs-Item belegt; Slot 0 (Jump and Run), 4 (Navigator) und 8 (Lobby-Switcher, nur Profil `cloudnet`) bleiben unverändert.
