@@ -21,6 +21,8 @@ dependencies {
     annotationProcessor(libs.avaje.inject.generator)
 
     testImplementation(platform(libs.aonyx.bom))
+    testImplementation(libs.archunit)
+    testImplementation(testFixtures(project(":core")))
     testImplementation(libs.minestom)
     testImplementation(libs.cyano)
     testImplementation(libs.junit.api)

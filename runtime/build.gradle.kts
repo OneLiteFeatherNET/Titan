@@ -30,6 +30,7 @@ dependencies {
     runtimeOnly(libs.sentry.logback)
 
     testImplementation(platform(libs.aonyx.bom))
+    testImplementation(libs.archunit)
     testImplementation(libs.minestom)
     testImplementation(libs.cyano)
     testImplementation(libs.mockito)

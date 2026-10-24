@@ -14,6 +14,8 @@ dependencies {
     implementation(libs.minestom.extensions)
 
     testImplementation(platform(libs.aonyx.bom))
+    testImplementation(libs.archunit)
+    testImplementation(testFixtures(project(":core")))
     testImplementation(libs.minestom)
     testImplementation(libs.junit.api)
     testImplementation(libs.junit.platform.launcher)

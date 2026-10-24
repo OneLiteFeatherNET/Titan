@@ -85,6 +85,13 @@ class ModuleBoundariesTest {
         assertAllowed(":apps:local", ":runtime");
     }
 
+    @DisplayName("Persistence may use the core test fixtures for its architecture test, but nothing else of core is declared")
+    @Test
+    void persistenceMayUseCoreTestFixtures() {
+        assertAllowed(":persistence", ":core");
+        assertViolation(":persistence", ":features:navigator");
+    }
+
     @DisplayName("A module may always depend on itself, for example through its own test fixtures")
     @Test
     void aModuleMayDependOnItself() {

@@ -31,6 +31,8 @@ dependencies {
 
     testImplementation(project(":common"))
     testImplementation(platform(libs.aonyx.bom))
+    testImplementation(libs.archunit)
+    testImplementation(testFixtures(project(":core")))
     testImplementation(libs.junit.api)
     testImplementation(libs.junit.platform.launcher)
     // ListAppender, for capturing the warnings and infos ServiceReadings logs.

@@ -28,6 +28,7 @@ dependencies {
     // TitanServerConnector / TitanPermissionBridge holders.
 
     testImplementation(platform(libs.aonyx.bom))
+    testImplementation(libs.archunit)
     testImplementation(libs.minestom)
     testImplementation(libs.cyano)
     testImplementation(libs.aves)

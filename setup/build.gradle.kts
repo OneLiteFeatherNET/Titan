@@ -22,6 +22,8 @@ dependencies {
     runtimeOnly(libs.sentry.logback)
 
     testImplementation(platform(libs.aonyx.bom))
+    testImplementation(libs.archunit)
+    testImplementation(testFixtures(project(":core")))
     testImplementation(libs.cyano)
     testImplementation(libs.junit.api)
     testImplementation(libs.junit.params)

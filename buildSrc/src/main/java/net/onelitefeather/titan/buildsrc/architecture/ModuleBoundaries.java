@@ -61,7 +61,10 @@ public final class ModuleBoundaries {
             return PLATFORM;
         }
         return switch (source) {
-            case ":core", ":persistence" -> NOTHING;
+            // persistence may use core's test fixtures for its architecture test; its main code must not import core,
+            // which the module's MaintainabilityArchitectureTest checks.
+            case ":core" -> NOTHING;
+            case ":persistence" -> CORE;
             case ":common" -> CORE;
             case ":setup", ":bridge" -> CORE_AND_COMMON;
             case ":runtime" -> List.of(":core", ":common", ":persistence");

@@ -2,6 +2,7 @@
 // each module build file: the toolchain five times, the test configuration four
 // times, and Jacoco into only two of the five modules.
 
+import net.onelitefeather.titan.buildsrc.architecture.ArchitectureTestGuard
 import net.onelitefeather.titan.buildsrc.architecture.ModuleBoundaries
 import org.gradle.api.GradleException
 import org.gradle.api.artifacts.ProjectDependency
@@ -35,6 +36,11 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 tasks.withType<Test>().configureEach {
+    // ArchUnit freezing rules (openspec maintainability-gates, D5): the baseline is committed under
+    // src/test/resources and never created or rewritten by a normal build.
+    systemProperty("archunit.freeze.store.default.path", "src/test/resources/archunit_store")
+    systemProperty("archunit.freeze.store.default.allowStoreCreation", "false")
+    systemProperty("archunit.freeze.store.default.allowStoreUpdate", "false")
     useJUnitPlatform()
     // Minestom refuses to initialise its registries outside a real server process
     // unless this flag is set.
@@ -59,12 +65,14 @@ tasks.withType<JacocoReport>().configureEach {
     }
 }
 
-// Module boundaries (design D2): checked while configuring, so a forbidden dependency fails with the
-// module pair instead of surfacing later as a compile or runtime problem.
+// Checked while configuring, so a violation fails with the module named instead of surfacing later as a
+// compile or runtime problem: forbidden project dependencies (design D2) and a missing architecture test (D3).
 afterEvaluate {
-    val violations = configurations
+    val boundaryViolations = configurations
         .flatMap { it.dependencies.withType(ProjectDependency::class.java) }
         .mapNotNull { ModuleBoundaries.violation(project.path, it.path).orElse(null) }
+    val guardViolations = ArchitectureTestGuard.violation(projectDir.toPath(), project.path).stream().toList()
+    val violations = boundaryViolations + guardViolations
     if (violations.isNotEmpty()) {
         throw GradleException(violations.joinToString(separator = "\n"))
     }
