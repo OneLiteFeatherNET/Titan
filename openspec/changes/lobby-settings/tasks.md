@@ -71,14 +71,14 @@ Reihenfolge: zuerst die Schnittstelle und das Menü mit dem In-Memory-Speicher, 
 
 ## 9. Dokumentation
 
-- [ ] 9.1 `docs/lobby-modules.md`: Abschnitt „Einstellungen (`settings`)“ mit Menü, Befehl, Opt-in und Opt-out, Otis-Anbindung und Offline-Variante.
-- [ ] 9.2 Konfigurationsschlüssel und Secret `TITAN_OTIS_TOKEN` in der Betriebsdokumentation nennen.
-- [ ] 9.3 Spec-Delta mit der Implementierung abgleichen (Szenario-Titel, Schlüssel, Slot, Standardwerte).
+- [x] 9.1 `docs/lobby-modules.md`: Abschnitt „Einstellungen (`settings`)“ mit Menü, Befehl, Opt-in und Opt-out, Otis-Anbindung und Offline-Variante.
+- [x] 9.2 Konfigurationsschlüssel und Secret `TITAN_OTIS_TOKEN` in der Betriebsdokumentation nennen.
+- [x] 9.3 Spec-Delta mit der Implementierung abgleichen (Szenario-Titel, Schlüssel, Slot, Standardwerte).
 
 ## 10. Prüfung
 
-- [ ] 10.1 `./gradlew spotlessApply` und `./gradlew build` grün.
-- [ ] 10.2 `openspec validate --strict lobby-settings` grün.
+- [x] 10.1 `./gradlew spotlessApply` und `./gradlew build` grün.
+- [x] 10.2 `openspec validate --strict lobby-settings` grün.
 - [ ] 10.3 Sichtprüfung auf einem Testserver mit Otis-Testinstanz (nicht Produktion): Menü, Umschalten, Neustart des Servers, Wiederherstellung nach Otis-Ausfall. Nicht ausgeführt, falls kein Testserver bereitsteht; im PR als offen vermerken.
 
 ## 11. Abhängige Changes (nach Merge)
@@ -89,5 +89,5 @@ Reihenfolge: zuerst die Schnittstelle und das Menü mit dem In-Memory-Speicher, 
 ## 12. Commits und Pull Request
 
 - [ ] 12.1 Commit `docs(openspec): propose lobby-settings` (Artefakte und Aufgaben).
-- [ ] 12.2 Commit `feat(settings): ...` für Code und Tests, Commit `docs(settings): ...` für `docs/`; abgehakte Aufgaben im selben Commit wie der zugehörige Code.
-- [ ] 12.3 Pull Request öffnen mit dem Titel `feat(settings): add a lobby settings menu backed by otis player settings`. Beschreibung auf Englisch: Schnittstelle, Menü, Otis-Anbindung und Fallback, optionales Token, offene Fragen, Testnachweis, offene Sichtprüfung. Abschließend `https://claude.ai/code/session_01AM6yGQ33vvJqWg39vCAcYt`. Danach nur auf grüne CI warten; Merge und Release macht der Nutzer.
+- [x] 12.2 Commit `feat(settings): ...` für Code und Tests, Commit `docs(settings): ...` für `docs/`; abgehakte Aufgaben im selben Commit wie der zugehörige Code.
+- [x] 12.3 Pull Request öffnen mit dem Titel `feat(settings): add a lobby settings menu backed by otis player settings`. Beschreibung auf Englisch: Schnittstelle, Menü, Otis-Anbindung und Fallback, optionales Token, offene Fragen, Testnachweis, offene Sichtprüfung. Abschließend `https://claude.ai/code/session_01AM6yGQ33vvJqWg39vCAcYt`. Danach nur auf grüne CI warten; Merge und Release macht der Nutzer.

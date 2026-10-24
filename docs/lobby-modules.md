@@ -574,6 +574,54 @@ heißt auf jedem Server `dance`, unabhängig von der Sprache; nur die Texte sind
 - **Telemetrie:** Zähler `titan.dance.started{dance}`, kein Span (Starts sind selten, die Schritte
   zu häufig für einen Span).
 
+## Einstellungen (`settings`)
+
+Spielerspezifische Schalter, die der Spieler im Menü umschaltet: über das Hotbar-Item in Slot 7 oder den Befehl `/settings` (nur englisch, ohne Alias). Gespeichert wird in Otis (`platform/otis`), ohne `otis.url` nur im Speicher des Prozesses.
+
+### Schnittstelle (`core`, `net.onelitefeather.titan.core.settings`)
+
+- `BooleanSetting(SettingKey, SettingDefault)`: ein Schalter. `SettingDefault.OPT_IN` ist aus, bis der Spieler ihn einschaltet; `OPT_OUT` ist an, bis er ihn ausschaltet.
+- Eine Column registriert jede Option einmal in `@PostConstruct` über `SettingsRegistry.register(owner, setting)`. Ein doppelter Schlüssel bricht den Start mit beiden Registrierungen ab. Höchstens 9 Optionen passen in die eine Menüzeile.
+- `SettingKey` ist `namespace:value` mit den Zeichen von Otis (Namespace `[a-z0-9_.-]`, Wert `[a-z0-9_./-]`), zum Beispiel `titan:tag.enabled`. Ein falscher Schlüssel scheitert beim Start.
+- Lesen: `PlayerSettings.isEnabled(uuid, setting)` wirft nie. Ohne geladenen Wert liefert es den Standard. Schreiben: `set(...)` wirkt sofort, Listener (`addChangeListener`) bekommen alten und neuen Wert.
+
+### Verhalten
+
+- **Menü:** ein Vanilla-Item je Option, Lime-Farbstoff bei an, Grau bei aus, ohne Resource Pack. Ein Klick schaltet um. Die Inventare werden je Zustandskombination und Sprache einmal gebaut und geteilt.
+- **Laden:** beim Konfigurieren des Spielers (`AsyncPlayerConfigurationEvent`) auf einem eigenen Executor. Die Werte werden auf dem Tick-Thread übernommen. Eine Option, die während des Ladens umgeschaltet wurde, behält den lokalen Wert. Verlässt der Spieler den Server vorher, wird das Ergebnis verworfen.
+- **Speichern:** im Hintergrund (Write-behind). Eine Änderung wartet `otis.writeDebounceMillis` (Standard 2000), eine weitere Änderung derselben Option verschiebt das Speichern. Netzfehler, 5xx und 404 werden bis `otis.writeRetries` (Standard 3) mit 500 ms Abstand wiederholt, andere 4xx nicht. Beim Verlassen wird sofort gespeichert, beim Herunterfahren bis zu 5 Sekunden lang.
+- **Ausfall:** nach `otis.circuitFailureThreshold` (Standard 3) Fehlern in Folge öffnet ein Circuit Breaker. Er sendet für `otis.circuitOpenMillis` (Standard 30000) nichts, danach eine einzelne Probeanfrage. Während er offen ist, bleiben Änderungen im Speicher, und geladene Werte bleiben erhalten.
+- **Texte:** Menütexte stehen in `titan/settings/messages_de.properties` und `messages_en.properties`. Der Name und die Beschreibung einer Option stehen unter `titan.settings.option.<namespace>.<value>.name` bzw. `.description`. Fehlt ein Schlüssel, zeigt das Menü den Schlüssel.
+
+### Konfiguration und Secret
+
+| Schlüssel | Standard | Zweck |
+|---|---|---|
+| `settings.enabled` | `false` | Funktion ein oder aus. Aus heißt: kein Menü, kein Item, kein Befehl, keine Anfrage an Otis |
+| `otis.url` | leer | Basis-URL von Otis. Leer: nur Speicher, Warnung beim Start |
+| `otis.token` | leer | Bearer-Token. Die Umgebungsvariable `TITAN_OTIS_TOKEN` hat Vorrang |
+| `otis.connectTimeoutMillis` | `1000` | Verbindungsaufbau |
+| `otis.requestTimeoutMillis` | `2000` | Gesamte Anfrage |
+| `otis.loadRetries` | `1` | Wiederholungen beim Laden |
+| `otis.writeRetries` | `3` | Wiederholungen beim Speichern |
+| `otis.writeDebounceMillis` | `2000` | Wartezeit bis zum Speichern |
+| `otis.circuitFailureThreshold` | `3` | Fehler in Folge bis zum Öffnen |
+| `otis.circuitOpenMillis` | `30000` | Dauer der Sperre |
+
+Die Standardwerte stehen in `features/settings/src/main/resources/titan/defaults/settings.yaml`.
+
+`TITAN_OTIS_TOKEN` ist optional. Ist es gesetzt, sendet die Lobby `Authorization: Bearer <token>`, ohne Token ohne Header. Das Token erscheint in keiner Log-Zeile, keiner Fehlermeldung und keiner Metrik; `toString()` maskiert es.
+
+Otis ist nur dienst-zu-dienst im internen Netz erreichbar. Eine Dienst-Authentifizierung ist deshalb keine Voraussetzung zum Einschalten.
+
+### Telemetrie
+
+- `titan.settings.load` (Histogramm in ms, Attribut `outcome`: `ok`, `timeout`, `error`, `circuit_open`)
+- `titan.settings.write` (Zähler, `outcome`: `ok`, `retry`, `error`)
+- `titan.settings.toggled` (Zähler, Attribut `key`, ohne Spieler-UUID)
+- `titan.settings.circuit` (Zähler, `state`: `open`, `half_open`, `closed`)
+- `titan.settings.started` (Zähler beim Start, `store`: `otis` oder `memory`)
+
 ## Erwartete Columns einer Variante
 
 `titan.app-variant` schreibt beim Bauen die Avaje-Modulnamen aller in eine Variante eingebundenen
