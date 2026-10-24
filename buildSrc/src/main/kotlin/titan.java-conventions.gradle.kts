@@ -2,6 +2,10 @@
 // each module build file: the toolchain five times, the test configuration four
 // times, and Jacoco into only two of the five modules.
 
+import net.onelitefeather.titan.buildsrc.architecture.ModuleBoundaries
+import org.gradle.api.GradleException
+import org.gradle.api.artifacts.ProjectDependency
+
 plugins {
     java
     jacoco
@@ -52,5 +56,16 @@ tasks.withType<JacocoReport>().configureEach {
     dependsOn(tasks.matching { it.name == "test" })
     reports {
         xml.required.set(true)
+    }
+}
+
+// Module boundaries (design D2): checked while configuring, so a forbidden dependency fails with the
+// module pair instead of surfacing later as a compile or runtime problem.
+afterEvaluate {
+    val violations = configurations
+        .flatMap { it.dependencies.withType(ProjectDependency::class.java) }
+        .mapNotNull { ModuleBoundaries.violation(project.path, it.path).orElse(null) }
+    if (violations.isNotEmpty()) {
+        throw GradleException(violations.joinToString(separator = "\n"))
     }
 }
