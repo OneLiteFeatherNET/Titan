@@ -4,16 +4,16 @@ Zweig: `test/module-test-levels` von `origin/main`. Jeder Commit hat genau einen
 
 ## Ausführungsplan
 
-| Welle | Agent | Aufgaben | Modell | darf ändern | darf nicht ändern |
-|---|---|---|---|---|---|
-| 1 | Lesen | 1.1, 1.2 | haiku | nur Scratch-Verzeichnis | Repository |
-| 2 | Umsetzung, Worktree | 2.1 | sonnet | `buildSrc/` | Testklassen |
-| 2 | Umsetzung, Worktree | 2.2, 2.3 | sonnet | `features/jumprun/src/test` | andere Module |
-| 2 | Umsetzung, Worktree | 2.4, 2.5 | sonnet | `apps/*/src/test`, Zielmodule der Verschiebung | `buildSrc/`, `core/src/testFixtures` |
-| 2 | Umsetzung, Worktree | 2.6, 2.7 | sonnet | `core/src/testFixtures`, Kopien in `features/*/src/test` | Produktionscode |
-| 3 | Umsetzung | 2.8 | sonnet | `docs/lobby-modules.md` | Code |
-| 4 | Prüfung | 3.1 | haiku | nur Scratch-Verzeichnis | Repository |
-| 5 | Pull Request | 3.2, 3.3 | sonnet | nur Git und `gh` | Repository-Inhalt |
+| Welle | Agent | Aufgaben | darf ändern | darf nicht ändern |
+|---|---|---|---|---|
+| 1 | Lesen | 1.1, 1.2 | nur Scratch-Verzeichnis | Repository |
+| 2 | Umsetzung, Worktree | 2.1 | `buildSrc/` | Testklassen |
+| 2 | Umsetzung, Worktree | 2.2, 2.3 | `features/jumprun/src/test` | andere Module |
+| 2 | Umsetzung, Worktree | 2.4, 2.5 | `apps/*/src/test`, Zielmodule der Verschiebung | `buildSrc/`, `core/src/testFixtures` |
+| 2 | Umsetzung, Worktree | 2.6, 2.7 | `core/src/testFixtures`, Kopien in `features/*/src/test` | Produktionscode |
+| 3 | Umsetzung | 2.8 | `docs/lobby-modules.md` | Code |
+| 4 | Prüfung | 3.1 | nur Scratch-Verzeichnis | Repository |
+| 5 | Pull Request | 3.2, 3.3 | nur Git und `gh` | Repository-Inhalt |
 
 Welle 2 läuft parallel. Der Integrationszweig führt die Ergebnisse zusammen; danach läuft der Build. Die Reviews nach jeder Welle (Clean Code, F.I.R.S.T.) übernehmen die Agenten nach den Regeln des Schemas.
 
