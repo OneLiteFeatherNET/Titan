@@ -18,6 +18,7 @@ package net.onelitefeather.titan.feature.portal;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Executor;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.minestom.server.coordinate.Pos;
@@ -75,7 +76,7 @@ class PortalLabelDisplayTest {
     }
 
     private PortalModule start(Env env, TestTitanNode titan, Instance lobby, Executor executor, PlayerCounts provider, Portal... portals) {
-        PortalModule module = new PortalModule(titan.node(), () -> List.of(portals), new RecordingDeliver(), new FakePermissionService(), new AdjustableClock(Instant.parse("2026-01-01T12:00:00Z"), ZoneOffset.UTC), lobby, env.process().scheduler(), executor, new LabelReader(provider, () -> 9), new PortalSettings(1), Telemetry.noop());
+        PortalModule module = new PortalModule(titan.node(), () -> List.of(portals), new RecordingDeliver(), new FakePermissionService(), new AdjustableClock(Instant.parse("2026-01-01T12:00:00Z"), ZoneOffset.UTC), lobby, env.process().scheduler(), executor, new LabelReader(provider, () -> 9), new PortalSettings(1), Optional.empty(), Telemetry.noop());
         module.start();
         return module;
     }
@@ -287,7 +288,7 @@ class PortalLabelDisplayTest {
     void failedStartCleansUp(Env env) {
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
             Instance lobby = env.createFlatInstance();
-            PortalModule module = new PortalModule(titan.node(), () -> List.of(portal("a", label("a", null, null, Billboard.CENTER, 0f))), new RecordingDeliver(), new FakePermissionService(), new AdjustableClock(Instant.parse("2026-01-01T12:00:00Z"), ZoneOffset.UTC), lobby, env.process().scheduler(), Runnable::run, new LabelReader(this.counts, () -> 9), new PortalSettings(Integer.MAX_VALUE), Telemetry.noop());
+            PortalModule module = new PortalModule(titan.node(), () -> List.of(portal("a", label("a", null, null, Billboard.CENTER, 0f))), new RecordingDeliver(), new FakePermissionService(), new AdjustableClock(Instant.parse("2026-01-01T12:00:00Z"), ZoneOffset.UTC), lobby, env.process().scheduler(), Runnable::run, new LabelReader(this.counts, () -> 9), new PortalSettings(Integer.MAX_VALUE), Optional.empty(), Telemetry.noop());
 
             Assertions.assertThrows(ArithmeticException.class, module::start, "the period overflows");
 

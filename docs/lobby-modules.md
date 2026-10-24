@@ -621,6 +621,19 @@ Otis ist nur dienst-zu-dienst im internen Netz erreichbar. Eine Dienst-Authentif
 - `titan.settings.circuit` (Zähler, `state`: `open`, `half_open`, `closed`)
 - `titan.settings.started` (Zähler beim Start, `store`: `otis` oder `memory`)
 
+## Schleudern (`throw`)
+
+Ein Spieler mit `titan.throw` rechtsklickt bei leerer Haupthand einen anderen Spieler. Das Ziel sitzt danach als Passagier auf dem Kopf des Werfers. Ein Rechtsklick hält den Ladeträger (ein Stock mit der Komponente `consumable` und der Animation `bow`, ohne Resource Pack), Loslassen wirft. Die Stärke wächst linear über 1,5 Sekunden (`Charge`), die Geschwindigkeit liegt zwischen 8 und 16 Blöcken pro Sekunde, der vertikale Anteil ist auf 10 begrenzt (`ThrowVelocity`). Die Flugbahn sieht nur der Werfer als Partikel (`ThrowTrajectory`, Näherung).
+
+- **Rechte:** `titan.throw` zum Werfen, `titan.throw.immune` macht ein Ziel unwerfbar (Team-Mitglieder über LuckPerms). Lokal gilt `DenyAllPermissionService`, dort wirft niemand.
+- **Opt-out des Ziels:** Die Einstellung `titan:throw.target` („Kann geworfen werden“, Standard an) steht im Einstellungsmenü. Ist die Option aus, wird das Ziel nicht aufgenommen; schaltet es die Option während der Trage aus, wird es sofort ohne Impuls freigegeben. Eine Ablehnung beim Aufnehmen nennt dem Werfer einen kurzen Grund; das Ziel erhält nie eine Nachricht.
+- **Ablehnung ohne Impuls:** Schleicht das Ziel, steigt es ab; das setzt für das Paar 60 Sekunden Pause. Nach 15 Sekunden fällt es automatisch ab. Der Werfer wartet 5 Sekunden nach jedem Wurf, ein Ziel höchstens einmal pro 20 Sekunden.
+- **Hand:** Die Hand des Werfers bekommt bei jedem Ende der Trage (Wurf, Schleichen, Auto-Drop, Opt-out, Immunität, Verlassen, Instanzwechsel, Tod, Stopp) genau ihren Inhalt von vor der Trage zurück. Der Ladeträger wird nie gespeichert.
+- **Hotbar-Platzwechsel** während des Ladens bricht die Ladung ab, nicht die Trage; der Ladeträger bleibt im Platz.
+- **Flugschutz:** Ein geworfenes Ziel passiert während des Flugs und zwei Sekunden nach der Landung kein Portal (`PortalTransferGuard` aus `core`, vom Portal-Modul vor der Übergabe abgefragt). Der Flug endet spätestens nach 5 Sekunden.
+- **Grenzen:** Konstanten im Modul, keine Konfiguration. Keine Befehle. Zustand nur im Speicher des Prozesses.
+- **Telemetrie:** `titan.throw.pickups`, `titan.throw.throws`, `titan.throw.escapes`, `titan.throw.refusals{reason}` (`permission`, `opt_out`, `immune`, `cooldown`, `state`), `titan.throw.charge_aborts`. Ohne Spieler-UUIDs.
+
 ## Erwartete Columns einer Variante
 
 `titan.app-variant` schreibt beim Bauen die Avaje-Modulnamen aller in eine Variante eingebundenen

@@ -37,11 +37,16 @@ class SettingsMessagesBundleTest {
         }
     }
 
-    @DisplayName("The fallback bundle defines exactly the keys the menu renders")
+    // Option names and descriptions are keyed by the option's setting key, so the feature that
+    // registers an option adds its keys here; every other key is one the menu renders itself.
+    @DisplayName("The fallback bundle defines the keys the menu renders plus the option texts")
     @Test
     void fallbackBundleMatchesTheRenderedKeys() throws IOException {
         Set<String> rendered = new HashSet<>(SettingsMessages.KEYS);
-        Assertions.assertEquals(rendered, load("messages_en.properties").stringPropertyNames(), "messages_en.properties must define every rendered key and nothing else");
+        Set<String> defined = new HashSet<>(load("messages_en.properties").stringPropertyNames());
+        Assertions.assertTrue(defined.containsAll(rendered), "messages_en.properties must define every rendered key");
+        defined.removeAll(rendered);
+        Assertions.assertTrue(defined.stream().allMatch(key -> key.startsWith("titan.settings.option.")), "messages_en.properties may define only option texts beyond the rendered keys, was " + defined);
     }
 
     @DisplayName("The German bundle has exactly the keys of the fallback bundle")

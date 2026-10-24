@@ -23,6 +23,7 @@ import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.Executor;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
@@ -37,6 +38,7 @@ import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.permission.PermissionService;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
 import net.onelitefeather.titan.core.portal.Portal;
+import net.onelitefeather.titan.core.portal.PortalTransferGuard;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,13 +68,14 @@ public final class PortalModule {
     private final Executor reads;
     private final LabelReadings readings;
     private final PortalSettings settings;
+    private final Optional<PortalTransferGuard> transferGuard;
     private final Telemetry telemetry;
     private final PortalTelemetry portalTelemetry;
     private final List<LabelDisplay> displays = new ArrayList<>();
     private FeatureNode node;
     private LabelRefresh refresh;
 
-    PortalModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbyPortals portals, Deliver deliver, PermissionService permissions, Clock clock, Instance lobby, Scheduler scheduler, @Named(PortalBeans.LABEL_READS) Executor reads, LabelReadings readings, PortalSettings settings, Telemetry telemetry) {
+    PortalModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, LobbyPortals portals, Deliver deliver, PermissionService permissions, Clock clock, Instance lobby, Scheduler scheduler, @Named(PortalBeans.LABEL_READS) Executor reads, LabelReadings readings, PortalSettings settings, Optional<PortalTransferGuard> transferGuard, Telemetry telemetry) {
         this.titan = Objects.requireNonNull(titan, "titan");
         this.portals = Objects.requireNonNull(portals, "portals");
         this.deliver = Objects.requireNonNull(deliver, "deliver");
@@ -83,6 +86,7 @@ public final class PortalModule {
         this.reads = Objects.requireNonNull(reads, "reads");
         this.readings = Objects.requireNonNull(readings, "readings");
         this.settings = Objects.requireNonNull(settings, "settings");
+        this.transferGuard = Objects.requireNonNull(transferGuard, "transferGuard");
         this.telemetry = Objects.requireNonNull(telemetry, "telemetry");
         this.portalTelemetry = new PortalTelemetry(telemetry);
     }
@@ -96,7 +100,7 @@ public final class PortalModule {
         // (position, newPosition) is the segment the player is about to travel.
         this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry).on(PlayerMoveEvent.class, event -> {
             Player player = event.getPlayer();
-            trigger.onMove(player.getUuid(), player.getPosition(), event.getNewPosition(), portal -> refused(player, portal)).ifPresent(portal -> deliver(player, portal));
+            trigger.onMove(player.getUuid(), player.getPosition(), event.getNewPosition(), portal -> refused(player, portal)).filter(portal -> mayTransfer(player)).ifPresent(portal -> deliver(player, portal));
         }).on(PlayerDisconnectEvent.class, event -> trigger.forget(event.getPlayer().getUuid()));
         try {
             startLabels(all);
@@ -121,6 +125,11 @@ public final class PortalModule {
             this.refresh = new LabelRefresh(this.scheduler, this.reads, this.readings, entries, this.portalTelemetry);
             this.refresh.start(this.settings.labelRefreshSeconds());
         }
+    }
+
+    // Another feature may hold a player back, e.g. one that is in the air after a throw.
+    private boolean mayTransfer(Player player) {
+        return this.transferGuard.map(guard -> guard.mayTransfer(player.getUuid())).orElse(true);
     }
 
     private void refused(Player player, Portal portal) {
