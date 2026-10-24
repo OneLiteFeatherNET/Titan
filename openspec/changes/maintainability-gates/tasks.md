@@ -48,7 +48,7 @@ Regeln für alle Wellen: Test zuerst (rot, dann grün, dann aufräumen); F.I.R.S
 
 ## 5. Javadoc der core-API (Welle 2d)
 
-- [ ] 5.1 Die 3 Typen ohne Javadoc (`DeliverComponent`, `DeliverType`, `Cancelable`) dokumentieren. Methoden-Lücken aus 1.3: bis zu einer Obergrenze, die 1.3 festlegt, im selben Commit dokumentieren; darüber hinaus in die Baseline. Die Javadoc beschreibt das Verhalten, nicht die Implementierung. Eigener Commit `docs(core): document the public core api`. Nachweis: `./gradlew :core:javadoc` mit Warnungen vor der Aktivierung listet die Lücken, danach ohne (bzw. nur noch Baseline-Einträge).
+- [x] 5.1 Die 3 Typen ohne Javadoc (`DeliverComponent`, `DeliverType`, `Cancelable`) dokumentieren. Methoden-Lücken aus 1.3: bis zu einer Obergrenze, die 1.3 festlegt, im selben Commit dokumentieren; darüber hinaus in die Baseline. Die Javadoc beschreibt das Verhalten, nicht die Implementierung. Eigener Commit `docs(core): document the public core api`. Nachweis: `./gradlew :core:javadoc` mit Warnungen vor der Aktivierung listet die Lücken, danach ohne (bzw. nur noch Baseline-Einträge).
 - [ ] 5.2 `:core:javadoc` mit doclint `missing` konfigurieren, `:core:check` hängt daran. Negativtest manuell: öffentliche Methode ohne Javadoc in `core` einfügen, Task muss brechen; danach verwerfen. Nachweis: Auszug im PR-Text.
 
 ## 6. Folgearbeit (nicht in diesem Change)

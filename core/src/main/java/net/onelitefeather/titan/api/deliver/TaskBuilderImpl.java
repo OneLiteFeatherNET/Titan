@@ -17,6 +17,7 @@ package net.onelitefeather.titan.api.deliver;
 
 import java.util.UUID;
 
+/** Builds a task delivery; reached through {@link DeliverComponent#taskBuilder()}. */
 final class TaskBuilderImpl implements DeliverComponent.TaskBuilder {
 
     private UUID playerId;

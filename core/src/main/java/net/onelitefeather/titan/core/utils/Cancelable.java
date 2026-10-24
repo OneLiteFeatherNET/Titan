@@ -17,12 +17,14 @@ package net.onelitefeather.titan.core.utils;
 
 import net.minestom.server.event.trait.CancellableEvent;
 
+/** Cancels Minestom events; holds static methods only. */
 public final class Cancelable {
 
     private Cancelable() {
         throw new UnsupportedOperationException("This class cannot be instantiated");
     }
 
+    /** Cancels the event, so its default action does not happen. */
     public static void cancel(CancellableEvent event) {
         event.setCancelled(true);
     }

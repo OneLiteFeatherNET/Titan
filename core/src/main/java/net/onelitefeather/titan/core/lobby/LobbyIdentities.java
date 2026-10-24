@@ -21,6 +21,7 @@ import org.jetbrains.annotations.NotNull;
 /** Tells a lobby who it is; empty when no CloudNet bridge provides that. */
 public interface LobbyIdentities {
 
+    /** This lobby's own identity, or empty when the lobby cannot resolve it. */
     @NotNull
     Optional<LobbyIdentity> self();
 }

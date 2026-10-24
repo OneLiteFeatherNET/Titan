@@ -22,7 +22,7 @@ import net.minestom.server.entity.EquipmentSlot;
  * Where a {@link LobbyItem} lives, if anywhere: sealed to a fixed hotbar slot, a fixed equipment
  * slot, or no fixed place at all.
  *
- * <p>{@link ItemConflicts#check(java.util.List)} only checks the first two; two features may both
+ * <p>{@code ItemConflicts.check} in {@code features/hotbar} only checks the first two; two features may both
  * hand out an unplaced item without ever colliding.
  */
 public sealed interface ItemSlot {
@@ -41,11 +41,12 @@ public sealed interface ItemSlot {
         return new Hotbar(slot);
     }
 
+    /** A fixed slot in the player's equipment, such as a piece of armour. */
     static ItemSlot equipment(EquipmentSlot slot) {
         return new Equipment(slot);
     }
 
-    /** Exempt from {@link ItemConflicts#check} conflict checking. */
+    /** Exempt from the conflict check of the hotbar column. */
     static ItemSlot unplaced() {
         return new Unplaced();
     }

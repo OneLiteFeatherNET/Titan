@@ -25,5 +25,6 @@ import net.minestom.server.event.player.PlayerUseItemEvent;
 @FunctionalInterface
 public interface ItemUseHandler {
 
+    /** Called when a player uses the item. */
     void handle(Player player, PlayerUseItemEvent event);
 }

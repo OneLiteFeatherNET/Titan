@@ -30,6 +30,7 @@ import org.jetbrains.annotations.Nullable;
 public record Portal(String id, PortalShape shape, String task, @Nullable String permission,
                      @Nullable PortalLabel label) {
 
+    /** A portal without a label. */
     public Portal(String id, PortalShape shape, String task, @Nullable String permission) {
         this(id, shape, task, permission, null);
     }
