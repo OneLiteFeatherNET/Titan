@@ -27,6 +27,7 @@ import java.util.Optional;
 import java.util.concurrent.Executor;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
+import net.minestom.server.event.EventDispatcher;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.event.player.PlayerMoveEvent;
@@ -35,6 +36,7 @@ import net.minestom.server.timer.Scheduler;
 import net.onelitefeather.titan.api.deliver.DeliverComponent;
 import net.onelitefeather.titan.api.deliver.Deliver;
 import net.onelitefeather.titan.core.module.FeatureNode;
+import net.onelitefeather.titan.core.module.LobbyPlayerBusyEvent;
 import net.onelitefeather.titan.core.permission.PermissionService;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
 import net.onelitefeather.titan.core.portal.Portal;
@@ -141,6 +143,7 @@ public final class PortalModule {
         LOGGER.debug("Player {} entered portal '{}', delivering to task '{}'", player.getUuid(), portal.id(), portal.task());
         // Before the hand-over: once the transfer is sent, the player is on their way out.
         PortalSounds.passed(player, portal);
+        EventDispatcher.call(new LobbyPlayerBusyEvent(player, true));
         this.portalTelemetry.transfer(player.getUuid(), portal, () -> this.deliver.sendPlayer(player, DeliverComponent.taskBuilder().taskName(portal.task()).player(player).build()));
     }
 

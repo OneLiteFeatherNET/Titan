@@ -8,7 +8,7 @@
 
 Eine Column ist ein `@Singleton` unter `features/<name>`, das nur von `core` abhängt. Sie hängt ihren `FeatureNode` an den `titan`-Knoten; die Priorität muss je Elternknoten eindeutig sein (`FeatureNode.attach` wirft sonst). Belegt sind heute 100 (protection), 200 (spawn), 300 (respawn), 400 (navigator), 450 (lobbyswitcher), 500 (sit), 600 (tickle), 650 (dance), 700 (elytra), 800 (season), 900 (portal), 1000 (jumprun).
 
-Fangen braucht drei Dinge, die die Lobby bisher nicht hat: einen Zustand pro Instanz, einen Nahkampf-Hook mit Abbruch und eine Einstellung pro Spieler. Die Einstellung kommt aus `lobby-settings`. Der Nahkampf-Hook ist `EntityAttackEvent`, den bereits `tickle` und `dance` benutzen. `protection` bricht Angriffe nicht ab; es bricht nur Aufnehmen, Ablegen, Tauschen, Inventar und Blöcke ab. Abgebrochen wird ein Angriff in dieser Lobby also nur über `Cancelable.cancel` in der jeweiligen Column.
+Fangen braucht drei Dinge, die die Lobby bisher nicht hat: einen Zustand pro Instanz, einen Nahkampf-Hook mit Abbruch und eine Einstellung pro Spieler. Die Einstellung kommt aus `lobby-settings`. Der Nahkampf-Hook ist `EntityAttackEvent`, den bereits `tickle` und `dance` benutzen. Er ist in Minestom `2026.10.07-26.2` **nicht abbrechbar** (kein `CancellableEvent`, geprüft am Quelltext). Ein Angriff macht in Minestom selbst keinen Schaden und keinen Rückstoß; die Lobby fügt Spielern keinen Schaden zu. Schaden und Rückstoß entstehen erst bei `LivingEntity#damage`, und das ist das abbrechbare `EntityDamageEvent`. Fangen unterdrückt deshalb Schaden zwischen zwei aktiven Spielern über `EntityDamageEvent`, nicht über den Angriff.
 
 ## Goals / Non-Goals
 
@@ -29,9 +29,9 @@ Fangen braucht drei Dinge, die die Lobby bisher nicht hat: einen Zustand pro Ins
 
 ### D0 Opt-in über die Settings-Schnittstelle
 
-Die Einstellung `titan:tag.enabled` (Boolean, Standard `false`) liegt im Schlüssel-Register von `lobby-settings`. Fangen liest sie beim Beitritt in der Instanz und bei jeder Änderung über das Ereignis aus `lobby-settings`, nicht bei jedem Treffer. Schreibt der Spieler sie um, egal ob über das Menü oder `/tag`, ändert sich der aktive Zustand im selben Tick.
+Die Einstellung `titan:tag.enabled` (`BooleanSetting` mit `SettingDefault.OPT_IN`) liegt im Schlüssel-Register von `lobby-settings`. Fangen liest sie beim Beitritt in der Instanz und meldet sich per `PlayerSettings#addChangeListener` für jede Änderung, nicht bei jedem Treffer. Die Schnittstelle wirft bei `isEnabled` nie; ein Fehler kann nur bei `set` auftreten (siehe `/tag`). Schreibt der Spieler sie um, egal ob über das Menü oder `/tag`, ändert sich der aktive Zustand im selben Tick.
 
-`/tag` ruft dieselbe Schnittstelle auf und dreht den Wert um. Ist die Schnittstelle nicht erreichbar, bleibt der Spieler inaktiv und bekommt eine Meldung, statt einen lokalen Zustand zu erfinden.
+`/tag` ruft dieselbe Schnittstelle auf und dreht den Wert um. Wirft `set` (Schnittstelle nicht erreichbar), bleibt der Zustand unverändert, der Spieler bekommt eine Meldung und keinen lokalen Zustand.
 
 Fangen hat keinen Hotbar-Platz. Das Item, das in der ersten Version geplant war, entfällt.
 
@@ -46,7 +46,7 @@ Die Zufallswahl bekommt einen injizierten `Random`. Tests setzen einen festen Se
 ### D2 Ablauf eines Treffers
 
 1. `EntityAttackEvent` mit Spieler als Angreifer und Ziel in derselben Instanz.
-2. Sind beide aktiv: Angriff wird abgebrochen (`Cancelable.cancel`). Damit gibt es weder Schaden noch Rückstoß.
+2. Sind beide aktiv, wird der Angriff nicht abgebrochen (nicht möglich, siehe Kontext). Er bleibt folgenlos, weil Minestom ohne Schadensaufruf keinen Schaden macht. Schaden zwischen zwei aktiven Spielern bricht ein `EntityDamageEvent`-Listener ab (`Cancelable.cancel`); damit gibt es weder Schaden noch Rückstoß.
 3. Ist der Angreifer der Fänger und das Ziel nicht der Fänger:
    - Rücktausch-Schutz greift (Ziel war in den letzten 5 Sekunden Fänger-Gegner des Angreifers): `COOLDOWN`, nur Actionbar-Hinweis.
    - Sonst wechselt die Rolle zum Ziel: `PASSED`. Neue Effekte: Ton für beide, Titel für das Ziel, Actionbar für alle aktiven Spieler, Zählung `tagged`.
@@ -56,9 +56,7 @@ Die Trefferanimation (`EntityAnimationPacket` mit Typ „Schaden nehmen“) geht
 
 ### D3 Reihenfolge der Ereignisse
 
-Fangen hat die Priorität 620. Sie liegt nach `tickle` (600), damit Tickle und Fangen nicht gegeneinander laufen: Tickle prüft nur, ob die Feder in der Hand ist, und seine Listener sehen den Treffer vor dem Abbruch durch Fangen. Vor `dance` (650), damit der Abbruch dort mit `onIncludingCancelled` weiterhin den Tanz beendet.
-
-Fangen registriert Angriffe mit `onIncludingCancelled`, weil andere Module (z. B. ein späteres Schutzmodul) einen Angriff vorher abbrechen können, der Treffer für die Rolle aber trotzdem zählen soll. Nur die Entscheidung selbst läuft über den Zustand.
+Fangen hat die Priorität 620, zwischen `tickle` (600) und `dance` (650). Da `EntityAttackEvent` nicht abbrechbar ist, gibt es keinen Abbruch, der die Reihenfolge verändern würde. Angriffe registriert Fangen mit `on`; die Entscheidung (Rolle, Sperre) läuft ausschließlich über den Zustand in `TagGame`.
 
 ### D4 Austritte und Ruhezustände
 
@@ -94,7 +92,7 @@ Das Spiel kennt keine AFK-Erkennung der Lobby. Die Regel nutzt nur die Bewegung,
 - **Sprungtest (`jumprun`):** Ein laufender Sprungtest nimmt den Spieler aus dem Spiel (D4). Ist er Fänger, verliert er die Rolle. Das Spiel läuft für die anderen weiter.
 - **Serverwechsel (`portal`):** Die Übergabe nimmt den Spieler aus dem Spiel, sobald sie beginnt (D4). Der Verbindungsabbruch ist die Sicherung.
 - **AFK:** siehe D5.
-- **Schutz (`protection`):** Unverändert. Fangen bricht nur Angriffe zwischen aktiven Spielern ab. Der Schutz für inaktive Spieler bleibt, wie er ist.
+- **Schutz (`protection`):** Unverändert. Fangen bricht nur Schaden zwischen aktiven Spielern ab. Der Schutz für inaktive Spieler bleibt, wie er ist.
 - **Hotbar und Lobby-Items:** Fangen fügt kein Item hinzu.
 - **Spawn und Respawn:** Rückkehr zum Spawn ändert den Zustand nicht. Die Rolle bleibt, wenn der Fänger zurückgesetzt wird (der Spawn ist nicht der Instanzwechsel).
 
@@ -117,7 +115,7 @@ Der Fänger bekommt `setGlowing(true)` mit der Standardfarbe (weiß). Es gibt ke
 - **Unit (rein):** `TagGameTest` für Übergaben, Rücktausch, Austritte, Zufallswahl mit festem Seed, Mindestzahl zwei, Inaktivität. Alles mit `AdjustableClock`.
 - **Unit:** `TagOptInTest` für Schalter an und aus, `/tag` dreht den Wert um, Schnittstelle nicht erreichbar bleibt inaktiv.
 - **Unit:** `TagMessagesTest` für gleiche Schlüssel in beiden Sprachen.
-- **Env (Minestom, `env.tick()`):** Treffer zwischen aktiven Spielern (Schaden und Rückstoß unterdrückt), Treffer mit Fänger (Rollenwechsel), Treffer ohne Fänger, Treffer auf inaktiven Spieler (Schutz unverändert), Sitzen, Tanz, Elytra, `LobbyPlayerBusyEvent`, Disconnect.
+- **Env (Minestom, `env.tick()`):** Schaden zwischen aktiven Spielern (`EntityDamageEvent` abgebrochen), Treffer mit Fänger (Rollenwechsel), Treffer ohne Fänger, Treffer auf inaktiven Spieler (Schutz unverändert), Sitzen, Tanz, Elytra, `LobbyPlayerBusyEvent`, Disconnect.
 - Kein `Thread.sleep`; Zeit nur über `AdjustableClock`.
 
 ## Offene Fragen

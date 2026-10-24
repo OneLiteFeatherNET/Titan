@@ -37,6 +37,7 @@ import net.minestom.server.instance.Instance;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.api.deliver.Deliver;
+import net.onelitefeather.titan.core.module.LobbyPlayerBusyEvent;
 import net.onelitefeather.titan.core.permission.PermissionResult;
 import net.onelitefeather.titan.core.portal.Box;
 import net.onelitefeather.titan.core.portal.Disc;
@@ -353,6 +354,24 @@ class PortalModuleTest {
 
             assertEquals(1, this.testTelemetry.counter("titan.portal.denied", Attributes.of(AttributeKey.stringKey("portal.id"), "vip")), "one refusal for 'vip'");
             assertTrue(this.testTelemetry.spans().stream().noneMatch(span -> span.getName().equals("portal.transfer")), "a refused entry is no transfer");
+            module.stop();
+        }
+    }
+
+    @DisplayName("A hand-over to another server tells the lobby the player is busy")
+    @Test
+    void handOverSaysBusy(Env env) {
+        try (TestTitanNode titan = TestTitanNode.attach(env)) {
+            List<LobbyPlayerBusyEvent> events = new ArrayList<>();
+            env.process().eventHandler().addListener(LobbyPlayerBusyEvent.class, events::add);
+            PortalModule module = start(env, titan, survivalBox());
+            Player player = playerAt(env, OUTSIDE);
+
+            move(env, player, INSIDE);
+
+            assertEquals(1, events.size(), "exactly one busy event must be fired when the transfer starts");
+            Assertions.assertSame(player, events.get(0).getPlayer(), "the event must name the player who is handed over");
+            assertTrue(events.get(0).busy(), "a transfer in progress must be reported as busy");
             module.stop();
         }
     }
