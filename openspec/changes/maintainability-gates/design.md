@@ -58,7 +58,6 @@ Die bestehende Column-Regel "hängt nur von `core` ab" steht im Kommentar von `t
 | Baseline für PMD | Ratchet-Prüfung im Gradle-Build, liest die PMD-XML-Berichte und vergleicht je Datei und Regel mit `config/quality/pmd-baseline.properties` | eigener Code, ~40 Zeilen, Tests mit XML-Fixtures |
 | Javadoc der `core`-API | `javadoc` mit doclint (`missing`) nur für `:core`, Warnungen brechen den Task ab | eingebaut |
 | Javadoc einer Column | Prüfung im `titan.column`-Plugin (`package-info.java` enthält einen Javadoc-Block vor der Paketdeklaration) | ~10 Zeilen, pure Funktion mit Tests |
-| Ungenutzte Abhängigkeiten (SOLLTE) | Dependency-Analysis-Gradle-Plugin, Aufgabe `buildHealth` | externes Plugin, nur falls D7 zugestimmt wird |
 | Formatierung | Spotless (bleibt) | bestehend |
 
 ## Decisions
@@ -88,7 +87,9 @@ Die Liste steht in einer Tabelle an einer Stelle (`buildSrc`), nicht in jedem `b
 | `runtime`, `setup`, `bridge` | `core`, `common` (`runtime` zusätzlich `persistence`) |
 | `apps/*` | alles (Composition Root) |
 
-Die Prüfung läuft auf allen Konfigurationen (`implementation`, `api`, `compileOnly`, `testImplementation`, `testFixtures(...)`) und beim Konfigurieren, nicht erst beim Kompilieren, damit der Fehler mit Modul und Ziel erscheint. Die Entscheidung über `persistence` für Columns ist offen (Open Question 1).
+Die Prüfung läuft auf allen Konfigurationen (`implementation`, `api`, `compileOnly`, `testImplementation`, `testFixtures(...)`) und beim Konfigurieren, nicht erst beim Kompilieren, damit der Fehler mit Modul und Ziel erscheint. `testFixtures(project(":core"))` zählt als `core`.
+
+Entschieden (Open Question 1): Columns dürfen `persistence` deklarieren. `features/jumprun` bleibt, wie es ist; die Persistenz-Logik wird nicht verschoben.
 
 Test: Die Prüffunktion ist rein (`violation(modulePath, targetPath) -> Optional<String>`) und wird in `buildSrc/src/test` mit fester Tabelle geprüft (Modul/Ziel-Paare). Ein Gradle-Lauf mit einer absichtlich falschen Abhängigkeit ist der Negativtest (Task 2.3, nicht committen). SOLID: DIP, die Regel hängt von einer Tabelle ab, nicht von Gradle-Typen in der Entscheidung.
 
@@ -96,7 +97,9 @@ Test: Die Prüffunktion ist rein (`violation(modulePath, targetPath) -> Optional
 
 Die bestehenden Regeln in `ColumnArchitectureRules` bleiben. Neue Projektregeln (Logger, Konsole, Reflexion, Systemuhr, `Thread.sleep`) liegen in einer zweiten Klasse `MaintainabilityRules` in `core/src/testFixtures`, daneben. Jedes Modul mit Produktionscode bekommt eine kurze Testklasse mit `@AnalyzeClasses(packages = ...)`, wie die Columns heute. Der Guard aus der Werkzeug-Tabelle stellt sicher, dass sie existiert.
 
-Alternative: Ein Convention-Plugin erzeugt die Testklasse. Verworfen für jetzt: Der Test ist dann unsichtbar und lässt sich nicht pro Modul mit Ausnahmen versehen. Die Kosten sind ~25 Klassen mit je 10 Zeilen. Die Entscheidung ist offen (Open Question 3).
+Alternative: Ein Convention-Plugin erzeugt die Testklasse. Verworfen: Der Test ist dann unsichtbar und lässt sich nicht pro Modul mit Ausnahmen versehen. Die Kosten sind ~25 Klassen mit je 10 Zeilen.
+
+Entschieden (Open Question 3): Jede `MaintainabilityArchitectureTest` wird pro Modul explizit geschrieben, nicht erzeugt. Der Guard aus D2 prüft, dass sie existiert.
 
 `Thread.sleep` in Tests braucht Testklassen auf dem Analysepfad. Die Klassen einer Column sind nicht auf dem Classpath von `apps/cloudnet`, deshalb gilt die Regel pro Modul und nicht zentral.
 
@@ -104,7 +107,7 @@ Test: Jede Regel bekommt eine Fixture-Klasse, die sie verletzt, und ein Testfall
 
 ### D4 PMD-Regelmenge, Größen und Baseline
 
-Regelmenge (versioniert in `config/quality/pmd-ruleset.xml`): die Regeln aus der Werkzeug-Tabelle, sonst nichts. Kein Stil, keine Formatierung (Spotless), keine Namensregeln. Die Schwellen 15 (CC), 60 (Methode NCSS), 500 (Klasse NCSS) sind Startwerte; Task 1.1 misst den Bestand, und die Schwellen werden angepasst, bevor der Build sie erzwingt. Gemessener Ausreißer nach Zeilen: `JumprunModule` mit 606 Zeilen. NCSS ist nicht gleich Zeilen; Task 1.1 zählt, ob die Klasse über 500 NCSS liegt, und trägt sie sonst als Bestandsverstoß in die Baseline ein.
+Regelmenge (versioniert in `config/quality/pmd-ruleset.xml`): die Regeln aus der Werkzeug-Tabelle, sonst nichts. Kein Stil, keine Formatierung (Spotless), keine Namensregeln. PMD läuft nur auf Produktionscode (`src/main`); Testcode bleibt außen vor (Open Question 5). Die Schwellen 15 (CC), 60 (Methode NCSS), 500 (Klasse NCSS) sind Startwerte; Task 1.1 misst den Bestand, und die Schwellen werden angepasst, bevor der Build sie erzwingt. Gemessener Ausreißer nach Zeilen: `JumprunModule` mit 606 Zeilen. NCSS ist nicht gleich Zeilen; Task 1.1 zählt, ob die Klasse über 500 NCSS liegt, und trägt sie sonst als Bestandsverstoß in die Baseline ein.
 
 Baseline: PMD hat keine eingebaute Baseline, und Gradle auch nicht. Eigener Code ist dafür nötig (`PmdRatchet`): Er liest die PMD-XML-Berichte, zählt Verstöße je Datei und Regel und vergleicht mit `config/quality/pmd-baseline.properties`. Mehr als erlaubt: Fehler. Weniger: Hinweis, Baseline kann verkleinert werden. Nicht in der Baseline: Fehler.
 
@@ -126,11 +129,9 @@ Warum nicht Checkstyle: siehe D1. Warum nicht ein Javadoc-Linter: doclint ist im
 
 Test: Ein Negativtest mit einer öffentlichen Methode ohne Javadoc in einer Fixture im Testlauf von `:core:javadoc` ist zu aufwendig; stattdessen ein Task-Lauf auf einem Branch, der die Lücke absichtlich einbaut (Task 5.2, nicht committen).
 
-### D7 Ungenutzte Abhängigkeiten (SOLLTE)
+### D7 Ungenutzte Abhängigkeiten (SOLLTE): Folgearbeit
 
-Das Dependency-Analysis-Plugin (`com.autonomousapps.dependency-analysis`) ist das einzige verbreitete Werkzeug für ungenutzte und zu lose deklarierte Abhängigkeiten in Gradle. Nicht in der ersten Stufe: Der Bestand ist unbekannt (Annotation-Prozessoren, BOM-Abhängigkeiten, Laufzeit-Bibliotheken würden Fehlalarme erzeugen). Task 1.3 misst im Dry-Run, dann wird entschieden.
-
-Test: Dry-Run-Bericht als Abnahme; keine Unit-Tests für das Plugin selbst.
+Das Dependency-Analysis-Plugin (`com.autonomousapps.dependency-analysis`) ist das verbreitete Werkzeug für ungenutzte und zu lose deklarierte Abhängigkeiten in Gradle. Es ist nicht Teil dieser Änderung (Open Question 4, Entscheidung des Nutzers): Zuerst folgt ein Dry-Run auf `main`, danach ein eigener Change, der das SOLLTE-Requirement als Gate einführt. Gründe für den Aufschub: Der Bestand ist unbekannt (Annotation-Prozessoren, BOM-Abhängigkeiten, Laufzeit-Bibliotheken würden Fehlalarme erzeugen).
 
 ### D8 Column-Beschreibung
 
@@ -148,7 +149,7 @@ Hinweis zu "Zero changed lines outside the new module" (Requirement "Ein neues F
 
 Rollback: Revert des PR-Commits. Keine Laufzeitwirkung, keine Datenmigration.
 
-Die Messwerte aus Task 1.1 bis 1.3 (Verstöße je Regel und Modul, Zeiten, Javadoc-Lücken der Methoden, Dry-Run des Dependency-Analysis-Plugins) werden in diesen Abschnitt geschrieben, bevor der erste Gate-Commit entsteht.
+Die Messwerte aus Task 1.1 bis 1.3 (Verstöße je Regel und Modul, Zeiten, Javadoc-Lücken der Methoden) werden in diesen Abschnitt geschrieben, bevor der erste Gate-Commit entsteht.
 
 ## Risks / Trade-offs
 
@@ -162,16 +163,13 @@ Die Messwerte aus Task 1.1 bis 1.3 (Verstöße je Regel und Modul, Zeiten, Javad
 
 ## Open Questions
 
-Blockierend (vor Task 2.x zu klären):
+Alle acht Fragen sind mit dem Nutzer entschieden (Stand: Umsetzung). Die Antworten stehen im Text oben und in den Abschnitten D2 bis D7; hier die Zusammenfassung:
 
-1. **`persistence` für Columns**: `features/jumprun` nutzt `persistence`, die Liste erlaubt es. Soll das so bleiben (Empfehlung: ja, `persistence` ist gemeinsame Bibliothek, keine Feature-Abhängigkeit), oder soll die Persistenz-Logik aus `jumprun` in ein Modul, das die Liste erlaubt?
-2. **Ein Change oder zwei**: Die ArchUnit-Regeln sind Tests. Nach Conventional Commits wären sie `test(architecture)`, die Gradle- und PMD-Gates `build(quality)`. Empfehlung: ein Change `build(quality)`, weil alle Regeln dieselbe Prüfung im Build bilden und ein Commit-Typ pro PR genügt. Wenn strikt getrennt werden soll, wird der ArchUnit-Anteil ein eigener Change.
-
-Nicht blockierend (vor Task 1.x oder später):
-
-3. **Architekturtests pro Modul**: explizit (wie heute bei den Columns, Empfehlung) oder durch ein Convention-Plugin erzeugt?
-4. **Dependency-Analysis-Plugin** (D7): jetzt in der ersten Stufe oder erst nach der Messung? Empfehlung: nach der Messung, als SOLLTE.
-5. **Schwellen** (15 / 60 / 500 NCSS): bestätigen nach Task 1.1. Sollen PMD-Regeln auch auf Testcode laufen, oder nur Logger und Konsole/Stacktrace?
-6. **Bridge-Abweichungen**: `System.getLogger` in `TitanBridgePermissionExtension` und Instanzfeld-Logger in `ServiceReadings`. Ausnahme mit Begründung oder anpassen? Task 1.2 prüft, ob der CloudNet-Kontext es erfordert.
-7. **Agenten-Modell**: Die globale Vorgabe verlangt Sonnet für Implementierung, die Projekt-Notiz zu Titan verlangt Haiku für alle Agenten. `tasks.md` folgt der globalen Vorgabe (Sonnet für Implementierung, Haiku für Messung und Review). Bitte bestätigen oder ändern.
-8. **Strict-Validierung und deutsche Schlüsselwörter**: `openspec validate --strict` warnt bei MUSS/DARF NICHT, weil es englische RFC-2119-Wörter erwartet. Alle bestehenden Specs im Repo schlagen deshalb mit Exit 1 fehl. Dieser Change ergänzt `(MUST)`, `(MUST NOT)`, `(SHOULD)` in Klammern hinter jedem Schlüsselwort, damit `--strict` läuft. Soll das Team das für alle Specs übernehmen oder die Warnung akzeptieren?
+1. **`persistence` für Columns**: Erlaubt. `features/jumprun` bleibt unverändert (D2).
+2. **Ein Change**: Ein Change `build(quality)` einschließlich ArchUnit-Anteil. Kein `test(architecture)`-Change. Ein Commit-Typ je Commit, ein Titel je PR.
+3. **Architekturtests pro Modul**: explizit geschrieben, mit Guard im Convention-Plugin (D3).
+4. **Dependency-Analysis-Plugin**: Später, als SOLLTE, nach einem Dry-Run. Nicht in dieser Umsetzung (D7).
+5. **PMD nur auf Produktionscode**, Schwellen 15 (CC), 60 (Methode NCSS), 500 (Klasse NCSS). Die Schwellen werden nur angepasst, wenn die Messung zeigt, dass sie blockieren; die Messung steht im Migration Plan.
+6. **Bridge-Abweichungen werden behoben, nicht ausgenommen**: `ServiceReadings` bekommt ein `private static final`-Logger-Feld. `TitanBridgePermissionExtension` wechselt von `System.getLogger` auf SLF4J, sofern der Bridge-Classloader SLF4J bereitstellt. Sonst bleibt `System.getLogger`, mit dokumentiertem Grund und einer benannten Ausnahme (Task 3.5).
+7. **Agenten für Titan sind Haiku**. `tasks.md` nennt keine Modelle; die Aufgaben beschreiben nur Umfang, Dateien und Nachweis.
+8. **Englische RFC-2119-Schlüsselwörter bleiben in Klammern**, z. B. `MUSS (MUST)`. `openspec validate --strict` läuft damit durch; das Muster gilt für die Specs dieses Change.

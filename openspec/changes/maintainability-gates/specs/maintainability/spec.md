@@ -94,8 +94,8 @@ Tests DÜRFEN NICHT (MUST NOT) `Thread.sleep` aufrufen. Zeitabhängiges Verhalte
 - **WHEN** ein Test `Thread.sleep` aufruft
 - **THEN** bricht der Build ab und nennt die Testklasse
 
-### Requirement: Statische Analyse prüft Produktions- und Testcode
-Der Build MUSS (MUST) PMD mit der gemeinsamen, im Repository versionierten Regelmenge auf Produktions- und Testcode ausführen. Die Prüfung ist Teil von `check`. Eine Verletzung einer aktiven Regel bricht den Build ab und nennt Datei, Zeile und Regel. Einzelne Module DÜRFEN die Regelmenge NICHT abschwächen.
+### Requirement: Statische Analyse prüft Produktionscode
+Der Build MUSS (MUST) PMD mit der gemeinsamen, im Repository versionierten Regelmenge auf Produktionscode (`src/main`) ausführen. Testcode ist in dieser Stufe nicht Teil der PMD-Prüfung. Die Prüfung ist Teil von `check`. Eine Verletzung einer aktiven Regel bricht den Build ab und nennt Datei, Zeile und Regel. Einzelne Module DÜRFEN die Regelmenge NICHT abschwächen.
 
 #### Scenario: Unbenutzte private Methode
 - **WHEN** eine Klasse eine private Methode enthält, die nirgends aufgerufen wird
@@ -104,6 +104,10 @@ Der Build MUSS (MUST) PMD mit der gemeinsamen, im Repository versionierten Regel
 #### Scenario: Saubere Klasse
 - **WHEN** alle Klassen die aktiven Regeln erfüllen oder im Bestand verzeichnet sind
 - **THEN** läuft `check` ohne PMD-Fehler durch
+
+#### Scenario: Testcode wird nicht geprüft
+- **WHEN** eine Testklasse unter `src/test` eine unbenutzte private Methode enthält
+- **THEN** bricht der Build wegen PMD nicht ab
 
 ### Requirement: Methoden und Klassen bleiben klein
 Eine Methode MUSS (MUST) höchstens eine zyklomatische Komplexität von 15 und höchstens 60 NCSS-Zeilen haben. Eine Klasse MUSS höchstens 500 NCSS-Zeilen haben. Diese Grenzen sind Startwerte, die vor der Einführung gegen den Bestand gemessen werden.
@@ -164,9 +168,3 @@ Jede Column MUSS (MUST) in `package-info.java` ihres Basispakets eine Javadoc mi
 - **WHEN** die `package-info.java` einer Column eine Javadoc mit Zweck und Abhängigkeiten enthält
 - **THEN** bricht der Build deswegen nicht ab
 
-### Requirement: Ungenutzte Abhängigkeiten werden gemeldet
-Der Build SOLLTE (SHOULD) deklarierte, aber im Modul nicht genutzte Abhängigkeiten melden. Die Prüfung MUSS (MUST) erst nach der Messung des Bestands eingeführt werden; bis dahin ist sie optional.
-
-#### Scenario: Ungenutzte Abhängigkeit
-- **WHEN** ein Modul eine Bibliothek deklariert, die im Code des Moduls nicht vorkommt
-- **THEN** meldet der Build die Abhängigkeit mit ihren Koordinaten
