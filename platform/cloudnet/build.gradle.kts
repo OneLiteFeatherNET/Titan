@@ -25,6 +25,8 @@ dependencies {
     testImplementation(testFixtures(project(":core")))
     testImplementation(libs.minestom)
     testImplementation(libs.cyano)
+    // DeliverContract, which MessageChannelDeliver must satisfy like the recording fake.
+    testImplementation(testFixtures(project(":core")))
     testImplementation(libs.junit.api)
     testImplementation(libs.junit.platform.launcher)
     // ListAppender, for capturing the warning MessageChannelDeliver logs.
