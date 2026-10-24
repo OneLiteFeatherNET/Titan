@@ -16,9 +16,11 @@
 package net.onelitefeather.titan.feature.tag;
 
 import java.time.Instant;
+import java.util.List;
 import java.time.ZoneOffset;
 import java.util.Random;
 import java.util.random.RandomGenerator;
+import net.kyori.adventure.text.Component;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.damage.Damage;
@@ -343,6 +345,90 @@ class TagModuleIntegrationTest {
             env.process().eventHandler().call(new LobbyPlayerBusyEvent(tagger.player(), false));
 
             Assertions.assertTrue(first.player().isGlowing() ^ second.player().isGlowing(), "after the run the two players must play again with exactly one tagger");
+        }
+    }
+
+    /** The waiting hint as the player's client receives it. */
+    static Component waitingHintFor(Seat seat) {
+        return TagMessages.text(TagMessages.WAITING, seat.player().getLocale());
+    }
+
+    @DisplayName("Switching the tag on while alone sends the waiting hint once and not again while the player waits")
+    @Test
+    void waitingHintIsSentOnceWhileAlone(Env env) {
+        Instance instance = env.createFlatInstance();
+        try (Round round = Round.start(env)) {
+            Seat alone = round.connect(env, instance);
+            Collector<ActionBarPacket> bars = alone.connection().trackIncoming(ActionBarPacket.class);
+
+            round.enable(alone);
+            for (int tick = 0; tick < 100; tick++) {
+                env.tick();
+            }
+
+            List<ActionBarPacket> sent = bars.collect();
+            Assertions.assertEquals(1, sent.size(), "the waiting hint must be sent once and not repeated while the player waits alone");
+            Assertions.assertEquals(waitingHintFor(alone), sent.getFirst().text(), "the single action bar must be the waiting hint");
+        }
+    }
+
+    @DisplayName("Joining a lobby with tag on while alone sends the waiting hint once")
+    @Test
+    void joiningAloneWithTagOnSendsTheWaitingHintOnce(Env env) {
+        Instance instance = env.createFlatInstance();
+        Instance elsewhere = env.createFlatInstance();
+        try (Round round = Round.start(env)) {
+            Seat walker = enabledSeat(env, round, elsewhere);
+            Collector<ActionBarPacket> bars = walker.connection().trackIncoming(ActionBarPacket.class);
+
+            walker.player().setInstance(instance).join();
+            for (int tick = 0; tick < 100; tick++) {
+                env.tick();
+            }
+
+            List<ActionBarPacket> sent = bars.collect();
+            Assertions.assertEquals(1, sent.size(), "joining alone with tag on must send the waiting hint once and not repeat it");
+            Assertions.assertEquals(waitingHintFor(walker), sent.getFirst().text(), "the single action bar must be the waiting hint");
+        }
+    }
+
+    @DisplayName("A second participant ends the waiting: the action bar names the tagger instead")
+    @Test
+    void secondParticipantEndsTheWaiting(Env env) {
+        Instance instance = env.createFlatInstance();
+        try (Round round = Round.start(env)) {
+            Seat first = round.connect(env, instance);
+            round.enable(first);
+            Collector<ActionBarPacket> bars = first.connection().trackIncoming(ActionBarPacket.class);
+
+            enabledSeat(env, round, instance);
+
+            List<ActionBarPacket> sent = bars.collect();
+            Assertions.assertFalse(sent.isEmpty(), "the first player must get an action bar when a second player joins");
+            Assertions.assertTrue(sent.stream().noneMatch(bar -> bar.text().equals(waitingHintFor(first))), "with a second participant the waiting hint must not be shown");
+        }
+    }
+
+    @DisplayName("When the other player leaves, the remaining player sees the waiting hint once")
+    @Test
+    void remainingPlayerSeesTheWaitingHintOnceWhenTheOtherLeaves(Env env) {
+        Instance instance = env.createFlatInstance();
+        Instance elsewhere = env.createFlatInstance();
+        try (Round round = Round.start(env)) {
+            Seat first = enabledSeat(env, round, instance);
+            Seat second = enabledSeat(env, round, instance);
+            Seat tagger = taggerOf(first, second);
+            Seat remaining = otherOf(tagger, first, second);
+            Collector<ActionBarPacket> bars = remaining.connection().trackIncoming(ActionBarPacket.class);
+
+            tagger.player().setInstance(elsewhere).join();
+            for (int tick = 0; tick < 100; tick++) {
+                env.tick();
+            }
+
+            List<ActionBarPacket> sent = bars.collect();
+            Assertions.assertEquals(1, sent.size(), "the remaining player must get the waiting hint once and not repeated while alone");
+            Assertions.assertEquals(waitingHintFor(remaining), sent.getFirst().text(), "the hint must say the player waits for a second player");
         }
     }
 }

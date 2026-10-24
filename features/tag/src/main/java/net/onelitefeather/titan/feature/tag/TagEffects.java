@@ -46,8 +46,9 @@ final class TagEffects {
     private static final Vec SPREAD = new Vec(0.3, 0.5, 0.3);
 
     /**
-     * Shows the new state after the tagger changed from {@code previous}: the glow moves and the
-     * action bar of every active player is refreshed, which also keeps it from fading out.
+     * Shows the new state after the tagger changed from {@code previous}: the glow moves, and the
+     * tagger's action bar is refreshed while there is one, which keeps it from fading out. When
+     * the tagger leaves and one player is left alone, that player sees the waiting hint once.
      */
     void taggerChanged(Instance instance, TagGame game, UUID previous) {
         UUID current = game.tagger().orElse(null);
@@ -56,8 +57,22 @@ final class TagEffects {
         }
         if (current != null) {
             playerIn(instance, current).ifPresent(player -> player.setGlowing(true));
+            actionBars(instance, game);
+        } else if (previous != null) {
+            for (Player player : instance.getPlayers()) {
+                if (game.isActive(player.getUuid())) {
+                    waiting(player);
+                }
+            }
         }
-        actionBars(instance, game);
+    }
+
+    /**
+     * The hint that a player is alone and waits for a second one. Sent once, when the player
+     * becomes alone, and not refreshed: the action bar fades out by itself after a few seconds.
+     */
+    void waiting(Player player) {
+        player.sendActionBar(TagMessages.text(TagMessages.WAITING, player.getLocale()));
     }
 
     /** The player left the game: no glow stays behind. */
@@ -90,22 +105,20 @@ final class TagEffects {
         playerIn(instance, tagger.get()).ifPresent(player -> instance.sendGroupedPacket(new ParticlePacket(dust, player.getPosition().add(0, 1, 0), SPREAD, 0f, PARTICLE_COUNT)));
     }
 
-    /** Every active player of the instance sees who the tagger is, or that there is none yet. */
+    /**
+     * Every active player of the instance sees who the tagger is. Does nothing without a tagger.
+     */
     void actionBars(Instance instance, TagGame game) {
-        for (Player player : instance.getPlayers()) {
-            if (game.isActive(player.getUuid())) {
-                player.sendActionBar(actionBarOf(instance, game, player));
-            }
-        }
-    }
-
-    private static Component actionBarOf(Instance instance, TagGame game, Player viewer) {
         Optional<UUID> tagger = game.tagger();
         if (tagger.isEmpty()) {
-            return TagMessages.text(TagMessages.WAITING, viewer.getLocale());
+            return;
         }
         String name = playerIn(instance, tagger.get()).map(Player::getUsername).orElse("");
-        return TagMessages.text(TagMessages.TAGGER, viewer.getLocale()).append(Component.text(" " + name));
+        for (Player player : instance.getPlayers()) {
+            if (game.isActive(player.getUuid())) {
+                player.sendActionBar(TagMessages.text(TagMessages.TAGGER, player.getLocale()).append(Component.text(" " + name)));
+            }
+        }
     }
 
     /** The player with {@code id} if they are in {@code instance}; empty otherwise. */

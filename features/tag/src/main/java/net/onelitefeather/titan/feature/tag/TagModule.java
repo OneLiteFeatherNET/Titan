@@ -247,22 +247,26 @@ public final class TagModule {
         if (this.busy.contains(id) || !this.settings.isEnabled(id, TagSettings.ENABLED)) {
             return;
         }
-        enter(id, instance);
+        enter(player, instance);
     }
 
-    private void enter(UUID player, Instance instance) {
-        Instance current = this.members.get(player);
+    private void enter(Player player, Instance instance) {
+        UUID id = player.getUuid();
+        Instance current = this.members.get(id);
         if (instance.equals(current)) {
             return;
         }
         if (current != null) {
-            leave(player);
+            leave(id);
         }
         TagGame game = this.games.computeIfAbsent(instance, ignored -> new TagGame(this.random));
         Optional<UUID> before = game.tagger();
-        if (game.join(player, now())) {
-            this.members.put(player, instance);
+        if (game.join(id, now())) {
+            this.members.put(id, instance);
             this.effects.taggerChanged(instance, game, before.orElse(null));
+            if (game.tagger().isEmpty()) {
+                this.effects.waiting(player);
+            }
         }
     }
 
