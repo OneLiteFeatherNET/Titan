@@ -34,6 +34,7 @@ final class SettingsMessages implements AutoCloseable {
 
     static final String TITLE = "titan.settings.title";
     static final String ITEM = "titan.settings.item";
+    static final String ITEM_HINT = "titan.settings.item.hint";
     static final String STATUS_ON = "titan.settings.status.on";
     static final String STATUS_OFF = "titan.settings.status.off";
     static final String HINT = "titan.settings.hint";
@@ -42,7 +43,7 @@ final class SettingsMessages implements AutoCloseable {
      * Every key the column renders with a fixed text; the bundle test checks the property files
      * against it.
      */
-    static final List<String> KEYS = List.of(TITLE, ITEM, STATUS_ON, STATUS_OFF, HINT);
+    static final List<String> KEYS = List.of(TITLE, ITEM, ITEM_HINT, STATUS_ON, STATUS_OFF, HINT);
 
     private static final String BUNDLE = "titan.settings.messages";
     private static final String OPTION_PREFIX = "titan.settings.option.";
@@ -81,19 +82,37 @@ final class SettingsMessages implements AutoCloseable {
         return text(TITLE, language);
     }
 
+    /** The name of the hotbar item, in the brand gradient and not italic. */
     Component itemName(Locale language) {
-        return text(ITEM, language);
+        return italicOff(text(ITEM, language));
     }
 
-    /** @return the option's name, rendered for {@code language} */
+    /** The one lore line of the hotbar item: how to open the menu. */
+    Component itemHint(Locale language) {
+        return italicOff(text(ITEM_HINT, language));
+    }
+
+    /** @return the option's name in the brand gradient, rendered for {@code language} */
     static Component name(BooleanSetting setting, Locale language) {
-        return text(optionKey(setting.key(), "name"), language);
+        return italicOff(text(optionKey(setting.key(), "name"), language));
     }
 
-    /** @return the option's lore: its description, its state and how to switch it */
-    static List<Component> lore(BooleanSetting setting, boolean enabled, Locale language) {
-        return List.of(
-                italicOff(text(optionKey(setting.key(), "description"), language)), italicOff(text(enabled ? STATUS_ON : STATUS_OFF, language)), italicOff(text(HINT, language)));
+    /** @return the option's description, which the menu shows under its icon */
+    static Component description(BooleanSetting setting, Locale language) {
+        return italicOff(text(optionKey(setting.key(), "description"), language));
+    }
+
+    /**
+     * @return the state of an option as the text of its switch: a green check when on, a red cross
+     *         when off
+     */
+    static Component toggleName(boolean enabled, Locale language) {
+        return italicOff(text(enabled ? STATUS_ON : STATUS_OFF, language));
+    }
+
+    /** @return how to switch an option, the lore of its switch */
+    static Component toggleHint(Locale language) {
+        return italicOff(text(HINT, language));
     }
 
     /**
