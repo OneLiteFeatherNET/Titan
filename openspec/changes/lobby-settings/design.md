@@ -129,20 +129,20 @@ Keine Spieler-UUIDs in Metriken; im Debug-Log ist die UUID erlaubt.
 
 ### D10 Sicherheit
 
-Otis hat keine Authentifizierung. Jeder mit Netzwerkzugang zu Otis kann die Einstellungen eines Spielers lesen und schreiben, wenn er die UUID kennt. Die Schranken heute:
+Otis hat keine Dienst-Authentifizierung. Otis ist eine Dienst-zu-Dienst-Verbindung, die nur im internen Netz erreichbar ist (wie die Aufrufe von Velocity). Die Schranken:
 
 - Otis ist nur im internen Netz erreichbar; die Lobby (mc01) erreicht den Dienst über den internen Pfad.
 - Die gespeicherten Werte sind Schalter. Es gibt keine personenbezogenen Daten außer der UUID, die ohnehin im Netzwerk bekannt ist.
 - Der Adapter erlaubt nur Schlüssel aus der Registry (D1); ein fremder Schlüssel kann nicht über die Lobby gesetzt werden.
 
-Vor dem Einschalten in Produktion muss die Otis-Authentifizierung (Voraussetzung 1) gelandet sein. Die Lobby sendet das Token dann bereits, sobald `otis.token` gesetzt ist. Ohne Token und mit Otis-Authentifizierung schlägt jeder Aufruf mit 401 fehl, was der Breaker als Fehler zählt und der Start als Warnung meldet.
+Das Token ist optional. Ist `otis.token` (bzw. `TITAN_OTIS_TOKEN`) gesetzt, sendet die Lobby es als `Authorization`-Header; ohne Token ruft sie ohne Header auf. Ein Otis, das später Authentifizierung verlangt, würde mit 401 antworten; der Breaker zählt das als Fehler und der Start meldet es als Warnung.
 
 ### D11 Otis-Stand in Produktion (verifiziert 2026-10-24)
 
 - Produktion läuft Otis 1.17.0 (`harbor.onelitefeather.dev/onelitefeather/otis:1.17.0`). Die Voraussetzung „Version ausgerollt“ ist erfüllt.
 - `GET /v1/players/{uuid}/settings` liefert 200 mit `[]`. Die Migration V2 (`player_setting`) ist damit in Produktion gelaufen.
 - Velocity legt den Spieler bei jedem Beitritt an (`/otis/update/{uuid}` in den Produktions-Access-Logs). Ein 404 beim ersten Schreiben ist daher nicht zu erwarten. Die Behandlung von `404 player-not-found` als „später erneut versuchen“ (D4) bleibt nur als defensiver Fallback.
-- Einzige blockierende Voraussetzung ist die Dienst-Authentifizierung in Otis. Sie ist ein eigener Change in `OneLiteFeatherNET/Otis`.
+- Keine offene Voraussetzung in Otis für die Einschaltung. Dienst-Authentifizierung ist nicht nötig, weil Otis nur dienst-zu-dienst im internen Netz erreichbar ist.
 
 ### D12 Client: eigene JSON-Abbildung statt `otis-client`
 

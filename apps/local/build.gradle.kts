@@ -7,6 +7,8 @@ plugins {
 // No supervisor restarts a standalone dev server, so the season column's restart-into-world cannot work here.
 titanVariant {
     exclude("season")
+    // The settings store: Otis when otis.url is set, otherwise the in-memory store of the settings column.
+    platform("otis")
 }
 
 // Off by default - a developer builds with LuckPerms only when testing permissions locally, via

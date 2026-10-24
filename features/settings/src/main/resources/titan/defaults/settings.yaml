@@ -1,0 +1,24 @@
+# The "settings" module: player options that a player switches in the settings menu, saved in Otis.
+settings:
+  # Off by default: no menu, no hotbar item, no /settings command and no request to Otis.
+  enabled: false
+
+# Otis, the profile service that keeps the player settings. The platform/otis module reads the
+# url, token and connection keys; the write keys below belong to this module.
+#   otis.url    base url, e.g. http://otis:8080; empty keeps the settings in memory only
+#   otis.token  bearer token for Otis; set it through the environment variable TITAN_OTIS_TOKEN,
+#               which wins over this key and is never logged
+otis:
+  url: ""
+  token: ""
+  # Connection and request timeouts, in milliseconds.
+  connectTimeoutMillis: 1000
+  requestTimeoutMillis: 2000
+  # Retries of a failed load (network error, timeout or 5xx) and of a failed write.
+  loadRetries: 1
+  writeRetries: 3
+  # How long a switched setting waits before it is saved; a further switch restarts the wait.
+  writeDebounceMillis: 2000
+  # Failures in a row that open the circuit breaker, and how long it stays open.
+  circuitFailureThreshold: 3
+  circuitOpenMillis: 30000
