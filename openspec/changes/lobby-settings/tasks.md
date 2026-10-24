@@ -43,13 +43,13 @@ Reihenfolge: zuerst die Schnittstelle und das Menü mit dem In-Memory-Speicher, 
 
 ## 5. Otis-Adapter (`platform/otis`)
 
-- [ ] 5.0 Gradle-Modul `platform/otis` anlegen und in `settings.gradle.kts` einbinden; Abhängigkeiten `core` und Gson (explizit deklariert), kein `otis-client` (D12, D13).
-- [ ] 5.1 Test zuerst (Unit, `OtisJsonTest`): Antwort mit `key`, `value`, `version`, `updatedAt` lesen; unbekannte Felder ignorieren; Schreibanfrage als `{"value": …}`. Verifikation: rot, dann grün.
-- [ ] 5.2 `OtisSettingsStore` mit `java.net.http.HttpClient`, Timeouts aus Konfiguration.
-- [ ] 5.3 Test zuerst (Unit, `CircuitBreakerTest` mit `AdjustableClock`): nach drei Fehlern offen; nach 30 Sekunden halb offen mit genau einer Probe; Erfolg schließt; Fehler öffnet erneut. Verifikation: rot, dann grün.
-- [ ] 5.4 `CircuitBreaker`, selbst gebaut, Zeit über `Clock`.
-- [ ] 5.5 Integrationstest (`integrationTest`, `OtisSettingsStoreIntegrationTest`, JDK-`HttpServer` auf Port 0, je ein Verhalten pro Test): Laden liefert Werte; 404 wird als „leer“ gewertet; 5xx wird wiederholt; Timeout führt zum Standard; Token wird im Header `Authorization` gesendet, nie in Logs. Verifikation: rot, dann grün.
-- [ ] 5.6 Test zuerst (Unit, `SettingsLogRedactionTest` mit captured appender): Token und Wert erscheinen in keiner Log-Zeile bei Fehlern. Verifikation: rot, dann grün.
+- [x] 5.0 Gradle-Modul `platform/otis` anlegen und in `settings.gradle.kts` einbinden; Abhängigkeiten `core` und Gson (explizit deklariert), kein `otis-client` (D12, D13).
+- [x] 5.1 Test zuerst (Unit, `OtisJsonTest`): Antwort mit `key`, `value`, `version`, `updatedAt` lesen; unbekannte Felder ignorieren; Schreibanfrage als `{"value": …}`. Verifikation: rot, dann grün.
+- [x] 5.2 `OtisSettingsStore` mit `java.net.http.HttpClient`, Timeouts aus Konfiguration.
+- [x] 5.3 Test zuerst (Unit, `CircuitBreakerTest` mit `AdjustableClock`): nach drei Fehlern offen; nach 30 Sekunden halb offen mit genau einer Probe; Erfolg schließt; Fehler öffnet erneut. Verifikation: rot, dann grün.
+- [x] 5.4 `CircuitBreaker`, selbst gebaut, Zeit über `Clock`.
+- [x] 5.5 Integrationstest (`integrationTest`, `OtisSettingsStoreIntegrationTest`, JDK-`HttpServer` auf Port 0, je ein Verhalten pro Test): Laden liefert Werte; 404 wird als „leer“ gewertet; 5xx wird wiederholt; Timeout führt zum Standard; Token wird im Header `Authorization` gesendet, nie in Logs. Verifikation: rot, dann grün.
+- [x] 5.6 Test zuerst (Unit, `SettingsLogRedactionTest` mit captured appender): Token und Wert erscheinen in keiner Log-Zeile bei Fehlern. Verifikation: rot, dann grün.
 
 ## 6. Konfiguration und Verdrahtung
 

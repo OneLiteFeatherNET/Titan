@@ -48,6 +48,7 @@ dependencyResolutionManagement {
             version("avaje-inject", "12.7")
             version("avaje-config", "5.2")
             version("snakeyaml", "2.7")
+            version("gson", "2.14.0")
 
             version("slf4j", "2.0.20")
             version("logback", "1.6.5")
@@ -105,6 +106,8 @@ dependencyResolutionManagement {
             library("avaje-inject-generator", "io.avaje", "avaje-inject-generator").versionRef("avaje-inject")
             library("avaje-config", "io.avaje", "avaje-config").versionRef("avaje-config")
             library("snakeyaml", "org.yaml", "snakeyaml").versionRef("snakeyaml")
+            // Otis JSON for the settings adapter (platform/otis); the same Gson Minestom already brings.
+            library("gson", "com.google.code.gson", "gson").versionRef("gson")
 
             // Guava: unrelocated, expected by LuckPerms (was transitive via CloudNet).
             library("guava", "com.google.guava", "guava").versionRef("guava")
