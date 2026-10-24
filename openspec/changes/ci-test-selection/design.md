@@ -60,7 +60,7 @@ Die Caller-Dateien haben unterschiedliche `name:`-Werte. Die `concurrency`-Grupp
 Verworfen:
 - Alle drei Betriebssysteme mit `build`: Smoke-Tests liefen dreimal, und der Windows-Lauf wäre der Engpass.
 - Smoke nur über Matrix-Bedingung `if: matrix.os == ...`: der geteilte Workflow lässt keine Bedingung je Matrix-Eintrag zu.
-- Nur Ubuntu im PR: Die Frage ist als Open Question an den Nutzer gestellt, siehe unten.
+- Nur Ubuntu im PR: verworfen (Entscheidung des Nutzers, siehe Open Questions).
 Test: ein PR zeigt drei Build-Jobs, `smokeTest` läuft nur im Ubuntu-Job, die Zeilen „Test results“ werden gezählt (zwei Check-Runs mit demselben Namen sind bekannt, siehe Risiken).
 
 **C4. `main` und Nacht als eigener Caller mit `force-build`.** Eine Datei `build-main.yml` mit den Triggern `push` (Branch `main`) und `schedule` ruft den geteilten Workflow mit `force-build: true` auf:
@@ -87,9 +87,9 @@ Die Zielwerte für kalte Läufe sind Schätzungen, die erst nach `module-test-le
 
 - [Cache-Eviction: GitHub entfernt Caches nach 7 Tagen ohne Zugriff und bei mehr als 10 GB je Repository] → Ein Lauf nach einer Lücke ist kalt; das Ziel „Feature-PR ≤ 5 min“ gilt nur bei warmem Cache, der kalte Ziel-Lauf ist „Core-PR ≤ 10 min“. Der Nachtlauf schreibt den Cache nicht neu, also erfolgt die Erneuerung über `main`.
 - [Nicht deterministische Tests werden aus dem Cache bestanden] → Die F.I.R.S.T.-Regel „keine versteckten Eingaben“ (Spec `test-levels`) und der Nachtlauf ohne Cache fangen das ab.
-- [Zwei Check-Runs mit dem Namen „Test results“ im selben PR] → Der geteilte Workflow setzt den Namen fest. Die Ergebnisse sind trotzdem je Job sichtbar. Ein eigener Name braucht eine Änderung im Workflows-Repository (Open Question).
+- [Zwei Check-Runs mit dem Namen „Test results“ im selben PR] → Der geteilte Workflow setzt den Namen fest. Die Ergebnisse sind trotzdem je Job sichtbar. Ein eigener Name braucht eine Änderung im Workflows-Repository (Folgeaufgabe, siehe Open Questions).
 - [Ein Push auf `main` bricht den Nachtlauf ab] → Dieselbe Gruppe. Ein eigener Gruppenschlüssel ist nur über den geteilten Workflow möglich; bis dahin wird der Nachtlauf bei einem Merge-Push neu gestartet.
-- [Windows und macOS im PR führen keine Smoke-Tests aus] → Der Smoke-Test prüft die Verdrahtung über das Jar, das auf allen drei Systemen gleich gebaut wird; der Entscheid liegt beim Nutzer (Open Question).
+- [Windows und macOS im PR führen keine Smoke-Tests aus] → Der Smoke-Test prüft die Verdrahtung über das Jar, das auf allen drei Systemen gleich gebaut wird; entschieden: Windows und macOS führen `test` aus (siehe Open Questions).
 - [Die Verhältniszahl „Job-Dauer ≈ 0,5 × Testsumme“ stammt aus zwei Läufen] → Die Zielwerte gelten als Richtwert und werden nach der Umsetzung neu gemessen.
 
 ## Migration Plan
@@ -103,6 +103,8 @@ Rollback: Die neue Caller-Datei und `build-main.yml` löschen; `build-pr.yml` zu
 
 ## Open Questions
 
-- **Windows und macOS im PR (entscheidet der Nutzer vor der Umsetzung):** Der Entwurf lässt beide im PR den Task `test` ausführen. Alternative: beide nur auf `main` und nachts, PR nur Ubuntu. Die Alternative spart den Windows-Engpass (ca. 575 s geschätzt), verliert aber die frühe Prüfung auf Windows. Dieser Punkt ändert das Requirement „macOS und Windows führen im Pull Request den Task test aus“.
-- **Remote-Build-Cache:** Ein gemeinsamer Cache-Server würde auch Läufe auf anderen Branches beschleunigen. Er ist eine Infrastrukturentscheidung mit Betriebsaufwand und ist nicht Teil dieser Änderung.
-- **Eigener Check-Name im geteilten Workflow:** Nur über das Repository `OneLiteFeatherNET/workflows` lösbar; für diese Änderung nicht nötig.
+Entschieden:
+
+- **Windows und macOS im PR führen `test` aus** (Entscheidung des Nutzers vor der Umsetzung). Die Alternative, beide nur auf `main` und nachts laufen zu lassen, ist verworfen; das Requirement „macOS und Windows führen im Pull Request den Task test aus“ bleibt unverändert. Der Windows-Job bleibt damit der Engpass im PR.
+- **Remote-Build-Cache:** nicht Teil dieser Änderung, später als eigene Infrastrukturentscheidung.
+- **Eigener Check-Name „Test results“ im geteilten Workflow:** nicht Teil dieser Änderung. Folgeaufgabe im Repository `OneLiteFeatherNET/workflows`; bis dahin trägt jeder Job den Namen aus dem geteilten Workflow.

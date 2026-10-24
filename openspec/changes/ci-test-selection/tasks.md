@@ -4,15 +4,15 @@ Zweig: `ci/test-selection` von `origin/main`, erst nach dem Merge von #472 und `
 
 ## Ausführungsplan
 
-| Welle | Agent | Aufgaben | Modell | darf ändern | darf nicht ändern |
-|---|---|---|---|---|---|
-| 1 | Lesen | 1.1, 1.2 | haiku | nur Scratch-Verzeichnis | Repository |
-| 2 | Umsetzung, Worktree | 2.1, 2.2 | sonnet | `.github/workflows/build-pr.yml`, neue Caller-Datei | Produktionscode, Tests |
-| 2 | Umsetzung, Worktree | 2.3 | sonnet | `.github/workflows/build-main.yml` (neu) | `build-pr.yml` |
-| 3 | Prüfung | 3.1, 3.2 | haiku | nur Scratch-Verzeichnis | Repository |
-| 4 | Pull Request | 4.1 | sonnet | nur Git und `gh` | Repository-Inhalt |
+| Welle | Agent | Aufgaben | darf ändern | darf nicht ändern |
+|---|---|---|---|---|
+| 1 | Lesen | 1.1, 1.2 | nur Scratch-Verzeichnis | Repository |
+| 2 | Umsetzung, Worktree | 2.1, 2.2 | `.github/workflows/build-pr.yml`, neue Caller-Datei | Produktionscode, Tests |
+| 2 | Umsetzung, Worktree | 2.3 | `.github/workflows/build-main.yml` (neu) | `build-pr.yml` |
+| 3 | Prüfung | 3.1, 3.2 | nur Scratch-Verzeichnis | Repository |
+| 4 | Pull Request | 4.1 | nur Git und `gh` | Repository-Inhalt |
 
-Welle 2 läuft parallel; die beiden Aufgaben berühren verschiedene Dateien. Vor Welle 2 steht die Entscheidung des Nutzers zu Windows und macOS im PR (Open Question in `design.md`); ohne Entscheidung gilt der Entwurf.
+Welle 2 läuft parallel; die beiden Aufgaben berühren verschiedene Dateien. Die Entscheidung zu Windows und macOS im PR ist getroffen: beide führen `test` aus (siehe `design.md`, Open Questions).
 
 ## 1. Vorbedingungen
 
@@ -33,4 +33,4 @@ Welle 2 läuft parallel; die beiden Aufgaben berühren verschiedene Dateien. Vor
 
 ## 4. Pull Request
 
-- [ ] 4.1 Pull Request öffnen mit dem Titel `ci(build): run smoke tests once and sweeps on main`. Beschreibung auf Englisch mit den Messungen aus 3.1 bis 3.3, den offenen Punkten (Windows und macOS im PR, Remote-Build-Cache) und der Session-URL als letzter Zeile. Nachweis: PR-URL; `gh pr checks <n> --watch` einmal.
+- [ ] 4.1 Pull Request öffnen mit dem Titel `ci(build): run smoke tests once and sweeps on main`. Beschreibung auf Englisch mit den Messungen aus 3.1 bis 3.3, den Entscheidungen und Folgeaufgaben aus `design.md` (Remote-Build-Cache später, eigener Check-Name im Workflows-Repository) und der Session-URL als letzter Zeile. Nachweis: PR-URL; `gh pr checks <n> --watch` einmal.

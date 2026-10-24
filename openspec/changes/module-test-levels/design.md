@@ -67,13 +67,13 @@ Verworfen:
 - nur die Seeds reduzieren: verliert die Abdeckung der langen Strecken ohne Ersatz;
 - `@Disabled` oder komplett nach `sweepTest`: der Generator wäre im PR ungeschützt;
 - statischer Cache der Strecken: verbindet Tests über Zustand.
-`CourseGeneratorTest` (38 s) und `HeadDrawTest` (18 s) werden in Task 2.2 nach derselben Regel gemessen und entschieden.
+`CourseGeneratorTest` (38 s) und `HeadDrawTest` (18 s) werden in Task 2.3 nach derselben Regel gemessen und entschieden.
 Test: die Laufzeit der PR-Teile wird im XML-Bericht gemessen (Ziel höchstens 10 s je Klasse); die Summe der Testfälle bleibt gleich (Regel „Der Umzug verliert keine Prüfung“).
 SOLID: nicht betroffen, Testcode.
 
 **D6. Smoke-Auswahl nach einer festen Regel.** Ein Test in `apps/*` ist Smoke, wenn er mindestens eines erfüllt: baut den vollen Avaje-Scope mit allen Columns, startet einen Kindprozess oder das Jar (`BootedVariant`, `ProcessBuilder`), liest das zusammengeführte `application.yaml` oder prüft die Variantendatei `variant.properties`. Alle übrigen Tests in `apps/*` werden in das Modul verschoben, das sie betreffen, oder bleiben in `runtime`, wenn sie nur `runtime` prüfen.
 Kandidaten nach der Regel: `BootSmokeTest` (beide Varianten), `VariantStartTest` (beide), `ConfigurationPrecedenceTest`, `ConfigFileWatchIntegrationTest`, `JumprunHeightBandWiringTest`, `WiringTest`, `PlatformBeansWiringTest`, `SpawnReturnWiringTest`, `NavigatorProtectionOrderingTest`, `StandardLoadoutTest`, `ApplicationYamlParityTest`, `ApplicationYamlDefaultsCharacterizationTest`, `SeasonRestartWiringTest`. Feature-Tests: `feature/example/*` und `feature/season/SeasonMapFileNameTest` in das Modul; `runtime/bootstrap/SeasonLobbyWorldTest` nach Messung.
-Die Liste ist in Task 2.3 durch Prüfung der Klassen zu bestätigen, nicht durch Raten.
+Die Liste ist in Task 2.4 durch Prüfung der Klassen zu bestätigen, nicht durch Raten.
 Verworfen: alle Tests in `apps/*` zu Smoke erklären. Dann würden Logiktests wie `ExampleGreetingRuleTest` nur auf Ubuntu in einem einzigen Task laufen.
 Test: Anzahl der Smoke-Klassen je App und die Liste der übrigen `apps/*`-Tests werden in der Umsetzung geprüft (`find apps -path '*src/test*' -name '*Test.java'`).
 Doppelte Smoke-Tests in `apps/local` und `apps/cloudnet` (Variantenprüfung) bleiben je Variante, ihre gemeinsame Logik liegt in `core` `testFixtures` (`BootedVariant` ist schon dort).
@@ -102,4 +102,10 @@ Rollback: jeder Schritt ist ein eigener Commit; ein Rückbau ist ein Revert der 
 
 ## Open Questions
 
-Keine. Die Liste der Smoke-Klassen wird in Task 2.3 durch Lesen der Klassen bestätigt. Die Entscheidung über Windows und macOS im PR liegt in `ci-test-selection`.
+Keine offen. Entschieden:
+
+- **Windows und macOS im PR** führen den Task `test` aus (Entscheidung des Nutzers). Die Workflows stehen in `ci-test-selection`.
+- **Remote-Build-Cache** ist nicht Teil dieser Änderung (später, eigene Infrastrukturentscheidung).
+- **Doppelter Check-Name „Test results“** ist nicht Teil dieser Änderung. Folgeaufgabe: eigener Check-Name im geteilten Workflow im Repository `OneLiteFeatherNET/workflows`.
+
+Die Liste der Smoke-Klassen wird in Task 2.4 durch Lesen der Klassen bestätigt.
