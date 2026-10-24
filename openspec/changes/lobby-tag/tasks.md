@@ -21,10 +21,10 @@
 
 ## 3. Spielzustand (`features/tag`, rein)
 
-- [ ] 3.1 Test zuerst (Unit, `TagGameTest`, je ein Verhalten pro Test, `AdjustableClock`, `Random` mit festem Seed): zweiter aktiver Spieler bekommt Rolle; weniger als zwei → kein Fänger; Fänger verlässt → zufälliger Nachfolger; Austritt ohne Fänger ändert nichts.
-- [ ] 3.2 Test zuerst (Unit): Treffer des Fängers überträgt Rolle; Rücktausch innerhalb 5 s gesperrt; nach 5 s erlaubt; Treffer ohne Fänger ändert nichts; Sperre gilt nur für das Paar.
-- [ ] 3.3 Test zuerst (Unit): 120 s ohne Bewegung, Treffer oder Eingabe gibt die Rolle weiter; Bewegung setzt die Zeit zurück.
-- [ ] 3.4 `TagGame`, `TagOutcome`, `TagCooldown` implementieren.
+- [x] 3.1 Test zuerst (Unit, `TagGameTest`, je ein Verhalten pro Test, `AdjustableClock`, `Random` mit festem Seed): zweiter aktiver Spieler bekommt Rolle; weniger als zwei → kein Fänger; Fänger verlässt → zufälliger Nachfolger; Austritt ohne Fänger ändert nichts.
+- [x] 3.2 Test zuerst (Unit): Treffer des Fängers überträgt Rolle; Rücktausch innerhalb 5 s gesperrt; nach 5 s erlaubt; Treffer ohne Fänger ändert nichts; Sperre gilt nur für das Paar.
+- [x] 3.3 Test zuerst (Unit): 120 s ohne Bewegung, Treffer oder Eingabe gibt die Rolle weiter; Bewegung setzt die Zeit zurück.
+- [x] 3.4 `TagGame`, `TagOutcome`, `TagCooldown` implementieren.
 
 ## 4. Minestom-Verdrahtung (`features/tag`)
 
