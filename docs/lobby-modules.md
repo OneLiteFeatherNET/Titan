@@ -622,6 +622,24 @@ Otis ist nur dienst-zu-dienst im internen Netz erreichbar. Eine Dienst-Authentif
 - `titan.settings.circuit` (Zähler, `state`: `open`, `half_open`, `closed`)
 - `titan.settings.started` (Zähler beim Start, `store`: `otis` oder `memory`)
 
+## Fangen (`tag`)
+
+Ein Fänger jagt die anderen. Trifft er einen anderen aktiven Spieler, wird dieser der Fänger. Es gibt keine Runden, keinen Timer und keinen Gewinner. Das Spiel läuft in jeder Lobby-Instanz dauerhaft.
+
+- **Teilnahme:** Die Einstellung `titan:tag.enabled` (Standard aus) schaltet der Spieler im Einstellungsmenü oder mit `/tag` um; beides schreibt dieselbe Einstellung. Ohne Einschalten ist das Modul für den Spieler nicht sichtbar. Der Befehl ist nur englisch.
+- **Aktiv:** eingeschaltet, in einer Lobby-Instanz, nicht in einem Sprungtest-Lauf und nicht in einer Übergabe zu einem anderen Server. Lauf und Übergabe senden `LobbyPlayerBusyEvent`.
+- **Ein Fänger:** ab zwei aktiven Spielern genau einer, darunter keiner; die Actionbar sagt, worauf gewartet wird. Verlässt der Fänger das Spiel, bekommt zufällig ein anderer aktiver Spieler die Rolle.
+- **Treffer:** Der Fänger trifft einen anderen aktiven Spieler, dann wechselt die Rolle. Schaden zwischen aktiven Spielern wird abgebrochen (`EntityDamageEvent`), also weder Schaden noch Rückstoß. Der neue Fänger kann seinen Vorgänger innerhalb von 5 Sekunden nicht zurückjagen; die Sperre gilt nur für dieses Paar.
+- **Inaktivität:** Der Fänger verliert die Rolle nach 120 Sekunden ohne Bewegung, Treffer oder Eingabe. Inaktive Spieler ohne Rolle bleiben im Spiel.
+- **Sichtbarkeit ohne Ressourcenpaket:** Der Fänger leuchtet in der Standardfarbe, hat alle 10 Ticks rote Partikel, und die Actionbar aller aktiven Spieler nennt ihn. Ein Scoreboard-Team gibt es nicht, damit die Namenspräfixe anderer Module unberührt bleiben.
+- **Interaktionen:** Während eines Gleitflugs zählt kein Treffer. Tanz und Sitzen ändern die Teilnahme nicht.
+- **Telemetrie:** `titan.tag.tags` (Zähler, `result`: `tagged`, `cooldown`) und `titan.tag.toggles` (Zähler, `state`: `on`, `off`), ohne Spieler-Id.
+- **Texte:** `titan/tag/messages_de.properties` und `messages_en.properties`. Name und Beschreibung der Option liegen in den Einstellungstexten (`titan.settings.option.titan.tag.enabled.*`).
+
+### Ereignis `LobbyPlayerBusyEvent` (`core`)
+
+Ein Record `(player, busy)` im Paket `net.onelitefeather.titan.core.module`. `jumprun` sendet es beim Start (`busy=true`) und Ende (`busy=false`) eines Laufs, `portal` beim Beginn einer Übergabe (`busy=true`). Synchron über `EventDispatcher`; Listener dürfen nicht werfen. Das Ereignis macht es möglich, dass eine Column einen Spieler aus einem Spiel nimmt, ohne eine andere Column aufzurufen.
+
 ## Erwartete Columns einer Variante
 
 `titan.app-variant` schreibt beim Bauen die Avaje-Modulnamen aller in eine Variante eingebundenen

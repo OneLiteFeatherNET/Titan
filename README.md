@@ -39,6 +39,7 @@ published.
   compass in navigator slot 31. `/lobby` and `/hub` are left to the proxy.
 - `/dance`: open the dance list; the quick action (G, client 1.21.6 or newer) opens the same list
   opens the same choice. Dances are free, except `spin`, which needs `titan.dance.spin`.
+- `/tag`: switch the tag game on or off; the same setting as in the settings menu, off by default.
 
 ## Permissions
 
