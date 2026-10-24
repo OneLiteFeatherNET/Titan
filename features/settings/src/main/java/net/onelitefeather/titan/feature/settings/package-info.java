@@ -1,0 +1,31 @@
+/**
+ * Copyright 2025 OneLiteFeather Network
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * The {@code settings} column: the settings menu, its hotbar item and {@code /settings}, and the
+ * loading and saving of player options through the {@code SettingsStore}.
+ */
+@InjectModule(name = "settingsColumn", requires = {EventNode.class, Scheduler.class, CommandManager.class, Telemetry.class, Clock.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"}, provides = {PlayerSettings.class, SettingsRegistry.class, LobbyItem.class})
+package net.onelitefeather.titan.feature.settings;
+
+import io.avaje.inject.InjectModule;
+import java.time.Clock;
+import net.minestom.server.command.CommandManager;
+import net.minestom.server.event.EventNode;
+import net.minestom.server.timer.Scheduler;
+import net.onelitefeather.titan.core.module.item.LobbyItem;
+import net.onelitefeather.titan.core.settings.PlayerSettings;
+import net.onelitefeather.titan.core.settings.SettingsRegistry;
+import net.onelitefeather.titan.core.telemetry.Telemetry;

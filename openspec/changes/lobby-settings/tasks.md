@@ -13,33 +13,33 @@ Reihenfolge: zuerst die Schnittstelle und das Menü mit dem In-Memory-Speicher, 
 
 ## 2. Schnittstelle in `core` (`net.onelitefeather.titan.core.settings`)
 
-- [ ] 2.1 Test zuerst (Unit, `SettingKeyTest`): `titan:tag.enabled` und `titan:throw.target` gültig; Großbuchstaben, Leerzeichen, fehlender Namespace und leerer Wert ungültig. Verifikation: rot, dann grün.
-- [ ] 2.2 `SettingKey` mit Prüfung nach den Otis-Zeichenregeln (Namespace `[a-z0-9_.-]`, Wert `[a-z0-9_./-]`).
-- [ ] 2.3 Test zuerst (Unit, `BooleanSettingTest`): `OPT_IN` liefert Standard `false`, `OPT_OUT` liefert `true`; Schlüssel und Standard sind unveränderlich. Verifikation: rot, dann grün.
-- [ ] 2.4 `BooleanSetting` und `SettingDefault` (`OPT_IN`, `OPT_OUT`).
-- [ ] 2.5 Test zuerst (Unit, `SettingsRegistryTest`): Registrierung in Reihenfolge; doppelter Schlüssel wirft mit beiden Registrierungen in der Meldung; unbekannter Schlüssel liefert leer. Verifikation: rot, dann grün.
-- [ ] 2.6 `SettingsRegistry`.
-- [ ] 2.7 `PlayerSettings`-Port, `SettingChangeListener`, `SettingsStore`-Port (`load`, `save`).
+- [x] 2.1 Test zuerst (Unit, `SettingKeyTest`): `titan:tag.enabled` und `titan:throw.target` gültig; Großbuchstaben, Leerzeichen, fehlender Namespace und leerer Wert ungültig. Verifikation: rot, dann grün.
+- [x] 2.2 `SettingKey` mit Prüfung nach den Otis-Zeichenregeln (Namespace `[a-z0-9_.-]`, Wert `[a-z0-9_./-]`).
+- [x] 2.3 Test zuerst (Unit, `BooleanSettingTest`): `OPT_IN` liefert Standard `false`, `OPT_OUT` liefert `true`; Schlüssel und Standard sind unveränderlich. Verifikation: rot, dann grün.
+- [x] 2.4 `BooleanSetting` und `SettingDefault` (`OPT_IN`, `OPT_OUT`).
+- [x] 2.5 Test zuerst (Unit, `SettingsRegistryTest`): Registrierung in Reihenfolge; doppelter Schlüssel wirft mit beiden Registrierungen in der Meldung; unbekannter Schlüssel liefert leer. Verifikation: rot, dann grün.
+- [x] 2.6 `SettingsRegistry`.
+- [x] 2.7 `PlayerSettings`-Port, `SettingChangeListener`, `SettingsStore`-Port (`load`, `save`).
 
 ## 3. Speicher im Prozess und Dienst (`features/settings`)
 
-- [ ] 3.1 Test zuerst (Unit, `PlayerSettingsServiceTest`, Fake-Store): ohne Laden liefert `isEnabled` den Standard; `set` wirkt sofort; Listener wird mit altem und neuem Wert benachrichtigt; Option eines anderen Spielers bleibt unverändert. Verifikation: rot, dann grün.
-- [ ] 3.2 `PlayerSettingsService` mit `ConcurrentHashMap`, Eintrag je Schlüssel (`value`, `version`, `dirty`).
-- [ ] 3.3 Test zuerst (Unit, `LoadMergeTest`): geladener Wert übernimmt, wenn der Schlüssel nicht `dirty` ist; lokal geänderter Schlüssel bleibt; Ergebnis nach Verlassen des Spielers wird verworfen. Verifikation: rot, dann grün.
-- [ ] 3.4 `applyLoaded` und Verwerfen nach Verlassen.
-- [ ] 3.5 Test zuerst (Unit, `WriteBehindTest`, injizierter Scheduler-Fake, kein Warten): drei Umschaltungen in zwei Sekunden ergeben einen Speicherauftrag mit dem letzten Wert; Verlassen flusht sofort; Fehlerwiederholung bis `writeRetries`; 400 wird nicht wiederholt. Verifikation: rot, dann grün.
-- [ ] 3.6 `WriteBehind` mit Debounce, Flush und Wiederholung.
-- [ ] 3.7 `InMemorySettingsStore`.
+- [x] 3.1 Test zuerst (Unit, `PlayerSettingsServiceTest`, Fake-Store): ohne Laden liefert `isEnabled` den Standard; `set` wirkt sofort; Listener wird mit altem und neuem Wert benachrichtigt; Option eines anderen Spielers bleibt unverändert. Verifikation: rot, dann grün.
+- [x] 3.2 `PlayerSettingsService` mit `ConcurrentHashMap`, Eintrag je Schlüssel (`value`, `version`, `dirty`).
+- [x] 3.3 Test zuerst (Unit, `LoadMergeTest`): geladener Wert übernimmt, wenn der Schlüssel nicht `dirty` ist; lokal geänderter Schlüssel bleibt; Ergebnis nach Verlassen des Spielers wird verworfen. Verifikation: rot, dann grün.
+- [x] 3.4 `applyLoaded` und Verwerfen nach Verlassen.
+- [x] 3.5 Test zuerst (Unit, `WriteBehindTest`, injizierter Scheduler-Fake, kein Warten): drei Umschaltungen in zwei Sekunden ergeben einen Speicherauftrag mit dem letzten Wert; Verlassen flusht sofort; Fehlerwiederholung bis `writeRetries`; 400 wird nicht wiederholt. Verifikation: rot, dann grün.
+- [x] 3.6 `WriteBehind` mit Debounce, Flush und Wiederholung.
+- [x] 3.7 `InMemorySettingsStore`.
 
 ## 4. Menü, Befehl, Hotbar-Item (`features/settings`)
 
-- [ ] 4.1 Test zuerst (Unit, `SettingsMenuTest`): ein Item je Option; Lime bei an, Grau bei aus; Klick schaltet um und führt zum Inventar der neuen Kombination; Texte de und en. Verifikation: rot, dann grün.
-- [ ] 4.2 `SettingsMenu` (Aves, ein Builder im Modul, geteilte Inventare je Zustandskombination und Sprache, beim Start gebaut, register/unregister im Lebenszyklus; D6).
-- [ ] 4.3 `messages_de.properties` und `messages_en.properties` mit gleichen Schlüsseln; Bundle-Test prüft, dass alle Schlüssel in beiden Dateien stehen und gerendert werden.
-- [ ] 4.4 Test zuerst (Env, `SettingsCommandIntegrationTest`): `/settings` öffnet das Menü; `/einstellungen` ist unbekannt; Konsole erhält eine Meldung und nichts öffnet sich. Verifikation: rot, dann grün.
-- [ ] 4.5 `SettingsCommand` (`settings`, ohne Alias) mit Registrierung und Abmeldung im Lebenszyklus.
-- [ ] 4.6 Test zuerst (Env, `SettingsHotbarIntegrationTest`): Hotbar-Item in Slot 7 ist vorhanden, nach Respawn wieder da; Klick öffnet das Menü. Verifikation: rot, dann grün.
-- [ ] 4.7 Hotbar-Item in Slot 7 über die Item-Schnittstelle von `lobby-hotbar`.
+- [x] 4.1 Test zuerst (Unit, `SettingsMenuTest`): ein Item je Option; Lime bei an, Grau bei aus; Klick schaltet um und führt zum Inventar der neuen Kombination; Texte de und en. Verifikation: rot, dann grün.
+- [x] 4.2 `SettingsMenu` (Aves, ein Builder im Modul, geteilte Inventare je Zustandskombination und Sprache, beim Start gebaut, register/unregister im Lebenszyklus; D6).
+- [x] 4.3 `messages_de.properties` und `messages_en.properties` mit gleichen Schlüsseln; Bundle-Test prüft, dass alle Schlüssel in beiden Dateien stehen und gerendert werden.
+- [x] 4.4 Test zuerst (Env, `SettingsCommandIntegrationTest`): `/settings` öffnet das Menü; `/einstellungen` ist unbekannt; Konsole erhält eine Meldung und nichts öffnet sich. Verifikation: rot, dann grün.
+- [x] 4.5 `SettingsCommand` (`settings`, ohne Alias) mit Registrierung und Abmeldung im Lebenszyklus.
+- [x] 4.6 Test zuerst (Env, `SettingsHotbarIntegrationTest`): Hotbar-Item in Slot 7 ist vorhanden, nach Respawn wieder da; Klick öffnet das Menü. Verifikation: rot, dann grün.
+- [x] 4.7 Hotbar-Item in Slot 7 über die Item-Schnittstelle von `lobby-hotbar`.
 
 ## 5. Otis-Adapter (`platform/otis`)
 
@@ -53,21 +53,21 @@ Reihenfolge: zuerst die Schnittstelle und das Menü mit dem In-Memory-Speicher, 
 
 ## 6. Konfiguration und Verdrahtung
 
-- [ ] 6.1 Standardwerte in `features/settings/src/main/resources/titan/defaults/settings.yaml`: `settings.enabled: false`, `otis.*` mit den Werten aus `design.md` D8.
-- [ ] 6.2 Test zuerst (Unit, `SettingsConfigTest`): Standardwerte; leere `otis.url` wählt In-Memory; gesetzte URL wählt Otis; Token wird maskiert angezeigt. Verifikation: rot, dann grün.
-- [ ] 6.3 Startwarnung bei leerer `otis.url` bei aktivierter Funktion.
-- [ ] 6.4 `package-info.java` mit `@InjectModule(name = "settingsColumn", ...)`; `ColumnArchitectureTest` (wie bei den übrigen Columns, Abhängigkeit nur auf `core`).
+- [x] 6.1 Standardwerte in `features/settings/src/main/resources/titan/defaults/settings.yaml`: `settings.enabled: false`, `otis.*` mit den Werten aus `design.md` D8.
+- [x] 6.2 Test zuerst (Unit, `SettingsConfigTest`): Standardwerte; leere `otis.url` wählt In-Memory; gesetzte URL wählt Otis; Token wird maskiert angezeigt. Verifikation: rot, dann grün.
+- [x] 6.3 Startwarnung bei leerer `otis.url` bei aktivierter Funktion.
+- [x] 6.4 `package-info.java` mit `@InjectModule(name = "settingsColumn", ...)`; `ColumnArchitectureTest` (wie bei den übrigen Columns, Abhängigkeit nur auf `core`).
 
 ## 7. Lebenszyklus und Beitritt
 
-- [ ] 7.1 Test zuerst (Env, `SettingsJoinIntegrationTest`, je ein Verhalten pro Test): Beitritt läuft ohne Antwort von Otis durch (Stub, das nie abschließt); Übernahme geladener Werte erscheint nach `env.tick()`; Verlassen während des Ladens übernimmt nichts. Verifikation: rot, dann grün.
-- [ ] 7.2 `SettingsModule`: `@PostConstruct` startet Listener für `AsyncPlayerConfigurationEvent`, Verlassen und Herunterfahren; `@PreDestroy` flusht mit Limit 5 Sekunden und hängt den `FeatureNode` ab.
-- [ ] 7.3 Test zuerst (Env, `SettingsModuleLifecycleTest` wie `SpawnModuleTest#stopLeavesNoListenerBehind`): nach `stop()` löst kein Event mehr Code des Moduls aus.
+- [x] 7.1 Test zuerst (Env, `SettingsJoinIntegrationTest`, je ein Verhalten pro Test): Beitritt läuft ohne Antwort von Otis durch (Stub, das nie abschließt); Übernahme geladener Werte erscheint nach `env.tick()`; Verlassen während des Ladens übernimmt nichts. Verifikation: rot, dann grün.
+- [x] 7.2 `SettingsModule`: `@PostConstruct` startet Listener für `AsyncPlayerConfigurationEvent`, Verlassen und Herunterfahren; `@PreDestroy` flusht mit Limit 5 Sekunden und hängt den `FeatureNode` ab.
+- [x] 7.3 Test zuerst (Env, `SettingsModuleLifecycleTest` wie `SpawnModuleTest#stopLeavesNoListenerBehind`): nach `stop()` löst kein Event mehr Code des Moduls aus.
 
 ## 8. Telemetrie
 
-- [ ] 8.1 Test zuerst (Unit, `SettingsTelemetryTest` mit Fake-`Telemetry`): Ladedauer mit `outcome`; Schreibergebnis; Umschaltung ohne UUID; Breaker-Zustandswechsel. Verifikation: rot, dann grün.
-- [ ] 8.2 `SettingsTelemetry` mit den Namen aus `design.md` D9.
+- [x] 8.1 Test zuerst (Unit, `SettingsTelemetryTest` mit Fake-`Telemetry`): Ladedauer mit `outcome`; Schreibergebnis; Umschaltung ohne UUID; Breaker-Zustandswechsel. Verifikation: rot, dann grün.
+- [x] 8.2 `SettingsTelemetry` mit den Namen aus `design.md` D9.
 
 ## 9. Dokumentation
 
