@@ -7,7 +7,9 @@
 // accessor is not generated for a buildSrc precompiled script plugin, only for a project's own
 // build.gradle.kts.
 
+import net.onelitefeather.titan.buildsrc.architecture.PackageDescription
 import net.onelitefeather.titan.buildsrc.config.MergeApplicationDefaultsTask
+import org.gradle.api.GradleException
 import org.gradle.api.artifacts.VersionCatalogsExtension
 
 plugins {
@@ -61,4 +63,25 @@ val mergeTestDefaults = tasks.register<MergeApplicationDefaultsTask>("mergeTestD
 
 sourceSets.test {
     resources.srcDir(mergeTestDefaults.map { it.outputDir })
+}
+
+// The column describes itself in the package-info.java of its base package (openspec
+// maintainability-gates, design D8). Only presence is checked; the wording stays a review question.
+val verifyPackageDescription by tasks.registering {
+    group = "verification"
+    description = "Fails when the column's package-info.java has no Javadoc description."
+    val sourceRoot = layout.projectDirectory.dir("src/main/java")
+    inputs.dir(sourceRoot)
+    doLast {
+        val packageInfo = sourceRoot.asFile.walk()
+            .filter { it.name == "package-info.java" }
+            .minByOrNull { it.path.length }
+        if (packageInfo == null || !PackageDescription.hasDescription(packageInfo.readText())) {
+            throw GradleException("${project.path}: package-info.java has no Javadoc description of the column")
+        }
+    }
+}
+
+tasks.named("check") {
+    dependsOn(verifyPackageDescription)
 }

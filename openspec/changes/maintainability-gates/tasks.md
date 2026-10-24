@@ -29,7 +29,7 @@ Regeln für alle Wellen: Test zuerst (rot, dann grün, dann aufräumen); F.I.R.S
 - [x] 2.1 Test zuerst (Unit, `buildSrc`): Die Prüffunktion für die Erlaubnisliste aus D2 liefert für Column → Column, Column → `runtime`, Column → `apps/*`, Plattform → Feature und `common` → `runtime` eine Verletzung; für Column → `core`, Column → `persistence` und Test-Fixtures von `core` keine. Rot. Nachweis: `./gradlew :buildSrc:test` rot, Fehlerausgabe im Commit-Text.
 - [x] 2.2 Die Prüffunktion implementieren und in `titan.java-conventions` für alle Module anbinden: Prüfung über alle Konfigurationen beim Konfigurieren, Fehlermeldung nennt Quell- und Zielmodul. Nachweis: `:buildSrc:test` grün, `./gradlew help` grün.
 - [x] 2.3 Negativtest manuell: `implementation(project(":features:tickle"))` in `features/navigator/build.gradle.kts` setzen, Konfiguration muss brechen und das Paar nennen; Änderung danach verwerfen, nicht committen. Nachweis: Auszug der Fehlermeldung im PR-Text.
-- [ ] 2.4 Test zuerst (Unit, `buildSrc`): Die Prüffunktion für `package-info.java` erkennt einen Javadoc-Block vor der Paketdeklaration; ohne Javadoc und nur mit `//` schlägt sie an. Rot, dann implementieren und in `titan.column` anbinden. Nachweis: `./gradlew check` grün für alle 16 Columns.
+- [x] 2.4 Test zuerst (Unit, `buildSrc`): Die Prüffunktion für `package-info.java` erkennt einen Javadoc-Block vor der Paketdeklaration; ohne Javadoc und nur mit `//` schlägt sie an. Rot, dann implementieren und in `titan.column` anbinden. Nachweis: `./gradlew check` grün für alle 16 Columns.
 
 ## 3. Architekturregeln (Welle 2b, ArchUnit)
 
