@@ -32,7 +32,6 @@ import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.core.portal.Box;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
 import net.onelitefeather.titan.core.portal.Portal;
-import net.onelitefeather.titan.core.testfixtures.ActiveLobby;
 import net.onelitefeather.titan.feature.portal.PortalModule;
 import net.onelitefeather.titan.core.module.LobbyWorldChoice;
 import net.onelitefeather.titan.core.bootstrap.ServerBootstrap;

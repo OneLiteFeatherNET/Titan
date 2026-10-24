@@ -37,7 +37,7 @@ import net.onelitefeather.titan.common.map.MapProvider;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.permission.PermissionService;
-import net.onelitefeather.titan.core.testfixtures.ActiveLobby;
+import net.onelitefeather.titan.apps.cloudnet.ActiveLobby;
 import net.onelitefeather.titan.core.testfixtures.AdjustableClock;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 import net.onelitefeather.titan.platform.luckperms.LuckPermsPermissionService;

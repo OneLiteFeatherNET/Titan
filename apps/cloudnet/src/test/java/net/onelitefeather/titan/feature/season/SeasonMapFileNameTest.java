@@ -21,8 +21,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Lives in the column's package name because {@code SeasonSettings} is package-private; a column
- * sees only core, so this is the one place that can compare it with {@code common}.
+ * Lives in the column's package name because {@code SeasonSettings} is package-private; the app
+ * is the only module that sees both the column and {@code common}.
  */
 class SeasonMapFileNameTest {
 
