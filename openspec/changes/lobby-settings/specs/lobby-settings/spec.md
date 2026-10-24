@@ -26,11 +26,11 @@ Die Lobby MUSS jede Spieleroption als `BooleanSetting` mit einem Schlüssel im F
 ### Requirement: Das Menü zeigt jede registrierte Option mit ihrem Zustand
 _The menu is the only place where players see and change options; it is opened from the hotbar and from the command._
 
-Die Lobby MUSS dem Spieler über das Hotbar-Item in Slot 7 und über `/settings` ein Menü öffnen. Das Menü MUSS für jede registrierte Option genau ein Vanilla-Item zeigen, ohne Resource Pack: Lime-Farbstoff bei an, Grau-Farbstoff bei aus.
+Die Lobby MUSS dem Spieler über das Hotbar-Item in Slot 7 und über `/settings` ein Menü öffnen. Das Menü MUSS für jede registrierte Option ein Vanilla-Symbol-Item in der mittleren Reihe und darunter einen Schalter zeigen, ohne Resource Pack: Der Schalter ist Lime-Farbstoff bei an und Grau-Farbstoff bei aus. Das Symbol glänzt, solange die Option an ist. Der Name des Hotbar-Items und des Menüs sowie die Namen der Optionen laufen im Titan-Gradient und sind nicht kursiv. Das Menü hat höchstens neun Optionen.
 
 #### Scenario: Menü öffnen über das Hotbar-Item
 - **WHEN** ein Spieler das Einstellungs-Item in Slot 7 benutzt
-- **THEN** öffnet sich das Menü mit einem Item je registrierter Option
+- **THEN** öffnet sich das Menü mit einem Symbol und einem Schalter je registrierter Option
 
 #### Scenario: Menü öffnen über den Befehl
 - **WHEN** ein Spieler `/settings` eingibt
@@ -38,7 +38,11 @@ Die Lobby MUSS dem Spieler über das Hotbar-Item in Slot 7 und über `/settings`
 
 #### Scenario: Zustand im Menü
 - **WHEN** eine Option für den Spieler an ist
-- **THEN** zeigt ihr Item den Lime-Farbstoff
+- **THEN** zeigt ihr Schalter den Lime-Farbstoff, und ihr Symbol glänzt
+
+#### Scenario: Klick auf Symbol oder Schalter
+- **WHEN** ein Spieler das Symbol oder den Schalter einer Option anklickt
+- **THEN** schaltet die Option um und ein Klickgeräusch (`ui.button.click`) ist für ihn zu hören
 
 #### Scenario: Sprache des Spielers
 - **WHEN** ein deutscher Spieler das Menü öffnet
@@ -51,7 +55,7 @@ Ein Klick auf das Item einer Option MUSS den Wert dieser Option für den Spieler
 
 #### Scenario: Umschalten
 - **WHEN** ein Spieler eine aus stehende Option anklickt
-- **THEN** ist sie an, ihr Item zeigt Lime, und `isEnabled` liefert `true`, bevor der Speicherauftrag bei Otis angekommen ist
+- **THEN** ist sie an, ihr Schalter zeigt Lime, und `isEnabled` liefert `true`, bevor der Speicherauftrag bei Otis angekommen ist
 
 #### Scenario: Keine Nebenwirkung
 - **WHEN** ein Spieler die Option `titan:tag.enabled` umschaltet
