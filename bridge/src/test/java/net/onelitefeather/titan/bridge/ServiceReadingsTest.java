@@ -15,13 +15,17 @@
  */
 package net.onelitefeather.titan.bridge;
 
-import java.lang.System.Logger;
-import java.lang.System.Logger.Level;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ResourceBundle;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -29,30 +33,47 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ServiceReadingsTest {
 
-    private final RecordingLogger logger = new RecordingLogger();
+    private final ListAppender<ILoggingEvent> appender = new ListAppender<>();
+    private final Logger logger = (Logger) LoggerFactory.getLogger(ServiceReadings.class);
+
+    @BeforeEach
+    void attachAppender() {
+        appender.start();
+        logger.addAppender(appender);
+    }
+
+    @AfterEach
+    void detachAppender() {
+        logger.detachAppender(appender);
+        appender.stop();
+    }
+
+    private List<Level> levels() {
+        return appender.list.stream().map(ILoggingEvent::getLevel).toList();
+    }
 
     @DisplayName("A missing provider yields no readings and one warning however often it is asked")
     @Test
     void warnsOnceWhenProviderMissing() {
-        ServiceReadings readings = new ServiceReadings(() -> null, logger);
+        ServiceReadings readings = new ServiceReadings(() -> null);
 
         assertTrue(readings.read("task", "Lobby").isEmpty(), "no provider means no readings");
         readings.read("task", "Lobby");
         readings.read("group", "Lobby");
 
-        assertEquals(List.of(Level.WARNING), logger.levels, "exactly one warning");
+        assertEquals(List.of(Level.WARN), levels(), "exactly one warning");
     }
 
     @DisplayName("A resolved provider is read and announced once")
     @Test
     void logsInfoOnceWhenResolved() {
         ServiceReading reading = new ServiceReading("Lobby-1", true, 2, 10);
-        ServiceReadings readings = new ServiceReadings(() -> (type, name) -> List.of(reading), logger);
+        ServiceReadings readings = new ServiceReadings(() -> (type, name) -> List.of(reading));
 
         assertEquals(List.of(reading), readings.read("task", "Lobby"), "reading of the provider");
         readings.read("task", "Lobby");
 
-        assertEquals(List.of(Level.INFO), logger.levels, "exactly one info");
+        assertEquals(List.of(Level.INFO), levels(), "exactly one info");
     }
 
     @DisplayName("A provider that appears later is picked up")
@@ -61,11 +82,11 @@ class ServiceReadingsTest {
         List<ServiceReadings.Source> sources = new ArrayList<>();
         sources.add(null);
         sources.add((type, name) -> List.of(new ServiceReading("Lobby-1", true, 1, 5)));
-        ServiceReadings readings = new ServiceReadings(sources::removeFirst, logger);
+        ServiceReadings readings = new ServiceReadings(sources::removeFirst);
 
         assertTrue(readings.read("task", "Lobby").isEmpty(), "first lookup: not available");
         assertEquals(1, readings.read("task", "Lobby").size(), "second lookup: available");
-        assertEquals(List.of(Level.WARNING, Level.INFO), logger.levels, "warned, then resolved");
+        assertEquals(List.of(Level.WARN, Level.INFO), levels(), "warned, then resolved");
     }
 
     @DisplayName("Exceptions of the provider propagate")
@@ -73,32 +94,8 @@ class ServiceReadingsTest {
     void propagatesProviderFailures() {
         ServiceReadings readings = new ServiceReadings(() -> (type, name) -> {
             throw new IllegalStateException("boom");
-        }, logger);
+        });
 
         assertThrows(IllegalStateException.class, () -> readings.read("task", "Lobby"), "must not be swallowed");
-    }
-
-    private static final class RecordingLogger implements Logger {
-        private final List<Level> levels = new ArrayList<>();
-
-        @Override
-        public String getName() {
-            return "test";
-        }
-
-        @Override
-        public boolean isLoggable(Level level) {
-            return true;
-        }
-
-        @Override
-        public void log(Level level, ResourceBundle bundle, String msg, Throwable thrown) {
-            levels.add(level);
-        }
-
-        @Override
-        public void log(Level level, ResourceBundle bundle, String format, Object... params) {
-            levels.add(level);
-        }
     }
 }

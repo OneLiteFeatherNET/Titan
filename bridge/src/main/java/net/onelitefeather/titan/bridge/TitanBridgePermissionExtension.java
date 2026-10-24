@@ -27,7 +27,6 @@ import eu.cloudnetservice.modules.bridge.player.PlayerManager;
 import eu.cloudnetservice.modules.bridge.player.executor.PlayerExecutor;
 import eu.cloudnetservice.modules.bridge.player.executor.ServerSelectorType;
 import eu.cloudnetservice.wrapper.holder.ServiceInfoHolder;
-import java.lang.System.Logger;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +40,8 @@ import net.onelitefeather.titan.common.deliver.TitanPlayerLimit;
 import net.onelitefeather.titan.common.deliver.TitanPlayerCountLookup;
 import net.onelitefeather.titan.common.deliver.TitanServerConnector;
 import net.onelitefeather.titan.common.permission.TitanPermissionBridge;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Minestom extension that wires the CloudNet bridge to Titan across the classloader boundary.
@@ -77,6 +78,8 @@ import net.onelitefeather.titan.common.permission.TitanPermissionBridge;
 )
 public final class TitanBridgePermissionExtension extends Extension {
 
+    private static final Logger LOG = LoggerFactory.getLogger(TitanBridgePermissionExtension.class);
+
     @Override
     public void initialize() {
         MinestomPermissionChecker checker = (player, permission) -> TitanPermissionBridge.hasPermission(player.getUuid(), permission);
@@ -100,8 +103,7 @@ public final class TitanBridgePermissionExtension extends Extension {
             }
         });
 
-        Logger logger = System.getLogger(TitanBridgePermissionExtension.class.getName());
-        ServiceReadings readings = new ServiceReadings(TitanBridgePermissionExtension::resolveSource, logger);
+        ServiceReadings readings = new ServiceReadings(TitanBridgePermissionExtension::resolveSource);
         TitanPlayerCountLookup.setLookup(new PlayerCountLookup() {
             @Override
             public boolean supports(String type) {
@@ -113,16 +115,16 @@ public final class TitanBridgePermissionExtension extends Extension {
                 return ServiceListing.running(readings.read(type, name));
             }
         });
-        publishIdentity(logger);
-        publishPlayerLimit(logger);
-        logger.log(Logger.Level.INFO, "Player count lookup installed");
+        publishIdentity();
+        publishPlayerLimit();
+        LOG.info("Player count lookup installed");
     }
 
     /**
      * The bridge read the maximum from a single ping while it loaded, before Titan knew its limit;
      * the limit Titan announces later replaces it in the service info.
      */
-    private static void publishPlayerLimit(Logger logger) {
+    private static void publishPlayerLimit() {
         try {
             BridgeServiceHelper helper = InjectionLayer.ext().instance(BridgeServiceHelper.class);
             ServiceInfoHolder holder = InjectionLayer.ext().instance(ServiceInfoHolder.class);
@@ -131,7 +133,7 @@ public final class TitanBridgePermissionExtension extends Extension {
                 holder.publishServiceInfoUpdate();
             });
         } catch (RuntimeException | LinkageError e) {
-            logger.log(Logger.Level.WARNING, "Player limit cannot be published, CloudNet keeps the ping's maximum", e);
+            LOG.warn("Player limit cannot be published, CloudNet keeps the ping's maximum", e);
         }
     }
 
@@ -162,13 +164,13 @@ public final class TitanBridgePermissionExtension extends Extension {
      * Publishes this service's task and name from the wrapper; the lobby stays without an identity
      * when they are unreachable.
      */
-    private static void publishIdentity(Logger logger) {
+    private static void publishIdentity() {
         try {
             ServiceInfoSnapshot self = InjectionLayer.ext().instance(ServiceInfoHolder.class).serviceInfo();
             TitanLobbyIdentity.set(self.serviceId().taskName(), self.name());
         } catch (RuntimeException | LinkageError e) {
             TitanLobbyIdentity.clear();
-            logger.log(Logger.Level.WARNING, "Own lobby identity unavailable, the lobby switcher stays closed", e);
+            LOG.warn("Own lobby identity unavailable, the lobby switcher stays closed", e);
         }
     }
 

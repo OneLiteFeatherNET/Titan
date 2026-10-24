@@ -15,10 +15,10 @@
  */
 package net.onelitefeather.titan.bridge;
 
-import java.lang.System.Logger;
-import java.lang.System.Logger.Level;
 import java.util.List;
 import java.util.function.Supplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Reads services through a CloudNet provider that is resolved on first use. Kept free of CloudNet
@@ -32,15 +32,15 @@ final class ServiceReadings {
         List<ServiceReading> read(String type, String name);
     }
 
+    private static final Logger LOG = LoggerFactory.getLogger(ServiceReadings.class);
+
     private final Supplier<Source> resolver;
-    private final Logger logger;
     private Source source;
     private boolean warned;
 
     /** @param resolver returns the source, or {@code null} while CloudNet does not provide it */
-    ServiceReadings(Supplier<Source> resolver, Logger logger) {
+    ServiceReadings(Supplier<Source> resolver) {
         this.resolver = resolver;
-        this.logger = logger;
     }
 
     synchronized List<ServiceReading> read(String type, String name) {
@@ -49,11 +49,11 @@ final class ServiceReadings {
             if (source == null) {
                 if (!warned) {
                     warned = true;
-                    logger.log(Level.WARNING, "CloudNet service provider is not available, portal labels show services as offline");
+                    LOG.warn("CloudNet service provider is not available, portal labels show services as offline");
                 }
                 return List.of();
             }
-            logger.log(Level.INFO, "CloudNet service provider resolved, portal labels read live player counts");
+            LOG.info("CloudNet service provider resolved, portal labels read live player counts");
         }
         return source.read(type, name);
     }
