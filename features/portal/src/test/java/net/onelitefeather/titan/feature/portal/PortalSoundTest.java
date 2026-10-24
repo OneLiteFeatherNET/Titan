@@ -18,6 +18,7 @@ package net.onelitefeather.titan.feature.portal;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.Player;
@@ -69,7 +70,7 @@ class PortalSoundTest {
     }
 
     private PortalModule start(Env env, TestTitanNode titan, Portal... portals) {
-        PortalModule module = new PortalModule(titan.node(), () -> List.of(portals), this.deliver, this.permissions, this.clock, env.createFlatInstance(), env.process().scheduler(), Runnable::run, portal -> new LabelReading.Local(0), new PortalSettings(1), this.testTelemetry.telemetry());
+        PortalModule module = new PortalModule(titan.node(), () -> List.of(portals), this.deliver, this.permissions, this.clock, env.createFlatInstance(), env.process().scheduler(), Runnable::run, portal -> new LabelReading.Local(0), new PortalSettings(1), Optional.empty(), this.testTelemetry.telemetry());
         module.start();
         return module;
     }
