@@ -38,7 +38,7 @@ subprojects {
 
 // One PMD ratchet for the whole build (openspec maintainability-gates, D4): it reads every module's PMD
 // report and compares the counts with config/quality/pmd-baseline.properties. Every module's check runs it.
-val pmdRatchet by tasks.registering {
+val pmdRatchet = tasks.register("pmdRatchet") {
     group = "verification"
     description = "Fails on PMD violations above the baseline; -PupdatePmdBaseline rewrites the baseline."
     dependsOn(provider { subprojects.mapNotNull { it.tasks.findByName("pmdMain") } })

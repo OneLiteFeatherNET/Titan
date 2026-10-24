@@ -67,7 +67,7 @@ sourceSets.test {
 
 // The column describes itself in the package-info.java of its base package (openspec
 // maintainability-gates, design D8). Only presence is checked; the wording stays a review question.
-val verifyPackageDescription by tasks.registering {
+val verifyPackageDescription = tasks.register("verifyPackageDescription") {
     group = "verification"
     description = "Fails when the column's package-info.java has no Javadoc description."
     val sourceRoot = layout.projectDirectory.dir("src/main/java")
