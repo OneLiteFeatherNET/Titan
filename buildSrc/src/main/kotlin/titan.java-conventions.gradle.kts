@@ -66,6 +66,9 @@ tasks.withType<JavaCompile>().configureEach {
     options.compilerArgs.addAll(listOf("-Xlint:deprecation", "-Xlint:unchecked"))
 }
 
+// Every Test task names its JUnit platform selection itself (test, sweepTest, smokeTest, the
+// integrationTest suite). Calling useJUnitPlatform() here would replace a tag filter that a task
+// set before this action ran, so the sweep task would silently run every test.
 tasks.withType<Test>().configureEach {
     // ArchUnit freezing rules (openspec maintainability-gates, D5): the baseline is committed under
     // src/test/resources and never created or rewritten by a normal build.
@@ -73,7 +76,6 @@ tasks.withType<Test>().configureEach {
     systemProperty("archunit.freeze.store.default.allowStoreCreation", "false")
     // Only a deliberate run changes a store: ./gradlew test -ParchunitStoreUpdate=true, then review the diff.
     systemProperty("archunit.freeze.store.default.allowStoreUpdate", providers.gradleProperty("archunitStoreUpdate").getOrElse("false"))
-    useJUnitPlatform()
     // Minestom refuses to initialise its registries outside a real server process
     // unless this flag is set.
     jvmArgs("-Dminestom.inside-test=true")
@@ -86,8 +88,33 @@ tasks.withType<Test>().configureEach {
 // Parallelism comes from forked JVMs only: Minestom keeps its server in static state, so Env tests
 // must never share a JVM concurrently. Half the cores, capped at 4, keeps forks x 512 MiB default
 // heap well inside a 7 GB runner. Docker-backed integrationTest tasks keep one fork (one container).
+val titanTestForks = (Runtime.getRuntime().availableProcessors() / 2).coerceIn(1, 4)
+extra["titanTestForks"] = titanTestForks
+
+// "smoke" (the variant scope, see titan.app-variant) and "sweep" (long seed ranges) are tags, not
+// source sets: test leaves both out, so the PR set stays the same on every operating system.
 tasks.named<Test>("test") {
-    maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).coerceIn(1, 4)
+    maxParallelForks = titanTestForks
+    useJUnitPlatform {
+        excludeTags("smoke", "sweep")
+    }
+}
+
+// Long seed sweeps run only on main and nightly (see the CI change); a module without any sweep
+// class simply finds none, so the task does not fail for it.
+tasks.register<Test>("sweepTest") {
+    group = "verification"
+    description = "Runs the @Tag(\"sweep\") property checks over long seed ranges."
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    maxParallelForks = titanTestForks
+    failOnNoDiscoveredTests = false
+    useJUnitPlatform {
+        includeTags("sweep")
+    }
+    shouldRunAfter(tasks.named("test"))
+    // The shared jacoco finalizer depends on test, which would run the whole unit suite after a sweep.
+    setFinalizedBy(emptyList<Any>())
 }
 
 tasks.withType<JacocoReport>().configureEach {

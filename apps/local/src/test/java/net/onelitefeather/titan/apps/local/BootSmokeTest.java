@@ -31,9 +31,9 @@ import org.junit.jupiter.api.io.TempDir;
  * Boots the shipped {@code local} jar with a real {@code application.yaml} and world, the way
  * production starts it, and checks it reports its start, logs no ERROR and exits with 0.
  *
- * <p>Runs in the {@code bootSmokeTest} task (tag {@code boot}), not in {@code test}.
+ * <p>Runs in the {@code smokeTest} task (tag {@code smoke}), not in {@code test}.
  */
-@Tag("boot")
+@Tag("smoke")
 class BootSmokeTest {
 
     private static final String VARIANT = "local";
