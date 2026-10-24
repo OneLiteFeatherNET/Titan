@@ -4,15 +4,60 @@ on:
     - cron: "17 3 * * *"
 
 # Nightly run without the Gradle build cache: a test that only passes with a cached result
-# shows up here. Its own caller file keeps it out of the concurrency group of build-main.yml,
-# so a push to main does not cancel it.
+# shows up here. It has its own concurrency group, so a push to main does not cancel it.
+# The job mirrors the build job of OneLiteFeatherNET/workflows gradle-build-pr.yml@v2.9.0 (see build-main.yml).
+concurrency:
+  group: build-nightly-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
-    uses: OneLiteFeatherNET/workflows/.github/workflows/gradle-build-pr.yml@v2.9.0
-    with:
-      java-version: "25.0.3"
-      java-distribution: "temurin"
-      runs-on: '["ubuntu-latest", "windows-latest", "macos-latest"]'
-      gradle-task: build sweepTest --no-build-cache
-      force-build: true
-    secrets: inherit
+    name: Build (${{ matrix.os }})
+    if: ${{ github.repository_owner == 'OneLiteFeatherNET' }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    env:
+      ONELITEFEATHER_MAVEN_USERNAME: ${{ secrets.ONELITEFEATHER_MAVEN_USERNAME }}
+      ONELITEFEATHER_MAVEN_PASSWORD: ${{ secrets.ONELITEFEATHER_MAVEN_PASSWORD }}
+      GRADLE_OPTS: "-Dorg.gradle.parallel=true -Dorg.gradle.caching=true -Dorg.gradle.welcome=never"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v6
+
+      - name: Set up JDK 25.0.3
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "25.0.3"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: false
+          add-job-summary: 'on-failure'
+
+      - name: Run Gradle (build sweepTest --no-build-cache)
+        shell: bash
+        run: |
+          if [ "${RUNNER_DEBUG:-0}" = "1" ]; then
+            ./gradlew build sweepTest --no-build-cache --info --stacktrace
+          else
+            ./gradlew build sweepTest --no-build-cache
+          fi
+
+      - name: Upload test reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports-${{ matrix.os }}-jdk25.0.3
+          path: |
+            **/build/reports/tests/**
+            **/build/test-results/**
+          if-no-files-found: ignore
+          retention-days: 14
