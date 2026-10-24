@@ -26,6 +26,7 @@ import net.minestom.server.event.inventory.InventoryOpenEvent;
 import net.minestom.server.item.Material;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.core.testfixtures.RecordingDeliver;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -40,7 +41,7 @@ class SwitcherPagingTest {
     private static final SwitcherLayout PAGED = SwitcherLayout.of(100);
 
     private static Player openWith(SwitcherFixture fixture, int lobbies) {
-        fixture.counts().serve(lobbies(lobbies));
+        fixture.counts().serveServices(SwitcherFixture.OWN.task(), lobbies(lobbies));
         return fixture.joinAndOpen();
     }
 
@@ -143,7 +144,7 @@ class SwitcherPagingTest {
             fixture.click(player, 2);
             env.tick();
 
-            Assertions.assertEquals(List.of(new RecordingDeliver.Delivery(player, "Lobby-047")), fixture.deliver().deliveries());
+            Assertions.assertEquals(List.of(RecordingDeliver.Delivery.toServer(player, "Lobby-047")), fixture.deliver().deliveries());
         }
     }
 
@@ -164,7 +165,7 @@ class SwitcherPagingTest {
     @Test
     void controlsAreTranslated(Env env) {
         try (SwitcherFixture fixture = SwitcherFixture.active(env)) {
-            fixture.counts().serve(lobbies(100));
+            fixture.counts().serveServices(SwitcherFixture.OWN.task(), lobbies(100));
             Player player = fixture.join(env.createFlatInstance());
             player.setLocale(Locale.GERMAN);
             fixture.use(player);
@@ -180,7 +181,7 @@ class SwitcherPagingTest {
     void sameSizeKeepsTheMenuOpen(Env env) {
         try (SwitcherFixture fixture = SwitcherFixture.active(env)) {
             Player player = openWith(fixture, 100);
-            fixture.counts().serve(lobbies(120));
+            fixture.counts().serveServices(SwitcherFixture.OWN.task(), lobbies(120));
 
             tick(env, PERIOD_TICKS + 10);
 
@@ -198,7 +199,7 @@ class SwitcherPagingTest {
     void growingClosesTheOpenMenu(Env env) {
         try (SwitcherFixture fixture = SwitcherFixture.active(env)) {
             Player player = openWith(fixture, 2);
-            fixture.counts().serve(lobbies(12));
+            fixture.counts().serveServices(SwitcherFixture.OWN.task(), lobbies(12));
 
             tick(env, PERIOD_TICKS + 10);
 
@@ -215,7 +216,7 @@ class SwitcherPagingTest {
     void shrinkingDropsThePaging(Env env) {
         try (SwitcherFixture fixture = SwitcherFixture.active(env)) {
             Player player = openWith(fixture, 100);
-            fixture.counts().serve(lobbies(3));
+            fixture.counts().serveServices(SwitcherFixture.OWN.task(), lobbies(3));
 
             tick(env, PERIOD_TICKS + 10);
 
@@ -231,7 +232,7 @@ class SwitcherPagingTest {
     void resizeCloseStopsTheRefresh(Env env) {
         try (SwitcherFixture fixture = SwitcherFixture.active(env)) {
             openWith(fixture, 2);
-            fixture.counts().serve(lobbies(12));
+            fixture.counts().serveServices(SwitcherFixture.OWN.task(), lobbies(12));
             tick(env, PERIOD_TICKS + 10);
             int reads = fixture.counts().reads();
 

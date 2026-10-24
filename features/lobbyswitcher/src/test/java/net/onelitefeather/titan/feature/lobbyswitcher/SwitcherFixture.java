@@ -37,6 +37,8 @@ import net.onelitefeather.titan.core.lobby.LobbyIdentity;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
 import net.onelitefeather.titan.core.portal.ServiceCount;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
+import net.onelitefeather.titan.core.testfixtures.FakePlayerCounts;
+import net.onelitefeather.titan.core.testfixtures.RecordingDeliver;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 
 /**
@@ -55,7 +57,7 @@ final class SwitcherFixture implements AutoCloseable {
     private final TestTitanNode titan;
     private final RecordingDeliver deliver = new RecordingDeliver();
     private final LobbySwitcherMessages messages = new LobbySwitcherMessages();
-    private final FakePlayerCounts counts = new FakePlayerCounts(LOBBY_3, LOBBY_1, LOBBY_2);
+    private final FakePlayerCounts counts = new FakePlayerCounts().serveServices(OWN.task(), LOBBY_3, LOBBY_1, LOBBY_2);
     private final SwitcherInventory inventory;
     private final LobbySwitcherModule module;
     private final LobbyItem item;

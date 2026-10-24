@@ -25,8 +25,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.concurrent.atomic.AtomicInteger;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
@@ -35,11 +33,12 @@ import net.minestom.server.instance.InstanceContainer;
 import net.minestom.server.timer.Scheduler;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
-import net.onelitefeather.titan.apps.cloudnet.ActiveLobby;
 import net.onelitefeather.titan.common.map.MapProvider;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.permission.PermissionService;
+import net.onelitefeather.titan.core.testfixtures.ActiveLobby;
+import net.onelitefeather.titan.core.testfixtures.AdjustableClock;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 import net.onelitefeather.titan.platform.luckperms.LuckPermsPermissionService;
 import org.junit.jupiter.api.AfterEach;
@@ -81,30 +80,6 @@ class SeasonRestartWiringTest {
     private AtomicInteger stops;
     private int online;
     private BeanScope scope;
-
-    private static final class AdjustableClock extends Clock {
-
-        private Instant instant;
-
-        AdjustableClock(Instant instant) {
-            this.instant = instant;
-        }
-
-        @Override
-        public ZoneId getZone() {
-            return ZoneOffset.UTC;
-        }
-
-        @Override
-        public Clock withZone(ZoneId zone) {
-            return this;
-        }
-
-        @Override
-        public Instant instant() {
-            return this.instant;
-        }
-    }
 
     @BeforeEach
     void setUp(Env env) throws IOException {
@@ -167,7 +142,7 @@ class SeasonRestartWiringTest {
         this.online = 1;
         startScope();
 
-        this.clock.instant = AFTER_WINTER;
+        this.clock.set(AFTER_WINTER);
         tickOneMinute();
 
         Assertions.assertTrue(logged("Restart to the default world pending"), "a restart to the default world must be pending, got: " + this.moduleLines.list);
@@ -179,7 +154,7 @@ class SeasonRestartWiringTest {
     void windowEndWithoutPlayersStopsTheServer() {
         startScope();
 
-        this.clock.instant = AFTER_WINTER;
+        this.clock.set(AFTER_WINTER);
         tickOneMinute();
 
         Assertions.assertEquals(1, this.stops.get(), "an empty lobby must request exactly one stop");

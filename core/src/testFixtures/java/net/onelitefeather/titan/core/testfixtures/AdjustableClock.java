@@ -13,24 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.feature.tickle;
+package net.onelitefeather.titan.core.testfixtures;
 
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 
 /**
- * A test-only {@link Clock} whose {@link #instant()} can be advanced between two calls into a
- * {@link TickleModule}, so a test can simulate the tickle cooldown expiring without depending on
- * wall-clock time or {@link Thread#sleep(long)}.
+ * A test-only {@link Clock} that only moves when a test says so, so no test depends on wall-clock
+ * time or {@link Thread#sleep(long)}. It also counts how often it was read.
  */
-final class AdjustableClock extends Clock {
+public final class AdjustableClock extends Clock {
 
     private final ZoneId zone;
     private Instant instant;
+    private int reads;
 
-    AdjustableClock(Instant instant, ZoneId zone) {
+    public AdjustableClock(Instant instant) {
+        this(instant, ZoneOffset.UTC);
+    }
+
+    public AdjustableClock(Instant instant, ZoneId zone) {
         this.instant = instant;
         this.zone = zone;
     }
@@ -40,8 +45,18 @@ final class AdjustableClock extends Clock {
      *
      * @param duration the amount of time to advance by
      */
-    void advance(Duration duration) {
+    public void advance(Duration duration) {
         this.instant = this.instant.plus(duration);
+    }
+
+    /** Sets this clock's current time to {@code instant}. */
+    public void set(Instant instant) {
+        this.instant = instant;
+    }
+
+    /** How often {@link #instant()} was read. */
+    public int reads() {
+        return this.reads;
     }
 
     @Override
@@ -56,6 +71,7 @@ final class AdjustableClock extends Clock {
 
     @Override
     public Instant instant() {
+        this.reads++;
         return this.instant;
     }
 }

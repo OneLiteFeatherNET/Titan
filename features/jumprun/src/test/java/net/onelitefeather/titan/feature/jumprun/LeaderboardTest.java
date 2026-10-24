@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import java.util.List;
 import java.util.UUID;
+import net.onelitefeather.titan.core.testfixtures.CapturedLog;
 import net.onelitefeather.titan.feature.jumprun.course.Mode;
 import net.onelitefeather.titan.feature.jumprun.persistence.FakeRunStore;
 import net.onelitefeather.titan.feature.jumprun.persistence.FinishedRun;

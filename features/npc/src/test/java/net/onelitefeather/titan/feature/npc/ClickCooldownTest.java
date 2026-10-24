@@ -18,6 +18,7 @@ package net.onelitefeather.titan.feature.npc;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
+import net.onelitefeather.titan.core.testfixtures.AdjustableClock;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -29,7 +30,7 @@ class ClickCooldownTest {
     @DisplayName("A second click within the cooldown is refused")
     @Test
     void secondClickWithinCooldownIsRefused() {
-        MutableClock clock = new MutableClock(Instant.parse("2026-10-24T20:00:00Z"));
+        AdjustableClock clock = new AdjustableClock(Instant.parse("2026-10-24T20:00:00Z"));
         ClickCooldown cooldown = new ClickCooldown(clock, COOLDOWN);
         UUID player = UUID.randomUUID();
         Assertions.assertTrue(cooldown.tryAcquire(player), "the first click is allowed");
@@ -40,7 +41,7 @@ class ClickCooldownTest {
     @DisplayName("A click after the cooldown is allowed again")
     @Test
     void clickAfterCooldownIsAllowed() {
-        MutableClock clock = new MutableClock(Instant.parse("2026-10-24T20:00:00Z"));
+        AdjustableClock clock = new AdjustableClock(Instant.parse("2026-10-24T20:00:00Z"));
         ClickCooldown cooldown = new ClickCooldown(clock, COOLDOWN);
         UUID player = UUID.randomUUID();
         cooldown.tryAcquire(player);
@@ -51,7 +52,7 @@ class ClickCooldownTest {
     @DisplayName("One player's cooldown does not hold back another player")
     @Test
     void cooldownIsPerPlayer() {
-        ClickCooldown cooldown = new ClickCooldown(new MutableClock(Instant.parse("2026-10-24T20:00:00Z")), COOLDOWN);
+        ClickCooldown cooldown = new ClickCooldown(new AdjustableClock(Instant.parse("2026-10-24T20:00:00Z")), COOLDOWN);
         cooldown.tryAcquire(UUID.randomUUID());
         Assertions.assertTrue(cooldown.tryAcquire(UUID.randomUUID()), "another player clicks freely");
     }

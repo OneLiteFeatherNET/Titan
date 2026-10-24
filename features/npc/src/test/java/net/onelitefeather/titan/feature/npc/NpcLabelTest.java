@@ -25,6 +25,7 @@ import net.onelitefeather.titan.core.portal.LabelSource;
 import net.onelitefeather.titan.core.portal.PortalLabel;
 import net.onelitefeather.titan.core.portal.ServiceCount;
 import net.minestom.server.coordinate.Vec;
+import net.onelitefeather.titan.core.testfixtures.FakePlayerCounts;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -43,7 +44,7 @@ class NpcLabelTest {
     @DisplayName("The label shows the online count and the maximum of the task")
     @Test
     void showsOnlineAndMax() {
-        FakePlayerCounts counts = new FakePlayerCounts().task("Slender", new ServiceCount("Slender-1", 7, 20), new ServiceCount("Slender-2", 3, 20));
+        FakePlayerCounts counts = new FakePlayerCounts().serveServices("Slender", new ServiceCount("Slender-1", 7, 20), new ServiceCount("Slender-2", 3, 20));
         Assertions.assertEquals("Slender\n10/40 Online", plain(NpcLabel.text(npc(null), Optional.of(counts), 0)), "the sums of the services");
     }
 
@@ -62,7 +63,7 @@ class NpcLabelTest {
     @DisplayName("A provider that throws shows the offline text instead of failing")
     @Test
     void offlineWhenProviderThrows() {
-        FakePlayerCounts counts = new FakePlayerCounts().failingWith(new IllegalStateException("down"));
+        FakePlayerCounts counts = new FakePlayerCounts().failWith(new IllegalStateException("down"));
         Assertions.assertEquals("Slender offline", plain(NpcLabel.text(npc(null), Optional.of(counts), 0)), "one failing provider must not break the label");
     }
 

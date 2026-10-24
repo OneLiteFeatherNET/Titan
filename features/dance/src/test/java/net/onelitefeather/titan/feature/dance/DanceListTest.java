@@ -24,6 +24,7 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.minestom.server.dialog.Dialog;
 import net.minestom.server.dialog.DialogActionButton;
 import net.minestom.server.registry.DynamicRegistry;
+import net.onelitefeather.titan.core.testfixtures.FakePermissionService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -72,7 +73,7 @@ class DanceListTest {
     @Test
     void registrationPutsEveryListUnderItsKey() {
         DynamicRegistry<Dialog> dialogs = DynamicRegistry.create(Key.key("titan", "test_dance_lists"));
-        new DanceMenu(this.messages, new DancePermissions(new FakePermissionService().grant("titan.dance.spin"))).register(dialogs);
+        new DanceMenu(this.messages, new DancePermissions(new FakePermissionService().allowEveryone("titan.dance.spin"))).register(dialogs);
 
         for (Locale language : DanceList.languages()) {
             for (Set<Dance> permitted : DanceList.variants()) {

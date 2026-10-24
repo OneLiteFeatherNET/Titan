@@ -30,6 +30,7 @@ import net.onelitefeather.titan.core.portal.PlayerCounts;
 import net.onelitefeather.titan.core.portal.Portal;
 import net.onelitefeather.titan.core.portal.PortalLabel;
 import net.onelitefeather.titan.core.portal.SourceType;
+import net.onelitefeather.titan.core.testfixtures.FakePlayerCounts;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

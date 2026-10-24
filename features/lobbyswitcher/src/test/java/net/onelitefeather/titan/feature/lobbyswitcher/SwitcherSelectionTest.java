@@ -29,6 +29,7 @@ import net.onelitefeather.titan.core.portal.ServiceCount;
 import net.minestom.server.event.inventory.InventoryPreClickEvent;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
+import net.onelitefeather.titan.core.testfixtures.RecordingDeliver;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -72,7 +73,7 @@ class SwitcherSelectionTest {
             fixture.click(player, LOBBY_1);
             env.tick();
 
-            Assertions.assertEquals(List.of(new RecordingDeliver.Delivery(player, "Lobby-1")), fixture.deliver().deliveries(), "one delivery by service name");
+            Assertions.assertEquals(List.of(RecordingDeliver.Delivery.toServer(player, "Lobby-1")), fixture.deliver().deliveries(), "one delivery by service name");
         }
     }
 
@@ -85,7 +86,7 @@ class SwitcherSelectionTest {
             fixture.click(player, LOBBY_1);
             env.tick();
 
-            Assertions.assertEquals(List.of(new RecordingDeliver.Delivery(player, "Lobby-1")), fixture.deliver().deliveries(), "one delivery although protection (priority 100) cancelled the click");
+            Assertions.assertEquals(List.of(RecordingDeliver.Delivery.toServer(player, "Lobby-1")), fixture.deliver().deliveries(), "one delivery although protection (priority 100) cancelled the click");
         }
     }
 
@@ -148,7 +149,7 @@ class SwitcherSelectionTest {
     @Test
     void notReadyLobbyIsNotDelivered(Env env) {
         try (SwitcherFixture fixture = SwitcherFixture.active(env)) {
-            fixture.counts().serve(new ServiceCount("Lobby-1", 0, 0), SwitcherFixture.LOBBY_2);
+            fixture.counts().serveServices(SwitcherFixture.OWN.task(), new ServiceCount("Lobby-1", 0, 0), SwitcherFixture.LOBBY_2);
             Viewer viewer = viewer(env, fixture, Locale.ENGLISH);
 
             fixture.click(viewer.player(), LOBBY_1);
@@ -177,7 +178,7 @@ class SwitcherSelectionTest {
     void lobbyFilledUpAtCheckTime(Env env) {
         try (SwitcherFixture fixture = SwitcherFixture.active(env)) {
             Viewer viewer = viewer(env, fixture, Locale.ENGLISH);
-            fixture.counts().serve(new ServiceCount("Lobby-1", 50, 50), SwitcherFixture.LOBBY_2, SwitcherFixture.LOBBY_3);
+            fixture.counts().serveServices(SwitcherFixture.OWN.task(), new ServiceCount("Lobby-1", 50, 50), SwitcherFixture.LOBBY_2, SwitcherFixture.LOBBY_3);
 
             fixture.click(viewer.player(), LOBBY_1);
             env.tick();
@@ -194,7 +195,7 @@ class SwitcherSelectionTest {
     void lobbyGoneAtCheckTime(Env env) {
         try (SwitcherFixture fixture = SwitcherFixture.active(env)) {
             Viewer viewer = viewer(env, fixture, Locale.ENGLISH);
-            fixture.counts().serve(SwitcherFixture.LOBBY_2, SwitcherFixture.LOBBY_3);
+            fixture.counts().serveServices(SwitcherFixture.OWN.task(), SwitcherFixture.LOBBY_2, SwitcherFixture.LOBBY_3);
 
             fixture.click(viewer.player(), LOBBY_1);
             env.tick();

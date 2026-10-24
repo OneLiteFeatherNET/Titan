@@ -13,22 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.feature.portal;
+package net.onelitefeather.titan.core.testfixtures;
 
 import java.util.ArrayList;
 import java.util.List;
 import net.minestom.server.entity.Player;
-import net.onelitefeather.titan.api.deliver.DeliverComponent;
 import net.onelitefeather.titan.api.deliver.Deliver;
+import net.onelitefeather.titan.api.deliver.DeliverComponent;
 
 /**
  * A test-only {@link Deliver} that records every delivery instead of sending one, so a test can
- * assert which player was sent to which destination.
+ * assert which player was sent to which task or to which service.
  */
-final class RecordingDeliver implements Deliver {
+public final class RecordingDeliver implements Deliver {
 
-    /** One recorded call to {@link #sendPlayer}. */
-    record Delivery(Player player, String taskName) {
+    /** One recorded call to {@link #sendPlayer}; at most one of the two names is set. */
+    public record Delivery(Player player, String taskName, String serverName) {
+
+        public static Delivery toTask(Player player, String taskName) {
+            return new Delivery(player, taskName, null);
+        }
+
+        public static Delivery toServer(Player player, String serverName) {
+            return new Delivery(player, null, serverName);
+        }
     }
 
     private final List<Delivery> deliveries = new ArrayList<>();
@@ -36,10 +44,11 @@ final class RecordingDeliver implements Deliver {
     @Override
     public void sendPlayer(Player player, DeliverComponent component) {
         String taskName = component instanceof DeliverComponent.TaskComponent task ? task.taskName() : null;
-        this.deliveries.add(new Delivery(player, taskName));
+        String serverName = component instanceof DeliverComponent.ServerDeliverComponent server ? server.gameServer() : null;
+        this.deliveries.add(new Delivery(player, taskName, serverName));
     }
 
-    List<Delivery> deliveries() {
+    public List<Delivery> deliveries() {
         return List.copyOf(this.deliveries);
     }
 }

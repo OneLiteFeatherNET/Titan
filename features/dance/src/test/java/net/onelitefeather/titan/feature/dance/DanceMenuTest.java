@@ -22,6 +22,7 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.minestom.server.dialog.Dialog;
 import net.minestom.server.dialog.DialogAction;
 import net.minestom.server.dialog.DialogActionButton;
+import net.onelitefeather.titan.core.testfixtures.FakePermissionService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,7 +66,7 @@ class DanceMenuTest {
     @DisplayName("A player with the spin permission also sees spin, before Stop")
     @Test
     void showsSpinWithPermission() {
-        Dialog.MultiAction dialog = dialog(new FakePermissionService().grant("titan.dance.spin"), Locale.ENGLISH);
+        Dialog.MultiAction dialog = dialog(new FakePermissionService().allowEveryone("titan.dance.spin"), Locale.ENGLISH);
 
         Assertions.assertEquals(List.of("Wave", "Groove", "Party", "Spin", "Stop"), labels(dialog), "spin appears once the permission is there");
     }

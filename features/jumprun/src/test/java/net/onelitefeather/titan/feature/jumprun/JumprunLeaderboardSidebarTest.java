@@ -30,6 +30,7 @@ import net.minestom.server.ServerFlag;
 import net.minestom.server.network.packet.server.ServerPacket;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.core.testfixtures.CapturedLog;
 import net.onelitefeather.titan.feature.jumprun.course.Mode;
 import net.onelitefeather.titan.feature.jumprun.persistence.EndReason;
 import net.onelitefeather.titan.feature.jumprun.persistence.FakeRunStore;

@@ -25,6 +25,8 @@ import net.minestom.server.event.player.PlayerCustomClickEvent;
 import net.minestom.server.instance.Instance;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.core.testfixtures.AdjustableClock;
+import net.onelitefeather.titan.core.testfixtures.FakePermissionService;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
 import org.junit.jupiter.api.Assertions;
@@ -179,7 +181,7 @@ class DanceStartIntegrationTest {
         DanceFixtures.Dancer dancer = DanceFixtures.connect(env, instance);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            DanceModule module = DanceFixtures.module(env, titan, new FakePermissionService().grant("titan.dance.spin"), new AdjustableClock(NOW, ZoneOffset.UTC), Telemetry.noop());
+            DanceModule module = DanceFixtures.module(env, titan, new FakePermissionService().allowEveryone("titan.dance.spin"), new AdjustableClock(NOW, ZoneOffset.UTC), Telemetry.noop());
             module.start();
             try {
                 env.process().eventHandler().call(DanceFixtures.danceClick(dancer.player(), Dance.SPIN));

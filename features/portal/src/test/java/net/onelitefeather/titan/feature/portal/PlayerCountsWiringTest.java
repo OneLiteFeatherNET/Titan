@@ -32,6 +32,8 @@ import net.onelitefeather.titan.core.portal.PlayerCount;
 import net.onelitefeather.titan.core.portal.PlayerCounts;
 import net.onelitefeather.titan.core.portal.SourceType;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
+import net.onelitefeather.titan.core.testfixtures.FakePermissionService;
+import net.onelitefeather.titan.core.testfixtures.RecordingDeliver;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;

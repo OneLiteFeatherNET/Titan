@@ -38,6 +38,12 @@ dependencies {
     // ColumnArchitectureRules references BeanScope/PostConstruct/Singleton, not to depend on them.
     testFixturesImplementation(libs.avaje.inject)
     testFixturesImplementation(libs.junit.api)
+    // CapturedLog's public API exposes logback's ILoggingEvent, so consumers need it on their classpath.
+    testFixturesApi(libs.logback.classic)
+    // ActiveLobby stubs the MapProvider and LobbyMap of :common. compileOnly keeps :common off the
+    // test classpath of every column; the apps that use ActiveLobby bring :common and Mockito themselves.
+    testFixturesCompileOnly(project(":common"))
+    testFixturesCompileOnly(libs.mockito)
 }
 
 // The public API of core is documented (openspec maintainability-gates, design D6). The core-only ruleset

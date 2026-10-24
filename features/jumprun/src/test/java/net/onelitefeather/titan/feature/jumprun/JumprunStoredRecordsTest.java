@@ -32,6 +32,7 @@ import net.minestom.server.network.packet.server.play.SystemChatPacket;
 import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.core.testfixtures.CapturedLog;
 import net.onelitefeather.titan.feature.jumprun.course.Mode;
 import net.onelitefeather.titan.feature.jumprun.persistence.FakeRunStore;
 import net.onelitefeather.titan.feature.jumprun.persistence.StoredRunRecords;

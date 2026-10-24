@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 import net.onelitefeather.titan.core.portal.ServiceCount;
+import net.onelitefeather.titan.core.portal.SourceType;
+import net.onelitefeather.titan.core.testfixtures.FakePlayerCounts;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -73,7 +75,7 @@ class TaskPlayersTest {
     void unsupportedTasksCannotReadServices() {
         FakePlayerCounts counts = new FakePlayerCounts();
         counts.serve("Survival", 7);
-        counts.doNotSupportTasks();
+        counts.doNotSupport(SourceType.TASK);
 
         Assertions.assertEquals(Optional.empty(), new TaskPlayers(Optional.of(counts)).services("Survival"), "a provider without task support cannot be asked, so nothing is read");
     }

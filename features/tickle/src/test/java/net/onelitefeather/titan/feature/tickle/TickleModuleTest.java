@@ -34,6 +34,7 @@ import net.minestom.testing.Env;
 import net.minestom.testing.TestConnection;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
+import net.onelitefeather.titan.core.testfixtures.AdjustableClock;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;

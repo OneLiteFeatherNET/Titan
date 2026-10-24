@@ -44,7 +44,7 @@ class SwitcherRefreshTest {
     void openListIsRefreshed(Env env) {
         try (SwitcherFixture fixture = SwitcherFixture.active(env)) {
             Player player = fixture.joinAndOpen();
-            fixture.counts().serve(new ServiceCount("Lobby-1", 49, 50), SwitcherFixture.LOBBY_2, SwitcherFixture.LOBBY_3);
+            fixture.counts().serveServices(SwitcherFixture.OWN.task(), new ServiceCount("Lobby-1", 49, 50), SwitcherFixture.LOBBY_2, SwitcherFixture.LOBBY_3);
 
             tick(env, PERIOD_TICKS + 10);
 
