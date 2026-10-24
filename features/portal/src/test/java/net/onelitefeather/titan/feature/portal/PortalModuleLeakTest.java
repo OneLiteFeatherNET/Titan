@@ -18,6 +18,7 @@ package net.onelitefeather.titan.feature.portal;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.Player;
@@ -49,7 +50,7 @@ class PortalModuleLeakTest {
 
     private PortalModule module(Env env, TestTitanNode titan) {
         Portal portal = new Portal("survival", new Box(new Vec(0, 64, 0), new Vec(1, 65, 1)), "Survival", null);
-        return new PortalModule(titan.node(), () -> List.of(portal), this.deliver, new FakePermissionService(), this.clock, env.createFlatInstance(), env.process().scheduler(), Runnable::run, unused -> new LabelReading.Local(0), new PortalSettings(1), Telemetry.noop());
+        return new PortalModule(titan.node(), () -> List.of(portal), this.deliver, new FakePermissionService(), this.clock, env.createFlatInstance(), env.process().scheduler(), Runnable::run, unused -> new LabelReading.Local(0), new PortalSettings(1), Optional.empty(), Telemetry.noop());
     }
 
     @DisplayName("After stop the module's node is gone and a move into a portal delivers nothing")

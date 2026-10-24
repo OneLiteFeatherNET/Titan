@@ -19,14 +19,14 @@ Zweig: `feat/lobby-throw` von `origin/main`, nach dem Merge von `lobby-settings`
 
 ## 2. Tests zuerst (rot)
 
-- [ ] 2.1 `ChargeTest` (rein, ohne Env): Stärke `p = min(t, 30) / 30` für Ticks 0, 1, 15, 30, 90; Tippen unter 2 Ticks ergibt `p = 0`; Geschwindigkeit `8 + 8 p`.
-- [ ] 2.2 `ThrowRulesTest` (rein): Aufnahme nur mit `ALLOWED`; Opt-out, Immunität, Sitzen, Tanzen, Elytra, Jump-and-Run, Verkettung blockieren mit dem richtigen `reason`. Jede Regel als eigener Test.
-- [ ] 2.3 `ThrowCooldownsTest` mit fixer `Clock`: Werfer 5 s, Paar 60 s nach Abbruch, Ziel 20 s, Auto-Drop nach 15 s. Keine Zeitabhängigkeit ohne Clock.
-- [ ] 2.4 `ThrowVelocityTest` (rein): Betrag im Bereich 8 bis 16, vertikal ≤ 10, bei Blick nach unten nicht negativ.
-- [ ] 2.5 `ThrowTrajectoryTest` (rein, deterministisch): gleiche Eingabe liefert gleiche Punkte; höchstens 40 Punkte; Ende bei festem Block; Landemarker am Auftreffpunkt; Gravitation und Luftwiderstand pro Tick nach Formel.
+- [x] 2.1 `ChargeTest` (rein, ohne Env): Stärke `p = min(t, 30) / 30` für Ticks 0, 1, 15, 30, 90; Tippen unter 2 Ticks ergibt `p = 0`; Geschwindigkeit `8 + 8 p`.
+- [x] 2.2 `ThrowRulesTest` (rein): Aufnahme nur mit `ALLOWED`; Opt-out, Immunität, Sitzen, Tanzen, Elytra, Jump-and-Run, Verkettung blockieren mit dem richtigen `reason`. Jede Regel als eigener Test.
+- [x] 2.3 `ThrowCooldownsTest` mit fixer `Clock`: Werfer 5 s, Paar 60 s nach Abbruch, Ziel 20 s, Auto-Drop nach 15 s. Keine Zeitabhängigkeit ohne Clock.
+- [x] 2.4 `ThrowVelocityTest` (rein): Betrag im Bereich 8 bis 16, vertikal ≤ 10, bei Blick nach unten nicht negativ.
+- [x] 2.5 `ThrowTrajectoryTest` (rein, deterministisch): gleiche Eingabe liefert gleiche Punkte; höchstens 40 Punkte; Ende bei festem Block; Landemarker am Auftreffpunkt; Gravitation und Luftwiderstand pro Tick nach Formel.
 - [ ] 2.6 `ThrowStateTest` (rein): Übergänge Idle, Carrying, Charging, Thrown, Idle; ein Ziel in höchstens einem Zustand; ein Werfer trägt höchstens ein Ziel; Laden ohne Snapshot ist nicht erreichbar.
-- [ ] 2.7 `ChargeFeedbackTest` (rein): Tonhöhe steigt mit `p`; Ton nur alle 5 Ticks; Actionbar-Leiste wächst mit `p`.
-- [ ] 2.8 `ThrowMessagesTest`: de- und en-Bundle haben dieselben Schlüssel.
+- [x] 2.7 `ChargeFeedbackTest` (rein): Tonhöhe steigt mit `p`; Ton nur alle 5 Ticks; Actionbar-Leiste wächst mit `p`.
+- [x] 2.8 `ThrowMessagesTest`: de- und en-Bundle haben dieselben Schlüssel.
 - [ ] 2.9 `ThrowModuleChargeTest` (Env, `env.tick()`): Rechtsklick startet Ladung, Loslassen nach N Ticks wirft mit erwarteter Geschwindigkeit; Loslassen ohne Ladung wirft nicht; Klick direkt nach der Aufnahme innerhalb 500 ms ignoriert.
 - [ ] 2.10 `ThrowModuleHandRestoreTest` (Env): Hand wird auf jedem Pfad exakt zurückgesetzt: Wurf, Schleichen, Auto-Drop, Opt-out, Immunität, Disconnect, Instanzwechsel, Tod, Modulstopp. Ein Test pro Pfad.
 - [ ] 2.11 `ThrowModuleHotbarAbortTest` (Env): Hotbar-Platzwechsel während der Ladung bricht ab, hält den Ladeträger im Platz, wirft nicht und erhöht `charge_aborts`.
@@ -35,21 +35,21 @@ Zweig: `feat/lobby-throw` von `origin/main`, nach dem Merge von `lobby-settings`
 - [ ] 2.14 `ThrowModuleLifecycleTest` (Env): Disconnect und Instanzwechsel lösen die Trage ohne Impuls.
 - [ ] 2.15 `ThrowPortalGuardTest`: Portal-Übergabe während Flug und 2 s nach Landung verweigert; danach wieder erlaubt; Flugende nach 5 s.
 - [ ] 2.16 `ThrowTelemetryTest`: Zähler mit Attributen, ohne UUIDs, inklusive `charge_aborts`.
-- [ ] 2.17 `ColumnArchitectureTest`: Modul hängt nur von `core` ab, nicht von anderen Features.
+- [x] 2.17 `ColumnArchitectureTest`: Modul hängt nur von `core` ab, nicht von anderen Features.
 
 Nachweis: Die Tests schlagen vor der Umsetzung fehl.
 
 ## 3. Umsetzung
 
-- [ ] 3.1 Modul `features/throw` mit `build.gradle.kts`, `package-info.java` (Column `throwColumn`), Eintrag in `settings.gradle.kts`.
-- [ ] 3.2 Reine Logik: `ThrowRules`, `ThrowCooldowns` (Clock), `ThrowVelocity`, `Charge` (Stärke aus Ticks), `ThrowState`, `ThrowTrajectory` (Punkte und Landemarker).
+- [x] 3.1 Modul `features/throw` mit `build.gradle.kts`, `package-info.java` (Column `throwColumn`), Eintrag in `settings.gradle.kts`.
+- [x] 3.2 Reine Logik: `ThrowRules`, `ThrowCooldowns` (Clock), `ThrowVelocity`, `Charge` (Stärke aus Ticks), `ThrowState`, `ThrowTrajectory` (Punkte und Landemarker).
 - [ ] 3.3 Ladeträger-Fabrik: Stock mit `consumable` gemäß 1.1; Snapshot und Wiederherstellung als eigene Klasse `HandSnapshot`.
 - [ ] 3.4 `ThrowModule` mit `FeatureNode`: Aufnahme über `PlayerEntityInteractEvent`, Ladung über `PlayerBeginItemUseEvent`, Wurf über `PlayerCancelItemUseEvent`, Schleichen über `PlayerPacketEvent`, Hotbar-Platzwechsel über `PlayerChangeHeldSlotEvent`, Abbau über `PlayerDisconnectEvent`, Instanzwechsel und Tod.
 - [ ] 3.5 Vorschau-Ausgabe über `player.sendPacket(...)`, Aktualisierung alle 2 Ticks, Obergrenze 40 Punkte.
 - [ ] 3.6 Fortschritt: Actionbar-Leiste, Ton alle 5 Ticks mit steigender Tonhöhe, nur für den Werfer.
 - [ ] 3.7 Portal-Schutz: kleine Abfrage vor der Übergabe im Portal-Modul, ohne Umbau des Portal-Moduls.
 - [ ] 3.8 Telemetrie `ThrowTelemetry` mit den fünf Zählern.
-- [ ] 3.9 Messages `messages_de.properties` und `messages_en.properties` nach dem Muster von `DanceMessages`; Actionbar-Hinweis.
+- [x] 3.9 Messages `messages_de.properties` und `messages_en.properties` nach dem Muster von `DanceMessages`; Actionbar-Hinweis.
 - [ ] 3.10 Settings-Schlüssel `titan:throw.target` über den Port aus `lobby-settings` (Standard an), inklusive sofortiger Freigabe bei Einschalten während der Trage.
 - [ ] 3.11 Immunität: Prüfung des Rechts `titan.throw.immune` bei Aufnahme und Wurf.
 

@@ -27,6 +27,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.coordinate.Vec;
 import net.minestom.server.entity.Player;
@@ -85,7 +86,7 @@ class PortalModuleTest {
     }
 
     private PortalModule module(Env env, TestTitanNode titan, Deliver deliverToUse, Portal... portals) {
-        return new PortalModule(titan.node(), () -> List.of(portals), deliverToUse, this.permissions, this.clock, env.createFlatInstance(), env.process().scheduler(), Runnable::run, portal -> new LabelReading.Local(0), new PortalSettings(1), this.testTelemetry.telemetry());
+        return new PortalModule(titan.node(), () -> List.of(portals), deliverToUse, this.permissions, this.clock, env.createFlatInstance(), env.process().scheduler(), Runnable::run, portal -> new LabelReading.Local(0), new PortalSettings(1), Optional.empty(), this.testTelemetry.telemetry());
     }
 
     /** Fires the move event before the position changes, exactly as Minestom does. */
