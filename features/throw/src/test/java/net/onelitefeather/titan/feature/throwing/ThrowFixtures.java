@@ -20,15 +20,22 @@ import net.onelitefeather.titan.core.testfixtures.AdjustableClock;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.PlayerHand;
 import net.minestom.server.event.item.PlayerBeginItemUseEvent;
 import net.minestom.server.event.item.PlayerCancelItemUseEvent;
 import net.minestom.server.event.player.PlayerEntityInteractEvent;
+import net.minestom.server.event.player.PlayerPacketEvent;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.item.ItemAnimation;
 import net.minestom.server.item.ItemStack;
+import net.minestom.server.network.packet.client.play.ClientInputPacket;
 import net.minestom.testing.Env;
 import net.minestom.testing.TestConnection;
 import net.onelitefeather.titan.core.permission.PermissionService;
@@ -51,7 +58,38 @@ final class ThrowFixtures {
     }
 
     static ThrowModule module(Env env, TestTitanNode titan, PermissionService permissions, PlayerSettings settings, Clock clock, Telemetry telemetry) {
-        return new ThrowModule(titan.node(), env.process().scheduler(), clock, telemetry, permissions, settings, new SettingsRegistry());
+        return module(env, titan, permissions, settings, clock, telemetry, new ActionBars());
+    }
+
+    static ThrowModule module(Env env, TestTitanNode titan, PermissionService permissions, PlayerSettings settings, Clock clock, Telemetry telemetry, ActionBars actionBars) {
+        return new ThrowModule(titan.node(), env.process().scheduler(), clock, telemetry, permissions, settings, new SettingsRegistry(), actionBars::record);
+    }
+
+    /** Every action bar text the module sent, per player, in order. */
+    static final class ActionBars {
+
+        private final List<UUID> players = new ArrayList<>();
+        private final List<String> texts = new ArrayList<>();
+
+        void record(Player player, Component text) {
+            this.players.add(player.getUuid());
+            this.texts.add(PlainTextComponentSerializer.plainText().serialize(text));
+        }
+
+        /** How many action bar texts went to {@code player}. */
+        int countFor(Player player) {
+            return (int) this.players.stream().filter(player.getUuid()::equals).count();
+        }
+
+        List<String> textsFor(Player player) {
+            List<String> result = new ArrayList<>();
+            for (int index = 0; index < this.players.size(); index++) {
+                if (this.players.get(index).equals(player.getUuid())) {
+                    result.add(this.texts.get(index));
+                }
+            }
+            return result;
+        }
     }
 
     static AdjustableClock clock() {
@@ -69,6 +107,11 @@ final class ThrowFixtures {
     /** A right-click on {@code target} with the main hand, as the client sends it. */
     static void rightClick(Env env, Player thrower, Player target) {
         env.process().eventHandler().call(new PlayerEntityInteractEvent(thrower, target, PlayerHand.MAIN, target.getPosition()));
+    }
+
+    /** The target presses sneak, which lets go of a carry. */
+    static void sneak(Env env, Player target) {
+        env.process().eventHandler().call(new PlayerPacketEvent(target, new ClientInputPacket(false, false, false, false, false, true, false)));
     }
 
     static ItemStack heldItem(Player player) {

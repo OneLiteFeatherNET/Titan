@@ -17,11 +17,14 @@ package net.onelitefeather.titan.feature.throwing;
 
 import io.avaje.inject.PostConstruct;
 import io.avaje.inject.PreDestroy;
+import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -110,12 +113,23 @@ public final class ThrowModule {
     private final CarryRegistry carries = new CarryRegistry();
     private final ThrowCooldowns cooldowns;
     private final FlightProtection flights = new FlightProtection();
+    private final ThrowFeedback feedback;
+    /**
+     * When each thrower's last click was evaluated; the client's repeats within the grace are
+     * ignored.
+     */
+    private final Map<UUID, Instant> lastPickupClick = new HashMap<>();
     private FeatureNode node;
     private Task tick;
     private long ticks;
     private boolean started;
 
+    @Inject
     public ThrowModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Scheduler scheduler, Clock clock, Telemetry telemetry, PermissionService permissions, PlayerSettings settings, SettingsRegistry registry) {
+        this(titan, scheduler, clock, telemetry, permissions, settings, registry, Player::sendActionBar);
+    }
+
+    ThrowModule(EventNode<Event> titan, Scheduler scheduler, Clock clock, Telemetry telemetry, PermissionService permissions, PlayerSettings settings, SettingsRegistry registry, ThrowFeedback.Sink actionBars) {
         this.titan = Objects.requireNonNull(titan, "titan must not be null");
         this.scheduler = Objects.requireNonNull(scheduler, "scheduler must not be null");
         this.clock = Objects.requireNonNull(clock, "clock must not be null");
@@ -126,6 +140,7 @@ public final class ThrowModule {
         this.metrics = new ThrowTelemetry(this.telemetry);
         this.messages = new ThrowMessages();
         this.cooldowns = new ThrowCooldowns(clock);
+        this.feedback = new ThrowFeedback(clock, actionBars);
     }
 
     @PostConstruct
@@ -168,9 +183,20 @@ public final class ThrowModule {
             return;
         }
         Player thrower = event.getPlayer();
+        // One click, one pickup: while a carry runs, the client's repeats of the interact change nothing.
+        if (this.carries.isCarrying(thrower.getUuid())) {
+            return;
+        }
         if (!thrower.getItemInMainHand().isAir() || thrower.getInstance() == null || thrower.getInstance() != target.getInstance()) {
             return;
         }
+        Instant now = this.clock.instant();
+        Instant lastEvaluated = this.lastPickupClick.get(thrower.getUuid());
+        if (lastEvaluated != null && now.isBefore(lastEvaluated.plus(PICKUP_CLICK_GRACE))) {
+            // The second packet of the same click, or a repeat while the button is held.
+            return;
+        }
+        this.lastPickupClick.put(thrower.getUuid(), now);
         pickUp(thrower, target);
     }
 
@@ -185,7 +211,10 @@ public final class ThrowModule {
         }
         if (refusal.isPresent()) {
             this.metrics.refused(refusal.get());
-            thrower.sendMessage(ThrowMessages.text(ThrowMessages.refusalKey(refusal.get()), thrower.getLocale()));
+            // Without the permission the click is no feature of theirs: nothing is said.
+            if (refusal.get() != Refusal.PERMISSION) {
+                this.feedback.refused(thrower, refusal.get());
+            }
             return;
         }
         int slot = thrower.getHeldSlot();
@@ -300,6 +329,8 @@ public final class ThrowModule {
         this.carries.endByTarget(id).ifPresent(this::restoreAndDetach);
         if (leaving) {
             this.flights.forget(id);
+            this.feedback.forget(id);
+            this.lastPickupClick.remove(id);
         }
     }
 
