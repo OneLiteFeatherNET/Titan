@@ -222,6 +222,8 @@ public final class ThrowModule {
         this.carries.start(new Carry(throwerId, targetId, slot, snapshot, now, false));
         thrower.getInventory().setItemStack(slot, CarrierItem.create());
         thrower.addPassenger(target);
+        // The carrier looks out of the body of the player on their head; only the carrier loses sight of it.
+        target.updateViewableRule(viewer -> !viewer.getUuid().equals(throwerId));
         this.cooldowns.targetPickedUp(targetId);
         this.metrics.pickedUp();
         thrower.playSound(Sound.sound(PICKUP_SOUND, Sound.Source.PLAYER, 1f, 1f));
@@ -352,6 +354,10 @@ public final class ThrowModule {
     private void restoreAndDetach(Carry carry) {
         Player thrower = online(carry.thrower());
         Player target = online(carry.target());
+        if (target != null) {
+            // Back to the default: everyone who could see the target before the carry sees them again.
+            target.updateViewableRule(null);
+        }
         if (thrower != null) {
             thrower.getInventory().setItemStack(carry.slot(), carry.snapshot());
             if (target != null && target.getVehicle() == thrower) {
