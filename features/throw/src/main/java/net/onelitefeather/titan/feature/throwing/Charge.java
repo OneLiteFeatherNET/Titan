@@ -27,8 +27,14 @@ final class Charge {
     /** Shorter holds are taps: they throw with the minimum strength. */
     static final int TAP_TICKS = 2;
 
-    static final double MIN_SPEED = 8.0;
-    static final double MAX_SPEED = 16.0;
+    /**
+     * Blocks per second of a tap, which lands about six blocks away at 45 degrees; the reach is
+     * pinned by {@code ThrowRangeTest} against the flight model of {@link ThrowTrajectory}.
+     */
+    static final double MIN_SPEED = 18.0;
+
+    /** Blocks per second of a full charge, which lands about twenty blocks away at 45 degrees. */
+    static final double MAX_SPEED = 50.0;
 
     private Charge() {
     }
