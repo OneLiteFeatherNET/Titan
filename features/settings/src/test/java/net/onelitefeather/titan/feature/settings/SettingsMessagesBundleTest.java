@@ -22,11 +22,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class SettingsMessagesBundleTest {
+
+    private static final String OPTION_PREFIX = "titan.settings.option.";
 
     private static Properties load(String file) throws IOException {
         try (InputStream in = SettingsMessagesBundleTest.class.getResourceAsStream("/titan/settings/" + file)) {
@@ -37,11 +40,31 @@ class SettingsMessagesBundleTest {
         }
     }
 
-    @DisplayName("The fallback bundle defines exactly the keys the menu renders")
+    @DisplayName("The fallback bundle defines exactly the fixed keys the menu renders")
     @Test
     void fallbackBundleMatchesTheRenderedKeys() throws IOException {
         Set<String> rendered = new HashSet<>(SettingsMessages.KEYS);
-        Assertions.assertEquals(rendered, load("messages_en.properties").stringPropertyNames(), "messages_en.properties must define every rendered key and nothing else");
+        Assertions.assertEquals(rendered, withoutOptionTexts(load("messages_en.properties")), "messages_en.properties must define every fixed rendered key and nothing else");
+    }
+
+    @DisplayName("Every option text in the bundle has both a name and a description")
+    @Test
+    void everyOptionHasNameAndDescription() throws IOException {
+        Set<String> keys = load("messages_en.properties").stringPropertyNames();
+        for (String key : keys) {
+            if (key.startsWith(OPTION_PREFIX) && key.endsWith(".name")) {
+                String description = key.substring(0, key.length() - ".name".length()) + ".description";
+                Assertions.assertTrue(keys.contains(description), key + " needs a matching " + description);
+            }
+        }
+    }
+
+    /**
+     * Option texts belong to the columns that register the options; only the fixed keys are checked
+     * here.
+     */
+    private static Set<String> withoutOptionTexts(Properties properties) {
+        return properties.stringPropertyNames().stream().filter(key -> !key.startsWith(OPTION_PREFIX)).collect(Collectors.toSet());
     }
 
     @DisplayName("The German bundle has exactly the keys of the fallback bundle")
