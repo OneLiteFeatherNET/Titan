@@ -15,6 +15,9 @@
  */
 package net.onelitefeather.titan.feature.throwing;
 
+import net.onelitefeather.titan.core.testfixtures.AdjustableClock;
+import net.onelitefeather.titan.core.testfixtures.FakePermissionService;
+
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
 import net.minestom.server.network.packet.server.play.ParticlePacket;
@@ -49,7 +52,7 @@ class ThrowPreviewRecipientTest {
         AdjustableClock clock = ThrowFixtures.clock();
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().grant(ThrowModule.PERMISSION), new FakePlayerSettings(), clock, Telemetry.noop());
+            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().allowEveryone(ThrowModule.PERMISSION), new FakePlayerSettings(), clock, Telemetry.noop());
             module.start();
             try {
                 ThrowFixtures.rightClick(env, thrower, target);

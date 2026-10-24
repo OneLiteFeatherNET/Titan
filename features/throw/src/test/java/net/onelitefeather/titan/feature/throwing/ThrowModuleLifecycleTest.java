@@ -15,6 +15,8 @@
  */
 package net.onelitefeather.titan.feature.throwing;
 
+import net.onelitefeather.titan.core.testfixtures.FakePermissionService;
+
 import net.kyori.adventure.text.Component;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.player.PlayerDeathEvent;
@@ -41,7 +43,7 @@ class ThrowModuleLifecycleTest {
         Player target = ThrowFixtures.connect(env, instance, ThrowFixtures.SPOT);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().grant(ThrowModule.PERMISSION), new FakePlayerSettings(), ThrowFixtures.clock(), Telemetry.noop());
+            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().allowEveryone(ThrowModule.PERMISSION), new FakePlayerSettings(), ThrowFixtures.clock(), Telemetry.noop());
             module.start();
             try {
                 ThrowFixtures.rightClick(env, thrower, target);
@@ -63,7 +65,7 @@ class ThrowModuleLifecycleTest {
         Player target = ThrowFixtures.connect(env, instance, ThrowFixtures.SPOT);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().grant(ThrowModule.PERMISSION), new FakePlayerSettings(), ThrowFixtures.clock(), Telemetry.noop());
+            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().allowEveryone(ThrowModule.PERMISSION), new FakePlayerSettings(), ThrowFixtures.clock(), Telemetry.noop());
             module.start();
             try {
                 ThrowFixtures.rightClick(env, thrower, target);
@@ -86,7 +88,7 @@ class ThrowModuleLifecycleTest {
         Player target = ThrowFixtures.connect(env, instance, ThrowFixtures.SPOT);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().grant(ThrowModule.PERMISSION), new FakePlayerSettings(), ThrowFixtures.clock(), Telemetry.noop());
+            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().allowEveryone(ThrowModule.PERMISSION), new FakePlayerSettings(), ThrowFixtures.clock(), Telemetry.noop());
             module.start();
             try {
                 ThrowFixtures.rightClick(env, thrower, target);

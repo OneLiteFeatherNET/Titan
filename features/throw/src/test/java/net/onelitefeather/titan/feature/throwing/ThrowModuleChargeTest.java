@@ -15,6 +15,9 @@
  */
 package net.onelitefeather.titan.feature.throwing;
 
+import net.onelitefeather.titan.core.testfixtures.AdjustableClock;
+import net.onelitefeather.titan.core.testfixtures.FakePermissionService;
+
 import java.time.Duration;
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
@@ -38,7 +41,7 @@ class ThrowModuleChargeTest {
         Player target = ThrowFixtures.connect(env, instance, ThrowFixtures.SPOT);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().grant(ThrowModule.PERMISSION), new FakePlayerSettings(), ThrowFixtures.clock(), Telemetry.noop());
+            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().allowEveryone(ThrowModule.PERMISSION), new FakePlayerSettings(), ThrowFixtures.clock(), Telemetry.noop());
             module.start();
             try {
                 ThrowFixtures.rightClick(env, thrower, target);
@@ -58,7 +61,7 @@ class ThrowModuleChargeTest {
         Player target = ThrowFixtures.connect(env, instance, ThrowFixtures.SPOT);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().grant(ThrowModule.PERMISSION), new FakePlayerSettings(), ThrowFixtures.clock(), Telemetry.noop());
+            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().allowEveryone(ThrowModule.PERMISSION), new FakePlayerSettings(), ThrowFixtures.clock(), Telemetry.noop());
             module.start();
             try {
                 ThrowFixtures.rightClick(env, thrower, target);
@@ -79,7 +82,7 @@ class ThrowModuleChargeTest {
         AdjustableClock clock = ThrowFixtures.clock();
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().grant(ThrowModule.PERMISSION), new FakePlayerSettings(), clock, Telemetry.noop());
+            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().allowEveryone(ThrowModule.PERMISSION), new FakePlayerSettings(), clock, Telemetry.noop());
             module.start();
             try {
                 ThrowFixtures.rightClick(env, thrower, target);
@@ -103,7 +106,7 @@ class ThrowModuleChargeTest {
         AdjustableClock clock = ThrowFixtures.clock();
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().grant(ThrowModule.PERMISSION), new FakePlayerSettings(), clock, Telemetry.noop());
+            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().allowEveryone(ThrowModule.PERMISSION), new FakePlayerSettings(), clock, Telemetry.noop());
             module.start();
             try {
                 ThrowFixtures.rightClick(env, thrower, target);
@@ -125,7 +128,7 @@ class ThrowModuleChargeTest {
         Player target = ThrowFixtures.connect(env, instance, ThrowFixtures.SPOT);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().grant(ThrowModule.PERMISSION), new FakePlayerSettings(), ThrowFixtures.clock(), Telemetry.noop());
+            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().allowEveryone(ThrowModule.PERMISSION), new FakePlayerSettings(), ThrowFixtures.clock(), Telemetry.noop());
             module.start();
             try {
                 ThrowFixtures.rightClick(env, thrower, target);
@@ -148,7 +151,7 @@ class ThrowModuleChargeTest {
         AdjustableClock clock = ThrowFixtures.clock();
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().grant(ThrowModule.PERMISSION), new FakePlayerSettings(), clock, Telemetry.noop());
+            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().allowEveryone(ThrowModule.PERMISSION), new FakePlayerSettings(), clock, Telemetry.noop());
             module.start();
             try {
                 ThrowFixtures.rightClick(env, thrower, target);
@@ -172,7 +175,7 @@ class ThrowModuleChargeTest {
         AdjustableClock clock = ThrowFixtures.clock();
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().grant(ThrowModule.PERMISSION), new FakePlayerSettings(), clock, Telemetry.noop());
+            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().allowEveryone(ThrowModule.PERMISSION), new FakePlayerSettings(), clock, Telemetry.noop());
             module.start();
             try {
                 ThrowFixtures.rightClick(env, thrower, target);

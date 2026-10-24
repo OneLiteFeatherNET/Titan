@@ -15,6 +15,9 @@
  */
 package net.onelitefeather.titan.feature.throwing;
 
+import net.onelitefeather.titan.core.testfixtures.AdjustableClock;
+import net.onelitefeather.titan.core.testfixtures.FakePermissionService;
+
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import net.minestom.server.entity.Player;
@@ -45,7 +48,7 @@ class ThrowTelemetryTest {
         AdjustableClock clock = ThrowFixtures.clock();
 
         try (TestTitanNode titan = TestTitanNode.attach(env); TestTelemetry telemetry = TestTelemetry.create()) {
-            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().grant(ThrowModule.PERMISSION), new FakePlayerSettings(), clock, telemetry.telemetry());
+            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().allowEveryone(ThrowModule.PERMISSION), new FakePlayerSettings(), clock, telemetry.telemetry());
             module.start();
             try {
                 ThrowFixtures.rightClick(env, thrower, target);
@@ -88,7 +91,7 @@ class ThrowTelemetryTest {
         Player target = ThrowFixtures.connect(env, instance, ThrowFixtures.SPOT);
 
         try (TestTitanNode titan = TestTitanNode.attach(env); TestTelemetry telemetry = TestTelemetry.create()) {
-            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().grant(ThrowModule.PERMISSION), new FakePlayerSettings(), ThrowFixtures.clock(), telemetry.telemetry());
+            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().allowEveryone(ThrowModule.PERMISSION), new FakePlayerSettings(), ThrowFixtures.clock(), telemetry.telemetry());
             module.start();
             try {
                 ThrowFixtures.rightClick(env, thrower, target);

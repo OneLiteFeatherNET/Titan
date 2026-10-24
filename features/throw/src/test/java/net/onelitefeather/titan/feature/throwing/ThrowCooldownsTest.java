@@ -15,6 +15,8 @@
  */
 package net.onelitefeather.titan.feature.throwing;
 
+import net.onelitefeather.titan.core.testfixtures.AdjustableClock;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;

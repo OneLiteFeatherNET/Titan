@@ -15,6 +15,8 @@
  */
 package net.onelitefeather.titan.feature.throwing;
 
+import net.onelitefeather.titan.core.testfixtures.FakePermissionService;
+
 import net.minestom.server.entity.Player;
 import net.minestom.server.instance.Instance;
 import net.minestom.testing.Env;
@@ -39,7 +41,7 @@ class ThrowModuleOptOutTest {
         settings.set(target.getUuid(), ThrowSettings.TARGET, false);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().grant(ThrowModule.PERMISSION), settings, ThrowFixtures.clock(), Telemetry.noop());
+            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().allowEveryone(ThrowModule.PERMISSION), settings, ThrowFixtures.clock(), Telemetry.noop());
             module.start();
             try {
                 ThrowFixtures.rightClick(env, thrower, target);
@@ -62,7 +64,7 @@ class ThrowModuleOptOutTest {
         settings.set(target.getUuid(), ThrowSettings.TARGET, true);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().grant(ThrowModule.PERMISSION), settings, ThrowFixtures.clock(), Telemetry.noop());
+            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().allowEveryone(ThrowModule.PERMISSION), settings, ThrowFixtures.clock(), Telemetry.noop());
             module.start();
             try {
                 ThrowFixtures.rightClick(env, thrower, target);
@@ -80,8 +82,8 @@ class ThrowModuleOptOutTest {
         Instance instance = env.createFlatInstance();
         Player thrower = ThrowFixtures.connect(env, instance, ThrowFixtures.SPOT);
         Player target = ThrowFixtures.connect(env, instance, ThrowFixtures.SPOT);
-        FakePermissionService permissions = new FakePermissionService().grant(ThrowModule.PERMISSION);
-        permissions.makeImmune(target.getUuid());
+        FakePermissionService permissions = new FakePermissionService().allowEveryone(ThrowModule.PERMISSION);
+        permissions.grant(target.getUuid(), ThrowModule.IMMUNE_PERMISSION);
 
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
             ThrowModule module = ThrowFixtures.module(env, titan, permissions, new FakePlayerSettings(), ThrowFixtures.clock(), Telemetry.noop());

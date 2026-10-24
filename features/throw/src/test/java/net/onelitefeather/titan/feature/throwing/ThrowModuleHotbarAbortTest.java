@@ -15,6 +15,9 @@
  */
 package net.onelitefeather.titan.feature.throwing;
 
+import net.onelitefeather.titan.core.testfixtures.AdjustableClock;
+import net.onelitefeather.titan.core.testfixtures.FakePermissionService;
+
 import java.time.Duration;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.PlayerHand;
@@ -45,7 +48,7 @@ class ThrowModuleHotbarAbortTest {
         int otherSlot = (carrierSlot + 1) % 9;
 
         try (TestTitanNode titan = TestTitanNode.attach(env); TestTelemetry testTelemetry = TestTelemetry.create()) {
-            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().grant(ThrowModule.PERMISSION), new FakePlayerSettings(), clock, testTelemetry.telemetry());
+            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().allowEveryone(ThrowModule.PERMISSION), new FakePlayerSettings(), clock, testTelemetry.telemetry());
             module.start();
             try {
                 ThrowFixtures.rightClick(env, thrower, target);
@@ -72,7 +75,7 @@ class ThrowModuleHotbarAbortTest {
         int carrierSlot = thrower.getHeldSlot();
 
         try (TestTitanNode titan = TestTitanNode.attach(env); TestTelemetry testTelemetry = TestTelemetry.create()) {
-            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().grant(ThrowModule.PERMISSION), new FakePlayerSettings(), ThrowFixtures.clock(), testTelemetry.telemetry());
+            ThrowModule module = ThrowFixtures.module(env, titan, new FakePermissionService().allowEveryone(ThrowModule.PERMISSION), new FakePlayerSettings(), ThrowFixtures.clock(), testTelemetry.telemetry());
             module.start();
             try {
                 ThrowFixtures.rightClick(env, thrower, target);

@@ -15,6 +15,9 @@
  */
 package net.onelitefeather.titan.feature.throwing;
 
+import net.onelitefeather.titan.core.testfixtures.AdjustableClock;
+import net.onelitefeather.titan.core.testfixtures.FakePermissionService;
+
 import java.time.Duration;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.entity.Player;
@@ -121,7 +124,7 @@ class ThrowModuleHandRestoreTest {
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
             ThrowModule module = carrying.startWith(env, titan);
             try {
-                carrying.permissions().makeImmune(carrying.target().getUuid());
+                carrying.permissions().grant(carrying.target().getUuid(), ThrowModule.IMMUNE_PERMISSION);
                 for (int tick = 0; tick < ThrowModule.IMMUNITY_CHECK_TICKS; tick++) {
                     env.tick();
                 }
@@ -207,7 +210,7 @@ class ThrowModuleHandRestoreTest {
             Player thrower = ThrowFixtures.connect(env, instance, ThrowFixtures.SPOT);
             Player target = ThrowFixtures.connect(env, instance, ThrowFixtures.SPOT);
             ItemStack before = ThrowFixtures.heldItem(thrower);
-            Carrying carrying = new Carrying(thrower, target, before, ThrowFixtures.clock(), new FakePlayerSettings(), new FakePermissionService().grant(ThrowModule.PERMISSION));
+            Carrying carrying = new Carrying(thrower, target, before, ThrowFixtures.clock(), new FakePlayerSettings(), new FakePermissionService().allowEveryone(ThrowModule.PERMISSION));
             return carrying;
         }
 
