@@ -5,16 +5,47 @@
 import net.onelitefeather.titan.buildsrc.architecture.ArchitectureTestGuard
 import net.onelitefeather.titan.buildsrc.architecture.ModuleBoundaries
 import org.gradle.api.GradleException
+import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.artifacts.ProjectDependency
 
 plugins {
     java
     jacoco
+    pmd
 }
 
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(25))
+    }
+}
+
+// Production code only: the PMD gate covers src/main (openspec maintainability-gates, D4).
+pmd {
+    toolVersion = extensions.getByType<VersionCatalogsExtension>().named("libs").findVersion("pmd").get().requiredVersion
+    ruleSetFiles = rootProject.files("config/quality/pmd-ruleset.xml")
+    sourceSets = listOf(java.sourceSets.getByName("main"))
+    isConsoleOutput = true
+    isIgnoreFailures = true
+}
+
+tasks.withType<Pmd>().configureEach {
+    reports {
+        xml.required.set(true)
+        html.required.set(false)
+    }
+}
+
+// Checked while configuring, so a violation fails with the module named instead of surfacing later as a
+// compile or runtime problem: forbidden project dependencies (design D2) and a missing architecture test (D3).
+afterEvaluate {
+    val boundaryViolations = configurations
+        .flatMap { it.dependencies.withType(ProjectDependency::class.java) }
+        .mapNotNull { ModuleBoundaries.violation(project.path, it.path).orElse(null) }
+    val guardViolations = ArchitectureTestGuard.violation(projectDir.toPath(), project.path).stream().toList()
+    val violations = boundaryViolations + guardViolations
+    if (violations.isNotEmpty()) {
+        throw GradleException(violations.joinToString(separator = "\n"))
     }
 }
 
@@ -62,18 +93,5 @@ tasks.withType<JacocoReport>().configureEach {
     dependsOn(tasks.matching { it.name == "test" })
     reports {
         xml.required.set(true)
-    }
-}
-
-// Checked while configuring, so a violation fails with the module named instead of surfacing later as a
-// compile or runtime problem: forbidden project dependencies (design D2) and a missing architecture test (D3).
-afterEvaluate {
-    val boundaryViolations = configurations
-        .flatMap { it.dependencies.withType(ProjectDependency::class.java) }
-        .mapNotNull { ModuleBoundaries.violation(project.path, it.path).orElse(null) }
-    val guardViolations = ArchitectureTestGuard.violation(projectDir.toPath(), project.path).stream().toList()
-    val violations = boundaryViolations + guardViolations
-    if (violations.isNotEmpty()) {
-        throw GradleException(violations.joinToString(separator = "\n"))
     }
 }

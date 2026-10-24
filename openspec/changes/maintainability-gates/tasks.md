@@ -21,7 +21,7 @@ Regeln für alle Wellen: Test zuerst (rot, dann grün, dann aufräumen); F.I.R.S
 - [ ] 1.1 PMD mit dem Regelset aus `design.md` (D4) über `src/main` aller Module laufen lassen, ohne Fehler zu erzeugen: Verstöße je Regel, Modul und Datei, CC und NCSS je Methode und Klasse, Laufzeit je Modul. Prüfen, dass Spotless an `check` hängt. Nachweis: Messtabelle in `design.md`.
 - [ ] 1.2 ArchUnit-Messung: Paketzyklen je Modul (`slices()`), Verstöße der Projektregeln aus `specs/maintainability` als Zählung (nicht als Test), Bridge-Abweichungen (`ServiceReadings`, `TitanBridgePermissionExtension`; ob der CloudNet-Classloader SLF4J bereitstellt), Speicherverhalten von `FreezingArchRule`. Nachweis: Tabelle in `design.md`.
 - [ ] 1.3 `:core:javadoc` mit doclint `missing` laufen lassen: Lücken bei Methoden zählen, Warnungsgruppen prüfen, ob Warnungen den Task abbrechen. Compiler-Warnungen (`-Xlint:deprecation,unchecked`) zählen. Nachweis: Zahlen in `design.md`.
-- [ ] 1.4 Versionen festlegen: PMD-Version mit Java-25-Unterstützung (Release-Notes lesen; Regelnamen `ProperLogger`, `NcssCount`, `CyclomaticComplexity` in dieser Version bestätigen). Eintrag im Versionskatalog. Nachweis: lokaler Build mit den gepinnten Versionen grün, Link zu den Release-Notes im PR-Text.
+- [x] 1.4 Versionen festlegen: PMD-Version mit Java-25-Unterstützung (Release-Notes lesen; Regelnamen `ProperLogger`, `NcssCount`, `CyclomaticComplexity` in dieser Version bestätigen). Eintrag im Versionskatalog. Nachweis: lokaler Build mit den gepinnten Versionen grün, Link zu den Release-Notes im PR-Text.
 - [x] 1.5 Open Questions 1 bis 8 aus `design.md` mit dem Nutzer geklärt; die Antworten stehen in `design.md`, Abschnitt "Open Questions". Nachweis: keine offene Frage mehr, die 2.x oder 3.x blockiert.
 
 ## 2. Modulgrenzen und Column-Beschreibung im Build (Welle 2a)
@@ -41,10 +41,10 @@ Regeln für alle Wellen: Test zuerst (rot, dann grün, dann aufräumen); F.I.R.S
 
 ## 4. Statische Analyse und Größen (Welle 2c, PMD)
 
-- [ ] 4.1 Test zuerst (Unit, `buildSrc`): `PmdRatchet` mit XML-Fixtures in einem `@TempDir`. Fälle: Bericht mit zwei Verstößen einer Regel in einer Datei, Baseline mit einem: schlägt an. Baseline mit zwei: besteht. Baseline mit drei: besteht und meldet, dass die Baseline verkleinert werden kann. Neue Datei: schlägt an. Keine Verstöße: besteht. Rot, dann implementieren. Nachweis: `./gradlew :buildSrc:test` grün.
-- [ ] 4.2 `config/quality/pmd-ruleset.xml` mit den Regeln aus D4 anlegen, PMD im `titan.java-conventions` nur für `src/main` aktivieren (Version aus 1.4, Bericht immer, Ratchet als Abhängigkeit von `check`). Negativtest manuell: `System.out.println` in eine Produktionsklasse eines Moduls setzen, `check` muss mit Datei, Zeile und Regel brechen; danach verwerfen. Nachweis: Auszug im PR-Text.
-- [ ] 4.3 `config/quality/pmd-baseline.properties` aus dem Messstand aus 1.1 erzeugen. Schwellen 15 (CC), 60 (Methode NCSS), 500 (Klasse NCSS) bestätigen; nur anpassen, wenn die Messung zeigt, dass sie den Bestand blockieren, und die Messung dokumentieren (Open Question 5). Nachweis: `./gradlew build` grün auf dem Branch.
-- [ ] 4.4 Jede Stelle mit `@SuppressWarnings("PMD.…")`, die durch 4.2 nötig wird, mit einem Kommentar zur Begründung versehen. Nachweis: `grep` über den Branch, jede Zeile mit Kommentar.
+- [x] 4.1 Test zuerst (Unit, `buildSrc`): `PmdRatchet` mit XML-Fixtures in einem `@TempDir`. Fälle: Bericht mit zwei Verstößen einer Regel in einer Datei, Baseline mit einem: schlägt an. Baseline mit zwei: besteht. Baseline mit drei: besteht und meldet, dass die Baseline verkleinert werden kann. Neue Datei: schlägt an. Keine Verstöße: besteht. Rot, dann implementieren. Nachweis: `./gradlew :buildSrc:test` grün.
+- [x] 4.2 `config/quality/pmd-ruleset.xml` mit den Regeln aus D4 anlegen, PMD im `titan.java-conventions` nur für `src/main` aktivieren (Version aus 1.4, Bericht immer, Ratchet als Abhängigkeit von `check`). Negativtest manuell: `System.out.println` in eine Produktionsklasse eines Moduls setzen, `check` muss mit Datei, Zeile und Regel brechen; danach verwerfen. Nachweis: Auszug im PR-Text.
+- [x] 4.3 `config/quality/pmd-baseline.properties` aus dem Messstand aus 1.1 erzeugen. Schwellen 15 (CC), 60 (Methode NCSS), 500 (Klasse NCSS) bestätigen; nur anpassen, wenn die Messung zeigt, dass sie den Bestand blockieren, und die Messung dokumentieren (Open Question 5). Nachweis: `./gradlew build` grün auf dem Branch.
+- [x] 4.4 Jede Stelle mit `@SuppressWarnings("PMD.…")`, die durch 4.2 nötig wird, mit einem Kommentar zur Begründung versehen. Nachweis: `grep` über den Branch, jede Zeile mit Kommentar.
 
 ## 5. Javadoc der core-API (Welle 2d)
 
