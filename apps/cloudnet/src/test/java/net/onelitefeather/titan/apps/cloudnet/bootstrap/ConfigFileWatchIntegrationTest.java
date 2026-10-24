@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -44,6 +45,7 @@ import org.junit.jupiter.api.io.TempDir;
  * the real working directory and reads {@code System.getenv} directly, with no injectable
  * provider - neither can be faked in-process without breaking Independent/Repeatable.
  */
+@Tag("smoke")
 class ConfigFileWatchIntegrationTest {
 
     private static final Duration TIMEOUT = Duration.ofSeconds(20);

@@ -43,6 +43,7 @@ import net.onelitefeather.titan.common.map.MapProvider;
 import net.onelitefeather.titan.runtime.bootstrap.BeanProfiles;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -62,6 +63,7 @@ import org.mockito.Mockito;
  */
 @ExtendWith(MicrotusExtension.class)
 @Timeout(30)
+@Tag("smoke")
 class WiringTest {
 
     private static EventNode<Event> titanNode(BeanScope scope) {

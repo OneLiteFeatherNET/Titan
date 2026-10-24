@@ -36,6 +36,7 @@ import net.onelitefeather.titan.core.portal.SourceType;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,6 +50,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
  */
 @ExtendWith(MicrotusExtension.class)
 @Timeout(30)
+@Tag("smoke")
 class PlatformBeansWiringTest {
 
     @DisplayName("The scope resolves Scheduler and builds LobbyItems")

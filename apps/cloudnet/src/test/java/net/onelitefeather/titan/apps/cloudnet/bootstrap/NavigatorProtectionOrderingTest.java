@@ -42,6 +42,7 @@ import net.onelitefeather.titan.common.map.LobbyMap;
 import net.onelitefeather.titan.common.map.MapProvider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -61,6 +62,7 @@ import org.mockito.Mockito;
  * teleporting the player.
  */
 @ExtendWith(MicrotusExtension.class)
+@Tag("smoke")
 class NavigatorProtectionOrderingTest {
 
     @DisplayName("A navigator click forwards via Deliver and is still cancelled by ProtectionModule, from the real wiring")

@@ -46,6 +46,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -61,6 +62,7 @@ import org.slf4j.LoggerFactory;
  */
 @ExtendWith(MicrotusExtension.class)
 @Timeout(30)
+@Tag("smoke")
 class SeasonRestartWiringTest {
 
     private static final Instant IN_WINTER = Instant.parse("2026-12-24T12:00:00Z");

@@ -45,6 +45,7 @@ import net.onelitefeather.titan.feature.navigator.NavigatorModule;
 import net.onelitefeather.titan.platform.luckperms.LuckPermsPermissionService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -60,6 +61,7 @@ import org.mockito.Mockito;
  */
 @ExtendWith(MicrotusExtension.class)
 @Timeout(30)
+@Tag("smoke")
 class SpawnReturnWiringTest {
 
     private static final Pos SPAWN = new Pos(-40.5, 40, 0.5);

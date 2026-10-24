@@ -19,6 +19,7 @@ import io.avaje.config.Configuration;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -31,6 +32,7 @@ import org.junit.jupiter.api.Test;
  * facade, so this test stays Independent and Repeatable regardless of JVM-wide state. The
  * navigator's destinations are guarded separately, by {@code NavigatorDestinationTest}.
  */
+@Tag("smoke")
 class ApplicationYamlDefaultsCharacterizationTest {
 
     private static Configuration load() {
