@@ -35,6 +35,6 @@ Welle 2 läuft parallel. Der Integrationszweig führt die Ergebnisse zusammen; d
 
 ## 3. Prüfung und Pull Request
 
-- [ ] 3.1 `./gradlew build` auf Ubuntu grün. Messung nach D7 aus einem PR-Lauf des Branches: Summe der Testzeit im Task `test` höchstens 800 s, kein Test im Task `test` über 10 s ohne Begründung, Testanzahl je Modul gleich wie in 1.2. Nachweis: Tabelle im Pull Request.
-- [ ] 3.2 `openspec validate --strict module-test-levels` ohne Fehler; die Warnungen zu deutschen Formulierungen sind wie bei den übrigen Änderungen erlaubt. Nachweis: Ausgabe des Befehls.
+- [x] 3.1 `./gradlew build` auf Ubuntu grün. Messung nach D7 aus einem PR-Lauf des Branches: Summe der Testzeit im Task `test` höchstens 800 s, kein Test im Task `test` über 10 s ohne Begründung, Testanzahl je Modul gleich wie in 1.2. Nachweis: Tabelle im Pull Request.
+- [x] 3.2 `openspec validate --strict module-test-levels` ohne Fehler; die Warnungen zu deutschen Formulierungen sind wie bei den übrigen Änderungen erlaubt. Nachweis: Ausgabe des Befehls.
 - [ ] 3.3 Pull Request öffnen mit dem Titel `test(modules): run module tests per level and move app-level tests out of apps`. Beschreibung auf Englisch mit den Messwerten aus 1.1 und 3.1 und der Session-URL als letzter Zeile. Nachweis: PR-URL; `gh pr checks <n> --watch` einmal.
