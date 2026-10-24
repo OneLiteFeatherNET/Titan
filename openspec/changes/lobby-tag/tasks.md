@@ -56,7 +56,7 @@
 
 ## 8. Prüfung
 
-- [ ] 8.1 `./gradlew spotlessApply` und `./gradlew build` grün; `openspec validate --strict lobby-tag` grün.
+- [x] 8.1 `./gradlew spotlessApply` und `./gradlew build` grün; `openspec validate --strict lobby-tag` grün.
 - [ ] 8.2 Sichtprüfung auf einem Testserver: Opt-in über das Menü, `/tag`, Glow, Partikel und Actionbar, Treffer ohne Schaden, Butterfly-Präfixe unverändert. Nicht ausgeführt, falls kein Testserver verfügbar; im PR als offen vermerken.
 
 ## 9. Commits und Pull Request
