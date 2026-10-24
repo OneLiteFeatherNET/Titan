@@ -38,10 +38,10 @@
 
 ## 5. Ereignis-Sender in anderen Columns
 
-- [ ] 5.1 Test zuerst (Env, `jumprun`): Lauf-Start sendet `LobbyPlayerBusyEvent(true)`, Lauf-Ende `(false)`.
-- [ ] 5.2 `jumprun` sendet das Ereignis an Lauf-Start und -Ende.
-- [ ] 5.3 Test zuerst (Env, `portal`): Übergabe-Start sendet `LobbyPlayerBusyEvent(true)`.
-- [ ] 5.4 `portal` sendet das Ereignis beim Start der Übergabe.
+- [x] 5.1 Test zuerst (Env, `jumprun`): Lauf-Start sendet `LobbyPlayerBusyEvent(true)`, Lauf-Ende `(false)`.
+- [x] 5.2 `jumprun` sendet das Ereignis an Lauf-Start und -Ende.
+- [x] 5.3 Test zuerst (Env, `portal`): Übergabe-Start sendet `LobbyPlayerBusyEvent(true)`.
+- [x] 5.4 `portal` sendet das Ereignis beim Start der Übergabe.
 
 ## 6. Telemetrie
 

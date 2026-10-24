@@ -47,6 +47,7 @@ import net.minestom.server.coordinate.Pos;
 import net.minestom.server.entity.EquipmentSlot;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
+import net.minestom.server.event.EventDispatcher;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.event.instance.RemoveEntityFromInstanceEvent;
 import net.minestom.server.event.player.AsyncPlayerConfigurationEvent;
@@ -67,6 +68,7 @@ import net.minestom.server.timer.Scheduler;
 import net.minestom.server.timer.Task;
 import net.minestom.server.timer.TaskSchedule;
 import net.onelitefeather.titan.core.module.FeatureNode;
+import net.onelitefeather.titan.core.module.LobbyPlayerBusyEvent;
 import net.onelitefeather.titan.core.module.LobbyHeightBounds;
 import net.onelitefeather.titan.core.module.LobbyReturnToSpawnEvent;
 import net.onelitefeather.titan.core.module.LobbySpawn;
@@ -326,6 +328,7 @@ final class JumprunModule {
             run.label().show(run.score());
             showSidebar(run);
         }
+        EventDispatcher.call(new LobbyPlayerBusyEvent(player, true));
         LOGGER.atDebug().addKeyValue("player", player.getUuid()).log("jumprun started");
         return true;
     }
@@ -580,6 +583,7 @@ final class JumprunModule {
                 fakeBlocks.reset(player, run.fakeWindow());
             }
         }
+        EventDispatcher.call(new LobbyPlayerBusyEvent(player, false));
         boolean isRecord = runTelemetry.end(new RunTelemetry.Ending(player.getUuid(), run.mode(), reason, score, fall), () -> reason.submitsScore() && records.submit(new FinishedRun(player.getUuid(), player.getUsername(), run.mode(), score, reason, now())));
         if (reason.announcesScore()) {
             // A run that never scored is not worth calling a record, even when it is the first.
