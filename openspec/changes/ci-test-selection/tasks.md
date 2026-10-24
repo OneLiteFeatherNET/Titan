@@ -17,13 +17,13 @@ Welle 2 läuft parallel; die beiden Aufgaben berühren verschiedene Dateien. Die
 ## 1. Vorbedingungen
 
 - [ ] 1.1 Prüfen, dass #472 auf `main` gemergt ist und dass ein Lauf auf `main` den Cache geschrieben hat (`gh run list --branch main --workflow "Build PR"`). Nachweis: Lauf-ID im Pull Request; Log eines PR-Laufs danach zeigt die Wiederherstellung des Caches.
-- [ ] 1.2 Prüfen, dass `module-test-levels` gemergt ist: `./gradlew smokeTest sweepTest --dry-run` zeigt beide Tasks. Nachweis: Ausgabe im Pull Request.
+- [x] 1.2 Prüfen, dass `module-test-levels` gemergt ist: `./gradlew smokeTest sweepTest --dry-run` zeigt beide Tasks. Nachweis: Ausgabe im Pull Request.
 
 ## 2. Workflows
 
-- [ ] 2.1 `build-pr.yml` auf Ubuntu begrenzen (`runs-on: ["ubuntu-latest"]`, `gradle-task: build`). Test zuerst: der Entwurf des Caller-Auftrags wird mit `actionlint` geprüft, bevor er gepusht wird. Nachweis: Ubuntu-Job läuft, `smokeTest` und Docker-Integrationstests stehen im Log.
+- [x] 2.1 `build-pr.yml` auf Ubuntu begrenzen (`runs-on: ["ubuntu-latest"]`, `gradle-task: build`). Test zuerst: der Entwurf des Caller-Auftrags wird mit `actionlint` geprüft, bevor er gepusht wird. Nachweis: Ubuntu-Job läuft, `smokeTest` und Docker-Integrationstests stehen im Log.
 - [ ] 2.2 Neue Caller-Datei `build-pr-cross-os.yml` mit dem Namen „Build PR (macOS, Windows)“ und `runs-on: ["windows-latest", "macos-latest"]`, `gradle-task: test`. Prüfen, ob die beiden Aufrufe sich über die `concurrency`-Gruppe abbrechen: auf dem Branch einen PR öffnen und in den Läufen nachsehen, ob beide Gruppen durchlaufen. Nachweis: beide Aufrufe laufen vollständig; Ergebnis im Pull Request.
-- [ ] 2.3 `build-main.yml` mit den Triggern `push` (Branch `main`) und `schedule` (nachts). Ein Job für Push ruft den geteilten Workflow mit `force-build: true` und `gradle-task: build sweepTest`; ein Job für den Nachtlauf mit `gradle-task: build sweepTest --no-build-cache`. Beide Jobs mit `if` auf den Ereignistyp. Nachweis: `actionlint`; ein manueller Lauf per `workflow_dispatch` (Trigger ergänzt, falls nötig) zeigt die Sweep-Tests in den Berichten.
+- [x] 2.3 `build-main.yml` mit den Triggern `push` (Branch `main`) und `schedule` (nachts). Ein Job für Push ruft den geteilten Workflow mit `force-build: true` und `gradle-task: build sweepTest`; ein Job für den Nachtlauf mit `gradle-task: build sweepTest --no-build-cache`. Beide Jobs mit `if` auf den Ereignistyp. Nachweis: `actionlint`; ein manueller Lauf per `workflow_dispatch` (Trigger ergänzt, falls nötig) zeigt die Sweep-Tests in den Berichten. Abweichung: der Nachtlauf steht in eigener Datei `build-nightly.yml`, damit ein Push auf `main` ihn nicht über die Concurrency-Gruppe abbricht (die Gruppe enthält den Workflow-Namen).
 
 ## 3. Messung
 

@@ -1,0 +1,18 @@
+name: Build nightly
+on:
+  schedule:
+    - cron: "17 3 * * *"
+
+# Nightly run without the Gradle build cache: a test that only passes with a cached result
+# shows up here. Its own caller file keeps it out of the concurrency group of build-main.yml,
+# so a push to main does not cancel it.
+jobs:
+  build:
+    uses: OneLiteFeatherNET/workflows/.github/workflows/gradle-build-pr.yml@v2.9.0
+    with:
+      java-version: "25.0.3"
+      java-distribution: "temurin"
+      runs-on: '["ubuntu-latest", "windows-latest", "macos-latest"]'
+      gradle-task: build sweepTest --no-build-cache
+      force-build: true
+    secrets: inherit

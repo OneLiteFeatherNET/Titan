@@ -1,0 +1,16 @@
+name: Build PR (macOS, Windows)
+on:
+  pull_request:
+
+# Unit and module tests only: smokeTest and sweepTest run on Ubuntu and on main (see
+# build-pr.yml and build-main.yml). The caller name is part of the concurrency group, so this
+# run and build-pr.yml do not cancel each other.
+jobs:
+  build:
+    uses: OneLiteFeatherNET/workflows/.github/workflows/gradle-build-pr.yml@v2.9.0
+    with:
+      java-version: "25.0.3"
+      java-distribution: "temurin"
+      runs-on: '["windows-latest", "macos-latest"]'
+      gradle-task: test
+    secrets: inherit
