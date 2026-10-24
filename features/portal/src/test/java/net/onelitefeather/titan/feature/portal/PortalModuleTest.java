@@ -40,6 +40,9 @@ import net.onelitefeather.titan.core.permission.PermissionResult;
 import net.onelitefeather.titan.core.portal.Box;
 import net.onelitefeather.titan.core.portal.Disc;
 import net.onelitefeather.titan.core.portal.Portal;
+import net.onelitefeather.titan.core.testfixtures.AdjustableClock;
+import net.onelitefeather.titan.core.testfixtures.FakePermissionService;
+import net.onelitefeather.titan.core.testfixtures.RecordingDeliver;
 import net.onelitefeather.titan.core.testfixtures.TestTelemetry;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 import org.junit.jupiter.api.AfterEach;
@@ -108,7 +111,7 @@ class PortalModuleTest {
 
             move(env, player, INSIDE);
 
-            Assertions.assertEquals(List.of(new RecordingDeliver.Delivery(player, "Survival")), this.deliver.deliveries(), "entering the box must deliver to 'Survival' once");
+            Assertions.assertEquals(List.of(RecordingDeliver.Delivery.toTask(player, "Survival")), this.deliver.deliveries(), "entering the box must deliver to 'Survival' once");
             module.stop();
         }
     }
@@ -122,7 +125,7 @@ class PortalModuleTest {
 
             move(env, player, new Pos(4, 64, 0));
 
-            Assertions.assertEquals(List.of(new RecordingDeliver.Delivery(player, "Gate")), this.deliver.deliveries(), "the move segment crosses the disc although neither position is near it");
+            Assertions.assertEquals(List.of(RecordingDeliver.Delivery.toTask(player, "Gate")), this.deliver.deliveries(), "the move segment crosses the disc although neither position is near it");
             module.stop();
         }
     }
@@ -183,7 +186,7 @@ class PortalModuleTest {
                 move(env, player, new Pos(25.5, 64, 0.5));
                 move(env, player, new Pos(20.5, 64, 0.5));
 
-                Assertions.assertEquals(List.of(new RecordingDeliver.Delivery(player, "Survival")), localDeliver.deliveries(), "with " + missing + " only the open portal delivers, immediately after the rejected one");
+                Assertions.assertEquals(List.of(RecordingDeliver.Delivery.toTask(player, "Survival")), localDeliver.deliveries(), "with " + missing + " only the open portal delivers, immediately after the rejected one");
                 module.stop();
             }
         }
@@ -199,7 +202,7 @@ class PortalModuleTest {
 
             move(env, player, INSIDE);
 
-            Assertions.assertEquals(List.of(new RecordingDeliver.Delivery(player, "Vip")), this.deliver.deliveries(), "ALLOWED must deliver to 'Vip'");
+            Assertions.assertEquals(List.of(RecordingDeliver.Delivery.toTask(player, "Vip")), this.deliver.deliveries(), "ALLOWED must deliver to 'Vip'");
             module.stop();
         }
     }

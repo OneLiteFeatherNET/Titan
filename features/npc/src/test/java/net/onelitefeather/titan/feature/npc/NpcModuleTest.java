@@ -31,6 +31,10 @@ import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.npc.LobbyNpc;
 import net.onelitefeather.titan.core.npc.NpcSkin;
 import net.onelitefeather.titan.core.portal.ServiceCount;
+import net.onelitefeather.titan.core.testfixtures.AdjustableClock;
+import net.onelitefeather.titan.core.testfixtures.FakePermissionService;
+import net.onelitefeather.titan.core.testfixtures.FakePlayerCounts;
+import net.onelitefeather.titan.core.testfixtures.RecordingDeliver;
 import net.onelitefeather.titan.core.testfixtures.TestTelemetry;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 import org.junit.jupiter.api.AfterEach;
@@ -46,10 +50,10 @@ class NpcModuleTest {
     private static final String PERMISSION = "titan.navigator.slender";
     private static final Pos STAND = new Pos(76.5, 80, 157.5, -90, 0);
 
-    private final MutableClock clock = new MutableClock(Instant.parse("2026-10-24T20:00:00Z"));
+    private final AdjustableClock clock = new AdjustableClock(Instant.parse("2026-10-24T20:00:00Z"));
     private final RecordingDeliver deliver = new RecordingDeliver();
     private final FakePermissionService permissions = new FakePermissionService();
-    private final FakePlayerCounts counts = new FakePlayerCounts().task("Slender", new ServiceCount("Slender-1", 4, 20));
+    private final FakePlayerCounts counts = new FakePlayerCounts().serveServices("Slender", new ServiceCount("Slender-1", 4, 20));
     private final TestTelemetry testTelemetry = TestTelemetry.create();
 
     @AfterEach
@@ -110,7 +114,7 @@ class NpcModuleTest {
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
             start(env, titan, lobby, Optional.of(counts), slender(null));
             click(env, player, figure(lobby));
-            Assertions.assertEquals(List.of(new RecordingDeliver.Delivery(player, "server:Slender-1")), this.deliver.deliveries(), "the click joins the service the navigator would pick");
+            Assertions.assertEquals(List.of(RecordingDeliver.Delivery.toServer(player, "Slender-1")), this.deliver.deliveries(), "the click joins the service the navigator would pick");
         }
     }
 
@@ -158,7 +162,7 @@ class NpcModuleTest {
     void fullTaskSendsNobody(Env env) {
         Instance lobby = env.createFlatInstance();
         Player player = env.createPlayer(lobby);
-        FakePlayerCounts full = new FakePlayerCounts().task("Slender", new ServiceCount("Slender-1", 20, 20));
+        FakePlayerCounts full = new FakePlayerCounts().serveServices("Slender", new ServiceCount("Slender-1", 20, 20));
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
             start(env, titan, lobby, Optional.of(full), slender(null));
             click(env, player, figure(lobby));

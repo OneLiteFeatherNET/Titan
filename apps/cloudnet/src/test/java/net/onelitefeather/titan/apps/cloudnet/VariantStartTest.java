@@ -39,6 +39,7 @@ import net.onelitefeather.titan.runtime.variant.VariantDescriptor;
 import net.onelitefeather.titan.runtime.variant.VariantStartupCheck;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,6 +53,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * exact feature/bean count, so this only exercises the variant-level check itself.
  */
 @ExtendWith(MicrotusExtension.class)
+@Tag("smoke")
 class VariantStartTest {
 
     @DisplayName("The full scope builds with no exception")

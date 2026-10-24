@@ -41,6 +41,7 @@ import net.onelitefeather.titan.common.map.LobbyMap;
 import net.onelitefeather.titan.common.map.MapProvider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -59,6 +60,7 @@ import org.mockito.Mockito;
  * never load.
  */
 @ExtendWith(MicrotusExtension.class)
+@Tag("smoke")
 class StandardLoadoutTest {
 
     private static AbstractInventory openNavigatorFeather(Env env, Player player) {

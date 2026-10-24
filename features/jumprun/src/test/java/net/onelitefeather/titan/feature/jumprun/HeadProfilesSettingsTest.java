@@ -23,12 +23,15 @@ import io.avaje.config.Configuration;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
+import net.onelitefeather.titan.core.testfixtures.AdjustableClock;
+import net.onelitefeather.titan.core.testfixtures.CapturedLog;
 import net.onelitefeather.titan.feature.jumprun.head.FakeHeadSkins;
 import net.onelitefeather.titan.feature.jumprun.head.HeadSkin;
 import net.onelitefeather.titan.feature.jumprun.head.TeamHeads;
@@ -44,6 +47,7 @@ class HeadProfilesSettingsTest {
     private static final String KEY = "jumprun.heads.profiles";
     private static final UUID ALEX = UUID.fromString("069a79f4-44e9-4726-a5be-fca90e38aaf5");
     private static final UUID BOB = UUID.fromString("61699b2e-d327-4a01-9f1e-0ea8c3f06bc6");
+    private static final Instant CLOCK_START = Instant.parse("2026-01-01T00:00:00Z");
     private static final UUID NOBODY = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     private static Map<UUID, Object> skins() {
@@ -51,7 +55,7 @@ class HeadProfilesSettingsTest {
     }
 
     private static JumprunConfig config(Configuration source, FakeHeadSkins skins) {
-        return new JumprunConfig(source, new TeamHeads(skins, Runnable::run, new MutableClock()));
+        return new JumprunConfig(source, new TeamHeads(skins, Runnable::run, new AdjustableClock(CLOCK_START)));
     }
 
     private static Configuration with(String profiles) {
@@ -178,7 +182,7 @@ class HeadProfilesSettingsTest {
     @Test
     void anUnresolvedSkinIsNotAskedAgainBeforeTheRetryDelay() {
         FakeHeadSkins skins = new FakeHeadSkins(skins());
-        MutableClock clock = new MutableClock();
+        AdjustableClock clock = new AdjustableClock(CLOCK_START);
         JumprunConfig config = new JumprunConfig(with(NOBODY.toString()), new TeamHeads(skins, Runnable::run, clock));
         config.readAtStartup();
 
@@ -192,7 +196,7 @@ class HeadProfilesSettingsTest {
     @Test
     void anUnresolvedSkinIsAskedAgainOnceTheRetryDelayHasPassed() {
         FakeHeadSkins skins = new FakeHeadSkins(skins());
-        MutableClock clock = new MutableClock();
+        AdjustableClock clock = new AdjustableClock(CLOCK_START);
         JumprunConfig config = new JumprunConfig(with(NOBODY.toString()), new TeamHeads(skins, Runnable::run, clock));
         config.readAtStartup();
 
@@ -205,7 +209,7 @@ class HeadProfilesSettingsTest {
     @Test
     void aLookupThatRunsOutOfTimeReleasesItsUuidAndIsRetriedAfterTheDelay() {
         FakeHeadSkins skins = new FakeHeadSkins(skins());
-        MutableClock clock = new MutableClock();
+        AdjustableClock clock = new AdjustableClock(CLOCK_START);
         List<Runnable> neverRun = new ArrayList<>();
         TeamHeads heads = new TeamHeads(skins, neverRun::add, clock, lookup -> {
             lookup.completeExceptionally(new TimeoutException("hung"));
@@ -225,7 +229,7 @@ class HeadProfilesSettingsTest {
         FakeHeadSkins skins = new FakeHeadSkins(skins());
         List<Runnable> queued = new ArrayList<>();
         Executor offThread = queued::add;
-        JumprunConfig config = new JumprunConfig(with(ALEX.toString()), new TeamHeads(skins, offThread, new MutableClock()));
+        JumprunConfig config = new JumprunConfig(with(ALEX.toString()), new TeamHeads(skins, offThread, new AdjustableClock(CLOCK_START)));
 
         config.readAtStartup();
 

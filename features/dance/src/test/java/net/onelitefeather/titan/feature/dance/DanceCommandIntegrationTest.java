@@ -29,6 +29,8 @@ import net.minestom.testing.Collector;
 import net.minestom.testing.Env;
 import net.minestom.testing.TestConnection;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.core.testfixtures.AdjustableClock;
+import net.onelitefeather.titan.core.testfixtures.FakePermissionService;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
 import org.junit.jupiter.api.Assertions;
@@ -78,7 +80,7 @@ class DanceCommandIntegrationTest {
 
         CommandManager commands = env.process().command();
         try (TestTitanNode titan = TestTitanNode.attach(env)) {
-            DanceModule module = DanceFixtures.module(env, titan, new FakePermissionService().grant("titan.dance.spin"), new AdjustableClock(NOW, ZoneOffset.UTC), Telemetry.noop());
+            DanceModule module = DanceFixtures.module(env, titan, new FakePermissionService().allowEveryone("titan.dance.spin"), new AdjustableClock(NOW, ZoneOffset.UTC), Telemetry.noop());
             module.start();
             DanceCommands registration = new DanceCommands(commands, module);
             registration.start();

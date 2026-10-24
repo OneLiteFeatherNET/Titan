@@ -10,7 +10,7 @@ Zwei Dinge fehlen, damit der Cache den Lauf wirklich verkürzt: die Tests des vo
 
 - **Auswahl über den Gradle-Build-Cache:** Ein PR führt nur die Testtasks aus, deren Eingaben sich geändert haben, samt Abhängigkeiten (Modul, Varianten). Kein eigenes Erkennungswerkzeug. Build-Logik-Änderungen führen von selbst zu einem vollen Lauf.
 - **Smoke-Tests einmal je PR:** Die Tasks `smokeTest` (Scope, Jar, Kindprozesse) laufen nur im Ubuntu-Job.
-- **Mac und Windows im PR mit `test`:** Die beiden Jobs führen Unit- und Modul-Tests aus, ohne Smoke- und Sweep-Tests. Die Entscheidung liegt beim Nutzer, siehe `design.md`.
+- **Mac und Windows im PR mit `test`:** Die beiden Jobs führen Unit- und Modul-Tests aus, ohne Smoke- und Sweep-Tests. Entschieden: beide führen `test` aus, siehe `design.md`.
 - **Main und Nacht:** Ein Push auf `main` führt `build sweepTest` auf allen Betriebssystemen aus und schreibt den Cache. Ein nächtlicher Lauf prüft zusätzlich ohne Build-Cache.
 - **Laufzeitziele:** Docs-PR höchstens 30 s, Feature-PR mit warmem Cache höchstens 5 min, PR mit Änderung in `core` höchstens 10 min, jeweils aus Job-Zeiten gemessen.
 

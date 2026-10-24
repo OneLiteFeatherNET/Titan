@@ -251,28 +251,24 @@ tasks {
     }
 }
 
-// Boot smoke test: starts the shipped shadow jar as a child JVM. Tagged "boot" so the plain test task
-// stays fast and jar-free; check runs it.
-tasks.named<Test>("test") {
-    useJUnitPlatform {
-        excludeTags("boot")
-    }
-}
-
-val bootSmokeTest = tasks.register<Test>("bootSmokeTest") {
+// Smoke tests (@Tag("smoke")) need this variant's full scope: they boot the shipped shadow jar as a
+// child JVM or wire several columns together. They are excluded from test (see titan.java-conventions)
+// and run once per variant here; check runs them.
+val smokeTest = tasks.register<Test>("smokeTest") {
     group = "verification"
-    description = "Boots the shipped variant jar with a real application.yaml and world."
+    description = "Runs the @Tag(\"smoke\") tests: the shipped variant jar and the full column scope."
     testClassesDirs = sourceSets.test.get().output.classesDirs
     classpath = sourceSets.test.get().runtimeClasspath
     dependsOn(tasks.named("shadowJar"))
     systemProperty("titan.jar", tasks.named<Jar>("shadowJar").get().archiveFile.get().asFile.absolutePath)
+    maxParallelForks = project.extra["titanTestForks"] as Int
     useJUnitPlatform {
-        includeTags("boot")
+        includeTags("smoke")
     }
     // The jacoco report would pull in the whole test task; coverage of a child process is not measured.
     setFinalizedBy(emptyList<Any>())
 }
 
 tasks.named("check") {
-    dependsOn(bootSmokeTest)
+    dependsOn(smokeTest)
 }

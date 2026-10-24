@@ -24,8 +24,8 @@ import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.module.item.LobbyItems;
 import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.core.permission.PermissionService;
-import net.onelitefeather.titan.platform.luckperms.LuckPermsPermissionService;
 import net.onelitefeather.titan.apps.cloudnet.ActiveLobby;
+import net.onelitefeather.titan.platform.luckperms.LuckPermsPermissionService;
 import net.onelitefeather.titan.runtime.bootstrap.BeanProfiles;
 import net.onelitefeather.titan.runtime.bootstrap.PlatformBeans;
 import net.onelitefeather.titan.common.deliver.HolderPlayerCounts;
@@ -36,6 +36,7 @@ import net.onelitefeather.titan.core.portal.SourceType;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,6 +50,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
  */
 @ExtendWith(MicrotusExtension.class)
 @Timeout(30)
+@Tag("smoke")
 class PlatformBeansWiringTest {
 
     @DisplayName("The scope resolves Scheduler and builds LobbyItems")

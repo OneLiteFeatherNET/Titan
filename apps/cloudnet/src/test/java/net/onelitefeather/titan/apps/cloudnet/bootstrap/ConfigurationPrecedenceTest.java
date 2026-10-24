@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -42,6 +43,7 @@ import org.junit.jupiter.api.io.TempDir;
  * child JVM with a controlled working directory and environment, to stay Independent and
  * Repeatable.
  */
+@Tag("smoke")
 class ConfigurationPrecedenceTest {
 
     private static final java.time.Duration TIMEOUT = java.time.Duration.ofSeconds(30);

@@ -120,7 +120,7 @@ class LobbySwitcherTelemetryTest {
     @Test
     void notReadyClickSpans(Env env) {
         try (SwitcherFixture fixture = fixture(env)) {
-            fixture.counts().serve(new ServiceCount("Lobby-1", 0, 0), SwitcherFixture.LOBBY_2);
+            fixture.counts().serveServices(SwitcherFixture.OWN.task(), new ServiceCount("Lobby-1", 0, 0), SwitcherFixture.LOBBY_2);
 
             Assertions.assertEquals("not_ready", this.testTelemetry.attribute(selectAfterClick(env, fixture, 0), RESULT));
         }
@@ -131,7 +131,7 @@ class LobbySwitcherTelemetryTest {
     void goneClickSpans(Env env) {
         try (SwitcherFixture fixture = fixture(env)) {
             Player player = fixture.joinAndOpen();
-            fixture.counts().serve(SwitcherFixture.LOBBY_2);
+            fixture.counts().serveServices(SwitcherFixture.OWN.task(), SwitcherFixture.LOBBY_2);
             fixture.click(player, 0);
             env.tick();
 

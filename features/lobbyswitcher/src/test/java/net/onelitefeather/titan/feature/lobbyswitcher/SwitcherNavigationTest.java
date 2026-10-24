@@ -44,7 +44,7 @@ class SwitcherNavigationTest {
     private static final SwitcherLayout PAGED = SwitcherLayout.of(100);
 
     private static Player openWith(SwitcherFixture fixture, int lobbies) {
-        fixture.counts().serve(lobbies(lobbies));
+        fixture.counts().serveServices(SwitcherFixture.OWN.task(), lobbies(lobbies));
         return fixture.joinAndOpen();
     }
 

@@ -31,6 +31,7 @@ import net.minestom.server.event.player.PlayerStopFlyingWithElytraEvent;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
+import net.onelitefeather.titan.core.testfixtures.AdjustableClock;
 import net.onelitefeather.titan.core.testfixtures.TestTelemetry;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

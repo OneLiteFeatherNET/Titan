@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.yaml.snakeyaml.Yaml;
@@ -39,6 +40,7 @@ import org.yaml.snakeyaml.Yaml;
  * {@link Configuration} instance returns, so a value that avaje-config drops or mistypes shows up
  * as a named key. Never the static {@code Config} facade: it is shared JVM state.
  */
+@Tag("smoke")
 class ApplicationYamlParityTest {
 
     private static final String SHIPPED = "application.yaml";

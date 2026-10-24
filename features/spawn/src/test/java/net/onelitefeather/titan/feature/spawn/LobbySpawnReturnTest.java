@@ -29,6 +29,7 @@ import net.minestom.server.instance.Instance;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
 import net.minestom.testing.Env;
+import net.onelitefeather.titan.core.testfixtures.CapturedLog;
 import org.mockito.Mockito;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.module.LobbyReturnToSpawnEvent;

@@ -37,6 +37,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
@@ -47,6 +48,7 @@ import org.junit.jupiter.api.io.TempDir;
  * because the one the service loader instantiates reads the system time.
  */
 @ExtendWith(MicrotusExtension.class)
+@Tag("smoke")
 class SeasonLobbyWorldTest {
 
     private static final Clock IN_WINTER = Clock.fixed(Instant.parse("2026-12-24T12:00:00Z"), ZoneOffset.UTC);

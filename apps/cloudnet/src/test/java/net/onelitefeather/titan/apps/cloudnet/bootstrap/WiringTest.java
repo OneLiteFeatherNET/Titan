@@ -23,6 +23,7 @@ import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
+import net.onelitefeather.titan.apps.cloudnet.ActiveLobby;
 import net.onelitefeather.titan.feature.elytra.ElytraModule;
 import net.onelitefeather.titan.feature.navigator.NavigatorModule;
 import net.onelitefeather.titan.feature.protection.ProtectionModule;
@@ -38,11 +39,11 @@ import net.onelitefeather.titan.core.feature.FeatureFlags;
 import net.onelitefeather.titan.core.permission.PermissionService;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.onelitefeather.titan.platform.luckperms.LuckPermsPermissionService;
-import net.onelitefeather.titan.apps.cloudnet.ActiveLobby;
 import net.onelitefeather.titan.common.map.MapProvider;
 import net.onelitefeather.titan.runtime.bootstrap.BeanProfiles;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -62,6 +63,7 @@ import org.mockito.Mockito;
  */
 @ExtendWith(MicrotusExtension.class)
 @Timeout(30)
+@Tag("smoke")
 class WiringTest {
 
     private static EventNode<Event> titanNode(BeanScope scope) {

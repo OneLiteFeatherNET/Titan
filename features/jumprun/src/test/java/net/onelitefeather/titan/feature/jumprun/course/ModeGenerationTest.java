@@ -15,53 +15,24 @@
  */
 package net.onelitefeather.titan.feature.jumprun.course;
 
+import static net.onelitefeather.titan.feature.jumprun.course.ModeWalks.Move;
+import static net.onelitefeather.titan.feature.jumprun.course.ModeWalks.walk;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.random.RandomGenerator;
-import java.util.random.RandomGeneratorFactory;
 import net.onelitefeather.titan.feature.jumprun.space.BlockPos;
-import net.onelitefeather.titan.feature.jumprun.space.FakeSpaceProbe;
 import net.onelitefeather.titan.feature.jumprun.space.FlightPath;
-import net.onelitefeather.titan.feature.jumprun.space.Heading;
 import org.junit.jupiter.api.Test;
 
-/** What the generator makes in each mode, over long walks with a fixed seed. */
+/**
+ * The mode checks on the PR set: single-seed walks plus the seed-loop checks with a few seeds. The
+ * same checks over 12, 20 and 200 seeds run in {@link ModeGenerationSweepTest} (tag {@code sweep}).
+ */
 class ModeGenerationTest {
 
-    private static final CourseBlock SOURCE = TestBlocks.at(new BlockPos(0, 10, 0), Surface.FULL);
-    private static final Heading EAST = new Heading(1.0, 0.0);
-    private static final int JUMPS = 400;
-
-    private record Move(int score, Jump jump) {
-    }
-
-    private static RandomGenerator seeded(long seed) {
-        return RandomGeneratorFactory.of("L64X128MixRandom").create(seed);
-    }
-
-    private static List<Move> walk(Mode mode, long seed) {
-        CourseGenerator generator = TestBlocks.generator(new FakeSpaceProbe(), TestBlocks.FAR_SPAWN, seeded(seed));
-        List<CourseBlock> course = new ArrayList<>(List.of(SOURCE));
-        List<Move> moves = new ArrayList<>();
-        Phase phase = new Phase.Scored(0, EAST, mode);
-        for (int score = 0; score < JUMPS; score++) {
-            Optional<CourseBlock> next = generator.next(course, phase);
-            if (next.isEmpty()) {
-                break;
-            }
-            moves.add(new Move(score, new Jump(course.getLast(), next.get())));
-            course.add(next.get());
-            phase = generator.after(course, phase);
-        }
-        return moves;
-    }
+    /** Seeds per loop check on the PR set; {@link ModeGenerationSweepTest} uses the full ranges. */
+    private static final long PR_SEEDS = 2;
 
     @Test
     void aNewBlockNeverLandsNearTheJumpThatIsStillToBeMade() {
@@ -117,31 +88,17 @@ class ModeGenerationTest {
 
     @Test
     void mediumNeverMakesANarrowSurface() {
-        for (long seed = 1; seed <= SEEDS; seed++) {
-            for (Move move : walk(Mode.MEDIUM, seed)) {
-                assertFalse(NARROW.contains(move.jump().to().surface()), "seed " + seed + " made " + move.jump().to().surface() + " in medium at score " + move.score());
-            }
-        }
+        ModeWalkChecks.assertMediumNeverMakesANarrowSurface(PR_SEEDS);
     }
 
     @Test
     void hardMakesNarrowSurfacesWithinTheWalk() {
-        Set<Surface> seen = new HashSet<>();
-        for (long seed = 1; seed <= SEEDS; seed++) {
-            walk(Mode.HARD, seed).forEach(move -> seen.add(move.jump().to().surface()));
-        }
-
-        assertTrue(seen.containsAll(NARROW), "hard made only " + seen);
+        ModeWalkChecks.assertHardMakesNarrowSurfacesWithinTheWalk(PR_SEEDS);
     }
 
     @Test
     void mediumReachesTheShapesWithAWideTopFaceWithinTheWalk() {
-        Set<Surface> seen = new HashSet<>();
-        for (long seed = 1; seed <= SEEDS; seed++) {
-            walk(Mode.MEDIUM, seed).forEach(move -> seen.add(move.jump().to().surface()));
-        }
-
-        assertTrue(seen.containsAll(List.of(Surface.STAIRS, Surface.CARPET, Surface.SNOW)), "medium made only " + seen);
+        ModeWalkChecks.assertMediumReachesTheShapesWithAWideTopFaceWithinTheWalk(PR_SEEDS);
     }
 
     @Test
@@ -155,34 +112,6 @@ class ModeGenerationTest {
         double hard = meanCostFrom(Mode.HARD, 40);
 
         assertTrue(hard > easy, "hard " + hard + " must cost more than easy " + easy);
-    }
-
-    private static final List<Surface> NEW_SHAPES = List.of(Surface.STAIRS, Surface.CARPET, Surface.SNOW, Surface.HEAD, Surface.FLOWER_POT, Surface.CANDLE);
-    /**
-     * The shapes with a top face narrower than a full block, or a thin post with a whole-cell
-     * collision.
-     */
-    private static final List<Surface> NARROW = List.of(Surface.FENCE, Surface.PANE, Surface.POST, Surface.HEAD, Surface.FLOWER_POT, Surface.CANDLE);
-    private static final int SEEDS = 12;
-
-    @Test
-    void easyMakesNoNewShape() {
-        for (long seed = 1; seed <= SEEDS; seed++) {
-            for (Move move : walk(Mode.EASY, seed)) {
-                assertTrue(!NEW_SHAPES.contains(move.jump().to().surface()), "seed " + seed + " made " + move.jump().to().surface() + " in easy");
-            }
-        }
-    }
-
-    @Test
-    void noJumpOverstepsTheLimitsOfGapAndRiseWhateverTheShape() {
-        for (Mode mode : Mode.values()) {
-            for (long seed = 1; seed <= SEEDS; seed++) {
-                for (Move move : walk(mode, seed)) {
-                    assertTrue(JumpRules.isReachable(move.jump(), mode), mode + " seed " + seed + " score " + move.score() + ": " + move.jump());
-                }
-            }
-        }
     }
 
     @Test
@@ -204,80 +133,52 @@ class ModeGenerationTest {
         }
     }
 
-    private static double meanCostFrom(Mode mode, int fromScore) {
-        return walk(mode, 7L).stream().filter(move -> move.score() >= fromScore).mapToDouble(move -> move.jump().cost(mode)).average().orElseThrow();
+    @Test
+    void easyMakesNoNewShape() {
+        ModeWalkChecks.assertEasyMakesNoNewShape(PR_SEEDS);
     }
 
-    private static boolean isTower(Jump jump) {
-        return jump.to().climb().isPresent();
+    @Test
+    void noJumpOverstepsTheLimitsOfGapAndRiseWhateverTheShape() {
+        ModeWalkChecks.assertNoJumpOverstepsTheLimitsOfGapAndRiseWhateverTheShape(PR_SEEDS);
     }
 
     @Test
     void easyMakesNoTowerAtAnyScore() {
-        for (long seed = 1; seed <= 20; seed++) {
-            for (Move move : walk(Mode.EASY, seed)) {
-                assertFalse(isTower(move.jump()), "easy seed " + seed + " made a tower at score " + move.score());
-            }
-        }
+        ModeWalkChecks.assertEasyMakesNoTowerAtAnyScore(PR_SEEDS);
     }
 
     @Test
     void mediumMakesNoTowerBeforeScore30() {
-        for (long seed = 1; seed <= 20; seed++) {
-            for (Move move : walk(Mode.MEDIUM, seed)) {
-                assertFalse(move.score() < 30 && isTower(move.jump()), "medium seed " + seed + " made a tower at score " + move.score());
-            }
-        }
+        ModeWalkChecks.assertMediumMakesNoTowerBeforeScore30(PR_SEEDS);
     }
 
     @Test
     void mediumMakesTowersFromScore30() {
-        long towers = 0;
-        for (long seed = 1; seed <= 20; seed++) {
-            towers += walk(Mode.MEDIUM, seed).stream().filter(move -> move.score() >= 30 && isTower(move.jump())).count();
-        }
-        assertTrue(towers > 0, "medium at score 30 and above must make towers");
+        ModeWalkChecks.assertMediumMakesTowersFromScore30(PR_SEEDS);
     }
 
     @Test
     void mediumMakesTowersAtScore80() {
-        long towers = 0;
-        for (long seed = 1; seed <= 20; seed++) {
-            towers += walk(Mode.MEDIUM, seed).stream().filter(move -> move.score() >= 80 && isTower(move.jump())).count();
-        }
-        assertTrue(towers > 0, "medium at score 80 must make towers, made " + towers);
+        ModeWalkChecks.assertMediumMakesTowersAtScore80(PR_SEEDS);
     }
 
     @Test
     void hardMakesTheTallestTowerWithTheDefaultLimitsAtScoreEighty() {
-        long tallest = 0;
-        for (long seed = 1; seed <= 20; seed++) {
-            tallest += walk(Mode.HARD, seed).stream().filter(move -> move.score() >= 80 && isTower(move.jump()) && move.jump().to().climb().orElseThrow().height() == Climb.MAX_HEIGHT).count();
-        }
-        assertTrue(tallest > 0, "hard at score 80 must make towers of " + Climb.MAX_HEIGHT + ", made " + tallest);
+        ModeWalkChecks.assertHardMakesTheTallestTowerWithTheDefaultLimitsAtScoreEighty(PR_SEEDS);
     }
 
     @Test
     void everyTowerIsStraightAndWithinTheDefaultHeights() {
-        for (long seed = 1; seed <= 200; seed++) {
-            for (Mode mode : List.of(Mode.MEDIUM, Mode.HARD)) {
-                for (Move move : walk(mode, seed)) {
-                    if (isTower(move.jump())) {
-                        int height = move.jump().to().climb().orElseThrow().height();
-                        assertEquals(0, move.jump().gap(), mode + " seed " + seed + ": tower gap");
-                        assertTrue(height >= Climb.MIN_HEIGHT && height <= Climb.MAX_HEIGHT, mode + " seed " + seed + ": tower height " + height);
-                    }
-                }
-            }
-        }
+        ModeWalkChecks.assertEveryTowerIsStraightAndWithinTheDefaultHeights(PR_SEEDS);
     }
 
     @Test
     void noJumpCostsMoreThanTheMaximumWithTowers() {
-        for (long seed = 1; seed <= 200; seed++) {
-            for (Move move : walk(Mode.HARD, seed)) {
-                assertTrue(move.jump().cost(Mode.HARD) <= Jump.MAX_COST, "hard seed " + seed + ": " + move.jump().cost(Mode.HARD) + " above " + Jump.MAX_COST);
-            }
-        }
+        ModeWalkChecks.assertNoJumpCostsMoreThanTheMaximumWithTowers(PR_SEEDS);
+    }
+
+    private static double meanCostFrom(Mode mode, int fromScore) {
+        return walk(mode, 7L).stream().filter(move -> move.score() >= fromScore).mapToDouble(move -> move.jump().cost(mode)).average().orElseThrow();
     }
 }

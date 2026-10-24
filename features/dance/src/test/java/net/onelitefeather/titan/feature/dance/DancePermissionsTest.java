@@ -18,6 +18,7 @@ package net.onelitefeather.titan.feature.dance;
 import java.util.UUID;
 import net.onelitefeather.titan.core.permission.PermissionResult;
 import net.onelitefeather.titan.core.permission.PermissionService;
+import net.onelitefeather.titan.core.testfixtures.FakePermissionService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -47,7 +48,7 @@ class DancePermissionsTest {
     @DisplayName("Spin is allowed only when the permission is explicitly granted")
     @Test
     void spinNeedsAnExplicitGrant() {
-        Assertions.assertTrue(new DancePermissions(new FakePermissionService().grant("titan.dance.spin")).may(PLAYER, Dance.SPIN), "a granted spin permission allows spin");
+        Assertions.assertTrue(new DancePermissions(new FakePermissionService().allowEveryone("titan.dance.spin")).may(PLAYER, Dance.SPIN), "a granted spin permission allows spin");
         Assertions.assertFalse(new DancePermissions(new FakePermissionService()).may(PLAYER, Dance.SPIN), "a permission that is not set must not allow spin");
     }
 

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.feature.navigator;
+package net.onelitefeather.titan.core.testfixtures;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,21 +25,27 @@ import net.onelitefeather.titan.core.permission.PermissionService;
 
 /**
  * A test-only {@link PermissionService}: every check answers {@link PermissionResult#NOT_SET}
- * until {@link #set(UUID, String, PermissionResult)} says otherwise for that player and
- * permission, or {@link #allowEveryone(String)} grants the permission to all players.
+ * until {@link #set(UUID, String, PermissionResult)} or {@link #grant(UUID, String)} says
+ * otherwise for that player and permission, or {@link #allowEveryone(String)} grants the
+ * permission to all players. An explicit result wins over {@link #allowEveryone(String)}.
  */
-final class FakePermissionService implements PermissionService {
+public final class FakePermissionService implements PermissionService {
 
     private final Map<String, PermissionResult> results = new HashMap<>();
     private final Set<String> grantedToEveryone = new HashSet<>();
 
-    FakePermissionService set(UUID playerId, String permission, PermissionResult result) {
+    public FakePermissionService set(UUID playerId, String permission, PermissionResult result) {
         this.results.put(key(playerId, permission), result);
         return this;
     }
 
+    /** Allows {@code permission} for {@code playerId}. */
+    public FakePermissionService grant(UUID playerId, String permission) {
+        return set(playerId, permission, PermissionResult.ALLOWED);
+    }
+
     /** Grants {@code permission} to every player who has no explicit result for it. */
-    FakePermissionService allowEveryone(String permission) {
+    public FakePermissionService allowEveryone(String permission) {
         this.grantedToEveryone.add(permission);
         return this;
     }
