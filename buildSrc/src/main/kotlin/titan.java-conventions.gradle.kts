@@ -71,7 +71,8 @@ tasks.withType<Test>().configureEach {
     // src/test/resources and never created or rewritten by a normal build.
     systemProperty("archunit.freeze.store.default.path", "src/test/resources/archunit_store")
     systemProperty("archunit.freeze.store.default.allowStoreCreation", "false")
-    systemProperty("archunit.freeze.store.default.allowStoreUpdate", "false")
+    // Only a deliberate run changes a store: ./gradlew test -ParchunitStoreUpdate=true, then review the diff.
+    systemProperty("archunit.freeze.store.default.allowStoreUpdate", providers.gradleProperty("archunitStoreUpdate").getOrElse("false"))
     useJUnitPlatform()
     // Minestom refuses to initialise its registries outside a real server process
     // unless this flag is set.
