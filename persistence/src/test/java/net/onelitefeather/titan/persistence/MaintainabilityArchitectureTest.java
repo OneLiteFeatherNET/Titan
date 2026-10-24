@@ -49,8 +49,5 @@ class MaintainabilityArchitectureTest {
     static final ArchRule packagesAreFreeOfCycles = FreezingArchRule.freeze(MaintainabilityRules.packagesAreFreeOfCycles("net.onelitefeather.titan.persistence"));
 
     @ArchTest
-    static final ArchRule mainCodeDoesNotDependOnCore = ArchRuleDefinition.noClasses()
-            .that(MaintainabilityRules.MAIN_CODE)
-            .should().dependOnClassesThat().resideInAPackage("net.onelitefeather.titan.core..")
-            .because("persistence is declared without a core dependency; only its test fixtures may use core");
+    static final ArchRule mainCodeDoesNotDependOnCore = ArchRuleDefinition.noClasses().that(MaintainabilityRules.MAIN_CODE).should().dependOnClassesThat().resideInAPackage("net.onelitefeather.titan.core..").because("persistence is declared without a core dependency; only its test fixtures may use core");
 }

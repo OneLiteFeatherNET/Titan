@@ -20,7 +20,8 @@ import net.minestom.server.entity.Player;
 import java.util.UUID;
 
 /**
- * One delivery of one player to a task or a game server, built with {@link #taskBuilder()} or {@link #serverBuilder()}.
+ * One delivery of one player to a task or a game server, built with {@link #taskBuilder()} or
+ * {@link #serverBuilder()}.
  */
 public sealed interface DeliverComponent permits DeliverComponent.TaskComponent,
         DeliverComponent.ServerDeliverComponent, TaskComponentImpl, ServerDeliverComponentImpl {

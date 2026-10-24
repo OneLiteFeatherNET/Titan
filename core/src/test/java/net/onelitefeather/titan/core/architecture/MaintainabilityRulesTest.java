@@ -108,24 +108,20 @@ class MaintainabilityRulesTest {
     @DisplayName("Packages that depend on each other in a cycle are reported")
     @Test
     void packageCycleIsReported() {
-        assertViolated(MaintainabilityRules.packagesAreFreeOfCycles("net.onelitefeather.titan.core.architecture.fixture.cycle", ANY_CLASS),
-                First.class, Second.class);
+        assertViolated(MaintainabilityRules.packagesAreFreeOfCycles("net.onelitefeather.titan.core.architecture.fixture.cycle", ANY_CLASS), First.class, Second.class);
     }
 
     @DisplayName("Packages that depend on each other in one direction only are accepted")
     @Test
     void packageDependencyWithoutCycleIsAccepted() {
-        assertSatisfied(MaintainabilityRules.packagesAreFreeOfCycles("net.onelitefeather.titan.core.architecture.fixture.acyclic", ANY_CLASS),
-                One.class, Two.class);
+        assertSatisfied(MaintainabilityRules.packagesAreFreeOfCycles("net.onelitefeather.titan.core.architecture.fixture.acyclic", ANY_CLASS), One.class, Two.class);
     }
 
     private static void assertViolated(ArchRule rule, Class<?>... fixtures) {
-        Assertions.assertThrows(AssertionError.class, () -> rule.check(new ClassFileImporter().importClasses(fixtures)),
-                "the rule should report " + fixtures[0].getSimpleName());
+        Assertions.assertThrows(AssertionError.class, () -> rule.check(new ClassFileImporter().importClasses(fixtures)), "the rule should report " + fixtures[0].getSimpleName());
     }
 
     private static void assertSatisfied(ArchRule rule, Class<?>... fixtures) {
-        Assertions.assertDoesNotThrow(() -> rule.check(new ClassFileImporter().importClasses(fixtures)),
-                "the rule should accept " + fixtures[0].getSimpleName());
+        Assertions.assertDoesNotThrow(() -> rule.check(new ClassFileImporter().importClasses(fixtures)), "the rule should accept " + fixtures[0].getSimpleName());
     }
 }

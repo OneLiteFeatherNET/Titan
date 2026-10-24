@@ -22,7 +22,8 @@ import net.minestom.server.entity.EquipmentSlot;
  * Where a {@link LobbyItem} lives, if anywhere: sealed to a fixed hotbar slot, a fixed equipment
  * slot, or no fixed place at all.
  *
- * <p>{@code ItemConflicts.check} in {@code features/hotbar} only checks the first two; two features may both
+ * <p>{@code ItemConflicts.check} in {@code features/hotbar} only checks the first two; two features
+ * may both
  * hand out an unplaced item without ever colliding.
  */
 public sealed interface ItemSlot {
