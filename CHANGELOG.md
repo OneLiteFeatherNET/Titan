@@ -1,5 +1,19 @@
 # Changelog
 
+## [4.5.0](https://github.com/OneLiteFeatherNET/Titan/compare/v4.4.0...v4.5.0) (2026-10-24)
+
+
+### Features
+
+* **settings:** add a lobby settings menu backed by otis player settings ([#480](https://github.com/OneLiteFeatherNET/Titan/issues/480)) ([48ff003](https://github.com/OneLiteFeatherNET/Titan/commit/48ff0031c9fc04996c295eada98e362bcdad7754))
+* **tag:** add an always-open tag game to the lobby ([#490](https://github.com/OneLiteFeatherNET/Titan/issues/490)) ([e1f56d2](https://github.com/OneLiteFeatherNET/Titan/commit/e1f56d2ec94a8817dd100238f88d24aa23255953))
+* **throw:** let permitted players pick up and throw others in the lobby ([#489](https://github.com/OneLiteFeatherNET/Titan/issues/489)) ([cfa95d3](https://github.com/OneLiteFeatherNET/Titan/commit/cfa95d3bd5cfb6dfea49d8ec39b66d70307d8131))
+
+
+### Bug Fixes
+
+* **deps:** update dependency com.google.code.gson:gson to v2.15.0 ([#487](https://github.com/OneLiteFeatherNET/Titan/issues/487)) ([ce800f7](https://github.com/OneLiteFeatherNET/Titan/commit/ce800f75ac7b04ddf82f010c082560bf325b4c7f))
+
 ## [4.4.0](https://github.com/OneLiteFeatherNET/Titan/compare/v4.3.2...v4.4.0) (2026-10-23)
 
 
