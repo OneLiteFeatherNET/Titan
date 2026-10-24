@@ -13,4 +13,7 @@ dependencies {
 
     // Real YAML loading in the tests, as in production, where apps/cloudnet brings it transitively.
     testRuntimeOnly(libs.snakeyaml)
+
+    // SeasonMapFileNameTest pins the season's map file name to the one the map loader in common reads.
+    testImplementation(project(":common"))
 }

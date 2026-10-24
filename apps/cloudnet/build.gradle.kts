@@ -27,7 +27,7 @@ dependencies {
     // The season wiring test asserts on captured log lines.
     testImplementation(libs.slf4j.api)
     testImplementation(libs.logback.classic)
-    // TestTitanNode - see the example feature's own test.
+    // TestTitanNode - the shared event node for Env-based tests.
     testImplementation(testFixtures(project(":core")))
     testImplementation(libs.junit.api)
     testImplementation(libs.junit.platform.launcher)
