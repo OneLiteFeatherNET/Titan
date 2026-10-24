@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<!--
+  Javadoc presence for the public API of core (openspec maintainability-gates, design D6). Only the
+  core module applies it, on top of config/quality/pmd-ruleset.xml: other modules have undocumented
+  public types that are outside this change. Presence only; the wording stays a review question.
+-->
+<ruleset name="Titan core API documentation"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+    <description>Every public type and public method in core has a Javadoc comment.</description>
+
+    <rule ref="category/java/documentation.xml/CommentRequired">
+        <properties>
+            <property name="classCommentRequirement" value="required"/>
+            <property name="publicMethodCommentRequirement" value="required"/>
+            <property name="fieldCommentRequirement" value="ignored"/>
+            <property name="protectedMethodCommentRequirement" value="ignored"/>
+            <property name="enumCommentRequirement" value="ignored"/>
+            <property name="serialVersionUIDCommentRequired" value="ignored"/>
+            <property name="serialPersistentFieldsCommentRequired" value="ignored"/>
+        </properties>
+    </rule>
+</ruleset>
