@@ -103,9 +103,7 @@ final class SettingsMessages implements AutoCloseable {
     }
 
     /**
-     * @return the option's description as gray lore lines of at most {@link #LORE_WIDTH}
-     *         characters,
-     *         which the menu shows under its icon
+     * @return the description as gray lore lines of at most {@link #LORE_WIDTH} characters
      */
     static List<Component> description(BooleanSetting setting, Locale language) {
         String plain = PlainTextComponentSerializer.plainText().serialize(text(optionKey(setting.key(), "description"), language));
