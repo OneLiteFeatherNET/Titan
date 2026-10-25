@@ -77,11 +77,14 @@ class SettingsTextStyleTest {
         Assertions.assertEquals(NamedTextColor.RED, firstColour(SettingsMessages.toggleName(false, Locale.GERMAN)), "the off state must be red");
     }
 
-    @DisplayName("An option description is not italic")
+    @DisplayName("An option description is a list of lines that are not italic")
     @Test
-    void descriptionIsNotItalic() {
-        Component description = SettingsMessages.description(SettingsFixtures.TAG, Locale.ENGLISH);
-        Assertions.assertEquals(TextDecoration.State.FALSE, description.decoration(TextDecoration.ITALIC), "the description must not be italic");
+    void descriptionIsWrappedAndNotItalic() {
+        List<Component> description = SettingsMessages.description(SettingsFixtures.TAG, Locale.ENGLISH);
+        Assertions.assertFalse(description.isEmpty(), "the description must have at least one line");
+        for (Component line : description) {
+            Assertions.assertEquals(TextDecoration.State.FALSE, line.decoration(TextDecoration.ITALIC), "each description line must not be italic");
+        }
     }
 
     private static String plain(Component component) {

@@ -20,7 +20,9 @@ import java.util.Locale;
 import java.util.ResourceBundle;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.kyori.adventure.translation.GlobalTranslator;
 import net.kyori.adventure.text.minimessage.translation.MiniMessageTranslationStore;
 import net.onelitefeather.titan.core.settings.BooleanSetting;
@@ -38,6 +40,9 @@ final class SettingsMessages implements AutoCloseable {
     static final String STATUS_ON = "titan.settings.status.on";
     static final String STATUS_OFF = "titan.settings.status.off";
     static final String HINT = "titan.settings.hint";
+
+    /** The most characters one lore line of the menu shows; longer descriptions wrap. */
+    static final int LORE_WIDTH = 30;
 
     /**
      * Every key the column renders with a fixed text; the bundle test checks the property files
@@ -97,9 +102,12 @@ final class SettingsMessages implements AutoCloseable {
         return italicOff(text(optionKey(setting.key(), "name"), language));
     }
 
-    /** @return the option's description, which the menu shows under its icon */
-    static Component description(BooleanSetting setting, Locale language) {
-        return italicOff(text(optionKey(setting.key(), "description"), language));
+    /**
+     * @return the description as gray lore lines of at most {@link #LORE_WIDTH} characters
+     */
+    static List<Component> description(BooleanSetting setting, Locale language) {
+        String plain = PlainTextComponentSerializer.plainText().serialize(text(optionKey(setting.key(), "description"), language));
+        return LoreWrap.wrap(plain, LORE_WIDTH).stream().map(line -> italicOff(Component.text(line, NamedTextColor.GRAY))).toList();
     }
 
     /**
