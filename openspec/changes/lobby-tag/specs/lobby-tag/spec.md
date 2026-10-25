@@ -35,7 +35,7 @@ Der Befehl `/tag` MUSS dieselbe Einstellung umschalten, die das Einstellungsmen�
 ### Requirement: Genau ein Fänger pro Instanz
 _From two active players on, exactly one player is the tagger; the role moves at random when it is lost._
 
-Die Lobby MUSS in jeder Instanz bei zwei oder mehr aktiven Spielern genau einen Fänger führen. Verliert der Fänger seine Aktivität, MUSS die Rolle zufällig an einen anderen aktiven Spieler gehen. Bei weniger als zwei aktiven Spielern MUSS es keinen Fänger geben, und die Actionbar MUSS einen Hinweis zeigen.
+Die Lobby MUSS in jeder Instanz bei zwei oder mehr aktiven Spielern genau einen Fänger führen. Verliert der Fänger seine Aktivität, MUSS die Rolle zufällig an einen anderen aktiven Spieler gehen. Bei weniger als zwei aktiven Spielern MUSS es keinen Fänger geben. Der allein wartende Spieler MUSS den Hinweis auf einen zweiten Spieler genau einmal kurz in der Actionbar sehen, beim Einschalten, beim Beitritt zu einer Lobby mit Fangen oder wenn der andere Spieler die Instanz verlässt. Der Hinweis DARF danach nicht dauerhaft wiederholt werden.
 
 #### Scenario: Zweiter aktiver Spieler
 - **WHEN** der zweite Spieler einer Instanz aktiv wird und keiner Fänger ist
@@ -47,7 +47,7 @@ Die Lobby MUSS in jeder Instanz bei zwei oder mehr aktiven Spielern genau einen 
 
 #### Scenario: Nur ein aktiver Spieler
 - **WHEN** nur noch ein aktiver Spieler in der Instanz ist
-- **THEN** gibt es keinen Fänger, und dieser Spieler sieht den Hinweis, dass er auf einen zweiten Spieler wartet
+- **THEN** gibt es keinen Fänger, und dieser Spieler sieht den Hinweis, dass er auf einen zweiten Spieler wartet, einmal kurz und danach nicht mehr
 
 ### Requirement: Der Fänger ist ohne Ressourcenpaket erkennbar
 _Visibility uses vanilla means only: glowing, red particles and the actionbar, no own scoreboard team._
