@@ -32,7 +32,7 @@ apps/local ────┼─▶ runtime ─────────────
   eigenes Gradle-Modul, das die Convention `titan.column` anwendet und **nur** an `core` hängt -
   nie an einer anderen Column, nie an `runtime` oder einer App-Variante. Die heutigen
   Columns: `protection`, `spawn`, `respawn`, `navigator`, `sit`, `tickle`, `elytra`, `jumprun`, `lobbyswitcher`
-  (nur CloudNet: Uhr in Hotbar-Slot 8 mit Lobby-Liste), `hotbar`
+  (nur CloudNet: Netherstern in Hotbar-Slot 8 mit Lobby-Liste), `hotbar`
   (Hotbar-/Ausrüstungsitems, `LobbyItems`-Implementierung) und `admin` (`/stop`, `/end`).
 - **`runtime`** ist der gemeinsame Starter: `TitanApplication` (`main`), `Titan` (baut den
   `BeanScope`), `PlatformBeans`-Äquivalent (`runtime`s eigene `package-info.java` deklariert die
@@ -514,7 +514,7 @@ Begründung der Koordinaten steht in [halloween-slender-showcase](halloween-slen
 
 ## Lobbyswitcher (`lobbyswitcher`, nur `cloudnet`)
 
-Die Uhr in Hotbar-Slot 8 öffnet die Liste der laufenden Lobbys des eigenen Tasks; ein Klick wechselt
+Der Netherstern in Hotbar-Slot 8 öffnet die Liste der laufenden Lobbys des eigenen Tasks; ein Klick wechselt
 dorthin. Die Liste endet immer mit einer Navigationszeile, auch bei einer einzigen Seite. Ihr erster Slot
 ist der Schließen-Knopf (`BARRIER`, „Schließen“), der das Inventar schließt; eine übergeordnete Ansicht
 gibt es nicht, deshalb führt er nirgendwohin.

@@ -94,7 +94,7 @@ class WiringTest {
         }
     }
 
-    @DisplayName("As a CloudNet service with the flag on and an identity, the lobby switcher module and its clock exist")
+    @DisplayName("As a CloudNet service with the flag on and an identity, the lobby switcher module and its nether star exist")
     @Test
     void cloudnetProfileWithFlagOnProvidesTheLobbySwitcher(Env env) throws ClassNotFoundException {
         LobbyIdentities identities = () -> Optional.of(new LobbyIdentity("Lobby", "Lobby-1"));
@@ -102,20 +102,20 @@ class WiringTest {
 
         try {
             Assertions.assertTrue(hasLobbySwitcherModule(scope), "the lobby switcher module must be a bean as a CloudNet service");
-            Assertions.assertEquals(5, scope.get(HotbarLobbyItems.class).itemCount(), "the four lobby items plus the switcher clock must be contributed");
+            Assertions.assertEquals(5, scope.get(HotbarLobbyItems.class).itemCount(), "the four lobby items plus the switcher nether star must be contributed");
         } finally {
             Assertions.assertDoesNotThrow(scope::close, "closing a fully built scope must not throw");
         }
     }
 
-    @DisplayName("As a CloudNet service with the flag off, the clock does not exist")
+    @DisplayName("As a CloudNet service with the flag off, the nether star does not exist")
     @Test
-    void cloudnetProfileWithFlagOffProvidesNoClock(Env env) {
+    void cloudnetProfileWithFlagOffProvidesNoNetherStar(Env env) {
         LobbyIdentities identities = () -> Optional.of(new LobbyIdentity("Lobby", "Lobby-1"));
         BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class, ActiveLobby.empty()).mock(FeatureFlags.class).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).bean(LobbyIdentities.class, identities).profiles(BeanProfiles.active(List.of(), true)).build();
 
         try {
-            Assertions.assertEquals(4, scope.get(HotbarLobbyItems.class).itemCount(), "without the flag no switcher clock may be contributed");
+            Assertions.assertEquals(4, scope.get(HotbarLobbyItems.class).itemCount(), "without the flag no switcher nether star may be contributed");
         } finally {
             scope.close();
         }
@@ -140,7 +140,7 @@ class WiringTest {
 
         try {
             Assertions.assertFalse(hasLobbySwitcherModule(scope), "the switcher module must not exist outside CloudNet");
-            Assertions.assertEquals(4, scope.get(HotbarLobbyItems.class).itemCount(), "no switcher clock may be contributed outside CloudNet");
+            Assertions.assertEquals(4, scope.get(HotbarLobbyItems.class).itemCount(), "no switcher nether star may be contributed outside CloudNet");
         } finally {
             scope.close();
         }

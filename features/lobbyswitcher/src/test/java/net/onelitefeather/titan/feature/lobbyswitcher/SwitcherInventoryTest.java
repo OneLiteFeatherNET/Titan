@@ -31,7 +31,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-/** What a player sees after clicking the clock. */
+/** What a player sees after clicking the nether star. */
 @ExtendWith(MicrotusExtension.class)
 class SwitcherInventoryTest {
 

@@ -32,8 +32,8 @@ import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
 
 /**
- * The lobby switcher: the clock in hotbar slot 8 opens the list of the running lobbies of this
- * task. Only exists as a CloudNet service; elsewhere there is nothing to switch to.
+ * The lobby switcher: the nether star in hotbar slot 8 opens the list of the running lobbies of
+ * this task. Only exists as a CloudNet service; elsewhere there is nothing to switch to.
  */
 @Singleton
 @Profile(LobbySwitcherModule.CLOUDNET)
@@ -42,7 +42,7 @@ final class LobbySwitcherModule {
     /** The Avaje profile of a CloudNet service; the runtime's {@code BeanProfiles.CLOUDNET}. */
     static final String CLOUDNET = "cloudnet";
 
-    /** The {@code features.*} flag that decides at startup whether the clock exists. */
+    /** The {@code features.*} flag that decides at startup whether the nether star exists. */
     static final String FLAG = "LOBBYSWITCHER";
 
     /** Free slot between the navigator (400) and the sit module (500). */
