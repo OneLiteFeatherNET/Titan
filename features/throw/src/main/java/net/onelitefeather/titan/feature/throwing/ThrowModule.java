@@ -17,17 +17,18 @@ package net.onelitefeather.titan.feature.throwing;
 
 import io.avaje.inject.PostConstruct;
 import io.avaje.inject.PreDestroy;
+import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import net.kyori.adventure.sound.Sound;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.minestom.server.MinecraftServer;
 import net.minestom.server.coordinate.Point;
 import net.minestom.server.coordinate.Vec;
@@ -110,12 +111,25 @@ public final class ThrowModule {
     private final CarryRegistry carries = new CarryRegistry();
     private final ThrowCooldowns cooldowns;
     private final FlightProtection flights = new FlightProtection();
+    private final ThrowFeedback feedback;
+    private final ThrowFeedback.Sink actionBars;
+    private final ChargeMeter meter = new ChargeMeter();
+    /**
+     * When each thrower's last click was evaluated; the client's repeats within the grace are
+     * ignored.
+     */
+    private final Map<UUID, Instant> lastPickupClick = new HashMap<>();
     private FeatureNode node;
     private Task tick;
     private long ticks;
     private boolean started;
 
+    @Inject
     public ThrowModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Scheduler scheduler, Clock clock, Telemetry telemetry, PermissionService permissions, PlayerSettings settings, SettingsRegistry registry) {
+        this(titan, scheduler, clock, telemetry, permissions, settings, registry, Player::sendActionBar);
+    }
+
+    ThrowModule(EventNode<Event> titan, Scheduler scheduler, Clock clock, Telemetry telemetry, PermissionService permissions, PlayerSettings settings, SettingsRegistry registry, ThrowFeedback.Sink actionBars) {
         this.titan = Objects.requireNonNull(titan, "titan must not be null");
         this.scheduler = Objects.requireNonNull(scheduler, "scheduler must not be null");
         this.clock = Objects.requireNonNull(clock, "clock must not be null");
@@ -126,6 +140,8 @@ public final class ThrowModule {
         this.metrics = new ThrowTelemetry(this.telemetry);
         this.messages = new ThrowMessages();
         this.cooldowns = new ThrowCooldowns(clock);
+        this.actionBars = Objects.requireNonNull(actionBars, "actionBars must not be null");
+        this.feedback = new ThrowFeedback(clock, this.actionBars);
     }
 
     @PostConstruct
@@ -168,9 +184,20 @@ public final class ThrowModule {
             return;
         }
         Player thrower = event.getPlayer();
+        // One click, one pickup: while a carry runs, the client's repeats of the interact change nothing.
+        if (this.carries.isCarrying(thrower.getUuid())) {
+            return;
+        }
         if (!thrower.getItemInMainHand().isAir() || thrower.getInstance() == null || thrower.getInstance() != target.getInstance()) {
             return;
         }
+        Instant now = this.clock.instant();
+        Instant lastEvaluated = this.lastPickupClick.get(thrower.getUuid());
+        if (lastEvaluated != null && now.isBefore(lastEvaluated.plus(PICKUP_CLICK_GRACE))) {
+            // The second packet of the same click, or a repeat while the button is held.
+            return;
+        }
+        this.lastPickupClick.put(thrower.getUuid(), now);
         pickUp(thrower, target);
     }
 
@@ -185,7 +212,10 @@ public final class ThrowModule {
         }
         if (refusal.isPresent()) {
             this.metrics.refused(refusal.get());
-            thrower.sendMessage(ThrowMessages.text(ThrowMessages.refusalKey(refusal.get()), thrower.getLocale()));
+            // Without the permission the click is no feature of theirs: nothing is said.
+            if (refusal.get() != Refusal.PERMISSION) {
+                this.feedback.refused(thrower, refusal.get());
+            }
             return;
         }
         int slot = thrower.getHeldSlot();
@@ -193,9 +223,13 @@ public final class ThrowModule {
         this.carries.start(new Carry(throwerId, targetId, slot, snapshot, now, false));
         thrower.getInventory().setItemStack(slot, CarrierItem.create());
         thrower.addPassenger(target);
+        // The carrier looks out of the body of the player on their head; only the carrier loses sight of it.
+        target.updateViewableRule(viewer -> !viewer.getUuid().equals(throwerId));
         this.cooldowns.targetPickedUp(targetId);
         this.metrics.pickedUp();
         thrower.playSound(Sound.sound(PICKUP_SOUND, Sound.Source.PLAYER, 1f, 1f));
+        // The hint is for the start of a carry only; the meter takes the action bar once charging.
+        this.actionBars.actionBar(thrower, ThrowMessages.text(ThrowMessages.HINT, thrower.getLocale()));
     }
 
     /**
@@ -228,6 +262,7 @@ public final class ThrowModule {
             return;
         }
         this.carries.setCharging(thrower.getUuid(), true);
+        this.meter.begin(thrower);
     }
 
     private void onCancelUse(PlayerCancelItemUseEvent event) {
@@ -270,6 +305,7 @@ public final class ThrowModule {
         }
         // The charge is cancelled, the carry stays: the item remains in its slot.
         this.carries.setCharging(event.getPlayer().getUuid(), false);
+        this.meter.end(event.getPlayer());
         this.metrics.chargeAborted();
     }
 
@@ -300,6 +336,9 @@ public final class ThrowModule {
         this.carries.endByTarget(id).ifPresent(this::restoreAndDetach);
         if (leaving) {
             this.flights.forget(id);
+            this.feedback.forget(id);
+            this.meter.forget(id);
+            this.lastPickupClick.remove(id);
         }
     }
 
@@ -321,7 +360,12 @@ public final class ThrowModule {
     private void restoreAndDetach(Carry carry) {
         Player thrower = online(carry.thrower());
         Player target = online(carry.target());
+        if (target != null) {
+            // Back to the default: everyone who could see the target before the carry sees them again.
+            target.updateViewableRule(null);
+        }
         if (thrower != null) {
+            this.meter.end(thrower);
             thrower.getInventory().setItemStack(carry.slot(), carry.snapshot());
             if (target != null && target.getVehicle() == thrower) {
                 thrower.removePassenger(target);
@@ -358,7 +402,8 @@ public final class ThrowModule {
 
     private void showCharge(Player thrower, long useTicks) {
         double strength = Charge.strength(useTicks);
-        thrower.sendActionBar(Component.text(ChargeFeedback.bar(strength), NamedTextColor.GREEN).appendSpace().append(ThrowMessages.text(ThrowMessages.HINT, thrower.getLocale())));
+        this.actionBars.actionBar(thrower, ChargeFeedback.meter(strength));
+        this.meter.show(thrower, strength);
         if (ChargeFeedback.soundDue(useTicks)) {
             thrower.playSound(Sound.sound(CHARGE_SOUND, Sound.Source.PLAYER, 1f, ChargeFeedback.pitch(strength)));
         }

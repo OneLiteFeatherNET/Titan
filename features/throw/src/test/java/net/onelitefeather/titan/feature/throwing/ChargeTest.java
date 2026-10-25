@@ -51,11 +51,11 @@ class ChargeTest {
         Assertions.assertEquals(1.0, Charge.strength(90), 1e-9, "a charge past 30 ticks must not exceed strength 1");
     }
 
-    @DisplayName("Speed runs linearly from 8 to 16 blocks per second")
+    @DisplayName("Speed runs linearly from 18 to 50 blocks per second")
     @Test
     void speedIsLinearInStrength() {
-        Assertions.assertEquals(8.0, Charge.speed(0.0), 1e-9, "strength 0 must throw at 8 blocks per second");
-        Assertions.assertEquals(12.0, Charge.speed(0.5), 1e-9, "strength 0.5 must throw at 12 blocks per second");
-        Assertions.assertEquals(16.0, Charge.speed(1.0), 1e-9, "strength 1 must throw at 16 blocks per second");
+        Assertions.assertEquals(18.0, Charge.speed(0.0), 1e-9, "strength 0 must throw at 18 blocks per second");
+        Assertions.assertEquals(34.0, Charge.speed(0.5), 1e-9, "strength 0.5 must throw at 34 blocks per second");
+        Assertions.assertEquals(50.0, Charge.speed(1.0), 1e-9, "strength 1 must throw at 50 blocks per second");
     }
 }

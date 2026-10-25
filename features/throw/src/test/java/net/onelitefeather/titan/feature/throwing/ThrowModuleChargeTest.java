@@ -73,7 +73,7 @@ class ThrowModuleChargeTest {
         }
     }
 
-    @DisplayName("Holding the charge and releasing throws the target at the full speed of sixteen blocks per second")
+    @DisplayName("Holding the charge and releasing throws the target at the full speed of fifty blocks per second")
     @Test
     void fullChargeThrowsAtSixteenBlocksPerSecond(Env env) {
         Instance instance = env.createFlatInstance();
@@ -90,14 +90,14 @@ class ThrowModuleChargeTest {
                 ThrowFixtures.release(env, thrower, ThrowFixtures.FULL_CHARGE);
 
                 Assertions.assertFalse(ThrowFixtures.carries(thrower, target), "a release must end the carry");
-                Assertions.assertEquals(16.0, target.getVelocity().length(), 1e-6, "a full charge must throw at 16 blocks per second");
+                Assertions.assertEquals(50.0, target.getVelocity().length(), 1e-6, "a full charge must throw at 50 blocks per second");
             } finally {
                 module.stop();
             }
         }
     }
 
-    @DisplayName("A tap throws at the minimum speed of eight blocks per second")
+    @DisplayName("A tap throws at the minimum speed of eighteen blocks per second")
     @Test
     void tapThrowsAtEightBlocksPerSecond(Env env) {
         Instance instance = env.createFlatInstance();
@@ -113,7 +113,7 @@ class ThrowModuleChargeTest {
                 ThrowFixtures.beginChargeAfterGrace(env, thrower, clock);
                 ThrowFixtures.release(env, thrower, 1);
 
-                Assertions.assertEquals(8.0, target.getVelocity().length(), 1e-6, "a tap of one tick must throw at 8 blocks per second");
+                Assertions.assertEquals(18.0, target.getVelocity().length(), 1e-6, "a tap of one tick must throw at 18 blocks per second");
             } finally {
                 module.stop();
             }

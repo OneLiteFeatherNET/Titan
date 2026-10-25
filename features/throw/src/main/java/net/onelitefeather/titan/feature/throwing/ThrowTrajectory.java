@@ -23,16 +23,20 @@ import net.minestom.server.coordinate.Point;
 import net.minestom.server.coordinate.Vec;
 
 /**
- * Predicts where a throw lands, for the preview the thrower sees. The model is the one in the
- * design: per tick the velocity is multiplied by 0.98 and lowered by 0.08, then added to the
- * position. It approximates the client's physics, so it is a guide, not a promise.
+ * The flight of a thrown player, the one model behind both the preview the thrower sees and the
+ * reach the balance is tested against. Per tick the player moves by the velocity, then the velocity
+ * decays: horizontally by {@link #DRAG_HORIZONTAL}, vertically by gravity and
+ * {@link #DRAG_VERTICAL}.
+ * These are the air resistances Minestom gives a player, which the client applies the same way.
  */
 final class ThrowTrajectory {
 
     static final int MAX_POINTS = 40;
-    static final double DRAG = 0.98;
+    static final double DRAG_HORIZONTAL = 0.91;
+    static final double DRAG_VERTICAL = 0.98;
     static final double GRAVITY = 0.08;
     private static final double TICKS_PER_SECOND = 20.0;
+    private static final int MAX_RANGE_TICKS = 400;
 
     private ThrowTrajectory() {
     }
@@ -57,7 +61,6 @@ final class ThrowTrajectory {
         List<Vec> points = new ArrayList<>();
         Vec landing = null;
         for (int step = 0; step < MAX_POINTS; step++) {
-            perTick = perTick.mul(DRAG).sub(0, GRAVITY, 0);
             Vec next = position.add(perTick);
             if (solid.test(next)) {
                 landing = position;
@@ -65,7 +68,36 @@ final class ThrowTrajectory {
             }
             position = next;
             points.add(position);
+            perTick = nextVelocity(perTick);
         }
         return new Trajectory(points, Optional.ofNullable(landing));
+    }
+
+    /**
+     * The horizontal distance from the throw point to where the flight comes down to the height it
+     * started at, on flat ground, interpolated within the last tick.
+     *
+     * @param velocity the impulse in blocks per second
+     * @return the reach in blocks, or the horizontal distance flown if the flight never lands
+     */
+    static double rangeOnFlatGround(Vec velocity) {
+        Vec perTick = velocity.div(TICKS_PER_SECOND);
+        Vec position = Vec.ZERO;
+        for (int step = 0; step < MAX_RANGE_TICKS; step++) {
+            Vec next = position.add(perTick);
+            if (position.y() > 0 && next.y() <= 0) {
+                double fraction = position.y() / (position.y() - next.y());
+                Vec landing = position.add(perTick.mul(fraction));
+                return Math.hypot(landing.x(), landing.z());
+            }
+            position = next;
+            perTick = nextVelocity(perTick);
+        }
+        return Math.hypot(position.x(), position.z());
+    }
+
+    /** The velocity after one tick of the flight: the drag and the gravity of the model. */
+    static Vec nextVelocity(Vec perTick) {
+        return new Vec(perTick.x() * DRAG_HORIZONTAL, (perTick.y() - GRAVITY) * DRAG_VERTICAL, perTick.z() * DRAG_HORIZONTAL);
     }
 }

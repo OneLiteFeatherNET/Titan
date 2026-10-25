@@ -9,7 +9,7 @@ Lobby-Spieler wollen sich gegenseitig necken, und Team-Mitglieder (Betreiber, He
 - Neues Feature-Modul `features/throw` (Gradle-Name und Column `throw`, Java-Paket `net.onelitefeather.titan.feature.throwing`, weil `throw` ein Java-Schlüsselwort ist).
 - **Aufnehmen:** Ein Spieler mit dem Recht `titan.throw` rechtsklickt (bei leerer Haupthand) einen anderen Spieler. Das Ziel sitzt danach als Passagier auf dem Kopf des Werfers.
 - **Aufladen statt Sofortwurf:** Während der Trage hält der Werfer einen temporären vanilla Ladeträger (Stock mit Komponente `consumable`, Animation `bow`). Rechtsklick startet die Ladung, Loslassen wirft. Die Stärke wird linear auf die Geschwindigkeit abgebildet, mit Obergrenze von 1,5 s Ladezeit. Die Hand des Werfers wird nach jedem Pfad exakt wiederhergestellt. Begründung und verworfene Alternativen stehen in `design.md` (D1).
-- **Wurf:** Das Ziel fliegt in Blickrichtung mit Geschwindigkeit 8 bis 16 Blöcke/s, Standard 12. Die Geschwindigkeit setzt der Client des Ziels selbst um (wie beim bestehenden Feuerwerks-Boost), die Lobby schreibt nur den Impuls.
+- **Wurf:** Das Ziel fliegt in Blickrichtung mit 18 bis 50 Blöcke/s (ein Tipp landet etwa 6 Blöcke weit, eine volle Ladung bei 45 Grad etwa 20 Blöcke). Die Geschwindigkeit setzt der Client des Ziels selbst um (wie beim bestehenden Feuerwerks-Boost), die Lobby schreibt nur den Impuls.
 - **Flugbahnvorschau:** Während des Ladens sieht nur der Werfer die vorhergesagte Flugbahn als vanilla Partikel, mit Landemarker. Die Vorschau ist eine Näherung.
 - **Fortschritt:** Actionbar-Leiste und steigender vanilla Ton, nur für den Werfer.
 - **Abbruch durch das Ziel:** Schleicht das Ziel, steigt es ab. Das zählt als Ablehnung und setzt eine kurze Sperre zwischen diesem Werfer und diesem Ziel.
@@ -17,7 +17,7 @@ Lobby-Spieler wollen sich gegenseitig necken, und Team-Mitglieder (Betreiber, He
 - **Immunität:** Spieler mit `titan.throw.immune` (z. B. Team-Mitglieder über LuckPerms) können nicht aufgenommen werden. Der Werfer erhält dieselbe kurze Nachricht.
 - **Sperren:** Cooldowns pro Werfer, pro Paar und ein Auto-Drop nach maximaler Tragzeit.
 - **Flugschutz:** Geworfene Spieler lösen während des Flugs und einer kurzen Landephase keine Portale aus.
-- **Rückmeldung:** Vanilla-Töne und -Partikel (keine Resource Pack), Actionbar mit Ladeleiste und Hinweis „Rechtsklick halten zum Aufladen, loslassen zum Werfen“ für den Werfer.
+- **Rückmeldung:** Vanilla-Töne und -Partikel (keine Resource Pack), XP-Leiste als Ladeanzeige, farbiges Messgerät mit Prozentzahl in der Actionbar und einmaliger Hinweis „Rechtsklick halten zum Aufladen, loslassen zum Werfen“ für den Werfer.
 - **Telemetrie:** Zähler für Aufnahmen, Würfe, Abbrüche durch das Ziel, Ablehnungen und Ladeabbrüche.
 - **Texte:** Deutsch und Englisch über Message-Bundles nach dem Muster von `DanceMessages`.
 

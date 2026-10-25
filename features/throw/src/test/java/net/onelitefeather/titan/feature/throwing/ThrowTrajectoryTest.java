@@ -37,13 +37,13 @@ class ThrowTrajectoryTest {
         Assertions.assertEquals(first, second, "the preview must be a pure function of its input");
     }
 
-    @DisplayName("The first two steps follow drag 0.98 and gravity 0.08 per tick")
+    @DisplayName("Each tick moves by the velocity, then drags it horizontally 0.91 and vertically 0.98 with gravity 0.08")
     @Test
-    void stepsFollowDragAndGravity() {
+    void stepsFollowTheClientModel() {
         List<Vec> points = ThrowTrajectory.compute(ORIGIN, EAST_PER_SECOND, solidFromX(50)).points();
 
-        assertNear(new Vec(0.98, -0.08, 0), points.get(0), "after one tick the velocity is drag-scaled and lowered by gravity");
-        assertNear(new Vec(1.9404, -0.2384, 0), points.get(1), "after two ticks the drag compounds and gravity adds up");
+        assertNear(new Vec(1.0, 0, 0), points.get(0), "the first tick moves by the velocity of one block per tick");
+        assertNear(new Vec(1.91, -0.0784, 0), points.get(1), "the second tick moves by the decayed velocity, lowered by gravity");
     }
 
     private static void assertNear(Vec expected, Point actual, String message) {

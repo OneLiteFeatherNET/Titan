@@ -22,12 +22,12 @@ import org.junit.jupiter.api.Test;
 
 class ThrowVelocityTest {
 
-    @DisplayName("Looking east at full strength throws east at 16 blocks per second")
+    @DisplayName("Looking east at full strength throws east at 50 blocks per second")
     @Test
-    void eastAtFullStrengthIsSixteenBlocksPerSecond() {
+    void eastAtFullStrengthIsFiftyBlocksPerSecond() {
         Vec impulse = ThrowVelocity.impulse(new Vec(1, 0, 0), 1.0);
 
-        Assertions.assertEquals(16.0, impulse.x(), 1e-9, "the impulse must point east at the full speed");
+        Assertions.assertEquals(50.0, impulse.x(), 1e-9, "the impulse must point east at the full speed");
         Assertions.assertEquals(0.0, impulse.y(), 1e-9, "a level look must not lift the thrown player");
         Assertions.assertEquals(0.0, impulse.z(), 1e-9, "an east look must not drift sideways");
     }
@@ -37,7 +37,7 @@ class ThrowVelocityTest {
     void magnitudeEqualsTheChargedSpeed() {
         Vec impulse = ThrowVelocity.impulse(new Vec(0.3, -0.2, 0.9), 0.5);
 
-        Assertions.assertEquals(12.0, impulse.length(), 1e-6, "a half charge must throw at 12 blocks per second");
+        Assertions.assertEquals(34.0, impulse.length(), 1e-6, "a half charge must throw at 34 blocks per second");
     }
 
     @DisplayName("The vertical part never exceeds ten blocks per second")
@@ -61,15 +61,15 @@ class ThrowVelocityTest {
     void lookingDownKeepsTheMagnitude() {
         Vec impulse = ThrowVelocity.impulse(new Vec(0.1, -1, 0), 1.0);
 
-        Assertions.assertEquals(16.0, impulse.length(), 1e-6, "the magnitude must not change when the look points down");
+        Assertions.assertEquals(50.0, impulse.length(), 1e-6, "the magnitude must not change when the look points down");
     }
 
-    @DisplayName("Looking straight down throws straight up at a speed from 8 to 16 blocks per second")
+    @DisplayName("Looking straight down throws straight up at the vertical cap")
     @Test
-    void lookingStraightDownHasAMagnitudeWithinTheRange() {
+    void lookingStraightDownThrowsUpAtTheCap() {
         Vec impulse = ThrowVelocity.impulse(new Vec(0, -1, 0), 0.0);
 
-        Assertions.assertTrue(impulse.length() >= 8.0 && impulse.length() <= 16.0, "the magnitude must stay within 8 to 16 blocks per second, was " + impulse.length());
+        Assertions.assertEquals(ThrowVelocity.MAX_VERTICAL, impulse.y(), 1e-9, "a straight look must throw straight up at the vertical cap");
         Assertions.assertEquals(0.0, impulse.x(), 1e-9, "a straight look has no horizontal part");
     }
 }
