@@ -1,5 +1,20 @@
 # Changelog
 
+## [4.6.0](https://github.com/OneLiteFeatherNET/Titan/compare/v4.5.0...v4.6.0) (2026-10-25)
+
+
+### Features
+
+* **settings:** make the settings menu friendlier with gradients and toggles ([#491](https://github.com/OneLiteFeatherNET/Titan/issues/491)) ([a472979](https://github.com/OneLiteFeatherNET/Titan/commit/a4729798327442273534ef3ec80d910689ddc310))
+
+
+### Bug Fixes
+
+* **deps:** update dependency org.hibernate.orm:hibernate-core to v7.4.14.final ([#494](https://github.com/OneLiteFeatherNET/Titan/issues/494)) ([0d535f2](https://github.com/OneLiteFeatherNET/Titan/commit/0d535f26033d94759dabbbbc4c86efcc4f9da263))
+* **jumprun:** debounce the mode switch and accidental stops ([#421](https://github.com/OneLiteFeatherNET/Titan/issues/421)) ([7f40115](https://github.com/OneLiteFeatherNET/Titan/commit/7f401157bbd58536de46908d773ba98f6b24c401))
+* **tag:** show the waiting hint briefly instead of permanently ([#492](https://github.com/OneLiteFeatherNET/Titan/issues/492)) ([8a9f7d2](https://github.com/OneLiteFeatherNET/Titan/commit/8a9f7d2d4d9a6169799469ba5f267f8195614537))
+* **throw:** pick up a player once per click and stop cooldown spam ([#493](https://github.com/OneLiteFeatherNET/Titan/issues/493)) ([14f98d7](https://github.com/OneLiteFeatherNET/Titan/commit/14f98d758a0a556b5325ea1be0067f7489fe8e57))
+
 ## [4.5.0](https://github.com/OneLiteFeatherNET/Titan/compare/v4.4.0...v4.5.0) (2026-10-24)
 
 
