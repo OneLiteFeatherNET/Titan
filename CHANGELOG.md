@@ -1,5 +1,14 @@
 # Changelog
 
+## [4.6.1](https://github.com/OneLiteFeatherNET/Titan/compare/v4.6.0...v4.6.1) (2026-10-25)
+
+
+### Bug Fixes
+
+* **deps:** update dependency ch.qos.logback:logback-classic to v1.6.6 ([#498](https://github.com/OneLiteFeatherNET/Titan/issues/498)) ([8ad4d73](https://github.com/OneLiteFeatherNET/Titan/commit/8ad4d73a0e29f6cdbdfb03266ce325f2d04f8636))
+* **lobbyswitcher:** use a nether star instead of the spinning clock ([#497](https://github.com/OneLiteFeatherNET/Titan/issues/497)) ([802e980](https://github.com/OneLiteFeatherNET/Titan/commit/802e98038a11086256d3e0ac97f23add1f632e7a))
+* **settings:** wrap long option descriptions in the menu lore ([#496](https://github.com/OneLiteFeatherNET/Titan/issues/496)) ([30093a8](https://github.com/OneLiteFeatherNET/Titan/commit/30093a83163988d31bd9ecf66f5eced8f1cef90d))
+
 ## [4.6.0](https://github.com/OneLiteFeatherNET/Titan/compare/v4.5.0...v4.6.0) (2026-10-25)
 
 
