@@ -26,7 +26,7 @@ Die Lobby MUSS jede Spieleroption als `BooleanSetting` mit einem Schlüssel im F
 ### Requirement: Das Menü zeigt jede registrierte Option mit ihrem Zustand
 _The menu is the only place where players see and change options; it is opened from the hotbar and from the command._
 
-Die Lobby MUSS dem Spieler über das Hotbar-Item in Slot 7 und über `/settings` ein Menü öffnen. Das Menü MUSS für jede registrierte Option ein Vanilla-Symbol-Item in der mittleren Reihe und darunter einen Schalter zeigen, ohne Resource Pack: Der Schalter ist Lime-Farbstoff bei an und Grau-Farbstoff bei aus. Das Symbol glänzt, solange die Option an ist. Der Name des Hotbar-Items und des Menüs sowie die Namen der Optionen laufen im Titan-Gradient und sind nicht kursiv. Das Menü hat höchstens neun Optionen.
+Die Lobby MUSS dem Spieler über das Hotbar-Item in Slot 7 und über `/settings` ein Menü öffnen. Das Menü MUSS für jede registrierte Option ein Vanilla-Symbol-Item in der mittleren Reihe und darunter einen Schalter zeigen, ohne Resource Pack: Der Schalter ist Lime-Farbstoff bei an und Grau-Farbstoff bei aus. Das Symbol glänzt, solange die Option an ist. Der Name des Hotbar-Items und des Menüs sowie die Namen der Optionen laufen im Titan-Gradient und sind nicht kursiv. Das Menü hat höchstens neun Optionen. Die Beschreibung einer Option steht als graue Lore-Zeilen unter dem Symbol, und jede Zeile hat höchstens 30 Zeichen; lange Beschreibungen werden zwischen Wörtern umbrochen.
 
 #### Scenario: Menü öffnen über das Hotbar-Item
 - **WHEN** ein Spieler das Einstellungs-Item in Slot 7 benutzt
