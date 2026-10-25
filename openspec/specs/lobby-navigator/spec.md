@@ -37,7 +37,7 @@ Das Öffnen des Navigators DARF NICHT dazu führen, dass pro Spieler oder pro Ö
 
 ### Requirement: Navigator-Ziele sind im Navigator-Modul festgelegt
 
-Titel und Ziele des Navigators MÜSSEN fest im Navigator-Modul festgelegt sein. Die Lobby DARF Titel und Ziele NICHT aus der Konfiguration lesen, und andere Module DÜRFEN KEINE Ziele beisteuern. Werte unter `navigator.*` aus Dateien, Profilen, Env-Variablen oder System-Properties DÜRFEN den Navigator NICHT beeinflussen. Der Navigator MUSS einen Titel „Navigator“ im Verlauf zeigen, der in der Sprache des Spielers übersetzt ist, und eine Anzeige mit vier Reihen zu je neun Plätzen. ElytraRace MUSS auf Platz 11 liegen, Survival auf Platz 20, Creative auf Platz 22, Spawn mit einem Kompass auf Platz 31. Slender auf Platz 15 erscheint nur Spielern mit dem Recht `titan.navigator.slender` (siehe „Slender liegt hinter dem Recht titan.navigator.slender“). Bounce auf Platz 13 erscheint nur Spielern mit dem Recht `titan.navigator.bounce` (siehe „Bounce liegt hinter dem Recht titan.navigator.bounce“). Spielern mit dem Recht `titan.navigator.buildserver` MUSS er zusätzlich Build auf Platz 24 zeigen (siehe „Das Ziel Build erscheint nur mit Recht“). Die übrigen Plätze MÜSSEN mit grauen Glasscheiben gefüllt sein, die Rahmenplätze mit der Glasscheibe aus „Der Navigator hat einen Rahmen aus Glasscheiben“.
+Titel und Ziele des Navigators MÜSSEN fest im Navigator-Modul festgelegt sein. Die Lobby DARF Titel und Ziele NICHT aus der Konfiguration lesen, und andere Module DÜRFEN KEINE Ziele beisteuern. Werte unter `navigator.*` aus Dateien, Profilen, Env-Variablen oder System-Properties DÜRFEN den Navigator NICHT beeinflussen. Der Navigator MUSS einen Titel „Navigator“ im Verlauf zeigen, der in der Sprache des Spielers übersetzt ist, und eine Anzeige mit vier Reihen zu je neun Plätzen. ElytraRace MUSS auf Platz 11 liegen, Survival auf Platz 20, Creative auf Platz 22, Spawn mit einem Kompass auf Platz 31. Slender auf Platz 15 erscheint nur Spielern mit dem Recht `titan.navigator.slender` (siehe „Slender liegt hinter dem Recht titan.navigator.slender“). Slender (Staging) auf Platz 16 erscheint nur Spielern mit dem Recht `cygnus.staging.join` (siehe „Slender (Staging) liegt hinter dem Recht cygnus.staging.join“). Bounce auf Platz 13 erscheint nur Spielern mit dem Recht `titan.navigator.bounce` (siehe „Bounce liegt hinter dem Recht titan.navigator.bounce“). Spielern mit dem Recht `titan.navigator.buildserver` MUSS er zusätzlich Build auf Platz 24 zeigen (siehe „Das Ziel Build erscheint nur mit Recht“). Die übrigen Plätze MÜSSEN mit grauen Glasscheiben gefüllt sein, die Rahmenplätze mit der Glasscheibe aus „Der Navigator hat einen Rahmen aus Glasscheiben“.
 
 #### Scenario: Standardziele
 
@@ -67,7 +67,7 @@ Titel und Ziele des Navigators MÜSSEN fest im Navigator-Modul festgelegt sein. 
 
 ### Requirement: Das Ziel Build erscheint nur mit Recht
 
-Der Navigator MUSS das Ziel Build auf Platz 24 zeigen, wenn die Rechteprüfung für `titan.navigator.buildserver` beim Öffnen „erteilt“ ergibt. Ergibt sie „verboten“ oder „nicht gesetzt“, MUSS der Navigator genau das Menü zeigen, das Spieler ohne dieses Ziel sehen: kein Eintrag, keine Lücke, kein Hinweis auf Build. Ein Klick auf Build MUSS das Recht erneut prüfen. Ist es erteilt, MUSS die Lobby den Spieler an das Weiterleitungsziel „Team-Build“ übergeben und den Navigator schließen; sonst DARF sie keine Weiterleitung anstoßen, MUSS den Navigator schließen und DARF dem Spieler keine Chat-Nachricht senden. Welcher Server das Ziel „Team-Build“ bedient, entscheidet die Cloud; die Lobby zeigt keine einzelnen Server. Das Verhalten der übrigen Ziele MUSS für alle Menüs gleich bleiben, und die Rechte für Build, Slender und Bounce sind voneinander unabhängig. Für das Öffnen, egal wie oft und von wie vielen Spielern, DÜRFEN keine zusätzlichen Event-Listener oder dauerhaft gehaltenen Objekte entstehen.
+Der Navigator MUSS das Ziel Build auf Platz 24 zeigen, wenn die Rechteprüfung für `titan.navigator.buildserver` beim Öffnen „erteilt“ ergibt. Ergibt sie „verboten“ oder „nicht gesetzt“, MUSS der Navigator genau das Menü zeigen, das Spieler ohne dieses Ziel sehen: kein Eintrag, keine Lücke, kein Hinweis auf Build. Ein Klick auf Build MUSS das Recht erneut prüfen. Ist es erteilt, MUSS die Lobby den Spieler an das Weiterleitungsziel „Team-Build“ übergeben und den Navigator schließen; sonst DARF sie keine Weiterleitung anstoßen, MUSS den Navigator schließen und DARF dem Spieler keine Chat-Nachricht senden. Welcher Server das Ziel „Team-Build“ bedient, entscheidet die Cloud; die Lobby zeigt keine einzelnen Server. Das Verhalten der übrigen Ziele MUSS für alle Menüs gleich bleiben, und die Rechte für Build, Slender, Slender (Staging) und Bounce sind voneinander unabhängig. Für das Öffnen, egal wie oft und von wie vielen Spielern, DÜRFEN keine zusätzlichen Event-Listener oder dauerhaft gehaltenen Objekte entstehen.
 
 #### Scenario: Spieler mit Recht sieht Build
 
@@ -106,7 +106,7 @@ Der Navigator MUSS das Ziel Build auf Platz 24 zeigen, wenn die Rechteprüfung f
 
 ### Requirement: Modus-Einträge erklären die Klicks
 
-Jeder Modus-Eintrag des Navigators MUSS seine Klickaktionen als Lore-Zeilen zeigen, in dieser Reihenfolge: eine Trennlinie in der Verlaufsfarbe des Modus, die Spielerzeile (sofern die Spielerzahl bekannt ist), eine Leerzeile und dann je Klick eine eigene Zeile. Ein Minispiel (ElytraRace, Slender, Bounce) zeigt die Zeilen „▸ Linksklick  Schnell beitreten“ und „▸ Rechtsklick  Server wählen“, auch wenn nur ein Dienst oder kein Dienst läuft. Ein Server (Survival, Creative, Build) zeigt die Zeile „▸ Linksklick  Verbinden“. Die Portal-Zeile „▸ Shift-Klick  Zum Portal laufen“ steht nur, wenn für das Ziel ein Portal in der Lobby existiert, und zuletzt. Der Rechtsklick auf einen Server hat keine eigene Zeile. Der Spawn-Eintrag DARF KEINE dieser Zeilen zeigen.
+Jeder Modus-Eintrag des Navigators MUSS seine Klickaktionen als Lore-Zeilen zeigen, in dieser Reihenfolge: eine Trennlinie in der Verlaufsfarbe des Modus, die Spielerzeile (sofern die Spielerzahl bekannt ist), eine Leerzeile und dann je Klick eine eigene Zeile. Ein Minispiel (ElytraRace, Slender, Bounce) zeigt die Zeilen „▸ Linksklick  Schnell beitreten“ und „▸ Rechtsklick  Server wählen“, auch wenn nur ein Dienst oder kein Dienst läuft. Ein Server (Survival, Creative, Build sowie Slender (Staging)) zeigt die Zeile „▸ Linksklick  Verbinden“. Die Portal-Zeile „▸ Shift-Klick  Zum Portal laufen“ steht nur, wenn für das Ziel ein Portal in der Lobby existiert, und zuletzt. Der Rechtsklick auf einen Server hat keine eigene Zeile. Der Spawn-Eintrag DARF KEINE dieser Zeilen zeigen.
 
 Die Spielerzahl folgt dem Snapshot der letzten abgeschlossenen Aktualisierung, wie bisher. Die Portal-Zeile folgt dagegen dem Stand beim Öffnen, und der Klick selbst liest die Dienste und das Portal beim Klick neu.
 
@@ -222,6 +222,30 @@ Das Ziel Slender MUSS an das Recht `titan.navigator.slender` gebunden sein, nach
 
 - **WHEN** einem Spieler `titan.navigator.slender` nach dem ersten Öffnen erteilt wird und er den Navigator danach erneut öffnet
 - **THEN** erscheint Slender auf Platz 15 bei diesem zweiten Öffnen, ohne Neustart der Lobby
+
+### Requirement: Slender (Staging) liegt hinter dem Recht cygnus.staging.join
+
+Das Ziel Slender (Staging) MUSS an das Recht `cygnus.staging.join` gebunden sein, dasselbe Recht, das der Proxy für den Beitritt zum Staging prüft. Es MUSS auf Platz 16 liegen, neben Slender, mit einem Strukturblock als Symbol und dem Namen „Slender (Staging)“ in einem Verlauf von `#616161` nach `#ffaa00`. Ergibt die Rechteprüfung beim Öffnen nicht „erteilt“, DARF Slender (Staging) nicht erscheinen, und auf Platz 16 MUSS eine graue Glasscheibe liegen. Ergibt sie „erteilt“, MUSS der Eintrag auf Platz 16 erscheinen. Der Eintrag MUSS nach seinen Klickzeilen eine Leerzeile und die Zeile „Testumgebung – nur fürs Team“ zeigen. Ein Klick auf Slender (Staging) MUSS das Recht erneut prüfen. Ist es erteilt, MUSS die Lobby den Spieler direkt an den CloudNet-Task `Slender-Staging` übergeben, ohne Schnellbeitritt und ohne Serverauswahl; sonst DARF sie keine Weiterleitung anstoßen, MUSS den Navigator schließen und DARF dem Spieler keine Chat-Nachricht senden. Slender (Staging) ist kein Minispiel: Der Schnellbeitritt und die Serverauswahl von Slender lesen nur die Dienste des Tasks `Slender`, und die Dienste eines Tasks MÜSSEN über den genauen Tasknamen gelesen werden, nicht über einen Namenspräfix.
+
+#### Scenario: Staging ohne Recht
+
+- **WHEN** ein Spieler ohne `cygnus.staging.join` den Navigator öffnet
+- **THEN** liegt auf Platz 16 eine graue Glasscheibe, und die übrigen Ziele sind unverändert
+
+#### Scenario: Staging mit Recht
+
+- **WHEN** ein Spieler mit `cygnus.staging.join` den Navigator öffnet und auf Platz 16 links klickt
+- **THEN** erscheint Slender (Staging) auf Platz 16, und der Spieler wird an den Task `Slender-Staging` übergeben
+
+#### Scenario: Staging nach Entzug des Rechts
+
+- **WHEN** ein Spieler das Recht verliert, während der Navigator offen ist, und danach auf Slender (Staging) klickt
+- **THEN** wird niemand weitergeleitet, der Navigator schließt sich, und dem Spieler wird keine Chat-Nachricht gesendet
+
+#### Scenario: Slender sieht den Staging-Dienst nicht
+
+- **WHEN** `Slender-Staging-1` als einziger Dienst freie Plätze hat und ein Spieler mit dem Recht `titan.navigator.slender` auf Slender links klickt oder dessen Serverauswahl öffnet
+- **THEN** wird niemand an `Slender-Staging-1` übergeben, und die Serverauswahl von Slender zeigt `Slender-Staging-1` nicht
 
 ### Requirement: Der Slender-Name ist ein Verlauf von Grau nach Rot
 
@@ -385,15 +409,15 @@ Die Serverauswahl MUSS den Titel „Server wählen“ im Verlauf zeigen, überse
 - **WHEN** ein Spieler einen Dienst aus der Serverauswahl anklickt, der seit dem Öffnen nicht mehr läuft
 - **THEN** wird der Spieler nicht übergeben, und er erhält im Chat „Servers » Dieser Server ist noch nicht bereit.“
 
-### Requirement: Menü-Varianten bleiben sechzehn geteilte Inventare
+### Requirement: Menü-Varianten bleiben zweiunddreißig geteilte Inventare
 _The navigator MUST keep one shared inventory per combination of permissions and language, and the server list one per destination, language, order, page and row count; opening, paging and sorting MUST NOT create a new inventory or listener once it exists._
 
-Der Navigator MUSS je Kombination aus Rechten und Sprache genau ein geteiltes Inventar haben, beim Start angelegt, mit dem Titel in dieser Sprache. Die Rechte sind `titan.navigator.slender`, `titan.navigator.buildserver` und `titan.navigator.bounce`; jede Teilmenge dieser drei Rechte ergibt ein Menü, also acht je Sprache und sechzehn bei zwei Sprachen. Die Serverauswahl MUSS je Ziel, Sprache, Ordnung, Seite und Zeilenzahl höchstens ein geteiltes Inventar haben. Ein Serverauswahl-Inventar entsteht, wenn seine Ansicht zum ersten Mal gebraucht wird, und wird danach wiederverwendet. Das Öffnen, Blättern und Sortieren DARF, wenn das Inventar schon existiert, KEIN neues Inventar und keinen neuen Listener erzeugen.
+Der Navigator MUSS je Kombination aus Rechten und Sprache genau ein geteiltes Inventar haben, beim Start angelegt, mit dem Titel in dieser Sprache. Die Rechte sind `titan.navigator.slender`, `titan.navigator.buildserver`, `titan.navigator.bounce` und `cygnus.staging.join`; jede Teilmenge dieser vier Rechte ergibt ein Menü, also sechzehn je Sprache und zweiunddreißig bei zwei Sprachen. Die Serverauswahl MUSS je Ziel, Sprache, Ordnung, Seite und Zeilenzahl höchstens ein geteiltes Inventar haben. Ein Serverauswahl-Inventar entsteht, wenn seine Ansicht zum ersten Mal gebraucht wird, und wird danach wiederverwendet. Das Öffnen, Blättern und Sortieren DARF, wenn das Inventar schon existiert, KEIN neues Inventar und keinen neuen Listener erzeugen.
 
-#### Scenario: Sechzehn Inventare beim Start
+#### Scenario: Zweiunddreißig Inventare beim Start
 
 - **WHEN** das Navigator-Modul startet
-- **THEN** existieren genau sechzehn Navigator-Inventare, acht je Sprache, und jedes trägt die Ziele, die seiner Rechte-Kombination entsprechen
+- **THEN** existieren genau zweiunddreißig Navigator-Inventare, sechzehn je Sprache, und jedes trägt die Ziele, die seiner Rechte-Kombination entsprechen
 
 #### Scenario: Titel je Sprache
 

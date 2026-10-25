@@ -63,6 +63,7 @@ class NavigatorModuleLeakTest {
     private static final String BUILD_PERMISSION = "titan.navigator.buildserver";
     private static final String BOUNCE_PERMISSION = "titan.navigator.bounce";
     private static final String SLENDER_PERMISSION = "titan.navigator.slender";
+    private static final String STAGING_PERMISSION = "cygnus.staging.join";
 
     @DisplayName("Opening and closing the navigator 50 times, alternating with and without permission, registers no extra listeners")
     @Test
@@ -70,7 +71,7 @@ class NavigatorModuleLeakTest {
         Instance instance = env.createFlatInstance();
         Player team = env.createPlayer(instance);
         Player other = env.createPlayer(instance);
-        FakePermissionService permissions = new FakePermissionService().set(team.getUuid(), SLENDER_PERMISSION, PermissionResult.ALLOWED).set(team.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED).set(team.getUuid(), BOUNCE_PERMISSION, PermissionResult.ALLOWED);
+        FakePermissionService permissions = new FakePermissionService().set(team.getUuid(), SLENDER_PERMISSION, PermissionResult.ALLOWED).set(team.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED).set(team.getUuid(), BOUNCE_PERMISSION, PermissionResult.ALLOWED).set(team.getUuid(), STAGING_PERMISSION, PermissionResult.ALLOWED);
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions)) {
             fixture.equip(team);
             fixture.equip(other);
@@ -101,7 +102,7 @@ class NavigatorModuleLeakTest {
         Player other = env.createPlayer(instance);
         team.setLocale(Locale.GERMANY);
         other.setLocale(Locale.GERMANY);
-        FakePermissionService permissions = new FakePermissionService().set(team.getUuid(), SLENDER_PERMISSION, PermissionResult.ALLOWED).set(team.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED).set(team.getUuid(), BOUNCE_PERMISSION, PermissionResult.ALLOWED);
+        FakePermissionService permissions = new FakePermissionService().set(team.getUuid(), SLENDER_PERMISSION, PermissionResult.ALLOWED).set(team.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED).set(team.getUuid(), BOUNCE_PERMISSION, PermissionResult.ALLOWED).set(team.getUuid(), STAGING_PERMISSION, PermissionResult.ALLOWED);
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions)) {
             fixture.equip(team);
             fixture.equip(other);

@@ -258,8 +258,8 @@ Feature selbst aushändigt (`ElytraModule`s Feuerwerk).
 
 Der Navigator ist der einzige Sonderfall ohne Andockpunkt: Seine Ziele stehen fest im
 package-privaten `enum Destination` (s. `openspec/changes/navigator-entries-in-code/design.md`).
-`Destination.SLENDER`, `Destination.BOUNCE` und `Destination.BUILD` hängen je an einem Recht
-(`titan.navigator.slender`, `titan.navigator.bounce` bzw. `titan.navigator.buildserver`), keiner an
+`Destination.SLENDER`, `Destination.SLENDER_STAGING`, `Destination.BOUNCE` und `Destination.BUILD` hängen je an einem Recht
+(`titan.navigator.slender`, `cygnus.staging.join`, `titan.navigator.bounce` bzw. `titan.navigator.buildserver`), keiner an
 einer Feature-Flag; `NavigatorModule` bekommt dafür keine `FeatureFlags` mehr.
 
 Auf Platz 31 (Mitte der unteren Reihe, dort wo sonst der Rahmen liegt) beider Inventare liegt der feste Eintrag „Spawn“ (Kompass), kein `Destination`: Der
@@ -267,13 +267,14 @@ Klick schickt den Spieler über `SpawnReturn#sendToSpawnAndTell` zurück an den 
 weiter. Das Modul holt `SpawnReturn` über einen `Provider`, damit zwischen den Columns `spawn` und
 `navigator` kein Zyklus entsteht.
 
-Der Navigator besitzt je Sprache ein geteiltes Aves-Inventar pro Teilmenge der drei Rechte, die ein
-Spieler hat: `titan.navigator.slender`, `titan.navigator.bounce` und `titan.navigator.buildserver`.
-Das sind acht Teilmengen je Sprache, also sechzehn Inventare beim Start; ohne Recht ist es das
+Der Navigator besitzt je Sprache ein geteiltes Aves-Inventar pro Teilmenge der vier Rechte, die ein
+Spieler hat: `titan.navigator.slender`, `cygnus.staging.join`, `titan.navigator.bounce` und `titan.navigator.buildserver`.
+Das sind sechzehn Teilmengen je Sprache, also zweiunddreißig Inventare beim Start; ohne Recht ist es das
 öffentliche Menü. `PermissionService#check` liefert nur `ALLOWED` als erteilt; `NOT_SET` und
 `DENIED` zählen als nicht erteilt. Beim Öffnen wird die Teilmenge gelesen und das passende Inventar
 geöffnet. `BUILD` liegt auf Platz 24 und leitet an den CloudNet-Task `Team-Build` weiter, `SLENDER`
-auf Platz 15 an `Slender` (getrennt von `MemberBuild` des Creative-Ziels), `BOUNCE` auf Platz 13 an
+auf Platz 15 an `Slender` (getrennt von `MemberBuild` des Creative-Ziels), `SLENDER_STAGING` auf Platz 16 an
+`Slender-Staging` (ohne Schnellbeitritt und Serverauswahl), `BOUNCE` auf Platz 13 an
 `Bounce`. Beim Klick wird das Recht erneut geprüft; ist es inzwischen weg, gibt es keine
 Weiterleitung, das Inventar schließt.
 
@@ -301,9 +302,9 @@ Spieler. Die Serverliste liest die Dienste beim Öffnen, bei jedem Seiten- und O
 auf einen Eintrag neu, nicht periodisch. Die Inventare sind je Ziel, Sprache, Ordnung, Seite und Zeilenzahl
 geteilt, entstehen beim ersten Bedarf und werden bei `stop()` entfernt.
 
-Betrieb: Die CloudNet-Tasks `Team-Build`, `Slender` und `Bounce` müssen existieren. Die LuckPerms-Rechte
+Betrieb: Die CloudNet-Tasks `Team-Build`, `Slender`, `Slender-Staging` und `Bounce` müssen existieren. Die LuckPerms-Rechte
 `titan.navigator.buildserver`, `titan.navigator.slender` und `titan.navigator.bounce` werden den
-jeweiligen Gruppen erteilt. In der lokalen Variante gilt `deny-all` (`DenyAllPermissionService`), dort
+jeweiligen Gruppen erteilt; `cygnus.staging.join` bekommt das Team, dasselbe Recht, das der Proxy für den Beitritt zum Staging prüft. In der lokalen Variante gilt `deny-all` (`DenyAllPermissionService`), dort
 sieht niemand die drei Ziele.
 
 ## Tasks über den injizierten `Scheduler`

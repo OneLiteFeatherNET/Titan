@@ -229,14 +229,16 @@ features:
 The navigator - a feather in hotbar slot 4 opening a shared inventory with ElytraRace, Survival,
 Slender and Creative - has no configuration section: its title and destinations are fixed in code
 (`NavigatorModule`/`Destination`), not read from `application.yaml`. A `navigator.*` key set here
-or anywhere else has no effect. Slender, Bounce and Build are gated behind permissions, not flags:
-`titan.navigator.slender`, `titan.navigator.bounce` and `titan.navigator.buildserver`. A player sees each one only while they
-hold its permission; granting or revoking it takes effect the next time they open the navigator,
+or anywhere else has no effect. Slender, Slender (Staging), Bounce and Build are gated behind permissions, not flags:
+`titan.navigator.slender`, `titan.navigator.bounce` and `titan.navigator.buildserver`, and Slender (Staging) behind
+`cygnus.staging.join`. A player sees each one only while they hold its permission; granting or revoking it takes effect the next time they open the navigator,
 with no restart of the navigator or the lobby, and a click checks the permission again.
 
 The menu has four rows with a glass frame. ElytraRace (slot 11), Bounce (slot 13) and Slender (slot 15)
 are the minigames in row two; Survival (20), Creative (22) and Build (24) are the servers in row three; spawn
-sits in the bottom middle (31). On a minigame, a left click quick-joins its best ready service, a
+sits in the bottom middle (31). Slender (Staging) on slot 16 sits beside Slender and is shown only with
+`cygnus.staging.join`; a click connects straight to the `Slender-Staging` task, with no quick join and no server list.
+On a minigame, a left click quick-joins its best ready service, a
 right click lists its services, and a shift click walks to the lobby portal when one exists. On a
 server, a left or right click connects, and a shift click walks to its portal when one exists. Any
 other click (number keys, Q, F, middle and double clicks) does nothing.
@@ -289,7 +291,7 @@ reads its settings live, at the moment it needs them, rather than once at startu
 `tickle.cooldownMillis` on every attack, sit reads `sit.offset.*`/`sit.allowedBlocks` on every block
 interaction, elytra reads `elytra.burnDurationTicks`/`elytra.cooldownTicks` on every boost, spawn
 reads `spawn.minHeight`/`spawn.maxHeight` on every height check and `spawn.simulationDistance` on
-every join, and the navigator checks the player's Slender, Bounce and Build permissions every time it is
+every join, and the navigator checks the player's Slender, Slender (Staging), Bounce and Build permissions every time it is
 opened - its title and destinations are otherwise fixed in code, not read from configuration at all.
 Once the watcher applies a change behind the facade, the very next such read sees the new value.
 Because nothing restarts, no in-flight, per-player state is ever lost - a player who is already
@@ -324,8 +326,8 @@ Feature flags are plain booleans under the `features` section, one per flag name
 configuration key - a profile's file, an external file, an environment variable
 (`FEATURES_LOBBYSWITCHER`), or a system property. The flags the lobby knows are listed in the
 shipped defaults. The navigator has no flag: its Slender destination needs the permission
-`titan.navigator.slender`, its Bounce destination `titan.navigator.bounce`, and its Build destination
-`titan.navigator.buildserver`. A
+`titan.navigator.slender`, its Slender (Staging) destination `cygnus.staging.join`, its Bounce destination
+`titan.navigator.bounce`, and its Build destination `titan.navigator.buildserver`. A
 `features.NAVIGATOR_SLENDER` setting (or `FEATURES_NAVIGATOR_SLENDER`) is unknown to the lobby and has
 no effect any more, so such a line can be deleted once the players who should see Slender hold the
 permission. The flags `NAVIGATOR_CREATIVE`, `NAVIGATOR_MANIS`, `NAVIGATOR_SURVIVAL` and
@@ -349,8 +351,8 @@ copy has no effect any more.
 
 ### Local testing
 
-The local variant denies every permission (`DenyAllPermissionService`), so none of Slender, Bounce
-or Build is shown there. To try the navigator with the permission-gated destinations, use the CloudNet
+The local variant denies every permission (`DenyAllPermissionService`), so none of Slender, Slender
+(Staging), Bounce or Build is shown there. To try the navigator with the permission-gated destinations, use the CloudNet
 variant with the permission granted. To turn on the file watcher from "Runtime reloading" above
 while testing locally, create an `application-local.yaml` next to `application.yaml`:
 

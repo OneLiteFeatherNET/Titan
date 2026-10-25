@@ -82,12 +82,33 @@ class NavigatorDestinationTest {
         Assertions.assertEquals("titan.navigator.slender", Destination.SLENDER.permission(), "Slender must be gated by its permission, not by a feature flag");
     }
 
-    @DisplayName("Only Slender, Bounce and Build need a permission")
+    @DisplayName("Slender (Staging) forwards to the Slender-Staging task and needs cygnus.staging.join")
     @Test
-    void onlySlenderBounceAndBuildNeedAPermission() {
+    void slenderStagingForwardsToTheStagingTaskBehindTheProxyPermission() {
+        Assertions.assertEquals("Slender-Staging", Destination.SLENDER_STAGING.task());
+        Assertions.assertEquals("cygnus.staging.join", Destination.SLENDER_STAGING.permission(), "the staging entry shares the permission the proxy checks");
+    }
+
+    @DisplayName("Slender (Staging) is shown with the structure block icon")
+    @Test
+    void slenderStagingUsesTheStructureBlockIcon(Env env) {
+        Assertions.assertEquals(Material.STRUCTURE_BLOCK, Destination.SLENDER_STAGING.item(List.of(Component.empty())).material());
+    }
+
+    @DisplayName("Only Slender, Slender (Staging), Bounce and Build need a permission")
+    @Test
+    void onlyTheGatedDestinationsNeedAPermission() {
         Set<Destination> permissioned = Arrays.stream(Destination.values()).filter(destination -> destination.permission() != null).collect(Collectors.toSet());
 
-        Assertions.assertEquals(Set.of(Destination.SLENDER, Destination.BOUNCE, Destination.BUILD), permissioned);
+        Assertions.assertEquals(Set.of(Destination.SLENDER, Destination.SLENDER_STAGING, Destination.BOUNCE, Destination.BUILD), permissioned);
+    }
+
+    @DisplayName("Slender (Staging) is visible only with cygnus.staging.join, not with the Slender grant")
+    @Test
+    void slenderStagingIsVisibleOnlyWithItsOwnGrant() {
+        Assertions.assertTrue(Destination.visible(Set.of(Destination.SLENDER_STAGING)).contains(Destination.SLENDER_STAGING), "the grant shows the staging entry");
+        Assertions.assertFalse(Destination.visible(Set.of(Destination.SLENDER)).contains(Destination.SLENDER_STAGING), "the Slender grant alone must not show the staging entry");
+        Assertions.assertFalse(Destination.visible(Set.of()).contains(Destination.SLENDER_STAGING), "without the grant the staging entry is hidden");
     }
 
     @DisplayName("No two destinations share a slot")
