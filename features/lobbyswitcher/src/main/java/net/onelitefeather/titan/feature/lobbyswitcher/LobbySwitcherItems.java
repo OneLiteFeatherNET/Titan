@@ -27,9 +27,11 @@ import net.onelitefeather.titan.core.module.item.ItemSlot;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
 
 /**
- * Contributes the {@code titan:lobbyswitcher} clock to the platform-wide lobby items, but only when
+ * Contributes the {@code titan:lobbyswitcher} nether star to the platform-wide lobby items, but
+ * only when
  * the flag is on: the hotbar builds its item maps once, and the bean scope is built before the
- * bridge extension learns this lobby's identity, so the identity is resolved when the clock is
+ * bridge extension learns this lobby's identity, so the identity is resolved when the nether star
+ * is
  * used.
  */
 @Factory
@@ -50,7 +52,7 @@ final class LobbySwitcherItems {
         }
         // The name is rendered per locale when the hotbar equips the player, not here: the bundle
         // may not be registered yet while the bean is built.
-        ItemStack clock = ItemStack.builder(Material.CLOCK).build();
-        return Optional.of(new LobbyItem(FEATURE_ID, ITEM_KEY, clock, ItemSlot.hotbar(HOTBAR_SLOT), (player, event) -> module.open(player), locale -> ItemStack.builder(Material.CLOCK).customName(messages.itemName(locale)).build()));
+        ItemStack icon = ItemStack.builder(Material.NETHER_STAR).build();
+        return Optional.of(new LobbyItem(FEATURE_ID, ITEM_KEY, icon, ItemSlot.hotbar(HOTBAR_SLOT), (player, event) -> module.open(player), locale -> ItemStack.builder(Material.NETHER_STAR).customName(messages.itemName(locale)).build()));
     }
 }
