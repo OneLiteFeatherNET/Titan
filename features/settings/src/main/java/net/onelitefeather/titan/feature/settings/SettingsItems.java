@@ -43,6 +43,6 @@ final class SettingsItems {
         // The name is rendered per locale when the hotbar equips the player, not here: the translations
         // are registered when the module starts, which may be after this bean is built.
         ItemStack comparator = ItemStack.builder(Material.COMPARATOR).build();
-        return Optional.of(new LobbyItem(FEATURE_ID, ITEM_KEY, comparator, ItemSlot.hotbar(HOTBAR_SLOT), (player, event) -> module.open(player), locale -> ItemStack.builder(Material.COMPARATOR).customName(messages.itemName(locale)).build()));
+        return Optional.of(new LobbyItem(FEATURE_ID, ITEM_KEY, comparator, ItemSlot.hotbar(HOTBAR_SLOT), (player, event) -> module.open(player), locale -> ItemStack.builder(Material.COMPARATOR).customName(messages.itemName(locale)).lore(messages.itemHint(locale)).build()));
     }
 }

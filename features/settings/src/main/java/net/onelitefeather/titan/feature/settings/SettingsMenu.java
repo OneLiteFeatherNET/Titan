@@ -16,32 +16,45 @@
 package net.onelitefeather.titan.feature.settings;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
+import net.kyori.adventure.sound.Sound;
+import net.kyori.adventure.text.Component;
+import net.minestom.server.component.DataComponents;
 import net.minestom.server.entity.Player;
-import net.minestom.server.inventory.InventoryType;
 import net.minestom.server.inventory.Inventory;
+import net.minestom.server.inventory.InventoryType;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
+import net.minestom.server.sound.SoundEvent;
 import net.onelitefeather.titan.core.settings.BooleanSetting;
 import net.onelitefeather.titan.core.settings.PlayerSettings;
 import net.onelitefeather.titan.core.settings.SettingsRegistry;
 import net.theevilreaper.aves.inventory.GlobalInventoryBuilder;
 import net.theevilreaper.aves.inventory.click.ClickHolder;
+import net.theevilreaper.aves.inventory.function.InventoryClick;
 import net.theevilreaper.aves.inventory.layout.InventoryLayout;
 
 /**
- * The settings menu: one row with one item per registered option. A shared inventory is built for
- * each combination of option values and language, the first time a player needs it, so the
- * inventory a player sees always matches his values and nothing is built per player. A click
- * switches the option and opens the inventory of the new combination.
+ * The settings menu: three rows. The top and bottom rows are a frame of glass panes; the middle row
+ * holds one feature icon per registered option and the row below holds the switch of each option.
+ * Clicking the icon or the switch flips the option. A shared inventory is built for each
+ * combination of option values and language, the first time a player needs it, so the inventory a
+ * player sees always matches his values and nothing is built per player.
  */
 final class SettingsMenu {
 
-    private static final InventoryType ROW = InventoryType.CHEST_1_ROW;
+    private static final InventoryType TYPE = InventoryType.CHEST_3_ROW;
+    private static final ItemStack FILLER = ItemStack.builder(Material.GRAY_STAINED_GLASS_PANE).customName(Component.empty()).build();
+    private static final ItemStack FRAME_LIGHT = ItemStack.builder(Material.LIGHT_BLUE_STAINED_GLASS_PANE).customName(Component.empty()).build();
+    private static final ItemStack FRAME_CYAN = ItemStack.builder(Material.CYAN_STAINED_GLASS_PANE).customName(Component.empty()).build();
+    private static final InventoryClick CANCEL = (player, slot, click, stack, result) -> result.accept(ClickHolder.cancelClick());
+    private static final Sound CLICK = Sound.sound(SoundEvent.UI_BUTTON_CLICK, Sound.Source.UI, 1.0f, 1.0f);
 
     private final PlayerSettings settings;
     private final SettingsRegistry registry;
@@ -82,15 +95,26 @@ final class SettingsMenu {
     }
 
     private GlobalInventoryBuilder build(Shared shared) {
-        GlobalInventoryBuilder builder = new GlobalInventoryBuilder(this.messages.title(shared.language()), ROW);
-        InventoryLayout layout = InventoryLayout.fromType(ROW);
-        for (int slot = 0; slot < shared.definitions().size(); slot++) {
-            BooleanSetting setting = shared.definitions().get(slot);
-            boolean enabled = (shared.enabled() & 1L << slot) != 0;
-            layout.setItem(slot, stack(setting, enabled, shared.language()), (player, clickedSlot, click, stack, result) -> {
-                result.accept(ClickHolder.cancelClick());
-                toggle(player, setting);
-            });
+        GlobalInventoryBuilder builder = new GlobalInventoryBuilder(this.messages.title(shared.language()), TYPE);
+        InventoryLayout layout = InventoryLayout.fromType(TYPE);
+        List<BooleanSetting> definitions = shared.definitions();
+        int count = definitions.size();
+        Set<Integer> options = new HashSet<>();
+        for (int index = 0; index < count; index++) {
+            options.add(SettingsLayout.iconSlot(index, count));
+            options.add(SettingsLayout.toggleSlot(index, count));
+        }
+        for (int slot = 0; slot < TYPE.getSize(); slot++) {
+            if (!options.contains(slot)) {
+                layout.setItem(slot, filler(slot), CANCEL);
+            }
+        }
+        for (int index = 0; index < count; index++) {
+            BooleanSetting setting = definitions.get(index);
+            boolean enabled = (shared.enabled() & 1L << index) != 0;
+            InventoryClick switchOption = switchOption(setting);
+            layout.setItem(SettingsLayout.iconSlot(index, count), icon(setting, enabled, shared.language()), switchOption);
+            layout.setItem(SettingsLayout.toggleSlot(index, count), toggle(enabled, shared.language()), switchOption);
         }
         builder.setLayout(layout);
         builder.invalidateLayout();
@@ -98,15 +122,50 @@ final class SettingsMenu {
         return builder;
     }
 
-    /** Switches {@code setting} for {@code player} and shows the menu of the new combination. */
+    /** Cancels the click and switches {@code setting}, both for its icon and for its switch. */
+    private InventoryClick switchOption(BooleanSetting setting) {
+        return (player, slot, click, stack, result) -> {
+            result.accept(ClickHolder.cancelClick());
+            toggle(player, setting);
+        };
+    }
+
+    /**
+     * Switches {@code setting} for {@code player}, plays the click and shows the menu of the new
+     * combination.
+     */
     void toggle(Player player, BooleanSetting setting) {
         this.settings.set(player.getUuid(), setting, !this.settings.isEnabled(player.getUuid(), setting));
+        player.playSound(CLICK, Sound.Emitter.self());
         player.openInventory(inventoryFor(player));
     }
 
-    private ItemStack stack(BooleanSetting setting, boolean enabled, Locale language) {
+    /**
+     * The glass pane of a slot that no option uses. The middle row is grey so the options stand out
+     * in it; the top and bottom rows alternate light blue and cyan, like the navigator's frame.
+     */
+    private static ItemStack filler(int slot) {
+        if (slot / SettingsLayout.COLUMNS == SettingsLayout.ICON_ROW) {
+            return FILLER;
+        }
+        return (slot / SettingsLayout.COLUMNS + slot % SettingsLayout.COLUMNS) % 2 == 0 ? FRAME_LIGHT : FRAME_CYAN;
+    }
+
+    /** The feature icon of an option; an enabled option glints. */
+    private static ItemStack icon(BooleanSetting setting, boolean enabled, Locale language) {
+        ItemStack.Builder builder = ItemStack.builder(SettingsIcons.of(setting.key())).customName(SettingsMessages.name(setting, language)).lore(SettingsMessages.description(setting, language));
+        if (enabled) {
+            builder.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
+        }
+        return builder.build();
+    }
+
+    /**
+     * The switch below an option's icon: lime when on, grey when off, with its state as the name.
+     */
+    private static ItemStack toggle(boolean enabled, Locale language) {
         Material material = enabled ? Material.LIME_DYE : Material.GRAY_DYE;
-        return ItemStack.builder(material).customName(SettingsMessages.name(setting, language)).lore(SettingsMessages.lore(setting, enabled, language)).build();
+        return ItemStack.builder(material).customName(SettingsMessages.toggleName(enabled, language)).lore(SettingsMessages.toggleHint(language)).build();
     }
 
     /**
