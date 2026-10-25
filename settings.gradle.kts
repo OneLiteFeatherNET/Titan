@@ -52,7 +52,7 @@ dependencyResolutionManagement {
             version("gson", "2.15.0")
 
             version("slf4j", "2.0.20")
-            version("logback", "1.6.5")
+            version("logback", "1.6.6")
             version("sentry", "8.61.1")
             // The API the OpenTelemetry Java agent 2.16.0 bundles (SDK/API 1.50.0); keep both in step.
             version("opentelemetry", "1.67.0")
