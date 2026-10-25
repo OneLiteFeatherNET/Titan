@@ -28,11 +28,9 @@ import net.onelitefeather.titan.core.module.item.LobbyItem;
 
 /**
  * Contributes the {@code titan:lobbyswitcher} nether star to the platform-wide lobby items, but
- * only when
- * the flag is on: the hotbar builds its item maps once, and the bean scope is built before the
- * bridge extension learns this lobby's identity, so the identity is resolved when the nether star
- * is
- * used.
+ * only when the flag is on: the hotbar builds its item maps once, and the bean scope is built
+ * before the bridge extension learns this lobby's identity, so the identity is resolved when the
+ * nether star is used.
  */
 @Factory
 @Profile(LobbySwitcherModule.CLOUDNET)

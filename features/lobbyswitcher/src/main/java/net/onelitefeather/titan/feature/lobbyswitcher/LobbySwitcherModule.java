@@ -33,8 +33,7 @@ import net.onelitefeather.titan.core.telemetry.Telemetry;
 
 /**
  * The lobby switcher: the nether star in hotbar slot 8 opens the list of the running lobbies of
- * this
- * task. Only exists as a CloudNet service; elsewhere there is nothing to switch to.
+ * this task. Only exists as a CloudNet service; elsewhere there is nothing to switch to.
  */
 @Singleton
 @Profile(LobbySwitcherModule.CLOUDNET)
