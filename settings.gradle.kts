@@ -57,7 +57,7 @@ dependencyResolutionManagement {
             // The API the OpenTelemetry Java agent 2.16.0 bundles (SDK/API 1.50.0); keep both in step.
             version("opentelemetry", "1.67.0")
 
-            version("hibernate", "7.4.13.Final")
+            version("hibernate", "7.4.14.Final")
             version("hikaricp", "7.1.0")
             version("postgresql", "42.7.14")
             version("flyway", "13.11.1")
