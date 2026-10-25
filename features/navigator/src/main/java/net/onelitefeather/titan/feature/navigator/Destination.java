@@ -27,12 +27,15 @@ import org.jetbrains.annotations.Nullable;
 /**
  * One destination shown in the shared navigator inventories, fixed in code as a Java {@code enum}
  * since destinations change rarely. The minigames ({@code ELYTRA_RACE}, {@code SLENDER}) sit in row
- * one of the grid, the servers in row two. {@link #SLENDER}, {@link #BOUNCE} and {@link #BUILD} are
- * each gated behind a permission; the others are always visible.
+ * one of the grid, the servers in row two. {@link #SLENDER}, {@link #SLENDER_STAGING},
+ * {@link #BOUNCE} and {@link #BUILD} are each gated behind a permission; the others are
+ * always visible.
  */
 enum Destination {
 
-    ELYTRA_RACE(11, Material.ELYTRA, "<gradient:#fcba03:#03fc8c>", "ElytraRace", "ElytraRace", null), SLENDER(15, Material.ENDERMAN_SPAWN_EGG, "<gradient:#616161:#e80000>", "Slender", "Slender", "titan.navigator.slender"), BOUNCE(13, Material.SLIME_BALL, "<gradient:#00FA9A:#40E0D0>", "Bounce", "Bounce", "titan.navigator.bounce"), SURVIVAL(20, Material.GRASS_BLOCK, "<gradient:#7CFC00:#00C853>", "Survival", "Survival", null), CREATIVE(22, Material.WOODEN_AXE, "<gradient:#ff6ec7:#7873f5>", "Creative", "MemberBuild", null), BUILD(24, Material.SCAFFOLDING, "<gradient:#FFD700:#FF8C00>", "Build", "Team-Build", "titan.navigator.buildserver");
+    ELYTRA_RACE(11, Material.ELYTRA, "<gradient:#fcba03:#03fc8c>", "ElytraRace", "ElytraRace", null), SLENDER(15, Material.ENDERMAN_SPAWN_EGG, "<gradient:#616161:#e80000>", "Slender", "Slender", "titan.navigator.slender"), BOUNCE(13, Material.SLIME_BALL, "<gradient:#00FA9A:#40E0D0>", "Bounce", "Bounce", "titan.navigator.bounce"), SURVIVAL(20, Material.GRASS_BLOCK, "<gradient:#7CFC00:#00C853>", "Survival", "Survival", null), CREATIVE(22, Material.WOODEN_AXE, "<gradient:#ff6ec7:#7873f5>", "Creative", "MemberBuild", null), BUILD(24, Material.SCAFFOLDING, "<gradient:#FFD700:#FF8C00>", "Build", "Team-Build", "titan.navigator.buildserver"),
+    // Shares the proxy's join permission, so one grant covers both.
+    SLENDER_STAGING(16, Material.STRUCTURE_BLOCK, "<gradient:#616161:#ffaa00>", "Slender (Staging)", "Slender-Staging", "cygnus.staging.join", NavigatorMessages.STAGING_HINT);
 
     private final int slot;
     private final Material icon;
@@ -40,14 +43,21 @@ enum Destination {
     private final String label;
     private final String task;
     private final @Nullable String permission;
+    private final @Nullable String hint;
 
     Destination(int slot, Material icon, String gradient, String label, String task, @Nullable String permission) {
+        this(slot, icon, gradient, label, task, permission, null);
+    }
+
+    /** {@code hint} is the translation key of one extra lore line, or {@code null} for none. */
+    Destination(int slot, Material icon, String gradient, String label, String task, @Nullable String permission, @Nullable String hint) {
         this.slot = slot;
         this.icon = icon;
         this.gradient = gradient;
         this.label = label;
         this.task = task;
         this.permission = permission;
+        this.hint = hint;
     }
 
     int slot() {
@@ -69,6 +79,12 @@ enum Destination {
     @Nullable
     String permission() {
         return this.permission;
+    }
+
+    /** The translation key of the extra lore line, or {@code null} when the entry has none. */
+    @Nullable
+    String hint() {
+        return this.hint;
     }
 
     /**

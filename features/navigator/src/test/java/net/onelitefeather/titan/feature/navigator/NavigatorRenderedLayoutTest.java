@@ -15,8 +15,15 @@
  */
 package net.onelitefeather.titan.feature.navigator;
 
+import java.util.List;
+import java.util.Locale;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import net.minestom.server.component.DataComponents;
 import net.minestom.server.entity.Player;
 import net.minestom.server.inventory.AbstractInventory;
+import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
@@ -38,11 +45,22 @@ class NavigatorRenderedLayoutTest {
     private static final String SLENDER_PERMISSION = "titan.navigator.slender";
     private static final String BUILD_PERMISSION = "titan.navigator.buildserver";
     private static final String BOUNCE_PERMISSION = "titan.navigator.bounce";
+    private static final String STAGING_PERMISSION = "cygnus.staging.join";
 
     private static AbstractInventory openNavigator(NavigatorFixture fixture, Player player) {
         fixture.equip(player);
         fixture.useFeather(player);
         return player.getOpenInventory();
+    }
+
+    // The plain text of a stack's custom name; a stack without one has an empty name.
+    private static String nameOf(AbstractInventory inventory, int slot) {
+        ItemStack stack = inventory.getItemStack(slot);
+        if (stack.get(DataComponents.CUSTOM_NAME) == null) {
+            return "";
+        }
+        MiniMessage mini = MiniMessage.miniMessage();
+        return mini.stripTags(mini.serialize(stack.get(DataComponents.CUSTOM_NAME)));
     }
 
     @DisplayName("The navigator has four rows of nine slots")
@@ -138,6 +156,53 @@ class NavigatorRenderedLayoutTest {
         FakePermissionService permissions = new FakePermissionService().set(player.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED);
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions)) {
             Assertions.assertEquals(Material.SCAFFOLDING, openNavigator(fixture, player).getItemStack(24).material(), "a granted Build is on slot 24");
+        }
+    }
+
+    @DisplayName("Without cygnus.staging.join slot 16 is a grey pane when the permission is not set")
+    @Test
+    void notSetStagingLeavesGreyPaneOnSlot16(Env env) {
+        Player player = env.createPlayer(env.createFlatInstance());
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService())) {
+            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, openNavigator(fixture, player).getItemStack(16).material(), "an unset staging grant leaves slot 16 blank");
+        }
+    }
+
+    @DisplayName("Without cygnus.staging.join slot 16 is a grey pane when the permission is denied")
+    @Test
+    void deniedStagingLeavesGreyPaneOnSlot16(Env env) {
+        Player player = env.createPlayer(env.createFlatInstance());
+        FakePermissionService permissions = new FakePermissionService().set(player.getUuid(), STAGING_PERMISSION, PermissionResult.DENIED);
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions)) {
+            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, openNavigator(fixture, player).getItemStack(16).material(), "a denied staging grant leaves slot 16 blank");
+        }
+    }
+
+    @DisplayName("With cygnus.staging.join Slender (Staging) shows on slot 16 as a structure block with its own name")
+    @Test
+    void grantedStagingShowsOnSlot16(Env env) {
+        Player player = env.createPlayer(env.createFlatInstance());
+        FakePermissionService permissions = new FakePermissionService().set(player.getUuid(), STAGING_PERMISSION, PermissionResult.ALLOWED);
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions)) {
+            AbstractInventory menu = openNavigator(fixture, player);
+
+            Assertions.assertEquals(Material.STRUCTURE_BLOCK, menu.getItemStack(16).material(), "a granted staging entry is a structure block on slot 16");
+            Assertions.assertEquals("Slender (Staging)", nameOf(menu, 16), "the staging entry is named apart from the real Slender");
+            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, menu.getItemStack(15).material(), "the real Slender stays hidden without its own grant");
+        }
+    }
+
+    @DisplayName("Slender (Staging) ends its lore with the team-only hint in English")
+    @Test
+    void stagingLoreEndsWithTheTeamOnlyHint(Env env) {
+        Player player = env.createPlayer(env.createFlatInstance());
+        player.setLocale(Locale.ENGLISH);
+        FakePermissionService permissions = new FakePermissionService().set(player.getUuid(), STAGING_PERMISSION, PermissionResult.ALLOWED);
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions)) {
+            List<Component> lore = openNavigator(fixture, player).getItemStack(16).get(DataComponents.LORE);
+
+            Assertions.assertNotNull(lore, "the staging entry has lore");
+            Assertions.assertEquals("Test environment – team only", PlainTextComponentSerializer.plainText().serialize(lore.getLast()), "the last line is the team-only hint");
         }
     }
 }

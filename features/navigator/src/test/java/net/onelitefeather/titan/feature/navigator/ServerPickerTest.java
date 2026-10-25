@@ -22,6 +22,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 class ServerPickerTest {
 
@@ -39,6 +40,12 @@ class ServerPickerTest {
     void entriesFollowTheSort() {
         assertEquals(List.of(ONE, TWO), ServerPicker.entries(List.of(TWO, ONE), PickerSort.NAME), "ElytraRace-1 comes before ElytraRace-2");
         assertEquals(List.of(TWO, ONE), ServerPicker.entries(List.of(ONE, TWO), PickerSort.MOST_PLAYERS), "the service with more players comes first");
+    }
+
+    @DisplayName("Slender (Staging) never offers the server list, so its click always connects")
+    @Test
+    void stagingIsNoMinigame() {
+        assertFalse(ServerPicker.DESTINATIONS.contains(Destination.SLENDER_STAGING), "the staging entry has no server list");
     }
 
     @DisplayName("The picker keeps every running service, however many there are")

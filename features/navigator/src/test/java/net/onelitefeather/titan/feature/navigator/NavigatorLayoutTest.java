@@ -55,9 +55,21 @@ class NavigatorLayoutTest {
         Assertions.assertEquals(11, Destination.ELYTRA_RACE.slot(), "ElytraRace is in row one");
         Assertions.assertEquals(13, Destination.BOUNCE.slot(), "Bounce is in row one, between ElytraRace and Slender");
         Assertions.assertEquals(15, Destination.SLENDER.slot(), "Slender is in row one");
+        Assertions.assertEquals(16, Destination.SLENDER_STAGING.slot(), "Slender (Staging) is in row one, right after Slender");
         Assertions.assertEquals(20, Destination.SURVIVAL.slot(), "Survival is in row two");
         Assertions.assertEquals(22, Destination.CREATIVE.slot(), "Creative is in row two");
         Assertions.assertEquals(24, Destination.BUILD.slot(), "Build is in row two");
+    }
+
+    @DisplayName("Slender (Staging) takes slot 16, which is inside the frame and used by no other destination")
+    @Test
+    void slenderStagingTakesTheFreeSlotNextToSlender() {
+        Assertions.assertFalse(NavigatorLayout.isFrame(16), "slot 16 is inside the frame");
+        for (Destination destination : Destination.values()) {
+            if (destination != Destination.SLENDER_STAGING) {
+                Assertions.assertNotEquals(16, destination.slot(), destination + " must not share slot 16 with Slender (Staging)");
+            }
+        }
     }
 
     @DisplayName("No destination sits on the frame")

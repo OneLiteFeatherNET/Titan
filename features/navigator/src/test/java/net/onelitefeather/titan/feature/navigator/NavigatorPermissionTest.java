@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.feature.navigator;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -370,10 +371,20 @@ class NavigatorPermissionTest {
         }
     }
 
-    @DisplayName("Starting the navigator creates a shared inventory for each of the eight permission sets, in both languages")
+    @DisplayName("Starting the navigator creates a shared inventory for each of the sixteen permission sets, in both languages")
     @Test
-    void startCreatesSixteenSharedInventories(Env env) {
-        List<Set<Destination>> grants = List.of(Set.of(), Set.of(Destination.SLENDER), Set.of(Destination.BOUNCE), Set.of(Destination.BUILD), Set.of(Destination.SLENDER, Destination.BOUNCE), Set.of(Destination.SLENDER, Destination.BUILD), Set.of(Destination.BOUNCE, Destination.BUILD), Set.of(Destination.SLENDER, Destination.BOUNCE, Destination.BUILD));
+    void startCreatesThirtyTwoSharedInventories(Env env) {
+        List<Set<Destination>> grants = new ArrayList<>();
+        List<Destination> permissioned = Destination.permissioned();
+        for (int mask = 0; mask < 1 << permissioned.size(); mask++) {
+            Set<Destination> granted = new HashSet<>();
+            for (int bit = 0; bit < permissioned.size(); bit++) {
+                if ((mask & 1 << bit) != 0) {
+                    granted.add(permissioned.get(bit));
+                }
+            }
+            grants.add(granted);
+        }
         try (NavigatorFixture fixture = start(env, new RecordingDeliver(), new FakePermissionService())) {
             Set<Inventory> inventories = new HashSet<>();
             for (Set<Destination> granted : grants) {
@@ -384,7 +395,7 @@ class NavigatorPermissionTest {
                 }
             }
 
-            Assertions.assertEquals(16, inventories.size(), "eight permission sets in two languages make sixteen distinct shared inventories");
+            Assertions.assertEquals(32, inventories.size(), "sixteen permission sets in two languages make thirty-two distinct shared inventories");
         }
     }
 }

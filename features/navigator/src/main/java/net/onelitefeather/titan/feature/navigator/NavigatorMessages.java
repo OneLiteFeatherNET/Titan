@@ -66,9 +66,10 @@ final class NavigatorMessages implements AutoCloseable {
     static final String PAGE_NEXT = "titan.navigator.picker.page.next";
     static final String PAGE_INDICATOR = "titan.navigator.picker.page.indicator";
     static final String PICKER_BACK = "titan.navigator.picker.back";
+    static final String STAGING_HINT = "titan.navigator.hint.staging";
 
     /** Every key the navigator renders; the bundle test checks the property files against it. */
-    static final List<String> KEYS = List.of(TITLE, PICKER_TITLE, PLAYERS, KEY_LEFT, KEY_RIGHT, KEY_SHIFT, ACTION_QUICK_JOIN, ACTION_CHOOSE_SERVER, ACTION_CONNECT, ACTION_PORTAL, PICKER_FULL, PICKER_NOT_READY, PICKER_JOIN, REFUSAL_FULL, REFUSAL_NOT_READY, REFUSAL_UNAVAILABLE, PICKER_EMPTY, SORT_ITEM, SORT_NAME, SORT_MOST_PLAYERS, SORT_MOST_FREE, SORT_STATUS, SORT_HINT, PAGE_PREVIOUS, PAGE_NEXT, PAGE_INDICATOR, PICKER_BACK);
+    static final List<String> KEYS = List.of(TITLE, PICKER_TITLE, PLAYERS, KEY_LEFT, KEY_RIGHT, KEY_SHIFT, ACTION_QUICK_JOIN, ACTION_CHOOSE_SERVER, ACTION_CONNECT, ACTION_PORTAL, PICKER_FULL, PICKER_NOT_READY, PICKER_JOIN, REFUSAL_FULL, REFUSAL_NOT_READY, REFUSAL_UNAVAILABLE, PICKER_EMPTY, SORT_ITEM, SORT_NAME, SORT_MOST_PLAYERS, SORT_MOST_FREE, SORT_STATUS, SORT_HINT, PAGE_PREVIOUS, PAGE_NEXT, PAGE_INDICATOR, PICKER_BACK, STAGING_HINT);
 
     private static final String BUNDLE = "titan.navigator.messages";
     private static final String SEPARATOR = "━━━━━━━━━━━━";
@@ -140,6 +141,11 @@ final class NavigatorMessages implements AutoCloseable {
         }
         TagResolver limit = Placeholder.unparsed("max", String.valueOf(max.getAsInt()));
         return mini.deserialize("<!i>" + LABEL_COLOR + "<label>  </#8c96a8><white><online></white>" + LABEL_COLOR + " / <max></#8c96a8>", label, count, limit);
+    }
+
+    /** One grey line of its own that explains an entry, such as a team-only test environment. */
+    static Component hintLine(String key, Locale locale) {
+        return MiniMessage.miniMessage().deserialize("<!i><gray><hint></gray>", Placeholder.component("hint", text(key, locale)));
     }
 
     /** The title of the navigator, styled as its gradient, in {@code locale}. */

@@ -275,7 +275,12 @@ public final class NavigatorModule {
     private ItemStack itemOf(Destination destination, Locale language) {
         List<ServiceCount> services = this.running.getOrDefault(destination, List.of());
         List<ClickAction> actions = ClickAction.hints(ServerPicker.DESTINATIONS.contains(destination), portalFor(destination).isPresent());
-        return destination.item(NavigatorMessages.modeLore(destination.gradient(), TaskPlayers.online(services), TaskPlayers.capacity(services), actions, language));
+        List<Component> lore = new ArrayList<>(NavigatorMessages.modeLore(destination.gradient(), TaskPlayers.online(services), TaskPlayers.capacity(services), actions, language));
+        if (destination.hint() != null) {
+            lore.add(Component.empty());
+            lore.add(NavigatorMessages.hintLine(destination.hint(), language));
+        }
+        return destination.item(List.copyOf(lore));
     }
 
     private SpawnReturn resolveSpawnReturn() {

@@ -127,4 +127,11 @@ class NavigatorLoreTest {
     void languagesDiffer() {
         Assertions.assertNotEquals(plain(NavigatorMessages.modeLore(ELYTRA_GRADIENT, OptionalInt.of(3), OptionalInt.of(9), MINIGAME_WITH_PORTAL, Locale.GERMAN)), plain(NavigatorMessages.modeLore(ELYTRA_GRADIENT, OptionalInt.of(3), OptionalInt.of(9), MINIGAME_WITH_PORTAL, Locale.ENGLISH)), "the bundles must differ");
     }
+
+    @DisplayName("The team-only hint of Slender (Staging) reads in German and in English")
+    @Test
+    void stagingHintReadsInBothLanguages() {
+        Assertions.assertEquals("Testumgebung – nur fürs Team", plain(List.of(NavigatorMessages.hintLine(NavigatorMessages.STAGING_HINT, Locale.GERMAN))).getFirst(), "the German hint");
+        Assertions.assertEquals("Test environment – team only", plain(List.of(NavigatorMessages.hintLine(NavigatorMessages.STAGING_HINT, Locale.ENGLISH))).getFirst(), "the English hint");
+    }
 }
