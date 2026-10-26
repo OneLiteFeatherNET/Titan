@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import net.onelitefeather.titan.core.service.ServiceState;
 import net.onelitefeather.titan.core.service.ServiceState.Phase;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.onelitefeather.titan.core.testfixtures.AdjustableClock;
 import net.onelitefeather.titan.core.testfixtures.FakeOnDemandServices;
 import org.junit.jupiter.api.Assertions;
@@ -44,7 +45,7 @@ class StagingStartsTest {
     private final AdjustableClock clock = new AdjustableClock(Instant.parse("2026-10-26T12:00:00Z"));
     private final RecordingConnect connect = new RecordingConnect();
     private final RecordingNotice notice = new RecordingNotice();
-    private final StagingStarts<String> starts = new StagingStarts<>(this.services, this.clock, this.connect, this.notice);
+    private final StagingStarts<String> starts = new StagingStarts<>(this.services, this.clock, this.connect, this.notice, new NavigatorTelemetry(Telemetry.noop()));
 
     StagingStartsTest() {
         this.connect.allowed.add(ANN);

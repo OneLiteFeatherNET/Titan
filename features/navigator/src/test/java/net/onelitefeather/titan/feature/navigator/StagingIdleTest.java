@@ -24,6 +24,7 @@ import java.util.Optional;
 import net.onelitefeather.titan.core.service.OnDemandServices;
 import net.onelitefeather.titan.core.service.ServiceState;
 import net.onelitefeather.titan.core.service.ServiceState.Phase;
+import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.onelitefeather.titan.core.testfixtures.AdjustableClock;
 import net.onelitefeather.titan.core.testfixtures.FakeOnDemandServices;
 import org.junit.jupiter.api.Assertions;
@@ -40,7 +41,7 @@ class StagingIdleTest {
 
     private final FakeOnDemandServices services = new FakeOnDemandServices();
     private final AdjustableClock clock = new AdjustableClock(Instant.parse("2026-10-26T12:00:00Z"));
-    private final StagingIdle idle = new StagingIdle(this.services, this.clock, TEN_MINUTES);
+    private final StagingIdle idle = new StagingIdle(this.services, this.clock, TEN_MINUTES, new NavigatorTelemetry(Telemetry.noop()));
 
     @DisplayName("A staging service that stood empty for less than 600 seconds is not stopped")
     @Test
@@ -146,7 +147,7 @@ class StagingIdleTest {
     void freshReadBeforeStopSeesAPlayer() {
         this.services.serve(TASK, running(0));
         JoinOnNextRead provider = new JoinOnNextRead(this.services);
-        StagingIdle checked = new StagingIdle(provider, this.clock, TEN_MINUTES);
+        StagingIdle checked = new StagingIdle(provider, this.clock, TEN_MINUTES, new NavigatorTelemetry(Telemetry.noop()));
         Map<Destination, Optional<List<ServiceState>>> stale = Map.of(STAGING, Optional.of(List.of(running(0))));
         checked.refresh(stale);
         this.clock.advance(TEN_MINUTES);
@@ -162,7 +163,7 @@ class StagingIdleTest {
     @Test
     void secondStopDoesNotFail() {
         this.services.serve(TASK, running(0));
-        StagingIdle other = new StagingIdle(this.services, this.clock, TEN_MINUTES);
+        StagingIdle other = new StagingIdle(this.services, this.clock, TEN_MINUTES, new NavigatorTelemetry(Telemetry.noop()));
         refresh(this.idle);
         refresh(other);
         this.clock.advance(TEN_MINUTES);

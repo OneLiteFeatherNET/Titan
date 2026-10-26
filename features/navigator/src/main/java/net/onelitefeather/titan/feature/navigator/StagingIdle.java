@@ -49,11 +49,13 @@ final class StagingIdle {
     private final Clock clock;
     private final Duration limit;
     private final Map<Destination, Idleness> entries = new EnumMap<>(Destination.class);
+    private final NavigatorTelemetry telemetry;
 
-    StagingIdle(OnDemandServices services, Clock clock, Duration limit) {
+    StagingIdle(OnDemandServices services, Clock clock, Duration limit, NavigatorTelemetry telemetry) {
         this.services = services;
         this.clock = clock;
         this.limit = limit;
+        this.telemetry = telemetry;
     }
 
     /**
@@ -106,8 +108,10 @@ final class StagingIdle {
         }
         entry.stopBlockedUntil.put(name, now.plus(STOP_BLOCK));
         if (this.request(name)) {
+            this.telemetry.stagingStop(destination, NavigatorTelemetry.StopResult.REQUESTED);
             LOGGER.info("Requested the stop of idle staging service {} of task {}", name, destination.task());
         } else {
+            this.telemetry.stagingStop(destination, NavigatorTelemetry.StopResult.FAILED);
             LOGGER.warn("The stop of idle staging service {} of task {} was refused", name, destination.task());
         }
     }

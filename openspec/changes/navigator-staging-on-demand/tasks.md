@@ -61,8 +61,8 @@ Commit-Schema: `feat(navigator)` für Code und Tests (Wellen 1 bis 4), `docs(nav
 
 - [x] 6.1 Test (Unit, i18n-Prüfung im Navigator): die Schlüssel aus `design.md` D10 stehen in `messages_de.properties` und `messages_en.properties`; jeder im Code verwendete Schlüssel existiert im englischen Fallback. Nachweis: rot vor 6.2.
 - [x] 6.2 Schlüssel in beiden Bundles und in `NavigatorMessages.KEYS` ergänzen. Nachweis: 6.1 grün.
-- [ ] 6.3 Test (Unit, `NavigatorStagingTelemetryTest`, `OpenTelemetryExtension` mit In-Memory-Metrik-Reader und Log-Appender): `titan.navigator.staging.starts` (Einheit `{start}`, Attribute `destination` und `result`), `titan.navigator.staging.stops` (Einheit `{stop}`), `titan.navigator.staging.wait` (Histogramm, Einheit `s`, Attribut `result`); Name, Einheit, Wert und Attribute werden geprüft; die INFO-Zeile mit Task und Dienst wird über den Log-Appender geprüft; keine Spielernamen oder UUIDs als Attribut. Nachweis: rot vor 6.4.
-- [ ] 6.4 Instrumente einmal bei der Initialisierung in `NavigatorTelemetry` anlegen; Aufrufe aus `StagingStarts` und `StagingIdle`. Nachweis: 6.3 grün; kein Aufruf blockiert den Tick-Thread.
+- [x] 6.3 Test (Unit, `NavigatorStagingTelemetryTest`, `OpenTelemetryExtension` mit In-Memory-Metrik-Reader und Log-Appender): `titan.navigator.staging.starts` (Einheit `{start}`, Attribute `destination` und `result`), `titan.navigator.staging.stops` (Einheit `{stop}`), `titan.navigator.staging.wait` (Histogramm, Einheit `s`, Attribut `result`); Name, Einheit, Wert und Attribute werden geprüft; die INFO-Zeile mit Task und Dienst wird über den Log-Appender geprüft; keine Spielernamen oder UUIDs als Attribut. Nachweis: rot vor 6.4.
+- [x] 6.4 Instrumente einmal bei der Initialisierung in `NavigatorTelemetry` anlegen; Aufrufe aus `StagingStarts` und `StagingIdle`. Nachweis: 6.3 grün; kein Aufruf blockiert den Tick-Thread.
 
 ## 7. Betrieb und Verifikation
 
