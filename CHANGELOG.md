@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.8.1](https://github.com/OneLiteFeatherNET/Titan/compare/v4.8.0...v4.8.1) (2026-10-26)
+
+
+### Bug Fixes
+
+* **tag:** take the elytra away while playing tag ([#506](https://github.com/OneLiteFeatherNET/Titan/issues/506)) ([6289312](https://github.com/OneLiteFeatherNET/Titan/commit/62893124cc6ab7b55c16ba56becc652e1e0c21c6))
+
 ## [4.8.0](https://github.com/OneLiteFeatherNET/Titan/compare/v4.7.0...v4.8.0) (2026-10-26)
 
 
