@@ -35,7 +35,6 @@ import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -69,9 +68,12 @@ import net.theevilreaper.aves.inventory.layout.InventoryLayout;
 
 /**
  * The lobby's navigator: a feather in hotbar slot 4 that opens one of the Aves-built inventories,
- * each shared by every player who gets it. A menu is fixed by the permissioned destinations
- * ({@code SLENDER}, {@code BOUNCE}, {@code BUILD}, see {@link Destination}) a player holds,
- * so there is one per subset of them and language. Opening picks by permission.
+ * each shared by every player who gets it. The main menu is fixed by the live permissioned
+ * destinations ({@code SLENDER}, {@code BOUNCE}, {@code TAMIAS}, {@code BUILD}, see
+ * {@link Destination}) a player holds, and by whether a player holds any staging permission, which
+ * shows the staging hub. The staging submenu is fixed by the staging permissions held. Opening
+ * picks
+ * by permission.
  *
  * <p>A minigame's left click joins its best ready service (see {@link TaskJoin}), its right click
  * lists the services (see {@link ServerPicker}); a server connects on a left or right click. A
@@ -101,6 +103,8 @@ public final class NavigatorModule {
     // One shared inventory per menu and language: the title and the click lines are translated, and a
     // shared inventory shows the same stacks to everyone who opens it.
     private final Map<Menu, SharedNavigator> menus = new HashMap<>();
+    // One shared submenu per set of staging grants and language, opened by the staging hub.
+    private final Map<Submenu, SharedNavigator> submenus = new HashMap<>();
     private final Telemetry telemetry;
     private final NavigatorTelemetry navigatorTelemetry;
     // A Provider, not a bean: the spawn column sits before this one in module order (spawn ->
@@ -153,12 +157,22 @@ public final class NavigatorModule {
         this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry);
         // Built here, not in the constructor: the title is translated, and the translations are
         // registered when the messages bean starts, which happens before this module does.
-        for (Set<Destination> granted : grantCombinations()) {
+        for (Set<Destination> granted : grantCombinations(Destination.livePermissioned())) {
+            for (boolean stagingHub : List.of(false, true)) {
+                for (Locale language : LANGUAGES) {
+                    SharedNavigator navigator = new SharedNavigator(NavigatorMessages.title(language), NavigatorLayout.TYPE, Destination.visible(granted), this.telemetry);
+                    navigator.applyLayout(visible -> toAvesLayout(visible, stagingHub, language));
+                    navigator.register();
+                    this.menus.put(new Menu(granted, stagingHub, language), navigator);
+                }
+            }
+        }
+        for (Set<Destination> granted : grantCombinations(Destination.stagingEntries())) {
             for (Locale language : LANGUAGES) {
-                SharedNavigator navigator = new SharedNavigator(NavigatorMessages.title(language), granted, this.telemetry);
-                navigator.applyLayout(layoutFor(language));
-                navigator.register();
-                this.menus.put(new Menu(granted, language), navigator);
+                SharedNavigator submenu = new SharedNavigator(StagingMenu.title(language), StagingMenu.TYPE, Destination.stagingVisible(granted), this.telemetry);
+                submenu.applyLayout(visible -> toStagingLayout(visible, language));
+                submenu.register();
+                this.submenus.put(new Submenu(granted, language), submenu);
             }
         }
         // Tick-based on purpose: Minestom's time-based schedules run on a wall-clock timer outside the tick.
@@ -172,15 +186,17 @@ public final class NavigatorModule {
         this.refreshTask.cancel();
         this.node.close();
         this.menus.values().forEach(SharedNavigator::unregister);
+        this.submenus.values().forEach(SharedNavigator::unregister);
         this.pickers.values().forEach(SharedServerPicker::unregister);
     }
 
     void open(Player player) {
-        Set<Destination> granted = grantedBy(player);
-        Menu menu = new Menu(granted, languageOf(player));
+        Set<Destination> granted = grantedBy(player, Destination.livePermissioned());
+        boolean stagingHub = !grantedBy(player, Destination.stagingEntries()).isEmpty();
+        Menu menu = new Menu(granted, stagingHub, languageOf(player));
         SharedNavigator navigator = this.menus.get(menu);
-        // The destinations plus the fixed spawn entry.
-        int entries = Destination.visible(granted).size() + 1;
+        // The destinations, the hub when it shows, plus the fixed spawn entry.
+        int entries = Destination.visible(granted).size() + 1 + (stagingHub ? 1 : 0);
         this.navigatorTelemetry.open(player.getUuid(), granted.contains(Destination.BUILD), entries, () -> {
             // A portal added since the last refresh must already show in the lines when the menu opens.
             navigator.showItems(destination -> itemOf(destination, menu.language()));
@@ -200,26 +216,35 @@ public final class NavigatorModule {
     }
 
     Inventory publicInventory(Locale language) {
-        return inventory(Set.of(), language);
+        return inventory(Set.of(), false, language);
     }
 
     Inventory teamInventory(Locale language) {
-        return inventory(Set.copyOf(Destination.permissioned()), language);
+        return inventory(Set.copyOf(Destination.livePermissioned()), true, language);
     }
 
-    // Test-only seam: the shared menu for one grant set and language, so a test can count them.
+    // Test-only seam: the main menu for one grant set and language, without the staging hub.
     Inventory inventory(Set<Destination> granted, Locale language) {
-        return this.menus.get(new Menu(granted, language)).inventory();
+        return inventory(granted, false, language);
     }
 
-    // The permissioned destinations this player may use right now; NOT_SET counts as not granted.
-    private Set<Destination> grantedBy(Player player) {
-        return Destination.permissioned().stream().filter(destination -> isAllowed(player, destination)).collect(Collectors.toUnmodifiableSet());
+    // Test-only seam: the shared main menu for one grant set, staging hub flag and language.
+    Inventory inventory(Set<Destination> granted, boolean stagingHub, Locale language) {
+        return this.menus.get(new Menu(granted, stagingHub, language)).inventory();
     }
 
-    // Every subset of the permissioned destinations: each is one menu a player can be shown.
-    private static List<Set<Destination>> grantCombinations() {
-        List<Destination> permissioned = Destination.permissioned();
+    // Test-only seam: the shared submenu for one set of staging grants and language.
+    Inventory stagingInventory(Set<Destination> granted, Locale language) {
+        return this.submenus.get(new Submenu(granted, language)).inventory();
+    }
+
+    // The destinations of the list this player may use right now; NOT_SET counts as not granted.
+    private Set<Destination> grantedBy(Player player, List<Destination> destinations) {
+        return destinations.stream().filter(destination -> isAllowed(player, destination)).collect(Collectors.toUnmodifiableSet());
+    }
+
+    // Every subset of the given destinations: each is one grant set a menu can be shown for.
+    private static List<Set<Destination>> grantCombinations(List<Destination> permissioned) {
         List<Set<Destination>> combinations = new ArrayList<>();
         for (int mask = 0; mask < 1 << permissioned.size(); mask++) {
             Set<Destination> granted = EnumSet.noneOf(Destination.class);
@@ -268,6 +293,7 @@ public final class NavigatorModule {
         }
         this.running = read;
         this.menus.forEach((menu, navigator) -> navigator.showItems(destination -> itemOf(destination, menu.language())));
+        this.submenus.forEach((submenu, navigator) -> navigator.showItems(destination -> itemOf(destination, submenu.language())));
     }
 
     // The lines follow the last refresh, as the count does; the portal is looked up now, so a portal
@@ -276,9 +302,16 @@ public final class NavigatorModule {
         List<ServiceCount> services = this.running.getOrDefault(destination, List.of());
         List<ClickAction> actions = ClickAction.hints(ServerPicker.DESTINATIONS.contains(destination), portalFor(destination).isPresent());
         List<Component> lore = new ArrayList<>(NavigatorMessages.modeLore(destination.gradient(), TaskPlayers.online(services), TaskPlayers.capacity(services), actions, language));
+        List<String> hints = new ArrayList<>();
+        if (destination.onDemand()) {
+            hints.add(NavigatorMessages.STAGING_ON_DEMAND_HINT);
+        }
         if (destination.hint() != null) {
+            hints.add(destination.hint());
+        }
+        if (!hints.isEmpty()) {
             lore.add(Component.empty());
-            lore.add(NavigatorMessages.hintLine(destination.hint(), language));
+            hints.forEach(hint -> lore.add(NavigatorMessages.hintLine(hint, language)));
         }
         return destination.item(List.copyOf(lore));
     }
@@ -302,11 +335,7 @@ public final class NavigatorModule {
         return permission == null || this.permissions.check(player.getUuid(), permission) == PermissionResult.ALLOWED;
     }
 
-    private Function<List<Destination>, InventoryLayout> layoutFor(Locale language) {
-        return visible -> toAvesLayout(visible, language);
-    }
-
-    private InventoryLayout toAvesLayout(List<Destination> visible, Locale language) {
+    private InventoryLayout toAvesLayout(List<Destination> visible, boolean stagingHub, Locale language) {
         InventoryLayout layout = InventoryLayout.fromType(NavigatorLayout.TYPE);
         for (int slot = 0; slot < NavigatorLayout.SIZE; slot++) {
             layout.setItem(slot, NavigatorLayout.isFrame(slot) ? frameItem(slot) : BLANK);
@@ -317,8 +346,42 @@ public final class NavigatorModule {
                 clickDestination(player, destination, click, language);
             });
         }
+        if (stagingHub) {
+            layout.setItem(NavigatorLayout.STAGING_HUB_SLOT, StagingMenu.hub(language), (player, clickedSlot, click, stack, result) -> {
+                result.accept(ClickHolder.cancelClick());
+                openStaging(player);
+            });
+        }
         addSpawnEntry(layout);
         return layout;
+    }
+
+    private InventoryLayout toStagingLayout(List<Destination> visible, Locale language) {
+        InventoryLayout layout = InventoryLayout.fromType(StagingMenu.TYPE);
+        for (int slot = 0; slot < StagingMenu.SIZE; slot++) {
+            layout.setItem(slot, BLANK);
+        }
+        for (Destination destination : visible) {
+            layout.setItem(destination.slot(), itemOf(destination, language), (player, clickedSlot, click, stack, result) -> {
+                result.accept(ClickHolder.cancelClick());
+                clickDestination(player, destination, click, language);
+            });
+        }
+        layout.setItem(StagingMenu.BACK_SLOT, StagingMenu.back(language), (player, clickedSlot, click, stack, result) -> {
+            result.accept(ClickHolder.cancelClick());
+            open(player);
+        });
+        return layout;
+    }
+
+    // The submenu follows the staging grants held now. A player who holds none gets the navigator back.
+    private void openStaging(Player player) {
+        Set<Destination> granted = grantedBy(player, Destination.stagingEntries());
+        if (granted.isEmpty()) {
+            open(player);
+            return;
+        }
+        player.openInventory(this.submenus.get(new Submenu(granted, languageOf(player))).inventory());
     }
 
     private static ItemStack frameItem(int slot) {
@@ -356,6 +419,7 @@ public final class NavigatorModule {
         return this.portals.portals().stream().filter(portal -> portal.task().equals(destination.task())).findFirst();
     }
 
+    // Every entry that connects leaves the menu here, staging entries included.
     private NavigatorTelemetry.Selection connectToTask(Player player, Destination destination) {
         this.deliver.sendPlayer(player, DeliverComponent.taskBuilder().taskName(destination.task()).player(player).build());
         player.closeInventory();
@@ -472,8 +536,15 @@ public final class NavigatorModule {
         return NavigatorTelemetry.Selection.SENT;
     }
 
-    /** One shared inventory: the permissioned destinations it shows, in one language. */
-    private record Menu(Set<Destination> granted, Locale language) {
+    /**
+     * One shared main menu: the live destinations it shows, whether the staging hub shows, and the
+     * language.
+     */
+    private record Menu(Set<Destination> granted, boolean stagingHub, Locale language) {
+    }
+
+    /** One shared staging submenu: the staging grants it shows, in one language. */
+    private record Submenu(Set<Destination> granted, Locale language) {
     }
 
     /** One shared server list: the minigame it lists, in one language. */

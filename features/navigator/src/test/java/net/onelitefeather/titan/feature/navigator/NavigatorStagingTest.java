@@ -34,7 +34,6 @@ import net.onelitefeather.titan.core.testfixtures.FakePermissionService;
 import net.onelitefeather.titan.core.testfixtures.FakePlayerCounts;
 import net.onelitefeather.titan.core.testfixtures.RecordingDeliver;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -60,6 +59,13 @@ class NavigatorStagingTest {
         return player.getOpenInventory();
     }
 
+    // The staging entries live in the submenu, which the hub on the main grid opens.
+    private static AbstractInventory openStagingMenu(Env env, NavigatorFixture fixture, Player player) {
+        AbstractInventory navigator = openNavigator(fixture, player);
+        click(env, navigator, player, new Click.Left(NavigatorLayout.STAGING_HUB_SLOT));
+        return player.getOpenInventory();
+    }
+
     private static InventoryPreClickEvent click(Env env, AbstractInventory inventory, Player player, Click click) {
         InventoryPreClickEvent event = new InventoryPreClickEvent(inventory, player, click);
         env.process().eventHandler().call(event);
@@ -79,14 +85,13 @@ class NavigatorStagingTest {
         return names;
     }
 
-    @Disabled("navigator-staging-on-demand wave 2: layout")
-    @DisplayName("A click on Slender (Staging) connects to the Slender-Staging task and cancels the click")
+    @DisplayName("A click on Slender (Staging) in the submenu connects to the Slender-Staging task and cancels the click")
     @Test
     void clickingStagingConnectsToTheStagingTask(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
         Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
         try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone(STAGING_PERMISSION))) {
-            AbstractInventory navigator = openNavigator(fixture, player);
+            AbstractInventory navigator = openStagingMenu(env, fixture, player);
 
             InventoryPreClickEvent event = click(env, navigator, player, new Click.Left(STAGING_SLOT));
             env.tick();
@@ -97,7 +102,6 @@ class NavigatorStagingTest {
         }
     }
 
-    @Disabled("navigator-staging-on-demand wave 2: layout")
     @DisplayName("A click on Slender (Staging) after the permission was denied connects nobody and closes the menu")
     @Test
     void deniedClickOnStagingConnectsNobody(Env env) {
@@ -105,10 +109,10 @@ class NavigatorStagingTest {
         Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
         FakePermissionService permissions = new FakePermissionService().set(player.getUuid(), STAGING_PERMISSION, PermissionResult.ALLOWED);
         try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, permissions)) {
-            AbstractInventory navigator = openNavigator(fixture, player);
+            AbstractInventory submenu = openStagingMenu(env, fixture, player);
             permissions.set(player.getUuid(), STAGING_PERMISSION, PermissionResult.DENIED);
 
-            click(env, navigator, player, new Click.Left(STAGING_SLOT));
+            click(env, submenu, player, new Click.Left(STAGING_SLOT));
             env.tick();
 
             Assertions.assertTrue(deliver.deliveries().isEmpty(), "a player who lost cygnus.staging.join must not be sent");
@@ -116,13 +120,12 @@ class NavigatorStagingTest {
         }
     }
 
-    @Disabled("navigator-staging-on-demand wave 2: layout")
-    @DisplayName("The team menu shows Slender (Staging) on slot 16 and the public menu leaves that slot grey")
+    @DisplayName("The team menu shows the staging hub on slot 16 and the public menu leaves that slot grey")
     @Test
     void teamMenuShowsStagingAndPublicMenuDoesNot(Env env) {
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService())) {
-            Assertions.assertEquals(Material.STRUCTURE_BLOCK, fixture.module().teamInventory().getItemStack(STAGING_SLOT).material(), "the team menu shows the staging entry");
-            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, fixture.module().publicInventory().getItemStack(STAGING_SLOT).material(), "the public menu has no staging entry");
+            Assertions.assertEquals(Material.STRUCTURE_BLOCK, fixture.module().teamInventory().getItemStack(NavigatorLayout.STAGING_HUB_SLOT).material(), "the team menu shows the staging hub");
+            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, fixture.module().publicInventory().getItemStack(NavigatorLayout.STAGING_HUB_SLOT).material(), "the public menu has no staging hub");
         }
     }
 

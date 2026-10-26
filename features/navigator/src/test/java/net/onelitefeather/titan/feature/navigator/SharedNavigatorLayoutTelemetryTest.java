@@ -52,24 +52,25 @@ class SharedNavigatorLayoutTelemetryTest {
     @DisplayName("The layout of a menu is applied inside a navigator.layout.apply span")
     @Test
     void layoutIsSpanned() {
-        SharedNavigator navigator = new SharedNavigator(Component.empty(), Set.of(), testTelemetry.telemetry());
+        SharedNavigator navigator = new SharedNavigator(Component.empty(), NavigatorLayout.TYPE, Destination.visible(Set.of()), testTelemetry.telemetry());
 
         navigator.applyLayout(SharedNavigatorLayoutTelemetryTest::emptyLayout);
 
         Assertions.assertEquals(1, layoutSpans(), "applying the layout must produce one layout span");
     }
 
-    @DisplayName("A menu lays out the destinations its grants allow, Slender included")
+    @DisplayName("A menu lays out the destinations it was built with, Slender included")
     @Test
-    void layoutFollowsTheGrants() {
-        SharedNavigator navigator = new SharedNavigator(Component.empty(), Set.of(Destination.SLENDER), testTelemetry.telemetry());
+    void layoutFollowsTheVisibleDestinations() {
+        List<Destination> visible = Destination.visible(Set.of(Destination.SLENDER));
+        SharedNavigator navigator = new SharedNavigator(Component.empty(), NavigatorLayout.TYPE, visible, testTelemetry.telemetry());
         List<List<Destination>> laidOut = new ArrayList<>();
 
-        navigator.applyLayout(visible -> {
-            laidOut.add(visible);
-            return emptyLayout(visible);
+        navigator.applyLayout(laid -> {
+            laidOut.add(laid);
+            return emptyLayout(laid);
         });
 
-        Assertions.assertEquals(List.of(Destination.visible(Set.of(Destination.SLENDER))), laidOut, "the layout must list exactly the destinations the grants allow");
+        Assertions.assertEquals(List.of(visible), laidOut, "the layout must list exactly the destinations the menu was built with");
     }
 }

@@ -17,7 +17,6 @@ package net.onelitefeather.titan.feature.navigator;
 
 import net.minestom.server.item.Material;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -50,36 +49,37 @@ class NavigatorLayoutTest {
         Assertions.assertEquals(Material.CYAN_STAINED_GLASS_PANE, NavigatorLayout.frameMaterial(27), "the bottom-left corner is cyan, one row down the parity flips");
     }
 
-    @Disabled("navigator-staging-on-demand wave 2: layout")
-    @DisplayName("Minigames sit in row one and servers in row two")
+    @DisplayName("Minigames and servers sit in row one and row two, and Tamias takes slot 14")
     @Test
     void destinationsSitOnTheirRows() {
         Assertions.assertEquals(11, Destination.ELYTRA_RACE.slot(), "ElytraRace is in row one");
-        Assertions.assertEquals(13, Destination.BOUNCE.slot(), "Bounce is in row one, between ElytraRace and Slender");
+        Assertions.assertEquals(13, Destination.BOUNCE.slot(), "Bounce is in row one, between ElytraRace and Tamias");
+        Assertions.assertEquals(14, Destination.TAMIAS.slot(), "Tamias is in row one, between Bounce and Slender");
         Assertions.assertEquals(15, Destination.SLENDER.slot(), "Slender is in row one");
-        Assertions.assertEquals(16, Destination.SLENDER_STAGING.slot(), "Slender (Staging) is in row one, right after Slender");
         Assertions.assertEquals(20, Destination.SURVIVAL.slot(), "Survival is in row two");
         Assertions.assertEquals(22, Destination.CREATIVE.slot(), "Creative is in row two");
         Assertions.assertEquals(24, Destination.BUILD.slot(), "Build is in row two");
     }
 
-    @DisplayName("Slender (Staging) takes slot 16, which is inside the frame and used by no other destination")
+    @DisplayName("The staging hub takes slot 16, which is inside the frame and used by no destination")
     @Test
-    void slenderStagingTakesTheFreeSlotNextToSlender() {
-        Assertions.assertFalse(NavigatorLayout.isFrame(16), "slot 16 is inside the frame");
+    void stagingHubTakesTheFreeSlotNextToSlender() {
+        Assertions.assertEquals(16, NavigatorLayout.STAGING_HUB_SLOT, "the staging hub is on slot 16");
+        Assertions.assertFalse(NavigatorLayout.isFrame(NavigatorLayout.STAGING_HUB_SLOT), "slot 16 is inside the frame");
         for (Destination destination : Destination.values()) {
-            if (destination != Destination.SLENDER_STAGING) {
-                Assertions.assertNotEquals(16, destination.slot(), destination + " must not share slot 16 with Slender (Staging)");
-            }
+            Assertions.assertNotEquals(NavigatorLayout.STAGING_HUB_SLOT, destination.slot(), destination + " must not share slot 16 with the staging hub");
         }
     }
 
-    @Disabled("navigator-staging-on-demand wave 2: layout")
-    @DisplayName("No destination sits on the frame")
+    @DisplayName("No main-grid destination sits on the frame, and every staging entry sits in the submenu")
     @Test
     void destinationsAreInside() {
         for (Destination destination : Destination.values()) {
-            Assertions.assertFalse(NavigatorLayout.isFrame(destination.slot()), destination + " must not sit on the frame");
+            if (destination.staging()) {
+                Assertions.assertTrue(destination.slot() < StagingMenu.SIZE - 1, destination + " must sit before the back button in the submenu");
+            } else {
+                Assertions.assertFalse(NavigatorLayout.isFrame(destination.slot()), destination + " must not sit on the frame");
+            }
         }
     }
 

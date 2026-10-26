@@ -17,6 +17,7 @@ package net.onelitefeather.titan.feature.navigator;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
@@ -31,7 +32,6 @@ import net.onelitefeather.titan.core.testfixtures.EventListenerCounter;
 import net.onelitefeather.titan.core.testfixtures.FakePermissionService;
 import net.onelitefeather.titan.core.testfixtures.RecordingDeliver;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -64,6 +64,7 @@ class NavigatorModuleLeakTest {
     private static final String BUILD_PERMISSION = "titan.navigator.buildserver";
     private static final String BOUNCE_PERMISSION = "titan.navigator.bounce";
     private static final String SLENDER_PERMISSION = "titan.navigator.slender";
+    private static final String TAMIAS_PERMISSION = "titan.navigator.tamias";
     private static final String STAGING_PERMISSION = "cygnus.staging.join";
 
     @DisplayName("Opening and closing the navigator 50 times, alternating with and without permission, registers no extra listeners")
@@ -95,7 +96,6 @@ class NavigatorModuleLeakTest {
         }
     }
 
-    @Disabled("navigator-staging-on-demand wave 2: layout")
     @DisplayName("Opening and closing the German navigator 50 times registers no extra listeners")
     @Test
     void germanOpeningAndClosingRepeatedlyDoesNotLeakListeners(Env env) {
@@ -104,7 +104,7 @@ class NavigatorModuleLeakTest {
         Player other = env.createPlayer(instance);
         team.setLocale(Locale.GERMANY);
         other.setLocale(Locale.GERMANY);
-        FakePermissionService permissions = new FakePermissionService().set(team.getUuid(), SLENDER_PERMISSION, PermissionResult.ALLOWED).set(team.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED).set(team.getUuid(), BOUNCE_PERMISSION, PermissionResult.ALLOWED).set(team.getUuid(), STAGING_PERMISSION, PermissionResult.ALLOWED);
+        FakePermissionService permissions = new FakePermissionService().set(team.getUuid(), SLENDER_PERMISSION, PermissionResult.ALLOWED).set(team.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED).set(team.getUuid(), BOUNCE_PERMISSION, PermissionResult.ALLOWED).set(team.getUuid(), TAMIAS_PERMISSION, PermissionResult.ALLOWED).set(team.getUuid(), STAGING_PERMISSION, PermissionResult.ALLOWED);
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions)) {
             fixture.equip(team);
             fixture.equip(other);
@@ -136,7 +136,8 @@ class NavigatorModuleLeakTest {
     @Test
     void everyInventoryIsUnregisteredWhenTheModuleStops(Env env) {
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"))) {
-            List<Inventory> inventories = List.of(fixture.module().publicInventory(), fixture.module().teamInventory(), fixture.module().publicInventory(Locale.GERMAN), fixture.module().teamInventory(Locale.GERMAN));
+            Set<Destination> allStaging = Set.copyOf(Destination.stagingEntries());
+            List<Inventory> inventories = List.of(fixture.module().publicInventory(), fixture.module().teamInventory(), fixture.module().publicInventory(Locale.GERMAN), fixture.module().teamInventory(Locale.GERMAN), fixture.module().stagingInventory(allStaging, Locale.ENGLISH), fixture.module().stagingInventory(allStaging, Locale.GERMAN));
             for (Inventory inventory : inventories) {
                 Assertions.assertTrue(EventListenerCounter.countListeners(inventory.eventNode()) > 0, "the inventory must listen for clicks while the module runs");
             }
