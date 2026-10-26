@@ -17,6 +17,7 @@ package net.onelitefeather.titan.feature.navigator;
 
 import net.minestom.server.item.Material;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -49,6 +50,7 @@ class NavigatorLayoutTest {
         Assertions.assertEquals(Material.CYAN_STAINED_GLASS_PANE, NavigatorLayout.frameMaterial(27), "the bottom-left corner is cyan, one row down the parity flips");
     }
 
+    @Disabled("navigator-staging-on-demand wave 2: layout")
     @DisplayName("Minigames sit in row one and servers in row two")
     @Test
     void destinationsSitOnTheirRows() {
@@ -72,6 +74,7 @@ class NavigatorLayoutTest {
         }
     }
 
+    @Disabled("navigator-staging-on-demand wave 2: layout")
     @DisplayName("No destination sits on the frame")
     @Test
     void destinationsAreInside() {

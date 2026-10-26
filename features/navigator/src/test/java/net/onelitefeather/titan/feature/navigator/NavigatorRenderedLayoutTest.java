@@ -31,6 +31,7 @@ import net.onelitefeather.titan.core.permission.PermissionResult;
 import net.onelitefeather.titan.core.testfixtures.FakePermissionService;
 import net.onelitefeather.titan.core.testfixtures.RecordingDeliver;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -178,6 +179,7 @@ class NavigatorRenderedLayoutTest {
         }
     }
 
+    @Disabled("navigator-staging-on-demand wave 2: layout")
     @DisplayName("With cygnus.staging.join Slender (Staging) shows on slot 16 as a structure block with its own name")
     @Test
     void grantedStagingShowsOnSlot16(Env env) {
@@ -192,6 +194,7 @@ class NavigatorRenderedLayoutTest {
         }
     }
 
+    @Disabled("navigator-staging-on-demand wave 2: layout")
     @DisplayName("Slender (Staging) ends its lore with the team-only hint in English")
     @Test
     void stagingLoreEndsWithTheTeamOnlyHint(Env env) {

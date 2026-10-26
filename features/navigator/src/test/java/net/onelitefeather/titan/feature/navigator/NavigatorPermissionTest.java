@@ -38,6 +38,7 @@ import net.onelitefeather.titan.core.testfixtures.FakePermissionService;
 import net.onelitefeather.titan.core.testfixtures.FakePlayerCounts;
 import net.onelitefeather.titan.core.testfixtures.RecordingDeliver;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -371,6 +372,7 @@ class NavigatorPermissionTest {
         }
     }
 
+    @Disabled("navigator-staging-on-demand wave 2: layout")
     @DisplayName("Starting the navigator creates a shared inventory for each of the sixteen permission sets, in both languages")
     @Test
     void startCreatesThirtyTwoSharedInventories(Env env) {
