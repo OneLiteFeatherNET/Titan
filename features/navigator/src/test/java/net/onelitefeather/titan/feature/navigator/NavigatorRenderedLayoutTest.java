@@ -22,7 +22,9 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.minestom.server.component.DataComponents;
 import net.minestom.server.entity.Player;
+import net.minestom.server.event.inventory.InventoryPreClickEvent;
 import net.minestom.server.inventory.AbstractInventory;
+import net.minestom.server.inventory.click.Click;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
 import net.minestom.testing.Env;
@@ -31,7 +33,6 @@ import net.onelitefeather.titan.core.permission.PermissionResult;
 import net.onelitefeather.titan.core.testfixtures.FakePermissionService;
 import net.onelitefeather.titan.core.testfixtures.RecordingDeliver;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -179,33 +180,37 @@ class NavigatorRenderedLayoutTest {
         }
     }
 
-    @Disabled("navigator-staging-on-demand wave 2: layout")
-    @DisplayName("With cygnus.staging.join Slender (Staging) shows on slot 16 as a structure block with its own name")
+    @DisplayName("With cygnus.staging.join the staging hub shows on slot 16 as a structure block named Staging")
     @Test
-    void grantedStagingShowsOnSlot16(Env env) {
+    void grantedStagingShowsTheHubOnSlot16(Env env) {
         Player player = env.createPlayer(env.createFlatInstance());
         FakePermissionService permissions = new FakePermissionService().set(player.getUuid(), STAGING_PERMISSION, PermissionResult.ALLOWED);
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions)) {
             AbstractInventory menu = openNavigator(fixture, player);
 
-            Assertions.assertEquals(Material.STRUCTURE_BLOCK, menu.getItemStack(16).material(), "a granted staging entry is a structure block on slot 16");
-            Assertions.assertEquals("Slender (Staging)", nameOf(menu, 16), "the staging entry is named apart from the real Slender");
+            Assertions.assertEquals(Material.STRUCTURE_BLOCK, menu.getItemStack(NavigatorLayout.STAGING_HUB_SLOT).material(), "a granted staging permission shows the hub as a structure block on slot 16");
+            Assertions.assertEquals("Staging", nameOf(menu, NavigatorLayout.STAGING_HUB_SLOT), "the hub is named Staging");
             Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, menu.getItemStack(15).material(), "the real Slender stays hidden without its own grant");
         }
     }
 
-    @Disabled("navigator-staging-on-demand wave 2: layout")
-    @DisplayName("Slender (Staging) ends its lore with the team-only hint in English")
+    @DisplayName("Slender (Staging) in the submenu ends its lore with the team-only hint in English")
     @Test
     void stagingLoreEndsWithTheTeamOnlyHint(Env env) {
         Player player = env.createPlayer(env.createFlatInstance());
         player.setLocale(Locale.ENGLISH);
         FakePermissionService permissions = new FakePermissionService().set(player.getUuid(), STAGING_PERMISSION, PermissionResult.ALLOWED);
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions)) {
-            List<Component> lore = openNavigator(fixture, player).getItemStack(16).get(DataComponents.LORE);
+            AbstractInventory navigator = openNavigator(fixture, player);
+            click(env, navigator, player, new Click.Left(NavigatorLayout.STAGING_HUB_SLOT));
+            List<Component> lore = player.getOpenInventory().getItemStack(Destination.SLENDER_STAGING.slot()).get(DataComponents.LORE);
 
             Assertions.assertNotNull(lore, "the staging entry has lore");
             Assertions.assertEquals("Test environment – team only", PlainTextComponentSerializer.plainText().serialize(lore.getLast()), "the last line is the team-only hint");
         }
+    }
+
+    private static void click(Env env, AbstractInventory inventory, Player player, Click click) {
+        env.process().eventHandler().call(new InventoryPreClickEvent(inventory, player, click));
     }
 }

@@ -123,9 +123,24 @@ enum Destination {
         return Arrays.stream(values()).filter(destination -> destination.permission != null).toList();
     }
 
+    /** The live entries with a permission: the ones the main grid gates. */
+    static List<Destination> livePermissioned() {
+        return Arrays.stream(values()).filter(destination -> destination.permission != null && !destination.staging).toList();
+    }
+
+    /** The staging entries, each behind its own permission. */
+    static List<Destination> stagingEntries() {
+        return Arrays.stream(values()).filter(destination -> destination.staging).toList();
+    }
+
     // granted holds the permissioned destinations a menu shows; the others are always shown,
     // except staging entries, which never appear on the main grid.
     static List<Destination> visible(Set<Destination> granted) {
         return Arrays.stream(values()).filter(destination -> !destination.staging && (destination.permission == null || granted.contains(destination))).toList();
+    }
+
+    /** The staging entries the grants allow; the submenu shows them on their own slots. */
+    static List<Destination> stagingVisible(Set<Destination> granted) {
+        return Arrays.stream(values()).filter(destination -> destination.staging && granted.contains(destination)).toList();
     }
 }

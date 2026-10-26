@@ -38,7 +38,6 @@ import net.onelitefeather.titan.core.testfixtures.FakePermissionService;
 import net.onelitefeather.titan.core.testfixtures.FakePlayerCounts;
 import net.onelitefeather.titan.core.testfixtures.RecordingDeliver;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,6 +54,7 @@ class NavigatorPermissionTest {
     private static final String SLENDER_PERMISSION = "titan.navigator.slender";
     private static final String BOUNCE_PERMISSION = "titan.navigator.bounce";
     private static final String BUILD_PERMISSION = "titan.navigator.buildserver";
+    private static final List<Locale> LANGUAGES = List.of(Locale.ENGLISH, Locale.GERMAN);
     private static final int SLENDER_SLOT = 15;
     private static final int BOUNCE_SLOT = 13;
     private static final int BUILD_SLOT = 24;
@@ -372,32 +372,90 @@ class NavigatorPermissionTest {
         }
     }
 
-    @Disabled("navigator-staging-on-demand wave 2: layout")
-    @DisplayName("Starting the navigator creates a shared inventory for each of the sixteen permission sets, in both languages")
+    @DisplayName("Starting the navigator creates ninety-six shared inventories: sixty-four for the main menu and thirty-two for the submenu")
     @Test
-    void startCreatesThirtyTwoSharedInventories(Env env) {
-        List<Set<Destination>> grants = new ArrayList<>();
-        List<Destination> permissioned = Destination.permissioned();
-        for (int mask = 0; mask < 1 << permissioned.size(); mask++) {
-            Set<Destination> granted = new HashSet<>();
-            for (int bit = 0; bit < permissioned.size(); bit++) {
-                if ((mask & 1 << bit) != 0) {
-                    granted.add(permissioned.get(bit));
+    void startCreatesNinetySixSharedInventories(Env env) {
+        try (NavigatorFixture fixture = start(env, new RecordingDeliver(), new FakePermissionService())) {
+            Set<Inventory> main = new HashSet<>();
+            for (Set<Destination> granted : subsets(Destination.livePermissioned())) {
+                for (boolean stagingHub : List.of(false, true)) {
+                    for (Locale language : LANGUAGES) {
+                        main.add(sharedOrFail(fixture.module().inventory(granted, stagingHub, language), "the main menu for " + granted + ", hub " + stagingHub + ", " + language));
+                    }
                 }
             }
-            grants.add(granted);
-        }
-        try (NavigatorFixture fixture = start(env, new RecordingDeliver(), new FakePermissionService())) {
-            Set<Inventory> inventories = new HashSet<>();
-            for (Set<Destination> granted : grants) {
-                for (Locale language : List.of(Locale.ENGLISH, Locale.GERMAN)) {
-                    Inventory inventory = fixture.module().inventory(granted, language);
-                    Assertions.assertNotNull(inventory, "there must be a shared menu for grants " + granted + " in " + language);
-                    inventories.add(inventory);
+            Set<Inventory> submenu = new HashSet<>();
+            for (Set<Destination> granted : subsets(Destination.stagingEntries())) {
+                for (Locale language : LANGUAGES) {
+                    submenu.add(sharedOrFail(fixture.module().stagingInventory(granted, language), "the submenu for " + granted + ", " + language));
                 }
             }
 
-            Assertions.assertEquals(32, inventories.size(), "sixteen permission sets in two languages make thirty-two distinct shared inventories");
+            Assertions.assertEquals(64, main.size(), "four live permissions plus the staging hub bit, in two languages, make sixty-four distinct main menus");
+            Assertions.assertEquals(32, submenu.size(), "four staging permissions in two languages make thirty-two distinct submenus");
+            Set<Inventory> all = new HashSet<>(main);
+            all.addAll(submenu);
+            Assertions.assertEquals(96, all.size(), "ninety-six distinct shared inventories in total");
         }
+    }
+
+    @DisplayName("Every main menu shows the entries of its key, and the hub only when a staging permission is held")
+    @Test
+    void everyMainMenuShowsTheEntriesOfItsKey(Env env) {
+        try (NavigatorFixture fixture = start(env, new RecordingDeliver(), new FakePermissionService())) {
+            for (Set<Destination> granted : subsets(Destination.livePermissioned())) {
+                for (boolean stagingHub : List.of(false, true)) {
+                    for (Locale language : LANGUAGES) {
+                        AbstractInventory menu = fixture.module().inventory(granted, stagingHub, language);
+                        String key = granted + ", hub " + stagingHub + ", " + language;
+                        for (Destination destination : Destination.livePermissioned()) {
+                            Material expected = granted.contains(destination) ? destination.item(List.of()).material() : Material.GRAY_STAINED_GLASS_PANE;
+                            Assertions.assertEquals(expected, menu.getItemStack(destination.slot()).material(), destination + " on slot " + destination.slot() + " for " + key);
+                        }
+                        Material hub = stagingHub ? Material.STRUCTURE_BLOCK : Material.GRAY_STAINED_GLASS_PANE;
+                        Assertions.assertEquals(hub, menu.getItemStack(NavigatorLayout.STAGING_HUB_SLOT).material(), "the staging hub on slot 16 for " + key);
+                    }
+                }
+            }
+        }
+    }
+
+    @DisplayName("Every submenu shows exactly the staging entries its key grants, and the back button on slot 8")
+    @Test
+    void everySubmenuShowsTheEntriesOfItsKey(Env env) {
+        try (NavigatorFixture fixture = start(env, new RecordingDeliver(), new FakePermissionService())) {
+            for (Set<Destination> granted : subsets(Destination.stagingEntries())) {
+                for (Locale language : LANGUAGES) {
+                    AbstractInventory submenu = fixture.module().stagingInventory(granted, language);
+                    String key = granted + ", " + language;
+                    Assertions.assertEquals(StagingMenu.SIZE, submenu.getSize(), "the submenu has nine slots for " + key);
+                    for (Destination destination : Destination.stagingEntries()) {
+                        Material expected = granted.contains(destination) ? destination.item(List.of()).material() : Material.GRAY_STAINED_GLASS_PANE;
+                        Assertions.assertEquals(expected, submenu.getItemStack(destination.slot()).material(), destination + " on slot " + destination.slot() + " for " + key);
+                    }
+                    Assertions.assertEquals(Material.DARK_OAK_DOOR, submenu.getItemStack(StagingMenu.BACK_SLOT).material(), "the back button on slot 8 for " + key);
+                }
+            }
+        }
+    }
+
+    private static Inventory sharedOrFail(Inventory inventory, String what) {
+        Assertions.assertNotNull(inventory, "there must be a shared inventory for " + what);
+        return inventory;
+    }
+
+    // Every subset of the given destinations, each one a grant set a menu key can name.
+    private static List<Set<Destination>> subsets(List<Destination> destinations) {
+        List<Set<Destination>> subsets = new ArrayList<>();
+        for (int mask = 0; mask < 1 << destinations.size(); mask++) {
+            Set<Destination> granted = new HashSet<>();
+            for (int bit = 0; bit < destinations.size(); bit++) {
+                if ((mask & 1 << bit) != 0) {
+                    granted.add(destinations.get(bit));
+                }
+            }
+            subsets.add(granted);
+        }
+        return subsets;
     }
 }

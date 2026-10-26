@@ -32,6 +32,11 @@ final class NavigatorLayout {
      * The middle of the bottom row, which is part of the frame and takes the spawn entry instead.
      */
     static final int SPAWN_SLOT = 31;
+    /**
+     * The staging hub on the main grid: it opens the staging submenu and shows only with a staging
+     * permission.
+     */
+    static final int STAGING_HUB_SLOT = 16;
 
     private NavigatorLayout() {
     }
