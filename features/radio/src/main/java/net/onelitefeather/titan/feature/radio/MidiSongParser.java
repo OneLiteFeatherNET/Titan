@@ -1,0 +1,171 @@
+/**
+ * Copyright 2025 OneLiteFeather Network
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package net.onelitefeather.titan.feature.radio;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import javax.sound.midi.InvalidMidiDataException;
+import javax.sound.midi.MetaMessage;
+import javax.sound.midi.MidiEvent;
+import javax.sound.midi.MidiMessage;
+import javax.sound.midi.MidiSystem;
+import javax.sound.midi.Sequence;
+import javax.sound.midi.ShortMessage;
+import javax.sound.midi.Track;
+import net.minestom.server.item.Material;
+
+/**
+ * Reads a standard MIDI file with {@code javax.sound.midi} and keeps its note-ons. Nothing is
+ * played here: no synthesizer and no sequencer are opened, so the read needs no audio device.
+ */
+final class MidiSongParser {
+
+    private static final int PROGRAMS = 16;
+    /** The meta event type of a tempo change: three bytes of microseconds per quarter note. */
+    private static final int TEMPO_META_TYPE = 0x51;
+
+    private MidiSongParser() {
+    }
+
+    /**
+     * Parses {@code data} into a song.
+     *
+     * @throws SongFormatException if the bytes are no playable MIDI file, or the song is over a
+     *                             limit
+     */
+    static MidiSong parse(String id, String title, String artist, Material disc, byte[] data) throws SongFormatException {
+        if (data.length > RadioLimits.MAX_FILE_BYTES) {
+            throw new SongFormatException("the file is larger than " + RadioLimits.MAX_FILE_BYTES / 1024 + " KiB");
+        }
+        Sequence sequence = read(data);
+        if (sequence.getDivisionType() != Sequence.PPQ) {
+            throw new SongFormatException("SMPTE timing is not supported");
+        }
+        List<NoteMapper.RawNote> notes = collect(sequence);
+        if (notes.isEmpty()) {
+            throw new SongFormatException("the file has no notes");
+        }
+        List<MidiNote> mapped = NoteMapper.map(notes);
+        int lastTick = mapped.getLast().tick();
+        if (lastTick > RadioLimits.MAX_TICKS_PER_SONG) {
+            throw new SongFormatException("the song is longer than fifteen minutes");
+        }
+        return new MidiSong(id, title, artist, disc, mapped);
+    }
+
+    private static Sequence read(byte[] data) throws SongFormatException {
+        try {
+            return MidiSystem.getSequence(new ByteArrayInputStream(data));
+        } catch (InvalidMidiDataException | IOException | RuntimeException e) {
+            throw new SongFormatException("not a MIDI file");
+        }
+    }
+
+    // Every track's events in one order by tick. The program of a channel is the last program change before the note.
+    private static List<NoteMapper.RawNote> collect(Sequence sequence) throws SongFormatException {
+        List<TimedMessage> events = new ArrayList<>();
+        for (Track track : sequence.getTracks()) {
+            for (int index = 0; index < track.size(); index++) {
+                MidiEvent event = track.get(index);
+                events.add(new TimedMessage(event.getTick(), event.getMessage()));
+            }
+        }
+        events.sort(Comparator.comparingLong(TimedMessage::tick));
+        TempoMap tempo = new TempoMap(events, sequence.getResolution());
+        int[] programs = new int[PROGRAMS];
+        List<NoteMapper.RawNote> notes = new ArrayList<>();
+        for (TimedMessage event : events) {
+            if (!(event.message() instanceof ShortMessage message)) {
+                continue;
+            }
+            int channel = message.getChannel();
+            if (message.getCommand() == ShortMessage.PROGRAM_CHANGE) {
+                programs[channel] = message.getData1();
+            } else if (message.getCommand() == ShortMessage.NOTE_ON && message.getData2() > 0) {
+                if (notes.size() == RadioLimits.MAX_NOTES_PER_SONG) {
+                    throw new SongFormatException("the song has more than " + RadioLimits.MAX_NOTES_PER_SONG + " notes");
+                }
+                notes.add(new NoteMapper.RawNote(tempo.micros(event.tick()), channel, programs[channel], message.getData1(), message.getData2()));
+            }
+        }
+        return notes;
+    }
+
+    private record TimedMessage(long tick, MidiMessage message) {
+    }
+
+    /**
+     * Converts ticks to microseconds across tempo changes. Each segment starts where the tempo
+     * changes and is found by binary search, so a long song with many changes stays cheap.
+     */
+    private static final class TempoMap {
+
+        private static final int DEFAULT_MICROS_PER_QUARTER = 500_000;
+
+        private final long[] startTicks;
+        private final double[] startMicros;
+        private final int[] microsPerQuarter;
+        private final int resolution;
+
+        TempoMap(List<TimedMessage> events, int resolution) {
+            this.resolution = resolution;
+            Map<Long, Integer> changes = new TreeMap<>();
+            changes.put(0L, DEFAULT_MICROS_PER_QUARTER);
+            for (TimedMessage event : events) {
+                if (event.message() instanceof MetaMessage meta && meta.getType() == TEMPO_META_TYPE && meta.getData().length == 3) {
+                    byte[] data = meta.getData();
+                    changes.put(event.tick(), ((data[0] & 0xFF) << 16) | ((data[1] & 0xFF) << 8) | (data[2] & 0xFF));
+                }
+            }
+            int size = changes.size();
+            this.startTicks = new long[size];
+            this.startMicros = new double[size];
+            this.microsPerQuarter = new int[size];
+            int index = 0;
+            for (Map.Entry<Long, Integer> change : changes.entrySet()) {
+                if (index > 0) {
+                    int previous = index - 1;
+                    this.startMicros[index] = this.startMicros[previous] + (change.getKey() - this.startTicks[previous]) * (double) this.microsPerQuarter[previous] / resolution;
+                }
+                this.startTicks[index] = change.getKey();
+                this.microsPerQuarter[index] = change.getValue();
+                index++;
+            }
+        }
+
+        long micros(long tick) {
+            int segment = 0;
+            int low = 0;
+            int high = this.startTicks.length - 1;
+            while (low <= high) {
+                int middle = (low + high) >>> 1;
+                if (this.startTicks[middle] <= tick) {
+                    segment = middle;
+                    low = middle + 1;
+                } else {
+                    high = middle - 1;
+                }
+            }
+            double micros = this.startMicros[segment] + (tick - this.startTicks[segment]) * (double) this.microsPerQuarter[segment] / this.resolution;
+            return Math.round(micros);
+        }
+    }
+}
