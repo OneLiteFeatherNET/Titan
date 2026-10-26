@@ -15,9 +15,16 @@
  */
 package net.onelitefeather.titan.bridge;
 
+import net.onelitefeather.titan.core.service.ServiceState.Phase;
+
 /**
- * One service as the bridge reports it: its name, whether it runs, and its players. Kept free of
+ * One service as the bridge reports it: its name, its phase, and its players. Kept free of
  * CloudNet types so the mapping and listing are testable on their own.
  */
-record ServiceReading(String name, boolean running, int online, int max) {
+record ServiceReading(String name, Phase phase, int online, int max) {
+
+    /** Whether the service is running; the quick join reads nothing else. */
+    boolean running() {
+        return this.phase == Phase.RUNNING;
+    }
 }

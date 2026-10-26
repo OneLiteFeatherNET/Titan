@@ -21,6 +21,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import java.util.ArrayList;
 import java.util.List;
+import net.onelitefeather.titan.core.service.ServiceState.Phase;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -67,7 +68,7 @@ class ServiceReadingsTest {
     @DisplayName("A resolved provider is read and announced once")
     @Test
     void logsInfoOnceWhenResolved() {
-        ServiceReading reading = new ServiceReading("Lobby-1", true, 2, 10);
+        ServiceReading reading = new ServiceReading("Lobby-1", Phase.RUNNING, 2, 10);
         ServiceReadings readings = new ServiceReadings(() -> (type, name) -> List.of(reading));
 
         assertEquals(List.of(reading), readings.read("task", "Lobby"), "reading of the provider");
@@ -81,7 +82,7 @@ class ServiceReadingsTest {
     void retriesUntilProviderAvailable() {
         List<ServiceReadings.Source> sources = new ArrayList<>();
         sources.add(null);
-        sources.add((type, name) -> List.of(new ServiceReading("Lobby-1", true, 1, 5)));
+        sources.add((type, name) -> List.of(new ServiceReading("Lobby-1", Phase.RUNNING, 1, 5)));
         ServiceReadings readings = new ServiceReadings(sources::removeFirst);
 
         assertTrue(readings.read("task", "Lobby").isEmpty(), "first lookup: not available");

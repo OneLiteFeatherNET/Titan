@@ -19,10 +19,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import net.onelitefeather.titan.common.deliver.PlayerCountLookup;
+import net.onelitefeather.titan.common.deliver.ServiceControl;
 
 /**
- * Lists the running services of a source one by one; the application sums them. Kept
- * free of CloudNet types so it is testable on its own.
+ * Lists the services of a source one by one, as JDK-typed rows. Kept free of CloudNet types so it
+ * is testable on its own.
  */
 final class ServiceListing {
 
@@ -30,16 +31,26 @@ final class ServiceListing {
     }
 
     /**
-     * The running services in the order given as JDK-typed rows ({@link PlayerCountLookup#NAME},
-     * {@link PlayerCountLookup#ONLINE}, {@link PlayerCountLookup#MAX}); services that do not run
-     * are
-     * left out.
+     * The running services in the order given, as rows keyed by {@link PlayerCountLookup}; services
+     * that do not run are left out. The quick join and the player counts read only these.
      */
     static List<Map<String, Object>> running(Collection<ServiceReading> services) {
-        return services.stream().filter(ServiceReading::running).map(ServiceListing::row).toList();
+        return services.stream().filter(ServiceReading::running).map(ServiceListing::countRow).toList();
     }
 
-    private static Map<String, Object> row(ServiceReading service) {
+    /**
+     * Every service in the order given, starting ones included, as rows keyed by
+     * {@link ServiceControl} with the phase name; the on-demand staging reads these.
+     */
+    static List<Map<String, Object>> withPhases(Collection<ServiceReading> services) {
+        return services.stream().map(ServiceListing::phaseRow).toList();
+    }
+
+    private static Map<String, Object> countRow(ServiceReading service) {
         return Map.of(PlayerCountLookup.NAME, service.name(), PlayerCountLookup.ONLINE, service.online(), PlayerCountLookup.MAX, service.max());
+    }
+
+    private static Map<String, Object> phaseRow(ServiceReading service) {
+        return Map.of(ServiceControl.NAME, service.name(), ServiceControl.PHASE, service.phase().name(), ServiceControl.ONLINE, service.online(), ServiceControl.MAX, service.max());
     }
 }

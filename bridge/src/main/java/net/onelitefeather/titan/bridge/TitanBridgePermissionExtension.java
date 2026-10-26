@@ -19,8 +19,6 @@ import eu.cloudnetservice.driver.inject.InjectionLayer;
 import eu.cloudnetservice.driver.provider.CloudServiceProvider;
 import eu.cloudnetservice.driver.registry.ServiceRegistry;
 import eu.cloudnetservice.driver.service.ServiceInfoSnapshot;
-import eu.cloudnetservice.driver.service.ServiceLifeCycle;
-import eu.cloudnetservice.modules.bridge.BridgeDocProperties;
 import eu.cloudnetservice.modules.bridge.BridgeServiceHelper;
 import eu.cloudnetservice.modules.bridge.impl.platform.minestom.MinestomPermissionChecker;
 import eu.cloudnetservice.modules.bridge.player.PlayerManager;
@@ -39,6 +37,7 @@ import net.onelitefeather.titan.common.deliver.TitanLobbyIdentity;
 import net.onelitefeather.titan.common.deliver.TitanPlayerLimit;
 import net.onelitefeather.titan.common.deliver.TitanPlayerCountLookup;
 import net.onelitefeather.titan.common.deliver.TitanServerConnector;
+import net.onelitefeather.titan.common.deliver.TitanServiceControl;
 import net.onelitefeather.titan.common.permission.TitanPermissionBridge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +64,7 @@ import org.slf4j.LoggerFactory;
  * {@code HolderPlayerCounts})
  * that lists the bridge's player counts of the running services of a task or group, or of one
  * service by name, one by one; the application sums them.
+ * <li><b>On-demand services:</b> installs {@link CloudNetServiceControl} for start and stop.
  * <li><b>Identity:</b> publishes this service's task and name through {@link TitanLobbyIdentity}.
  * <li><b>Player limit:</b> hands the limit Titan announces through {@link TitanPlayerLimit} to the
  * bridge as the service's maximum players.
@@ -115,6 +115,8 @@ public final class TitanBridgePermissionExtension extends Extension {
                 return ServiceListing.running(readings.read(type, name));
             }
         });
+        TitanServiceControl.setControl(new CloudNetServiceControl());
+        LOG.info("Service control installed");
         publishIdentity();
         publishPlayerLimit();
         LOG.info("Player count lookup installed");
@@ -145,7 +147,7 @@ public final class TitanBridgePermissionExtension extends Extension {
         } catch (RuntimeException e) {
             return null;
         }
-        return provider == null ? null : (type, name) -> services(provider, type, name).stream().map(TitanBridgePermissionExtension::reading).toList();
+        return provider == null ? null : (type, name) -> services(provider, type, name).stream().map(CloudNetServiceControl::reading).toList();
     }
 
     private static Collection<ServiceInfoSnapshot> services(CloudServiceProvider provider, String type, String name) {
@@ -172,14 +174,6 @@ public final class TitanBridgePermissionExtension extends Extension {
             TitanLobbyIdentity.clear();
             LOG.warn("Own lobby identity unavailable, the lobby switcher stays closed", e);
         }
-    }
-
-    private static ServiceReading reading(ServiceInfoSnapshot service) {
-        return new ServiceReading(service.name(), service.lifeCycle() == ServiceLifeCycle.RUNNING, count(service.readProperty(BridgeDocProperties.ONLINE_COUNT)), count(service.readProperty(BridgeDocProperties.MAX_PLAYERS)));
-    }
-
-    private static int count(Integer value) {
-        return value == null ? 0 : value;
     }
 
     private static PlayerExecutor playerExecutor(UUID playerId) {
