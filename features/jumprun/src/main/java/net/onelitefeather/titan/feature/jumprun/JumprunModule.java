@@ -613,7 +613,6 @@ final class JumprunModule {
                 fakeBlocks.reset(player, run.fakeWindow());
             }
         }
-        EventDispatcher.call(new LobbyPlayerBusyEvent(player, false));
         boolean isRecord = runTelemetry.end(new RunTelemetry.Ending(player.getUuid(), run.mode(), reason, score, fall), () -> reason.submitsScore() && records.submit(new FinishedRun(player.getUuid(), player.getUsername(), run.mode(), score, reason, now())));
         if (reason.announcesScore()) {
             // A run that never scored is not worth calling a record, even when it is the first.
@@ -626,6 +625,8 @@ final class JumprunModule {
         if (reason.restoresLoadout()) {
             lobbyItems.get().equip(player);
         }
+        // After the loadout, so a feature the player rejoins on this event takes the elytra off again.
+        EventDispatcher.call(new LobbyPlayerBusyEvent(player, false));
         // A new record is the news of the run, so the failure tone stays silent.
         if (reason.failed() && !(isRecord && score > 0)) {
             RunSounds.fail(player);
