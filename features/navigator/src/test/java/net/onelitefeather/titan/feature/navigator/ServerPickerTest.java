@@ -29,10 +29,10 @@ class ServerPickerTest {
     private static final ServiceCount ONE = new ServiceCount("ElytraRace-1", 1, 50);
     private static final ServiceCount TWO = new ServiceCount("ElytraRace-2", 2, 50);
 
-    @DisplayName("Only the minigames ElytraRace, Slender and Bounce offer the server choice")
+    @DisplayName("Only the live minigames ElytraRace, Slender, Bounce and Tamias offer the server choice")
     @Test
     void onlyMinigamesOfferTheChoice() {
-        assertEquals(java.util.Set.of(Destination.ELYTRA_RACE, Destination.SLENDER, Destination.BOUNCE), ServerPicker.DESTINATIONS, "servers never open the picker");
+        assertEquals(java.util.Set.of(Destination.ELYTRA_RACE, Destination.SLENDER, Destination.BOUNCE, Destination.TAMIAS), ServerPicker.DESTINATIONS, "servers never open the picker");
     }
 
     @DisplayName("The picker lists the services in the order of its sort, by name first")

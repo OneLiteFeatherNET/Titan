@@ -17,10 +17,10 @@ package net.onelitefeather.titan.feature.navigator;
 
 import io.opentelemetry.api.common.Attributes;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Function;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.inventory.Inventory;
+import net.minestom.server.inventory.InventoryType;
 import net.minestom.server.item.ItemStack;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.theevilreaper.aves.inventory.GlobalInventoryBuilder;
@@ -33,13 +33,14 @@ import net.theevilreaper.aves.inventory.layout.InventoryLayout;
 final class SharedNavigator {
 
     private final GlobalInventoryBuilder builder;
-    private final Set<Destination> granted;
+    private final List<Destination> visible;
     private final Telemetry telemetry;
     private List<Destination> appliedVisible;
 
-    SharedNavigator(Component title, Set<Destination> granted, Telemetry telemetry) {
-        this.builder = new GlobalInventoryBuilder(title, NavigatorLayout.TYPE);
-        this.granted = granted;
+    /** The destinations this menu shows, fixed when it is built. */
+    SharedNavigator(Component title, InventoryType type, List<Destination> visible, Telemetry telemetry) {
+        this.builder = new GlobalInventoryBuilder(title, type);
+        this.visible = visible;
         this.telemetry = telemetry;
     }
 
@@ -55,14 +56,13 @@ final class SharedNavigator {
         return this.builder.getInventory();
     }
 
-    // The visible destinations depend only on the grants this menu was built for, so the layout is
-    // applied once. Synchronized so a refresh never reads the layout half-built.
+    // The layout is applied once, since the visible destinations never change. Synchronized so a
+    // refresh never reads the layout half-built.
     synchronized void applyLayout(Function<List<Destination>, InventoryLayout> layoutFor) {
-        List<Destination> visible = Destination.visible(this.granted);
         this.telemetry.inSpan(NavigatorTelemetry.LAYOUT_SPAN, Attributes.empty(), () -> {
-            this.builder.setLayout(layoutFor.apply(visible));
+            this.builder.setLayout(layoutFor.apply(this.visible));
             this.builder.invalidateLayout();
-            this.appliedVisible = visible;
+            this.appliedVisible = this.visible;
         });
     }
 

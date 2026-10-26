@@ -18,33 +18,46 @@ package net.onelitefeather.titan.feature.navigator;
 import io.avaje.config.Config;
 
 /**
- * The navigator's configuration: how often the shown player counts are read.
+ * The navigator's configuration: how often the shown player counts are read, and how long an empty
+ * staging service runs before it is stopped again.
  *
- * @param refreshSeconds whole seconds between two reads, from 1 to {@value #MAX_REFRESH_SECONDS}
+ * @param refreshSeconds     whole seconds between two reads
+ * @param stagingIdleSeconds whole seconds an empty staging service runs before its stop
  */
-record NavigatorSettings(int refreshSeconds) {
+record NavigatorSettings(int refreshSeconds, int stagingIdleSeconds) {
 
     static final String REFRESH_KEY = "navigator.refreshSeconds";
+    static final String STAGING_IDLE_KEY = "navigator.stagingIdleSeconds";
     // An hour is far beyond any useful count age and keeps seconds * ticks well inside an int.
     static final int MAX_REFRESH_SECONDS = 3600;
+    static final int MIN_STAGING_IDLE_SECONDS = 60;
+    static final int MAX_STAGING_IDLE_SECONDS = 86400;
 
-    /** Aborts startup, naming the key, when the configured value is not a whole number in range. */
+    /** Aborts startup, naming the key, when a configured value is not a whole number in range. */
     static NavigatorSettings read() {
-        return new NavigatorSettings(Config.getAs(REFRESH_KEY, NavigatorSettings::refreshSeconds));
+        return new NavigatorSettings(Config.getAs(REFRESH_KEY, NavigatorSettings::refreshSeconds), Config.getAs(STAGING_IDLE_KEY, NavigatorSettings::stagingIdleSeconds));
     }
 
     static int refreshSeconds(String raw) {
+        return wholeSeconds(REFRESH_KEY, raw, 1, MAX_REFRESH_SECONDS);
+    }
+
+    static int stagingIdleSeconds(String raw) {
+        return wholeSeconds(STAGING_IDLE_KEY, raw, MIN_STAGING_IDLE_SECONDS, MAX_STAGING_IDLE_SECONDS);
+    }
+
+    private static int wholeSeconds(String key, String raw, int min, int max) {
         int seconds;
         try {
             seconds = Integer.parseInt(raw.strip());
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException(REFRESH_KEY + " must be a whole number, was '" + raw + "'", e);
+            throw new IllegalArgumentException(key + " must be a whole number, was '" + raw + "'", e);
         }
-        if (seconds < 1) {
-            throw new IllegalArgumentException(REFRESH_KEY + " must be at least 1, was " + seconds);
+        if (seconds < min) {
+            throw new IllegalArgumentException(key + " must be at least " + min + ", was " + seconds);
         }
-        if (seconds > MAX_REFRESH_SECONDS) {
-            throw new IllegalArgumentException(REFRESH_KEY + " must be at most " + MAX_REFRESH_SECONDS + ", was " + seconds);
+        if (seconds > max) {
+            throw new IllegalArgumentException(key + " must be at most " + max + ", was " + seconds);
         }
         return seconds;
     }

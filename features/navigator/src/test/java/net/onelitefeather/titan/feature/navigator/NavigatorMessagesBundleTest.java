@@ -64,6 +64,16 @@ class NavigatorMessagesBundleTest {
         Assertions.assertTrue(load("messages_de.properties").stringPropertyNames().containsAll(pickerKeys), "messages_de.properties must define every sort and page text");
     }
 
+    @DisplayName("The staging menu, its start and timeout texts, the action line and the on-demand hint are defined in both bundles")
+    @Test
+    void stagingTextsAreRenderedAndDefined() throws IOException {
+        List<String> stagingKeys = List.of("titan.navigator.staging.menu.title", "titan.navigator.staging.starting", "titan.navigator.staging.timeout", "titan.navigator.action.start", "titan.navigator.hint.staging.ondemand");
+
+        Assertions.assertTrue(renderedKeys().containsAll(stagingKeys), "NavigatorMessages.KEYS must list every staging text");
+        Assertions.assertTrue(load("messages_de.properties").stringPropertyNames().containsAll(stagingKeys), "messages_de.properties must define every staging text");
+        Assertions.assertTrue(load("messages_en.properties").stringPropertyNames().containsAll(stagingKeys), "messages_en.properties must define every staging text");
+    }
+
     @DisplayName("The German bundle has exactly the keys of the fallback bundle")
     @Test
     void germanBundleHasTheKeysOfTheFallbackBundle() throws IOException {

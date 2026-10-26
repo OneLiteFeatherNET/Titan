@@ -226,27 +226,49 @@ features:
 - `features`: plain booleans, one per feature flag, with the same sources and override order as
   every other key (see "Feature flags" below).
 
-The navigator - a feather in hotbar slot 4 opening a shared inventory with ElytraRace, Survival,
-Slender and Creative - has no configuration section: its title and destinations are fixed in code
-(`NavigatorModule`/`Destination`), not read from `application.yaml`. A `navigator.*` key set here
-or anywhere else has no effect. Slender, Slender (Staging), Bounce and Build are gated behind permissions, not flags:
-`titan.navigator.slender`, `titan.navigator.bounce` and `titan.navigator.buildserver`, and Slender (Staging) behind
-`cygnus.staging.join`. A player sees each one only while they hold its permission; granting or revoking it takes effect the next time they open the navigator,
-with no restart of the navigator or the lobby, and a click checks the permission again.
+Das Navigator-Feder-Item auf Hotbar-Slot 4 öffnet ein geteiltes Inventar mit ElytraRace, Survival,
+Slender, Bounce, Tamias und Creative. Die Ziele sind fest im Code (`NavigatorModule`/`Destination`) verankert.
+Der Navigator hat nur die beiden Schlüssel `navigator.refreshSeconds` (Standard 5, Bereich 1 bis 3600) und
+`navigator.stagingIdleSeconds` (Standard 600, Bereich 60 bis 86400) in `navigator.yaml`; ein `navigator.*`-Schlüssel
+in einer anderen Quelle hat keine Wirkung. Slender, Tamias, Bounce und Build sind über Rechte gesteuert, nicht über Flags:
+`titan.navigator.slender`, `titan.navigator.tamias`, `titan.navigator.bounce` und `titan.navigator.buildserver`.
+Die vier Staging-Einträge haben je ein eigenes Recht (siehe unten). Ein Spieler sieht jeden Eintrag nur mit seinem Recht;
+Entziehen oder Erteilen wirkt beim nächsten Öffnen des Navigators, ohne Neustart, und ein Klick prüft das Recht erneut.
 
-The menu has four rows with a glass frame. ElytraRace (slot 11), Bounce (slot 13) and Slender (slot 15)
-are the minigames in row two; Survival (20), Creative (22) and Build (24) are the servers in row three; spawn
-sits in the bottom middle (31). Slender (Staging) on slot 16 sits beside Slender and is shown only with
-`cygnus.staging.join`; a click connects straight to the `Slender-Staging` task, with no quick join and no server list.
-On a minigame, a left click quick-joins its best ready service, a
-right click lists its services, and a shift click walks to the lobby portal when one exists. On a
-server, a left or right click connects, and a shift click walks to its portal when one exists. Any
-other click (number keys, Q, F, middle and double clicks) does nothing.
+Das Hauptmenü hat vier Reihen mit Glasrahmen. ElytraRace (Platz 11), Bounce (Platz 13), Tamias (Platz 14) und
+Slender (Platz 15) sind die Minispiele in Reihe zwei; Survival (20), Creative (22) und Build (24) die Server in
+Reihe drei; der Spawn-Kompass sitzt unten in der Mitte (31). Tamias (Amethyst-Scherbe, Recht `titan.navigator.tamias`,
+CloudNet-Task `Tamias`) hat wie die anderen Minispiele einen Schnellbeitritt (Linksklick) und eine Serverliste
+(Rechtsklick).
 
-Bounce needs the CloudNet task `Bounce` and the LuckPerms permission `titan.navigator.bounce`, granted to
-the groups that should see it. Without the permission slot 13 stays a grey pane.
+Der Staging-Hub auf Platz 16 (Strukturblock „Staging“) ist nur sichtbar, wenn der Spieler mindestens eines der vier
+Staging-Rechte hat. Er öffnet ein Untermenü mit einer Reihe: Slender (Staging) auf Platz 0 (`cygnus.staging.join`),
+Bounce (Staging) auf Platz 1 (`bounce.staging.join`), ElytraRace (Staging) auf Platz 2 (`elytrarace.staging.join`) und
+Tamias (Staging) auf Platz 3 (`tamias.staging.join`); die Zurück-Taste liegt auf Platz 8. Jeder Staging-Eintrag erscheint
+nur mit seinem eigenen Recht. Staging-Einträge haben keinen Schnellbeitritt und keine Serverliste: ein Klick verbindet
+direkt mit dem Staging-Task (`Slender-Staging`, `Bounce-Staging`, `ElytraRace-Staging` bzw. `Tamias-Staging`).
 
-### Environment variable reference
+Bedarfsstart: Gibt es für den Staging-Task keinen laufenden Dienst, startet ein Klick genau einen Dienst. Die
+Aktionsleiste meldet den Start, und sobald der Dienst bereit ist, verbindet die Lobby den Spieler. Das Warten ist auf
+90 Sekunden begrenzt; danach gibt es keine Verbindung und keinen Stopp. Ein zweiter Klick startet während des Wartens
+nichts. Ein Staging-Dienst ohne Spieler wird nach `navigator.stagingIdleSeconds` gestoppt. Nur Staging-Tasks werden so
+gestoppt; Live-Tasks laufen weiter.
+
+Betrieb (Checkliste für CloudNet und LuckPerms):
+
+1. CloudNet-Tasks anlegen: `Tamias`, `Bounce-Staging`, `ElytraRace-Staging` und `Tamias-Staging`; `Slender-Staging` prüfen.
+2. Alle Staging-Tasks (`Slender-Staging`, `Bounce-Staging`, `ElytraRace-Staging`, `Tamias-Staging`) auf `minServiceCount: 0`
+   setzen. Sonst startet CloudNet jeden Dienst, den Titan stoppt, alle 10 Minuten neu.
+3. `properties.requiredPermission` auf das Recht setzen, das der Code prüft: `cygnus.staging.join`, `bounce.staging.join`,
+   `elytrarace.staging.join` bzw. `tamias.staging.join` für die Staging-Tasks, `titan.navigator.tamias` für `Tamias`.
+4. LuckPerms-Rechte vergeben: `titan.navigator.tamias` und die Live-Rechte den Gruppen, die sie sehen sollen; die vier
+   Staging-Rechte dem Team.
+5. `bridge` und die Lobby gemeinsam ausrollen.
+
+Ohne Recht fehlt der jeweilige Eintrag im Menü; bei den Live-Zielen bleibt ein graues Glasfeld stehen, der Staging-Hub
+auf Platz 16 fehlt ganz.
+
+### Environment variable reference### Environment variable reference
 
 | Key | Environment variable |
 | --- | --- |
@@ -291,7 +313,7 @@ reads its settings live, at the moment it needs them, rather than once at startu
 `tickle.cooldownMillis` on every attack, sit reads `sit.offset.*`/`sit.allowedBlocks` on every block
 interaction, elytra reads `elytra.burnDurationTicks`/`elytra.cooldownTicks` on every boost, spawn
 reads `spawn.minHeight`/`spawn.maxHeight` on every height check and `spawn.simulationDistance` on
-every join, and the navigator checks the player's Slender, Slender (Staging), Bounce and Build permissions every time it is
+every join, and the navigator checks the player's Slender, Tamias, Bounce, Build and staging permissions every time it is
 opened - its title and destinations are otherwise fixed in code, not read from configuration at all.
 Once the watcher applies a change behind the facade, the very next such read sees the new value.
 Because nothing restarts, no in-flight, per-player state is ever lost - a player who is already
@@ -325,10 +347,10 @@ Feature flags are plain booleans under the `features` section, one per flag name
 `features.LOBBYSWITCHER: false`), with the same sources and override order as every other
 configuration key - a profile's file, an external file, an environment variable
 (`FEATURES_LOBBYSWITCHER`), or a system property. The flags the lobby knows are listed in the
-shipped defaults. The navigator has no flag: its Slender destination needs the permission
-`titan.navigator.slender`, its Slender (Staging) destination `cygnus.staging.join`, its Bounce destination
-`titan.navigator.bounce`, and its Build destination `titan.navigator.buildserver`. A
-`features.NAVIGATOR_SLENDER` setting (or `FEATURES_NAVIGATOR_SLENDER`) is unknown to the lobby and has
+shipped defaults. The navigator has no flag: its Slender destination needs the permission `titan.navigator.slender`,
+Tamias `titan.navigator.tamias`, Bounce `titan.navigator.bounce`, Build `titan.navigator.buildserver`, and each
+staging entry its own permission (`cygnus.staging.join`, `bounce.staging.join`, `elytrarace.staging.join`,
+`tamias.staging.join`). A `features.NAVIGATOR_SLENDER` setting (or `FEATURES_NAVIGATOR_SLENDER`) is unknown to the lobby and has
 no effect any more, so such a line can be deleted once the players who should see Slender hold the
 permission. The flags `NAVIGATOR_CREATIVE`, `NAVIGATOR_MANIS`, `NAVIGATOR_SURVIVAL` and
 `NAVIGATOR_ELYTRA` were never wired to anything and have no effect either.
@@ -351,8 +373,8 @@ copy has no effect any more.
 
 ### Local testing
 
-The local variant denies every permission (`DenyAllPermissionService`), so none of Slender, Slender
-(Staging), Bounce or Build is shown there. To try the navigator with the permission-gated destinations, use the CloudNet
+The local variant denies every permission (`DenyAllPermissionService`), so none of Slender, Tamias, Slender
+(Staging), Bounce, Build or the staging entries is shown there. To try the navigator with the permission-gated destinations, use the CloudNet
 variant with the permission granted. To turn on the file watcher from "Runtime reloading" above
 while testing locally, create an `application-local.yaml` next to `application.yaml`:
 

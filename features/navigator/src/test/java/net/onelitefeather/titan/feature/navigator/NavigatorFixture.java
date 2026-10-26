@@ -15,6 +15,8 @@
  */
 package net.onelitefeather.titan.feature.navigator;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Executor;
@@ -29,7 +31,9 @@ import net.onelitefeather.titan.core.permission.PermissionService;
 import net.onelitefeather.titan.core.portal.LobbyPortals;
 import net.onelitefeather.titan.core.portal.PlayerCounts;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
+import net.onelitefeather.titan.core.service.OnDemandServices;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
+import net.onelitefeather.titan.core.testfixtures.AdjustableClock;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 
 /**
@@ -48,6 +52,12 @@ final class NavigatorFixture implements AutoCloseable {
 
     /** How often the fixture's module refreshes the counts and services. */
     static final int REFRESH_SECONDS = 1;
+    /**
+     * The idle time of a staging service in the fixture: the shipped minimum, far past a test's
+     * ticks.
+     */
+    static final int STAGING_IDLE_SECONDS = 600;
+    private static final Instant NOW = Instant.parse("2026-10-26T12:00:00Z");
 
     private final TestTitanNode titan;
     private final NavigatorModule module;
@@ -103,15 +113,26 @@ final class NavigatorFixture implements AutoCloseable {
         return start(env, deliver, permissions, new FakeSpawnReturn(), Telemetry.noop(), List::of, Optional.of(counts), reads);
     }
 
+    /**
+     * Starts with a provider of on-demand services, so a staging click starts or reads a service.
+     */
+    static NavigatorFixture startWithStaging(Env env, Deliver deliver, PermissionService permissions, OnDemandServices services, AdjustableClock clock) {
+        return start(env, deliver, permissions, new FakeSpawnReturn(), Telemetry.noop(), List::of, Optional.empty(), Runnable::run, Optional.of(services), clock);
+    }
+
     private static NavigatorFixture start(Env env, Deliver deliver, PermissionService permissions, SpawnReturn spawnReturn, Telemetry telemetry, LobbyPortals portals, Optional<PlayerCounts> counts) {
         return start(env, deliver, permissions, spawnReturn, telemetry, portals, counts, Runnable::run);
     }
 
     private static NavigatorFixture start(Env env, Deliver deliver, PermissionService permissions, SpawnReturn spawnReturn, Telemetry telemetry, LobbyPortals portals, Optional<PlayerCounts> counts, Executor reads) {
+        return start(env, deliver, permissions, spawnReturn, telemetry, portals, counts, reads, Optional.empty(), new AdjustableClock(NOW));
+    }
+
+    private static NavigatorFixture start(Env env, Deliver deliver, PermissionService permissions, SpawnReturn spawnReturn, Telemetry telemetry, LobbyPortals portals, Optional<PlayerCounts> counts, Executor reads, Optional<OnDemandServices> services, Clock clock) {
         TestTitanNode titan = TestTitanNode.attach(env);
         NavigatorMessages messages = new NavigatorMessages();
         messages.register();
-        NavigatorModule module = new NavigatorModule(titan.node(), deliver, permissions, () -> spawnReturn, portals, telemetry, counts, env.process().scheduler(), reads, new NavigatorSettings(REFRESH_SECONDS), messages);
+        NavigatorModule module = new NavigatorModule(titan.node(), deliver, permissions, () -> spawnReturn, portals, telemetry, counts, env.process().scheduler(), reads, new NavigatorSettings(REFRESH_SECONDS, STAGING_IDLE_SECONDS), messages, services, clock);
         module.start();
         LobbyItem feather = new NavigatorItems().navigatorFeather(module);
         return new NavigatorFixture(titan, module, feather, messages);

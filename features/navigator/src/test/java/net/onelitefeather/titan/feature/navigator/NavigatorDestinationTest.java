@@ -82,33 +82,90 @@ class NavigatorDestinationTest {
         Assertions.assertEquals("titan.navigator.slender", Destination.SLENDER.permission(), "Slender must be gated by its permission, not by a feature flag");
     }
 
-    @DisplayName("Slender (Staging) forwards to the Slender-Staging task and needs cygnus.staging.join")
+    @DisplayName("Tamias forwards to the live Tamias task and needs titan.navigator.tamias")
     @Test
-    void slenderStagingForwardsToTheStagingTaskBehindTheProxyPermission() {
-        Assertions.assertEquals("Slender-Staging", Destination.SLENDER_STAGING.task());
-        Assertions.assertEquals("cygnus.staging.join", Destination.SLENDER_STAGING.permission(), "the staging entry shares the permission the proxy checks");
+    void tamiasForwardsToTheTamiasTaskBehindItsPermission() {
+        Assertions.assertEquals("Tamias", Destination.TAMIAS.task());
+        Assertions.assertEquals("titan.navigator.tamias", Destination.TAMIAS.permission());
     }
 
-    @DisplayName("Slender (Staging) is shown with the structure block icon")
+    @DisplayName("Tamias occupies row three, slot 14, between Bounce and Slender")
     @Test
-    void slenderStagingUsesTheStructureBlockIcon(Env env) {
+    void tamiasOccupiesSlot14() {
+        Assertions.assertEquals(14, Destination.TAMIAS.slot());
+    }
+
+    @DisplayName("Tamias is shown with the amethyst shard icon")
+    @Test
+    void tamiasUsesTheAmethystShardIcon(Env env) {
+        Assertions.assertEquals(Material.AMETHYST_SHARD, Destination.TAMIAS.item(List.of(Component.empty())).material());
+    }
+
+    @DisplayName("Slender (Staging) sits in the submenu at slot 0, not on the main grid's slot 16")
+    @Test
+    void slenderStagingSitsInTheSubmenu() {
+        Assertions.assertEquals(0, Destination.SLENDER_STAGING.slot());
+        Assertions.assertEquals("Slender-Staging", Destination.SLENDER_STAGING.task());
+        Assertions.assertEquals("cygnus.staging.join", Destination.SLENDER_STAGING.permission(), "the staging entry shares the permission the proxy checks");
         Assertions.assertEquals(Material.STRUCTURE_BLOCK, Destination.SLENDER_STAGING.item(List.of(Component.empty())).material());
     }
 
-    @DisplayName("Only Slender, Slender (Staging), Bounce and Build need a permission")
+    @DisplayName("Bounce (Staging) sits in the submenu at slot 1 behind bounce.staging.join")
+    @Test
+    void bounceStagingSitsInTheSubmenu() {
+        Assertions.assertEquals(1, Destination.BOUNCE_STAGING.slot());
+        Assertions.assertEquals("Bounce-Staging", Destination.BOUNCE_STAGING.task());
+        Assertions.assertEquals("bounce.staging.join", Destination.BOUNCE_STAGING.permission());
+        Assertions.assertEquals(Material.SLIME_BLOCK, Destination.BOUNCE_STAGING.item(List.of(Component.empty())).material());
+    }
+
+    @DisplayName("ElytraRace (Staging) sits in the submenu at slot 2 behind elytrarace.staging.join")
+    @Test
+    void elytraRaceStagingSitsInTheSubmenu() {
+        Assertions.assertEquals(2, Destination.ELYTRA_RACE_STAGING.slot());
+        Assertions.assertEquals("ElytraRace-Staging", Destination.ELYTRA_RACE_STAGING.task());
+        Assertions.assertEquals("elytrarace.staging.join", Destination.ELYTRA_RACE_STAGING.permission());
+        Assertions.assertEquals(Material.FIREWORK_ROCKET, Destination.ELYTRA_RACE_STAGING.item(List.of(Component.empty())).material());
+    }
+
+    @DisplayName("Tamias (Staging) sits in the submenu at slot 3 behind tamias.staging.join")
+    @Test
+    void tamiasStagingSitsInTheSubmenu() {
+        Assertions.assertEquals(3, Destination.TAMIAS_STAGING.slot());
+        Assertions.assertEquals("Tamias-Staging", Destination.TAMIAS_STAGING.task());
+        Assertions.assertEquals("tamias.staging.join", Destination.TAMIAS_STAGING.permission());
+        Assertions.assertEquals(Material.AMETHYST_BLOCK, Destination.TAMIAS_STAGING.item(List.of(Component.empty())).material());
+    }
+
+    @DisplayName("Only the staging entries are on demand, and the live entries never are")
+    @Test
+    void onlyTheStagingEntriesAreOnDemand() {
+        Set<Destination> onDemand = Arrays.stream(Destination.values()).filter(Destination::onDemand).collect(Collectors.toSet());
+
+        Assertions.assertEquals(Set.of(Destination.SLENDER_STAGING, Destination.BOUNCE_STAGING, Destination.ELYTRA_RACE_STAGING, Destination.TAMIAS_STAGING), onDemand);
+        Assertions.assertFalse(Destination.TAMIAS.onDemand(), "Tamias is live and must never be stopped by the idle stop");
+    }
+
+    @DisplayName("Only the gated destinations need a permission: the live ones and the four staging entries")
     @Test
     void onlyTheGatedDestinationsNeedAPermission() {
         Set<Destination> permissioned = Arrays.stream(Destination.values()).filter(destination -> destination.permission() != null).collect(Collectors.toSet());
 
-        Assertions.assertEquals(Set.of(Destination.SLENDER, Destination.SLENDER_STAGING, Destination.BOUNCE, Destination.BUILD), permissioned);
+        Assertions.assertEquals(Set.of(Destination.SLENDER, Destination.BOUNCE, Destination.TAMIAS, Destination.BUILD, Destination.SLENDER_STAGING, Destination.BOUNCE_STAGING, Destination.ELYTRA_RACE_STAGING, Destination.TAMIAS_STAGING), permissioned);
     }
 
-    @DisplayName("Slender (Staging) is visible only with cygnus.staging.join, not with the Slender grant")
+    @DisplayName("A staging entry never appears in the main menu, not even with its own grant")
     @Test
-    void slenderStagingIsVisibleOnlyWithItsOwnGrant() {
-        Assertions.assertTrue(Destination.visible(Set.of(Destination.SLENDER_STAGING)).contains(Destination.SLENDER_STAGING), "the grant shows the staging entry");
-        Assertions.assertFalse(Destination.visible(Set.of(Destination.SLENDER)).contains(Destination.SLENDER_STAGING), "the Slender grant alone must not show the staging entry");
-        Assertions.assertFalse(Destination.visible(Set.of()).contains(Destination.SLENDER_STAGING), "without the grant the staging entry is hidden");
+    void stagingEntriesAreNeverPartOfTheMainMenu() {
+        Assertions.assertFalse(Destination.visible(Set.of(Destination.SLENDER_STAGING)).contains(Destination.SLENDER_STAGING), "the staging grant must not show the entry on the main grid");
+        Assertions.assertFalse(Destination.visible(Set.copyOf(Destination.permissioned())).stream().anyMatch(Destination::staging), "with every grant the main grid holds no staging entry");
+    }
+
+    @DisplayName("Tamias is visible only with titan.navigator.tamias")
+    @Test
+    void tamiasIsVisibleOnlyWithItsGrant() {
+        Assertions.assertFalse(Destination.visible(Set.of()).contains(Destination.TAMIAS), "Tamias must be hidden without titan.navigator.tamias");
+        Assertions.assertTrue(Destination.visible(Set.of(Destination.TAMIAS)).contains(Destination.TAMIAS), "Tamias must be visible with titan.navigator.tamias");
     }
 
     @DisplayName("No two destinations share a slot")
@@ -140,12 +197,13 @@ class NavigatorDestinationTest {
         Assertions.assertFalse(visible.contains(Destination.BUILD), "Build must stay hidden without its own grant");
     }
 
-    @DisplayName("visible() lists every destination once both permissioned destinations are granted")
+    @DisplayName("visible() lists every main-grid destination once all grants are held, and no staging entry")
     @Test
-    void visibleWithAllGrantsListsEveryDestination() {
+    void visibleWithAllGrantsListsEveryMainGridDestination() {
         List<Destination> visible = Destination.visible(Set.copyOf(Destination.permissioned()));
 
-        Assertions.assertEquals(Set.copyOf(Arrays.asList(Destination.values())), Set.copyOf(visible), "every destination must be visible with both grants, was: " + visible.stream().map(Enum::name).collect(Collectors.joining(", ")));
+        Set<Destination> mainGrid = Arrays.stream(Destination.values()).filter(destination -> !destination.staging()).collect(Collectors.toSet());
+        Assertions.assertEquals(mainGrid, Set.copyOf(visible), "every main-grid destination must be visible with all grants, was: " + visible.stream().map(Enum::name).collect(Collectors.joining(", ")));
     }
 
     @DisplayName("visible() without the Bounce grant hides Bounce, and with it shows Bounce")
