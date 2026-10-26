@@ -1,5 +1,17 @@
 # Changelog
 
+## [4.7.0](https://github.com/OneLiteFeatherNET/Titan/compare/v4.6.1...v4.7.0) (2026-10-26)
+
+
+### Features
+
+* **navigator:** add a team-only slender staging entry ([#500](https://github.com/OneLiteFeatherNET/Titan/issues/500)) ([ea2720a](https://github.com/OneLiteFeatherNET/Titan/commit/ea2720afcd3743b0d6c22f057b259a7aa024953e))
+
+
+### Bug Fixes
+
+* **deps:** update dependency net.onelitefeather:pica to v0.1.6 ([#502](https://github.com/OneLiteFeatherNET/Titan/issues/502)) ([8479416](https://github.com/OneLiteFeatherNET/Titan/commit/84794165f54f814c9596d359bf706dec2251eeec))
+
 ## [4.6.1](https://github.com/OneLiteFeatherNET/Titan/compare/v4.6.0...v4.6.1) (2026-10-25)
 
 
