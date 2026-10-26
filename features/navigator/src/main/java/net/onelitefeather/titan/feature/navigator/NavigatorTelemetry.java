@@ -17,8 +17,10 @@ package net.onelitefeather.titan.feature.navigator;
 
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.DoubleHistogram;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.trace.Span;
+import java.time.Duration;
 import java.util.UUID;
 import java.util.function.Supplier;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
@@ -56,12 +58,67 @@ final class NavigatorTelemetry {
         }
     }
 
+    static final String STAGING_STARTS = "titan.navigator.staging.starts";
+    static final String STAGING_STOPS = "titan.navigator.staging.stops";
+    static final String STAGING_WAIT = "titan.navigator.staging.wait";
+
+    /** What a request to start a staging service led to. */
+    enum StartResult {
+        REQUESTED("requested"), SKIPPED_STARTING("skipped_starting"), COOLDOWN("cooldown"), FAILED("failed");
+
+        private final String value;
+
+        StartResult(String value) {
+            this.value = value;
+        }
+    }
+
+    /** What a request to stop an idle staging service led to. */
+    enum StopResult {
+        REQUESTED("requested"), FAILED("failed");
+
+        private final String value;
+
+        StopResult(String value) {
+            this.value = value;
+        }
+    }
+
+    /** How a player's wait for a staging service ended. */
+    enum WaitResult {
+        READY("ready"), TIMEOUT("timeout"), LEFT("left");
+
+        private final String value;
+
+        WaitResult(String value) {
+            this.value = value;
+        }
+    }
+
     private final Telemetry telemetry;
     private final LongCounter selections;
+    private final LongCounter stagingStarts;
+    private final LongCounter stagingStops;
+    private final DoubleHistogram stagingWait;
 
     NavigatorTelemetry(Telemetry telemetry) {
         this.telemetry = telemetry;
         this.selections = telemetry.meter().counterBuilder("titan.navigator.selections").setUnit("{selection}").build();
+        this.stagingStarts = telemetry.meter().counterBuilder(STAGING_STARTS).setUnit("{start}").build();
+        this.stagingStops = telemetry.meter().counterBuilder(STAGING_STOPS).setUnit("{stop}").build();
+        this.stagingWait = telemetry.meter().histogramBuilder(STAGING_WAIT).setUnit("s").build();
+    }
+
+    void stagingStart(Destination destination, StartResult result) {
+        this.stagingStarts.add(1, Attributes.of(METRIC_DESTINATION, destination.name(), METRIC_RESULT, result.value));
+    }
+
+    void stagingStop(Destination destination, StopResult result) {
+        this.stagingStops.add(1, Attributes.of(METRIC_DESTINATION, destination.name(), METRIC_RESULT, result.value));
+    }
+
+    void stagingWait(Destination destination, WaitResult result, Duration waited) {
+        this.stagingWait.record(waited.toNanos() / 1_000_000_000.0, Attributes.of(METRIC_DESTINATION, destination.name(), METRIC_RESULT, result.value));
     }
 
     void open(UUID player, boolean team, int entries, Runnable body) {

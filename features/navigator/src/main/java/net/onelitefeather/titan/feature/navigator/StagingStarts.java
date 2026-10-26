@@ -57,15 +57,17 @@ final class StagingStarts<P> {
     private final Clock clock;
     private final StagingConnect<P> connect;
     private final StagingNotice<P> notice;
+    private final NavigatorTelemetry telemetry;
     private final Map<Destination, Set<P>> waiting = new EnumMap<>(Destination.class);
     private final Map<Destination, Instant> waitingSince = new EnumMap<>(Destination.class);
     private final Map<Destination, Instant> lastStart = new EnumMap<>(Destination.class);
 
-    StagingStarts(OnDemandServices services, Clock clock, StagingConnect<P> connect, StagingNotice<P> notice) {
+    StagingStarts(OnDemandServices services, Clock clock, StagingConnect<P> connect, StagingNotice<P> notice, NavigatorTelemetry telemetry) {
         this.services = services;
         this.clock = clock;
         this.connect = connect;
         this.notice = notice;
+        this.telemetry = telemetry;
     }
 
     /**
@@ -100,12 +102,17 @@ final class StagingStarts<P> {
             return Outcome.CONNECTED;
         }
         Instant now = this.clock.instant();
-        if (services.stream().allMatch(service -> service.phase() == Phase.STOPPED) && !this.coolingDown(destination, now)) {
-            if (!this.services.start(destination.task())) {
-                this.notice.unavailable(player);
-                return Outcome.REFUSED;
-            }
+        if (!services.stream().allMatch(service -> service.phase() == Phase.STOPPED)) {
+            this.telemetry.stagingStart(destination, NavigatorTelemetry.StartResult.SKIPPED_STARTING);
+        } else if (this.coolingDown(destination, now)) {
+            this.telemetry.stagingStart(destination, NavigatorTelemetry.StartResult.COOLDOWN);
+        } else if (!this.services.start(destination.task())) {
+            this.telemetry.stagingStart(destination, NavigatorTelemetry.StartResult.FAILED);
+            this.notice.unavailable(player);
+            return Outcome.REFUSED;
+        } else {
             this.lastStart.put(destination, now);
+            this.telemetry.stagingStart(destination, NavigatorTelemetry.StartResult.REQUESTED);
             LOGGER.info("Requested the start of a service of task {}", destination.task());
         }
         this.enqueue(player, destination, now);
@@ -125,7 +132,12 @@ final class StagingStarts<P> {
 
     /** Removes a player who left the server from every waiting list. */
     void disconnected(P player) {
+        Instant now = this.clock.instant();
         for (Destination destination : List.copyOf(this.waiting.keySet())) {
+            Set<P> players = this.waiting.get(destination);
+            if (players != null && players.contains(player)) {
+                this.recordWait(destination, NavigatorTelemetry.WaitResult.LEFT, now);
+            }
             this.unwait(player, destination);
         }
     }
@@ -139,6 +151,7 @@ final class StagingStarts<P> {
         }
         if (read.isPresent() && read.get().stream().anyMatch(ServiceState::ready)) {
             List<P> ready = List.copyOf(players);
+            this.recordWaits(destination, NavigatorTelemetry.WaitResult.READY, now, players);
             this.clear(destination);
             ready.forEach(player -> this.connect.connect(player, destination));
             return;
@@ -146,6 +159,7 @@ final class StagingStarts<P> {
         if (!now.isBefore(this.waitingSince.get(destination).plus(TIMEOUT))) {
             LOGGER.warn("A service of task {} was not ready within {} seconds", destination.task(), TIMEOUT.toSeconds());
             List<P> expired = List.copyOf(players);
+            this.recordWaits(destination, NavigatorTelemetry.WaitResult.TIMEOUT, now, players);
             this.clear(destination);
             expired.forEach(player -> this.notice.timeout(player, destination));
             return;
@@ -181,5 +195,16 @@ final class StagingStarts<P> {
     private void clear(Destination destination) {
         this.waiting.remove(destination);
         this.waitingSince.remove(destination);
+    }
+
+    // The wait is measured from the entry's first waiter, the same point the timeout counts from.
+    private void recordWaits(Destination destination, NavigatorTelemetry.WaitResult result, Instant now, Set<P> players) {
+        for (P ignored : players) {
+            this.recordWait(destination, result, now);
+        }
+    }
+
+    private void recordWait(Destination destination, NavigatorTelemetry.WaitResult result, Instant now) {
+        this.telemetry.stagingWait(destination, result, Duration.between(this.waitingSince.get(destination), now));
     }
 }

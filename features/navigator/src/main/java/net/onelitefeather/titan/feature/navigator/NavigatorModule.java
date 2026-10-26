@@ -153,10 +153,10 @@ public final class NavigatorModule {
         this.players = new TaskPlayers(Objects.requireNonNull(counts, "counts must not be null"));
         this.settings = Objects.requireNonNull(settings, "settings must not be null");
         this.services = Objects.requireNonNull(onDemand, "onDemand must not be null").orElse(NoOnDemandServices.INSTANCE);
-        StagingPorts stagingPorts = new StagingPorts(this::isAllowed, this::connectToTask);
-        this.starts = new StagingStarts<>(this.services, Objects.requireNonNull(clock, "clock must not be null"), stagingPorts, stagingPorts);
-        this.idle = new StagingIdle(this.services, clock, Duration.ofSeconds(settings.stagingIdleSeconds()));
         this.navigatorTelemetry = new NavigatorTelemetry(this.telemetry);
+        StagingPorts stagingPorts = new StagingPorts(this::isAllowed, this::connectToTask);
+        this.starts = new StagingStarts<>(this.services, Objects.requireNonNull(clock, "clock must not be null"), stagingPorts, stagingPorts, this.navigatorTelemetry);
+        this.idle = new StagingIdle(this.services, clock, Duration.ofSeconds(settings.stagingIdleSeconds()), this.navigatorTelemetry);
         for (Destination destination : ServerPicker.DESTINATIONS) {
             for (Locale language : LANGUAGES) {
                 this.pickers.put(new Picker(destination, language), new SharedServerPicker(language));
