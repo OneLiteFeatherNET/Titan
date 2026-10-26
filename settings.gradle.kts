@@ -41,7 +41,7 @@ dependencyResolutionManagement {
 
             version("guava", "33.7.2-jre")
             version("minestom-extensions", "2.2.0")
-            version("pica", "0.1.5")
+            version("pica", "0.1.6")
 
             version("mockito", "5.24.0")
             version("archunit", "1.5.1")
