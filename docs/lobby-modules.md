@@ -258,25 +258,33 @@ Feature selbst aushändigt (`ElytraModule`s Feuerwerk).
 
 Der Navigator ist der einzige Sonderfall ohne Andockpunkt: Seine Ziele stehen fest im
 package-privaten `enum Destination` (s. `openspec/changes/navigator-entries-in-code/design.md`).
-`Destination.SLENDER`, `Destination.SLENDER_STAGING`, `Destination.BOUNCE` und `Destination.BUILD` hängen je an einem Recht
-(`titan.navigator.slender`, `cygnus.staging.join`, `titan.navigator.bounce` bzw. `titan.navigator.buildserver`), keiner an
-einer Feature-Flag; `NavigatorModule` bekommt dafür keine `FeatureFlags` mehr.
+`Destination.SLENDER`, `Destination.BOUNCE`, `Destination.TAMIAS` und `Destination.BUILD` hängen je an einem Recht
+(`titan.navigator.slender`, `titan.navigator.bounce`, `titan.navigator.tamias` bzw. `titan.navigator.buildserver`), keiner an
+einer Feature-Flag; `NavigatorModule` bekommt dafür keine `FeatureFlags` mehr. Die vier Staging-Einträge
+(`SLENDER_STAGING` auf Platz 0, `BOUNCE_STAGING` auf 1, `ELYTRA_RACE_STAGING` auf 2, `TAMIAS_STAGING` auf 3) hängen je an
+einem eigenen Recht (`cygnus.staging.join`, `bounce.staging.join`, `elytrarace.staging.join`, `tamias.staging.join`) und
+stehen nie auf dem Hauptgitter, sondern im Untermenü (`StagingMenu`).
 
 Auf Platz 31 (Mitte der unteren Reihe, dort wo sonst der Rahmen liegt) beider Inventare liegt der feste Eintrag „Spawn“ (Kompass), kein `Destination`: Der
 Klick schickt den Spieler über `SpawnReturn#sendToSpawnAndTell` zurück an den Spawn und leitet nicht
 weiter. Das Modul holt `SpawnReturn` über einen `Provider`, damit zwischen den Columns `spawn` und
 `navigator` kein Zyklus entsteht.
 
-Der Navigator besitzt je Sprache ein geteiltes Aves-Inventar pro Teilmenge der vier Rechte, die ein
-Spieler hat: `titan.navigator.slender`, `cygnus.staging.join`, `titan.navigator.bounce` und `titan.navigator.buildserver`.
-Das sind sechzehn Teilmengen je Sprache, also zweiunddreißig Inventare beim Start; ohne Recht ist es das
-öffentliche Menü. `PermissionService#check` liefert nur `ALLOWED` als erteilt; `NOT_SET` und
-`DENIED` zählen als nicht erteilt. Beim Öffnen wird die Teilmenge gelesen und das passende Inventar
-geöffnet. `BUILD` liegt auf Platz 24 und leitet an den CloudNet-Task `Team-Build` weiter, `SLENDER`
-auf Platz 15 an `Slender` (getrennt von `MemberBuild` des Creative-Ziels), `SLENDER_STAGING` auf Platz 16 an
-`Slender-Staging` (ohne Schnellbeitritt und Serverauswahl), `BOUNCE` auf Platz 13 an
-`Bounce`. Beim Klick wird das Recht erneut geprüft; ist es inzwischen weg, gibt es keine
-Weiterleitung, das Inventar schließt.
+Der Navigator besitzt je Sprache geteilte Aves-Inventare: 32 für das Hauptmenü (fünf Bits: die vier Live-Rechte
+`titan.navigator.slender`, `titan.navigator.tamias`, `titan.navigator.bounce` und `titan.navigator.buildserver` sowie „mindestens
+ein Staging-Recht“) und 16 für das Staging-Untermenü (vier Bits: die vier Staging-Rechte). Das sind je Sprache 48 Inventare,
+also 96 beim Start. `PermissionService#check` liefert nur `ALLOWED` als erteilt; `NOT_SET` und `DENIED` zählen als nicht
+erteilt. Beim Öffnen wird die Teilmenge gelesen und das passende Inventar geöffnet.
+`BUILD` liegt auf Platz 24 und leitet an den CloudNet-Task `Team-Build` weiter, `SLENDER` auf Platz 15 an `Slender`
+(getrennt von `MemberBuild` des Creative-Ziels), `TAMIAS` auf Platz 14 an `Tamias`, `BOUNCE` auf Platz 13 an `Bounce`.
+Der Staging-Hub auf Platz 16 erscheint im Hauptmenü, sobald mindestens ein Staging-Recht erteilt ist, und öffnet das
+Untermenü mit den Staging-Einträgen auf den Plätzen 0 bis 3 und der Zurück-Taste auf Platz 8. `SLENDER_STAGING`,
+`BOUNCE_STAGING`, `ELYTRA_RACE_STAGING` und `TAMIAS_STAGING` verbinden direkt mit `Slender-Staging`, `Bounce-Staging`,
+`ElytraRace-Staging` bzw. `Tamias-Staging` (ohne Schnellbeitritt und Serverauswahl). Ein Klick startet einen Staging-Dienst
+bei Bedarf: Ist keiner aktiv, startet genau einer (`StagingStarts`), die Aktionsleiste meldet es, und der Spieler wird nach
+der Bereitschaft verbunden. Das Warten ist auf 90 Sekunden begrenzt; ein zweiter Klick startet nichts. Ohne Spieler stoppt
+`StagingIdle` den Dienst nach `navigator.stagingIdleSeconds` (Standard 600, zulässig 60 bis 86400); nur Staging-Tasks werden
+gestoppt. Beim Klick wird das Recht erneut geprüft; ist es inzwischen weg, gibt es keine Weiterleitung, das Inventar schließt.
 
 Nur Links- und Rechtsklick, auch mit Shift, lösen eine Aktion aus. Jeder andere Klicktyp (Zahlentasten,
 Q, F, Mittelklick, Doppelklick, Ziehen) wird abgebrochen und tut nichts. Die Serverliste liest die
@@ -302,12 +310,16 @@ Spieler. Die Serverliste liest die Dienste beim Öffnen, bei jedem Seiten- und O
 auf einen Eintrag neu, nicht periodisch. Die Inventare sind je Ziel, Sprache, Ordnung, Seite und Zeilenzahl
 geteilt, entstehen beim ersten Bedarf und werden bei `stop()` entfernt.
 
-Betrieb: Die CloudNet-Tasks `Team-Build`, `Slender`, `Slender-Staging` und `Bounce` müssen existieren. Die LuckPerms-Rechte
-`titan.navigator.buildserver`, `titan.navigator.slender` und `titan.navigator.bounce` werden den
-jeweiligen Gruppen erteilt; `cygnus.staging.join` bekommt das Team, dasselbe Recht, das der Proxy für den Beitritt zum Staging prüft. In der lokalen Variante gilt `deny-all` (`DenyAllPermissionService`), dort
-sieht niemand die drei Ziele.
+Betrieb (Checkliste): Die CloudNet-Tasks `Team-Build`, `Slender`, `Tamias`, `Bounce`, `Slender-Staging`,
+`Bounce-Staging`, `ElytraRace-Staging` und `Tamias-Staging` müssen existieren. Alle Staging-Tasks bekommen `minServiceCount: 0`,
+sonst startet CloudNet jeden von Titan gestoppten Dienst alle 10 Minuten neu. `properties.requiredPermission` wird auf das
+Recht des Eintrags gesetzt, `titan.navigator.tamias` für `Tamias`. Die LuckPerms-Rechte `titan.navigator.buildserver`,
+`titan.navigator.slender`, `titan.navigator.tamias` und `titan.navigator.bounce` gehen an die jeweiligen Gruppen;
+`cygnus.staging.join`, `bounce.staging.join`, `elytrarace.staging.join` und `tamias.staging.join` an das Team, dieselben Rechte,
+die der Proxy für den Beitritt zum Staging prüft. `bridge` und die Lobby werden gemeinsam ausgerollt. In der lokalen Variante gilt
+`deny-all` (`DenyAllPermissionService`), dort sieht niemand die Ziele.
 
-## Tasks über den injizierten `Scheduler`
+## Tasks über den injizierten## Tasks über den injizierten `Scheduler`
 
 Ein wiederkehrender Task wird direkt über den injizierten Minestom-`Scheduler` geplant, nicht über
 einen eigenen Andockpunkt:
@@ -367,7 +379,7 @@ Abschalten oder erneutes `start()`.
 Jede konfigurierbare Column liefert ihre eigenen Standardwerte als
 `src/main/resources/titan/defaults/<column>.yaml`, kommentiert, mit genau ihrem Abschnitt (z. B.
 `features/spawn/src/main/resources/titan/defaults/spawn.yaml` mit dem Abschnitt `spawn`;
-`navigator` liefert `navigator.yaml` mit `navigator.refreshSeconds`, ohne Flag). `runtime` liefert
+`navigator` liefert `navigator.yaml` mit `navigator.refreshSeconds` und `navigator.stagingIdleSeconds`, ohne Flag). `runtime` liefert
 `runtime/src/main/resources/titan/defaults/runtime.yaml` (`config.watch.*`). Eine Column ohne
 eigene Konfiguration (`protection`, `respawn`, `hotbar`, `admin`) liefert keine Default-Datei.
 
