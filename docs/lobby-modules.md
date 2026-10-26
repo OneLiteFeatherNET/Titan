@@ -665,6 +665,32 @@ Ein Fänger jagt die anderen. Trifft er einen anderen aktiven Spieler, wird dies
 
 Ein Record `(player, busy)` im Paket `net.onelitefeather.titan.core.module`. `jumprun` sendet es beim Start (`busy=true`) und Ende (`busy=false`) eines Laufs, `portal` beim Beginn einer Übergabe (`busy=true`). Synchron über `EventDispatcher`; Listener dürfen nicht werfen. Das Ereignis macht es möglich, dass eine Column einen Spieler aus einem Spiel nimmt, ohne eine andere Column aufzurufen.
 
+## Radio (`radio`)
+
+Ein Jukebox-Item auf Hotbar-Slot 5 (`titan:radio`) öffnet das Radio. Es ist immer da, auch ohne MIDI-Dateien. Jeder Titel spielt nur für den Spieler, der ihn gestartet hat, und in der Welt entsteht kein Ton.
+
+- **Menüs:** „Vanilla-Platten“ zeigt die 22 Schallplatten, die diese Minestom-Version kennt. Sind MIDI-Songs geladen, gibt es einen Umschalter zu „Eigene Songs“ (bis zu 18). Ein Klick auf eine Platte startet genau diesen Titel. Stopp, Weiter und der Modusknopf sind in beiden Menüs gleich.
+- **Vanilla-Platten:** Der Client spielt den eigenen Plattenton der Platte, als Quelle `RECORD` und Emitter `self`. Kein Resource Pack, keine Notenblöcke. Das Ende setzt der Server nach der Länge aus der Tabelle plus 5 Sekunden Puffer mit einem benannten Stopp.
+- **MIDI-Songs:** `radio/songs.yaml` im Arbeitsverzeichnis der Lobby, die `.mid`-Dateien daneben. Ein Eintrag hat `id`, `title`, `artist`, `disc` (ein `MUSIC_DISC_*`) und `file`:
+
+  ```yaml
+  songs:
+    - id: sunrise
+      title: Sunrise
+      artist: Beispiel
+      disc: MUSIC_DISC_CAT
+      file: sunrise.mid
+  ```
+
+  Die Noten spielt der Server als Notenblock-Töne, auf dem 50-ms-Takt. Die Platte ist nur das Symbol, die Originalmusik der Platte erklingt nie. Eine Datei, die fehlt, kaputt ist, mehr als 512 KiB groß ist, mehr als 20 000 Noten oder mehr als 15 Minuten hat, wird mit Dateiname und Grund als WARN übersprungen. Die Lobby startet trotzdem. Die Dateien werden einmal beim Start gelesen. Die MIDI-Dateien liegen nicht im Repository; ihre Rechte trägt der Betreiber.
+- **Modusknopf:** Einmal (Standard), Schleife und Zufall. Der Modus gilt nur für die Sitzung und wird beim Abmelden vergessen. Einmal endet ohne Nachfolger, Schleife startet denselben Titel neu, Zufall wählt einen anderen Titel. „Weiter“ geht in Einmal und Schleife in der Reihenfolge weiter (erst die Vanilla-Platten, dann die MIDI-Songs), in Zufall zufällig. Ein Modus-Wechsel während eines Titels ändert den laufenden Titel nicht.
+- **Stoppgründe:** Stopp, Weiter, Titelende, Abmelden und `LobbyPlayerBusyEvent` (Sprungtest, Übergabe zu einem anderen Server). Nach `busy` oder einem Abmelden startet das Radio nicht von selbst neu. Fangen sendet kein Busy-Ereignis, das Radio läuft dort weiter.
+- **Grenzen:** höchstens 16 Noten je Tick und Spieler; die leisesten fallen weg und zählen als verworfen.
+- **Telemetrie:** `titan.radio.plays{kind, mode, trigger}`, `titan.radio.stops{reason, kind}`, `titan.radio.notes.dropped` und `titan.radio.songs{result}`, ohne Spieler-Id und ohne Span.
+- **Java:** `javax.sound.midi` liegt im JDK-Modul `java.desktop`. Die Auslieferung nutzt ein volles JDK; es gibt kein jlink-Image.
+- **Texte:** `titan/radio/messages_de.properties` und `messages_en.properties`.
+- **Offen:** Die Längen der Vanilla-Platten sind Näherungen (Minecraft-Wiki, nicht an den Client-Dateien gemessen); `tears`, `lava_chicken` und `bounce` sind Platzhalter. Die Instrumententabelle wird nach Gehör angepasst.
+
 ## Erwartete Columns einer Variante
 
 `titan.app-variant` schreibt beim Bauen die Avaje-Modulnamen aller in eine Variante eingebundenen
