@@ -21,8 +21,8 @@ Commit-Schema: `feat(navigator)` für Code und Tests (Wellen 1 bis 4), `docs(nav
 
 ## 1. Port in `core`
 
-- [ ] 1.1 Test (Unit, `core/src/testFixtures`): `OnDemandServicesContract` für den Fake: `start` nimmt die erste Anfrage an und lässt den Dienst als `STARTING` zählen; `ServiceState.ready()` ist nur für `RUNNING` mit `max > 0` wahr; `stop` ist idempotent (zweiter Aufruf liefert `false` ohne Ausnahme); `services` für einen unbekannten Task liefert eine leere Liste. Nachweis: rot vor 1.2 (Kompilierfehler gilt als rot).
-- [ ] 1.2 Port `OnDemandServices`, Record `ServiceState` mit Enum `Phase` (`STARTING`, `RUNNING`, `STOPPED`) und `FakeOnDemandServices` in `core` umsetzen. Nachweis: 1.1 grün; `./gradlew :core:test` grün; ArchUnit-Regeln grün.
+- [x] 1.1 Test (Unit, `core/src/testFixtures`): `OnDemandServicesContract` für den Fake: `start` nimmt die erste Anfrage an und lässt den Dienst als `STARTING` zählen; `ServiceState.ready()` ist nur für `RUNNING` mit `max > 0` wahr; `stop` ist idempotent (zweiter Aufruf liefert `false` ohne Ausnahme); `services` für einen unbekannten Task liefert eine leere Liste. Nachweis: rot vor 1.2 (Kompilierfehler gilt als rot).
+- [x] 1.2 Port `OnDemandServices`, Record `ServiceState` mit Enum `Phase` (`STARTING`, `RUNNING`, `STOPPED`) und `FakeOnDemandServices` in `core` umsetzen. Nachweis: 1.1 grün; `./gradlew :core:test` grün; ArchUnit-Regeln grün.
 
 ## 2. CloudNet-Seite
 
