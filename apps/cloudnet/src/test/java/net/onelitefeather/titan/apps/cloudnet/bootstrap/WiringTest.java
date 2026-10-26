@@ -27,6 +27,7 @@ import net.onelitefeather.titan.apps.cloudnet.ActiveLobby;
 import net.onelitefeather.titan.feature.elytra.ElytraModule;
 import net.onelitefeather.titan.feature.navigator.NavigatorModule;
 import net.onelitefeather.titan.feature.protection.ProtectionModule;
+import net.onelitefeather.titan.feature.radio.RadioModule;
 import net.onelitefeather.titan.feature.respawn.RespawnModule;
 import net.onelitefeather.titan.feature.sit.SitModule;
 import net.onelitefeather.titan.feature.spawn.SpawnModule;
@@ -71,7 +72,7 @@ class WiringTest {
         }.type(), FeatureNode.TITAN_NODE);
     }
 
-    @DisplayName("The scope builds the seven module feature beans and a LobbyItems with exactly four items")
+    @DisplayName("The scope builds the seven module feature beans and a LobbyItems with exactly five items")
     @Test
     void scopeBuildsTheFeatureBeansAndLobbyItemsWithFourItems(Env env) {
         // Named mock, not the plain mock(Type) overload - see docs/lobby-modules.md,
@@ -86,9 +87,10 @@ class WiringTest {
             Assertions.assertNotNull(scope.get(SitModule.class), "the sit feature must be a bean");
             Assertions.assertNotNull(scope.get(TickleModule.class), "the tickle feature must be a bean");
             Assertions.assertNotNull(scope.get(ElytraModule.class), "the elytra feature must be a bean");
+            Assertions.assertNotNull(scope.get(RadioModule.class), "the radio feature must be a bean");
 
             HotbarLobbyItems lobbyItems = scope.get(HotbarLobbyItems.class);
-            Assertions.assertEquals(4, lobbyItems.itemCount(), "exactly the jump and run item, the navigator feather, the elytra chestplate and the elytra firework must be contributed");
+            Assertions.assertEquals(5, lobbyItems.itemCount(), "exactly the jump and run item, the navigator feather, the radio, the elytra chestplate and the elytra firework must be contributed");
         } finally {
             Assertions.assertDoesNotThrow(scope::close, "closing a fully built scope must not throw");
         }
@@ -102,7 +104,7 @@ class WiringTest {
 
         try {
             Assertions.assertTrue(hasLobbySwitcherModule(scope), "the lobby switcher module must be a bean as a CloudNet service");
-            Assertions.assertEquals(5, scope.get(HotbarLobbyItems.class).itemCount(), "the four lobby items plus the switcher nether star must be contributed");
+            Assertions.assertEquals(6, scope.get(HotbarLobbyItems.class).itemCount(), "the five lobby items plus the switcher nether star must be contributed");
         } finally {
             Assertions.assertDoesNotThrow(scope::close, "closing a fully built scope must not throw");
         }
@@ -115,7 +117,7 @@ class WiringTest {
         BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class, ActiveLobby.empty()).mock(FeatureFlags.class).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).bean(LobbyIdentities.class, identities).profiles(BeanProfiles.active(List.of(), true)).build();
 
         try {
-            Assertions.assertEquals(4, scope.get(HotbarLobbyItems.class).itemCount(), "without the flag no switcher nether star may be contributed");
+            Assertions.assertEquals(5, scope.get(HotbarLobbyItems.class).itemCount(), "without the flag no switcher nether star may be contributed");
         } finally {
             scope.close();
         }
@@ -140,7 +142,7 @@ class WiringTest {
 
         try {
             Assertions.assertFalse(hasLobbySwitcherModule(scope), "the switcher module must not exist outside CloudNet");
-            Assertions.assertEquals(4, scope.get(HotbarLobbyItems.class).itemCount(), "no switcher nether star may be contributed outside CloudNet");
+            Assertions.assertEquals(5, scope.get(HotbarLobbyItems.class).itemCount(), "no switcher nether star may be contributed outside CloudNet");
         } finally {
             scope.close();
         }

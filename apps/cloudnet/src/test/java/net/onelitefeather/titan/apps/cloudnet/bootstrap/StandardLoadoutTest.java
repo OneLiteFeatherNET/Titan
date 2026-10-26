@@ -69,7 +69,7 @@ class StandardLoadoutTest {
         return player.getOpenInventory();
     }
 
-    @DisplayName("A joining player gets exactly the Jump & Run item (slot 0), the feather (slot 4) and the elytra (chestplate), and the feather opens the navigator")
+    @DisplayName("A joining player gets exactly the Jump & Run item (slot 0), the feather (slot 4), the radio (slot 5) and the elytra (chestplate), and the feather opens the navigator")
     @Test
     @Timeout(30)
     void standardLoadoutHoldsJumprunFeatherAndElytraAndTheFeatherOpensTheNavigator(Env env) {
@@ -89,8 +89,9 @@ class StandardLoadoutTest {
 
             Assertions.assertEquals(Material.SLIME_BLOCK, player.getInventory().getItemStack(0).material(), "hotbar slot 0 must hold the Jump & Run item");
             Assertions.assertEquals(Material.FEATHER, player.getInventory().getItemStack(4).material(), "hotbar slot 4 must hold the navigator feather");
+            Assertions.assertEquals(Material.JUKEBOX, player.getInventory().getItemStack(5).material(), "hotbar slot 5 must hold the radio");
             for (int slot = 0; slot < 9; slot++) {
-                if (slot == 0 || slot == 4) {
+                if (slot == 0 || slot == 4 || slot == 5) {
                     continue;
                 }
                 Assertions.assertEquals(ItemStack.AIR, player.getInventory().getItemStack(slot), "hotbar slot " + slot + " must be empty");
