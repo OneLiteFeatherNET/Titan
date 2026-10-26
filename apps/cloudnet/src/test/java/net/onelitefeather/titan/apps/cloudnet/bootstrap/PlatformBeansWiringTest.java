@@ -33,7 +33,9 @@ import net.onelitefeather.titan.common.map.MapProvider;
 import net.onelitefeather.titan.core.portal.PlayerCount;
 import net.onelitefeather.titan.core.portal.PlayerCounts;
 import net.onelitefeather.titan.core.portal.SourceType;
+import net.onelitefeather.titan.core.service.OnDemandServices;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
+import net.onelitefeather.titan.platform.cloudnet.HolderOnDemandServices;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -105,6 +107,30 @@ class PlatformBeansWiringTest {
 
         try {
             Assertions.assertInstanceOf(HolderPlayerCounts.class, scope.get(PlayerCounts.class), "the CloudNet profile must register the bridge lookup");
+        } finally {
+            scope.close();
+        }
+    }
+
+    @DisplayName("Outside CloudNet no on-demand services are provided")
+    @Test
+    void onDemandServicesAbsentOutsideCloudNet(Env env) {
+        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class, ActiveLobby.empty()).mock(FeatureFlags.class).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).profiles(BeanProfiles.active(List.of(), false)).build();
+
+        try {
+            Assertions.assertTrue(scope.getOptional(OnDemandServices.class).isEmpty(), "the holder must not be registered outside CloudNet");
+        } finally {
+            scope.close();
+        }
+    }
+
+    @DisplayName("As a CloudNet service the holder provides the on-demand services")
+    @Test
+    void holderProvidesOnDemandServicesInCloudNet(Env env) {
+        BeanScope scope = BeanScope.builder().forTesting().mock(MapProvider.class, ActiveLobby.empty()).mock(FeatureFlags.class).mock(PermissionService.class, LuckPermsPermissionService.QUALIFIER).profiles(BeanProfiles.active(List.of(), true)).build();
+
+        try {
+            Assertions.assertInstanceOf(HolderOnDemandServices.class, scope.get(OnDemandServices.class), "the CloudNet profile must register the on-demand holder");
         } finally {
             scope.close();
         }
