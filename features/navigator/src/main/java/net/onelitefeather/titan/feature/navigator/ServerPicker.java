@@ -192,8 +192,17 @@ final class ServerPicker {
         return refusalOf(NavigatorMessages.REFUSAL_UNAVAILABLE, locale);
     }
 
+    /** What the player is told when a staging service was not ready within its wait. */
+    static Component stagingTimeout(Destination destination, Locale locale) {
+        return refusalOf(NavigatorMessages.text(NavigatorMessages.STAGING_TIMEOUT, locale, Component.text(destination.label())));
+    }
+
     private static Component refusalOf(String key, Locale locale) {
-        return MiniMessage.miniMessage().deserialize(BRAND + "Servers</gradient> <gray>»</gray> <red><reason></red>", Placeholder.component("reason", NavigatorMessages.text(key, locale)));
+        return refusalOf(NavigatorMessages.text(key, locale));
+    }
+
+    private static Component refusalOf(Component reason) {
+        return MiniMessage.miniMessage().deserialize(BRAND + "Servers</gradient> <gray>»</gray> <red><reason></red>", Placeholder.component("reason", reason));
     }
 
     static State stateOf(ServiceCount service) {

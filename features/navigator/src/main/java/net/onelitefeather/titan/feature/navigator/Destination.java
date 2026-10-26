@@ -71,6 +71,11 @@ enum Destination {
         return this.slot;
     }
 
+    /** The name shown on the entry, which is not translated. */
+    String label() {
+        return this.label;
+    }
+
     /**
      * The MiniMessage gradient opening tag of this destination; its colours style the name,
      * separators and picker entries.

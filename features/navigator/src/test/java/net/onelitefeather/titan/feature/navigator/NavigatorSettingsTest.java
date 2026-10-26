@@ -48,4 +48,31 @@ class NavigatorSettingsTest {
             Assertions.assertTrue(thrown.getMessage().contains(NavigatorSettings.REFRESH_KEY) && thrown.getMessage().contains(raw), "the message must name the key and " + raw + ", was: " + thrown.getMessage());
         }
     }
+
+    @DisplayName("The shipped staging idle default is 600 seconds")
+    @Test
+    void shippedStagingIdleDefaultIsTenMinutes() {
+        Configuration configuration = Configuration.builder().resourceLoader(getClass().getClassLoader()::getResourceAsStream).load("titan/defaults/navigator.yaml").build();
+
+        int seconds = configuration.getAs(NavigatorSettings.STAGING_IDLE_KEY, NavigatorSettings::stagingIdleSeconds);
+
+        Assertions.assertEquals(600, seconds, "an idle staging service stops after ten minutes by default");
+    }
+
+    @DisplayName("60 and 86400 are valid staging idle values")
+    @Test
+    void stagingIdleBordersAreValid() {
+        Assertions.assertEquals(60, NavigatorSettings.stagingIdleSeconds("60"));
+        Assertions.assertEquals(86400, NavigatorSettings.stagingIdleSeconds("86400"));
+    }
+
+    @DisplayName("0, 59, 86401 and text are rejected, naming the key and the value")
+    @Test
+    void invalidStagingIdleValuesAreRejected() {
+        for (String raw : new String[]{"0", "59", "86401", "zehn"}) {
+            IllegalArgumentException thrown = Assertions.assertThrows(IllegalArgumentException.class, () -> NavigatorSettings.stagingIdleSeconds(raw), raw + " must be rejected");
+
+            Assertions.assertTrue(thrown.getMessage().contains(NavigatorSettings.STAGING_IDLE_KEY) && thrown.getMessage().contains(raw), "the message must name the key and " + raw + ", was: " + thrown.getMessage());
+        }
+    }
 }

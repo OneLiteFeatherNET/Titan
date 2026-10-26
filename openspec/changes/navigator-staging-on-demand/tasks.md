@@ -45,17 +45,17 @@ Commit-Schema: `feat(navigator)` für Code und Tests (Wellen 1 bis 4), `docs(nav
 
 ## 4. Start und Warten (`features/navigator`)
 
-- [ ] 4.1 Test (Unit, `StagingStartsTest`, Fake-Port, Fake-`Clock`, ohne Ticks): Lesefehler führt zu Ablehnung ohne Start; kein Dienst führt zu genau einem Start; `PREPARED` führt zu keinem Start und zum Warten; `RUNNING` und bereit führt zu sofortigem Verbinden; `RUNNING` ohne Limit führt zum Warten; Cooldown nach eigenem Start verhindert einen Start; nach 90 Sekunden ergibt sich die Ablehnung und kein Stopp; Logout entfernt aus der Warteliste; zweiter Klick startet nichts; entzogenes Recht verbindet nicht. Nachweis: rot vor 4.2.
-- [ ] 4.2 Klasse `StagingStarts` ohne Minestom-Typen; Abhängigkeiten sind `OnDemandServices`, `Clock` und zwei kleine Schnittstellen für Verbinden und Aktionsleiste. Nachweis: 4.1 grün.
-- [ ] 4.3 Test (Integration, `NavigatorStagingStartTest`, Cyano-Env, Ticks explizit): Klick auf Slender (Staging) ohne Dienst startet genau einen Dienst; nach Bereitschaft des Fake-Dienstes und einem Refresh-Tick wird der Spieler verbunden; ein zweiter Klick startet nichts. Nachweis: rot vor 4.4.
-- [ ] 4.4 Verdrahtung in `NavigatorModule`: Klick-Pfad, Prüfung im Refresh-Zyklus, `PlayerDisconnectEvent`-Listener genau einmal beim Start. Nachweis: 4.3 grün; `NavigatorModuleLeakTest` zeigt keinen Listener pro Spieler.
+- [x] 4.1 Test (Unit, `StagingStartsTest`, Fake-Port, Fake-`Clock`, ohne Ticks): Lesefehler führt zu Ablehnung ohne Start; kein Dienst führt zu genau einem Start; `PREPARED` führt zu keinem Start und zum Warten; `RUNNING` und bereit führt zu sofortigem Verbinden; `RUNNING` ohne Limit führt zum Warten; Cooldown nach eigenem Start verhindert einen Start; nach 90 Sekunden ergibt sich die Ablehnung und kein Stopp; Logout entfernt aus der Warteliste; zweiter Klick startet nichts; entzogenes Recht verbindet nicht. Nachweis: rot vor 4.2.
+- [x] 4.2 Klasse `StagingStarts` ohne Minestom-Typen; Abhängigkeiten sind `OnDemandServices`, `Clock` und zwei kleine Schnittstellen für Verbinden und Aktionsleiste. Nachweis: 4.1 grün.
+- [x] 4.3 Test (Integration, `NavigatorStagingStartTest`, Cyano-Env, Ticks explizit): Klick auf Slender (Staging) ohne Dienst startet genau einen Dienst; nach Bereitschaft des Fake-Dienstes und einem Refresh-Tick wird der Spieler verbunden; ein zweiter Klick startet nichts. Nachweis: rot vor 4.4.
+- [x] 4.4 Verdrahtung in `NavigatorModule`: Klick-Pfad, Prüfung im Refresh-Zyklus, `PlayerDisconnectEvent`-Listener genau einmal beim Start. Nachweis: 4.3 grün; `NavigatorModuleLeakTest` zeigt keinen Listener pro Spieler.
 
 ## 5. Leerlauf-Stopp und Konfiguration
 
-- [ ] 5.1 Test (Unit, `StagingIdleTest`, Fake-`Clock`): nach 600 Sekunden gestoppt, bei 599 nicht; ein Spieler setzt die Dauer zurück; Lesefehler stoppt nichts und friert die Dauer ein; Live-Tasks werden nie gestoppt; ein frisches Lesen geht dem Stopp voraus (Fake zählt die Lesevorgänge); doppelter Stopp ist ohne Fehler. Nachweis: rot vor 5.2.
-- [ ] 5.2 Klasse `StagingIdle`, verdrahtet im Refresh-Zyklus. Nachweis: 5.1 grün.
-- [ ] 5.3 Test (Unit, `NavigatorSettingsTest`): Standard 600; 0, 59, 86401 und Text brechen den Start mit Fehler ab. Nachweis: rot vor 5.4.
-- [ ] 5.4 `NavigatorSettings` und `features/navigator/src/main/resources/titan/defaults/navigator.yaml` um `stagingIdleSeconds: 600` mit Kommentar im bestehenden Stil ergänzen. Nachweis: 5.3 grün.
+- [x] 5.1 Test (Unit, `StagingIdleTest`, Fake-`Clock`): nach 600 Sekunden gestoppt, bei 599 nicht; ein Spieler setzt die Dauer zurück; Lesefehler stoppt nichts und friert die Dauer ein; Live-Tasks werden nie gestoppt; ein frisches Lesen geht dem Stopp voraus (Fake zählt die Lesevorgänge); doppelter Stopp ist ohne Fehler. Nachweis: rot vor 5.2.
+- [x] 5.2 Klasse `StagingIdle`, verdrahtet im Refresh-Zyklus. Nachweis: 5.1 grün.
+- [x] 5.3 Test (Unit, `NavigatorSettingsTest`): Standard 600; 0, 59, 86401 und Text brechen den Start mit Fehler ab. Nachweis: rot vor 5.4.
+- [x] 5.4 `NavigatorSettings` und `features/navigator/src/main/resources/titan/defaults/navigator.yaml` um `stagingIdleSeconds: 600` mit Kommentar im bestehenden Stil ergänzen. Nachweis: 5.3 grün.
 
 ## 6. Texte und Telemetrie
 

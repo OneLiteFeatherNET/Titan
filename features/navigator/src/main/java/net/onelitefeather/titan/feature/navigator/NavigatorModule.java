@@ -20,6 +20,8 @@ import io.avaje.inject.PreDestroy;
 import jakarta.inject.Named;
 import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
+import java.time.Clock;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -35,6 +37,7 @@ import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -42,6 +45,7 @@ import net.minestom.server.ServerFlag;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
+import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.inventory.AbstractInventory;
 import net.minestom.server.inventory.Inventory;
 import net.minestom.server.inventory.click.Click;
@@ -62,6 +66,8 @@ import net.onelitefeather.titan.core.portal.Portal;
 import net.onelitefeather.titan.core.portal.PortalApproach;
 import net.onelitefeather.titan.core.portal.ServiceCount;
 import net.onelitefeather.titan.core.portal.TaskJoin;
+import net.onelitefeather.titan.core.service.OnDemandServices;
+import net.onelitefeather.titan.core.service.ServiceState;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
 import net.theevilreaper.aves.inventory.click.ClickHolder;
 import net.theevilreaper.aves.inventory.layout.InventoryLayout;
@@ -115,6 +121,11 @@ public final class NavigatorModule {
     private final Executor reads;
     private final TaskPlayers players;
     private final NavigatorSettings settings;
+    // The staging entries start on demand: the click is decided by the start logic, and the idle stop
+    // runs on the read thread of each refresh. Without a provider, every staging request is refused.
+    private final OnDemandServices services;
+    private final StagingStarts<Player> starts;
+    private final StagingIdle idle;
     // One server list per minigame and language, so each picker is in the language of its players.
     private final Map<Picker, SharedServerPicker> pickers = new HashMap<>();
     // Players whose click is waiting for the service read; a second click meanwhile is ignored.
@@ -128,7 +139,7 @@ public final class NavigatorModule {
     private FeatureNode node;
     private Task refreshTask;
 
-    public NavigatorModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Deliver deliver, PermissionService permissions, Provider<SpawnReturn> spawnReturnProvider, LobbyPortals portals, Telemetry telemetry, Optional<PlayerCounts> counts, Scheduler scheduler, @Named(NavigatorBeans.READS) Executor reads, NavigatorSettings settings, NavigatorMessages messages) {
+    public NavigatorModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Deliver deliver, PermissionService permissions, Provider<SpawnReturn> spawnReturnProvider, LobbyPortals portals, Telemetry telemetry, Optional<PlayerCounts> counts, Scheduler scheduler, @Named(NavigatorBeans.READS) Executor reads, NavigatorSettings settings, NavigatorMessages messages, Optional<OnDemandServices> onDemand, Clock clock) {
         this.titan = Objects.requireNonNull(titan, "titan must not be null");
         this.deliver = Objects.requireNonNull(deliver, "deliver must not be null");
         this.permissions = Objects.requireNonNull(permissions, "permissions must not be null");
@@ -141,6 +152,10 @@ public final class NavigatorModule {
         this.reads = Objects.requireNonNull(reads, "reads must not be null");
         this.players = new TaskPlayers(Objects.requireNonNull(counts, "counts must not be null"));
         this.settings = Objects.requireNonNull(settings, "settings must not be null");
+        this.services = Objects.requireNonNull(onDemand, "onDemand must not be null").orElse(NoOnDemandServices.INSTANCE);
+        StagingPorts stagingPorts = new StagingPorts(this::isAllowed, this::connectToTask);
+        this.starts = new StagingStarts<>(this.services, Objects.requireNonNull(clock, "clock must not be null"), stagingPorts, stagingPorts);
+        this.idle = new StagingIdle(this.services, clock, Duration.ofSeconds(settings.stagingIdleSeconds()));
         this.navigatorTelemetry = new NavigatorTelemetry(this.telemetry);
         for (Destination destination : ServerPicker.DESTINATIONS) {
             for (Locale language : LANGUAGES) {
@@ -152,9 +167,9 @@ public final class NavigatorModule {
     @PostConstruct
     void start() {
         this.spawnReturn = resolveSpawnReturn();
-        // Listener-less: only attached so this feature shows up in the fixed EVENT_PRIORITY order
-        // and the leak test; Aves handles every inventory click itself.
-        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry);
+        // Aves handles every inventory click itself. The one listener is attached once here, not per
+        // player, and drops a player who leaves while waiting for a staging service.
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry).on(PlayerDisconnectEvent.class, event -> this.starts.disconnected(event.getPlayer()));
         // Built here, not in the constructor: the title is translated, and the translations are
         // registered when the messages bean starts, which happens before this module does.
         for (Set<Destination> granted : grantCombinations(Destination.livePermissioned())) {
@@ -259,7 +274,7 @@ public final class NavigatorModule {
     }
 
     // A player whose language has no bundle reads English.
-    private static Locale languageOf(Player player) {
+    static Locale languageOf(Player player) {
         String language = player.getLocale().getLanguage();
         return LANGUAGES.stream().filter(supported -> supported.getLanguage().equals(language)).findFirst().orElse(Locale.ENGLISH);
     }
@@ -277,7 +292,9 @@ public final class NavigatorModule {
                     for (Destination destination : Destination.values()) {
                         read.put(destination, this.players.services(destination.task()).orElse(List.of()));
                     }
-                    this.scheduler.scheduleNextTick(() -> showCounts(read));
+                    Map<Destination, Optional<List<ServiceState>>> staging = readStaging();
+                    this.idle.refresh(staging);
+                    this.scheduler.scheduleNextTick(() -> showCounts(read, staging));
                 } finally {
                     this.reading.set(false);
                 }
@@ -287,13 +304,25 @@ public final class NavigatorModule {
         }
     }
 
-    private void showCounts(Map<Destination, List<ServiceCount>> read) {
+    // The services of every staging entry, read off the tick with the counts of this cycle.
+    private Map<Destination, Optional<List<ServiceState>>> readStaging() {
+        Map<Destination, Optional<List<ServiceState>>> staging = new EnumMap<>(Destination.class);
+        for (Destination destination : Destination.values()) {
+            if (destination.onDemand()) {
+                staging.put(destination, StagingStarts.read(this.services, destination));
+            }
+        }
+        return staging;
+    }
+
+    private void showCounts(Map<Destination, List<ServiceCount>> read, Map<Destination, Optional<List<ServiceState>>> staging) {
         if (this.stopped) {
             return;
         }
         this.running = read;
         this.menus.forEach((menu, navigator) -> navigator.showItems(destination -> itemOf(destination, menu.language())));
         this.submenus.forEach((submenu, navigator) -> navigator.showItems(destination -> itemOf(destination, submenu.language())));
+        this.starts.refresh(staging);
     }
 
     // The lines follow the last refresh, as the count does; the portal is looked up now, so a portal
@@ -401,6 +430,10 @@ public final class NavigatorModule {
             readServices(player, destination, (viewer, running) -> conclude(viewer, destination, action, language, running));
             return;
         }
+        if (action == ClickAction.CONNECT && destination.onDemand()) {
+            readThen(player, () -> StagingStarts.read(this.services, destination), (viewer, read) -> decideStaging(viewer, destination, read));
+            return;
+        }
         this.navigatorTelemetry.select(player.getUuid(), destination.name(), () -> {
             if (!isAllowed(player, destination)) {
                 player.closeInventory();
@@ -426,22 +459,46 @@ public final class NavigatorModule {
         return NavigatorTelemetry.Selection.SENT;
     }
 
-    // The services are read off the tick, and the decision follows on the next tick with that reading,
-    // so neither the join, the list nor a pick ever acts on a stale or missing reading. An empty
-    // Optional means the read failed. A second click by the same player meanwhile is ignored.
     private void readServices(Player player, Destination destination, BiConsumer<Player, Optional<List<ServiceCount>>> decision) {
+        readThen(player, () -> this.players.services(destination.task()), decision);
+    }
+
+    // A staging click connects, starts or waits as the start logic decides; the decision is recorded
+    // as the click's outcome, and a waiting player's inventory closes so the action bar shows.
+    private void decideStaging(Player player, Destination destination, Optional<List<ServiceState>> read) {
+        this.navigatorTelemetry.select(player.getUuid(), destination.name(), () -> {
+            StagingStarts.Outcome outcome = this.starts.click(player, destination, read);
+            return switch (outcome) {
+                case CONNECTED -> NavigatorTelemetry.Selection.SENT;
+                case WAITING -> {
+                    player.closeInventory();
+                    yield NavigatorTelemetry.Selection.PENDING;
+                }
+                case DENIED -> {
+                    player.closeInventory();
+                    yield NavigatorTelemetry.Selection.DENIED;
+                }
+                case REFUSED -> NavigatorTelemetry.Selection.REFUSED;
+            };
+        });
+    }
+
+    // The services are read off the tick, and the decision follows on the next tick with that reading,
+    // so neither the join, the list, a pick nor a staging start ever acts on a stale or missing reading.
+    // An empty Optional means the read failed. A second click by the same player meanwhile is ignored.
+    private <T> void readThen(Player player, Supplier<Optional<T>> read, BiConsumer<Player, Optional<T>> decision) {
         if (!this.choosing.add(player.getUuid())) {
             return;
         }
         try {
             this.reads.execute(() -> {
-                Optional<List<ServiceCount>> running = this.players.services(destination.task());
+                Optional<T> reading = read.get();
                 this.scheduler.scheduleNextTick(() -> {
                     this.choosing.remove(player.getUuid());
                     if (this.stopped || !player.isOnline()) {
                         return;
                     }
-                    decision.accept(player, running);
+                    decision.accept(player, reading);
                 });
             });
         } catch (RuntimeException e) {

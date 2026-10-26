@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.feature.navigator;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -31,6 +32,7 @@ import net.minestom.server.item.Material;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
+import net.onelitefeather.titan.core.testfixtures.AdjustableClock;
 import net.onelitefeather.titan.core.testfixtures.FakePermissionService;
 import net.onelitefeather.titan.core.testfixtures.FakePlayerCounts;
 import net.onelitefeather.titan.core.testfixtures.RecordingDeliver;
@@ -210,7 +212,7 @@ class NavigatorModuleTest {
         try {
             NavigatorModule module = new NavigatorModule(titan.node(), new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), () -> {
                 throw new NoSuchElementException("no bean");
-            }, List::of, Telemetry.noop(), Optional.empty(), env.process().scheduler(), Runnable::run, new NavigatorSettings(1), new NavigatorMessages());
+            }, List::of, Telemetry.noop(), Optional.empty(), env.process().scheduler(), Runnable::run, new NavigatorSettings(1, 600), new NavigatorMessages(), Optional.empty(), new AdjustableClock(Instant.parse("2026-10-26T12:00:00Z")));
 
             IllegalStateException thrown = Assertions.assertThrows(IllegalStateException.class, module::start, "an unresolvable provider must fail the start");
             Assertions.assertTrue(thrown.getMessage().contains("SpawnReturn") && thrown.getMessage().contains("spawn column"), "the message must name SpawnReturn and the spawn column, was: " + thrown.getMessage());
@@ -224,7 +226,7 @@ class NavigatorModuleTest {
     void startFailsClearlyWhenTheProviderYieldsNull(Env env) {
         TestTitanNode titan = TestTitanNode.attach(env);
         try {
-            NavigatorModule module = new NavigatorModule(titan.node(), new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), () -> null, List::of, Telemetry.noop(), Optional.empty(), env.process().scheduler(), Runnable::run, new NavigatorSettings(1), new NavigatorMessages());
+            NavigatorModule module = new NavigatorModule(titan.node(), new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), () -> null, List::of, Telemetry.noop(), Optional.empty(), env.process().scheduler(), Runnable::run, new NavigatorSettings(1, 600), new NavigatorMessages(), Optional.empty(), new AdjustableClock(Instant.parse("2026-10-26T12:00:00Z")));
 
             IllegalStateException thrown = Assertions.assertThrows(IllegalStateException.class, module::start, "a provider yielding null must fail the start");
             Assertions.assertTrue(thrown.getMessage().contains("SpawnReturn") && thrown.getMessage().contains("spawn column"), "the message must name SpawnReturn and the spawn column, was: " + thrown.getMessage());

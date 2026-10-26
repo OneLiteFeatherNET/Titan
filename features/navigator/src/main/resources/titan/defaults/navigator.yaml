@@ -2,3 +2,5 @@
 navigator:
   # How often, in whole seconds (1 to 3600), the player count shown under each mode is read again.
   refreshSeconds: 5
+  # How long, in whole seconds (60 to 86400), an empty staging service runs before it is stopped again.
+  stagingIdleSeconds: 600

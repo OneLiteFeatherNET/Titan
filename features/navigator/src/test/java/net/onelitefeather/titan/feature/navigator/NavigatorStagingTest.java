@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.feature.navigator;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import net.minestom.server.component.DataComponents;
@@ -30,6 +31,10 @@ import net.minestom.testing.extension.MicrotusExtension;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.onelitefeather.titan.core.permission.PermissionResult;
 import net.onelitefeather.titan.core.portal.ServiceCount;
+import net.onelitefeather.titan.core.service.ServiceState;
+import net.onelitefeather.titan.core.service.ServiceState.Phase;
+import net.onelitefeather.titan.core.testfixtures.AdjustableClock;
+import net.onelitefeather.titan.core.testfixtures.FakeOnDemandServices;
 import net.onelitefeather.titan.core.testfixtures.FakePermissionService;
 import net.onelitefeather.titan.core.testfixtures.FakePlayerCounts;
 import net.onelitefeather.titan.core.testfixtures.RecordingDeliver;
@@ -90,7 +95,8 @@ class NavigatorStagingTest {
     void clickingStagingConnectsToTheStagingTask(Env env) {
         RecordingDeliver deliver = new RecordingDeliver();
         Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
-        try (NavigatorFixture fixture = NavigatorFixture.start(env, deliver, new FakePermissionService().allowEveryone(STAGING_PERMISSION))) {
+        FakeOnDemandServices services = new FakeOnDemandServices().serve("Slender-Staging", new ServiceState(STAGING_SERVICE, Phase.RUNNING, 0, 10));
+        try (NavigatorFixture fixture = NavigatorFixture.startWithStaging(env, deliver, new FakePermissionService().allowEveryone(STAGING_PERMISSION), services, new AdjustableClock(Instant.parse("2026-10-26T12:00:00Z")))) {
             AbstractInventory navigator = openStagingMenu(env, fixture, player);
 
             InventoryPreClickEvent event = click(env, navigator, player, new Click.Left(STAGING_SLOT));
