@@ -36,8 +36,8 @@ Commit-Schema: `feat(navigator)` für Code und Tests (Wellen 1 bis 4), `docs(nav
 
 ## 3. Ziele und Layout (`features/navigator`)
 
-- [ ] 3.1 Test (Unit, `NavigatorDestinationTest`): TAMIAS auf Platz 14 mit Recht `titan.navigator.tamias`, Task `Tamias`, in `ServerPicker.DESTINATIONS`; die vier Staging-Einträge mit Platz, Recht und Task aus `design.md` D3; `onDemand` nur bei Staging-Einträgen; `SLENDER_STAGING` nicht mehr auf Platz 16; `visible(Set.of())` enthält keinen Staging-Eintrag. Nachweis: rot vor 3.2.
-- [ ] 3.2 `Destination` um TAMIAS und die drei neuen Staging-Einträge erweitern; Eigenschaft `onDemand` und Staging-Markierung einführen; Klassen-Javadoc an die Reihen anpassen. Nachweis: 3.1 grün.
+- [x] 3.1 Test (Unit, `NavigatorDestinationTest`): TAMIAS auf Platz 14 mit Recht `titan.navigator.tamias`, Task `Tamias`, in `ServerPicker.DESTINATIONS`; die vier Staging-Einträge mit Platz, Recht und Task aus `design.md` D3; `onDemand` nur bei Staging-Einträgen; `SLENDER_STAGING` nicht mehr auf Platz 16; `visible(Set.of())` enthält keinen Staging-Eintrag. Nachweis: rot vor 3.2.
+- [x] 3.2 `Destination` um TAMIAS und die drei neuen Staging-Einträge erweitern; Eigenschaft `onDemand` und Staging-Markierung einführen; Klassen-Javadoc an die Reihen anpassen. Nachweis: 3.1 grün.
 - [ ] 3.3 Test (Unit/Integration, `NavigatorLayoutTest` und neu `NavigatorStagingMenuTest`): Hauptmenü ohne Rechte zeigt graue Glasscheiben auf 14 und 16; mit einem Staging-Recht steht der Hub auf 16; Staging-Einträge erscheinen nicht im Hauptmenü; Untermenü zeigt Slender (Staging), Bounce (Staging), ElytraRace (Staging), Tamias (Staging) auf 0 bis 3 und die Zurück-Taste auf 8. Nachweis: rot vor 3.4.
 - [ ] 3.4 `NavigatorLayout`, `NavigatorModule` und `SharedNavigator` um den Hub-Eintrag und die Untermenü-Ansicht mit eigenem Schlüssel (vier Rechte) ergänzen; Hauptmenü-Schlüssel mit fünf Bits (vier Live-Rechte und „mindestens ein Staging-Recht“). Nachweis: 3.3 grün.
 - [ ] 3.5 Test (Unit, `NavigatorPermissionTest`, `NavigatorModuleLeakTest`): beim Start genau 96 Inventare, 64 Hauptmenü und 32 Untermenü; jedes trägt die Ziele seines Schlüssels; die Zahl der Listener ändert sich beim Öffnen nicht. Nachweis: rot vor 3.6.
@@ -59,8 +59,8 @@ Commit-Schema: `feat(navigator)` für Code und Tests (Wellen 1 bis 4), `docs(nav
 
 ## 6. Texte und Telemetrie
 
-- [ ] 6.1 Test (Unit, i18n-Prüfung im Navigator): die Schlüssel aus `design.md` D10 stehen in `messages_de.properties` und `messages_en.properties`; jeder im Code verwendete Schlüssel existiert im englischen Fallback. Nachweis: rot vor 6.2.
-- [ ] 6.2 Schlüssel in beiden Bundles und in `NavigatorMessages.KEYS` ergänzen. Nachweis: 6.1 grün.
+- [x] 6.1 Test (Unit, i18n-Prüfung im Navigator): die Schlüssel aus `design.md` D10 stehen in `messages_de.properties` und `messages_en.properties`; jeder im Code verwendete Schlüssel existiert im englischen Fallback. Nachweis: rot vor 6.2.
+- [x] 6.2 Schlüssel in beiden Bundles und in `NavigatorMessages.KEYS` ergänzen. Nachweis: 6.1 grün.
 - [ ] 6.3 Test (Unit, `NavigatorStagingTelemetryTest`, `OpenTelemetryExtension` mit In-Memory-Metrik-Reader und Log-Appender): `titan.navigator.staging.starts` (Einheit `{start}`, Attribute `destination` und `result`), `titan.navigator.staging.stops` (Einheit `{stop}`), `titan.navigator.staging.wait` (Histogramm, Einheit `s`, Attribut `result`); Name, Einheit, Wert und Attribute werden geprüft; die INFO-Zeile mit Task und Dienst wird über den Log-Appender geprüft; keine Spielernamen oder UUIDs als Attribut. Nachweis: rot vor 6.4.
 - [ ] 6.4 Instrumente einmal bei der Initialisierung in `NavigatorTelemetry` anlegen; Aufrufe aus `StagingStarts` und `StagingIdle`. Nachweis: 6.3 grün; kein Aufruf blockiert den Tick-Thread.
 

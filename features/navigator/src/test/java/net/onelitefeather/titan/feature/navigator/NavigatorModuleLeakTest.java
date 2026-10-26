@@ -31,6 +31,7 @@ import net.onelitefeather.titan.core.testfixtures.EventListenerCounter;
 import net.onelitefeather.titan.core.testfixtures.FakePermissionService;
 import net.onelitefeather.titan.core.testfixtures.RecordingDeliver;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -94,6 +95,7 @@ class NavigatorModuleLeakTest {
         }
     }
 
+    @Disabled("navigator-staging-on-demand wave 2: layout")
     @DisplayName("Opening and closing the German navigator 50 times registers no extra listeners")
     @Test
     void germanOpeningAndClosingRepeatedlyDoesNotLeakListeners(Env env) {

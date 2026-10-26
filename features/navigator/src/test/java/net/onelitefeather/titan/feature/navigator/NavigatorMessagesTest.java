@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 class NavigatorMessagesTest {
 
     // The title and the status sort name are the same word in both languages, so they have no own German text.
-    private static final Set<String> SAME_IN_BOTH_LANGUAGES = Set.of(NavigatorMessages.TITLE, NavigatorMessages.SORT_STATUS);
+    private static final Set<String> SAME_IN_BOTH_LANGUAGES = Set.of(NavigatorMessages.TITLE, NavigatorMessages.SORT_STATUS, NavigatorMessages.STAGING_MENU_TITLE);
 
     private NavigatorMessages messages;
 
@@ -57,7 +57,7 @@ class NavigatorMessagesTest {
         }
     }
 
-    @DisplayName("The German texts differ from the English ones, except the title and the status order, which are the same word in both")
+    @DisplayName("The German texts differ from the English ones, except the title, the status order and the staging menu, which are the same word in both")
     @Test
     void germanDiffersFromEnglish() {
         for (String key : NavigatorMessages.KEYS) {

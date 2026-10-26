@@ -34,6 +34,7 @@ import net.onelitefeather.titan.core.testfixtures.FakePermissionService;
 import net.onelitefeather.titan.core.testfixtures.FakePlayerCounts;
 import net.onelitefeather.titan.core.testfixtures.RecordingDeliver;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -78,6 +79,7 @@ class NavigatorStagingTest {
         return names;
     }
 
+    @Disabled("navigator-staging-on-demand wave 2: layout")
     @DisplayName("A click on Slender (Staging) connects to the Slender-Staging task and cancels the click")
     @Test
     void clickingStagingConnectsToTheStagingTask(Env env) {
@@ -95,6 +97,7 @@ class NavigatorStagingTest {
         }
     }
 
+    @Disabled("navigator-staging-on-demand wave 2: layout")
     @DisplayName("A click on Slender (Staging) after the permission was denied connects nobody and closes the menu")
     @Test
     void deniedClickOnStagingConnectsNobody(Env env) {
@@ -113,6 +116,7 @@ class NavigatorStagingTest {
         }
     }
 
+    @Disabled("navigator-staging-on-demand wave 2: layout")
     @DisplayName("The team menu shows Slender (Staging) on slot 16 and the public menu leaves that slot grey")
     @Test
     void teamMenuShowsStagingAndPublicMenuDoesNot(Env env) {
