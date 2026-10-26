@@ -17,8 +17,10 @@ package net.onelitefeather.titan.feature.jumprun;
 
 import java.util.ArrayList;
 import java.util.List;
-import net.minestom.server.event.EventDispatcher;
+import net.minestom.server.entity.EquipmentSlot;
 import net.minestom.server.entity.Player;
+import net.minestom.server.event.EventDispatcher;
+import net.minestom.server.item.Material;
 import net.minestom.testing.Env;
 import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.module.LobbyPlayerBusyEvent;
@@ -65,6 +67,26 @@ class JumprunBusyEventTest {
 
             Assertions.assertEquals(1, events.size(), "exactly one busy event must be fired when the run ends");
             Assertions.assertFalse(events.get(0).busy(), "a finished run must be reported as not busy");
+        }
+    }
+
+    @DisplayName("The loadout is back before the lobby hears that the player is free")
+    @Test
+    void loadoutIsBackBeforeTheBusyEnd(Env env) {
+        try (JumprunFixture fixture = JumprunFixture.start(env)) {
+            StartedRun run = StartedRun.start(env, fixture);
+            Player player = run.player();
+            List<Boolean> elytraWhenFree = new ArrayList<>();
+            env.process().eventHandler().addListener(LobbyPlayerBusyEvent.class, event -> {
+                if (!event.busy()) {
+                    elytraWhenFree.add(player.getEquipment(EquipmentSlot.CHESTPLATE).material() == Material.ELYTRA);
+                }
+            });
+
+            EventDispatcher.call(new LobbyReturnToSpawnEvent(player));
+            env.tick();
+
+            Assertions.assertEquals(List.of(true), elytraWhenFree, "the elytra must be back on the chestplate when the busy end is announced, so the lobby features that rejoin the player see the loadout first");
         }
     }
 }

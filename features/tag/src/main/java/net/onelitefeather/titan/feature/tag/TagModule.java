@@ -19,6 +19,7 @@ import io.avaje.inject.PostConstruct;
 import io.avaje.inject.PreDestroy;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
+import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import java.time.Clock;
 import java.util.ArrayList;
@@ -32,6 +33,7 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.random.RandomGenerator;
 import net.minestom.server.entity.Entity;
+import net.minestom.server.entity.EquipmentSlot;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
@@ -41,16 +43,19 @@ import net.minestom.server.event.instance.RemoveEntityFromInstanceEvent;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
 import net.minestom.server.event.player.PlayerMoveEvent;
 import net.minestom.server.event.player.PlayerPacketEvent;
+import net.minestom.server.event.player.PlayerRespawnEvent;
 import net.minestom.server.event.player.PlayerSpawnEvent;
 import net.minestom.server.event.player.PlayerStartFlyingWithElytraEvent;
 import net.minestom.server.event.player.PlayerStopFlyingWithElytraEvent;
 import net.minestom.server.instance.Instance;
+import net.minestom.server.item.ItemStack;
 import net.minestom.server.network.packet.client.play.ClientInputPacket;
 import net.minestom.server.timer.Scheduler;
 import net.minestom.server.timer.Task;
 import net.minestom.server.timer.TaskSchedule;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.module.LobbyPlayerBusyEvent;
+import net.onelitefeather.titan.core.module.item.LobbyItems;
 import net.onelitefeather.titan.core.settings.BooleanSetting;
 import net.onelitefeather.titan.core.settings.PlayerSettings;
 import net.onelitefeather.titan.core.settings.SettingChangeListener;
@@ -81,6 +86,7 @@ public final class TagModule {
     private final PlayerSettings settings;
     private final SettingsRegistry registry;
     private final RandomGenerator random;
+    private final Provider<LobbyItems> lobbyItems;
     private final TagMessages messages = new TagMessages();
     private final TagEffects effects = new TagEffects();
     private final TagTelemetry tagTelemetry;
@@ -99,18 +105,22 @@ public final class TagModule {
     private Task secondTask;
 
     @Inject
-    public TagModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Scheduler scheduler, Clock clock, Telemetry telemetry, PlayerSettings settings, SettingsRegistry registry) {
-        this(titan, scheduler, clock, telemetry, settings, registry, ThreadLocalRandom.current());
+    public TagModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Scheduler scheduler, Clock clock, Telemetry telemetry, PlayerSettings settings, SettingsRegistry registry, Provider<LobbyItems> lobbyItems) {
+        this(titan, scheduler, clock, telemetry, settings, registry, lobbyItems, ThreadLocalRandom.current());
     }
 
-    /** The random source picks each new tagger; tests pass a seeded one. */
-    TagModule(EventNode<Event> titan, Scheduler scheduler, Clock clock, Telemetry telemetry, PlayerSettings settings, SettingsRegistry registry, RandomGenerator random) {
+    /**
+     * The random source picks each new tagger; tests pass a seeded one. {@link LobbyItems} comes
+     * as a {@link Provider}, as in jumprun: the hotbar collects the lobby items of the features.
+     */
+    TagModule(EventNode<Event> titan, Scheduler scheduler, Clock clock, Telemetry telemetry, PlayerSettings settings, SettingsRegistry registry, Provider<LobbyItems> lobbyItems, RandomGenerator random) {
         this.titan = Objects.requireNonNull(titan, "titan must not be null");
         this.scheduler = Objects.requireNonNull(scheduler, "scheduler must not be null");
         this.clock = Objects.requireNonNull(clock, "clock must not be null");
         this.telemetry = Objects.requireNonNull(telemetry, "telemetry must not be null");
         this.settings = Objects.requireNonNull(settings, "settings must not be null");
         this.registry = Objects.requireNonNull(registry, "registry must not be null");
+        this.lobbyItems = Objects.requireNonNull(lobbyItems, "lobbyItems must not be null");
         this.random = Objects.requireNonNull(random, "random must not be null");
         this.tagTelemetry = new TagTelemetry(this.telemetry);
     }
@@ -119,7 +129,7 @@ public final class TagModule {
     void start() {
         this.messages.register();
         this.registry.register(ID, TagSettings.ENABLED);
-        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry).on(PlayerSpawnEvent.class, this::onSpawn).on(PlayerDisconnectEvent.class, this::onDisconnect).on(RemoveEntityFromInstanceEvent.class, this::onRemoved).on(EntityAttackEvent.class, this::onAttack).on(EntityDamageEvent.class, this::onDamage).on(PlayerMoveEvent.class, event -> touch(event.getPlayer())).on(PlayerPacketEvent.class, this::onPacket).on(LobbyPlayerBusyEvent.class, this::onBusy).on(PlayerStartFlyingWithElytraEvent.class, event -> gliding.add(event.getPlayer().getUuid())).on(PlayerStopFlyingWithElytraEvent.class, event -> gliding.remove(event.getPlayer().getUuid()));
+        this.node = FeatureNode.attach(this.titan, ID, EVENT_PRIORITY, this.telemetry).on(PlayerSpawnEvent.class, this::onSpawn).on(PlayerDisconnectEvent.class, this::onDisconnect).on(RemoveEntityFromInstanceEvent.class, this::onRemoved).on(EntityAttackEvent.class, this::onAttack).on(EntityDamageEvent.class, this::onDamage).on(PlayerMoveEvent.class, event -> touch(event.getPlayer())).on(PlayerPacketEvent.class, this::onPacket).on(PlayerRespawnEvent.class, this::onRespawn).on(LobbyPlayerBusyEvent.class, this::onBusy).on(PlayerStartFlyingWithElytraEvent.class, event -> gliding.add(event.getPlayer().getUuid())).on(PlayerStopFlyingWithElytraEvent.class, event -> gliding.remove(event.getPlayer().getUuid()));
         this.open = true;
         this.settings.addChangeListener(this.settingChanged);
         this.particleTask = this.scheduler.scheduleTask(this::particles, TaskSchedule.tick(PARTICLE_TICKS), TaskSchedule.tick(PARTICLE_TICKS));
@@ -158,7 +168,7 @@ public final class TagModule {
 
     private void onDisconnect(PlayerDisconnectEvent event) {
         UUID id = event.getPlayer().getUuid();
-        leave(id);
+        leave(id, false);
         this.players.remove(id);
         this.busy.remove(id);
         this.gliding.remove(id);
@@ -175,7 +185,8 @@ public final class TagModule {
         UUID id = player.getUuid();
         if (event.busy()) {
             this.busy.add(id);
-            leave(id);
+            // The busy feature owns the chestplate until it hands the loadout back.
+            leave(id, false);
             return;
         }
         this.busy.remove(id);
@@ -263,6 +274,7 @@ public final class TagModule {
         Optional<UUID> before = game.tagger();
         if (game.join(id, now())) {
             this.members.put(id, instance);
+            takeElytra(player);
             this.effects.taggerChanged(instance, game, before.orElse(null));
             if (game.tagger().isEmpty()) {
                 this.effects.waiting(player);
@@ -271,6 +283,11 @@ public final class TagModule {
     }
 
     private void leave(UUID player) {
+        leave(player, true);
+    }
+
+    /** A busy player's chestplate belongs to the busy feature, so it is not restored then. */
+    private void leave(UUID player, boolean restore) {
         Instance instance = this.members.remove(player);
         if (instance == null) {
             return;
@@ -281,10 +298,32 @@ public final class TagModule {
         Player online = this.players.get(player);
         if (online != null) {
             this.effects.leftGame(online);
+            if (restore) {
+                this.lobbyItems.get().equip(online);
+            }
         }
         this.effects.taggerChanged(instance, game, before.orElse(null));
         if (game.active().isEmpty()) {
             this.games.remove(instance);
+        }
+    }
+
+    /**
+     * The respawn hands the loadout back, elytra included, so a player still in the game loses it.
+     */
+    private void onRespawn(PlayerRespawnEvent event) {
+        Player player = event.getPlayer();
+        if (this.members.containsKey(player.getUuid())) {
+            takeElytra(player);
+        }
+    }
+
+    /** Takes the elytra off; a glide in progress ends too, as only landing would end it. */
+    private void takeElytra(Player player) {
+        player.setEquipment(EquipmentSlot.CHESTPLATE, ItemStack.AIR);
+        if (player.isFlyingWithElytra()) {
+            player.setFlyingWithElytra(false);
+            this.gliding.remove(player.getUuid());
         }
     }
 

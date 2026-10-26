@@ -22,15 +22,20 @@ import java.util.Random;
 import java.util.random.RandomGenerator;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.MinecraftServer;
+import net.minestom.server.entity.EquipmentSlot;
 import net.minestom.server.entity.Player;
 import net.minestom.server.entity.damage.Damage;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.event.entity.EntityAttackEvent;
 import net.minestom.server.event.entity.EntityDamageEvent;
+import net.minestom.server.event.instance.RemoveEntityFromInstanceEvent;
 import net.minestom.server.event.player.PlayerDisconnectEvent;
+import net.minestom.server.event.player.PlayerRespawnEvent;
 import net.minestom.server.event.player.PlayerStartFlyingWithElytraEvent;
 import net.minestom.server.instance.Instance;
+import net.minestom.server.item.ItemStack;
+import net.minestom.server.item.Material;
 import net.minestom.server.network.packet.server.play.ActionBarPacket;
 import net.minestom.server.network.packet.server.play.ParticlePacket;
 import net.minestom.server.network.packet.server.play.SetTitleTextPacket;
@@ -68,13 +73,14 @@ class TagModuleIntegrationTest {
         final TagModule module;
         final FakePlayerSettings settings = new FakePlayerSettings();
         final AdjustableClock clock = new AdjustableClock(NOW, ZoneOffset.UTC);
+        final FakeLobbyItems lobbyItems = new FakeLobbyItems();
         private final TestTitanNode titanNode;
 
         private Round(Env env) {
             this.titanNode = TestTitanNode.attach(env);
             EventNode<Event> titan = this.titanNode.node();
             RandomGenerator random = new Random(7L);
-            this.module = new TagModule(titan, env.process().scheduler(), this.clock, Telemetry.noop(), this.settings, new SettingsRegistry(), random);
+            this.module = new TagModule(titan, env.process().scheduler(), this.clock, Telemetry.noop(), this.settings, new SettingsRegistry(), () -> this.lobbyItems, random);
             this.module.start();
         }
 
@@ -92,6 +98,11 @@ class TagModuleIntegrationTest {
         /** Switches the tag setting on for {@code seat}, as the settings menu would. */
         void enable(Seat seat) {
             this.settings.set(seat.player().getUuid(), TagSettings.ENABLED, true);
+        }
+
+        /** Switches the tag setting off for {@code seat}, as the settings menu would. */
+        void disable(Seat seat) {
+            this.settings.set(seat.player().getUuid(), TagSettings.ENABLED, false);
         }
 
         @Override
@@ -429,6 +440,138 @@ class TagModuleIntegrationTest {
             List<ActionBarPacket> sent = bars.collect();
             Assertions.assertEquals(1, sent.size(), "the remaining player must get the waiting hint once and not repeated while alone");
             Assertions.assertEquals(waitingHintFor(remaining), sent.getFirst().text(), "the hint must say the player waits for a second player");
+        }
+    }
+
+    /** Whether the player's chestplate holds an elytra. */
+    static boolean wearsElytra(Player player) {
+        return player.getEquipment(EquipmentSlot.CHESTPLATE).material() == Material.ELYTRA;
+    }
+
+    @DisplayName("Joining the tag game takes the elytra off the chestplate")
+    @Test
+    void joiningTheGameTakesTheElytraOff(Env env) {
+        Instance instance = env.createFlatInstance();
+        try (Round round = Round.start(env)) {
+            Seat seat = round.connect(env, instance);
+            seat.player().setEquipment(EquipmentSlot.CHESTPLATE, ItemStack.of(Material.ELYTRA));
+
+            round.enable(seat);
+
+            Assertions.assertFalse(wearsElytra(seat.player()), "a player in the tag game must not wear the elytra");
+        }
+    }
+
+    @DisplayName("A player who never joins the tag game keeps the elytra")
+    @Test
+    void playerOutsideTheGameKeepsTheElytra(Env env) {
+        Instance instance = env.createFlatInstance();
+        try (Round round = Round.start(env)) {
+            Seat seat = round.connect(env, instance);
+            seat.player().setEquipment(EquipmentSlot.CHESTPLATE, ItemStack.of(Material.ELYTRA));
+
+            Assertions.assertTrue(wearsElytra(seat.player()), "a player who did not switch the tag game on must keep the elytra");
+        }
+    }
+
+    @DisplayName("Switching the tag game off gives the lobby elytra back")
+    @Test
+    void leavingTheGameGivesTheElytraBack(Env env) {
+        Instance instance = env.createFlatInstance();
+        try (Round round = Round.start(env)) {
+            Seat seat = enabledSeat(env, round, instance);
+
+            round.disable(seat);
+
+            Assertions.assertTrue(wearsElytra(seat.player()), "switching the tag game off must give the lobby elytra back");
+            Assertions.assertEquals(List.of(seat.player()), round.lobbyItems.equipped(), "the lobby loadout must be given out once, when the player leaves");
+        }
+    }
+
+    @DisplayName("Removing a player from the tag instance gives the lobby elytra back")
+    @Test
+    void removalFromTheInstanceGivesTheElytraBack(Env env) {
+        Instance instance = env.createFlatInstance();
+        try (Round round = Round.start(env)) {
+            Seat seat = enabledSeat(env, round, instance);
+
+            env.process().eventHandler().call(new RemoveEntityFromInstanceEvent(instance, seat.player()));
+
+            Assertions.assertTrue(wearsElytra(seat.player()), "a player removed from the tag instance must get the lobby elytra back");
+        }
+    }
+
+    @DisplayName("Stopping the module gives the lobby elytra back to the players in the game")
+    @Test
+    void stoppingTheModuleGivesTheElytraBack(Env env) {
+        Instance instance = env.createFlatInstance();
+        Round round = Round.start(env);
+        Seat seat = enabledSeat(env, round, instance);
+
+        round.module.stop();
+
+        Assertions.assertTrue(wearsElytra(seat.player()), "a stopped module must give the lobby elytra back");
+        round.close();
+    }
+
+    @DisplayName("A player who glides when joining the tag game stops gliding")
+    @Test
+    void joiningTheGameStopsAGlide(Env env) {
+        Instance instance = env.createFlatInstance();
+        try (Round round = Round.start(env)) {
+            Seat seat = round.connect(env, instance);
+            seat.player().setFlyingWithElytra(true);
+
+            round.enable(seat);
+
+            Assertions.assertFalse(seat.player().isFlyingWithElytra(), "a player who joins the tag game must stop gliding");
+        }
+    }
+
+    @DisplayName("A player on a jump and run keeps the elytra off while the run lasts")
+    @Test
+    void busyPlayerKeepsTheElytraOff(Env env) {
+        Instance instance = env.createFlatInstance();
+        try (Round round = Round.start(env)) {
+            Seat first = enabledSeat(env, round, instance);
+            Seat second = enabledSeat(env, round, instance);
+            Seat tagger = taggerOf(first, second);
+
+            env.process().eventHandler().call(new LobbyPlayerBusyEvent(tagger.player(), true));
+
+            Assertions.assertFalse(wearsElytra(tagger.player()), "the tag game must not give the elytra back to a player who is busy");
+            Assertions.assertTrue(round.lobbyItems.equipped().isEmpty(), "the tag game must not hand out the loadout when a player gets busy");
+        }
+    }
+
+    @DisplayName("A player who rejoins the tag game after a run loses the elytra the loadout gave back")
+    @Test
+    void rejoiningAfterARunTakesTheElytraOffAgain(Env env) {
+        Instance instance = env.createFlatInstance();
+        try (Round round = Round.start(env)) {
+            Seat first = enabledSeat(env, round, instance);
+            Seat second = enabledSeat(env, round, instance);
+            Seat tagger = taggerOf(first, second);
+            env.process().eventHandler().call(new LobbyPlayerBusyEvent(tagger.player(), true));
+            round.lobbyItems.equip(tagger.player());
+
+            env.process().eventHandler().call(new LobbyPlayerBusyEvent(tagger.player(), false));
+
+            Assertions.assertFalse(wearsElytra(tagger.player()), "a player who rejoins the tag game after a run must not wear the elytra");
+        }
+    }
+
+    @DisplayName("A player who respawns in the tag game gets no elytra back")
+    @Test
+    void respawnInTheGameTakesTheElytraOffAgain(Env env) {
+        Instance instance = env.createFlatInstance();
+        try (Round round = Round.start(env)) {
+            Seat seat = enabledSeat(env, round, instance);
+            round.lobbyItems.equip(seat.player());
+
+            env.process().eventHandler().call(new PlayerRespawnEvent(seat.player()));
+
+            Assertions.assertFalse(wearsElytra(seat.player()), "a player who respawns in the tag game must not wear the elytra");
         }
     }
 }
