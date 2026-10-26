@@ -26,9 +26,9 @@ Commit-Schema: `feat(navigator)` für Code und Tests (Wellen 1 bis 4), `docs(nav
 
 ## 2. CloudNet-Seite
 
-- [ ] 2.0 Spike (kein Testlevel, Lookup mit `javap` gegen `driver-api-4.0.0-RC18-SNAPSHOT` aus dem Gradle-Cache): (a) wie `ServiceConfiguration` für einen Task gebaut wird, (b) ob `CloudServiceFactory.createCloudService` den Dienst startet oder nur vorbereitet (dann zusätzlich `SpecificCloudServiceProvider.start()`), (c) welche Lebenszyklen ein frisch angelegter Dienst durchläuft. Nachweis: Ergebnis im PR-Text. Weicht es ab, wird D4 angepasst, nicht der Port.
-- [ ] 2.1 Test (Unit, `common`): `TitanServiceControl` ohne Adapter liefert leere Dienstliste, `start` und `stop` liefern `false`; mit einem Fake-Adapter werden die Aufrufe unverändert durchgereicht. Nachweis: rot vor 2.2.
-- [ ] 2.2 Halter `TitanServiceControl` in `common` mit JDK-Typen nach dem Muster von `TitanServerConnector`. Nachweis: 2.1 grün.
+- [x] 2.0 Spike (kein Testlevel, Lookup mit `javap` gegen `driver-api-4.0.0-RC18-SNAPSHOT` aus dem Gradle-Cache): (a) wie `ServiceConfiguration` für einen Task gebaut wird, (b) ob `CloudServiceFactory.createCloudService` den Dienst startet oder nur vorbereitet (dann zusätzlich `SpecificCloudServiceProvider.start()`), (c) welche Lebenszyklen ein frisch angelegter Dienst durchläuft. Nachweis: Ergebnis im PR-Text. Weicht es ab, wird D4 angepasst, nicht der Port.
+- [x] 2.1 Test (Unit, `common`): `TitanServiceControl` ohne Adapter liefert leere Dienstliste, `start` und `stop` liefern `false`; mit einem Fake-Adapter werden die Aufrufe unverändert durchgereicht. Nachweis: rot vor 2.2.
+- [x] 2.2 Halter `TitanServiceControl` in `common` mit JDK-Typen nach dem Muster von `TitanServerConnector`. Nachweis: 2.1 grün.
 - [ ] 2.3 Test (Unit, `platform/cloudnet`): `HolderOnDemandServices` erfüllt `OnDemandServicesContract` gegen einen Fake-Adapter; ohne Adapter Ablehnung ohne Ausnahme. Nachweis: rot vor 2.4.
 - [ ] 2.4 `HolderOnDemandServices` als Bean im Profil `CLOUDNET`. Nachweis: 2.3 grün; Verdrahtungstest `PlatformBeansWiringTest` in `apps/cloudnet` um den Bean erweitert und grün.
 - [ ] 2.5 Test (Unit, `bridge`): reine Abbildung von `ServiceLifeCycle` auf `Phase` (`PREPARED` → `STARTING`, `RUNNING` → `RUNNING`, `STOPPED` und `DELETED` → `STOPPED`, unbekannt → `STARTING`); `ServiceListing` liefert `STARTING`-Dienste mit, während der bestehende Schnellbeitritt weiter nur `RUNNING` liest. Nachweis: rot vor 2.6.
