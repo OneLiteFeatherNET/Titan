@@ -12,7 +12,7 @@ Der Takt ist der Server-Tick, 20 pro Sekunde (50 ms). Töne gehen als Sound-Pake
 
 **Ziele**
 
-- Ein Item öffnet das Radio. Start, Weiter und Stopp, sonst nichts.
+- Ein Item öffnet das Radio. Start, Weiter, Stopp und Abspielmodus, sonst nichts.
 - Vanilla-Schallplatten sind immer verfügbar, auch ohne MIDI-Dateien.
 - Ton nur für den Spieler, der das Radio gestartet hat.
 - MIDI-Dateien im Template, beim Start geladen, fehlerhafte Dateien übersprungen.
@@ -35,7 +35,9 @@ Das Radio hat keinen Eintrag in den Spielereinstellungen und keinen Befehl. Der 
 - Der Zustand gilt nur für die Sitzung. Abmelden, Serverwechsel und Sprungtest stoppen ihn, also gibt es nichts, was man speichern müsste. Eine Einstellung würde einen zweiten Weg schaffen, der beim nächsten Login sofort wieder stoppen müsste.
 - Die Einstellungen (`lobby-settings`) würden eine Otis-Abhängigkeit für einen Schalter einführen, den niemand braucht.
 
-Sollte später ein Start beim Beitritt gewünscht sein, ist das ein eigener Change.
+Dasselbe gilt für den Abspielmodus (D13): Er ist Teil des Radiozustands der Sitzung und wird beim Abmelden vergessen.
+
+Sollte später ein Start beim Beitritt oder ein gespeicherter Modus gewünscht sein, ist das ein eigener Change mit Otis-Anbindung.
 
 ### D2 Bausteine im Modul `features/radio`
 
@@ -43,8 +45,9 @@ Sollte später ein Start beim Beitritt gewünscht sein, ist das ein eigener Chan
 - **`RadioPlayback`** (rein, ohne Minestom): ein Objekt je Spieler mit einem Song, einem Stand und einem Grund zum Beenden. `start`, `tick`, `stop(reason)` sind für beide Arten gleich. Nur der Inhalt unterscheidet sich: Eine MIDI-Wiedergabe spielt fällige Noten (D5), eine Vanilla-Wiedergabe startet einmal den Plattenton und endet nach der Länge aus der Tabelle (D11). Die Töne gehen über das Interface **`RadioSink`** (`note`, `playRecord`, `stopRecord`). Die Produktion setzt es mit dem Spieler um, die Tests mit einer Aufzeichnung.
 - **`RadioModule`** (`@Singleton`): `@PostConstruct` lädt die MIDI-Songs, baut die Menüs, hängt den `FeatureNode` mit Priorität 680 an und startet einen Takt-Task (`TaskSchedule.tick(1)`), der alle aktiven Wiedergaben ruft. `@PreDestroy` stoppt alle mit `SHUTDOWN`, hebt den Takt auf, schließt den Knoten und entfernt die Menüs.
 - **`RadioItems`** (`@Factory`, `Optional<LobbyItem>`): `titan:radio`, Material `JUKEBOX`, Hotbar-Platz 5. Immer vorhanden, weil die Vanilla-Platten immer da sind.
-- **`RadioMenuBuilder`**: der einzige Builder des Moduls. Er baut zwei Aves-Inventare, eines für Vanilla-Platten, eines für eigene Songs (D12). Die Inventare sind geteilt und ändern sich nicht je Spieler.
-- **`RadioPlaybacks`**: eine `ConcurrentHashMap<UUID, RadioPlayback>`, Start und Stopp je Spieler. Start und Stopp kommen von Klicks und Ereignissen, der Takt läuft auf dem Scheduler-Thread. Deshalb ist die Map nebenläufig, und eine Wiedergabe hat ein `closed`-Flag.
+- **`RadioMenuBuilder`**: der einzige Builder des Moduls. Er baut die Aves-Inventare für zwei Menüs (Vanilla-Platten, Eigene Songs) und drei Modi, also sechs geteilte Inventare (D14).
+- **`RadioSessions`**: eine `ConcurrentHashMap<UUID, RadioSession>`. Eine `RadioSession` hält je Spieler den Abspielmodus (`PlayMode`, Standard `ONCE`) und die laufende `RadioPlayback` oder keine. Start und Stopp kommen von Klicks und Ereignissen, der Takt läuft auf dem Scheduler-Thread. Deshalb ist die Map nebenläufig, und eine Wiedergabe hat ein `closed`-Flag. Beim Abmelden wird die Sitzung entfernt, also auch der Modus.
+- **`RadioSelection`** (rein): berechnet den nächsten Titel aus Titel, Modus, Katalog und `RandomGenerator` (D13). Der Zufall kommt injiziert; die Produktion nutzt `RandomGenerator.getDefault()` über eine `@Factory`-Bean, die Tests einen festen Seed.
 
 ### D3 MIDI lesen
 
@@ -112,8 +115,8 @@ Der Bereich wird in zwei Schritten erreicht:
 | Grund (Telemetrie) | Auslöser |
 | --- | --- |
 | `user` | Spieler klickt „Stopp“. |
-| `next` | Spieler klickt „Weiter“ oder eine andere Schallplatte. Der neue Titel startet sofort. |
-| `end` | Der Titel ist zu Ende: bei MIDI die letzte Note, bei Vanilla die Länge aus D11 plus Puffer. Keine Schleife, kein automatischer Nachfolger. |
+| `next` | Spieler klickt „Weiter“ oder eine andere Schallplatte. Der neue Titel startet sofort; bei „Weiter“ wählt der Modus den Titel (D13). |
+| `end` | Der Titel ist zu Ende: bei MIDI die letzte Note, bei Vanilla die Länge aus D11 plus Puffer. Danach startet nach D13 je nach Modus ein Nachfolger (`plays` mit `trigger=auto`) oder nichts. |
 | `logout` | `PlayerDisconnectEvent`. Der Client ist weg, also wird nichts mehr gesendet. |
 | `busy` | `LobbyPlayerBusyEvent` mit `busy = true`, gesendet vom Sprungtest beim Start eines Laufs und vom Portal bei Beginn einer Übergabe. Der Serverwechsel ist damit abgedeckt. |
 | `shutdown` | `@PreDestroy` des Moduls. |
@@ -126,7 +129,7 @@ Der Bereich wird in zwei Schritten erreicht:
 **Weitere Regeln:**
 
 - **Kein Wiedereinstieg nach `busy`.** Nach einem Sprungtest oder einer Übergabe startet der Spieler das Radio neu.
-- **Fangen, Tanz, Sitzen, Elytra, Spawn und Respawn** haben keine Wirkung. Fangen sendet kein `LobbyPlayerBusyEvent`, und der Ton ist privat. Das Radio spielt also während einer Jagd weiter (offene Frage 5).
+- **Fangen, Tanz, Sitzen, Elytra, Spawn und Respawn** haben keine Wirkung. Fangen sendet kein `LobbyPlayerBusyEvent`, und der Ton ist privat. Das Radio spielt also während einer Jagd weiter (entschieden, siehe `proposal.md`).
 - Ein `LobbyPlayerBusyEvent` mit `busy = false` tut nichts. Ein Listener darf nie werfen, weil das Ereignis synchron ausgelöst wird.
 
 ### D7 Songs laden, Konfiguration, Modul immer an
@@ -166,8 +169,10 @@ Die Packet-Grenze von 16 Noten je Tick ergibt höchstens 320 Sound-Pakete je Sek
 
 ### D9 Telemetrie und Logs
 
-- `titan.radio.plays{kind}` (Zähler): jeder Start, auch der Neustart durch eine andere Schallplatte. `kind` ist `vanilla` oder `midi`.
-- `titan.radio.stops{reason, kind}` (Zähler): je Grund aus D6 und je Art. Keine Spieler-Id.
+- `titan.radio.plays{kind, mode, trigger}` (Zähler): jeder Start. `kind` ist `vanilla` oder `midi`, `mode` ist `once`, `loop` oder `shuffle` (der Modus zum Startzeitpunkt), `trigger` ist `user` (Klick auf eine Platte, Weiter) oder `auto` (Nachfolger nach `end`, also Schleife oder Zufall). Kardinalität: 2 × 3 × 2 = 12.
+- `titan.radio.stops{reason, kind}` (Zähler): je Grund aus D6 und je Art. Keine Spieler-Id. Kardinalität: 6 × 2 = 12.
+- **Ein Titelende mit Nachfolger** zählt also zweimal: einmal `stops{reason=end}` für den alten Titel und einmal `plays{trigger=auto}` für den neuen. Das ist gewollt, damit jede Wiedergabe einen Start und einen Grund zum Ende hat.
+- **Modus-Wechsel** zählt nichts. Er ändert weder den laufenden Titel noch einen Start.
 - `titan.radio.notes.dropped` (Zähler): Noten, die das Budget oder die Verspätung verworfen hat. Nur MIDI.
 - `titan.radio.songs{result}` (Zähler): `loaded` und `rejected` beim Start, je MIDI-Datei. Vanilla-Platten zählen nicht.
 - Kein Span, weil Starts und Stopps zu häufig sind, um sie einzeln zu verfolgen. Dasselbe gilt für Noten.
@@ -175,11 +180,11 @@ Die Packet-Grenze von 16 Noten je Tick ergibt höchstens 320 Sound-Pakete je Sek
 
 ### D10 Meldungen
 
-Dateien `titan/radio/messages_de.properties` und `messages_en.properties`, mit denselben Schlüsseln. Benötigt werden: Itemname und Hinweis, Menütitel für beide Menüs, Umschalter „Eigene Songs“ und „Vanilla-Platten“, Lore der Schallplatte (Titel, Künstler, Art), Stopp, Weiter, Aktionsleiste „Läuft: {0} von {1}“, „Radio aus“ bei Stopp und Abbruch durch `busy`. Ein Test prüft, dass beide Sprachen dieselben Schlüssel haben und alle rendern.
+Dateien `titan/radio/messages_de.properties` und `messages_en.properties`, mit denselben Schlüsseln. Benötigt werden: Itemname und Hinweis, Menütitel für beide Menüs, Umschalter „Eigene Songs“ und „Vanilla-Platten“, Lore der Schallplatte (Titel, Künstler, Art), Stopp, Weiter, Modusknopf mit den Namen „Einmal“, „Schleife“, „Zufall“ und einer Zeile „Modus: …“, Aktionsleiste „Läuft: {0} von {1}“, „Radio aus“ bei Stopp und Abbruch durch `busy`. Ein Test prüft, dass beide Sprachen dieselben Schlüssel haben und alle rendern.
 
 ### D11 Vanilla-Schallplatten
 
-**Quelle der Liste.** Die 22 Plattenarten sind gegen `Material.MUSIC_DISC_*` und `SoundEvents.MUSIC_DISC_*` der Minestom-Version `2026.10.07-26.2` geprüft. Die Liste des Owners nennt 21 Platten. Minestom kennt zusätzlich `MUSIC_DISC_BOUNCE`; sie ist aufgenommen (offene Frage 6).
+**Quelle der Liste.** Die 22 Plattenarten sind gegen `Material.MUSIC_DISC_*` und `SoundEvents.MUSIC_DISC_*` der Minestom-Version `2026.10.07-26.2` geprüft. Die Liste des Owners nennt 21 Platten. Minestom kennt zusätzlich `MUSIC_DISC_BOUNCE`; sie ist aufgenommen (entschieden, siehe `proposal.md`).
 
 **Tabelle im Code.** Eine kleine feste Tabelle in `VanillaDiscs` (ein Enum oder eine unveränderliche Liste) mit Schallplatte, Plattenton und Länge. Seltene Daten liegen im Code, nicht in der Konfiguration. Die Plattenton-Id ist `SoundEvents.MUSIC_DISC_<NAME>` aus Minestom, der Titel steht in den Meldungen.
 
@@ -232,10 +237,48 @@ Die Zahl passt nicht in eine Kiste: 22 Vanilla-Platten und bis zu 18 eigene Song
 
 **Layout je Menü (3 Reihen, 27 Plätze):**
 
-- **Vanilla-Platten:** 22 Platten auf den Plätzen 0 bis 21. Stopp auf Platz 22, Weiter auf Platz 23, Umschalter „Eigene Songs“ auf Platz 26. Der Umschalter fehlt, wenn es keine MIDI-Songs gibt.
-- **Eigene Songs:** bis zu 18 Platten auf den Plätzen 0 bis 17. Stopp auf 22, Weiter auf 23, Umschalter „Vanilla-Platten“ auf 26.
+- **Vanilla-Platten:** 22 Platten auf den Plätzen 0 bis 21. Stopp auf Platz 22, Weiter auf Platz 23, Modusknopf auf Platz 24, Umschalter „Eigene Songs“ auf Platz 26. Der Umschalter fehlt, wenn es keine MIDI-Songs gibt.
+- **Eigene Songs:** bis zu 18 Platten auf den Plätzen 0 bis 17. Stopp auf 22, Weiter auf 23, Modusknopf auf 24, Umschalter „Vanilla-Platten“ auf 26.
 
 Der Hotbar-Eintrag öffnet immer das Menü „Vanilla-Platten“. Ein Klick auf eine Platte startet genau den Song dieser Platte, Art egal.
+
+### D13 Abspielmodus: Einmal, Schleife, Zufall
+
+**Modi.** `ONCE` (Einmal, Standard), `LOOP` (Schleife), `SHUFFLE` (Zufall). Ein Knopf im Menü schaltet den Modus des Spielers zyklisch um: Einmal → Schleife → Zufall → Einmal. Der Modus wirkt nur auf das Ende eines Titels und auf „Weiter“. Ein Klick auf eine Platte startet immer genau diesen Titel.
+
+**Katalog.** Alle verfügbaren Titel sind die 22 Vanilla-Platten in Menüreihenfolge, danach die MIDI-Songs in Konfigurationsreihenfolge. „Weiter“ im Modus Einmal oder Schleife geht in dieser Reihenfolge weiter und wechselt am Ende wieder auf den ersten Titel.
+
+| Modus | Titelende | Weiter |
+| --- | --- | --- |
+| Einmal | kein Nachfolger, Grund `end` | nächster Titel in der Reihenfolge |
+| Schleife | derselbe Titel startet neu, `trigger=auto` | nächster Titel in der Reihenfolge; die Schleife gilt für ihn weiter |
+| Zufall | ein zufälliger Titel aus dem ganzen Katalog, nie derselbe wie eben, `trigger=auto` | ein zufälliger Titel, nie derselbe wie der aktuelle |
+
+**Zufall.** Die Auswahl ist gleichverteilt über alle Titel außer dem aktuellen. Sie nutzt einen injizierten `RandomGenerator`; damit ist sie in Tests mit festem Seed reproduzierbar. Ein Titel wird so nie zweimal hintereinander gespielt, solange der Katalog mindestens zwei Titel hat.
+
+**Ein einziger Titel.** In der Produktion hat der Katalog immer 22 Titel, dieser Fall kann also nicht eintreten. In der reinen Auswahl gilt: Gibt es nur einen Titel, wiederholt Zufall ihn, weil es keinen anderen gibt. Die Regel „nie zweimal hintereinander“ ist dann nicht erfüllbar, und ein Stopp wäre für einen Modus, der weiterspielen soll, falsch. Ein leerer Katalog liefert keinen Titel und endet ohne Nachfolger.
+
+**Standard Einmal.** Das Radio spielt nur, was der Spieler gewählt hat. Schleife und Zufall laufen weiter und brauchen deshalb eine bewusste Wahl.
+
+**Sitzungszustand.** Der Modus gehört zur Sitzung und wird beim Abmelden mit der Sitzung entfernt. Er ist nicht gespeichert. Ein gespeicherter Modus bräuchte die Otis-Anbindung und einen zweiten Weg für den Zustand (D1). Das lohnt sich für einen Knopf nicht; wer ihn später will, bekommt einen eigenen Change.
+
+**Stopp und Modus.** Ein Stopp setzt den Modus nicht zurück. Ein Modus-Wechsel während eines Titels wirkt erst auf das Ende oder auf „Weiter“.
+
+### D14 Darstellung des Modusknopfs: ein Inventar je Modus und Menü
+
+Der Modusknopf muss zeigen, welcher Modus gilt. Die Menüs sind geteilte Aves-Inventare, und ein Item in einem geteilten Inventar sieht für alle Spieler gleich aus. Drei Lösungen standen zur Wahl:
+
+1. **Ein Inventar je Menü und Modus (2 × 3 = 6).** Der Modusknopf steht fest im Inventar mit dem Namen des Modus. Ein Klick schreibt den nächsten Modus in die Sitzung und öffnet dem Spieler das Inventar desselben Menüs für den neuen Modus. Der Zustand liegt in der Sitzung, das Inventar zeigt ihn nur an.
+2. **Ein Item pro Spieler aktualisieren.** Verworfen. Ein geteiltes Inventar hat für alle Spieler dasselbe Item; ein Update wäre für alle sichtbar.
+3. **Inventare pro Spieler bauen.** Verworfen. Der Aufbau kostet bei jedem Öffnen, und es gäbe so viele Inventare wie Spieler.
+
+**Gewählt: Option 1.** Der Navigator macht es mit Varianten nach Berechtigung genauso: Die Varianten sind vorab gebaut, und der Spieler sieht die richtige. Hier sind es drei Modi statt Berechtigungen, und das Umschalten zwischen den Menüs nutzt dieselbe Logik. Der Umschalter öffnet das andere Menü im aktuellen Modus.
+
+Die Kosten sind kurz: Ein Klick auf den Modusknopf öffnet das Fenster neu. Das ist für den Spieler ein kurzes Neuladen, und es ist akzeptiert.
+
+**Sprache.** Die Namen der Modi, Knöpfe und Menütitel liegen als übersetzte Aves-Items vor, die der Client pro Betrachter auflöst (wie im Navigator). Dann bleiben es sechs Inventare. Löst Aves die Sprache nicht pro Betrachter auf, gibt es je Sprache eine Variante, also zwölf Inventare. Das wird in Aufgabe 6.4 geprüft. Der Speicher ist in beiden Fällen klein.
+
+**Zustand.** Der Modus liegt nur in der Sitzung (D13). Die Inventare sind unveränderlich und tragen nichts von einem Spieler.
 
 ## Risiken / Abwägungen
 
@@ -256,7 +299,8 @@ Alle Tests folgen F.I.R.S.T.: keine Sleeps, keine Systemzeit, frische Fixtures j
   - `InstrumentMapperTest`: je Programmgruppe ein Instrument, Schlagzeug nach Taste.
   - `PitchTest`: `pitch(0) = 0,5`, `pitch(12) = 1,0`, `pitch(24) = 2,0`; Transponieren (Median), Falten (Oktaven hoch und runter), Gleichstand.
   - `RadioPlaybackTest` mit `RecordingRadioSink` und explizitem `tick()`: MIDI-Quantisierung, MIDI-Budget 16 nach Lautstärke, verspätete Noten verfallen, Ende setzt `END`, Stopp ist idempotent, nach `closed` kommen keine Töne mehr.
-  - `RadioSelectionTest`: „Weiter“ wechselt auf den nächsten Song und wrapt von der letzten Platte des Menüs auf die erste; Vanilla und MIDI werden in der gleichen Reihenfolge abgelaufen, die das Menü zeigt.
+  - `RadioSelectionTest` mit `java.util.Random(seed)` als `RandomGenerator`: Einmal startet am Ende keinen Nachfolger; Schleife startet am Ende denselben Titel neu; Zufall wählt nach dem Ende nie den eben gespielten Titel, über viele Ziehungen mit festem Seed; mit nur einem Titel wiederholt Zufall ihn; ein leerer Katalog liefert nichts; „Weiter“ geht in jedem Modus den Katalog weiter (Einmal und Schleife in Reihenfolge, Zufall ohne Wiederholung des aktuellen Titels), und der Wrap von der letzten auf die erste Platte stimmt.
+  - `PlayModeTest`: Standard ist Einmal; der Knopf zyklisch Einmal → Schleife → Zufall → Einmal; ein Modus-Wechsel während eines Titels ändert nichts am laufenden Titel.
 - **Unit, Vanilla-Tabelle:**
   - `VanillaDiscsTest`: Die Tabelle ist vollständig. Sie enthält genau die Materialien `MUSIC_DISC_*` aus `Material.values()`, je einen Plattenton aus `SoundEvents`, keine Duplikate, und jede Länge liegt über null und unter 15 Minuten. Kommt in einer künftigen Minestom-Version eine Platte hinzu, schlägt der Test fehl.
   - `VanillaDiscPlaybackTest` mit `RecordingRadioSink`: Start sendet genau einen Plattenton `RECORD` mit Emitter `self`, Lautstärke 1,0, Tonhöhe 1,0; Stopp sendet genau einen benannten Stopp mit demselben Schlüssel; Länge plus Puffer löst `END` und einen benannten Stopp aus; „Weiter“ während Vanilla sendet erst den Stopp, dann den Start des nächsten Titels.
@@ -270,7 +314,8 @@ Alle Tests folgen F.I.R.S.T.: keine Sleeps, keine Systemzeit, frische Fixtures j
 
 ## Offene Fragen
 
-Die Fragen aus `proposal.md` sind mit einem Standard beantwortet. Zusätzlich offen, ohne Einfluss auf Spec und Aufgaben:
+Die Entscheidungen des Owners stehen in `proposal.md` („Entschieden“). Offen, ohne Einfluss auf Spec und Aufgaben:
 
 1. Ob `avaje-config` ein YAML-Listenformat liest. Dann entfällt SnakeYAML als Laufzeitabhängigkeit (D7). Prüfung in Aufgabe 1.3.
 2. Ob die Lautstärke der Schallplatten-Kategorie oder der Musik-Kategorie folgt. Standard: Schallplatten (`RECORD`), weil Spieler dort die Plattenmusik regeln. Gilt für MIDI und Vanilla gleich.
+3. Ob Aves übersetzte Items pro Betrachter auflöst. Entscheidet über sechs oder zwölf Inventare in D14. Prüfung in Aufgabe 6.4.

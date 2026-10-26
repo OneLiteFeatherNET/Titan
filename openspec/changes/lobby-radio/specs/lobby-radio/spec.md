@@ -5,17 +5,95 @@
 ### Requirement: Das Radio öffnet sich über ein Hotbar-Item mit zwei Menüs
 _The radio is one hotbar item, always there, that opens the vanilla discs; custom songs are one switch away._
 
-Die Lobby MUSS das Item `titan:radio` (Material `JUKEBOX`) auf Hotbar-Platz 5 anbieten, immer, auch ohne MIDI-Dateien. Ein Klick auf das Item MUSS das Menü „Vanilla-Platten“ öffnen. Das Menü MUSS je Vanilla-Platte eine Schallplatte zeigen sowie die Steuerelemente Stopp und Weiter. Gibt es MIDI-Songs, MUSS das Menü einen Umschalter zu „Eigene Songs“ haben, und das zweite Menü MUSS je MIDI-Song eine Schallplatte zeigen, mit denselben Steuerelementen und einem Umschalter zurück.
+Die Lobby MUSS das Item `titan:radio` (Material `JUKEBOX`) auf Hotbar-Platz 5 anbieten, immer, auch ohne MIDI-Dateien. Ein Klick auf das Item MUSS das Menü „Vanilla-Platten“ öffnen. Das Menü MUSS je Vanilla-Platte eine Schallplatte zeigen sowie die Steuerelemente Stopp, Weiter und den Modusknopf. Gibt es MIDI-Songs, MUSS das Menü einen Umschalter zu „Eigene Songs“ haben, und das zweite Menü MUSS je MIDI-Song eine Schallplatte zeigen, mit denselben Steuerelementen und einem Umschalter zurück.
 
 #### Scenario: Menü öffnen ohne MIDI-Dateien
 
 - **WHEN** ein Spieler das Radio-Item benutzt und im Verzeichnis `radio/` keine MIDI-Datei liegt
-- **THEN** sieht er das Menü „Vanilla-Platten“ mit 22 Platten, Stopp und Weiter, und keinen Umschalter
+- **THEN** sieht er das Menü „Vanilla-Platten“ mit 22 Platten, Stopp, Weiter, Modusknopf und keinem Umschalter
 
 #### Scenario: Umschalten zu den eigenen Songs
 
 - **WHEN** ein Spieler mit mindestens einem geladenen MIDI-Song im Menü „Vanilla-Platten“ den Umschalter wählt
-- **THEN** sieht er das Menü „Eigene Songs“ mit einer Schallplatte je MIDI-Song und einem Umschalter zurück
+- **THEN** sieht er das Menü „Eigene Songs“ mit einer Schallplatte je MIDI-Song, dem Modusknopf im aktuellen Modus und einem Umschalter zurück
+
+### Requirement: Der Modusknopf zeigt den Modus des Spielers und schaltet ihn um
+
+_The mode button shows the player's mode through the inventory variant that is open; each variant is shared._
+
+Die Lobby MUSS für jedes Menü und jeden Modus ein Inventar bereithalten, also sechs Inventare. Der Modusknopf MUSS den aktuellen Modus des Spielers zeigen, indem das für ihn geöffnete Inventar den Modus trägt. Ein Klick auf den Modusknopf MUSS den Modus des Spielers zyklisch weiterschalten (Einmal, Schleife, Zufall) und dem Spieler das Inventar desselben Menüs im neuen Modus öffnen.
+
+#### Scenario: Modus umschalten
+
+- **WHEN** ein Spieler im Modus Einmal den Modusknopf anklickt
+- **THEN** ist sein Modus Schleife, und er sieht das Inventar „Vanilla-Platten“ im Modus Schleife
+
+#### Scenario: Umschalter behält den Modus
+
+- **WHEN** ein Spieler im Modus Zufall den Umschalter zu „Eigene Songs“ wählt
+- **THEN** sieht er „Eigene Songs“ im Modus Zufall
+
+### Requirement: Der Abspielmodus ist eine Sitzungseinstellung mit dem Standard Einmal
+
+_Three modes, default Einmal; the mode lives in the session and is forgotten on logout._
+
+Die Lobby MUSS drei Abspielmodi kennen: Einmal, Schleife und Zufall. Der Standard MUSS Einmal sein. Der Modus MUSS nur für die Sitzung des Spielers gelten, und die Lobby DARF ihn NICHT speichern. Beim Abmelden MUSS der Modus vergessen werden.
+
+#### Scenario: Standard
+
+- **WHEN** ein Spieler die Lobby betritt und das Radio öffnet
+- **THEN** ist sein Modus Einmal
+
+#### Scenario: Modus nach dem Abmelden
+
+- **WHEN** ein Spieler im Modus Schleife ist, sich abmeldet und wieder anmeldet
+- **THEN** ist sein Modus wieder Einmal
+
+### Requirement: Titelende und Weiter richten sich nach dem Modus
+
+_Einmal stops, Schleife repeats the same title, Zufall picks a random other title; Weiter follows the mode too._
+
+Die Lobby MUSS beim Titelende nach dem Modus handeln. Im Modus Einmal MUSS kein Nachfolger starten. Im Modus Schleife MUSS derselbe Titel neu starten. Im Modus Zufall MUSS ein zufälliger Titel aus allen verfügbaren Titeln starten, nicht derselbe wie eben, solange der Katalog mindestens zwei Titel hat. „Weiter“ MUSS den nächsten Titel nach dem Modus wählen: in Einmal und Schleife den nächsten in der Reihenfolge (Vanilla in Menüreihenfolge, danach MIDI in Konfigurationsreihenfolge, am Ende wieder vorn), in Zufall einen zufälligen anderen Titel. Mit nur einem Titel MUSS Zufall diesen Titel wiederholen. Ein leerer Katalog DARF keinen Titel liefern.
+
+#### Scenario: Einmal endet
+
+- **WHEN** der Titel „wait“ im Modus Einmal endet
+- **THEN** endet die Wiedergabe mit dem Grund `end`, und es startet kein Nachfolger
+
+#### Scenario: Schleife wiederholt den Titel
+
+- **WHEN** der Titel „cat“ im Modus Schleife endet
+- **THEN** endet „cat“ mit dem Grund `end`, und „cat“ startet mit `trigger=auto` neu
+
+#### Scenario: Zufall wählt einen anderen Titel
+
+- **WHEN** der Titel „cat“ im Modus Zufall endet
+- **THEN** endet „cat“ mit dem Grund `end`, und ein zufälliger anderer Titel startet mit `trigger=auto`
+
+#### Scenario: Zufall wiederholt nie denselben Titel zweimal hintereinander
+
+- **WHEN** viele Titelenden im Modus Zufall mit festem Seed ausgelost werden
+- **THEN** ist kein Nachfolger gleich dem Titel, der eben endete
+
+#### Scenario: Weiter im Modus Einmal
+
+- **WHEN** ein Spieler im Modus Einmal bei „cat“ „Weiter“ wählt
+- **THEN** endet „cat“ mit dem Grund `next`, und der nächste Titel in der Reihenfolge startet
+
+#### Scenario: Weiter im Modus Schleife
+
+- **WHEN** ein Spieler im Modus Schleife bei „cat“ „Weiter“ wählt
+- **THEN** endet „cat“ mit dem Grund `next`, der nächste Titel in der Reihenfolge startet, und er wird im Modus Schleife wiederholt
+
+#### Scenario: Weiter im Modus Zufall
+
+- **WHEN** ein Spieler im Modus Zufall bei „cat“ „Weiter“ wählt
+- **THEN** endet „cat“ mit dem Grund `next`, und ein zufälliger anderer Titel startet
+
+#### Scenario: Ein einziger Titel im Modus Zufall
+
+- **WHEN** der Katalog nur einen Titel hat und er im Modus Zufall endet
+- **THEN** startet derselbe Titel mit `trigger=auto` neu
 
 ### Requirement: Vanilla-Schallplatten spielen den Plattenton des Clients nur für den Spieler
 
@@ -37,7 +115,7 @@ Die Lobby MUSS für jede der 22 Plattenarten aus der festen Tabelle den eingebau
 
 _Lengths are approximate constants in code; the server ends the disc itself after the length plus a short margin._
 
-Die Lobby MUSS für jede Vanilla-Platte eine Länge aus der festen Tabelle kennen. Nach Länge plus 5 Sekunden Puffer MUSS sie den Plattenton mit einem benannten Stopp beenden und den Grund `end` melden. Die Lobby DARF den Titel nicht in einer Schleife wiederholen.
+Die Lobby MUSS für jede Vanilla-Platte eine Länge aus der festen Tabelle kennen. Nach Länge plus 5 Sekunden Puffer MUSS sie den Plattenton mit einem benannten Stopp beenden und den Grund `end` melden. Ob danach ein Titel startet, entscheidet der Modus (siehe „Titelende und Weiter richten sich nach dem Modus“).
 
 #### Scenario: Ende nach der Länge
 
@@ -82,9 +160,10 @@ Die Lobby MUSS die Töne jedes Titels, Vanilla und MIDI, als Sound-Paket an gena
 - **THEN** entsteht in der Welt kein Notenblock und kein Ton
 
 ### Requirement: Das Radio hat keinen Einstellungsschalter und keinen Befehl
-_Start and stop happen in the menu only; the radio is not stored as a player setting._
 
-Die Lobby MUSS das Radio nicht über die Spielereinstellungen steuern und MUSS keinen Befehl dafür anbieten. Start und Stopp MÜSSEN über das Menü geschehen.
+_Start, stop and mode are in the menu only; the radio is not stored as a player setting._
+
+Die Lobby MUSS das Radio nicht über die Spielereinstellungen steuern und MUSS keinen Befehl dafür anbieten. Start, Stopp und Modus MÜSSEN über das Menü geschehen.
 
 #### Scenario: Keine Einstellung
 
@@ -151,29 +230,19 @@ Die Lobby MUSS die Noten eines MIDI-Songs auf den Server-Tick (50 ms) umrechnen 
 
 ### Requirement: Stoppgründe beenden die Wiedergabe sofort, für beide Arten
 
-_The radio stops on logout, busy events, end of song, skip and stop; it never resumes on its own._
+_The radio stops on logout, busy events, end of title, skip and stop; it never resumes on its own after busy or logout._
 
-Die Lobby MUSS die Wiedergabe beenden, wenn der Spieler sich abmeldet, wenn ein `LobbyPlayerBusyEvent` mit `busy = true` für ihn kommt, wenn der Titel endet, und wenn der Spieler „Stopp“ oder „Weiter“ wählt. Das gilt für Vanilla-Platten und MIDI-Songs gleich. Die Lobby DARF die Wiedergabe NICHT von selbst wieder aufnehmen.
+Die Lobby MUSS die Wiedergabe beenden, wenn der Spieler sich abmeldet, wenn ein `LobbyPlayerBusyEvent` mit `busy = true` für ihn kommt, wenn der Titel endet, und wenn der Spieler „Stopp“ oder „Weiter“ wählt. Das gilt für Vanilla-Platten und MIDI-Songs gleich. Die Lobby DARF die Wiedergabe nach `busy` oder nach einem Abmelden NICHT von selbst wieder aufnehmen. Nur das Titelende kann nach dem Modus einen Nachfolger starten.
 
 #### Scenario: Abmelden
 
 - **WHEN** ein Spieler das Radio hört und sich abmeldet
-- **THEN** endet die Wiedergabe mit dem Grund `logout`
+- **THEN** endet die Wiedergabe mit dem Grund `logout`, und der Modus wird vergessen
 
 #### Scenario: Sprungtest und Serverwechsel
 
 - **WHEN** ein Spieler einen Sprungtest startet oder eine Übergabe zu einem anderen Server beginnt
-- **THEN** endet die Wiedergabe mit dem Grund `busy`, und sie startet danach nicht von selbst
-
-#### Scenario: Weiter
-
-- **WHEN** ein Spieler „Weiter“ wählt
-- **THEN** endet der laufende Titel mit dem Grund `next`, und der nächste Titel in der Reihenfolge des Menüs startet
-
-#### Scenario: Titelende
-
-- **WHEN** der letzte Ton eines MIDI-Songs gespielt ist oder die Länge einer Vanilla-Platte abgelaufen ist
-- **THEN** endet die Wiedergabe mit dem Grund `end`, und es folgt kein weiterer Titel
+- **THEN** endet die Wiedergabe mit dem Grund `busy`, und sie startet danach nicht von selbst, auch nicht im Modus Schleife oder Zufall
 
 #### Scenario: Fangen beendet das Radio nicht
 
@@ -198,14 +267,19 @@ Die Lobby MUSS folgende Grenzen einhalten: eine MIDI-Datei höchstens 512 KiB, e
 
 ### Requirement: Telemetrie und Meldungen
 
-_Counters by reason and kind, no player identifiers; texts in German and English._
+_Counters by kind, mode, trigger and reason, no player identifiers; texts in German and English._
 
-Die Lobby MUSS die Zähler `titan.radio.plays{kind}`, `titan.radio.stops{reason, kind}`, `titan.radio.notes.dropped` und `titan.radio.songs{result}` führen. `kind` ist `vanilla` oder `midi`. Attribute MÜSSEN ohne Spieler-Id auskommen. Alle Nutzertexte MÜSSEN in Deutsch und Englisch mit denselben Schlüsseln vorliegen, auch die Menütitel und der Umschalter.
+Die Lobby MUSS die Zähler `titan.radio.plays{kind, mode, trigger}`, `titan.radio.stops{reason, kind}`, `titan.radio.notes.dropped` und `titan.radio.songs{result}` führen. `kind` ist `vanilla` oder `midi`, `mode` ist `once`, `loop` oder `shuffle`, `trigger` ist `user` oder `auto`. Attribute MÜSSEN ohne Spieler-Id auskommen. Ein Titelende mit Nachfolger MUSS als Stopp mit `reason=end` und als Start mit `trigger=auto` zählen. Alle Nutzertexte MÜSSEN in Deutsch und Englisch mit denselben Schlüsseln vorliegen, auch die Menütitel, der Umschalter und die Modusnamen.
 
 #### Scenario: Stopp mit Grund und Art
 
-- **WHEN** ein Spieler „Stopp“ wählt, während die MIDI-Songs-Platte „sunrise“ läuft
+- **WHEN** ein Spieler „Stopp“ wählt, während der MIDI-Song „sunrise“ läuft
 - **THEN** wird `titan.radio.stops` mit `reason=user` und `kind=midi` um eins erhöht, ohne Spieler-Id
+
+#### Scenario: Schleife zählt Ende und Neustart
+
+- **WHEN** im Modus Schleife der Titel „cat“ endet und neu startet
+- **THEN** wird `titan.radio.stops` mit `reason=end` und `kind=vanilla` um eins erhöht, und `titan.radio.plays` mit `kind=vanilla`, `mode=loop` und `trigger=auto` um eins
 
 #### Scenario: Meldungen in beiden Sprachen
 
