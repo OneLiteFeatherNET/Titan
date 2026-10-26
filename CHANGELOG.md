@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.8.0](https://github.com/OneLiteFeatherNET/Titan/compare/v4.7.0...v4.8.0) (2026-10-26)
+
+
+### Features
+
+* **navigator:** add on-demand staging entries and tamias ([#504](https://github.com/OneLiteFeatherNET/Titan/issues/504)) ([dbf9f71](https://github.com/OneLiteFeatherNET/Titan/commit/dbf9f715bfe3ed9ed7fa7e4be66e9ed75ae0c30e))
+
 ## [4.7.0](https://github.com/OneLiteFeatherNET/Titan/compare/v4.6.1...v4.7.0) (2026-10-26)
 
 
