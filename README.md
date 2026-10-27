@@ -9,6 +9,7 @@ Titan is a complete Minestom-based Minecraft lobby server that provides various 
 - **Elytra Boost**: Provides boost functionality for players using elytra
 - **Jump & Run**: A random single-player jump and run in hotbar slot 0 with client-side blocks (2 behind, 2 ahead of the player); the difficulty rises with the score and records persist in the database when one is configured (otherwise in memory), and a sidebar shows score, record and the top three of the mode during a run; see [Database](docs/lobby-modules.md#datenbank-persistence)
 - **Lobby switcher** (CloudNet variant only): a clock in hotbar slot 8 opens an inventory listing the running lobbies of the own task with their player counts; a click sends the player there. The last row is a navigation row with a close button at its first slot; from 46 lobbies it pages. Gated by the flag `LOBBYSWITCHER` (see "Feature flags" below)
+- **Radio**: A jukebox in hotbar slot 5 opens the vanilla music discs and, when `radio/songs.yaml` names MIDI files, your own songs on note blocks. Each title plays only for the player who started it; see [Radio](docs/lobby-modules.md#radio-radio)
 - **Height Teleportation**: Automatically teleports players when they exceed certain height limits
 
 ## Requirements
