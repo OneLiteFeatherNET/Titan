@@ -30,13 +30,25 @@ class RadioTelemetryTest {
 
     @DisplayName("A start counts by kind, mode and trigger")
     @Test
-    void startCountsByKindModeAndTrigger() {
+    void startCountsByKindModeTriggerAndCategory() {
         try (TestTelemetry test = TestTelemetry.create()) {
             RadioTelemetry telemetry = new RadioTelemetry(test.telemetry());
 
-            telemetry.started(RadioKind.VANILLA, PlayMode.LOOP, Trigger.AUTO);
+            telemetry.started(RadioKind.VANILLA, PlayMode.LOOP, Trigger.AUTO, "minecraft");
 
-            Assertions.assertEquals(1, test.counter(PLAYS, Attributes.builder().put(RadioTelemetry.KIND, "vanilla").put(RadioTelemetry.MODE, "loop").put(RadioTelemetry.TRIGGER, "auto").build()), "one vanilla start in loop, triggered automatically, must be counted once");
+            Assertions.assertEquals(1, test.counter(PLAYS, Attributes.builder().put(RadioTelemetry.KIND, "vanilla").put(RadioTelemetry.MODE, "loop").put(RadioTelemetry.TRIGGER, "auto").put(RadioTelemetry.CATEGORY, "minecraft").build()), "one vanilla start in loop, triggered automatically, must be counted once with its category");
+        }
+    }
+
+    @DisplayName("A start in a declared category counts with the category id, never a player id")
+    @Test
+    void startCountsWithDeclaredCategoryId() {
+        try (TestTelemetry test = TestTelemetry.create()) {
+            RadioTelemetry telemetry = new RadioTelemetry(test.telemetry());
+
+            telemetry.started(RadioKind.MIDI, PlayMode.ONCE, Trigger.USER, "games");
+
+            Assertions.assertEquals(1, test.counter(PLAYS, Attributes.builder().put(RadioTelemetry.KIND, "midi").put(RadioTelemetry.MODE, "once").put(RadioTelemetry.TRIGGER, "user").put(RadioTelemetry.CATEGORY, "games").build()), "a MIDI start in games must be counted with the category id games");
         }
     }
 
@@ -59,10 +71,10 @@ class RadioTelemetryTest {
             RadioTelemetry telemetry = new RadioTelemetry(test.telemetry());
 
             telemetry.stopped(StopReason.END, RadioKind.VANILLA);
-            telemetry.started(RadioKind.VANILLA, PlayMode.SHUFFLE, Trigger.AUTO);
+            telemetry.started(RadioKind.VANILLA, PlayMode.SHUFFLE, Trigger.AUTO, "minecraft");
 
             Assertions.assertEquals(1, test.counter(STOPS, Attributes.builder().put(RadioTelemetry.REASON, "end").put(RadioTelemetry.KIND, "vanilla").build()), "the end must count as an end stop");
-            Assertions.assertEquals(1, test.counter(PLAYS, Attributes.builder().put(RadioTelemetry.KIND, "vanilla").put(RadioTelemetry.MODE, "shuffle").put(RadioTelemetry.TRIGGER, "auto").build()), "the successor must count as an automatic start");
+            Assertions.assertEquals(1, test.counter(PLAYS, Attributes.builder().put(RadioTelemetry.KIND, "vanilla").put(RadioTelemetry.MODE, "shuffle").put(RadioTelemetry.TRIGGER, "auto").put(RadioTelemetry.CATEGORY, "minecraft").build()), "the successor must count as an automatic start");
         }
     }
 

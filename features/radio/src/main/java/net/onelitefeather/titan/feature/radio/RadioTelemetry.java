@@ -30,6 +30,7 @@ final class RadioTelemetry {
     static final AttributeKey<String> KIND = AttributeKey.stringKey("kind");
     static final AttributeKey<String> MODE = AttributeKey.stringKey("mode");
     static final AttributeKey<String> TRIGGER = AttributeKey.stringKey("trigger");
+    static final AttributeKey<String> CATEGORY = AttributeKey.stringKey("category");
     static final AttributeKey<String> REASON = AttributeKey.stringKey("reason");
     static final AttributeKey<String> RESULT = AttributeKey.stringKey("result");
 
@@ -43,14 +44,18 @@ final class RadioTelemetry {
 
     RadioTelemetry(Telemetry telemetry) {
         Objects.requireNonNull(telemetry, "telemetry must not be null");
-        this.plays = telemetry.meter().counterBuilder("titan.radio.plays").setUnit("{start}").setDescription("Titles started, by kind, play mode and trigger").build();
+        this.plays = telemetry.meter().counterBuilder("titan.radio.plays").setUnit("{start}").setDescription("Titles started, by kind, play mode, trigger and category").build();
         this.stops = telemetry.meter().counterBuilder("titan.radio.stops").setUnit("{stop}").setDescription("Titles stopped, by reason and kind").build();
         this.droppedNotes = telemetry.meter().counterBuilder("titan.radio.notes.dropped").setUnit("{note}").setDescription("MIDI notes dropped for lateness or the notes-per-tick budget").build();
         this.songs = telemetry.meter().counterBuilder("titan.radio.songs").setUnit("{file}").setDescription("MIDI files read at start, by result").build();
     }
 
-    void started(RadioKind kind, PlayMode mode, Trigger trigger) {
-        this.plays.add(1, Attributes.builder().put(KIND, kind.telemetryName()).put(MODE, mode.telemetryName()).put(TRIGGER, trigger.telemetryName()).build());
+    /**
+     * The category is its id, which the config bounds to 22 values; stops carry no category, so
+     * starts are not counted twice.
+     */
+    void started(RadioKind kind, PlayMode mode, Trigger trigger, String category) {
+        this.plays.add(1, Attributes.builder().put(KIND, kind.telemetryName()).put(MODE, mode.telemetryName()).put(TRIGGER, trigger.telemetryName()).put(CATEGORY, category).build());
     }
 
     void stopped(StopReason reason, RadioKind kind) {

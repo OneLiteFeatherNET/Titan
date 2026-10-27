@@ -275,7 +275,7 @@ class RadioModuleIntegrationTest {
             Assertions.assertEquals(2, played.size(), "the disc must start a second time after it ended in loop mode");
             Assertions.assertEquals(played.get(0).soundEvent(), played.get(1).soundEvent(), "the second start must be the same disc");
             Assertions.assertEquals(1, round.counter("titan.radio.stops", attributes("reason", "end", "kind", "vanilla")), "the end must be counted as an end stop");
-            Assertions.assertEquals(1, round.counter("titan.radio.plays", attributes("kind", "vanilla", "mode", "loop", "trigger", "auto")), "the restart must be counted as an automatic loop start");
+            Assertions.assertEquals(1, round.counter("titan.radio.plays", attributes("kind", "vanilla", "mode", "loop", "trigger", "auto", "category", "minecraft")), "the restart must be counted as an automatic loop start");
         }
     }
 
