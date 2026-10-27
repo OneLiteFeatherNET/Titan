@@ -224,7 +224,7 @@ public final class RadioModule {
     }
 
     private void play(Player player, RadioSession session, RadioSong song, List<MidiNote> notes, Trigger trigger) {
-        RadioPlayback playback = new RadioPlayback(song, notes, new PlayerRadioSink(player));
+        RadioPlayback playback = new RadioPlayback(song, notes, new PlayerRadioSink(player), () -> Volume.DEFAULT);
         session.play(song, playback);
         this.radioTelemetry.started(song.kind(), session.mode(), trigger, song.category().id());
         this.radioTelemetry.notesDropped(playback.start(this.serverTick).droppedNotes());

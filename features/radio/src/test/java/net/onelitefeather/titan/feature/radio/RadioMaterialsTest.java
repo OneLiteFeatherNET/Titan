@@ -15,7 +15,6 @@
  */
 package net.onelitefeather.titan.feature.radio;
 
-import java.util.Arrays;
 import java.util.List;
 import net.minestom.server.item.Material;
 import org.junit.jupiter.api.Assertions;
@@ -30,6 +29,6 @@ class RadioMaterialsTest {
         List<Material> used = List.of(Material.OAK_DOOR, Material.SPECTRAL_ARROW, Material.BOOK, Material.BARRIER, Material.REPEATER, Material.NOTE_BLOCK, Material.ARROW, Material.PAPER, Material.MUSIC_DISC_13, Material.GRAY_STAINED_GLASS_PANE, Material.JUKEBOX, Material.EMERALD, Material.FIREWORK_ROCKET, Material.CLOCK, Material.JACK_O_LANTERN);
 
         Assertions.assertEquals(15, used.size(), "the list must name all fifteen materials of the change");
-        Assertions.assertTrue(Arrays.asList(Material.values()).containsAll(used), "every menu material must be a Minestom material");
+        used.forEach(material -> Assertions.assertNotNull(Material.fromKey(material.key()), material.key() + " must be a Minestom material"));
     }
 }

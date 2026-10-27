@@ -36,7 +36,7 @@ class VanillaDiscPlaybackTest {
     @Test
     void startPlaysTheRecordSoundOnce() {
         RecordingRadioSink sink = new RecordingRadioSink();
-        RadioPlayback playback = new RadioPlayback(mellohi(), List.of(), sink);
+        RadioPlayback playback = new RadioPlayback(mellohi(), List.of(), sink, () -> Volume.DEFAULT);
 
         playback.start(START);
 
@@ -52,7 +52,7 @@ class VanillaDiscPlaybackTest {
     @Test
     void stopSendsTheNamedStopOnce() {
         RecordingRadioSink sink = new RecordingRadioSink();
-        RadioPlayback playback = new RadioPlayback(mellohi(), List.of(), sink);
+        RadioPlayback playback = new RadioPlayback(mellohi(), List.of(), sink, () -> Volume.DEFAULT);
         playback.start(START);
 
         playback.stop();
@@ -65,7 +65,7 @@ class VanillaDiscPlaybackTest {
     @Test
     void discEndsAfterItsLengthPlusBuffer() {
         RecordingRadioSink sink = new RecordingRadioSink();
-        RadioPlayback playback = new RadioPlayback(mellohi(), List.of(), sink);
+        RadioPlayback playback = new RadioPlayback(mellohi(), List.of(), sink, () -> Volume.DEFAULT);
         playback.start(START);
 
         Assertions.assertFalse(playback.tick(START + MELLOHI_END_TICK - 1).ended(), "the disc must still run one tick before the end");
@@ -77,7 +77,7 @@ class VanillaDiscPlaybackTest {
     @Test
     void stopAfterTheEndSendsNothing() {
         RecordingRadioSink sink = new RecordingRadioSink();
-        RadioPlayback playback = new RadioPlayback(mellohi(), List.of(), sink);
+        RadioPlayback playback = new RadioPlayback(mellohi(), List.of(), sink, () -> Volume.DEFAULT);
         playback.start(START);
         playback.tick(START + MELLOHI_END_TICK);
 

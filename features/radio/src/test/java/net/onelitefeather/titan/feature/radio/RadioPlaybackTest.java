@@ -37,7 +37,7 @@ class RadioPlaybackTest {
     }
 
     private static RadioPlayback playback(RecordingRadioSink sink, MidiNote... notes) {
-        return new RadioPlayback(song(), List.of(notes), sink);
+        return new RadioPlayback(song(), List.of(notes), sink, () -> Volume.DEFAULT);
     }
 
     private static List<Integer> velocities(List<Sound> sounds) {
