@@ -41,8 +41,8 @@ Die Melodie eines Songs MUSS wie bisher um ganze Oktaven verschoben werden, soda
 
 #### Scenario: Blechbläser
 
-- **WHEN** ein Titel das General-MIDI-Programm 56 spielt, dann 59, dann 60
-- **THEN** wird `trumpet` gewählt, dann `trumpet_oxidized`, dann `trumpet_weathered`
+- **WHEN** ein Titel die General-MIDI-Programme 56, 57, 58 und 60 spielt
+- **THEN** werden die Instrumente `trumpet`, `trumpet_weathered`, `trumpet_oxidized` und `trumpet_exposed` gewählt
 
 #### Scenario: Zu tiefe Melodie-Note
 

@@ -9,7 +9,7 @@ Im Radio klingen MIDI-Songs stellenweise falsch. Steigt eine Melodie über F#5, 
 - **Register je Instrument:** Jedes Notenblock-Instrument kennt seine Grundtaste, also die MIDI-Taste seiner Note 0. Harfe, Banjo, Pling, Bit, Eisen-Xylophon und alle Schlagzeug-artigen Instrumente der Melodie haben 54, Bass und Didgeridoo 30, Gitarre 42, Flöte 66, Glocke, Glockenspiel und Xylophon 78. Die Note ist `Taste − Grundtaste + Verschiebung`, damit die Oktave stimmt.
 - **Erweiterungsinstrumente statt Falten:** Liegt eine Melodie-Note außerhalb des Registers ihres Instruments, spielt sie das Erweiterungsinstrument (Bass, Gitarre, Flöte oder Glocke), dessen Register die Taste enthält. Gibt es mehrere, gewinnt das Register, dessen Grundtaste der des Instruments am nächsten liegt.
 - **Letzte Instanz:** Nur Noten außerhalb von 30 bis 102 (der Gesamtbereich aller Register) werden um Oktaven gefaltet, und zwar in diesen Bereich hinein. Die Tonhöhenklasse bleibt erhalten.
-- **Blechbläser:** Die Notenblock-Instrumente `trumpet`, `trumpet_exposed`, `trumpet_weathered` und `trumpet_oxidized` aus Minecraft 26.2 kommen dazu, mit der Grundtaste 54 (Register der Harfe, angenommen). General-MIDI-Programme 56 bis 58 und 61 bis 63 spielen `trumpet`, 59 (gedämpfte Trompete) `trumpet_oxidized`, 60 (Waldhorn) `trumpet_weathered`. Die bisherige Zuordnung von 56 bis 63 zum Didgeridoo entfällt. Das Register muss im Spiel per Ohr geprüft werden.
+- **Blechbläser:** Die Notenblock-Instrumente `trumpet`, `trumpet_exposed`, `trumpet_weathered` und `trumpet_oxidized` aus der aktuellen Minecraft-Version kommen dazu, mit der Grundtaste 54 (Register der Harfe, angenommen). General-MIDI-Programme 56 (Trompete), 59 (gedämpfte Trompete) und 61 bis 63 (Blechbläser-Satz, Synth-Blech) spielen `trumpet`, 57 (Posaune) `trumpet_weathered`, 58 (Tuba) `trumpet_oxidized`, 60 (Waldhorn) `trumpet_exposed`. Die bisherige Zuordnung von 56 bis 63 zum Didgeridoo entfällt. Die Register sind angenommen und müssen im Spiel per Ohr geprüft werden.
 - **Unverändert:** Die Verschiebung um ganze Oktaven anhand des Melodie-Medians bleibt. Schlagzeug auf Kanal 10 bleibt wie bisher, die Lautstärke ebenso. Keine neue Konfiguration.
 
 ## Capabilities
@@ -30,7 +30,7 @@ Keine.
 - **Konfiguration:** keine.
 - **Abhängigkeit:** Die Anforderung steht heute in `openspec/changes/radio-categories/specs/lobby-radio/spec.md` (MODIFIED-Abschnitt) und ist dort noch nicht archiviert. Dieses Delta ist gegen diese Fassung geschrieben. Die Archivreihenfolge ist `lobby-radio`, dann `radio-categories`, dann diese Änderung.
 - **Nicht brechend:** Vorhandene Songs bleiben abspielbar. Nur die Tonlage einzelner Noten und die Instrumente der Blechbläser ändern sich.
-- **Minecraft-Version:** Die Trompeten-Sounds existieren erst mit Minecraft 26.2. Ein Client ohne diese Sounds spielt die Töne nicht. Das muss mit dem Server-Stand abgeglichen werden.
+- **Minecraft-Version:** Die Trompeten-Sounds gibt es nur in einer Minecraft-Version, die den Client-Stand dieser Lobby trägt. Ein Client ohne diese Sounds spielt die Töne nicht. Das muss mit dem Server-Stand abgeglichen werden.
 
 ## Type and Scope
 

@@ -6,7 +6,7 @@
 
 Die Anforderung „MIDI-Noten werden auf Notenblock-Instrumente und Tonhöhen abgebildet“ steht heute im MODIFIED-Abschnitt von `openspec/changes/radio-categories/specs/lobby-radio/spec.md`. Diese Änderung ist ein Delta dagegen.
 
-Zusätzlich kommen mit Minecraft 26.2 vier Trompeten-Instrumente dazu (`trumpet`, `trumpet_exposed`, `trumpet_weathered`, `trumpet_oxidized`). Sie werden in dieser Änderung mit eingeführt und den Blechbläser-Programmen zugeordnet.
+Zusätzlich kommen in der aktuellen Minecraft-Version vier Trompeten-Instrumente dazu (`trumpet`, `trumpet_exposed`, `trumpet_weathered`, `trumpet_oxidized`). Sie werden in dieser Änderung mit eingeführt und den Blechbläser-Programmen zugeordnet.
 
 ## Ziele / Nicht-Ziele
 
@@ -64,15 +64,16 @@ Das hat eine Grenze, die vor dem Merge geklärt werden muss (siehe „Offen“).
 
 ### D5 Blechbläser und Trompeten
 
-Mit Minecraft 26.2 kommen vier Notenblock-Instrumente dazu: `trumpet`, `trumpet_exposed`, `trumpet_weathered`, `trumpet_oxidized`. Ihre Sound-Schlüssel sind `minecraft:block.note_block.trumpet`, `…trumpet_exposed`, `…trumpet_weathered`, `…trumpet_oxidized`. Die Sounds sind im Data-Jar nachgewiesen.
+Es kommen vier Notenblock-Instrumente dazu: `trumpet`, `trumpet_exposed`, `trumpet_weathered`, `trumpet_oxidized`. Ihre Sound-Schlüssel sind `minecraft:block.note_block.trumpet`, `…trumpet_exposed`, `…trumpet_weathered`, `…trumpet_oxidized`. Die Sounds sind im Data-Jar nachgewiesen. Die Wiki-Quelle nennt die Varianten als eigene Instrumente: Trompete, Horn, Posaune und Tuba.
 
 Die Zuordnung der General-MIDI-Programme:
 
-- 56 (Trompete), 57 (Posaune), 58 (Tuba), 61 (Blechbläser-Satz), 62 und 63 (Synth-Blech) → `trumpet`
-- 59 (gedämpfte Trompete) → `trumpet_oxidized`
-- 60 (Waldhorn) → `trumpet_weathered`
+- 56 (Trompete), 59 (gedämpfte Trompete), 61 (Blechbläser-Satz), 62 und 63 (Synth-Blech) → `trumpet`
+- 57 (Posaune) → `trumpet_weathered`
+- 58 (Tuba) → `trumpet_oxidized`
+- 60 (Waldhorn) → `trumpet_exposed`
 
-Das Register der Trompeten ist angenommen: Grundtaste 54, wie bei der Harfe. Es ist nicht aus einer Quelle belegt. Die Grundtaste steht in einer Konstante, damit sie bei einer Korrektur an einer Stelle geändert wird. Der Abnahmeschritt in `tasks.md` prüft im Spiel per Ohr, ob die Oktave stimmt.
+Das Register aller vier Trompeten-Varianten ist angenommen: Grundtaste 54, wie bei der Harfe. Es ist nicht aus einer Quelle belegt. Eine Tuba-Sample liegt unter Umständen tiefer als 54; die Grundtaste der Tuba-Variante ist dann anzupassen. Die Grundtaste steht in einer Konstante, damit sie bei einer Korrektur an einer Stelle geändert wird. Der Abnahmeschritt in `tasks.md` prüft im Spiel per Ohr, ob die Oktave stimmt.
 
 Das Didgeridoo verliert damit seine General-MIDI-Programme 56 bis 63. Das Instrument bleibt im Enum mit Grundtaste 30, wird aber von keinem Programm mehr gewählt.
 
@@ -83,8 +84,8 @@ Die Mob-Köpfe des Notenblocks (Zombie, Skelett, Creeper, Drache, Wither-Skelett
 ## Offen
 
 - **Verschiebung bei tiefen Songs (Owner-Entscheidung).** D4 verschiebt den ganzen Song, sobald der Median nicht in der Mitte liegt. Eine reine Bass-Stimme mit Median F#2 (Taste 42) wird um zwei Oktaven nach oben verschoben. Dann landen ihre Noten auf Gitarre und Flöte statt auf dem Bass. Die Anforderung verlangt die Verschiebung ausdrücklich unverändert. Vor dem Merge soll der Owner entscheiden, ob die Verschiebung für diesen Fall entfällt oder pro Instrument gilt. Der Code-Pull-Request ändert das nicht ohne diese Entscheidung.
-- **Trompeten-Register.** Grundtaste 54 ist angenommen (D5).
-- **Minecraft-Version.** Die Trompeten-Sounds gibt es nur ab Minecraft 26.2. Ob der Server auf diesem Stand ist, prüft diese Änderung nicht.
+- **Trompeten-Register.** Grundtaste 54 ist für alle vier Varianten angenommen (D5). Die Tuba-Variante kann tiefer liegen.
+- **Minecraft-Version.** Die Trompeten-Sounds gibt es nur in einer passenden Minecraft-Version. Ob der Server und der Client-Stand dazu passen, prüft diese Änderung nicht.
 
 ## Tests
 
