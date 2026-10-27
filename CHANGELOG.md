@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.9.0](https://github.com/OneLiteFeatherNET/Titan/compare/v4.8.1...v4.9.0) (2026-10-27)
+
+
+### Features
+
+* **radio:** add a note block radio with personal discs ([#509](https://github.com/OneLiteFeatherNET/Titan/issues/509)) ([a1d6bb4](https://github.com/OneLiteFeatherNET/Titan/commit/a1d6bb4cb5b1df2f4fc5183258a6e840bfc4944f))
+
 ## [4.8.1](https://github.com/OneLiteFeatherNET/Titan/compare/v4.8.0...v4.8.1) (2026-10-26)
 
 

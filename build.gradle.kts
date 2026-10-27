@@ -15,7 +15,7 @@ plugins {
 
 // release-please bumps the annotated version line below on each release.
 allprojects {
-    version = "4.8.1" // x-release-please-version
+    version = "4.9.0" // x-release-please-version
 }
 
 subprojects {
