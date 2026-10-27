@@ -30,6 +30,8 @@ final class RadioSession {
     private RadioPlayback playback;
     private final RadioSessionState view = new RadioSessionState();
     private final RadioLoad load;
+    private int startVolume = Volume.DEFAULT;
+    private boolean changed;
 
     RadioSession(Player player, RadioLoad load) {
         this.player = Objects.requireNonNull(player, "player must not be null");
@@ -78,13 +80,33 @@ final class RadioSession {
         return this.playback != null;
     }
 
-    void play(RadioSong song, RadioPlayback playback) {
+    /** The volume the playing title started at; a vanilla disc keeps it until it ends. */
+    int startVolume() {
+        return this.startVolume;
+    }
+
+    void play(RadioSong song, RadioPlayback playback, int startVolume) {
         this.song = song;
         this.playback = playback;
+        this.startVolume = startVolume;
+        touch();
     }
 
     /** The title is over, stopped or ended; the song stays as the last one played. */
     void clear() {
         this.playback = null;
+        touch();
+    }
+
+    /** Marks the open window as stale, so it is drawn again on the next tick. */
+    void touch() {
+        this.changed = true;
+    }
+
+    /** @return whether the open window is stale; the mark is cleared by this call */
+    boolean takeChanged() {
+        boolean changed = this.changed;
+        this.changed = false;
+        return changed;
     }
 }

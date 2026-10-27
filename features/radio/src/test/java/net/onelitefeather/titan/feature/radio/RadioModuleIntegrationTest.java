@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Random;
+import net.minestom.server.component.DataComponents;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
 import net.minestom.server.event.EventNode;
@@ -40,6 +41,7 @@ import net.minestom.testing.extension.MicrotusExtension;
 import net.onelitefeather.titan.core.module.LobbyPlayerBusyEvent;
 import net.onelitefeather.titan.core.module.item.ItemSlot;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
+import net.onelitefeather.titan.core.settings.SettingsRegistry;
 import net.onelitefeather.titan.core.testfixtures.TestTelemetry;
 import net.onelitefeather.titan.core.testfixtures.TestTitanNode;
 import org.junit.jupiter.api.Assertions;
@@ -52,15 +54,19 @@ import org.junit.jupiter.api.io.TempDir;
 class RadioModuleIntegrationTest {
 
     static final long SEED = 7L;
-    /** Slot of the disc 11 in the vanilla menu: a short disc, 71 seconds. */
+    /** The overview lists Minecraft first, so its slot is 0; Sonstige follows when it has songs. */
+    static final int MINECRAFT_SLOT = 0;
+    static final int SONSTIGE_SLOT = 1;
+    /** Slot of the disc 13 in the Minecraft list, the first vinyl disc. */
+    static final int DISC_13_SLOT = 0;
+    /** Slot of the disc 11 in the Minecraft list: a short disc, 71 seconds. */
     static final int ELEVEN_SLOT = 10;
     static final int ELEVEN_END_TICKS = 71 * RadioLimits.TICKS_PER_SECOND + RadioLimits.DISC_END_BUFFER_TICKS;
-    static final int DISC_13_SOUND_SLOT = 0;
     /** Past the second note of {@link TestSongFiles#writeSunrise}, which is on game tick 20. */
     static final int MIDI_NOTES_TICKS = 25;
-    static final int STOP_SLOT = RadioMenuLayout.STOP_SLOT;
-    static final int MODE_SLOT = RadioMenuLayout.MODE_SLOT;
-    static final int SWITCH_SLOT = RadioMenuLayout.SWITCH_SLOT;
+    static final int STOP_SLOT = RadioMenuLayout.STOP;
+    static final int MODE_SLOT = RadioMenuLayout.MODE;
+    static final int VOLUME_SLOT = RadioMenuLayout.VOLUME;
 
     @TempDir
     Path radio;
@@ -75,6 +81,7 @@ class RadioModuleIntegrationTest {
         final RadioModule module;
         final RadioMessages messages = new RadioMessages();
         final TestTelemetry telemetry = TestTelemetry.create();
+        final InMemoryRadioSettings settings = new InMemoryRadioSettings();
         private final TestTitanNode titanNode;
 
         Round(Env env, Path directory) {
@@ -82,7 +89,7 @@ class RadioModuleIntegrationTest {
             this.messages.register();
             EventNode<Event> titan = this.titanNode.node();
             Scheduler scheduler = env.process().scheduler();
-            this.module = new RadioModule(titan, scheduler, this.telemetry.telemetry(), new Random(SEED), this.messages, directory, Runnable::run);
+            this.module = new RadioModule(titan, scheduler, this.telemetry.telemetry(), new Random(SEED), this.messages, this.settings, new SettingsRegistry(), directory, Runnable::run);
             this.module.start();
         }
 
@@ -114,15 +121,32 @@ class RadioModuleIntegrationTest {
 
     /** Clicks {@code slot} in the inventory {@code player} has open, as the client would. */
     static void click(Env env, Player player, int slot) {
+        click(env, player, slot, new Click.Left(slot));
+    }
+
+    /** A right click on {@code slot}. */
+    static void clickRight(Env env, Player player, int slot) {
+        click(env, player, slot, new Click.Right(slot));
+    }
+
+    private static void click(Env env, Player player, int slot, Click click) {
         AbstractInventory open = player.getOpenInventory();
-        Assertions.assertNotNull(open, "the player must have a radio inventory open before a click");
-        env.process().eventHandler().call(new InventoryPreClickEvent(open, player, new Click.Left(slot)));
+        Assertions.assertNotNull(open, "the player must have a radio window open before a click");
+        env.process().eventHandler().call(new InventoryPreClickEvent(open, player, click));
     }
 
     static void tick(Env env, int ticks) {
         for (int tick = 0; tick < ticks; tick++) {
             env.tick();
         }
+    }
+
+    /** Opens the radio, lets the window fill, and opens the category at {@code overviewSlot}. */
+    static void openCategory(Env env, RadioModuleIntegrationTest.Round round, Player player, int overviewSlot) {
+        round.module.open(player);
+        env.tick();
+        click(env, player, overviewSlot);
+        env.tick();
     }
 
     @DisplayName("The radio item sits on hotbar slot 5 and is there without any MIDI file")
@@ -136,6 +160,38 @@ class RadioModuleIntegrationTest {
         }
     }
 
+    @DisplayName("The overview lists Minecraft first, and Sonstige only when there are songs")
+    @Test
+    void overviewListsMinecraftAndSonstigeWithSongs(Env env) throws Exception {
+        TestSongFiles.writeSunrise(this.radio, "sunrise.mid");
+        Instance instance = env.createFlatInstance();
+        try (Round round = new Round(env, this.radio)) {
+            Player player = round.connect(env, instance).player();
+
+            round.module.open(player);
+            env.tick();
+
+            AbstractInventory overview = player.getOpenInventory();
+            Assertions.assertEquals(Material.MUSIC_DISC_13, overview.getItemStack(MINECRAFT_SLOT).material(), "the first category must be Minecraft, shown as disc 13");
+            Assertions.assertEquals(Material.PAPER, overview.getItemStack(SONSTIGE_SLOT).material(), "Sonstige must follow Minecraft when it has songs");
+            Assertions.assertEquals(Material.BARRIER, overview.getItemStack(STOP_SLOT).material(), "the stop control must keep its slot in the overview");
+        }
+    }
+
+    @DisplayName("Without MIDI files the overview shows Minecraft only")
+    @Test
+    void overviewWithoutSongsShowsMinecraftOnly(Env env) {
+        Instance instance = env.createFlatInstance();
+        try (Round round = new Round(env, this.radio.resolve("missing"))) {
+            Player player = round.connect(env, instance).player();
+
+            round.module.open(player);
+            env.tick();
+
+            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, player.getOpenInventory().getItemStack(SONSTIGE_SLOT).material(), "Sonstige must not be listed without songs");
+        }
+    }
+
     @DisplayName("A clicked vinyl disc plays its record sound for the clicker only")
     @Test
     void clickedDiscPlaysForTheClickerOnly(Env env) {
@@ -145,9 +201,9 @@ class RadioModuleIntegrationTest {
             Seat other = round.connect(env, instance);
             Collector<EntitySoundEffectPacket> clickerSounds = clicker.connection().trackIncoming(EntitySoundEffectPacket.class);
             Collector<EntitySoundEffectPacket> otherSounds = other.connection().trackIncoming(EntitySoundEffectPacket.class);
-            round.module.open(clicker.player());
+            openCategory(env, round, clicker.player(), MINECRAFT_SLOT);
 
-            click(env, clicker.player(), DISC_13_SOUND_SLOT);
+            click(env, clicker.player(), DISC_13_SLOT);
 
             EntitySoundEffectPacket sound = clickerSounds.collect().getFirst();
             Assertions.assertEquals(VanillaDiscs.ALL.getFirst().sound(), sound.soundEvent(), "the first disc must play its own record sound");
@@ -163,8 +219,8 @@ class RadioModuleIntegrationTest {
         try (Round round = new Round(env, this.radio.resolve("missing"))) {
             Seat clicker = round.connect(env, instance);
             Collector<StopSoundPacket> stops = clicker.connection().trackIncoming(StopSoundPacket.class);
-            round.module.open(clicker.player());
-            click(env, clicker.player(), DISC_13_SOUND_SLOT);
+            openCategory(env, round, clicker.player(), MINECRAFT_SLOT);
+            click(env, clicker.player(), DISC_13_SLOT);
 
             click(env, clicker.player(), STOP_SLOT);
 
@@ -173,7 +229,7 @@ class RadioModuleIntegrationTest {
         }
     }
 
-    @DisplayName("A MIDI song from the switch plays its notes for the clicker only")
+    @DisplayName("A MIDI song in Sonstige plays its notes for the clicker only")
     @Test
     void midiSongPlaysNotesForTheClickerOnly(Env env) throws Exception {
         TestSongFiles.writeSunrise(this.radio, "sunrise.mid");
@@ -183,8 +239,7 @@ class RadioModuleIntegrationTest {
             Seat other = round.connect(env, instance);
             Collector<EntitySoundEffectPacket> clickerSounds = clicker.connection().trackIncoming(EntitySoundEffectPacket.class);
             Collector<EntitySoundEffectPacket> otherSounds = other.connection().trackIncoming(EntitySoundEffectPacket.class);
-            round.module.open(clicker.player());
-            click(env, clicker.player(), SWITCH_SLOT);
+            openCategory(env, round, clicker.player(), SONSTIGE_SLOT);
 
             click(env, clicker.player(), 0);
             tick(env, MIDI_NOTES_TICKS);
@@ -205,15 +260,14 @@ class RadioModuleIntegrationTest {
         try (Round round = new Round(env, this.radio)) {
             Seat clicker = round.connect(env, instance);
             Collector<EntitySoundEffectPacket> sounds = clicker.connection().trackIncoming(EntitySoundEffectPacket.class);
-            round.module.open(clicker.player());
-            click(env, clicker.player(), SWITCH_SLOT);
+            openCategory(env, round, clicker.player(), SONSTIGE_SLOT);
 
             click(env, clicker.player(), 0);
             tick(env, MIDI_NOTES_TICKS);
 
             sounds.assertEmpty();
             Assertions.assertEquals(1, round.counter("titan.radio.songs", attributes("result", "rejected")), "the unreadable file must be counted once as rejected");
-            Assertions.assertEquals(0, round.counter("titan.radio.plays", attributes("kind", "midi", "mode", "once", "trigger", "user")), "no title may start for the unreadable file");
+            Assertions.assertEquals(0, round.counter("titan.radio.plays", attributes("kind", "midi", "mode", "once", "trigger", "user", "category", "other")), "no title may start for the unreadable file");
         }
     }
 
@@ -223,8 +277,8 @@ class RadioModuleIntegrationTest {
         Instance instance = env.createFlatInstance();
         try (Round round = new Round(env, this.radio.resolve("missing"))) {
             Seat clicker = round.connect(env, instance);
-            round.module.open(clicker.player());
-            click(env, clicker.player(), DISC_13_SOUND_SLOT);
+            openCategory(env, round, clicker.player(), MINECRAFT_SLOT);
+            click(env, clicker.player(), DISC_13_SLOT);
             click(env, clicker.player(), MODE_SLOT);
             Assertions.assertEquals(PlayMode.LOOP, round.module.modeOf(clicker.player()), "the mode button must switch the mode to loop");
 
@@ -242,7 +296,7 @@ class RadioModuleIntegrationTest {
         try (Round round = new Round(env, this.radio.resolve("missing"))) {
             Seat clicker = round.connect(env, instance);
             Collector<StopSoundPacket> stops = clicker.connection().trackIncoming(StopSoundPacket.class);
-            round.module.open(clicker.player());
+            openCategory(env, round, clicker.player(), MINECRAFT_SLOT);
             click(env, clicker.player(), MODE_SLOT);
             click(env, clicker.player(), ELEVEN_SLOT);
             // A collector reads once and then stops listening, so it is started after the disc has begun.
@@ -264,51 +318,65 @@ class RadioModuleIntegrationTest {
         Instance instance = env.createFlatInstance();
         try (Round round = new Round(env, this.radio.resolve("missing"))) {
             Seat clicker = round.connect(env, instance);
-            Collector<EntitySoundEffectPacket> sounds = clicker.connection().trackIncoming(EntitySoundEffectPacket.class);
-            round.module.open(clicker.player());
+            openCategory(env, round, clicker.player(), MINECRAFT_SLOT);
             click(env, clicker.player(), MODE_SLOT);
+            Collector<EntitySoundEffectPacket> played = clicker.connection().trackIncoming(EntitySoundEffectPacket.class);
             click(env, clicker.player(), ELEVEN_SLOT);
 
             tick(env, ELEVEN_END_TICKS + 5);
 
-            List<EntitySoundEffectPacket> played = sounds.collect();
-            Assertions.assertEquals(2, played.size(), "the disc must start a second time after it ended in loop mode");
-            Assertions.assertEquals(played.get(0).soundEvent(), played.get(1).soundEvent(), "the second start must be the same disc");
+            List<EntitySoundEffectPacket> sounds = played.collect();
+            Assertions.assertEquals(2, sounds.size(), "the disc must start a second time after it ended in loop mode");
+            Assertions.assertEquals(sounds.get(0).soundEvent(), sounds.get(1).soundEvent(), "the second start must be the same disc");
             Assertions.assertEquals(1, round.counter("titan.radio.stops", attributes("reason", "end", "kind", "vanilla")), "the end must be counted as an end stop");
             Assertions.assertEquals(1, round.counter("titan.radio.plays", attributes("kind", "vanilla", "mode", "loop", "trigger", "auto", "category", "minecraft")), "the restart must be counted as an automatic loop start");
         }
     }
 
-    @DisplayName("After stop no listener of the module reacts")
+    @DisplayName("The volume button lowers the volume to 75 percent and stores it for the player")
     @Test
-    void stopLeavesNoListenerBehind(Env env) {
-        Instance instance = env.createFlatInstance();
-        Round round = new Round(env, this.radio.resolve("missing"));
-        Seat clicker = round.connect(env, instance);
-        Collector<EntitySoundEffectPacket> sounds = clicker.connection().trackIncoming(EntitySoundEffectPacket.class);
-        round.module.open(clicker.player());
-        AbstractInventory open = clicker.player().getOpenInventory();
-
-        round.module.stop();
-        env.process().eventHandler().call(new InventoryPreClickEvent(open, clicker.player(), new Click.Left(DISC_13_SOUND_SLOT)));
-        tick(env, 3);
-
-        sounds.assertEmpty();
-        round.close();
-    }
-
-    @DisplayName("Without MIDI files the switch shows nothing and a click on its slot keeps the vanilla menu open")
-    @Test
-    void switchDoesNothingWithoutSongs(Env env) {
+    void volumeButtonStoresTheLevel(Env env) {
         Instance instance = env.createFlatInstance();
         try (Round round = new Round(env, this.radio.resolve("missing"))) {
-            tick(env, 1);
-            Seat clicker = round.connect(env, instance);
-            round.module.open(clicker.player());
+            Player player = round.connect(env, instance).player();
+            openCategory(env, round, player, MINECRAFT_SLOT);
 
-            click(env, clicker.player(), SWITCH_SLOT);
+            clickRight(env, player, VOLUME_SLOT);
 
-            Assertions.assertEquals(Material.MUSIC_DISC_13, clicker.player().getOpenInventory().getItemStack(0).material(), "the vanilla menu must stay open");
+            Assertions.assertEquals(75, round.settings.level(player.getUuid(), Volume.SETTING), "a right click at 100 percent must store 75 percent");
+        }
+    }
+
+    @DisplayName("The mode button changes the open window in place, the same inventory stays open")
+    @Test
+    void modeButtonKeepsTheWindow(Env env) {
+        Instance instance = env.createFlatInstance();
+        try (Round round = new Round(env, this.radio.resolve("missing"))) {
+            Player player = round.connect(env, instance).player();
+            openCategory(env, round, player, MINECRAFT_SLOT);
+            AbstractInventory before = player.getOpenInventory();
+
+            click(env, player, MODE_SLOT);
+            env.tick();
+
+            Assertions.assertSame(before, player.getOpenInventory(), "the mode change must not reopen the window");
+            Assertions.assertEquals(PlayMode.LOOP, round.module.modeOf(player), "the mode must change to loop");
+        }
+    }
+
+    @DisplayName("The title that plays for a player glows in that player's window only")
+    @Test
+    void playingTitleGlows(Env env) {
+        Instance instance = env.createFlatInstance();
+        try (Round round = new Round(env, this.radio.resolve("missing"))) {
+            Player player = round.connect(env, instance).player();
+            openCategory(env, round, player, MINECRAFT_SLOT);
+            click(env, player, DISC_13_SLOT);
+            tick(env, 3);
+
+            AbstractInventory window = player.getOpenInventory();
+            Assertions.assertEquals(Boolean.TRUE, window.getItemStack(DISC_13_SLOT).get(DataComponents.ENCHANTMENT_GLINT_OVERRIDE), "the title that plays must glow");
+            Assertions.assertNull(window.getItemStack(ELEVEN_SLOT).get(DataComponents.ENCHANTMENT_GLINT_OVERRIDE), "a title that does not play must not glow");
         }
     }
 }

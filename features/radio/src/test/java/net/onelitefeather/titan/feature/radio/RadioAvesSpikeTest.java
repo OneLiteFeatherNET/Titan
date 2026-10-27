@@ -43,7 +43,7 @@ class RadioAvesSpikeTest {
 
     private static RadioWindow window(Player player, Material slotZero) {
         RadioWindow window = new RadioWindow(player, Locale.ENGLISH);
-        window.setTitleData(new TextData(RadioMessages.MENU_VANILLA));
+        window.setTitleData(new TextData(RadioMessages.WINDOW_OVERVIEW));
         window.setLayout(InventoryLayout.fromType(RadioWindow.TYPE));
         window.setDataLayoutFunction(previous -> layout(slotZero));
         return window;
@@ -124,7 +124,7 @@ class RadioAvesSpikeTest {
         AbstractInventory before = player.getOpenInventory();
         String titleBefore = titleOf(before);
 
-        window.setTitleData(new TextData(RadioMessages.MENU_SONGS));
+        window.setTitleData(new TextData(RadioMessages.WINDOW_CATEGORY, "Games", "1", "2"));
         window.invalidateDataLayout();
         env.tick();
 

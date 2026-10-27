@@ -15,153 +15,140 @@
  */
 package net.onelitefeather.titan.feature.radio;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import net.kyori.adventure.text.Component;
-import net.minestom.server.inventory.AbstractInventory;
-import net.minestom.server.inventory.Inventory;
-import net.minestom.server.inventory.InventoryType;
+import net.kyori.adventure.text.format.TextDecoration;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
-import net.theevilreaper.aves.i18n.TextData;
-import net.theevilreaper.aves.inventory.CustomInventory;
-import net.theevilreaper.aves.inventory.GlobalTranslatedInventoryBuilder;
-import net.theevilreaper.aves.inventory.holder.InventoryHolderImpl;
 import net.theevilreaper.aves.inventory.layout.InventoryLayout;
-import net.theevilreaper.aves.item.TranslatedItem;
 
 /**
- * The six radio inventories: two menus, each in three play modes. Every inventory is one Aves
- * builder, and Aves renders its texts for the viewer's locale, so the inventories are shared by
- * everyone who opens them. A click on a builder's inventory is handled by {@link RadioModule}:
- * Aves' own click handling does not run for translated builders.
+ * Builds the content of one radio window from a snapshot of the player's state. Items are plain
+ * stacks rendered for the window's language: a translated item would lose its glint. Every control
+ * keeps its slot, and an unavailable one shows as glass.
  */
 final class RadioMenuBuilder {
 
     private static final ItemStack FILLER = ItemStack.builder(Material.GRAY_STAINED_GLASS_PANE).customName(Component.empty()).build();
-    private static final List<Locale> LANGUAGES = List.of(Locale.ENGLISH, Locale.GERMAN);
 
-    /** One of the six inventories: which menu, in which play mode. */
-    record Variant(RadioMenu menu, PlayMode mode) {
+    /**
+     * What the window shows.
+     *
+     * @param state       the overview or the open category, and the page
+     * @param categories  the overview categories, in order; used in the overview only
+     * @param titles      the titles of the open category, in order; empty in the overview
+     * @param mode        the player's play mode
+     * @param volume      the player's volume in percent
+     * @param playing     the title that plays for this player, or {@code null}
+     * @param volumeLater whether {@code playing} started at another volume than {@code volume}
+     * @param canNext     whether Next has a title to start
+     */
+    record MenuView(RadioSessionState state, List<RadioCategory> categories, List<RadioSong> titles,
+                    PlayMode mode, int volume, RadioSong playing, boolean volumeLater,
+                    boolean canNext) {
 
-        Variant {
-            Objects.requireNonNull(menu, "menu must not be null");
+        MenuView {
+            Objects.requireNonNull(state, "state must not be null");
+            categories = List.copyOf(categories);
+            titles = List.copyOf(titles);
             Objects.requireNonNull(mode, "mode must not be null");
         }
     }
 
-    private final List<MidiSong> songs;
-    private final Map<Variant, GlobalTranslatedInventoryBuilder> builders = new HashMap<>();
-
-    RadioMenuBuilder(List<MidiSong> songs) {
-        this.songs = List.copyOf(Objects.requireNonNull(songs, "songs must not be null"));
-        for (RadioMenu menu : RadioMenu.values()) {
-            for (PlayMode mode : PlayMode.values()) {
-                this.builders.put(new Variant(menu, mode), builder(menu, mode));
-            }
-        }
+    private RadioMenuBuilder() {
     }
 
-    /**
-     * Registers every builder and builds its inventory for each supported language up front. Aves
-     * fills an inventory's contents on the next tick, so a viewer who opens one later sees it full.
-     */
-    void register() {
-        for (GlobalTranslatedInventoryBuilder builder : this.builders.values()) {
-            builder.register();
-            for (Locale language : LANGUAGES) {
-                builder.getInventory(language);
-            }
-        }
-    }
-
-    void unregister() {
-        this.builders.values().forEach(GlobalTranslatedInventoryBuilder::unregister);
-    }
-
-    /** The language a viewer reads: German for German clients, English for every other client. */
-    static Locale languageOf(Locale locale) {
-        return locale != null && Locale.GERMAN.getLanguage().equals(locale.getLanguage()) ? Locale.GERMAN : Locale.ENGLISH;
-    }
-
-    /** The inventory of {@code menu} in {@code mode}, as {@code locale} sees it. */
-    Inventory inventory(RadioMenu menu, PlayMode mode, Locale locale) {
-        return this.builders.get(new Variant(menu, mode)).getInventory(languageOf(locale));
-    }
-
-    /** Which of the six inventories {@code inventory} is, or nothing when it is none of ours. */
-    Optional<Variant> ownerOf(AbstractInventory inventory) {
-        if (inventory instanceof CustomInventory custom && custom.getHolder() instanceof InventoryHolderImpl holder) {
-            Object builder = holder.inventoryBuilder();
-            return this.builders.entrySet().stream().filter(entry -> entry.getValue() == builder).map(Map.Entry::getKey).findFirst();
-        }
-        return Optional.empty();
-    }
-
-    /** Whether the switch to the songs menu is shown: only when there are songs. */
-    boolean switchShown() {
-        return !this.songs.isEmpty();
-    }
-
-    private GlobalTranslatedInventoryBuilder builder(RadioMenu menu, PlayMode mode) {
-        GlobalTranslatedInventoryBuilder builder = new EnglishWithoutLocale(RadioMenuLayout.TYPE);
-        builder.setTitleData(new TextData(menu == RadioMenu.VANILLA ? RadioMessages.MENU_VANILLA : RadioMessages.MENU_SONGS));
-        builder.setLayout(InventoryLayout.fromType(RadioMenuLayout.TYPE));
-        builder.setDataLayoutFunction(previous -> layout(menu, mode));
-        return builder;
-    }
-
-    private InventoryLayout layout(RadioMenu menu, PlayMode mode) {
-        InventoryLayout layout = InventoryLayout.fromType(RadioMenuLayout.TYPE);
+    /** The layout of the window for {@code view}, in the language of {@code locale}. */
+    static InventoryLayout build(MenuView view, Locale locale) {
+        InventoryLayout layout = InventoryLayout.fromType(RadioWindow.TYPE);
         for (int slot = 0; slot < RadioMenuLayout.SIZE; slot++) {
             layout.setItem(slot, FILLER);
         }
-        List<? extends RadioSong> discs = menu == RadioMenu.VANILLA ? VanillaDiscs.ALL : this.songs;
-        int shown = Math.min(discs.size(), RadioMenuLayout.discSlots(menu));
-        for (int slot = 0; slot < shown; slot++) {
-            layout.setItem(slot, disc(discs.get(slot)).toNonClickSlot());
+        if (view.state().inOverview()) {
+            overview(layout, view, locale);
+        } else {
+            titles(layout, view, locale);
         }
-        layout.setItem(RadioMenuLayout.STOP_SLOT, TranslatedItem.of(Material.BARRIER).setDisplayName(new TextData(RadioMessages.STOP)).toNonClickSlot());
-        layout.setItem(RadioMenuLayout.NEXT_SLOT, TranslatedItem.of(Material.ARROW).setDisplayName(new TextData(RadioMessages.NEXT)).toNonClickSlot());
-        layout.setItem(RadioMenuLayout.MODE_SLOT, TranslatedItem.of(Material.REPEATER).setDisplayName(new TextData(modeName(mode))).setLore(new TextData(RadioMessages.MODE_HINT)).toNonClickSlot());
-        if (menu == RadioMenu.VANILLA && switchShown()) {
-            layout.setItem(RadioMenuLayout.SWITCH_SLOT, TranslatedItem.of(Material.NOTE_BLOCK).setDisplayName(new TextData(RadioMessages.SWITCH_TO_SONGS)).toNonClickSlot());
-        } else if (menu == RadioMenu.SONGS) {
-            layout.setItem(RadioMenuLayout.SWITCH_SLOT, TranslatedItem.of(Material.JUKEBOX).setDisplayName(new TextData(RadioMessages.SWITCH_TO_VANILLA)).toNonClickSlot());
-        }
+        controls(layout, view, locale);
         return layout;
     }
 
-    private static TranslatedItem disc(RadioSong song) {
-        String lore = song.kind() == RadioKind.VANILLA ? RadioMessages.DISC_LORE_VANILLA : RadioMessages.DISC_LORE_MIDI;
-        return TranslatedItem.of(song.disc()).setDisplayName(TextData.of(RadioMessages.DISC_NAME, song.title())).setLore(TextData.of(lore, song.artist()));
+    private static void overview(InventoryLayout layout, MenuView view, Locale locale) {
+        for (int index = 0; index < view.categories().size() && index < RadioMenuLayout.CONTENT; index++) {
+            RadioCategory category = view.categories().get(index);
+            layout.setItem(index, item(category.icon(), plain(category.name(locale)), List.of(), false));
+        }
     }
 
-    private static String modeName(PlayMode mode) {
+    private static void titles(InventoryLayout layout, MenuView view, Locale locale) {
+        int first = (PageLayout.clampPage(view.state().page(), view.titles().size()) - 1) * RadioMenuLayout.CONTENT;
+        for (int slot = 0; slot < RadioMenuLayout.CONTENT && first + slot < view.titles().size(); slot++) {
+            RadioSong song = view.titles().get(first + slot);
+            String lore = song.kind() == RadioKind.VANILLA ? RadioMessages.DISC_LORE_VANILLA : RadioMessages.DISC_LORE_MIDI;
+            layout.setItem(slot, item(song.disc(), plain(song.title()), List.of(RadioMessages.text(lore, locale, song.artist())), song.equals(view.playing())));
+        }
+    }
+
+    private static void controls(InventoryLayout layout, MenuView view, Locale locale) {
+        boolean inCategory = !view.state().inOverview();
+        int pages = PageLayout.pageCount(view.titles().size());
+        int page = PageLayout.clampPage(view.state().page(), view.titles().size());
+        layout.setItem(RadioMenuLayout.BACK, inCategory ? control(Material.OAK_DOOR, RadioMessages.text(RadioMessages.BACK, locale)) : FILLER);
+        layout.setItem(RadioMenuLayout.PREVIOUS, inCategory && page > 1 ? control(Material.SPECTRAL_ARROW, RadioMessages.text(RadioMessages.PAGE_PREVIOUS, locale)) : FILLER);
+        layout.setItem(RadioMenuLayout.PAGE_INFO, inCategory ? control(Material.BOOK, RadioMessages.text(RadioMessages.PAGE_INFO, locale, String.valueOf(page), String.valueOf(pages))) : control(Material.BOOK, RadioMessages.text(RadioMessages.CATEGORY_COUNT, locale, String.valueOf(view.categories().size()))));
+        layout.setItem(RadioMenuLayout.STOP, control(Material.BARRIER, RadioMessages.text(RadioMessages.STOP, locale)));
+        layout.setItem(RadioMenuLayout.NOW_PLAYING, nowPlaying(view, locale));
+        layout.setItem(RadioMenuLayout.NEXT, view.canNext() ? control(Material.ARROW, RadioMessages.text(RadioMessages.NEXT, locale)) : FILLER);
+        layout.setItem(RadioMenuLayout.MODE, item(Material.REPEATER, RadioMessages.text(modeKey(view.mode()), locale), List.of(RadioMessages.text(RadioMessages.MODE_HINT, locale)), false));
+        layout.setItem(RadioMenuLayout.VOLUME, item(Material.NOTE_BLOCK, RadioMessages.text(RadioMessages.NOW_VOLUME, locale, String.valueOf(view.volume())), List.of(RadioMessages.text(RadioMessages.VOLUME_HINT, locale)), false));
+        layout.setItem(RadioMenuLayout.FORWARD, inCategory && page < pages ? control(Material.SPECTRAL_ARROW, RadioMessages.text(RadioMessages.PAGE_NEXT, locale)) : FILLER);
+    }
+
+    private static ItemStack nowPlaying(MenuView view, Locale locale) {
+        List<Component> lore = new ArrayList<>();
+        if (view.playing() == null) {
+            lore.add(RadioMessages.text(modeKey(view.mode()), locale));
+            lore.add(RadioMessages.text(RadioMessages.NOW_VOLUME, locale, String.valueOf(view.volume())));
+            return item(Material.JUKEBOX, RadioMessages.text(RadioMessages.NOW_NONE, locale), lore, false);
+        }
+        RadioSong playing = view.playing();
+        lore.add(RadioMessages.text(RadioMessages.NOW_ARTIST, locale, playing.artist()));
+        lore.add(RadioMessages.text(RadioMessages.NOW_CATEGORY, locale, playing.category().name(locale)));
+        lore.add(RadioMessages.text(modeKey(view.mode()), locale));
+        lore.add(RadioMessages.text(RadioMessages.NOW_VOLUME, locale, String.valueOf(view.volume())));
+        if (view.volumeLater()) {
+            lore.add(RadioMessages.text(RadioMessages.NOW_LATER, locale));
+        }
+        return item(playing.disc(), RadioMessages.text(RadioMessages.NOW_TITLE, locale, playing.title()), lore, false);
+    }
+
+    private static ItemStack control(Material material, Component name) {
+        return item(material, name, List.of(), false);
+    }
+
+    private static ItemStack item(Material material, Component name, List<Component> lore, boolean glowing) {
+        ItemStack.Builder builder = ItemStack.builder(material).customName(name);
+        if (!lore.isEmpty()) {
+            builder.lore(lore);
+        }
+        if (glowing) {
+            builder.glowing();
+        }
+        return builder.build();
+    }
+
+    private static Component plain(String text) {
+        return Component.text(text).decoration(TextDecoration.ITALIC, false);
+    }
+
+    private static String modeKey(PlayMode mode) {
         return switch (mode) {
             case ONCE -> RadioMessages.MODE_ONCE;
             case LOOP -> RadioMessages.MODE_LOOP;
             case SHUFFLE -> RadioMessages.MODE_SHUFFLE;
         };
-    }
-
-    /**
-     * Aves asks for the inventory without a locale when it registers a builder; that inventory
-     * reads English, as in the lobby switcher.
-     */
-    private static final class EnglishWithoutLocale extends GlobalTranslatedInventoryBuilder {
-
-        EnglishWithoutLocale(InventoryType type) {
-            super(type);
-        }
-
-        @Override
-        public Inventory getInventory(Locale locale) {
-            return super.getInventory(locale == null ? Locale.ENGLISH : locale);
-        }
     }
 }

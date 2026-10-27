@@ -16,6 +16,8 @@
 package net.onelitefeather.titan.feature.radio;
 
 import java.util.List;
+import net.onelitefeather.titan.core.settings.LevelSetting;
+import net.onelitefeather.titan.core.settings.SettingKey;
 
 /**
  * The radio volume as a fixed step list. There is no zero: stop covers silence. The edges hold
@@ -25,6 +27,12 @@ final class Volume {
 
     static final List<Integer> STEPS = List.of(25, 50, 75, 100);
     static final int DEFAULT = 100;
+
+    /**
+     * The player's stored volume, kept in Otis through the settings with the key
+     * {@code titan:radio.volume}.
+     */
+    static final LevelSetting SETTING = new LevelSetting(SettingKey.parse("titan:radio.volume"), STEPS, DEFAULT);
 
     private Volume() {
     }
