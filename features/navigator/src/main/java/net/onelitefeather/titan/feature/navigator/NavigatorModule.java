@@ -155,7 +155,7 @@ public final class NavigatorModule {
         this.services = Objects.requireNonNull(onDemand, "onDemand must not be null").orElse(NoOnDemandServices.INSTANCE);
         this.navigatorTelemetry = new NavigatorTelemetry(this.telemetry);
         StagingPorts stagingPorts = new StagingPorts(this::isAllowed, this::connectToTask);
-        this.starts = new StagingStarts<>(this.services, Objects.requireNonNull(clock, "clock must not be null"), stagingPorts, stagingPorts, this.navigatorTelemetry);
+        this.starts = new StagingStarts<>(this.services, Objects.requireNonNull(clock, "clock must not be null"), Duration.ofSeconds(settings.stagingStartTimeoutSeconds()), stagingPorts, stagingPorts, this.navigatorTelemetry);
         this.idle = new StagingIdle(this.services, clock, Duration.ofSeconds(settings.stagingIdleSeconds()), this.navigatorTelemetry);
         for (Destination destination : ServerPicker.DESTINATIONS) {
             for (Locale language : LANGUAGES) {

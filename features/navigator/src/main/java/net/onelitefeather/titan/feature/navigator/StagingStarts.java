@@ -33,7 +33,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Decides what a click on a staging entry does: connect at once when a service is ready, start one
  * when no service is alive, or make the player wait. The waiting players of an entry are connected
- * by the refresh once a service is ready, and refused after {@link #TIMEOUT}. The services are read
+ * by the refresh once a service is ready, and refused once the configured timeout has passed. The
+ * services are read
  * off the tick by the caller, so every method here runs on the tick thread with the reading it was
  * given and never blocks.
  *
@@ -45,8 +46,6 @@ final class StagingStarts<P> {
 
     /** How long after its own start an entry waits before it may start again. */
     static final Duration COOLDOWN = Duration.ofSeconds(30);
-    /** How long the players wait for a service before they are refused. */
-    static final Duration TIMEOUT = Duration.ofSeconds(90);
 
     /** What a click led to. */
     enum Outcome {
@@ -55,6 +54,7 @@ final class StagingStarts<P> {
 
     private final OnDemandServices services;
     private final Clock clock;
+    private final Duration timeout;
     private final StagingConnect<P> connect;
     private final StagingNotice<P> notice;
     private final NavigatorTelemetry telemetry;
@@ -62,9 +62,10 @@ final class StagingStarts<P> {
     private final Map<Destination, Instant> waitingSince = new EnumMap<>(Destination.class);
     private final Map<Destination, Instant> lastStart = new EnumMap<>(Destination.class);
 
-    StagingStarts(OnDemandServices services, Clock clock, StagingConnect<P> connect, StagingNotice<P> notice, NavigatorTelemetry telemetry) {
+    StagingStarts(OnDemandServices services, Clock clock, Duration timeout, StagingConnect<P> connect, StagingNotice<P> notice, NavigatorTelemetry telemetry) {
         this.services = services;
         this.clock = clock;
+        this.timeout = timeout;
         this.connect = connect;
         this.notice = notice;
         this.telemetry = telemetry;
@@ -121,7 +122,7 @@ final class StagingStarts<P> {
 
     /**
      * One pass after a refresh: connects the waiting players of every entry whose service is ready,
-     * refuses those past {@link #TIMEOUT}, and repeats the action bar line for the rest.
+     * refuses those past the timeout, and repeats the action bar line for the rest.
      */
     void refresh(Map<Destination, Optional<List<ServiceState>>> reads) {
         Instant now = this.clock.instant();
@@ -156,8 +157,8 @@ final class StagingStarts<P> {
             ready.forEach(player -> this.connect.connect(player, destination));
             return;
         }
-        if (!now.isBefore(this.waitingSince.get(destination).plus(TIMEOUT))) {
-            LOGGER.warn("A service of task {} was not ready within {} seconds", destination.task(), TIMEOUT.toSeconds());
+        if (!now.isBefore(this.waitingSince.get(destination).plus(this.timeout))) {
+            LOGGER.warn("A service of task {} was not ready within {} seconds", destination.task(), this.timeout.toSeconds());
             List<P> expired = List.copyOf(players);
             this.recordWaits(destination, NavigatorTelemetry.WaitResult.TIMEOUT, now, players);
             this.clear(destination);

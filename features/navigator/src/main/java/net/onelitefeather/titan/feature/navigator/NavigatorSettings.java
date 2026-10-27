@@ -18,24 +18,31 @@ package net.onelitefeather.titan.feature.navigator;
 import io.avaje.config.Config;
 
 /**
- * The navigator's configuration: how often the shown player counts are read, and how long an empty
- * staging service runs before it is stopped again.
+ * The navigator's configuration: how often the shown player counts are read, how long an empty
+ * staging service runs before it is stopped again, and how long players wait for a staging service
+ * to start.
  *
- * @param refreshSeconds     whole seconds between two reads
- * @param stagingIdleSeconds whole seconds an empty staging service runs before its stop
+ * @param refreshSeconds             whole seconds between two reads
+ * @param stagingIdleSeconds         whole seconds an empty staging service runs before its stop
+ * @param stagingStartTimeoutSeconds whole seconds the players wait for a staging service before
+ *                                   they are refused
  */
-record NavigatorSettings(int refreshSeconds, int stagingIdleSeconds) {
+record NavigatorSettings(int refreshSeconds, int stagingIdleSeconds,
+                         int stagingStartTimeoutSeconds) {
 
     static final String REFRESH_KEY = "navigator.refreshSeconds";
     static final String STAGING_IDLE_KEY = "navigator.stagingIdleSeconds";
+    static final String STAGING_START_TIMEOUT_KEY = "navigator.stagingStartTimeoutSeconds";
     // An hour is far beyond any useful count age and keeps seconds * ticks well inside an int.
     static final int MAX_REFRESH_SECONDS = 3600;
     static final int MIN_STAGING_IDLE_SECONDS = 60;
     static final int MAX_STAGING_IDLE_SECONDS = 86400;
+    static final int MIN_STAGING_START_TIMEOUT_SECONDS = 30;
+    static final int MAX_STAGING_START_TIMEOUT_SECONDS = 900;
 
     /** Aborts startup, naming the key, when a configured value is not a whole number in range. */
     static NavigatorSettings read() {
-        return new NavigatorSettings(Config.getAs(REFRESH_KEY, NavigatorSettings::refreshSeconds), Config.getAs(STAGING_IDLE_KEY, NavigatorSettings::stagingIdleSeconds));
+        return new NavigatorSettings(Config.getAs(REFRESH_KEY, NavigatorSettings::refreshSeconds), Config.getAs(STAGING_IDLE_KEY, NavigatorSettings::stagingIdleSeconds), Config.getAs(STAGING_START_TIMEOUT_KEY, NavigatorSettings::stagingStartTimeoutSeconds));
     }
 
     static int refreshSeconds(String raw) {
@@ -44,6 +51,10 @@ record NavigatorSettings(int refreshSeconds, int stagingIdleSeconds) {
 
     static int stagingIdleSeconds(String raw) {
         return wholeSeconds(STAGING_IDLE_KEY, raw, MIN_STAGING_IDLE_SECONDS, MAX_STAGING_IDLE_SECONDS);
+    }
+
+    static int stagingStartTimeoutSeconds(String raw) {
+        return wholeSeconds(STAGING_START_TIMEOUT_KEY, raw, MIN_STAGING_START_TIMEOUT_SECONDS, MAX_STAGING_START_TIMEOUT_SECONDS);
     }
 
     private static int wholeSeconds(String key, String raw, int min, int max) {

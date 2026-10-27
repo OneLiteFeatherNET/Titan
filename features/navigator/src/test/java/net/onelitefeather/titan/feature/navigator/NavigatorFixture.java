@@ -132,7 +132,7 @@ final class NavigatorFixture implements AutoCloseable {
         TestTitanNode titan = TestTitanNode.attach(env);
         NavigatorMessages messages = new NavigatorMessages();
         messages.register();
-        NavigatorModule module = new NavigatorModule(titan.node(), deliver, permissions, () -> spawnReturn, portals, telemetry, counts, env.process().scheduler(), reads, new NavigatorSettings(REFRESH_SECONDS, STAGING_IDLE_SECONDS), messages, services, clock);
+        NavigatorModule module = new NavigatorModule(titan.node(), deliver, permissions, () -> spawnReturn, portals, telemetry, counts, env.process().scheduler(), reads, new NavigatorSettings(REFRESH_SECONDS, STAGING_IDLE_SECONDS, 180), messages, services, clock);
         module.start();
         LobbyItem feather = new NavigatorItems().navigatorFeather(module);
         return new NavigatorFixture(titan, module, feather, messages);

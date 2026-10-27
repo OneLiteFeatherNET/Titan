@@ -282,7 +282,7 @@ Untermenü mit den Staging-Einträgen auf den Plätzen 0 bis 3 und der Zurück-T
 `BOUNCE_STAGING`, `ELYTRA_RACE_STAGING` und `TAMIAS_STAGING` verbinden direkt mit `Slender-Staging`, `Bounce-Staging`,
 `ElytraRace-Staging` bzw. `Tamias-Staging` (ohne Schnellbeitritt und Serverauswahl). Ein Klick startet einen Staging-Dienst
 bei Bedarf: Ist keiner aktiv, startet genau einer (`StagingStarts`), die Aktionsleiste meldet es, und der Spieler wird nach
-der Bereitschaft verbunden. Das Warten ist auf 90 Sekunden begrenzt; ein zweiter Klick startet nichts. Ohne Spieler stoppt
+der Bereitschaft verbunden. Das Warten ist auf `navigator.stagingStartTimeoutSeconds` (Standard 180, zulässig 30 bis 900) begrenzt; ein zweiter Klick startet nichts. Ohne Spieler stoppt
 `StagingIdle` den Dienst nach `navigator.stagingIdleSeconds` (Standard 600, zulässig 60 bis 86400); nur Staging-Tasks werden
 gestoppt. Beim Klick wird das Recht erneut geprüft; ist es inzwischen weg, gibt es keine Weiterleitung, das Inventar schließt.
 
@@ -379,7 +379,7 @@ Abschalten oder erneutes `start()`.
 Jede konfigurierbare Column liefert ihre eigenen Standardwerte als
 `src/main/resources/titan/defaults/<column>.yaml`, kommentiert, mit genau ihrem Abschnitt (z. B.
 `features/spawn/src/main/resources/titan/defaults/spawn.yaml` mit dem Abschnitt `spawn`;
-`navigator` liefert `navigator.yaml` mit `navigator.refreshSeconds` und `navigator.stagingIdleSeconds`, ohne Flag). `runtime` liefert
+`navigator` liefert `navigator.yaml` mit `navigator.refreshSeconds`, `navigator.stagingIdleSeconds` und `navigator.stagingStartTimeoutSeconds`, ohne Flag). `runtime` liefert
 `runtime/src/main/resources/titan/defaults/runtime.yaml` (`config.watch.*`). Eine Column ohne
 eigene Konfiguration (`protection`, `respawn`, `hotbar`, `admin`) liefert keine Default-Datei.
 
