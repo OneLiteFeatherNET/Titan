@@ -18,6 +18,7 @@ package net.onelitefeather.titan.feature.radio;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -37,9 +38,13 @@ import javax.sound.midi.Track;
  */
 final class MidiSongParser {
 
-    private static final int PROGRAMS = 16;
+    private static final int CHANNELS = 16;
     /** The meta event type of a tempo change: three bytes of microseconds per quarter note. */
     private static final int TEMPO_META_TYPE = 0x51;
+    /** The control change of the channel volume and of the expression; both start at full scale. */
+    private static final int CHANNEL_VOLUME = 7;
+    private static final int EXPRESSION = 11;
+    private static final int FULL_SCALE = 127;
 
     private MidiSongParser() {
     }
@@ -70,6 +75,7 @@ final class MidiSongParser {
     }
 
     // Every track's events in one order by tick. The program of a channel is the last program change before the note.
+    // The velocity of a note is scaled by the channel volume and expression set before it; a note that scales to 0 is dropped.
     private static List<NoteMapper.RawNote> collect(Sequence sequence) throws SongFormatException {
         List<TimedMessage> events = new ArrayList<>();
         for (Track track : sequence.getTracks()) {
@@ -80,7 +86,9 @@ final class MidiSongParser {
         }
         events.sort(Comparator.comparingLong(TimedMessage::tick));
         TempoMap tempo = new TempoMap(events, sequence.getResolution());
-        int[] programs = new int[PROGRAMS];
+        int[] programs = new int[CHANNELS];
+        int[] volumes = filled(CHANNELS, FULL_SCALE);
+        int[] expressions = filled(CHANNELS, FULL_SCALE);
         List<NoteMapper.RawNote> notes = new ArrayList<>();
         for (TimedMessage event : events) {
             if (!(event.message() instanceof ShortMessage message)) {
@@ -89,11 +97,34 @@ final class MidiSongParser {
             int channel = message.getChannel();
             if (message.getCommand() == ShortMessage.PROGRAM_CHANGE) {
                 programs[channel] = message.getData1();
+            } else if (message.getCommand() == ShortMessage.CONTROL_CHANGE) {
+                if (message.getData1() == CHANNEL_VOLUME) {
+                    volumes[channel] = message.getData2();
+                } else if (message.getData1() == EXPRESSION) {
+                    expressions[channel] = message.getData2();
+                }
             } else if (message.getCommand() == ShortMessage.NOTE_ON && message.getData2() > 0) {
-                notes.add(new NoteMapper.RawNote(tempo.micros(event.tick()), channel, programs[channel], message.getData1(), message.getData2()));
+                int velocity = scaledVelocity(message.getData2(), volumes[channel], expressions[channel]);
+                if (velocity > 0) {
+                    notes.add(new NoteMapper.RawNote(tempo.micros(event.tick()), channel, programs[channel], message.getData1(), velocity));
+                }
             }
         }
         return notes;
+    }
+
+    /**
+     * The velocity times the channel volume and the expression, each over 127, rounded to the
+     * nearest whole number.
+     */
+    private static int scaledVelocity(int velocity, int volume, int expression) {
+        return (int) Math.round(velocity * (volume / (double) FULL_SCALE) * (expression / (double) FULL_SCALE));
+    }
+
+    private static int[] filled(int size, int value) {
+        int[] values = new int[size];
+        Arrays.fill(values, value);
+        return values;
     }
 
     private record TimedMessage(long tick, MidiMessage message) {
