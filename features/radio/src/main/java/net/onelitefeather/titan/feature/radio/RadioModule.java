@@ -20,12 +20,17 @@ import io.avaje.inject.PreDestroy;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.random.RandomGenerator;
 import net.minestom.server.entity.Player;
 import net.minestom.server.event.Event;
@@ -68,7 +73,9 @@ public final class RadioModule {
     private final RadioMessages messages;
     private final Path directory;
     private final RadioTelemetry radioTelemetry;
-    private final RadioSessions sessions = new RadioSessions();
+    private final Executor io;
+    private final SongNotesCache notes;
+    private final RadioSessions sessions;
     private List<MidiSong> songs = List.of();
     private RadioSelection selection;
     private RadioMenuBuilder menus;
@@ -79,18 +86,29 @@ public final class RadioModule {
 
     @Inject
     public RadioModule(@Named(FeatureNode.TITAN_NODE) EventNode<Event> titan, Scheduler scheduler, Telemetry telemetry, RandomGenerator random, RadioMessages messages) {
-        this(titan, scheduler, telemetry, random, messages, DIRECTORY);
+        this(titan, scheduler, telemetry, random, messages, DIRECTORY, Executors.newVirtualThreadPerTaskExecutor());
     }
 
-    /** The directory of the MIDI songs is a parameter, so a test points it at its own files. */
-    RadioModule(EventNode<Event> titan, Scheduler scheduler, Telemetry telemetry, RandomGenerator random, RadioMessages messages, Path directory) {
+    /**
+     * The directory of the MIDI songs and the executor of the note reads are parameters, so a test
+     * points them at its own files and runs the reads inline. An executor that is an
+     * {@link ExecutorService} is shut down with the module.
+     */
+    RadioModule(EventNode<Event> titan, Scheduler scheduler, Telemetry telemetry, RandomGenerator random, RadioMessages messages, Path directory, Executor io) {
         this.titan = Objects.requireNonNull(titan, "titan must not be null");
         this.scheduler = Objects.requireNonNull(scheduler, "scheduler must not be null");
         this.telemetry = Objects.requireNonNull(telemetry, "telemetry must not be null");
         this.random = Objects.requireNonNull(random, "random must not be null");
         this.messages = Objects.requireNonNull(messages, "messages must not be null");
         this.directory = Objects.requireNonNull(directory, "directory must not be null");
+        this.io = Objects.requireNonNull(io, "io must not be null");
         this.radioTelemetry = new RadioTelemetry(this.telemetry);
+        this.notes = new SongNotesCache(this.io, RadioModule::parseFile);
+        this.sessions = new RadioSessions(() -> new RadioLoad(this.notes, this.scheduler::scheduleNextTick));
+    }
+
+    private static List<MidiNote> parseFile(MidiSong song) throws SongFormatException, IOException {
+        return MidiSongParser.notes(Files.readAllBytes(song.file()));
     }
 
     @PostConstruct
@@ -123,13 +141,16 @@ public final class RadioModule {
             this.node.close();
         }
         for (RadioSession session : this.sessions.all()) {
-            if (session.playing()) {
+            if (session.playing() || session.loading()) {
                 end(session, StopReason.SHUTDOWN);
             }
         }
         this.sessions.clear();
         if (this.menus != null) {
             this.menus.unregister();
+        }
+        if (this.io instanceof ExecutorService service) {
+            service.shutdown();
         }
     }
 
@@ -196,18 +217,33 @@ public final class RadioModule {
         }
     }
 
+    // A cached title starts at once; an uncached one shows the loading text and starts when its notes are read.
     private void start(Player player, RadioSession session, RadioSong song, Trigger trigger) {
         stopCurrent(session, StopReason.NEXT);
-        RadioPlayback playback = new RadioPlayback(song, new PlayerRadioSink(player));
+        session.load().begin(song, new TitleStart(player, session, song, trigger));
+    }
+
+    private void play(Player player, RadioSession session, RadioSong song, List<MidiNote> notes, Trigger trigger) {
+        RadioPlayback playback = new RadioPlayback(song, notes, new PlayerRadioSink(player));
         session.play(song, playback);
         this.radioTelemetry.started(song.kind(), session.mode(), trigger);
         this.radioTelemetry.notesDropped(playback.start(this.serverTick).droppedNotes());
         player.sendActionBar(RadioMessages.text(RadioMessages.PLAYING, localeOf(player), song.title(), song.artist()));
     }
 
+    // A title whose notes cannot be read starts nothing: the player is told, the rejection is counted and logged once.
+    private void rejected(Player player, RadioSong song, Throwable cause) {
+        this.radioTelemetry.songRejected();
+        String name = song instanceof MidiSong midi ? midi.file().toString() : song.title();
+        LOG.warn("Radio song {} cannot be read and is not played: {}", name, cause.getMessage());
+        if (player.isOnline()) {
+            player.sendActionBar(RadioMessages.text(RadioMessages.REJECTED, localeOf(player)));
+        }
+    }
+
     private void stop(Player player, StopReason reason) {
         Optional<RadioSession> session = this.sessions.find(player.getUuid());
-        if (session.isEmpty() || !session.get().playing()) {
+        if (session.isEmpty() || !(session.get().playing() || session.get().loading())) {
             return;
         }
         stopCurrent(session.get(), reason);
@@ -238,16 +274,20 @@ public final class RadioModule {
     }
 
     private void stopCurrent(RadioSession session, StopReason reason) {
-        if (session.playing()) {
+        if (session.playing() || session.loading()) {
             end(session, reason);
         }
     }
 
+    // Ends the title or the pending load; the generation advances and the notes lease is released.
     private void end(RadioSession session, StopReason reason) {
-        RadioSong song = session.song();
-        session.playback().stop();
-        session.clear();
-        this.radioTelemetry.stopped(reason, song.kind());
+        if (session.playing()) {
+            RadioSong song = session.song();
+            session.playback().stop();
+            session.clear();
+            this.radioTelemetry.stopped(reason, song.kind());
+        }
+        session.load().cancel();
     }
 
     /**
@@ -267,6 +307,7 @@ public final class RadioModule {
             if (step.ended()) {
                 RadioSong ended = session.song();
                 session.clear();
+                session.load().cancel();
                 this.radioTelemetry.stopped(StopReason.END, ended.kind());
                 Optional<RadioSong> successor = this.selection.afterEnd(ended, session.mode());
                 if (successor.isPresent() && session.player().isOnline()) {
@@ -280,6 +321,44 @@ public final class RadioModule {
         List<RadioSong> catalog = new ArrayList<>(VanillaDiscs.ALL);
         catalog.addAll(this.songs);
         return catalog;
+    }
+
+    /**
+     * One title's start for one player. The outcome arrives on the tick thread, and a result that
+     * the load drops never reaches this class; a player who logged out hears nothing.
+     */
+    private final class TitleStart implements RadioLoad.Listener {
+
+        private final Player player;
+        private final RadioSession session;
+        private final RadioSong song;
+        private final Trigger trigger;
+
+        TitleStart(Player player, RadioSession session, RadioSong song, Trigger trigger) {
+            this.player = player;
+            this.session = session;
+            this.song = song;
+            this.trigger = trigger;
+        }
+
+        @Override
+        public void loading() {
+            this.player.sendActionBar(RadioMessages.text(RadioMessages.LOADING, localeOf(this.player)));
+        }
+
+        @Override
+        public void ready(List<MidiNote> notes) {
+            if (!RadioModule.this.stopped && this.player.isOnline()) {
+                play(this.player, this.session, this.song, notes, this.trigger);
+            }
+        }
+
+        @Override
+        public void failed(Throwable cause) {
+            if (!RadioModule.this.stopped) {
+                rejected(this.player, this.song, cause);
+            }
+        }
     }
 
     private static Locale localeOf(Player player) {

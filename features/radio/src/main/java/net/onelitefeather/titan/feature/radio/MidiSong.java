@@ -15,23 +15,23 @@
  */
 package net.onelitefeather.titan.feature.radio;
 
-import java.util.Comparator;
-import java.util.List;
+import java.nio.file.Path;
 import java.util.Objects;
 import net.minestom.server.item.Material;
 
 /**
- * A MIDI song from {@code radio/songs.yaml}, played on note blocks. The notes are sorted by tick.
+ * A MIDI song from {@code radio/songs.yaml}, played on note blocks. The song holds the path of its
+ * file, not its notes: the notes are read when the title starts, through the notes cache.
  *
  * @param id       the song's id in the configuration, unique within it
  * @param title    the title shown in the menu
  * @param artist   the artist shown in the lore
  * @param disc     the music disc item that stands for the song in its menu
  * @param category the category the song is listed in
- * @param notes    the notes, which must not be empty
+ * @param file     the MIDI file, inside {@code radio/}
  */
 record MidiSong(String id, String title, String artist, Material disc, RadioCategory category,
-                List<MidiNote> notes) implements RadioSong {
+                Path file) implements RadioSong {
 
     MidiSong {
         Objects.requireNonNull(id, "id must not be null");
@@ -39,10 +39,7 @@ record MidiSong(String id, String title, String artist, Material disc, RadioCate
         Objects.requireNonNull(artist, "artist must not be null");
         Objects.requireNonNull(disc, "disc must not be null");
         Objects.requireNonNull(category, "category must not be null");
-        notes = notes.stream().sorted(Comparator.comparingInt(MidiNote::tick)).toList();
-        if (notes.isEmpty()) {
-            throw new IllegalArgumentException("a MIDI song needs at least one note");
-        }
+        Objects.requireNonNull(file, "file must not be null");
     }
 
     @Override
@@ -53,10 +50,5 @@ record MidiSong(String id, String title, String artist, Material disc, RadioCate
     @Override
     public RadioCategory category() {
         return this.category;
-    }
-
-    /** The tick of the last note: the song ends there. */
-    int lengthTicks() {
-        return this.notes.getLast().tick();
     }
 }

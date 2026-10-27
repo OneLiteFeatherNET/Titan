@@ -37,8 +37,8 @@ record VanillaDisc(Material disc, SoundEvent sound, String title, String artist,
         Objects.requireNonNull(sound, "sound must not be null");
         Objects.requireNonNull(title, "title must not be null");
         Objects.requireNonNull(artist, "artist must not be null");
-        if (lengthTicks <= 0 || lengthTicks >= RadioLimits.MAX_TICKS_PER_SONG) {
-            throw new IllegalArgumentException("lengthTicks must be between 1 and " + (RadioLimits.MAX_TICKS_PER_SONG - 1) + ", was " + lengthTicks);
+        if (lengthTicks <= 0) {
+            throw new IllegalArgumentException("lengthTicks must be positive, was " + lengthTicks);
         }
     }
 

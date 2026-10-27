@@ -30,7 +30,6 @@ import javax.sound.midi.MidiSystem;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.ShortMessage;
 import javax.sound.midi.Track;
-import net.minestom.server.item.Material;
 
 /**
  * Reads a standard MIDI file with {@code javax.sound.midi} and keeps its note-ons. Nothing is
@@ -46,11 +45,11 @@ final class MidiSongParser {
     }
 
     /**
-     * Parses {@code data} into a song.
+     * The notes of {@code data} in game ticks, sorted by tick. There is no size or length limit.
      *
-     * @throws SongFormatException if the bytes are no playable MIDI file
+     * @throws SongFormatException if the bytes are no playable MIDI file or have no notes
      */
-    static MidiSong parse(String id, String title, String artist, Material disc, RadioCategory category, byte[] data) throws SongFormatException {
+    static List<MidiNote> notes(byte[] data) throws SongFormatException {
         Sequence sequence = read(data);
         if (sequence.getDivisionType() != Sequence.PPQ) {
             throw new SongFormatException("SMPTE timing is not supported");
@@ -59,7 +58,7 @@ final class MidiSongParser {
         if (notes.isEmpty()) {
             throw new SongFormatException("the file has no notes");
         }
-        return new MidiSong(id, title, artist, disc, category, NoteMapper.map(notes));
+        return NoteMapper.map(notes);
     }
 
     private static Sequence read(byte[] data) throws SongFormatException {

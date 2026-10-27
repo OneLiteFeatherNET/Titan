@@ -33,15 +33,27 @@ final class RadioPlayback {
     private final RadioSong song;
     private final RadioSink sink;
     private final List<MidiNote> notes;
+    /** The tick of the last note of a MIDI song; a MIDI song ends there. */
+    private final long lastNoteTick;
     private int cursor;
     private long startTick;
     private boolean started;
     private boolean closed;
 
-    RadioPlayback(RadioSong song, RadioSink sink) {
+    /**
+     * @param song  the title to play
+     * @param notes the notes of a MIDI song, sorted by tick and not empty; a vanilla disc takes
+     *              none
+     * @param sink  receives the sounds
+     */
+    RadioPlayback(RadioSong song, List<MidiNote> notes, RadioSink sink) {
         this.song = Objects.requireNonNull(song, "song must not be null");
         this.sink = Objects.requireNonNull(sink, "sink must not be null");
-        this.notes = song instanceof MidiSong midi ? midi.notes() : List.of();
+        this.notes = List.copyOf(Objects.requireNonNull(notes, "notes must not be null"));
+        if (song instanceof MidiSong && this.notes.isEmpty()) {
+            throw new IllegalArgumentException("a MIDI song needs at least one note");
+        }
+        this.lastNoteTick = this.notes.isEmpty() ? 0 : this.notes.getLast().tick();
     }
 
     RadioSong song() {
@@ -72,7 +84,7 @@ final class RadioPlayback {
             return tickDisc(disc, elapsed);
         }
         int dropped = playDue(elapsed);
-        boolean ended = this.cursor == this.notes.size() && elapsed >= ((MidiSong) this.song).lengthTicks();
+        boolean ended = this.cursor == this.notes.size() && elapsed >= this.lastNoteTick;
         if (ended) {
             this.closed = true;
         }

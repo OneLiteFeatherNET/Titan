@@ -17,6 +17,7 @@ package net.onelitefeather.titan.feature.radio;
 
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Random;
@@ -81,7 +82,7 @@ class RadioModuleIntegrationTest {
             this.messages.register();
             EventNode<Event> titan = this.titanNode.node();
             Scheduler scheduler = env.process().scheduler();
-            this.module = new RadioModule(titan, scheduler, this.telemetry.telemetry(), new Random(SEED), this.messages, directory);
+            this.module = new RadioModule(titan, scheduler, this.telemetry.telemetry(), new Random(SEED), this.messages, directory, Runnable::run);
             this.module.start();
         }
 
@@ -192,6 +193,27 @@ class RadioModuleIntegrationTest {
             Assertions.assertFalse(sounds.isEmpty(), "the clicker must hear the notes of the song");
             Assertions.assertTrue(sounds.stream().allMatch(sound -> sound.soundEvent().key().asString().startsWith("minecraft:block.note_block.")), "every sound of a MIDI song must be a note block sound");
             otherSounds.assertEmpty();
+        }
+    }
+
+    @DisplayName("A MIDI file that cannot be parsed at play time starts nothing and is counted once as rejected")
+    @Test
+    void unreadableMidiFileIsRejectedAtPlayTime(Env env) throws Exception {
+        Files.write(this.radio.resolve("broken.mid"), new byte[]{'M', 'T', 'h', 'd', 1, 2, 3});
+        Files.writeString(this.radio.resolve("songs.yaml"), "songs:\n  - id: broken\n    title: Broken\n    artist: Beispiel\n    disc: MUSIC_DISC_CAT\n    file: broken.mid\n");
+        Instance instance = env.createFlatInstance();
+        try (Round round = new Round(env, this.radio)) {
+            Seat clicker = round.connect(env, instance);
+            Collector<EntitySoundEffectPacket> sounds = clicker.connection().trackIncoming(EntitySoundEffectPacket.class);
+            round.module.open(clicker.player());
+            click(env, clicker.player(), SWITCH_SLOT);
+
+            click(env, clicker.player(), 0);
+            tick(env, MIDI_NOTES_TICKS);
+
+            sounds.assertEmpty();
+            Assertions.assertEquals(1, round.counter("titan.radio.songs", attributes("result", "rejected")), "the unreadable file must be counted once as rejected");
+            Assertions.assertEquals(0, round.counter("titan.radio.plays", attributes("kind", "midi", "mode", "once", "trigger", "user")), "no title may start for the unreadable file");
         }
     }
 

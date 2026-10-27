@@ -39,10 +39,16 @@ final class RadioMenuLayout {
     }
 
     /**
+     * The disc slots the songs menu shows. The menu still shows the first eighteen songs; the
+     * paged category menu replaces this capacity.
+     */
+    static final int SONG_SLOTS = 18;
+
+    /**
      * The number of disc slots of {@code menu}: the vanilla discs fill 22, the songs at most 18.
      */
     static int discSlots(RadioMenu menu) {
-        return menu == RadioMenu.VANILLA ? VanillaDiscs.ALL.size() : RadioLimits.MAX_SONGS;
+        return menu == RadioMenu.VANILLA ? VanillaDiscs.ALL.size() : SONG_SLOTS;
     }
 
     /** The index of the disc a click on {@code slot} means, or -1 when the slot is no disc slot. */

@@ -17,19 +17,27 @@ package net.onelitefeather.titan.feature.radio;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 import net.minestom.server.entity.Player;
 
 /** The radio sessions of the players on this lobby, by player id. */
 final class RadioSessions {
 
     private final Map<UUID, RadioSession> sessions = new ConcurrentHashMap<>();
+    private final Supplier<RadioLoad> loads;
+
+    /** @param loads makes the load of a new session, one per player */
+    RadioSessions(Supplier<RadioLoad> loads) {
+        this.loads = Objects.requireNonNull(loads, "loads must not be null");
+    }
 
     /** The player's session, created on first use. */
     RadioSession of(Player player) {
-        return this.sessions.computeIfAbsent(player.getUuid(), ignored -> new RadioSession(player));
+        return this.sessions.computeIfAbsent(player.getUuid(), ignored -> new RadioSession(player, this.loads.get()));
     }
 
     Optional<RadioSession> find(UUID player) {

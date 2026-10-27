@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.feature.radio;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import net.minestom.server.item.Material;
@@ -31,8 +32,12 @@ class RadioPlaybackTest {
         return new MidiNote(tick, RadioInstrument.HARP, 12, velocity);
     }
 
-    private static MidiSong song(MidiNote... notes) {
-        return new MidiSong("song", "Song", "Test", Material.MUSIC_DISC_CAT, RadioCategories.OTHER, List.of(notes));
+    private static MidiSong song() {
+        return new MidiSong("song", "Song", "Test", Material.MUSIC_DISC_CAT, RadioCategories.OTHER, Path.of("song.mid"));
+    }
+
+    private static RadioPlayback playback(RecordingRadioSink sink, MidiNote... notes) {
+        return new RadioPlayback(song(), List.of(notes), sink);
     }
 
     private static List<Integer> velocities(List<Sound> sounds) {
@@ -47,7 +52,7 @@ class RadioPlaybackTest {
     @Test
     void noteSoundsOnItsOwnTick() {
         RecordingRadioSink sink = new RecordingRadioSink();
-        RadioPlayback playback = new RadioPlayback(song(note(0, 100), note(2, 80)), sink);
+        RadioPlayback playback = playback(sink, note(0, 100), note(2, 80));
 
         playback.start(START);
         Assertions.assertEquals(1, sink.notes.size(), "the note on tick 0 must sound at the start");
@@ -62,7 +67,7 @@ class RadioPlaybackTest {
     @Test
     void noteMoreThanOneTickLateIsDropped() {
         RecordingRadioSink sink = new RecordingRadioSink();
-        RadioPlayback playback = new RadioPlayback(song(note(2, 100), note(4, 100)), sink);
+        RadioPlayback playback = playback(sink, note(2, 100), note(4, 100));
         playback.start(START);
 
         PlaybackTick tick = playback.tick(START + 5);
@@ -79,7 +84,7 @@ class RadioPlaybackTest {
             notes.add(note(0, velocity));
         }
         RecordingRadioSink sink = new RecordingRadioSink();
-        RadioPlayback playback = new RadioPlayback(song(notes.toArray(MidiNote[]::new)), sink);
+        RadioPlayback playback = playback(sink, notes.toArray(MidiNote[]::new));
 
         PlaybackTick tick = playback.start(START);
 
@@ -92,7 +97,7 @@ class RadioPlaybackTest {
     @Test
     void songEndsWithItsLastNote() {
         RecordingRadioSink sink = new RecordingRadioSink();
-        RadioPlayback playback = new RadioPlayback(song(note(0, 100), note(10, 100)), sink);
+        RadioPlayback playback = playback(sink, note(0, 100), note(10, 100));
         playback.start(START);
 
         Assertions.assertFalse(playback.tick(START + 9).ended(), "the song must go on before its last note");
@@ -103,7 +108,7 @@ class RadioPlaybackTest {
     @Test
     void stopSilencesTheSongAndIsIdempotent() {
         RecordingRadioSink sink = new RecordingRadioSink();
-        RadioPlayback playback = new RadioPlayback(song(note(0, 100), note(5, 100)), sink);
+        RadioPlayback playback = playback(sink, note(0, 100), note(5, 100));
         playback.start(START);
 
         playback.stop();

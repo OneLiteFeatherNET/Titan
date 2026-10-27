@@ -15,6 +15,7 @@
  */
 package net.onelitefeather.titan.feature.radio;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -182,7 +183,7 @@ class RadioSelectionTest {
     private static final RadioSong GAME_TWO = midi("two", GAMES);
 
     private static RadioSong midi(String id, RadioCategory category) {
-        return new MidiSong(id, id, "Beispiel", Material.MUSIC_DISC_WARD, category, List.of(new MidiNote(0, RadioInstrument.HARP, 12, 100)));
+        return new MidiSong(id, id, "Beispiel", Material.MUSIC_DISC_WARD, category, Path.of(id + ".mid"));
     }
 
     private static List<RadioSong> mixedCatalog() {

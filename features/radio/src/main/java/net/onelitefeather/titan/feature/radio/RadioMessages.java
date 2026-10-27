@@ -51,9 +51,11 @@ final class RadioMessages implements AutoCloseable {
     static final String MODE_HINT = "titan.radio.mode.hint";
     static final String PLAYING = "titan.radio.playing";
     static final String STOPPED = "titan.radio.stopped";
+    static final String LOADING = "titan.radio.loading";
+    static final String REJECTED = "titan.radio.rejected";
 
     /** Every key the radio renders; the bundle test checks the property files against it. */
-    static final List<String> KEYS = List.of(ITEM_NAME, ITEM_HINT, MENU_VANILLA, MENU_SONGS, SWITCH_TO_SONGS, SWITCH_TO_VANILLA, DISC_NAME, DISC_LORE_VANILLA, DISC_LORE_MIDI, STOP, NEXT, MODE_ONCE, MODE_LOOP, MODE_SHUFFLE, MODE_HINT, PLAYING, STOPPED);
+    static final List<String> KEYS = List.of(ITEM_NAME, ITEM_HINT, MENU_VANILLA, MENU_SONGS, SWITCH_TO_SONGS, SWITCH_TO_VANILLA, DISC_NAME, DISC_LORE_VANILLA, DISC_LORE_MIDI, STOP, NEXT, MODE_ONCE, MODE_LOOP, MODE_SHUFFLE, MODE_HINT, PLAYING, STOPPED, LOADING, REJECTED);
 
     private static final String BUNDLE = "titan.radio.messages";
 

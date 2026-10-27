@@ -29,13 +29,27 @@ final class RadioSession {
     private RadioSong song;
     private RadioPlayback playback;
     private final RadioSessionState view = new RadioSessionState();
+    private final RadioLoad load;
 
-    RadioSession(Player player) {
+    RadioSession(Player player, RadioLoad load) {
         this.player = Objects.requireNonNull(player, "player must not be null");
+        this.load = Objects.requireNonNull(load, "load must not be null");
     }
 
     Player player() {
         return this.player;
+    }
+
+    /**
+     * The load of the title this player starts: its notes lease and the generation of its start.
+     */
+    RadioLoad load() {
+        return this.load;
+    }
+
+    /** Whether a title of this player waits for its notes. */
+    boolean loading() {
+        return this.load.pending();
     }
 
     /** Where the player is in the window: overview or category, page, generation. */
