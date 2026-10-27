@@ -28,12 +28,23 @@ class InstrumentMapperTest {
     @DisplayName("Every General MIDI program group plays on its note block instrument")
     @Test
     void melodicProgramGroupsMapToTheirInstrument() {
-        int[] programs = {0, 8, 12, 14, 15, 16, 24, 32, 40, 56, 64, 80, 88, 104, 112, 120};
-        RadioInstrument[] instruments = {RadioInstrument.HARP, RadioInstrument.CHIME, RadioInstrument.XYLOPHONE, RadioInstrument.BELL, RadioInstrument.IRON_XYLOPHONE, RadioInstrument.FLUTE, RadioInstrument.GUITAR, RadioInstrument.BASS, RadioInstrument.HARP, RadioInstrument.DIDGERIDOO, RadioInstrument.FLUTE, RadioInstrument.BIT, RadioInstrument.PLING, RadioInstrument.BANJO, RadioInstrument.COW_BELL, RadioInstrument.HAT};
+        int[] programs = {0, 8, 12, 14, 15, 16, 24, 32, 40, 64, 80, 88, 104, 112, 120};
+        RadioInstrument[] instruments = {RadioInstrument.HARP, RadioInstrument.CHIME, RadioInstrument.XYLOPHONE, RadioInstrument.BELL, RadioInstrument.IRON_XYLOPHONE, RadioInstrument.FLUTE, RadioInstrument.GUITAR, RadioInstrument.BASS, RadioInstrument.HARP, RadioInstrument.FLUTE, RadioInstrument.BIT, RadioInstrument.PLING, RadioInstrument.BANJO, RadioInstrument.COW_BELL, RadioInstrument.HAT};
 
         for (int i = 0; i < programs.length; i++) {
             Assertions.assertEquals(instruments[i], InstrumentMapper.of(MELODIC_CHANNEL, programs[i], ANY_KEY), "program " + programs[i] + " must play " + instruments[i]);
         }
+    }
+
+    @DisplayName("Brass programs 56, 59 and 61 to 63 play the trumpet, the trombone, tuba and french horn have their own variants")
+    @Test
+    void brassProgramsMapToTheTrumpetFamily() {
+        for (int program : new int[]{56, 59, 61, 62, 63}) {
+            Assertions.assertEquals(RadioInstrument.TRUMPET, InstrumentMapper.of(MELODIC_CHANNEL, program, ANY_KEY), "program " + program + " must play the trumpet");
+        }
+        Assertions.assertEquals(RadioInstrument.TRUMPET_WEATHERED, InstrumentMapper.of(MELODIC_CHANNEL, 57, ANY_KEY), "the trombone, program 57, must play the weathered trumpet");
+        Assertions.assertEquals(RadioInstrument.TRUMPET_OXIDIZED, InstrumentMapper.of(MELODIC_CHANNEL, 58, ANY_KEY), "the tuba, program 58, must play the oxidized trumpet");
+        Assertions.assertEquals(RadioInstrument.TRUMPET_EXPOSED, InstrumentMapper.of(MELODIC_CHANNEL, 60, ANY_KEY), "the french horn, program 60, must play the exposed trumpet");
     }
 
     @DisplayName("Channel ten is drums: the key picks the drum, the program is ignored")

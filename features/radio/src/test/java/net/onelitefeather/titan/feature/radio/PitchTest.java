@@ -31,30 +31,18 @@ class PitchTest {
         Assertions.assertEquals(2.0f, Pitch.of(24), DELTA, "note 24 must play at pitch 2.0");
     }
 
-    @DisplayName("A song is moved in whole octaves so its median note lands on the centre of the range")
+    @DisplayName("A key outside the span of all registers is folded by octaves into it and keeps its pitch class")
     @Test
-    void transpositionMovesTheMedianToTheCentre() {
-        Assertions.assertEquals(12, Pitch.transposition(0), "a median at the bottom must move up one octave");
-        Assertions.assertEquals(-12, Pitch.transposition(24), "a median at the top must move down one octave");
-        Assertions.assertEquals(0, Pitch.transposition(12), "a median in the centre must not move");
-        Assertions.assertEquals(-12, Pitch.transposition(19), "a median seven semitones above the centre must move down one octave");
+    void foldingIntoTheSpanKeepsThePitchClass() {
+        Assertions.assertEquals(32, Pitch.foldIntoSpan(20), "key 20 must fold up to 32, the lowest bass note above the span");
+        Assertions.assertEquals(98, Pitch.foldIntoSpan(110), "key 110 must fold down to 98, inside the bell register");
     }
 
-    @DisplayName("A transposition exactly halfway between two octaves rounds down")
+    @DisplayName("A key inside the span of all registers is not moved by folding")
     @Test
-    void halfwayTranspositionRoundsDown() {
-        Assertions.assertEquals(0, Pitch.transposition(6), "a median six semitones below the centre must stay, rounding down");
-        Assertions.assertEquals(-12, Pitch.transposition(18), "a median six semitones above the centre must move down, rounding down");
-    }
-
-    @DisplayName("A note outside the range is folded by octaves and keeps its pitch class")
-    @Test
-    void foldingKeepsThePitchClass() {
-        Assertions.assertEquals(11, Pitch.fold(-1), "-1 must fold up to 11");
-        Assertions.assertEquals(11, Pitch.fold(-13), "-13 must fold up to 11");
-        Assertions.assertEquals(13, Pitch.fold(25), "25 must fold down to 13");
-        Assertions.assertEquals(18, Pitch.fold(30), "30 must fold down to 18, the first octave inside the range");
-        Assertions.assertEquals(12, Pitch.fold(12), "a note inside the range must not move");
-        Assertions.assertEquals(24, Pitch.fold(24), "the top of the range must not move");
+    void foldingLeavesKeysInsideTheSpan() {
+        Assertions.assertEquals(30, Pitch.foldIntoSpan(30), "the bottom of the span must not move");
+        Assertions.assertEquals(66, Pitch.foldIntoSpan(66), "a key inside the span must not move");
+        Assertions.assertEquals(102, Pitch.foldIntoSpan(102), "the top of the span must not move");
     }
 }

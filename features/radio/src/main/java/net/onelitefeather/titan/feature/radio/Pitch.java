@@ -26,6 +26,9 @@ final class Pitch {
     static final int HIGHEST = 24;
     /** The MIDI key of note 0. */
     static final int LOWEST_KEY = 54;
+    /** The lowest key of any note block register (bass) and the highest (top of the bell). */
+    static final int SPAN_LOWEST_KEY = 30;
+    static final int SPAN_HIGHEST_KEY = 102;
     private static final int OCTAVE = 12;
 
     private Pitch() {
@@ -37,23 +40,15 @@ final class Pitch {
     }
 
     /**
-     * The shift, a whole number of octaves, that moves {@code median} onto the centre of the range.
-     * A median exactly halfway between two octaves rounds down.
+     * Moves {@code key} by octaves until it lies in the span of all registers; the pitch class
+     * stays.
      */
-    static int transposition(int median) {
-        int distance = CENTRE - median;
-        // ceil(distance / 12 - 1/2) in whole numbers: the tie at .5 falls to the lower octave.
-        int octaves = -Math.floorDiv(-(2 * distance - OCTAVE), 2 * OCTAVE);
-        return octaves * OCTAVE;
-    }
-
-    /** Moves {@code semitone} by octaves until it lies in the range; the pitch class stays. */
-    static int fold(int semitone) {
-        int folded = semitone;
-        while (folded < LOWEST) {
+    static int foldIntoSpan(int key) {
+        int folded = key;
+        while (folded < SPAN_LOWEST_KEY) {
             folded += OCTAVE;
         }
-        while (folded > HIGHEST) {
+        while (folded > SPAN_HIGHEST_KEY) {
             folded -= OCTAVE;
         }
         return folded;
