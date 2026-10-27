@@ -15,6 +15,8 @@
  */
 package net.onelitefeather.titan.feature.radio;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -32,9 +34,26 @@ class NoteMapperTest {
         return new NoteMapper.RawNote(micros, MELODY_CHANNEL, 0, key, velocity);
     }
 
+    /** A melodic track on the harp: one note per tick, keys in order. */
+    private static List<NoteMapper.RawNote> phrase(int... keys) {
+        List<NoteMapper.RawNote> notes = new ArrayList<>();
+        for (int tick = 0; tick < keys.length; tick++) {
+            notes.add(melody((long) tick * MICROS_PER_TICK, keys[tick], 100));
+        }
+        return notes;
+    }
+
     /** The MIDI key a note sounds as: its instrument's base key plus its note. */
     private static int soundingKey(MidiNote note) {
         return note.instrument().baseKey() + note.semitone();
+    }
+
+    private static List<Integer> soundingKeys(List<MidiNote> notes) {
+        return notes.stream().map(NoteMapperTest::soundingKey).toList();
+    }
+
+    private static List<RadioInstrument> instruments(List<MidiNote> notes) {
+        return notes.stream().map(MidiNote::instrument).toList();
     }
 
     @DisplayName("A note is placed on the server tick it is nearest to, in microseconds")
@@ -54,14 +73,62 @@ class NoteMapperTest {
         Assertions.assertEquals(100, notes.getFirst().velocity(), "the velocity must be kept for the volume");
     }
 
-    @DisplayName("A melody note above the harp register moves to the flute and sounds one octave up, not down")
+    @DisplayName("A melody that climbs past the harp register moves the whole track down an octave and stays on the harp")
     @Test
-    void melodyAboveTheHarpStaysInItsOctave() {
-        List<MidiNote> notes = NoteMapper.map(List.of(melody(0, 66, 100), melody(0, 79, 100)));
+    void melodyAboveTheHarpMovesTheTrackDown() {
+        List<MidiNote> notes = NoteMapper.map(phrase(66, 79));
 
-        Assertions.assertEquals(RadioInstrument.FLUTE, notes.get(1).instrument(), "key 79 must play on the flute, the register nearest to the harp");
-        Assertions.assertEquals(13, notes.get(1).semitone(), "key 79 on the flute must be note 13");
-        Assertions.assertEquals(79, soundingKey(notes.get(1)), "the note must sound as key 79, not an octave lower");
+        Assertions.assertEquals(List.of(RadioInstrument.HARP, RadioInstrument.HARP), instruments(notes), "both notes must stay on the harp");
+        Assertions.assertEquals(List.of(54, 67), soundingKeys(notes), "the track must sound one octave below the written keys 66 and 79");
+    }
+
+    @DisplayName("A melodic track above the harp register plays entirely on the harp, one octave lower")
+    @Test
+    void korobeikiLikeMelodyPlaysOnTheHarpOneOctaveLower() {
+        List<MidiNote> notes = NoteMapper.map(phrase(72, 76, 77, 79, 81, 83, 84, 86, 88));
+
+        Assertions.assertEquals(Collections.nCopies(9, RadioInstrument.HARP), instruments(notes), "every note of the melody must stay on the harp");
+        Assertions.assertEquals(List.of(60, 64, 65, 67, 69, 71, 72, 74, 76), soundingKeys(notes), "the melody must sound one octave below the written keys C5 to E6");
+    }
+
+    @DisplayName("A track spanning three octaves keeps its intervals and only its outliers change instrument")
+    @Test
+    void threeOctaveTrackKeepsItsIntervals() {
+        List<MidiNote> notes = NoteMapper.map(phrase(48, 60, 72, 84));
+
+        Assertions.assertEquals(List.of(RadioInstrument.GUITAR, RadioInstrument.HARP, RadioInstrument.HARP, RadioInstrument.FLUTE), instruments(notes), "keys 60 and 72 must stay on the harp, the outliers 48 and 84 must switch to the extensions");
+        Assertions.assertEquals(List.of(48, 60, 72, 84), soundingKeys(notes), "no shift: every note must sound as written");
+    }
+
+    @DisplayName("A bass track keeps its octave while the melody above it moves down")
+    @Test
+    void bassTrackKeepsItsOctaveBesideAMelody() {
+        List<NoteMapper.RawNote> notes = new ArrayList<>(phrase(72, 76, 79, 84, 88));
+        notes.add(new NoteMapper.RawNote(0, BASS_CHANNEL, BASS_PROGRAM, 42, 100));
+
+        List<MidiNote> mapped = NoteMapper.map(notes);
+
+        Assertions.assertEquals(List.of(42), mapped.stream().filter(note -> note.instrument() == RadioInstrument.BASS).map(NoteMapperTest::soundingKey).toList(), "the bass note must sound as key 42, unshifted");
+        Assertions.assertEquals(Collections.nCopies(5, RadioInstrument.HARP), mapped.stream().filter(note -> note.instrument() != RadioInstrument.BASS).map(MidiNote::instrument).toList(), "the melody must stay on the harp");
+    }
+
+    @DisplayName("When plus and minus shift a track equally, the shift whose median sits nearer the register centre wins")
+    @Test
+    void tieBetweenPlusAndMinusFollowsTheMedian() {
+        List<MidiNote> notes = NoteMapper.map(phrase(20, 43, 85));
+
+        Assertions.assertEquals(RadioInstrument.HARP, notes.get(1).instrument(), "key 43 must play on the harp after the shift");
+        Assertions.assertEquals(55, soundingKey(notes.get(1)), "the shift must be +12: the median 43 sits nearer the centre 66 at 55 than at 31");
+    }
+
+    @DisplayName("The shift of a track does not depend on the order its notes arrive in")
+    @Test
+    void shiftDoesNotDependOnNoteOrder() {
+        List<NoteMapper.RawNote> notes = phrase(20, 43, 85);
+        List<NoteMapper.RawNote> reversed = new ArrayList<>(notes);
+        Collections.reverse(reversed);
+
+        Assertions.assertEquals(NoteMapper.map(notes), NoteMapper.map(reversed), "the same notes must map to the same instruments and notes in any order");
     }
 
     @DisplayName("A melody note above the flute register moves to the bell")
