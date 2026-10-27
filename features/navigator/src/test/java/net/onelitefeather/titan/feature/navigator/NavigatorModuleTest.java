@@ -72,13 +72,13 @@ class NavigatorModuleTest {
             Assertions.assertNotNull(openInventory, "the navigator must open synchronously, without a tick");
             Assertions.assertInstanceOf(Inventory.class, openInventory);
             Assertions.assertEquals(InventoryType.CHEST_4_ROW, ((Inventory) openInventory).getInventoryType());
-            Assertions.assertEquals(Material.ELYTRA, openInventory.getItemStack(11).material());
+            Assertions.assertEquals(Material.ELYTRA, openInventory.getItemStack(12).material());
             Assertions.assertEquals(Material.COMPASS, openInventory.getItemStack(31).material());
-            Assertions.assertEquals(Material.GRASS_BLOCK, openInventory.getItemStack(20).material());
-            Assertions.assertEquals(Material.ENDERMAN_SPAWN_EGG, openInventory.getItemStack(15).material());
+            Assertions.assertEquals(Material.GRASS_BLOCK, openInventory.getItemStack(21).material());
+            Assertions.assertEquals(Material.ENDERMAN_SPAWN_EGG, openInventory.getItemStack(13).material());
             Assertions.assertEquals(Material.WOODEN_AXE, openInventory.getItemStack(22).material());
-            for (int slot : List.of(10, 12, 13, 14, 16, 19, 21, 23, 24, 25)) {
-                Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, openInventory.getItemStack(slot).material(), "slot " + slot + " should be a blank glass pane");
+            for (int slot : List.of(10, 11, 14, 15, 16, 19, 20, 23, 24, 25)) {
+                Assertions.assertEquals(Material.AIR, openInventory.getItemStack(slot).material(), "slot " + slot + " should be empty");
             }
         }
     }
@@ -93,7 +93,7 @@ class NavigatorModuleTest {
             fixture.equip(player);
             AbstractInventory openInventory = openNavigator(fixture, player);
 
-            InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(Destination.ELYTRA_RACE.slot()));
+            InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(12));
             env.process().eventHandler().call(clickEvent);
             env.tick();
 
@@ -113,7 +113,7 @@ class NavigatorModuleTest {
             fixture.equip(player);
             AbstractInventory openInventory = openNavigator(fixture, player);
 
-            InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(20));
+            InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(21));
             env.process().eventHandler().call(clickEvent);
 
             Assertions.assertTrue(clickEvent.isCancelled());
@@ -133,7 +133,7 @@ class NavigatorModuleTest {
             fixture.equip(player);
             AbstractInventory openInventory = openNavigator(fixture, player);
 
-            InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(15));
+            InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(13));
             env.process().eventHandler().call(clickEvent);
             env.tick();
 
@@ -247,7 +247,7 @@ class NavigatorModuleTest {
 
             fixture.stopModule();
 
-            InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(20));
+            InventoryPreClickEvent clickEvent = new InventoryPreClickEvent(openInventory, player, new Click.Left(21));
             env.process().eventHandler().call(clickEvent);
 
             Assertions.assertFalse(clickEvent.isCancelled(), "no feature code may run once the module has stopped");

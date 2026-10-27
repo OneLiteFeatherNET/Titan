@@ -32,7 +32,7 @@ import net.onelitefeather.titan.core.portal.ServiceCount;
 /** The clicks, reads and inspections the server list tests share; the picker is ElytraRace's. */
 final class PickerTestSupport {
 
-    static final int ELYTRA_RACE_SLOT = Destination.ELYTRA_RACE.slot();
+    static final int ELYTRA_RACE_SLOT = 12;
 
     private PickerTestSupport() {
     }

@@ -45,11 +45,10 @@ class NavigatorPlayerCountTest {
     // Survival has no portal in these tests, so only its connect line is listed.
     private static final String HINT = "▸ Left click  Connect";
     private static final String GERMAN_HINT = "▸ Linksklick  Verbinden";
-    private static final String SEPARATOR = "━━━━━━━━━━━━";
 
-    // The lore of Survival with a known count: separator, players against the limit of 100, blank, hint.
-    private static List<String> expected(int online, String label, String hint) {
-        return List.of(SEPARATOR, label + "  " + online + " / 100", "", hint);
+    // The lore of Survival: the status line with the count, the description, a blank line, the hint.
+    private static List<String> expected(int online, String status, String description, String hint) {
+        return List.of("● " + online + " " + status, description, "", hint);
     }
 
     private static List<String> lore(ItemStack item) {
@@ -57,7 +56,7 @@ class NavigatorPlayerCountTest {
     }
 
     private static ItemStack survival(Inventory inventory) {
-        return inventory.getItemStack(Destination.SURVIVAL.slot());
+        return inventory.getItemStack(21);
     }
 
     @DisplayName("The first refresh shows the count under the mode, in both menus")
@@ -68,8 +67,34 @@ class NavigatorPlayerCountTest {
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), counts)) {
             tick(env, 2);
 
-            Assertions.assertEquals(expected(4, "Players", HINT), lore(survival(fixture.module().publicInventory())));
-            Assertions.assertEquals(expected(4, "Players", HINT), lore(survival(fixture.module().teamInventory())));
+            Assertions.assertEquals(expected(4, "players", "A survival server", HINT), lore(survival(fixture.module().publicInventory())));
+            Assertions.assertEquals(expected(4, "players", "A survival server", HINT), lore(survival(fixture.module().teamInventory())));
+        }
+    }
+
+    @DisplayName("After a refresh the stack amount is the player count and the entry glints")
+    @Test
+    void countSetsTheStackAmountAndTheGlint(Env env) {
+        FakePlayerCounts counts = new FakePlayerCounts();
+        counts.serve("Survival", 12);
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), counts)) {
+            tick(env, 2);
+
+            ItemStack survival = survival(fixture.module().publicInventory());
+            Assertions.assertEquals(12, survival.amount(), "the stack amount is the player count");
+            Assertions.assertEquals(Boolean.TRUE, survival.get(DataComponents.ENCHANTMENT_GLINT_OVERRIDE), "an entry with players glints");
+        }
+    }
+
+    @DisplayName("An empty destination shows one item and does not glint")
+    @Test
+    void emptyDestinationShowsOneItemWithoutGlint(Env env) {
+        try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), new FakePlayerCounts())) {
+            tick(env, 2);
+
+            ItemStack survival = survival(fixture.module().publicInventory());
+            Assertions.assertEquals(1, survival.amount(), "an empty destination shows one item");
+            Assertions.assertNull(survival.get(DataComponents.ENCHANTMENT_GLINT_OVERRIDE), "an empty destination does not glint");
         }
     }
 
@@ -83,21 +108,21 @@ class NavigatorPlayerCountTest {
             counts.serve("Survival", 9);
             tick(env, 5);
             Inventory inventory = fixture.module().publicInventory();
-            Assertions.assertEquals(expected(4, "Players", HINT), lore(survival(inventory)), "no refresh is due yet");
+            Assertions.assertEquals(expected(4, "players", "A survival server", HINT), lore(survival(inventory)), "no refresh is due yet");
 
             tick(env, PERIOD_TICKS);
 
-            Assertions.assertEquals(expected(9, "Players", HINT), lore(survival(inventory)));
+            Assertions.assertEquals(expected(9, "players", "A survival server", HINT), lore(survival(inventory)));
         }
     }
 
-    @DisplayName("A mode whose task is not running shows no count line")
+    @DisplayName("A mode whose task is not running shows zero players")
     @Test
-    void notRunningTaskShowsNoCountLine(Env env) {
+    void notRunningTaskShowsZeroPlayers(Env env) {
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), new FakePlayerCounts())) {
             tick(env, 2);
 
-            Assertions.assertEquals(List.of(SEPARATOR, "", HINT), lore(survival(fixture.module().publicInventory())), "a task that runs nowhere must not show a count line");
+            Assertions.assertEquals(expected(0, "players", "A survival server", HINT), lore(survival(fixture.module().publicInventory())), "a task that runs nowhere must show a grey zero");
         }
     }
 
@@ -109,8 +134,8 @@ class NavigatorPlayerCountTest {
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone("titan.navigator.slender"), counts)) {
             tick(env, 2);
 
-            Assertions.assertEquals(expected(4, "Spieler", GERMAN_HINT), lore(survival(fixture.module().publicInventory(Locale.GERMAN))), "the German public menu must get the count refresh");
-            Assertions.assertEquals(expected(4, "Spieler", GERMAN_HINT), lore(survival(fixture.module().teamInventory(Locale.GERMAN))), "the German team menu must get the count refresh");
+            Assertions.assertEquals(expected(4, "Spieler", "Ein Survival-Server", GERMAN_HINT), lore(survival(fixture.module().publicInventory(Locale.GERMAN))), "the German public menu must get the count refresh");
+            Assertions.assertEquals(expected(4, "Spieler", "Ein Survival-Server", GERMAN_HINT), lore(survival(fixture.module().teamInventory(Locale.GERMAN))), "the German team menu must get the count refresh");
         }
     }
 
@@ -126,7 +151,7 @@ class NavigatorPlayerCountTest {
 
             tick(env, PERIOD_TICKS * 2);
 
-            Assertions.assertEquals(expected(4, "Players", HINT), lore(survival(fixture.module().publicInventory())));
+            Assertions.assertEquals(expected(4, "players", "A survival server", HINT), lore(survival(fixture.module().publicInventory())));
         }
     }
 
@@ -142,7 +167,7 @@ class NavigatorPlayerCountTest {
             tick(env, 2);
             fixture.useFeather(player);
 
-            env.process().eventHandler().call(new InventoryPreClickEvent(player.getOpenInventory(), player, new Click.Left(Destination.SURVIVAL.slot())));
+            env.process().eventHandler().call(new InventoryPreClickEvent(player.getOpenInventory(), player, new Click.Left(21)));
 
             Assertions.assertEquals("Survival", deliver.deliveries().get(0).taskName());
         }

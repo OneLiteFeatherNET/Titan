@@ -20,6 +20,7 @@ import java.util.Locale;
 import java.util.OptionalInt;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.junit.jupiter.api.AfterEach;
@@ -133,5 +134,58 @@ class NavigatorLoreTest {
     void stagingHintReadsInBothLanguages() {
         Assertions.assertEquals("Testumgebung – nur fürs Team", plain(List.of(NavigatorMessages.hintLine(NavigatorMessages.STAGING_HINT, Locale.GERMAN))).getFirst(), "the German hint");
         Assertions.assertEquals("Test environment – team only", plain(List.of(NavigatorMessages.hintLine(NavigatorMessages.STAGING_HINT, Locale.ENGLISH))).getFirst(), "the English hint");
+    }
+
+    @DisplayName("A main-grid minigame in German lists the status, the description, a blank line and the click lines")
+    @Test
+    void germanMainEntryWithPortal() {
+        List<Component> lore = NavigatorMessages.entryLore(NavigatorMessages.DESCRIPTION_ELYTRA_RACE, 3, MINIGAME_WITH_PORTAL, Locale.GERMAN);
+        Assertions.assertEquals(List.of("● 3 Spieler", "Ein Wettrennen im Gleitflug", "", "▸ Linksklick  Schnell beitreten", "▸ Rechtsklick  Server wählen", "▸ Shift-Klick  Zum Portal laufen"), plain(lore), "the German lore of ElytraRace with a portal");
+    }
+
+    @DisplayName("A main-grid minigame in English lists the same lines with English words")
+    @Test
+    void englishMainEntryWithPortal() {
+        List<Component> lore = NavigatorMessages.entryLore(NavigatorMessages.DESCRIPTION_ELYTRA_RACE, 3, MINIGAME_WITH_PORTAL, Locale.ENGLISH);
+        Assertions.assertEquals(List.of("● 3 players", "A race in elytra flight", "", "▸ Left click  Quick join", "▸ Right click  Choose a server", "▸ Shift click  Walk to portal"), plain(lore), "the English lore of ElytraRace with a portal");
+    }
+
+    @DisplayName("A server without a portal shows its status and one click line, and no separator")
+    @Test
+    void mainServerLoreHasNoSeparator() {
+        List<String> lines = plain(NavigatorMessages.entryLore(NavigatorMessages.DESCRIPTION_SURVIVAL, 12, SERVER_WITHOUT_PORTAL, Locale.GERMAN));
+
+        Assertions.assertEquals(List.of("● 12 Spieler", "Ein Survival-Server", "", "▸ Linksklick  Verbinden"), lines, "the German lore of Survival");
+        Assertions.assertTrue(lines.stream().noneMatch(line -> line.contains("━")), "a main-grid entry has no separator line");
+    }
+
+    @DisplayName("The status dot is green with players and grey without")
+    @Test
+    void statusDotFollowsThePlayerCount() {
+        Assertions.assertEquals(NamedTextColor.GREEN, firstColor(NavigatorMessages.statusLine(1, Locale.ENGLISH), null), "one player makes the dot green");
+        Assertions.assertEquals(NamedTextColor.GRAY, firstColor(NavigatorMessages.statusLine(0, Locale.ENGLISH), null), "zero players makes the dot grey");
+    }
+
+    @DisplayName("Zero players reads as zero, not as an unknown count")
+    @Test
+    void zeroPlayersShowsZero() {
+        Assertions.assertEquals("● 0 players", plain(List.of(NavigatorMessages.statusLine(0, Locale.ENGLISH))).getFirst(), "the status line shows the zero");
+    }
+
+    @DisplayName("The navigator title reads with its sparkles in both languages")
+    @Test
+    void titleHasTheSparkles() {
+        Assertions.assertEquals("✦ Navigator ✦", plain(List.of(NavigatorMessages.title(Locale.GERMAN))).getFirst(), "the German title");
+        Assertions.assertEquals("✦ Navigator ✦", plain(List.of(NavigatorMessages.title(Locale.ENGLISH))).getFirst(), "the English title");
+    }
+
+    @DisplayName("Every main-grid description has text in both languages")
+    @Test
+    void everyDescriptionHasText() {
+        for (String key : NavigatorMessages.DESCRIPTIONS) {
+            for (Locale locale : new Locale[]{Locale.GERMAN, Locale.ENGLISH}) {
+                Assertions.assertFalse(plain(List.of(NavigatorMessages.text(key, locale))).getFirst().isBlank(), key + " must have text in " + locale);
+            }
+        }
     }
 }

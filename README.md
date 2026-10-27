@@ -237,13 +237,13 @@ in einer anderen Quelle hat keine Wirkung. Slender, Tamias, Bounce und Build sin
 Die vier Staging-Einträge haben je ein eigenes Recht (siehe unten). Ein Spieler sieht jeden Eintrag nur mit seinem Recht;
 Entziehen oder Erteilen wirkt beim nächsten Öffnen des Navigators, ohne Neustart, und ein Klick prüft das Recht erneut.
 
-Das Hauptmenü hat vier Reihen mit Glasrahmen. ElytraRace (Platz 11), Bounce (Platz 13), Tamias (Platz 14) und
-Slender (Platz 15) sind die Minispiele in Reihe zwei; Survival (20), Creative (22) und Build (24) die Server in
-Reihe drei; der Spawn-Kompass sitzt unten in der Mitte (31). Tamias (Amethyst-Scherbe, Recht `titan.navigator.tamias`,
+Das Hauptmenü hat vier Reihen mit einem dunklen Rahmen. Die sichtbaren Minispiele (ElytraRace, Bounce, Tamias, Slender in
+dieser Reihenfolge) stehen zentriert in Reihe zwei, die sichtbaren Server (Survival, Creative, Build) zentriert in Reihe
+drei; ein fehlendes Ziel lässt keine Lücke. Der Spawn-Kompass sitzt unten in der Mitte (31). Tamias (Amethyst-Scherbe, Recht `titan.navigator.tamias`,
 CloudNet-Task `Tamias`) hat wie die anderen Minispiele einen Schnellbeitritt (Linksklick) und eine Serverliste
 (Rechtsklick).
 
-Der Staging-Hub auf Platz 16 (Strukturblock „Staging“) ist nur sichtbar, wenn der Spieler mindestens eines der vier
+Der Staging-Hub auf Platz 35 (untere rechte Ecke, Strukturblock „Staging“) ist nur sichtbar, wenn der Spieler mindestens eines der vier
 Staging-Rechte hat. Er öffnet ein Untermenü mit einer Reihe: Slender (Staging) auf Platz 0 (`cygnus.staging.join`),
 Bounce (Staging) auf Platz 1 (`bounce.staging.join`), ElytraRace (Staging) auf Platz 2 (`elytrarace.staging.join`) und
 Tamias (Staging) auf Platz 3 (`tamias.staging.join`); die Zurück-Taste liegt auf Platz 8. Jeder Staging-Eintrag erscheint

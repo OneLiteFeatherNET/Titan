@@ -44,15 +44,25 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(MicrotusExtension.class)
 class NavigatorDestinationTest {
 
-    @DisplayName("Every destination occupies the slot the lobby-navigator spec fixes for it")
+    @DisplayName("Every main-grid destination belongs to the minigame or the server group")
     @Test
-    void destinationsOccupyTheirFixedSlots() {
-        Assertions.assertEquals(11, Destination.ELYTRA_RACE.slot());
-        Assertions.assertEquals(20, Destination.SURVIVAL.slot());
-        Assertions.assertEquals(15, Destination.SLENDER.slot());
-        Assertions.assertEquals(24, Destination.BUILD.slot());
-        Assertions.assertEquals(22, Destination.CREATIVE.slot());
-        Assertions.assertEquals(13, Destination.BOUNCE.slot());
+    void destinationsBelongToTheirGroups() {
+        Assertions.assertEquals(Destination.Group.MINIGAME, Destination.ELYTRA_RACE.group());
+        Assertions.assertEquals(Destination.Group.MINIGAME, Destination.BOUNCE.group());
+        Assertions.assertEquals(Destination.Group.MINIGAME, Destination.TAMIAS.group());
+        Assertions.assertEquals(Destination.Group.MINIGAME, Destination.SLENDER.group());
+        Assertions.assertEquals(Destination.Group.SERVER, Destination.SURVIVAL.group());
+        Assertions.assertEquals(Destination.Group.SERVER, Destination.CREATIVE.group());
+        Assertions.assertEquals(Destination.Group.SERVER, Destination.BUILD.group());
+        Assertions.assertEquals(Destination.Group.STAGING, Destination.SLENDER_STAGING.group());
+    }
+
+    @DisplayName("Every main-grid destination names a description")
+    @Test
+    void mainDestinationsHaveADescription() {
+        for (Destination destination : Destination.visible(Set.copyOf(Destination.permissioned()))) {
+            Assertions.assertTrue(NavigatorMessages.DESCRIPTIONS.contains(destination.description()), destination + " must name a description key");
+        }
     }
 
     @DisplayName("Bounce forwards to the Bounce task and needs titan.navigator.bounce")
@@ -87,12 +97,6 @@ class NavigatorDestinationTest {
     void tamiasForwardsToTheTamiasTaskBehindItsPermission() {
         Assertions.assertEquals("Tamias", Destination.TAMIAS.task());
         Assertions.assertEquals("titan.navigator.tamias", Destination.TAMIAS.permission());
-    }
-
-    @DisplayName("Tamias occupies row three, slot 14, between Bounce and Slender")
-    @Test
-    void tamiasOccupiesSlot14() {
-        Assertions.assertEquals(14, Destination.TAMIAS.slot());
     }
 
     @DisplayName("Tamias is shown with the amethyst shard icon")
@@ -168,14 +172,14 @@ class NavigatorDestinationTest {
         Assertions.assertTrue(Destination.visible(Set.of(Destination.TAMIAS)).contains(Destination.TAMIAS), "Tamias must be visible with titan.navigator.tamias");
     }
 
-    @DisplayName("No two destinations share a slot")
+    @DisplayName("No two staging entries share a submenu slot")
     @Test
-    void destinationsHavePairwiseDistinctSlots() {
-        List<Integer> slots = Arrays.stream(Destination.values()).map(Destination::slot).toList();
+    void stagingEntriesHavePairwiseDistinctSlots() {
+        List<Integer> slots = Destination.stagingEntries().stream().map(Destination::slot).toList();
 
         Set<Integer> distinctSlots = new HashSet<>(slots);
 
-        Assertions.assertEquals(slots.size(), distinctSlots.size(), "every destination must occupy its own slot, but found duplicates in " + slots);
+        Assertions.assertEquals(slots.size(), distinctSlots.size(), "every staging entry must occupy its own submenu slot, but found duplicates in " + slots);
     }
 
     @DisplayName("visible() without grants lists neither Slender nor Build")

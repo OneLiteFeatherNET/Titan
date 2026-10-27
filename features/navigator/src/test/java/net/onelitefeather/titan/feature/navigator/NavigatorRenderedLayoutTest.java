@@ -17,6 +17,7 @@ package net.onelitefeather.titan.feature.navigator;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.IntStream;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
@@ -38,8 +39,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * The menu as a player sees it: four rows, the frame, the entries on their slots and the grey
- * panes.
+ * The menu as a player sees it: four rows, the dark frame, the entries centred in their rows and an
+ * empty inside wherever no entry is shown.
  */
 @ExtendWith(MicrotusExtension.class)
 class NavigatorRenderedLayoutTest {
@@ -65,6 +66,10 @@ class NavigatorRenderedLayoutTest {
         return mini.stripTags(mini.serialize(stack.get(DataComponents.CUSTOM_NAME)));
     }
 
+    private static boolean contains(AbstractInventory inventory, Material material) {
+        return IntStream.range(0, inventory.getSize()).anyMatch(slot -> inventory.getItemStack(slot).material() == material);
+    }
+
     @DisplayName("The navigator has four rows of nine slots")
     @Test
     void fourRows(Env env) {
@@ -74,26 +79,28 @@ class NavigatorRenderedLayoutTest {
         }
     }
 
-    @DisplayName("The frame alternates light blue and cyan panes, and the inside is grey")
+    @DisplayName("The frame is one dark pane without a name, and the inside is empty")
     @Test
-    void frameAndInsideAreGlass(Env env) {
+    void frameIsOneDarkPaneAndTheInsideIsEmpty(Env env) {
         Player player = env.createPlayer(env.createFlatInstance());
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService())) {
             AbstractInventory menu = openNavigator(fixture, player);
-            Assertions.assertEquals(Material.LIGHT_BLUE_STAINED_GLASS_PANE, menu.getItemStack(0).material(), "the top-left corner is light blue");
-            Assertions.assertEquals(Material.CYAN_STAINED_GLASS_PANE, menu.getItemStack(1).material(), "the next frame pane is cyan");
-            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, menu.getItemStack(10).material(), "an empty inner slot is grey");
+            Assertions.assertEquals(Material.BLACK_STAINED_GLASS_PANE, menu.getItemStack(0).material(), "the top-left corner is the dark pane");
+            Assertions.assertEquals(Material.BLACK_STAINED_GLASS_PANE, menu.getItemStack(1).material(), "the next frame pane is the same dark pane");
+            Assertions.assertEquals("", nameOf(menu, 0), "a frame pane has no name");
+            Assertions.assertEquals(Material.AIR, menu.getItemStack(10).material(), "an empty inner slot holds no item");
+            Assertions.assertFalse(contains(menu, Material.GRAY_STAINED_GLASS_PANE), "no grey filler pane is shown");
         }
     }
 
-    @DisplayName("The entries sit on their slots: ElytraRace on 11, Survival on 20, Creative on 22")
+    @DisplayName("ElytraRace alone sits on slot 13, Survival on 21 and Creative on 22")
     @Test
     void entriesSitOnTheirSlots(Env env) {
         Player player = env.createPlayer(env.createFlatInstance());
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService())) {
             AbstractInventory menu = openNavigator(fixture, player);
-            Assertions.assertEquals(Material.ELYTRA, menu.getItemStack(11).material(), "ElytraRace is on slot 11");
-            Assertions.assertEquals(Material.GRASS_BLOCK, menu.getItemStack(20).material(), "Survival is on slot 20");
+            Assertions.assertEquals(Material.ELYTRA, menu.getItemStack(13).material(), "ElytraRace is alone in row one, on slot 13");
+            Assertions.assertEquals(Material.GRASS_BLOCK, menu.getItemStack(21).material(), "Survival is on slot 21");
             Assertions.assertEquals(Material.WOODEN_AXE, menu.getItemStack(22).material(), "Creative is on slot 22");
         }
     }
@@ -107,90 +114,94 @@ class NavigatorRenderedLayoutTest {
         }
     }
 
-    @DisplayName("Without the permissions Slender and Build leave grey panes on their slots")
+    @DisplayName("Without the permissions Slender and Build their entries are absent and leave no gap")
     @Test
-    void hiddenEntriesLeaveGreyPanes(Env env) {
+    void hiddenEntriesLeaveNoItem(Env env) {
         Player player = env.createPlayer(env.createFlatInstance());
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService())) {
             AbstractInventory menu = openNavigator(fixture, player);
-            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, menu.getItemStack(15).material(), "Slender is hidden on slot 15");
-            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, menu.getItemStack(24).material(), "Build is hidden on slot 24");
+            Assertions.assertFalse(contains(menu, Material.ENDERMAN_SPAWN_EGG), "Slender is hidden");
+            Assertions.assertEquals(Material.AIR, menu.getItemStack(23).material(), "Build is hidden, so slot 23 stays empty");
         }
     }
 
-    @DisplayName("With the Slender permission Slender shows on slot 15")
+    @DisplayName("With the Slender permission Slender shows on slot 13 beside ElytraRace on slot 12")
     @Test
-    void grantedSlenderShowsOnSlot15(Env env) {
+    void grantedSlenderShowsBesideElytraRace(Env env) {
         Player player = env.createPlayer(env.createFlatInstance());
         FakePermissionService permissions = new FakePermissionService().set(player.getUuid(), SLENDER_PERMISSION, PermissionResult.ALLOWED);
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions)) {
-            Assertions.assertEquals(Material.ENDERMAN_SPAWN_EGG, openNavigator(fixture, player).getItemStack(15).material(), "a granted Slender is on slot 15");
+            AbstractInventory menu = openNavigator(fixture, player);
+            Assertions.assertEquals(Material.ELYTRA, menu.getItemStack(12).material(), "ElytraRace is on slot 12");
+            Assertions.assertEquals(Material.ENDERMAN_SPAWN_EGG, menu.getItemStack(13).material(), "a granted Slender is on slot 13");
         }
     }
 
-    @DisplayName("With the Bounce and Slender permissions Bounce sits on slot 13 between ElytraRace and Slender")
+    @DisplayName("With the Bounce and Slender permissions the minigames are ElytraRace, Bounce and Slender on slots 12 to 14")
     @Test
-    void grantedBounceShowsOnSlot13BetweenRaceAndSlender(Env env) {
+    void grantedBounceSitsBetweenRaceAndSlender(Env env) {
         Player player = env.createPlayer(env.createFlatInstance());
         FakePermissionService permissions = new FakePermissionService().set(player.getUuid(), BOUNCE_PERMISSION, PermissionResult.ALLOWED).set(player.getUuid(), SLENDER_PERMISSION, PermissionResult.ALLOWED);
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions)) {
             AbstractInventory menu = openNavigator(fixture, player);
 
-            Assertions.assertEquals(Material.ELYTRA, menu.getItemStack(11).material(), "ElytraRace is on slot 11");
+            Assertions.assertEquals(Material.ELYTRA, menu.getItemStack(12).material(), "ElytraRace is on slot 12");
             Assertions.assertEquals(Material.SLIME_BALL, menu.getItemStack(13).material(), "a granted Bounce is on slot 13");
-            Assertions.assertEquals(Material.ENDERMAN_SPAWN_EGG, menu.getItemStack(15).material(), "Slender is on slot 15");
+            Assertions.assertEquals(Material.ENDERMAN_SPAWN_EGG, menu.getItemStack(14).material(), "Slender is on slot 14");
         }
     }
 
-    @DisplayName("Without the Bounce permission slot 13 is a grey pane")
+    @DisplayName("Without the Bounce permission ElytraRace takes slot 13 and no Bounce shows")
     @Test
-    void hiddenBounceLeavesGreyPaneOnSlot13(Env env) {
+    void hiddenBounceLeavesNoBounceItem(Env env) {
         Player player = env.createPlayer(env.createFlatInstance());
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService())) {
-            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, openNavigator(fixture, player).getItemStack(13).material(), "a hidden Bounce leaves slot 13 blank");
+            AbstractInventory menu = openNavigator(fixture, player);
+            Assertions.assertEquals(Material.ELYTRA, menu.getItemStack(13).material(), "ElytraRace moves to slot 13 without Bounce");
+            Assertions.assertFalse(contains(menu, Material.SLIME_BALL), "a hidden Bounce shows nothing");
         }
     }
 
-    @DisplayName("With the Build permission Build shows on slot 24")
+    @DisplayName("With the Build permission Build shows on slot 23")
     @Test
-    void grantedBuildShowsOnSlot24(Env env) {
+    void grantedBuildShowsOnSlot23(Env env) {
         Player player = env.createPlayer(env.createFlatInstance());
         FakePermissionService permissions = new FakePermissionService().set(player.getUuid(), BUILD_PERMISSION, PermissionResult.ALLOWED);
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions)) {
-            Assertions.assertEquals(Material.SCAFFOLDING, openNavigator(fixture, player).getItemStack(24).material(), "a granted Build is on slot 24");
+            Assertions.assertEquals(Material.SCAFFOLDING, openNavigator(fixture, player).getItemStack(23).material(), "a granted Build is on slot 23");
         }
     }
 
-    @DisplayName("Without cygnus.staging.join slot 16 is a grey pane when the permission is not set")
+    @DisplayName("Without cygnus.staging.join the hub corner keeps the dark frame pane when the permission is not set")
     @Test
-    void notSetStagingLeavesGreyPaneOnSlot16(Env env) {
+    void notSetStagingLeavesTheFramePaneOnSlot35(Env env) {
         Player player = env.createPlayer(env.createFlatInstance());
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService())) {
-            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, openNavigator(fixture, player).getItemStack(16).material(), "an unset staging grant leaves slot 16 blank");
+            Assertions.assertEquals(Material.BLACK_STAINED_GLASS_PANE, openNavigator(fixture, player).getItemStack(NavigatorLayout.STAGING_HUB_SLOT).material(), "an unset staging grant leaves slot 35 to the frame");
         }
     }
 
-    @DisplayName("Without cygnus.staging.join slot 16 is a grey pane when the permission is denied")
+    @DisplayName("Without cygnus.staging.join the hub corner keeps the dark frame pane when the permission is denied")
     @Test
-    void deniedStagingLeavesGreyPaneOnSlot16(Env env) {
+    void deniedStagingLeavesTheFramePaneOnSlot35(Env env) {
         Player player = env.createPlayer(env.createFlatInstance());
         FakePermissionService permissions = new FakePermissionService().set(player.getUuid(), STAGING_PERMISSION, PermissionResult.DENIED);
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions)) {
-            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, openNavigator(fixture, player).getItemStack(16).material(), "a denied staging grant leaves slot 16 blank");
+            Assertions.assertEquals(Material.BLACK_STAINED_GLASS_PANE, openNavigator(fixture, player).getItemStack(NavigatorLayout.STAGING_HUB_SLOT).material(), "a denied staging grant leaves slot 35 to the frame");
         }
     }
 
-    @DisplayName("With cygnus.staging.join the staging hub shows on slot 16 as a structure block named Staging")
+    @DisplayName("With cygnus.staging.join the staging hub shows on slot 35 as a structure block named Staging")
     @Test
-    void grantedStagingShowsTheHubOnSlot16(Env env) {
+    void grantedStagingShowsTheHubOnSlot35(Env env) {
         Player player = env.createPlayer(env.createFlatInstance());
         FakePermissionService permissions = new FakePermissionService().set(player.getUuid(), STAGING_PERMISSION, PermissionResult.ALLOWED);
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions)) {
             AbstractInventory menu = openNavigator(fixture, player);
 
-            Assertions.assertEquals(Material.STRUCTURE_BLOCK, menu.getItemStack(NavigatorLayout.STAGING_HUB_SLOT).material(), "a granted staging permission shows the hub as a structure block on slot 16");
+            Assertions.assertEquals(Material.STRUCTURE_BLOCK, menu.getItemStack(NavigatorLayout.STAGING_HUB_SLOT).material(), "a granted staging permission shows the hub as a structure block on slot 35");
             Assertions.assertEquals("Staging", nameOf(menu, NavigatorLayout.STAGING_HUB_SLOT), "the hub is named Staging");
-            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, menu.getItemStack(15).material(), "the real Slender stays hidden without its own grant");
+            Assertions.assertFalse(contains(menu, Material.ENDERMAN_SPAWN_EGG), "the real Slender stays hidden without its own grant");
         }
     }
 

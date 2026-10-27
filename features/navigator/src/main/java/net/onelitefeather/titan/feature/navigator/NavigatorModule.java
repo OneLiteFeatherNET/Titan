@@ -100,6 +100,7 @@ public final class NavigatorModule {
     private static final String ID = "navigator";
     private static final ItemStack SPAWN_ITEM = ItemStack.builder(Material.COMPASS).customName(MiniMessage.miniMessage().deserialize("<!i><gradient:#00ddff:#ffffff>Spawn</gradient>")).build();
     private static final ItemStack BLANK = ItemStack.builder(Material.GRAY_STAINED_GLASS_PANE).customName(Component.empty()).build();
+    private static final ItemStack FRAME = ItemStack.builder(NavigatorLayout.FRAME_MATERIAL).customName(Component.empty()).build();
 
     private static final List<Locale> LANGUAGES = List.of(Locale.ENGLISH, Locale.GERMAN);
 
@@ -175,8 +176,8 @@ public final class NavigatorModule {
         for (Set<Destination> granted : grantCombinations(Destination.livePermissioned())) {
             for (boolean stagingHub : List.of(false, true)) {
                 for (Locale language : LANGUAGES) {
-                    SharedNavigator navigator = new SharedNavigator(NavigatorMessages.title(language), NavigatorLayout.TYPE, Destination.visible(granted), this.telemetry);
-                    navigator.applyLayout(visible -> toAvesLayout(visible, stagingHub, language));
+                    SharedNavigator navigator = new SharedNavigator(NavigatorMessages.title(language), NavigatorLayout.TYPE, NavigatorLayout.mainSlots(Destination.visible(granted)), this.telemetry);
+                    navigator.applyLayout(slots -> toAvesLayout(slots, stagingHub, language));
                     navigator.register();
                     this.menus.put(new Menu(granted, stagingHub, language), navigator);
                 }
@@ -184,8 +185,8 @@ public final class NavigatorModule {
         }
         for (Set<Destination> granted : grantCombinations(Destination.stagingEntries())) {
             for (Locale language : LANGUAGES) {
-                SharedNavigator submenu = new SharedNavigator(StagingMenu.title(language), StagingMenu.TYPE, Destination.stagingVisible(granted), this.telemetry);
-                submenu.applyLayout(visible -> toStagingLayout(visible, language));
+                SharedNavigator submenu = new SharedNavigator(StagingMenu.title(language), StagingMenu.TYPE, stagingSlots(Destination.stagingVisible(granted)), this.telemetry);
+                submenu.applyLayout(slots -> toStagingLayout(slots, language));
                 submenu.register();
                 this.submenus.put(new Submenu(granted, language), submenu);
             }
@@ -330,6 +331,11 @@ public final class NavigatorModule {
     private ItemStack itemOf(Destination destination, Locale language) {
         List<ServiceCount> services = this.running.getOrDefault(destination, List.of());
         List<ClickAction> actions = ClickAction.hints(ServerPicker.DESTINATIONS.contains(destination), portalFor(destination).isPresent());
+        if (!destination.staging()) {
+            // The count is the stack amount and the glint, so the lore and the stack never disagree.
+            int online = TaskPlayers.online(services).orElse(0);
+            return destination.item(NavigatorMessages.entryLore(destination.description(), online, actions, language), online);
+        }
         List<Component> lore = new ArrayList<>(NavigatorMessages.modeLore(destination.gradient(), TaskPlayers.online(services), TaskPlayers.capacity(services), actions, language));
         List<String> hints = new ArrayList<>();
         if (destination.onDemand()) {
@@ -364,17 +370,18 @@ public final class NavigatorModule {
         return permission == null || this.permissions.check(player.getUuid(), permission) == PermissionResult.ALLOWED;
     }
 
-    private InventoryLayout toAvesLayout(List<Destination> visible, boolean stagingHub, Locale language) {
+    // Only the frame is filled; a main-grid slot without an entry stays empty.
+    private InventoryLayout toAvesLayout(Map<Destination, Integer> slots, boolean stagingHub, Locale language) {
         InventoryLayout layout = InventoryLayout.fromType(NavigatorLayout.TYPE);
         for (int slot = 0; slot < NavigatorLayout.SIZE; slot++) {
-            layout.setItem(slot, NavigatorLayout.isFrame(slot) ? frameItem(slot) : BLANK);
+            if (NavigatorLayout.isFrame(slot)) {
+                layout.setItem(slot, FRAME);
+            }
         }
-        for (Destination destination : visible) {
-            layout.setItem(destination.slot(), itemOf(destination, language), (player, clickedSlot, click, stack, result) -> {
-                result.accept(ClickHolder.cancelClick());
-                clickDestination(player, destination, click, language);
-            });
-        }
+        slots.forEach((destination, slot) -> layout.setItem(slot, itemOf(destination, language), (player, clickedSlot, click, stack, result) -> {
+            result.accept(ClickHolder.cancelClick());
+            clickDestination(player, destination, click, language);
+        }));
         if (stagingHub) {
             layout.setItem(NavigatorLayout.STAGING_HUB_SLOT, StagingMenu.hub(language), (player, clickedSlot, click, stack, result) -> {
                 result.accept(ClickHolder.cancelClick());
@@ -385,17 +392,15 @@ public final class NavigatorModule {
         return layout;
     }
 
-    private InventoryLayout toStagingLayout(List<Destination> visible, Locale language) {
+    private InventoryLayout toStagingLayout(Map<Destination, Integer> slots, Locale language) {
         InventoryLayout layout = InventoryLayout.fromType(StagingMenu.TYPE);
         for (int slot = 0; slot < StagingMenu.SIZE; slot++) {
             layout.setItem(slot, BLANK);
         }
-        for (Destination destination : visible) {
-            layout.setItem(destination.slot(), itemOf(destination, language), (player, clickedSlot, click, stack, result) -> {
-                result.accept(ClickHolder.cancelClick());
-                clickDestination(player, destination, click, language);
-            });
-        }
+        slots.forEach((destination, slot) -> layout.setItem(slot, itemOf(destination, language), (player, clickedSlot, click, stack, result) -> {
+            result.accept(ClickHolder.cancelClick());
+            clickDestination(player, destination, click, language);
+        }));
         layout.setItem(StagingMenu.BACK_SLOT, StagingMenu.back(language), (player, clickedSlot, click, stack, result) -> {
             result.accept(ClickHolder.cancelClick());
             open(player);
@@ -413,8 +418,11 @@ public final class NavigatorModule {
         player.openInventory(this.submenus.get(new Submenu(granted, languageOf(player))).inventory());
     }
 
-    private static ItemStack frameItem(int slot) {
-        return ItemStack.builder(NavigatorLayout.frameMaterial(slot)).customName(Component.empty()).build();
+    // The submenu's entries sit on their own fixed slots, so the map is read from the entries themselves.
+    private static Map<Destination, Integer> stagingSlots(List<Destination> entries) {
+        Map<Destination, Integer> slots = new EnumMap<>(Destination.class);
+        entries.forEach(entry -> slots.put(entry, entry.slot()));
+        return slots;
     }
 
     // Decides the click first: a join or the server list needs the services read, a connect or a

@@ -49,7 +49,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 class NavigatorPickerLifecycleTest {
 
     private static final String SLENDER_PERMISSION = "titan.navigator.slender";
-    private static final int ELYTRA_RACE_SLOT = Destination.ELYTRA_RACE.slot();
+    private static final int ELYTRA_RACE_SLOT = 12;
     private static final Pos SPAWN = new Pos(11.5, 40, 60);
     private static final ServiceCount RACE_ONE = new ServiceCount("ElytraRace-1", 3, 50);
     private static final int OPEN_CLOSE_COUNT = 20;

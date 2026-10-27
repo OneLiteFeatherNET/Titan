@@ -72,9 +72,19 @@ final class NavigatorMessages implements AutoCloseable {
     static final String STAGING_TIMEOUT = "titan.navigator.staging.timeout";
     static final String STAGING_ON_DEMAND_HINT = "titan.navigator.hint.staging.ondemand";
     static final String ACTION_START = "titan.navigator.action.start";
+    static final String STATUS_PLAYERS = "titan.navigator.status.players";
+    static final String DESCRIPTION_ELYTRA_RACE = "titan.navigator.description.elytrarace";
+    static final String DESCRIPTION_BOUNCE = "titan.navigator.description.bounce";
+    static final String DESCRIPTION_TAMIAS = "titan.navigator.description.tamias";
+    static final String DESCRIPTION_SLENDER = "titan.navigator.description.slender";
+    static final String DESCRIPTION_SURVIVAL = "titan.navigator.description.survival";
+    static final String DESCRIPTION_CREATIVE = "titan.navigator.description.creative";
+    static final String DESCRIPTION_BUILD = "titan.navigator.description.build";
+    /** The description line of every main-grid entry. */
+    static final List<String> DESCRIPTIONS = List.of(DESCRIPTION_ELYTRA_RACE, DESCRIPTION_BOUNCE, DESCRIPTION_TAMIAS, DESCRIPTION_SLENDER, DESCRIPTION_SURVIVAL, DESCRIPTION_CREATIVE, DESCRIPTION_BUILD);
 
     /** Every key the navigator renders; the bundle test checks the property files against it. */
-    static final List<String> KEYS = List.of(TITLE, PICKER_TITLE, PLAYERS, KEY_LEFT, KEY_RIGHT, KEY_SHIFT, ACTION_QUICK_JOIN, ACTION_CHOOSE_SERVER, ACTION_CONNECT, ACTION_PORTAL, PICKER_FULL, PICKER_NOT_READY, PICKER_JOIN, REFUSAL_FULL, REFUSAL_NOT_READY, REFUSAL_UNAVAILABLE, PICKER_EMPTY, SORT_ITEM, SORT_NAME, SORT_MOST_PLAYERS, SORT_MOST_FREE, SORT_STATUS, SORT_HINT, PAGE_PREVIOUS, PAGE_NEXT, PAGE_INDICATOR, PICKER_BACK, STAGING_HINT, STAGING_MENU_TITLE, STAGING_STARTING, STAGING_TIMEOUT, STAGING_ON_DEMAND_HINT, ACTION_START);
+    static final List<String> KEYS = List.of(TITLE, PICKER_TITLE, PLAYERS, KEY_LEFT, KEY_RIGHT, KEY_SHIFT, ACTION_QUICK_JOIN, ACTION_CHOOSE_SERVER, ACTION_CONNECT, ACTION_PORTAL, PICKER_FULL, PICKER_NOT_READY, PICKER_JOIN, REFUSAL_FULL, REFUSAL_NOT_READY, REFUSAL_UNAVAILABLE, PICKER_EMPTY, SORT_ITEM, SORT_NAME, SORT_MOST_PLAYERS, SORT_MOST_FREE, SORT_STATUS, SORT_HINT, PAGE_PREVIOUS, PAGE_NEXT, PAGE_INDICATOR, PICKER_BACK, STAGING_HINT, STAGING_MENU_TITLE, STAGING_STARTING, STAGING_TIMEOUT, STAGING_ON_DEMAND_HINT, ACTION_START, STATUS_PLAYERS, DESCRIPTION_ELYTRA_RACE, DESCRIPTION_BOUNCE, DESCRIPTION_TAMIAS, DESCRIPTION_SLENDER, DESCRIPTION_SURVIVAL, DESCRIPTION_CREATIVE, DESCRIPTION_BUILD);
 
     private static final String BUNDLE = "titan.navigator.messages";
     private static final String SEPARATOR = "━━━━━━━━━━━━";
@@ -134,6 +144,33 @@ final class NavigatorMessages implements AutoCloseable {
             lore.add(clickLine(action, locale));
         }
         return List.copyOf(lore);
+    }
+
+    /**
+     * The lore of a main-grid entry: the status line, the description, a blank line, then one line
+     * per
+     * click action. It has no separator, so the entries read as one row of plain cards.
+     */
+    static List<Component> entryLore(String description, int online, List<ClickAction> actions, Locale locale) {
+        List<Component> lore = new ArrayList<>();
+        lore.add(statusLine(online, locale));
+        lore.add(hintLine(description, locale));
+        lore.add(Component.empty());
+        for (ClickAction action : actions) {
+            lore.add(clickLine(action, locale));
+        }
+        return List.copyOf(lore);
+    }
+
+    /**
+     * The status line of a main-grid entry: a green dot with players on it, a grey one without,
+     * then the count.
+     */
+    static Component statusLine(int online, Locale locale) {
+        String dot = online > 0 ? "green" : "gray";
+        TagResolver label = Placeholder.component("label", text(STATUS_PLAYERS, locale));
+        TagResolver count = Placeholder.unparsed("online", String.valueOf(online));
+        return MiniMessage.miniMessage().deserialize("<!i><" + dot + ">●</" + dot + "> <white><online></white>" + LABEL_COLOR + " <label></#8c96a8>", label, count);
     }
 
     /** The players of an entry, with the maximum after a slash when it is known. */
