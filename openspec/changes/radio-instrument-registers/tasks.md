@@ -4,7 +4,7 @@ Zweig für die Umsetzung: `fix/radio-instrument-registers`, angelegt vom Vorschl
 
 ## 1. Tests zuerst (rot)
 
-- [ ] 1.1 Unit (`RadioInstrumentTest`, neu): Grundtasten je Instrument nach `design.md` D1, Trompeten (`trumpet`, `trumpet_exposed`, `trumpet_weathered`, `trumpet_oxidized`) mit 54. Nachweis: rot vor 2.1.
+- [ ] 1.1 Unit (`RadioInstrumentTest`, neu): Grundtasten je Instrument nach `design.md` D1, Kuhglocke mit 66, Trompeten (`trumpet`, `trumpet_exposed`, `trumpet_weathered`, `trumpet_oxidized`) mit 54. Nachweis: rot vor 2.1.
 - [ ] 1.2 Unit (`RadioInstrumentTest`): Registergrenzen (Bass 30 und 54 drin, 29 und 55 nicht). Erweiterung nach D2: Harfe 50 ergibt Gitarre (nicht Bass), Harfe 35 ergibt Bass, Harfe 79 ergibt Flöte, Harfe 96 ergibt Glocke, Glocke 60 ergibt Gitarre, Harfe 66 bleibt Harfe. Nachweis: rot vor 2.1.
 - [ ] 1.3 Unit (`PitchTest`): `foldIntoSpan` faltet 20 auf 32, 110 auf 98, lässt 30, 66 und 102 stehen; die Transposition bleibt bestehen. Nachweis: rot vor 2.2.
 - [ ] 1.4 Unit (`NoteMapperTest`): Melodie-Note 79 (Klavier, Median in der Mitte) spielt Flöte mit Note 13 und klingt als 79; Note 96 spielt Glocke mit 18; Bass-Stimme (Programm 32) auf 42 spielt Bass mit 12; Note 20 wird als 32 auf dem Bass gespielt; Note 110 wird als 98 auf der Glocke gespielt; ein Song mit Median 54 wird um eine Oktave nach oben verschoben; Schlagzeug auf Kanal 10 bleibt Note 12. Nachweis: rot vor 2.4.
