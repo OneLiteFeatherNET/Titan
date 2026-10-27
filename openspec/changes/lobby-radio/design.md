@@ -207,15 +207,15 @@ Dateien `titan/radio/messages_de.properties` und `messages_en.properties`, mit d
 | otherside | `music_disc.otherside` | 3:15 |
 | 5 | `music_disc.5` | 2:58 |
 | pigstep | `music_disc.pigstep` | 2:28 |
-| relic | `music_disc.relic` | 3:17 |
-| creator | `music_disc.creator` | 3:00 |
+| relic | `music_disc.relic` | 3:38 |
+| creator | `music_disc.creator` | 2:56 |
 | creator_music_box | `music_disc.creator_music_box` | 1:13 |
-| precipice | `music_disc.precipice` | 5:59 |
-| tears | `music_disc.tears` | Platzhalter 3:00, prüfen |
-| lava_chicken | `music_disc.lava_chicken` | Platzhalter 3:00, prüfen |
+| precipice | `music_disc.precipice` | 4:59 |
+| tears | `music_disc.tears` | 2:55 |
+| lava_chicken | `music_disc.lava_chicken` | 2:15 |
 | bounce | `music_disc.bounce` | Platzhalter 3:00, prüfen |
 
-Die Längen der drei Platzhalter sind nicht bekannt und müssen in Aufgabe 3.1 gemessen werden.
+Die Länge von `bounce` ist nicht bekannt und muss in Aufgabe 3.1 gemessen werden. Die Längen von `relic`, `precipice`, `creator`, `tears` und `lava_chicken` stammen aus der Review-Nachbesserung (Wiki-Werte, nicht gemessen).
 
 **Ablauf.**
 
@@ -330,7 +330,7 @@ Festgehalten bei der Umsetzung (Aufgaben 1.2 bis 8.4). Wo die Umsetzung von D1 b
 - **Entscheidung 6.4, Aves und Sprache, sechs Builder.** Aves rendert übersetzte Items pro Betrachter (`GlobalTranslatedInventoryBuilder`, Test `RadioMenuTest`). Es gibt also sechs Builder: zwei Menüs in drei Modi. Die Sprache wird wie im Navigator auf Deutsch oder Englisch reduziert; Aves hält dafür intern je Sprache ein Inventar, beide werden beim Start gebaut. Klicks behandelt `RadioModule` selbst (`InventoryPreClickEvent`), weil Aves' eigene Klick-Behandlung für übersetzte Builder nicht läuft (wie im Lobbyswitcher).
 - **Aves füllt den Inhalt auf dem nächsten Tick.** Ein frisch gebautes Inventar ist vor dem ersten Tick leer. Deshalb baut der Start alle Inventare vorab, und die Tests lesen Namen erst nach einem Tick.
 - **Aufgabe 1.2, `java.desktop`.** Das Repository erzeugt kein jlink-Image (keine Treffer für `jlink`, `add-modules` oder `java.desktop` in Build und Deployment). Produktiv läuft ein volles Temurin-JDK 25, `javax.sound.midi` ist dort enthalten. Hotbar-Platz 5 ist in der Lobby sonst frei (Suche über alle `ItemSlot.hotbar(...)`), Priorität 680 ist frei (`EVENT_PRIORITY` aller Columns). Ein eigener Konflikt-Test der Hotbar wurde nicht ergänzt; der Env-Test `RadioModuleIntegrationTest` prüft die Platzierung.
-- **Aufgabe 3.1, Plattenlängen: offen.** Die Längen sind Wiki-Werte in Sekunden, nicht an den Client-Dateien gemessen. `tears`, `lava_chicken` und `bounce` bleiben Platzhalter mit 3:00. Die Künstlerzeilen sind für `tears`, `lava_chicken` und `bounce` ebenfalls Platzhalter („Mojang“).
+- **Aufgabe 3.1, Plattenlängen: offen.** Die Längen sind Wiki-Werte in Sekunden, nicht an den Client-Dateien gemessen. Nur `bounce` bleibt Platzhalter mit 3:00. Die Künstlerzeilen von `tears`, `lava_chicken` und `bounce` sind ebenfalls Platzhalter („Mojang“).
 - **Aufgabe 8.3, Abnahme auf einem Testserver: nicht ausgeführt.** Offen, wie vom Auftrag vorgegeben.
 - **Aufgabe 8.2, `openspec validate lobby-radio --strict`.** Ohne Fehler. Die Warnungen betreffen den deutschen Spec-Text: Anforderungstitel ohne SHALL/MUST und Anforderungen über 500 Zeichen. Der Text bleibt, wie der Owner ihn geschrieben hat.
 - **Modusknopf.** Wie in D12 und D14: Der Knopf öffnet dem Spieler das Inventar desselben Menüs im nächsten Modus. Ein Klick auf eine Platte startet genau diesen Titel, unabhängig vom Modus.
