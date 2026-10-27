@@ -34,7 +34,6 @@ class MidiSongParserTest {
     private static final int TICKS_PER_QUARTER = 24;
     private static final int TEMPO_120_BPM = 500_000;
     private static final int TEMPO_60_BPM = 1_000_000;
-    private static final int MAX_FILE_BYTES = 512 * 1024;
 
     /** A type 0 file with one track: the track and its events are what the test builds. */
     private static final class Score {
@@ -71,7 +70,7 @@ class MidiSongParserTest {
     }
 
     private static MidiSong parse(byte[] bytes) throws SongFormatException {
-        return MidiSongParser.parse("sunrise", "Sunrise", "Beispiel", Material.MUSIC_DISC_CAT, bytes);
+        return MidiSongParser.parse("sunrise", "Sunrise", "Beispiel", Material.MUSIC_DISC_CAT, RadioCategories.OTHER, bytes);
     }
 
     @DisplayName("At 120 BPM a quarter note of 24 ticks lands on game tick 10 and two quarters on tick 20")
@@ -107,30 +106,17 @@ class MidiSongParserTest {
         Assertions.assertFalse(rejected.getMessage().isBlank(), "a rejection must name its reason");
     }
 
-    @DisplayName("A file larger than 512 KiB is rejected before it is read")
+    @DisplayName("A song with 60 000 notes and about 40 minutes of length is parsed without a limit")
     @Test
-    void fileLargerThanTheLimitIsRejected() {
-        byte[] huge = new byte[MAX_FILE_BYTES + 1];
-
-        Assertions.assertThrows(SongFormatException.class, () -> parse(huge), "a file above 512 KiB must be rejected");
-    }
-
-    @DisplayName("More than 20 000 notes reject the song")
-    @Test
-    void tooManyNotesAreRejected() throws Exception {
+    void largeSongIsParsed() throws Exception {
         Score score = new Score();
-        for (int i = 0; i <= 20_000; i++) {
-            score.note(i, 66, 100);
+        for (int i = 0; i < 60_000; i++) {
+            score.note(2 * i, 66, 100);
         }
 
-        Assertions.assertThrows(SongFormatException.class, () -> parse(score.bytes()), "a song with 20 001 notes must be rejected");
-    }
+        MidiSong song = parse(score.bytes());
 
-    @DisplayName("A song longer than 15 minutes is rejected")
-    @Test
-    void tooLongSongIsRejected() throws Exception {
-        byte[] bytes = new Score().note(43_300, 66, 100).bytes();
-
-        Assertions.assertThrows(SongFormatException.class, () -> parse(bytes), "a note after 15 minutes must reject the song");
+        Assertions.assertEquals(60_000, song.notes().size(), "every note of a large song must be kept");
+        Assertions.assertTrue(song.lengthTicks() > 15 * 60 * 20, "a song longer than fifteen minutes must be accepted, was " + song.lengthTicks() + " ticks");
     }
 }

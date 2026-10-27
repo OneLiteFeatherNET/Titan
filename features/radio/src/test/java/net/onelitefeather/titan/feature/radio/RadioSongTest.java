@@ -23,6 +23,8 @@ import org.junit.jupiter.api.Test;
 
 class RadioSongTest {
 
+    private static final RadioCategory GAMES = new RadioCategory("games", "Spiele", "Games", Material.EMERALD, 10);
+
     @DisplayName("A vanilla disc is of kind VANILLA and carries its title, artist and disc")
     @Test
     void vanillaDiscIsOfKindVanilla() {
@@ -37,11 +39,27 @@ class RadioSongTest {
     @DisplayName("A MIDI song is of kind MIDI and carries its title, artist and disc")
     @Test
     void midiSongIsOfKindMidi() {
-        RadioSong song = new MidiSong("sunrise", "Sunrise", "Beispiel", Material.MUSIC_DISC_WARD, List.of(new MidiNote(0, RadioInstrument.HARP, 12, 100)));
+        RadioSong song = new MidiSong("sunrise", "Sunrise", "Beispiel", Material.MUSIC_DISC_WARD, GAMES, List.of(new MidiNote(0, RadioInstrument.HARP, 12, 100)));
 
         Assertions.assertEquals(RadioKind.MIDI, song.kind(), "a MIDI song must report the kind MIDI");
         Assertions.assertEquals(Material.MUSIC_DISC_WARD, song.disc(), "a MIDI song must report its own disc");
         Assertions.assertEquals("Sunrise", song.title(), "a MIDI song must report its title");
         Assertions.assertEquals("Beispiel", song.artist(), "a MIDI song must report its artist");
+    }
+
+    @DisplayName("Every vanilla disc belongs to the built-in Minecraft category")
+    @Test
+    void vanillaDiscsBelongToMinecraft() {
+        for (RadioSong song : VanillaDiscs.ALL) {
+            Assertions.assertEquals(RadioCategories.MINECRAFT, song.category(), song.title() + " must belong to the Minecraft category");
+        }
+    }
+
+    @DisplayName("A MIDI song keeps the category it was declared with")
+    @Test
+    void midiSongKeepsItsCategory() {
+        RadioSong song = new MidiSong("sunrise", "Sunrise", "Beispiel", Material.MUSIC_DISC_WARD, GAMES, List.of(new MidiNote(0, RadioInstrument.HARP, 12, 100)));
+
+        Assertions.assertEquals(GAMES, song.category(), "a MIDI song must report the category it was declared with");
     }
 }

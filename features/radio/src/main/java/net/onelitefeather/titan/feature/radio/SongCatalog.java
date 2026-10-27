@@ -165,7 +165,7 @@ final class SongCatalog {
                     reject(name, "the file is larger than 512 KiB");
                     return;
                 }
-                MidiSong song = MidiSongParser.parse(id, title, artist, disc, Files.readAllBytes(path));
+                MidiSong song = MidiSongParser.parse(id, title, artist, disc, RadioCategories.OTHER, Files.readAllBytes(path));
                 this.ids.add(id);
                 this.discs.add(disc);
                 this.songs.add(song);

@@ -31,4 +31,7 @@ sealed interface RadioSong permits VanillaDisc, MidiSong {
     Material disc();
 
     RadioKind kind();
+
+    /** The overview category the title is listed in. */
+    RadioCategory category();
 }

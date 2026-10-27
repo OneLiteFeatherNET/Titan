@@ -32,7 +32,7 @@ class RadioPlaybackTest {
     }
 
     private static MidiSong song(MidiNote... notes) {
-        return new MidiSong("song", "Song", "Test", Material.MUSIC_DISC_CAT, List.of(notes));
+        return new MidiSong("song", "Song", "Test", Material.MUSIC_DISC_CAT, RadioCategories.OTHER, List.of(notes));
     }
 
     private static List<Integer> velocities(List<Sound> sounds) {

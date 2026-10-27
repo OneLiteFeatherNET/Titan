@@ -23,13 +23,14 @@ import net.minestom.server.item.Material;
 /**
  * A MIDI song from {@code radio/songs.yaml}, played on note blocks. The notes are sorted by tick.
  *
- * @param id     the song's id in the configuration, unique within it
- * @param title  the title shown in the menu
- * @param artist the artist shown in the lore
- * @param disc   the music disc item that stands for the song in its menu
- * @param notes  the notes, which must not be empty
+ * @param id       the song's id in the configuration, unique within it
+ * @param title    the title shown in the menu
+ * @param artist   the artist shown in the lore
+ * @param disc     the music disc item that stands for the song in its menu
+ * @param category the category the song is listed in
+ * @param notes    the notes, which must not be empty
  */
-record MidiSong(String id, String title, String artist, Material disc,
+record MidiSong(String id, String title, String artist, Material disc, RadioCategory category,
                 List<MidiNote> notes) implements RadioSong {
 
     MidiSong {
@@ -37,6 +38,7 @@ record MidiSong(String id, String title, String artist, Material disc,
         Objects.requireNonNull(title, "title must not be null");
         Objects.requireNonNull(artist, "artist must not be null");
         Objects.requireNonNull(disc, "disc must not be null");
+        Objects.requireNonNull(category, "category must not be null");
         notes = notes.stream().sorted(Comparator.comparingInt(MidiNote::tick)).toList();
         if (notes.isEmpty()) {
             throw new IllegalArgumentException("a MIDI song needs at least one note");
@@ -46,6 +48,11 @@ record MidiSong(String id, String title, String artist, Material disc,
     @Override
     public RadioKind kind() {
         return RadioKind.MIDI;
+    }
+
+    @Override
+    public RadioCategory category() {
+        return this.category;
     }
 
     /** The tick of the last note: the song ends there. */

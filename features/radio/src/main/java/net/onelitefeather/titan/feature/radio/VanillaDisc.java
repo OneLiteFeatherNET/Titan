@@ -46,4 +46,9 @@ record VanillaDisc(Material disc, SoundEvent sound, String title, String artist,
     public RadioKind kind() {
         return RadioKind.VANILLA;
     }
+
+    @Override
+    public RadioCategory category() {
+        return RadioCategories.MINECRAFT;
+    }
 }
