@@ -1,5 +1,17 @@
 # Changelog
 
+## [4.10.0](https://github.com/OneLiteFeatherNET/Titan/compare/v4.9.0...v4.10.0) (2026-10-27)
+
+
+### Features
+
+* **radio:** add categories, paging and volume to the radio menu ([#514](https://github.com/OneLiteFeatherNET/Titan/issues/514)) ([b68144a](https://github.com/OneLiteFeatherNET/Titan/commit/b68144ae1cb4e2c3d949f961f7cdf97f85df8fbd))
+
+
+### Bug Fixes
+
+* **navigator:** make the staging start timeout configurable ([#513](https://github.com/OneLiteFeatherNET/Titan/issues/513)) ([5cb07fd](https://github.com/OneLiteFeatherNET/Titan/commit/5cb07fd03951327308fd9f38f2dbeca3ef72ef81))
+
 ## [4.9.0](https://github.com/OneLiteFeatherNET/Titan/compare/v4.8.1...v4.9.0) (2026-10-27)
 
 
