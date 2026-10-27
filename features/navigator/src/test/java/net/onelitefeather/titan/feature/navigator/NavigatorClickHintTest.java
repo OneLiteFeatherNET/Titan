@@ -51,11 +51,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(MicrotusExtension.class)
 class NavigatorClickHintTest {
 
-    private static final int ELYTRA_RACE_SLOT = Destination.ELYTRA_RACE.slot();
+    private static final int ELYTRA_RACE_SLOT = 12;
     private static final int SPAWN_SLOT = NavigatorLayout.SPAWN_SLOT;
-    private static final int SURVIVAL_SLOT = Destination.SURVIVAL.slot();
-    private static final int BUILD_SLOT = Destination.BUILD.slot();
-    private static final String SEPARATOR = "━━━━━━━━━━━━";
+    private static final int SURVIVAL_SLOT = 21;
+    private static final int BUILD_SLOT = 23;
     private static final Box AREA = new Box(new Vec(10, 40, 20), new Vec(12, 42, 22));
     private static final LobbyPortals NO_PORTALS = List::of;
     private static final LobbyPortals SURVIVAL_PORTAL = () -> List.of(new Portal("survival", AREA, "Survival", null));
@@ -67,7 +66,7 @@ class NavigatorClickHintTest {
     private static final String BUILD_PERMISSION = "titan.navigator.buildserver";
     private static final String SLENDER_PERMISSION = "titan.navigator.slender";
     private static final String BOUNCE_PERMISSION = "titan.navigator.bounce";
-    private static final int BOUNCE_SLOT = Destination.BOUNCE.slot();
+    private static final int BOUNCE_SLOT = 13;
 
     private static List<String> lore(ItemStack item) {
         return Optional.ofNullable(item.get(DataComponents.LORE)).orElse(List.of()).stream().map(line -> PlainTextComponentSerializer.plainText().serialize(line)).toList();
@@ -91,7 +90,7 @@ class NavigatorClickHintTest {
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone(SLENDER_PERMISSION), SURVIVAL_PORTAL)) {
             AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
 
-            Assertions.assertEquals(List.of(SEPARATOR, "", "▸ Left click  Connect", "▸ Shift click  Walk to portal"), lore(inventory.getItemStack(SURVIVAL_SLOT)), "a server with a portal lists connect and the walk to the portal");
+            Assertions.assertEquals(List.of("● 0 players", "A survival server", "", "▸ Left click  Connect", "▸ Shift click  Walk to portal"), lore(inventory.getItemStack(SURVIVAL_SLOT)), "a server with a portal lists connect and the walk to the portal");
         }
     }
 
@@ -101,7 +100,7 @@ class NavigatorClickHintTest {
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone(SLENDER_PERMISSION), NO_PORTALS)) {
             AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
 
-            Assertions.assertEquals(List.of(SEPARATOR, "", "▸ Left click  Connect"), lore(inventory.getItemStack(SURVIVAL_SLOT)), "without a portal there is no shift line");
+            Assertions.assertEquals(List.of("● 0 players", "A survival server", "", "▸ Left click  Connect"), lore(inventory.getItemStack(SURVIVAL_SLOT)), "without a portal there is no shift line");
         }
     }
 
@@ -114,7 +113,7 @@ class NavigatorClickHintTest {
             tick(env, REFRESH_TICKS);
             AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
 
-            Assertions.assertEquals(List.of(SEPARATOR, "Players  13 / 100", "", "▸ Left click  Quick join", "▸ Right click  Choose a server"), lore(inventory.getItemStack(ELYTRA_RACE_SLOT)), "the players are summed and the maximum is known for both services");
+            Assertions.assertEquals(List.of("● 13 players", "A race in elytra flight", "", "▸ Left click  Quick join", "▸ Right click  Choose a server"), lore(inventory.getItemStack(ELYTRA_RACE_SLOT)), "the players are summed over both services");
         }
     }
 
@@ -126,7 +125,7 @@ class NavigatorClickHintTest {
             tick(env, REFRESH_TICKS);
             AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
 
-            Assertions.assertEquals(List.of(SEPARATOR, "", "▸ Left click  Quick join", "▸ Right click  Choose a server"), lore(inventory.getItemStack(BOUNCE_SLOT)), "Bounce lists the same clicks as ElytraRace and no players line while it runs nowhere");
+            Assertions.assertEquals(List.of("● 0 players", "A jumping game", "", "▸ Left click  Quick join", "▸ Right click  Choose a server"), lore(inventory.getItemStack(BOUNCE_SLOT)), "Bounce lists the same clicks as ElytraRace and shows zero players while it runs nowhere");
         }
     }
 
@@ -139,11 +138,11 @@ class NavigatorClickHintTest {
             tick(env, REFRESH_TICKS);
             AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
 
-            Assertions.assertEquals(List.of(SEPARATOR, "Players  3 / 50", "", "▸ Left click  Quick join", "▸ Right click  Choose a server"), lore(inventory.getItemStack(ELYTRA_RACE_SLOT)), "the hint no longer depends on how many services run");
+            Assertions.assertEquals(List.of("● 3 players", "A race in elytra flight", "", "▸ Left click  Quick join", "▸ Right click  Choose a server"), lore(inventory.getItemStack(ELYTRA_RACE_SLOT)), "the hint no longer depends on how many services run");
         }
     }
 
-    @DisplayName("ElytraRace running nowhere lists the same clicks without a players line")
+    @DisplayName("ElytraRace running nowhere shows zero players and the same clicks")
     @Test
     void elytraRaceWithoutServicesListsTheSameClicks(Env env) {
         FakePlayerCounts counts = new FakePlayerCounts();
@@ -151,7 +150,7 @@ class NavigatorClickHintTest {
             tick(env, REFRESH_TICKS);
             AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
 
-            Assertions.assertEquals(List.of(SEPARATOR, "", "▸ Left click  Quick join", "▸ Right click  Choose a server"), lore(inventory.getItemStack(ELYTRA_RACE_SLOT)), "an unknown count adds no players line");
+            Assertions.assertEquals(List.of("● 0 players", "A race in elytra flight", "", "▸ Left click  Quick join", "▸ Right click  Choose a server"), lore(inventory.getItemStack(ELYTRA_RACE_SLOT)), "a destination running nowhere shows zero players");
         }
     }
 
@@ -164,7 +163,7 @@ class NavigatorClickHintTest {
             tick(env, REFRESH_TICKS);
             AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
 
-            Assertions.assertEquals(List.of(SEPARATOR, "Players  13 / 100", "", "▸ Left click  Quick join", "▸ Right click  Choose a server", "▸ Shift click  Walk to portal"), lore(inventory.getItemStack(ELYTRA_RACE_SLOT)), "the portal line follows the two click lines");
+            Assertions.assertEquals(List.of("● 13 players", "A race in elytra flight", "", "▸ Left click  Quick join", "▸ Right click  Choose a server", "▸ Shift click  Walk to portal"), lore(inventory.getItemStack(ELYTRA_RACE_SLOT)), "the portal line follows the two click lines");
         }
     }
 
@@ -178,7 +177,7 @@ class NavigatorClickHintTest {
 
             AbstractInventory inventory = open(fixture, player(env, Locale.ENGLISH));
 
-            Assertions.assertEquals(List.of(SEPARATOR, "", "▸ Left click  Connect", "▸ Shift click  Walk to portal"), lore(inventory.getItemStack(SURVIVAL_SLOT)), "the menu must show the portal that exists when it opens, not the one the last refresh saw");
+            Assertions.assertEquals(List.of("● 0 players", "A survival server", "", "▸ Left click  Connect", "▸ Shift click  Walk to portal"), lore(inventory.getItemStack(SURVIVAL_SLOT)), "the menu must show the portal that exists when it opens, not the one the last refresh saw");
         }
     }
 
@@ -198,7 +197,7 @@ class NavigatorClickHintTest {
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService().allowEveryone(SLENDER_PERMISSION), SURVIVAL_PORTAL)) {
             AbstractInventory inventory = open(fixture, player(env, Locale.GERMANY));
 
-            Assertions.assertEquals(List.of(SEPARATOR, "", "▸ Linksklick  Verbinden", "▸ Shift-Klick  Zum Portal laufen"), lore(inventory.getItemStack(SURVIVAL_SLOT)), "the German player must read the German lines");
+            Assertions.assertEquals(List.of("● 0 Spieler", "Ein Survival-Server", "", "▸ Linksklick  Verbinden", "▸ Shift-Klick  Zum Portal laufen"), lore(inventory.getItemStack(SURVIVAL_SLOT)), "the German player must read the German lines");
         }
     }
 
@@ -212,7 +211,7 @@ class NavigatorClickHintTest {
 
             tick(env, REFRESH_TICKS + 1);
 
-            Assertions.assertEquals(List.of(SEPARATOR, "", "▸ Left click  Connect"), lore(inventory.getItemStack(SURVIVAL_SLOT)), "the shift line must be gone once a refresh has seen the portal removed");
+            Assertions.assertEquals(List.of("● 0 players", "A survival server", "", "▸ Left click  Connect"), lore(inventory.getItemStack(SURVIVAL_SLOT)), "the shift line must be gone once a refresh has seen the portal removed");
         }
     }
 
@@ -224,7 +223,7 @@ class NavigatorClickHintTest {
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), permissions, NO_PORTALS)) {
             AbstractInventory inventory = open(fixture, player);
 
-            Assertions.assertEquals(List.of(SEPARATOR, "", "▸ Linksklick  Verbinden"), lore(inventory.getItemStack(BUILD_SLOT)), "the team menu in German must name the connect in German");
+            Assertions.assertEquals(List.of("● 0 Spieler", "Gemeinsam bauen", "", "▸ Linksklick  Verbinden"), lore(inventory.getItemStack(BUILD_SLOT)), "the team menu in German must name the connect in German");
         }
     }
 }

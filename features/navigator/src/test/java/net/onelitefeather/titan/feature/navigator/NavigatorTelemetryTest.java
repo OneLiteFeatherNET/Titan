@@ -51,8 +51,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 class NavigatorTelemetryTest {
 
     private static final String BUILD_PERMISSION = "titan.navigator.buildserver";
-    private static final int SURVIVAL_SLOT = 20;
-    private static final int BUILD_SLOT = 24;
+    private static final int SURVIVAL_SLOT = 21;
+    private static final int BUILD_SLOT = 23;
     private static final int SPAWN_SLOT = 31;
     // The back button of a server list that fits one content row: the first slot of its navigation row.
     private static final int ONE_ROW_BACK_SLOT = 9;
@@ -125,7 +125,7 @@ class NavigatorTelemetryTest {
             Player player = env.createPlayer(env.createFlatInstance());
             fixture.equip(player);
             fixture.useFeather(player);
-            PickerTestSupport.clickAndTick(env, player.getOpenInventory(), player, new Click.Right(Destination.ELYTRA_RACE.slot()));
+            PickerTestSupport.clickAndTick(env, player.getOpenInventory(), player, new Click.Right(12));
 
             PickerTestSupport.clickAndTick(env, player.getOpenInventory(), player, new Click.Left(ONE_ROW_BACK_SLOT));
 

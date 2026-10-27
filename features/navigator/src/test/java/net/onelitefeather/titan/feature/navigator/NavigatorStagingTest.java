@@ -54,7 +54,7 @@ class NavigatorStagingTest {
     private static final String STAGING_PERMISSION = "cygnus.staging.join";
     private static final String SLENDER_PERMISSION = "titan.navigator.slender";
     private static final int STAGING_SLOT = Destination.SLENDER_STAGING.slot();
-    private static final int SLENDER_SLOT = Destination.SLENDER.slot();
+    private static final int SLENDER_SLOT = 13;
     private static final String STAGING_SERVICE = "Slender-Staging-1";
     private static final Pos SPAWN = new Pos(11.5, 40, 60);
 
@@ -126,12 +126,12 @@ class NavigatorStagingTest {
         }
     }
 
-    @DisplayName("The team menu shows the staging hub on slot 16 and the public menu leaves that slot grey")
+    @DisplayName("The team menu shows the staging hub on slot 35 and the public menu leaves that corner to the frame")
     @Test
     void teamMenuShowsStagingAndPublicMenuDoesNot(Env env) {
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService())) {
             Assertions.assertEquals(Material.STRUCTURE_BLOCK, fixture.module().teamInventory().getItemStack(NavigatorLayout.STAGING_HUB_SLOT).material(), "the team menu shows the staging hub");
-            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, fixture.module().publicInventory().getItemStack(NavigatorLayout.STAGING_HUB_SLOT).material(), "the public menu has no staging hub");
+            Assertions.assertEquals(Material.BLACK_STAINED_GLASS_PANE, fixture.module().publicInventory().getItemStack(NavigatorLayout.STAGING_HUB_SLOT).material(), "the public menu has no staging hub");
         }
     }
 

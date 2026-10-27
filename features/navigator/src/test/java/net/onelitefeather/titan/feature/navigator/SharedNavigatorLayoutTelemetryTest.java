@@ -18,6 +18,7 @@ package net.onelitefeather.titan.feature.navigator;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import net.kyori.adventure.text.Component;
 import net.onelitefeather.titan.core.testfixtures.TestTelemetry;
@@ -41,7 +42,7 @@ class SharedNavigatorLayoutTelemetryTest {
         testTelemetry.close();
     }
 
-    private static InventoryLayout emptyLayout(List<Destination> visible) {
+    private static InventoryLayout emptyLayout(Map<Destination, Integer> slots) {
         return InventoryLayout.fromType(NavigatorLayout.TYPE);
     }
 
@@ -52,25 +53,25 @@ class SharedNavigatorLayoutTelemetryTest {
     @DisplayName("The layout of a menu is applied inside a navigator.layout.apply span")
     @Test
     void layoutIsSpanned() {
-        SharedNavigator navigator = new SharedNavigator(Component.empty(), NavigatorLayout.TYPE, Destination.visible(Set.of()), testTelemetry.telemetry());
+        SharedNavigator navigator = new SharedNavigator(Component.empty(), NavigatorLayout.TYPE, NavigatorLayout.mainSlots(Destination.visible(Set.of())), testTelemetry.telemetry());
 
         navigator.applyLayout(SharedNavigatorLayoutTelemetryTest::emptyLayout);
 
         Assertions.assertEquals(1, layoutSpans(), "applying the layout must produce one layout span");
     }
 
-    @DisplayName("A menu lays out the destinations it was built with, Slender included")
+    @DisplayName("A menu lays out the slots it was built with, Slender included")
     @Test
     void layoutFollowsTheVisibleDestinations() {
-        List<Destination> visible = Destination.visible(Set.of(Destination.SLENDER));
-        SharedNavigator navigator = new SharedNavigator(Component.empty(), NavigatorLayout.TYPE, visible, testTelemetry.telemetry());
-        List<List<Destination>> laidOut = new ArrayList<>();
+        Map<Destination, Integer> slots = NavigatorLayout.mainSlots(Destination.visible(Set.of(Destination.SLENDER)));
+        SharedNavigator navigator = new SharedNavigator(Component.empty(), NavigatorLayout.TYPE, slots, testTelemetry.telemetry());
+        List<Map<Destination, Integer>> laidOut = new ArrayList<>();
 
         navigator.applyLayout(laid -> {
             laidOut.add(laid);
             return emptyLayout(laid);
         });
 
-        Assertions.assertEquals(List.of(visible), laidOut, "the layout must list exactly the destinations the menu was built with");
+        Assertions.assertEquals(List.of(slots), laidOut, "the layout must place exactly the destinations the menu was built with");
     }
 }

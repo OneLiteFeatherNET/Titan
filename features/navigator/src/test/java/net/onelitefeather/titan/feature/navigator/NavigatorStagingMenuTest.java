@@ -46,7 +46,6 @@ class NavigatorStagingMenuTest {
 
     private static final int HUB_SLOT = NavigatorLayout.STAGING_HUB_SLOT;
     private static final int BACK_SLOT = StagingMenu.BACK_SLOT;
-    private static final int TAMIAS_SLOT = Destination.TAMIAS.slot();
     private static final List<Material> STAGING_ICONS = List.of(Material.STRUCTURE_BLOCK, Material.SLIME_BLOCK, Material.FIREWORK_ROCKET, Material.AMETHYST_BLOCK);
     private static final Pos SPAWN = new Pos(11.5, 40, 60);
 
@@ -85,19 +84,21 @@ class NavigatorStagingMenuTest {
         return permissions;
     }
 
-    @DisplayName("Without any permission the Tamias slot and the staging hub slot are grey panes")
+    @DisplayName("Without any permission Tamias is not shown and the hub corner keeps the frame pane")
     @Test
     void noPermissionLeavesTamiasAndHubGrey(Env env) {
         Player player = env.createPlayer(env.createFlatInstance(), SPAWN);
         try (NavigatorFixture fixture = NavigatorFixture.start(env, new RecordingDeliver(), new FakePermissionService())) {
             AbstractInventory menu = openNavigator(fixture, player);
 
-            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, menu.getItemStack(TAMIAS_SLOT).material(), "Tamias is hidden without its permission");
-            Assertions.assertEquals(Material.GRAY_STAINED_GLASS_PANE, menu.getItemStack(HUB_SLOT).material(), "the hub is hidden without a staging permission");
+            for (int slot = 0; slot < menu.getSize(); slot++) {
+                Assertions.assertNotEquals(Material.AMETHYST_SHARD, menu.getItemStack(slot).material(), "Tamias is hidden without its permission, but slot " + slot + " shows it");
+            }
+            Assertions.assertEquals(Material.BLACK_STAINED_GLASS_PANE, menu.getItemStack(HUB_SLOT).material(), "the hub is hidden without a staging permission, so the frame pane shows");
         }
     }
 
-    @DisplayName("The staging hub shows on slot 16 once any one staging permission is held")
+    @DisplayName("The staging hub shows on slot 35 once any one staging permission is held")
     @Test
     void anyStagingPermissionShowsTheHub(Env env) {
         FakePermissionService permissions = new FakePermissionService();

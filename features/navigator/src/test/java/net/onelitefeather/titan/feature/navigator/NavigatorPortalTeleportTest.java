@@ -45,8 +45,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(MicrotusExtension.class)
 class NavigatorPortalTeleportTest {
 
-    private static final int SURVIVAL_SLOT = 20;
-    private static final int BUILD_SLOT = 24;
+    private static final int SURVIVAL_SLOT = 21;
+    private static final int BUILD_SLOT = 23;
     private static final String BUILD_PERMISSION = "titan.navigator.buildserver";
     private static final Box AREA = new Box(new Vec(10, 40, 20), new Vec(12, 42, 22));
     private static final LobbyPortals SURVIVAL_PORTAL = () -> List.of(new Portal("survival", AREA, "Survival", null));

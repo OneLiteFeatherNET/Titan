@@ -38,10 +38,24 @@ final class NavigatorItems {
     private static final String FEATURE_ID = "navigator";
     private static final Key ITEM_KEY = Key.key("titan:navigator");
     private static final int HOTBAR_SLOT = 4;
+    private static final int MAX_STACK = 64;
 
     @Bean
     LobbyItem navigatorFeather(NavigatorModule navigator) {
         ItemStack feather = ItemStack.builder(Material.FEATHER).customName(MiniMessage.miniMessage().deserialize("<!i><gradient:#00ddff:#ffffff>Navigator</gradient>")).build();
         return new LobbyItem(FEATURE_ID, ITEM_KEY, feather, ItemSlot.hotbar(HOTBAR_SLOT), (player, event) -> navigator.open(player));
+    }
+
+    /**
+     * The stack amount of a main-grid entry: its player count, at least 1 and at most a full stack
+     * of 64.
+     */
+    static int amountFor(int online) {
+        return Math.clamp(online, 1, MAX_STACK);
+    }
+
+    /** A main-grid entry glints only while at least one player is on it. */
+    static boolean glintsFor(int online) {
+        return online > 0;
     }
 }

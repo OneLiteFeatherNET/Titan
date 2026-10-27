@@ -105,7 +105,7 @@ class StandardLoadoutTest {
             AbstractInventory openInventory = openNavigatorFeather(env, player);
             Assertions.assertNotNull(openInventory, "using the feather must open the navigator");
             Assertions.assertEquals(InventoryType.CHEST_4_ROW, ((Inventory) openInventory).getInventoryType());
-            Assertions.assertEquals(Material.ELYTRA, openInventory.getItemStack(11).material(), "the opened inventory must be the real navigator layout");
+            Assertions.assertEquals(Material.ELYTRA, openInventory.getItemStack(13).material(), "the opened inventory must be the real navigator layout");
 
             player.closeInventory();
             AbstractInventory reopened = openNavigatorFeather(env, player);

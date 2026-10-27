@@ -16,7 +16,7 @@
 package net.onelitefeather.titan.feature.navigator;
 
 import io.opentelemetry.api.common.Attributes;
-import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import net.kyori.adventure.text.Component;
 import net.minestom.server.inventory.Inventory;
@@ -33,14 +33,14 @@ import net.theevilreaper.aves.inventory.layout.InventoryLayout;
 final class SharedNavigator {
 
     private final GlobalInventoryBuilder builder;
-    private final List<Destination> visible;
+    private final Map<Destination, Integer> slots;
     private final Telemetry telemetry;
-    private List<Destination> appliedVisible;
+    private Map<Destination, Integer> appliedSlots;
 
-    /** The destinations this menu shows, fixed when it is built. */
-    SharedNavigator(Component title, InventoryType type, List<Destination> visible, Telemetry telemetry) {
+    /** The slot of every destination this menu shows, fixed when it is built. */
+    SharedNavigator(Component title, InventoryType type, Map<Destination, Integer> slots, Telemetry telemetry) {
         this.builder = new GlobalInventoryBuilder(title, type);
-        this.visible = visible;
+        this.slots = slots;
         this.telemetry = telemetry;
     }
 
@@ -58,21 +58,19 @@ final class SharedNavigator {
 
     // The layout is applied once, since the visible destinations never change. Synchronized so a
     // refresh never reads the layout half-built.
-    synchronized void applyLayout(Function<List<Destination>, InventoryLayout> layoutFor) {
+    synchronized void applyLayout(Function<Map<Destination, Integer>, InventoryLayout> layoutFor) {
         this.telemetry.inSpan(NavigatorTelemetry.LAYOUT_SPAN, Attributes.empty(), () -> {
-            this.builder.setLayout(layoutFor.apply(this.visible));
+            this.builder.setLayout(layoutFor.apply(this.slots));
             this.builder.invalidateLayout();
-            this.appliedVisible = this.visible;
+            this.appliedSlots = this.slots;
         });
     }
 
     // Updates the stacks in place, so a refresh never rebuilds the layout or touches the click handlers.
     synchronized void showItems(Function<Destination, ItemStack> itemFor) {
-        if (this.appliedVisible == null) {
+        if (this.appliedSlots == null) {
             return;
         }
-        for (Destination destination : this.appliedVisible) {
-            this.builder.getInventory().setItemStack(destination.slot(), itemFor.apply(destination));
-        }
+        this.appliedSlots.forEach((destination, slot) -> this.builder.getInventory().setItemStack(slot, itemFor.apply(destination)));
     }
 }
