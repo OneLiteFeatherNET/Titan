@@ -4,3 +4,5 @@ navigator:
   refreshSeconds: 5
   # How long, in whole seconds (60 to 86400), an empty staging service runs before it is stopped again.
   stagingIdleSeconds: 600
+  # How long, in whole seconds (30 to 900), players wait for a staging service to start before they are refused.
+  stagingStartTimeoutSeconds: 180

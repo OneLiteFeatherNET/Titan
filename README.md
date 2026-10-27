@@ -229,8 +229,9 @@ features:
 
 Das Navigator-Feder-Item auf Hotbar-Slot 4 öffnet ein geteiltes Inventar mit ElytraRace, Survival,
 Slender, Bounce, Tamias und Creative. Die Ziele sind fest im Code (`NavigatorModule`/`Destination`) verankert.
-Der Navigator hat nur die beiden Schlüssel `navigator.refreshSeconds` (Standard 5, Bereich 1 bis 3600) und
-`navigator.stagingIdleSeconds` (Standard 600, Bereich 60 bis 86400) in `navigator.yaml`; ein `navigator.*`-Schlüssel
+Der Navigator hat nur die drei Schlüssel `navigator.refreshSeconds` (Standard 5, Bereich 1 bis 3600),
+`navigator.stagingIdleSeconds` (Standard 600, Bereich 60 bis 86400) und `navigator.stagingStartTimeoutSeconds`
+(Standard 180, Bereich 30 bis 900) in `navigator.yaml`; ein `navigator.*`-Schlüssel
 in einer anderen Quelle hat keine Wirkung. Slender, Tamias, Bounce und Build sind über Rechte gesteuert, nicht über Flags:
 `titan.navigator.slender`, `titan.navigator.tamias`, `titan.navigator.bounce` und `titan.navigator.buildserver`.
 Die vier Staging-Einträge haben je ein eigenes Recht (siehe unten). Ein Spieler sieht jeden Eintrag nur mit seinem Recht;
@@ -251,7 +252,7 @@ direkt mit dem Staging-Task (`Slender-Staging`, `Bounce-Staging`, `ElytraRace-St
 
 Bedarfsstart: Gibt es für den Staging-Task keinen laufenden Dienst, startet ein Klick genau einen Dienst. Die
 Aktionsleiste meldet den Start, und sobald der Dienst bereit ist, verbindet die Lobby den Spieler. Das Warten ist auf
-90 Sekunden begrenzt; danach gibt es keine Verbindung und keinen Stopp. Ein zweiter Klick startet während des Wartens
+`navigator.stagingStartTimeoutSeconds` (Standard 180 Sekunden) begrenzt; danach gibt es keine Verbindung und keinen Stopp. Ein zweiter Klick startet während des Wartens
 nichts. Ein Staging-Dienst ohne Spieler wird nach `navigator.stagingIdleSeconds` gestoppt. Nur Staging-Tasks werden so
 gestoppt; Live-Tasks laufen weiter.
 

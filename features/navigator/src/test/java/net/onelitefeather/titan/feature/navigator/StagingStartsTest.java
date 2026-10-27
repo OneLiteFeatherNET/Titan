@@ -40,12 +40,13 @@ class StagingStartsTest {
     private static final String TASK = STAGING.task();
     private static final String ANN = "ann";
     private static final String BOB = "bob";
+    private static final Duration TIMEOUT = Duration.ofSeconds(120);
 
     private final FakeOnDemandServices services = new FakeOnDemandServices();
     private final AdjustableClock clock = new AdjustableClock(Instant.parse("2026-10-26T12:00:00Z"));
     private final RecordingConnect connect = new RecordingConnect();
     private final RecordingNotice notice = new RecordingNotice();
-    private final StagingStarts<String> starts = new StagingStarts<>(this.services, this.clock, this.connect, this.notice, new NavigatorTelemetry(Telemetry.noop()));
+    private final StagingStarts<String> starts = new StagingStarts<>(this.services, this.clock, TIMEOUT, this.connect, this.notice, new NavigatorTelemetry(Telemetry.noop()));
 
     StagingStartsTest() {
         this.connect.allowed.add(ANN);
@@ -144,18 +145,18 @@ class StagingStartsTest {
         Assertions.assertEquals(List.of(ANN + ":" + STAGING.name()), this.connect.connected, "the refresh connects the waiting player");
     }
 
-    @DisplayName("Ninety seconds after the start the waiting players are refused and nothing is stopped")
+    @DisplayName("The configured timeout refuses the waiting players, and nothing is stopped")
     @Test
     void timeoutRefusesWithoutStopping() {
         click(ANN);
-        this.clock.advance(Duration.ofSeconds(89));
+        this.clock.advance(TIMEOUT.minusSeconds(1));
         refresh();
-        Assertions.assertTrue(this.notice.timeouts.isEmpty(), "no timeout before 90 seconds");
+        Assertions.assertTrue(this.notice.timeouts.isEmpty(), "no timeout one second before the configured timeout");
 
         this.clock.advance(Duration.ofSeconds(1));
         refresh();
 
-        Assertions.assertEquals(List.of(ANN), this.notice.timeouts, "the waiting player is refused after 90 seconds");
+        Assertions.assertEquals(List.of(ANN), this.notice.timeouts, "the waiting player is refused once the configured timeout has passed");
         Assertions.assertTrue(this.services.stopped().isEmpty(), "the timeout must not stop the service");
         Assertions.assertTrue(this.connect.connected.isEmpty(), "a timed out player is not connected");
     }

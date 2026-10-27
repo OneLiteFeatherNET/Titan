@@ -70,7 +70,7 @@ class NavigatorStagingTelemetryTest {
     private final AdjustableClock clock = new AdjustableClock(Instant.parse("2026-10-26T12:00:00Z"));
     private final Ports ports = new Ports();
     private final NavigatorTelemetry telemetry = new NavigatorTelemetry(new Telemetry(TracerProvider.noop().get("test"), this.meters.get("test")));
-    private final StagingStarts<String> starts = new StagingStarts<>(this.services, this.clock, this.ports, this.ports, this.telemetry);
+    private final StagingStarts<String> starts = new StagingStarts<>(this.services, this.clock, Duration.ofSeconds(90), this.ports, this.ports, this.telemetry);
     private final StagingIdle idle = new StagingIdle(this.services, this.clock, LIMIT, this.telemetry);
 
     @AfterEach
