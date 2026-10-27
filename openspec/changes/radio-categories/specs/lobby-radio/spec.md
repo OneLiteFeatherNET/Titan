@@ -4,6 +4,8 @@
 
 - FROM: `### Requirement: Das Radio öffnet sich über ein Hotbar-Item mit zwei Menüs`
 - TO: `### Requirement: Das Radio öffnet sich über ein Hotbar-Item mit der Kategorieübersicht`
+- FROM: `### Requirement: Grenzen begrenzen Paketzahl und Speicher`
+- TO: `### Requirement: Die Paketzahl je Spieler und Tick ist begrenzt`
 
 ## MODIFIED Requirements
 
@@ -80,17 +82,17 @@ Die Lobby MUSS beim Titelende nach dem Modus handeln. Im Modus Einmal MUSS kein 
 ### Requirement: Vanilla-Schallplatten spielen den Plattenton des Clients nur für den Spieler
 _A vanilla disc plays the client's own record sound, emitted by the player and heard by the player only, at the player's volume._
 
-Die Lobby MUSS für jede der 22 Plattenarten aus der festen Tabelle den eingebauten Plattenton des Clients (`SoundEvents.MUSIC_DISC_*`) als Sound-Paket an den Spieler senden, der die Platte gewählt hat. Quelle MUSS `Sound.Source.RECORD` sein, Emitter `Sound.Emitter.self()`, Tonhöhe 1,0. Die Lautstärke MUSS die Lautstärke des Spielers im Startmoment sein (siehe „Die Lautstärke ist eine Sitzungseinstellung von 10 bis 100 Prozent“). Die Lobby DARF dafür keine Resource Pack und keine Notenblöcke benutzen.
+Die Lobby MUSS für jede der 22 Plattenarten aus der festen Tabelle den eingebauten Plattenton des Clients (`SoundEvents.MUSIC_DISC_*`) als Sound-Paket an den Spieler senden, der die Platte gewählt hat. Quelle MUSS `Sound.Source.RECORD` sein, Emitter `Sound.Emitter.self()`, Tonhöhe 1,0. Die Lautstärke MUSS die Lautstärke des Spielers im Startmoment sein (siehe „Die Lautstärke ist eine gespeicherte Spielereinstellung von 25 bis 100 Prozent“). Die Lobby DARF dafür keine Resource Pack und keine Notenblöcke benutzen.
 
 #### Scenario: Platte starten
 
 - **WHEN** ein Spieler mit Lautstärke 100 Prozent im Menü die Platte „13“ anklickt
 - **THEN** erhält er genau einen Plattenton `music_disc.13` mit Quelle RECORD, Emitter `self`, Lautstärke 1,0 und Tonhöhe 1,0
 
-#### Scenario: Platte mit Lautstärke 70 Prozent
+#### Scenario: Platte mit Lautstärke 75 Prozent
 
-- **WHEN** ein Spieler mit Lautstärke 70 Prozent die Platte „13“ anklickt
-- **THEN** erhält er den Plattenton mit Lautstärke 0,7
+- **WHEN** ein Spieler mit Lautstärke 75 Prozent die Platte „13“ anklickt
+- **THEN** erhält er den Plattenton mit Lautstärke 0,75
 
 #### Scenario: Keine Platte für andere
 
@@ -100,7 +102,7 @@ Die Lobby MUSS für jede der 22 Plattenarten aus der festen Tabelle den eingebau
 ### Requirement: MIDI-Noten werden auf Notenblock-Instrumente und Tonhöhen abgebildet
 _Channels and programs choose the instrument, pitches are folded into the two-octave range, velocity and the player's volume set the loudness._
 
-Die Lobby MUSS jede Note eines MIDI-Songs einem der 16 Notenblock-Instrumente zuordnen, Schlagzeug auf Kanal 10 nach Taste. Die Tonhöhe MUSS in den Bereich der Notenblöcke (Noten 0 bis 24) gebracht werden, und die Tonhöhe des Sounds MUSS `2^((n − 12) / 12)` sein. Die Lautstärke jeder Note MUSS `velocity / 127` mal der Lautstärke des Spielers sein. Notenereignisse mit Anschlagstärke 0 MÜSSEN ignoriert werden. Ändert der Spieler die Lautstärke, MUSS die nächste Note mit der neuen Lautstärke klingen.
+Die Lobby MUSS jede Note eines MIDI-Songs einem der 16 Notenblock-Instrumente zuordnen, Schlagzeug auf Kanal 10 nach Taste. Die Tonhöhe MUSS in den Bereich der Notenblöcke (Noten 0 bis 24) gebracht werden, und die Tonhöhe des Sounds MUSS `2^((n − 12) / 12)` sein. Die Lautstärke jeder Note MUSS `velocity / 127` mal der Lautstärke des Spielers sein, wobei die Lautstärke in Prozent geteilt durch 100 gerechnet wird. Notenereignisse mit Anschlagstärke 0 MÜSSEN ignoriert werden. Ändert der Spieler die Lautstärke, MUSS die nächste Note mit der neuen Lautstärke klingen.
 
 #### Scenario: Schlagzeug
 
@@ -122,14 +124,14 @@ Die Lobby MUSS jede Note eines MIDI-Songs einem der 16 Notenblock-Instrumente zu
 - **WHEN** eine Melodie-Note außerhalb des Bereichs liegt
 - **THEN** wird sie um Oktaven verschoben, bis sie im Bereich liegt, und ihre Tonhöhenklasse bleibt erhalten
 
-### Requirement: MIDI-Songs werden beim Start mit Kategorie geladen, fehlerhafte Dateien übersprungen
-_A broken MIDI file is logged and skipped; every song gets a category, or Sonstige; nothing here stops the lobby._
+### Requirement: MIDI-Songs werden beim Start nur geprüft, Noten erst beim Abspielen geladen
+_At start only metadata and the MIDI header are checked; the notes are read when a title starts, never on the tick thread._
 
-Die Lobby MUSS die MIDI-Songs aus `radio/songs.yaml` und den zugehörigen Dateien einmal beim Start laden. Eine Datei, die fehlt, zu groß ist, nicht als MIDI gelesen werden kann oder eine ungültige Schallplatte hat, MUSS übersprungen und mit Dateiname und Grund protokolliert werden. Eine Schallplatte DARF in `songs.yaml` nur einmal vorkommen; eine doppelte `id` ebenfalls nicht. Eine MIDI-Platte DARF eine Vanilla-Platte sein, denn die Menüs sind getrennt (so umgesetzt, siehe `lobby-radio`, Umsetzungsnotizen). Die Lobby DARF den Start NICHT abbrechen. Fehlt das Verzeichnis `radio/` oder ist keine Datei gültig, MUSS die Lobby trotzdem alle Vanilla-Platten anbieten.
+Die Lobby MUSS beim Start die Einträge aus `radio/songs.yaml` mit ihren Pflichtfeldern, der Platte, der Kategorie und der Eindeutigkeit der Id prüfen. Für jede Datei MUSS sie prüfen, dass sie eine reguläre Datei unter `radio/` ist und mit einem MIDI-Kopf beginnt, und dafür nur den Kopf lesen. Die Lobby DARF beim Start KEINE Noten einlesen. Eine Datei, die diese Prüfung nicht besteht, MUSS übersprungen und mit Dateiname und Grund protokolliert werden. Eine Schallplatte DARF in `songs.yaml` nur einmal vorkommen; eine doppelte `id` ebenfalls nicht. Eine MIDI-Platte DARF eine Vanilla-Platte sein, denn die Menüs sind getrennt. Die Lobby DARF den Start NICHT abbrechen. Fehlt das Verzeichnis `radio/` oder ist keine Datei gültig, MUSS die Lobby trotzdem alle Vanilla-Platten anbieten.
 
-#### Scenario: Kaputte Datei
+#### Scenario: Kaputter Kopf beim Start
 
-- **WHEN** eine von drei MIDI-Dateien keine gültige MIDI-Datei ist
+- **WHEN** eine von drei Dateien nicht mit einem MIDI-Kopf beginnt
 - **THEN** wird dieser Song übersprungen, die beiden anderen stehen in ihrer Kategorie, und die Lobby startet
 
 #### Scenario: Ohne gültige Datei
@@ -147,35 +149,30 @@ Die Lobby MUSS die MIDI-Songs aus `radio/songs.yaml` und den zugehörigen Dateie
 - **WHEN** ein MIDI-Eintrag die Schallplatte `MUSIC_DISC_CAT` nennt, die auch Vanilla vorkommt
 - **THEN** wird der Eintrag geladen, und beide stehen in ihrer Kategorie
 
-### Requirement: Grenzen begrenzen Paketzahl und Speicher
-_Packet budget per tick and per player, file size, note and song count limits, and a total note budget for the lobby's memory._
+#### Scenario: Start mit großen Dateien
 
-Die Lobby MUSS folgende Grenzen einhalten: eine MIDI-Datei höchstens 512 KiB, ein MIDI-Song höchstens 20 000 Noten und 15 Minuten, höchstens 200 MIDI-Songs, insgesamt höchstens 1 000 000 Noten über alle geladenen MIDI-Songs, und höchstens 16 Noten je Tick und Spieler. Überschreitet ein MIDI-Song die Grenzen für Datei, Noten oder Länge, MUSS er übersprungen werden. Überschreitet ein Song die Titelzahl oder das Notenbudget, MUSS er übersprungen und protokolliert werden. Überschreitet eine Note das Budget je Tick, MUSS die leiseste Note verworfen werden. Vanilla-Platten zählen nicht zu den 200 Songs.
+- **WHEN** `songs.yaml` 200 Einträge mit je einer MIDI-Datei von 10 MB hat
+- **THEN** startet die Lobby mit dem Speicher für die Metadaten, ohne eine der Dateien vollständig einzulesen
+
+### Requirement: Die Paketzahl je Spieler und Tick ist begrenzt
+_The packet budget is playback quality, not a content limit: no size, note, length or song-count limit exists._
+
+Die Lobby MUSS je Spieler höchstens 16 Noten je Tick abspielen. Überschreitet eine Note das Budget je Tick, MUSS die leiseste Note verworfen werden. Die Lobby DARF KEINE Grenzen für Dateigröße, Noten, Länge oder Titelzahl einführen; die Grenze je Tick begrenzt Pakete je Spieler, nicht den Inhalt.
 
 #### Scenario: Zu viele Noten je Tick
 
 - **WHEN** 20 Noten im selben Tick fällig sind
 - **THEN** werden die 16 lautesten gespielt und vier verworfen
 
-#### Scenario: Zu große Datei
+#### Scenario: Keine Titelgrenze
 
-- **WHEN** eine MIDI-Datei größer als 512 KiB ist
-- **THEN** wird der Song übersprungen und protokolliert
-
-#### Scenario: Der 201. Song
-
-- **WHEN** `songs.yaml` 201 gültige Einträge hat
-- **THEN** wird der letzte Eintrag in Konfigurationsreihenfolge übersprungen und protokolliert, und die anderen 200 stehen im Menü
-
-#### Scenario: Notenbudget überschritten
-
-- **WHEN** ein Song die Gesamtgrenze von 1 000 000 Noten überschreitet
-- **THEN** wird er übersprungen und protokolliert, und die Songs davor bleiben geladen
+- **WHEN** `songs.yaml` 500 gültige Einträge hat
+- **THEN** stehen alle 500 im Menü, verteilt auf Seiten
 
 ### Requirement: Telemetrie und Meldungen
 _Counters by kind, mode, trigger and reason, no player identifiers; plays carry the category id; texts in German and English._
 
-Die Lobby MUSS die Zähler `titan.radio.plays{kind, mode, trigger, category}`, `titan.radio.stops{reason, kind}`, `titan.radio.notes.dropped` und `titan.radio.songs{result}` führen. `kind` ist `vanilla` oder `midi`, `mode` ist `once`, `loop` oder `shuffle`, `trigger` ist `user` oder `auto`, `category` ist die Id der Kategorie, bei Vanilla `minecraft`, bei Sonstige `other`. Stopps tragen keine Kategorie. Attribute MÜSSEN ohne Spieler-Id auskommen. Alle Nutzertexte MÜSSEN in Deutsch und Englisch mit denselben Schlüsseln vorliegen, auch die Kategorienamen, die Seitenanzeige, die Lautstärke und „Läuft jetzt“.
+Die Lobby MUSS die Zähler `titan.radio.plays{kind, mode, trigger, category}`, `titan.radio.stops{reason, kind}`, `titan.radio.notes.dropped` und `titan.radio.songs{result}` führen. `kind` ist `vanilla` oder `midi`, `mode` ist `once`, `loop` oder `shuffle`, `trigger` ist `user` oder `auto`, `category` ist die Id der Kategorie, bei Vanilla `minecraft`, bei Sonstige `other`. Stopps tragen keine Kategorie. `titan.radio.songs{result}` misst den Start-Check mit `loaded` und `rejected`, und ein Parse-Fehler beim Abspielen zählt zusätzlich `rejected`. Attribute MÜSSEN ohne Spieler-Id auskommen. Alle Nutzertexte MÜSSEN in Deutsch und Englisch mit denselben Schlüsseln vorliegen, auch die Kategorienamen, die Seitenanzeige, die Lautstärke, „Läuft jetzt“, „Lädt …“ und die Meldung für einen nicht lesbaren Titel.
 
 #### Scenario: Start mit Kategorie
 
@@ -282,32 +279,42 @@ Die Lobby MUSS das Menü je Öffnen als Aves-Inventar für genau diesen Spieler 
 #### Scenario: Schließen gibt die Ansicht frei
 
 - **WHEN** ein Spieler das Fenster schließt
-- **THEN** ist die Ansicht entfernt, und seine Sitzung mit Modus, Lautstärke und Kategorie bleibt bestehen
+- **THEN** ist die Ansicht entfernt, und seine Sitzung mit Modus, Kategorie und Seite bleibt bestehen
 
-### Requirement: Die Lautstärke ist eine Sitzungseinstellung von 10 bis 100 Prozent
-_Ten steps of ten percent, default 100, one button with two click directions, session only, forgotten on logout._
+### Requirement: Die Lautstärke ist eine gespeicherte Spielereinstellung von 25 bis 100 Prozent
+_Four steps, default 100, one button with two click directions, stored in Otis, kept across logouts, not in the settings menu._
 
-Die Lobby MUSS je Spieler eine Lautstärke in Zehnerschritten von 10 bis 100 Prozent halten, Standard 100 Prozent. Ein Linksklick auf den Lautstärkeknopf MUSS sie um 10 Prozent erhöhen, ein Rechtsklick um 10 Prozent senken, jeweils bis zur Grenze. Die Lautstärke MUSS nur für die Sitzung des Spielers gelten, und die Lobby DARF sie NICHT über `PlayerSettings` oder den Otis-Adapter speichern. Beim Abmelden MUSS die Lautstärke vergessen werden.
+Die Lobby MUSS je Spieler eine Lautstärke mit den Stufen 25, 50, 75 und 100 Prozent halten, Standard 100 Prozent. Ein Linksklick auf den Lautstärkeknopf MUSS auf die nächsthöhere Stufe gehen, ein Rechtsklick auf die nächsttiefere, und an den Rändern MUSS der Wert stehen bleiben. Die Lobby MUSS die Lautstärke über die Spielereinstellungen in Otis speichern, unter dem Schlüssel `titan:radio.volume` als JSON-Zahl. Die Lautstärke MUSS den Logout überdauern. Die Lautstärke DARF NICHT im Einstellungsmenü erscheinen. Ist Otis nicht erreichbar, MUSS die Lobby mit dem Standard 100 Prozent weiterspielen und die Änderung später speichern.
 
 #### Scenario: Standard
 
-- **WHEN** ein Spieler das Radio zum ersten Mal in der Sitzung öffnet
+- **WHEN** ein Spieler ohne gespeicherten Wert das Radio öffnet
 - **THEN** zeigt der Knopf „Lautstärke: 100 %“
 
-#### Scenario: Lauter und leiser
+#### Scenario: Stufen
 
 - **WHEN** ein Spieler mit 100 Prozent einmal rechts und danach einmal links klickt
-- **THEN** ist die Lautstärke 90 Prozent und danach wieder 100 Prozent
+- **THEN** ist die Lautstärke 75 Prozent und danach wieder 100 Prozent
 
-#### Scenario: Grenze
+#### Scenario: Ränder bleiben stehen
 
-- **WHEN** ein Spieler mit 10 Prozent weiter leiser klickt
-- **THEN** bleibt die Lautstärke bei 10 Prozent
+- **WHEN** ein Spieler mit 25 Prozent weiter leiser klickt
+- **THEN** bleibt die Lautstärke bei 25 Prozent, und es gibt keinen Sprung auf 100 Prozent
 
-#### Scenario: Vergessen beim Abmelden
+#### Scenario: Speichern über den Logout
 
-- **WHEN** ein Spieler auf 40 Prozent steht, sich abmeldet und wieder anmeldet
-- **THEN** ist seine Lautstärke wieder 100 Prozent
+- **WHEN** ein Spieler auf 50 Prozent steht, sich abmeldet und wieder anmeldet
+- **THEN** ist seine Lautstärke wieder 50 Prozent, weil der Wert in Otis gespeichert ist
+
+#### Scenario: Otis nicht erreichbar
+
+- **WHEN** ein Spieler beim Beitritt keine Antwort von Otis erhält
+- **THEN** spielt das Radio mit 100 Prozent, und eine Änderung wird gespeichert, sobald Otis wieder antwortet
+
+#### Scenario: Nicht im Einstellungsmenü
+
+- **WHEN** ein Spieler das Einstellungsmenü öffnet
+- **THEN** gibt es darin keinen Eintrag für die Lautstärke
 
 ### Requirement: Eine laufende Schallplatte behält ihre Lautstärke bis zum nächsten Titel
 _A running disc cannot change its volume; the next start uses the new one. MIDI follows at once._
@@ -316,13 +323,13 @@ Die Lobby MUSS bei einer laufenden Vanilla-Platte beim Ändern der Lautstärke N
 
 #### Scenario: Lautstärke während einer Schallplatte
 
-- **WHEN** ein Spieler die Platte „13“ mit 100 Prozent hört und auf 70 Prozent stellt
+- **WHEN** ein Spieler die Platte „13“ mit 100 Prozent hört und auf 75 Prozent stellt
 - **THEN** sendet die Lobby kein Paket, „13“ läuft mit 100 Prozent weiter, und „Läuft jetzt“ zeigt den Hinweis
 
 #### Scenario: Nächste Schallplatte
 
 - **WHEN** danach ein Spieler die Platte „cat“ anklickt
-- **THEN** erhält er den Plattenton von „cat“ mit Lautstärke 0,7
+- **THEN** erhält er den Plattenton von „cat“ mit Lautstärke 0,75
 
 #### Scenario: MIDI folgt sofort
 
@@ -336,10 +343,80 @@ Der Knopf „Läuft jetzt“ MUSS den Titel als Name zeigen und in der Lore Kün
 
 #### Scenario: Titel läuft
 
-- **WHEN** der Titel „Sunrise“ von „Beispiel“ aus der Kategorie „Spiele“ im Modus Schleife mit 70 Prozent läuft
-- **THEN** zeigt „Läuft jetzt“ den Namen „Sunrise“ und in der Lore „Künstler: Beispiel“, „Kategorie: Spiele“, „Modus: Schleife“ und „Lautstärke: 70 %“
+- **WHEN** der Titel „Sunrise“ von „Beispiel“ aus der Kategorie „Spiele“ im Modus Schleife mit 75 Prozent läuft
+- **THEN** zeigt „Läuft jetzt“ den Namen „Sunrise“ und in der Lore „Künstler: Beispiel“, „Kategorie: Spiele“, „Modus: Schleife“ und „Lautstärke: 75 %“
 
 #### Scenario: Ende ohne Nachfolger
 
 - **WHEN** der Titel im Modus Einmal endet
 - **THEN** zeigt „Läuft jetzt“ „Kein Titel läuft“
+
+### Requirement: Noten werden beim Start eines Titels geladen, nicht auf dem Tick-Thread
+_Parsing runs on a background executor; the title starts on the tick thread once the notes are ready._
+
+Die Lobby MUSS die Noten eines MIDI-Songs beim Start des Titels laden, asynchron, und den Titel erst starten, wenn die Noten vorliegen. Das Laden MUSS außerhalb des Tick-Threads laufen. Der Spieler MUSS während des Ladens die Aktionsleiste „Lädt …“ sehen. Ein Stopp, ein Weiter oder ein Abmelden während des Ladens MUSS das Laden verwerfen, ohne dass der Titel später startet. Ein Vanilla-Titel lädt nichts.
+
+#### Scenario: Laden beim Start
+
+- **WHEN** ein Spieler einen MIDI-Song anklickt, dessen Noten nicht im Cache liegen
+- **THEN** sieht er „Lädt …“, und der Titel startet, sobald die Noten bereit sind
+
+#### Scenario: Stopp während des Ladens
+
+- **WHEN** ein Spieler „Stopp“ wählt, während die Noten noch laden
+- **THEN** startet der Titel nicht, und das Ergebnis des Ladens wird verworfen
+
+### Requirement: Der Cache hält laufende und zuletzt gespielte Titel
+_Playing titles are never evicted; the eight most recently released titles stay in memory, so a loop restarts without a reload._
+
+Die Lobby MUSS die Noten laufender Titel halten, solange sie laufen, und höchstens acht zuletzt gespielte, nicht laufende Titel. Ein laufender Titel DARF NICHT aus dem Cache entfernt werden. Zwei Spieler, die denselben Titel gleichzeitig starten, MÜSSEN einen einzigen Ladevorgang auslösen. Ein Schleifen-Neustart MUSS ohne erneutes Laden starten, solange der Titel im Cache ist.
+
+#### Scenario: Schleife ohne Neuladen
+
+- **WHEN** der Titel „cat“ im Modus Schleife endet
+- **THEN** startet „cat“ neu, ohne dass die Datei erneut gelesen wird
+
+#### Scenario: Ein Ladevorgang für zwei Spieler
+
+- **WHEN** Spieler A und Spieler B denselben nicht geladenen Titel gleichzeitig starten
+- **THEN** wird die Datei einmal geparst, und beide starten, sobald die Noten bereit sind
+
+#### Scenario: Neunter Titel
+
+- **WHEN** neun verschiedene Titel gespielt und gestoppt wurden
+- **THEN** ist der älteste von ihnen aus dem Cache entfernt, und die übrigen acht sind im Cache
+
+### Requirement: Ein Titel, der beim Abspielen nicht lesbar ist, wird gemeldet
+_A file that fails to parse at play time tells the player, logs a warning and counts as rejected; it never stops the lobby._
+
+Schlägt der Parse einer MIDI-Datei beim Abspielen fehl, MUSS die Lobby dem Spieler die Meldung „Dieser Titel kann nicht abgespielt werden“ zeigen, eine Warnung mit Dateiname und Grund protokollieren und `titan.radio.songs{result=rejected}` um eins erhöhen. Der Fehler MUSS einmal je Ladevorgang gezählt werden. Der Titel startet nicht. Schlägt der Nachfolger eines Titelendes fehl, startet nichts, und die Lobby DARF keinen weiteren Nachfolger versuchen.
+
+#### Scenario: Kaputte Datei beim Abspielen
+
+- **WHEN** ein Spieler den Titel „sunrise“ anklickt, dessen Datei beim Parsen fehlschlägt
+- **THEN** sieht er die Meldung „Dieser Titel kann nicht abgespielt werden“, `titan.radio.songs{result=rejected}` steigt um eins, und die Lobby protokolliert eine Warnung mit dem Dateinamen
+
+#### Scenario: Fehlschlag als Nachfolger
+
+- **WHEN** im Modus Zufall ein Titelende den Nachfolger „cat“ ergibt, dessen Datei nicht lesbar ist
+- **THEN** startet nichts, der Spieler sieht die Meldung, und die Wiedergabe bleibt beendet
+
+### Requirement: Das laufende Stück glänzt im Fenster des Spielers
+_The title that plays for this player shows the enchantment glint in his own window; nothing glints for anyone else._
+
+Im offenen Fenster eines Spielers MUSS das Item des Titels, der für genau diesen Spieler läuft, den Glanz der Verzauberung zeigen (`DataComponents.ENCHANTMENT_GLINT_OVERRIDE`, Vanilla, ohne Resource Pack). Ein Stopp, ein Titelende ohne Nachfolger oder ein Abmelden MUSS den Glanz entfernen. Der Glanz DARF NICHT in den Fenstern anderer Spieler erscheinen.
+
+#### Scenario: Laufender Titel glänzt
+
+- **WHEN** ein Spieler den Titel „sunrise“ in der Kategorie „Spiele“ startet
+- **THEN** glänzt das Item von „sunrise“ in seinem Fenster, und das Item von „cat“ in der Liste nicht
+
+#### Scenario: Glanz endet mit dem Stopp
+
+- **WHEN** ein Spieler „Stopp“ wählt, während „sunrise“ läuft
+- **THEN** glänzt in seinem Fenster kein Item mehr
+
+#### Scenario: Glanz nur beim Spieler
+
+- **WHEN** Spieler A „sunrise“ spielt und Spieler B dieselbe Kategorie offen hat
+- **THEN** glänzt „sunrise“ nur im Fenster von A
