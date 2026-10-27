@@ -689,7 +689,7 @@ Ein Jukebox-Item auf Hotbar-Slot 5 (`titan:radio`) öffnet das Radio. Es ist imm
 - **Telemetrie:** `titan.radio.plays{kind, mode, trigger}`, `titan.radio.stops{reason, kind}`, `titan.radio.notes.dropped` und `titan.radio.songs{result}`, ohne Spieler-Id und ohne Span.
 - **Java:** `javax.sound.midi` liegt im JDK-Modul `java.desktop`. Die Auslieferung nutzt ein volles JDK; es gibt kein jlink-Image.
 - **Texte:** `titan/radio/messages_de.properties` und `messages_en.properties`.
-- **Offen:** Die Längen der Vanilla-Platten sind Näherungen (Minecraft-Wiki, nicht an den Client-Dateien gemessen); `tears`, `lava_chicken` und `bounce` sind Platzhalter. Die Instrumententabelle wird nach Gehör angepasst.
+- **Offen:** Die Längen der Vanilla-Platten sind Näherungen (Minecraft-Wiki, nicht an den Client-Dateien gemessen); `bounce` ist ein Platzhalter. Die Instrumententabelle wird nach Gehör angepasst.
 
 ## Erwartete Columns einer Variante
 
