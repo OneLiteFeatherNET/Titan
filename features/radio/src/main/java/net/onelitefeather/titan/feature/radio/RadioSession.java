@@ -28,6 +28,7 @@ final class RadioSession {
     private PlayMode mode = PlayMode.DEFAULT;
     private RadioSong song;
     private RadioPlayback playback;
+    private final RadioSessionState view = new RadioSessionState();
 
     RadioSession(Player player) {
         this.player = Objects.requireNonNull(player, "player must not be null");
@@ -35,6 +36,11 @@ final class RadioSession {
 
     Player player() {
         return this.player;
+    }
+
+    /** Where the player is in the window: overview or category, page, generation. */
+    RadioSessionState view() {
+        return this.view;
     }
 
     PlayMode mode() {

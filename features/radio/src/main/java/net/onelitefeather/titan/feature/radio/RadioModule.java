@@ -218,7 +218,7 @@ public final class RadioModule {
 
     // Next takes the title after the one playing, or the first when nothing plays, and ends the current one with NEXT.
     private void next(Player player, RadioSession session) {
-        Optional<RadioSong> target = this.selection.next(session.song(), session.mode());
+        Optional<RadioSong> target = this.selection.next(session.playing() ? session.song() : null, session.view().lastCategory(), session.mode());
         if (target.isEmpty()) {
             return;
         }

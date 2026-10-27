@@ -84,7 +84,7 @@ class RadioSelectionTest {
         RadioSelection selection = selectionOf(List.of());
 
         Assertions.assertEquals(Optional.empty(), selection.afterEnd(disc(Material.MUSIC_DISC_13), PlayMode.SHUFFLE), "an empty catalog must not start a successor");
-        Assertions.assertEquals(Optional.empty(), selection.next(null, PlayMode.ONCE), "an empty catalog must not yield a next title");
+        Assertions.assertEquals(Optional.empty(), selection.next(null, null, PlayMode.ONCE), "an empty catalog must not yield a next title");
     }
 
     @DisplayName("Next in once and loop goes through the catalog in order and wraps at the end")
@@ -95,15 +95,15 @@ class RadioSelectionTest {
         RadioSong last = VanillaDiscs.ALL.getLast();
         RadioSelection selection = fullCatalog();
 
-        Assertions.assertEquals(Optional.of(second), selection.next(first, PlayMode.ONCE), "once must go to the next title in order");
-        Assertions.assertEquals(Optional.of(second), selection.next(first, PlayMode.LOOP), "loop must go to the next title in order too");
-        Assertions.assertEquals(Optional.of(first), selection.next(last, PlayMode.ONCE), "the last title must wrap to the first");
+        Assertions.assertEquals(Optional.of(second), selection.next(first, null, PlayMode.ONCE), "once must go to the next title in order");
+        Assertions.assertEquals(Optional.of(second), selection.next(first, null, PlayMode.LOOP), "loop must go to the next title in order too");
+        Assertions.assertEquals(Optional.of(first), selection.next(last, null, PlayMode.ONCE), "the last title must wrap to the first");
     }
 
     @DisplayName("Next without a current title starts at the first title in order")
     @Test
     void nextWithoutCurrentStartsAtTheFirst() {
-        Assertions.assertEquals(Optional.of(VanillaDiscs.ALL.getFirst()), fullCatalog().next(null, PlayMode.ONCE), "next without a current title must start the first title");
+        Assertions.assertEquals(Optional.of(VanillaDiscs.ALL.getFirst()), fullCatalog().next(null, RadioCategories.MINECRAFT, PlayMode.ONCE), "next without a current title must start the first title of the last opened category");
     }
 
     @DisplayName("Next in shuffle picks another title than the current one")
@@ -112,10 +112,83 @@ class RadioSelectionTest {
         RadioSelection selection = fullCatalog();
         for (RadioSong current : VanillaDiscs.ALL) {
             for (int draw = 0; draw < DRAWS; draw++) {
-                RadioSong picked = selection.next(current, PlayMode.SHUFFLE).orElseThrow();
+                RadioSong picked = selection.next(current, null, PlayMode.SHUFFLE).orElseThrow();
 
                 Assertions.assertNotEquals(current, picked, "shuffle must not pick " + current.title() + " again after it");
             }
         }
+    }
+
+    @DisplayName("Shuffle after a vanilla disc stays in the Minecraft category")
+    @Test
+    void shuffleStaysInTheCategoryOfTheEndedTitle() {
+        RadioSelection selection = selectionOf(mixedCatalog());
+        RadioSong ended = disc(Material.MUSIC_DISC_13);
+        for (int draw = 0; draw < DRAWS; draw++) {
+            RadioSong successor = selection.afterEnd(ended, PlayMode.SHUFFLE).orElseThrow();
+
+            Assertions.assertEquals(RadioCategories.MINECRAFT, successor.category(), "shuffle must not leave the Minecraft category, got " + successor.title());
+        }
+    }
+
+    @DisplayName("Shuffle after a MIDI song of a declared category stays in that category")
+    @Test
+    void shuffleStaysInADeclaredCategory() {
+        RadioSelection selection = selectionOf(mixedCatalog());
+        RadioSong ended = GAME_ONE;
+        for (int draw = 0; draw < DRAWS; draw++) {
+            RadioSong successor = selection.afterEnd(ended, PlayMode.SHUFFLE).orElseThrow();
+
+            Assertions.assertEquals(GAMES, successor.category(), "shuffle must stay in games, got " + successor.title());
+            Assertions.assertNotEquals(ended, successor, "shuffle must not repeat the title that ended");
+        }
+    }
+
+    @DisplayName("Next in a category wraps inside the category, not over the whole catalog")
+    @Test
+    void nextWrapsInsideTheCategory() {
+        RadioSelection selection = selectionOf(mixedCatalog());
+
+        Assertions.assertEquals(Optional.of(GAME_ONE), selection.next(GAME_TWO, null, PlayMode.ONCE), "the last game must wrap to the first game");
+    }
+
+    @DisplayName("Next without a current title starts the first title of the last opened category")
+    @Test
+    void nextWithoutCurrentUsesTheLastOpenedCategory() {
+        RadioSelection selection = selectionOf(mixedCatalog());
+
+        Assertions.assertEquals(Optional.of(GAME_ONE), selection.next(null, GAMES, PlayMode.ONCE), "next must start the first game when games was opened last");
+    }
+
+    @DisplayName("Next without a current title and without an opened category is empty")
+    @Test
+    void nextWithoutCurrentAndWithoutCategoryIsEmpty() {
+        RadioSelection selection = selectionOf(mixedCatalog());
+
+        Assertions.assertEquals(Optional.empty(), selection.next(null, null, PlayMode.ONCE), "next without any category must yield nothing");
+    }
+
+    @DisplayName("A category with one title repeats it in shuffle")
+    @Test
+    void singleTitleCategoryRepeatsInShuffle() {
+        RadioSong lone = midi("lone", GAMES);
+        RadioSelection selection = selectionOf(List.of(disc(Material.MUSIC_DISC_13), lone));
+
+        Assertions.assertEquals(Optional.of(lone), selection.afterEnd(lone, PlayMode.SHUFFLE), "a category with one title must repeat it");
+    }
+
+    private static final RadioCategory GAMES = new RadioCategory("games", "Spiele", "Games", Material.EMERALD, 10);
+    private static final RadioSong GAME_ONE = midi("one", GAMES);
+    private static final RadioSong GAME_TWO = midi("two", GAMES);
+
+    private static RadioSong midi(String id, RadioCategory category) {
+        return new MidiSong(id, id, "Beispiel", Material.MUSIC_DISC_WARD, category, List.of(new MidiNote(0, RadioInstrument.HARP, 12, 100)));
+    }
+
+    private static List<RadioSong> mixedCatalog() {
+        List<RadioSong> catalog = new ArrayList<>(VanillaDiscs.ALL);
+        catalog.add(GAME_ONE);
+        catalog.add(GAME_TWO);
+        return catalog;
     }
 }
