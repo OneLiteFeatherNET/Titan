@@ -1,5 +1,18 @@
 # Changelog
 
+## [4.11.0](https://github.com/OneLiteFeatherNET/Titan/compare/v4.10.0...v4.11.0) (2026-10-27)
+
+
+### Features
+
+* **navigator:** group the navigator menu and show live activity ([#519](https://github.com/OneLiteFeatherNET/Titan/issues/519)) ([c66ee4e](https://github.com/OneLiteFeatherNET/Titan/commit/c66ee4e8649d14847e47274ddf404a8126a0e1b5))
+
+
+### Bug Fixes
+
+* **deps:** update dependency io.sentry:sentry-bom to v8.62.0 ([#516](https://github.com/OneLiteFeatherNET/Titan/issues/516)) ([3dcd7ad](https://github.com/OneLiteFeatherNET/Titan/commit/3dcd7ad3c963eb0c7a21150609fcaccbf9744a11))
+* **radio:** keep notes in their octave by using the instrument registers ([#521](https://github.com/OneLiteFeatherNET/Titan/issues/521)) ([af36091](https://github.com/OneLiteFeatherNET/Titan/commit/af3609141adc945d3c55beed74c4a5e6f6e921b4))
+
 ## [4.10.0](https://github.com/OneLiteFeatherNET/Titan/compare/v4.9.0...v4.10.0) (2026-10-27)
 
 
