@@ -271,7 +271,7 @@ final class SongCatalog {
                 return;
             }
             this.ids.add(id);
-            this.songs.add(new MidiSong(id, title, artist, disc, songCategory(name, fields), path));
+            this.songs.add(new MidiSong(id, title, artist, disc, songCategory(name, fields), path, text(fields, "midi")));
             LOG.info("Radio song {} loaded", name);
         }
 

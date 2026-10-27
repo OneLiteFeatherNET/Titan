@@ -21,6 +21,7 @@ import java.util.Locale;
 import java.util.Objects;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.minestom.server.component.DataComponents;
 import net.minestom.server.item.ItemStack;
 import net.minestom.server.item.Material;
 import net.theevilreaper.aves.inventory.layout.InventoryLayout;
@@ -87,8 +88,7 @@ final class RadioMenuBuilder {
         int first = (PageLayout.clampPage(view.state().page(), view.titles().size()) - 1) * RadioMenuLayout.CONTENT;
         for (int slot = 0; slot < RadioMenuLayout.CONTENT && first + slot < view.titles().size(); slot++) {
             RadioSong song = view.titles().get(first + slot);
-            String lore = song.kind() == RadioKind.VANILLA ? RadioMessages.DISC_LORE_VANILLA : RadioMessages.DISC_LORE_MIDI;
-            layout.setItem(slot, item(song.disc(), plain(song.title()), List.of(RadioMessages.text(lore, locale, song.artist())), song.equals(view.playing())));
+            layout.setItem(slot, songItem(song, song.equals(view.playing()), locale));
         }
     }
 
@@ -122,7 +122,34 @@ final class RadioMenuBuilder {
         if (view.volumeLater()) {
             lore.add(RadioMessages.text(RadioMessages.NOW_LATER, locale));
         }
-        return item(playing.disc(), RadioMessages.text(RadioMessages.NOW_TITLE, locale, playing.title()), lore, false);
+        return disc(playing, RadioMessages.text(RadioMessages.NOW_TITLE, locale, playing.title()), lore, false);
+    }
+
+    /** The menu item of one title: its disc, named and described by the radio. */
+    static ItemStack songItem(RadioSong song, boolean glowing, Locale locale) {
+        return disc(song, plain(song.title()), discLore(song, locale), glowing);
+    }
+
+    private static List<Component> discLore(RadioSong song, Locale locale) {
+        return switch (song) {
+            case VanillaDisc vanilla ->
+                List.of(RadioMessages.text(RadioMessages.DISC_LORE_VANILLA, locale, vanilla.artist()));
+            case MidiSong midi -> midiLore(midi, locale);
+        };
+    }
+
+    private static List<Component> midiLore(MidiSong song, Locale locale) {
+        List<Component> lore = new ArrayList<>();
+        lore.add(RadioMessages.text(RadioMessages.DISC_LORE_ORIGINAL, locale, song.artist()));
+        if (song.midi() != null) {
+            lore.add(RadioMessages.text(RadioMessages.DISC_LORE_MIDI, locale, song.midi()));
+        }
+        return lore;
+    }
+
+    // Without this the client adds the vanilla disc description (e.g. "C418 - cat") under our lore.
+    private static ItemStack disc(RadioSong song, Component name, List<Component> lore, boolean glowing) {
+        return item(song.disc(), name, lore, glowing).without(DataComponents.JUKEBOX_PLAYABLE);
     }
 
     private static ItemStack control(Material material, Component name) {

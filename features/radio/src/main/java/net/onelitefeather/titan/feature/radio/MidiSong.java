@@ -29,9 +29,15 @@ import net.minestom.server.item.Material;
  * @param disc     the music disc item that stands for the song in its menu
  * @param category the category the song is listed in
  * @param file     the MIDI file, inside {@code radio/}
+ * @param midi     who made the MIDI file or where it comes from, or {@code null} when the entry
+ *                 names no source
  */
 record MidiSong(String id, String title, String artist, Material disc, RadioCategory category,
-                Path file) implements RadioSong {
+                Path file, String midi) implements RadioSong {
+
+    MidiSong(String id, String title, String artist, Material disc, RadioCategory category, Path file) {
+        this(id, title, artist, disc, category, file, null);
+    }
 
     MidiSong {
         Objects.requireNonNull(id, "id must not be null");

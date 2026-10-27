@@ -57,6 +57,7 @@ final class RadioMessages implements AutoCloseable {
     static final String MODE_SHUFFLE = "titan.radio.mode.shuffle";
     static final String MODE_HINT = "titan.radio.mode.hint";
     static final String DISC_LORE_VANILLA = "titan.radio.disc.lore.vanilla";
+    static final String DISC_LORE_ORIGINAL = "titan.radio.disc.lore.original";
     static final String DISC_LORE_MIDI = "titan.radio.disc.lore.midi";
     static final String PLAYING = "titan.radio.playing";
     static final String STOPPED = "titan.radio.stopped";
@@ -64,7 +65,7 @@ final class RadioMessages implements AutoCloseable {
     static final String REJECTED = "titan.radio.rejected";
 
     /** Every key the radio renders; the bundle test checks the property files against it. */
-    static final List<String> KEYS = List.of(ITEM_NAME, ITEM_HINT, WINDOW_OVERVIEW, WINDOW_CATEGORY, CATEGORY_COUNT, PAGE_INFO, BACK, PAGE_PREVIOUS, PAGE_NEXT, STOP, NEXT, NOW_TITLE, NOW_NONE, NOW_ARTIST, NOW_CATEGORY, NOW_VOLUME, NOW_LATER, VOLUME_HINT, MODE_ONCE, MODE_LOOP, MODE_SHUFFLE, MODE_HINT, DISC_LORE_VANILLA, DISC_LORE_MIDI, PLAYING, STOPPED, LOADING, REJECTED);
+    static final List<String> KEYS = List.of(ITEM_NAME, ITEM_HINT, WINDOW_OVERVIEW, WINDOW_CATEGORY, CATEGORY_COUNT, PAGE_INFO, BACK, PAGE_PREVIOUS, PAGE_NEXT, STOP, NEXT, NOW_TITLE, NOW_NONE, NOW_ARTIST, NOW_CATEGORY, NOW_VOLUME, NOW_LATER, VOLUME_HINT, MODE_ONCE, MODE_LOOP, MODE_SHUFFLE, MODE_HINT, DISC_LORE_VANILLA, DISC_LORE_ORIGINAL, DISC_LORE_MIDI, PLAYING, STOPPED, LOADING, REJECTED);
 
     private static final String BUNDLE = "titan.radio.messages";
 

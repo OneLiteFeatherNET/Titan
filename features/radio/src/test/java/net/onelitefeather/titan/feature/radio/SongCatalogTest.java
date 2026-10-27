@@ -112,6 +112,28 @@ class SongCatalogTest {
         Assertions.assertEquals(Material.MUSIC_DISC_CAT, song.disc(), "the disc must come from the entry");
     }
 
+    @DisplayName("The midi field names the source of the MIDI file")
+    @Test
+    void midiFieldNamesTheSource() throws Exception {
+        writeMidi("sunrise.mid");
+        writeSongs(songs(entry("sunrise", "MUSIC_DISC_CAT", "sunrise.mid") + "    midi: BitMidi-Upload (unbekannt)\n"));
+
+        SongCatalog.Load load = SongCatalog.load(this.radio);
+
+        Assertions.assertEquals("BitMidi-Upload (unbekannt)", load.songs().getFirst().midi(), "the midi field must name the source of the MIDI file");
+    }
+
+    @DisplayName("An entry without a midi field has no MIDI source")
+    @Test
+    void entryWithoutMidiFieldHasNoSource() throws Exception {
+        writeMidi("sunrise.mid");
+        writeSongs(songs(entry("sunrise", "MUSIC_DISC_CAT", "sunrise.mid")));
+
+        SongCatalog.Load load = SongCatalog.load(this.radio);
+
+        Assertions.assertNull(load.songs().getFirst().midi(), "an entry without a midi field must have no MIDI source");
+    }
+
     @DisplayName("An entry whose MIDI file is missing is skipped and named")
     @Test
     void missingFileIsSkipped() throws Exception {
