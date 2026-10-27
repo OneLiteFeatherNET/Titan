@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.11.1](https://github.com/OneLiteFeatherNET/Titan/compare/v4.11.0...v4.11.1) (2026-10-27)
+
+
+### Bug Fixes
+
+* **radio:** shift each track by octaves into its instrument's register ([#523](https://github.com/OneLiteFeatherNET/Titan/issues/523)) ([f513802](https://github.com/OneLiteFeatherNET/Titan/commit/f51380221802af47c4b795af913fc4364f144653))
+
 ## [4.11.0](https://github.com/OneLiteFeatherNET/Titan/compare/v4.10.0...v4.11.0) (2026-10-27)
 
 
