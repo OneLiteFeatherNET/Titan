@@ -22,8 +22,8 @@ import net.kyori.adventure.sound.SoundStop;
 import net.minestom.server.entity.Player;
 
 /**
- * Sends the radio's sounds to one player. The emitter is the player himself, so the sound is not
- * placed in the world and no other player receives a packet.
+ * Sends the radio's sounds to one player. The emitter is the player, so the sound is not placed in
+ * the world and no other player receives a packet.
  */
 final class PlayerRadioSink implements RadioSink {
 
