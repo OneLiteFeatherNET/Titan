@@ -669,24 +669,39 @@ Ein Record `(player, busy)` im Paket `net.onelitefeather.titan.core.module`. `ju
 
 Ein Jukebox-Item auf Hotbar-Slot 5 (`titan:radio`) öffnet das Radio. Es ist immer da, auch ohne MIDI-Dateien. Jeder Titel spielt nur für den Spieler, der ihn gestartet hat, und in der Welt entsteht kein Ton.
 
-- **Menüs:** „Vanilla-Platten“ zeigt die 22 Schallplatten, die diese Minestom-Version kennt. Sind MIDI-Songs geladen, gibt es einen Umschalter zu „Eigene Songs“ (bis zu 18). Ein Klick auf eine Platte startet genau diesen Titel. Stopp, Weiter und der Modusknopf sind in beiden Menüs gleich.
-- **Vanilla-Platten:** Der Client spielt den eigenen Plattenton der Platte, als Quelle `RECORD` und Emitter `self`. Kein Resource Pack, keine Notenblöcke. Das Ende setzt der Server nach der Länge aus der Tabelle plus 5 Sekunden Puffer mit einem benannten Stopp.
-- **MIDI-Songs:** `radio/songs.yaml` im Arbeitsverzeichnis der Lobby, die `.mid`-Dateien daneben. Ein Eintrag hat `id`, `title`, `artist`, `disc` (ein `MUSIC_DISC_*`) und `file`:
+- **Übersicht:** Das Item öffnet immer die Kategorieübersicht, nie die zuletzt geöffnete Kategorie. „Minecraft“ steht vorn und enthält die 22 Vanilla-Platten. „Sonstige“ steht hinten und erscheint nur, wenn sie Titel hat. Eine deklarierte Kategorie ohne Titel fehlt. Ein Klick auf eine Kategorie öffnet ihre Titelliste mit Zurück-Knopf.
+- **Titelliste und Steuerzeile:** Seitenweise, 45 Titel je Seite in einer 6-Reihen-Kiste. Die unterste Reihe hat neun feste Plätze: Zurück, Seite zurück, Seitenanzeige, Stopp, „Läuft jetzt“, Weiter, Modus, Lautstärke, Seite weiter. Ein nicht benötigter Knopf bleibt als Füllglas an seinem Platz. Die Seite gehört zur Sitzung und beginnt bei 1, wenn eine Kategorie geöffnet wird. Der Titel, der für den Spieler läuft, glänzt in seinem Fenster.
+- **Kategorien in `songs.yaml`:** Die Kategorien stehen oben in derselben Datei wie die Songs. Jeder Song nennt seine Kategorie per `category`:
 
   ```yaml
+  categories:
+    - id: games
+      name: { de: Spiele, en: Games }
+      icon: EMERALD
+      order: 10
+    - id: anime
+      name: Anime
+      icon: FIREWORK_ROCKET
+      order: 20
   songs:
     - id: sunrise
       title: Sunrise
       artist: Beispiel
       disc: MUSIC_DISC_CAT
       file: sunrise.mid
+      category: games
   ```
 
-  Die Noten spielt der Server als Notenblock-Töne, auf dem 50-ms-Takt. Die Platte ist nur das Symbol, die Originalmusik der Platte erklingt nie. Eine Datei, die fehlt, kaputt ist, mehr als 512 KiB groß ist, mehr als 20 000 Noten oder mehr als 15 Minuten hat, wird mit Dateiname und Grund als WARN übersprungen. Die Lobby startet trotzdem. Die Dateien werden einmal beim Start gelesen. Die MIDI-Dateien liegen nicht im Repository; ihre Rechte trägt der Betreiber.
-- **Modusknopf:** Einmal (Standard), Schleife und Zufall. Der Modus gilt nur für die Sitzung und wird beim Abmelden vergessen. Einmal endet ohne Nachfolger, Schleife startet denselben Titel neu, Zufall wählt einen anderen Titel. „Weiter“ geht in Einmal und Schleife in der Reihenfolge weiter (erst die Vanilla-Platten, dann die MIDI-Songs), in Zufall zufällig. Ein Modus-Wechsel während eines Titels ändert den laufenden Titel nicht.
+  Regeln: Die Id ist `[a-z0-9_-]{1,32}`. `minecraft` und `other` sind reserviert und werden mit WARN übersprungen. Höchstens 20 deklarierte Kategorien, der Überschuss wird mit WARN übersprungen. Der Name ist ein Text oder `{ de, en }`; fehlt eine Sprache, gilt die andere. Das Symbol ist ein Vanilla-Item; unbekannt oder fehlend wird `PAPER` mit WARN. Die Reihenfolge ist aufsteigend, bei gleichen Werten entscheidet die Id. Ein Titel ohne `category` oder mit einer unbekannten Id landet in „Sonstige“, mit WARN. Eine alte `songs.yaml` ohne `categories` und ohne `category` bleibt gültig: alle Titel stehen dann in „Sonstige“.
+- **Keine Grenzen:** Es gibt keine Obergrenze für Titelzahl, Dateigröße, Noten oder Länge. Die einzige Grenze ist die Paketzahl: höchstens 16 Noten je Tick und Spieler. Die leisesten fallen weg und zählen als verworfen. Sie schützt die Verbindung, nicht den Inhalt einer Datei.
+- **Laden:** Beim Start liest die Lobby nur `songs.yaml` und den MIDI-Kopf (`MThd`) jeder Datei. Die Noten lädt sie beim Start eines Titels, außerhalb des Tick-Threads; während des Ladens steht „Lädt …“ in der Aktionsleiste. Ein kleiner Cache hält die 8 zuletzt gespielten, nicht laufenden Titel. Laufende Titel bleiben immer im Speicher. Ein Titel, der nicht lesbar ist, zeigt „Dieser Titel kann nicht abgespielt werden“, wird mit Dateiname als WARN protokolliert und zählt als `rejected`.
+- **Lautstärke:** Stufen 25, 50, 75 und 100 Prozent, Standard 100. Linksklick erhöht, Rechtsklick senkt, an den Rändern bleibt der Wert. Der Wert ist eine Spielereinstellung und liegt in Otis unter `titan:radio.volume` als JSON-Zahl; er gilt über den Logout hinaus. Er steht nicht im Einstellungsmenü. MIDI-Noten folgen sofort. Eine laufende Schallplatte behält die Lautstärke, mit der sie gestartet wurde; „Läuft jetzt“ zeigt dann „Lautstärke wirkt ab dem nächsten Titel“. Ohne Otis spielt das Radio mit 100 Prozent.
+- **Modusknopf:** Einmal (Standard), Schleife und Zufall. Der Modus gilt für die Sitzung und wird beim Abmelden vergessen. Einmal endet ohne Nachfolger, Schleife startet denselben Titel neu, Zufall wählt einen anderen Titel. Zufall und „Weiter“ bleiben in der Kategorie des laufenden Titels; ohne laufenden Titel in der zuletzt geöffneten Kategorie. Ist noch keine Kategorie geöffnet gewesen, ist „Weiter“ ausgegraut.
+- **„Läuft jetzt“:** zeigt den Titel als Namen und in der Lore Künstler, Kategorie, Modus und Lautstärke. Ein Klick startet und stoppt nichts.
+- **Vanilla-Platten:** Der Client spielt den eigenen Plattenton der Platte, als Quelle `RECORD` und Emitter `self`. Kein Resource Pack, keine Notenblöcke. Das Ende setzt der Server nach der Länge aus der Tabelle plus 5 Sekunden Puffer mit einem benannten Stopp.
+- **MIDI-Songs:** `radio/songs.yaml` im Arbeitsverzeichnis der Lobby, die `.mid`-Dateien daneben (Beispiel oben). Die Noten spielt der Server als Notenblock-Töne, auf dem 50-ms-Takt. Die Platte ist nur das Symbol, die Originalmusik der Platte erklingt nie. Eine Datei, die fehlt oder keinen MIDI-Kopf hat, wird mit Dateiname und Grund als WARN übersprungen. Die Lobby startet trotzdem. Die MIDI-Dateien liegen nicht im Repository; ihre Rechte trägt der Betreiber.
 - **Stoppgründe:** Stopp, Weiter, Titelende, Abmelden und `LobbyPlayerBusyEvent` (Sprungtest, Übergabe zu einem anderen Server). Nach `busy` oder einem Abmelden startet das Radio nicht von selbst neu. Fangen sendet kein Busy-Ereignis, das Radio läuft dort weiter.
-- **Grenzen:** höchstens 16 Noten je Tick und Spieler; die leisesten fallen weg und zählen als verworfen.
-- **Telemetrie:** `titan.radio.plays{kind, mode, trigger}`, `titan.radio.stops{reason, kind}`, `titan.radio.notes.dropped` und `titan.radio.songs{result}`, ohne Spieler-Id und ohne Span.
+- **Telemetrie:** `titan.radio.plays{kind, mode, trigger, category}`, `titan.radio.stops{reason, kind}`, `titan.radio.notes.dropped` und `titan.radio.songs{result}`, ohne Spieler-Id und ohne Span. `category` ist die Id: `minecraft`, `other` oder die deklarierte Id.
 - **Java:** `javax.sound.midi` liegt im JDK-Modul `java.desktop`. Die Auslieferung nutzt ein volles JDK; es gibt kein jlink-Image.
 - **Texte:** `titan/radio/messages_de.properties` und `messages_en.properties`.
 - **Offen:** Die Längen der Vanilla-Platten sind Näherungen (Minecraft-Wiki, nicht an den Client-Dateien gemessen); `bounce` ist ein Platzhalter. Die Instrumententabelle wird nach Gehör angepasst.
