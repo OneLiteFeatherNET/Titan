@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import net.onelitefeather.titan.core.settings.SettingKey;
+import net.onelitefeather.titan.core.settings.SettingValue;
 import net.onelitefeather.titan.core.settings.SettingsStoreException;
 import net.onelitefeather.titan.core.settings.SettingsStoreException.Failure;
 import org.junit.jupiter.api.Assertions;
@@ -38,6 +39,7 @@ import org.junit.jupiter.api.Test;
 class OtisSettingsStoreIntegrationTest {
 
     private static final SettingKey TAG = SettingKey.parse("titan:tag.enabled");
+    private static final SettingKey VOLUME = SettingKey.parse("titan:radio.volume");
     private static final UUID PLAYER = UUID.fromString("0f8fad5b-d9cb-469f-a165-70867728950e");
     private static final String STORED = "[{\"key\":\"titan:tag.enabled\",\"value\":true,\"version\":2,\"updatedAt\":\"2026-10-24T12:00:00Z\"}]";
 
@@ -56,7 +58,7 @@ class OtisSettingsStoreIntegrationTest {
     void loadReturnsStoredValues() throws IOException {
         try (FakeOtis otis = new FakeOtis().always(FakeOtis.Reply.of(200, STORED))) {
             OtisSettingsStore store = store(settings(otis.url(), "", 0, 3, Duration.ofSeconds(2)));
-            Assertions.assertEquals(Map.of(TAG, true), store.load(PLAYER), "the stored value must be returned");
+            Assertions.assertEquals(Map.of(TAG, new SettingValue.Flag(true)), store.load(PLAYER), "the stored value must be returned");
             FakeOtis.Received request = otis.received().getFirst();
             Assertions.assertEquals("/v1/players/" + PLAYER + "/settings", request.path(), "the load must address the player's settings");
             Assertions.assertEquals("namespace=titan", request.query(), "the load must ask for the titan namespace only");
@@ -77,7 +79,7 @@ class OtisSettingsStoreIntegrationTest {
     void loadRetriesAfterAServerError() throws IOException {
         try (FakeOtis otis = new FakeOtis().then(FakeOtis.Reply.empty(500)).always(FakeOtis.Reply.of(200, STORED))) {
             OtisSettingsStore store = store(settings(otis.url(), "", 1, 3, Duration.ofSeconds(2)));
-            Assertions.assertEquals(Map.of(TAG, true), store.load(PLAYER), "the retry must deliver the stored value");
+            Assertions.assertEquals(Map.of(TAG, new SettingValue.Flag(true)), store.load(PLAYER), "the retry must deliver the stored value");
             Assertions.assertEquals(2, otis.received().size(), "one failed request and one retry");
         }
     }
@@ -130,11 +132,32 @@ class OtisSettingsStoreIntegrationTest {
     @Test
     void saveWritesTheValueBody() throws IOException {
         try (FakeOtis otis = new FakeOtis().always(FakeOtis.Reply.of(201, "{}"))) {
-            store(settings(otis.url(), "", 0, 3, Duration.ofSeconds(2))).save(PLAYER, TAG, true);
+            store(settings(otis.url(), "", 0, 3, Duration.ofSeconds(2))).save(PLAYER, TAG, new SettingValue.Flag(true));
             FakeOtis.Received request = otis.received().getFirst();
             Assertions.assertEquals("PUT", request.method(), "a save must be a PUT");
             Assertions.assertEquals("/v1/players/" + PLAYER + "/settings/titan:tag.enabled", request.path(), "the key must be in the path");
             Assertions.assertEquals("{\"value\":true}", request.body(), "the body must carry the value");
+        }
+    }
+
+    @DisplayName("A save of a level puts its number as the value")
+    @Test
+    void saveWritesTheLevelAsANumber() throws IOException {
+        try (FakeOtis otis = new FakeOtis().always(FakeOtis.Reply.of(201, "{}"))) {
+            store(settings(otis.url(), "", 0, 3, Duration.ofSeconds(2))).save(PLAYER, VOLUME, new SettingValue.Level(75));
+            FakeOtis.Received request = otis.received().getFirst();
+            Assertions.assertEquals("/v1/players/" + PLAYER + "/settings/titan:radio.volume", request.path(), "the level key must be in the path");
+            Assertions.assertEquals("{\"value\":75}", request.body(), "a level must be sent as a JSON number");
+        }
+    }
+
+    @DisplayName("A load returns a stored whole number as a level")
+    @Test
+    void loadReturnsStoredLevel() throws IOException {
+        try (FakeOtis otis = new FakeOtis().always(FakeOtis.Reply.of(200, "[{\"key\":\"titan:radio.volume\",\"value\":75,\"version\":1,\"updatedAt\":\"2026-10-24T12:00:00Z\"}]"))) {
+            OtisSettingsStore store = store(settings(otis.url(), "", 0, 3, Duration.ofSeconds(2)));
+
+            Assertions.assertEquals(Map.of(VOLUME, new SettingValue.Level(75)), store.load(PLAYER), "the stored number must come back as a level");
         }
     }
 
@@ -143,7 +166,7 @@ class OtisSettingsStoreIntegrationTest {
     void rejectedSaveIsNotRetryable() throws IOException {
         try (FakeOtis otis = new FakeOtis().always(FakeOtis.Reply.empty(400))) {
             OtisSettingsStore store = store(settings(otis.url(), "", 0, 5, Duration.ofSeconds(2)));
-            SettingsStoreException failure = Assertions.assertThrows(SettingsStoreException.class, () -> store.save(PLAYER, TAG, true));
+            SettingsStoreException failure = Assertions.assertThrows(SettingsStoreException.class, () -> store.save(PLAYER, TAG, new SettingValue.Flag(true)));
             Assertions.assertEquals(Failure.REJECTED, failure.failure(), "a 400 must be reported as rejected");
             Assertions.assertFalse(failure.failure().retryable(), "a rejected write must not be retried");
         }
@@ -154,7 +177,7 @@ class OtisSettingsStoreIntegrationTest {
     void saveForUnknownPlayerIsNotFound() throws IOException {
         try (FakeOtis otis = new FakeOtis().always(FakeOtis.Reply.empty(404))) {
             OtisSettingsStore store = store(settings(otis.url(), "", 0, 5, Duration.ofSeconds(2)));
-            SettingsStoreException failure = Assertions.assertThrows(SettingsStoreException.class, () -> store.save(PLAYER, TAG, true));
+            SettingsStoreException failure = Assertions.assertThrows(SettingsStoreException.class, () -> store.save(PLAYER, TAG, new SettingValue.Flag(true)));
             Assertions.assertEquals(Failure.NOT_FOUND, failure.failure(), "a 404 on save must be reported as not found");
             Assertions.assertTrue(failure.failure().retryable(), "a not-found write may succeed later");
         }
@@ -165,9 +188,9 @@ class OtisSettingsStoreIntegrationTest {
     void openBreakerSendsNothing() throws IOException {
         try (FakeOtis otis = new FakeOtis().always(FakeOtis.Reply.empty(503))) {
             OtisSettingsStore store = store(settings(otis.url(), "", 0, 2, Duration.ofSeconds(2)));
-            Assertions.assertThrows(SettingsStoreException.class, () -> store.save(PLAYER, TAG, true));
-            Assertions.assertThrows(SettingsStoreException.class, () -> store.save(PLAYER, TAG, true));
-            SettingsStoreException refused = Assertions.assertThrows(SettingsStoreException.class, () -> store.save(PLAYER, TAG, true));
+            Assertions.assertThrows(SettingsStoreException.class, () -> store.save(PLAYER, TAG, new SettingValue.Flag(true)));
+            Assertions.assertThrows(SettingsStoreException.class, () -> store.save(PLAYER, TAG, new SettingValue.Flag(true)));
+            SettingsStoreException refused = Assertions.assertThrows(SettingsStoreException.class, () -> store.save(PLAYER, TAG, new SettingValue.Flag(true)));
             Assertions.assertEquals(Failure.CIRCUIT_OPEN, refused.failure(), "the third call must be refused by the open breaker");
             Assertions.assertEquals(2, otis.received().size(), "a refused call must not reach Otis");
         }

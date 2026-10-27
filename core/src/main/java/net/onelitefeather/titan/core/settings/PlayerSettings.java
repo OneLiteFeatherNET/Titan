@@ -29,6 +29,20 @@ public interface PlayerSettings {
     /** Switches the value at once; saving happens later, in the background. */
     void set(UUID player, BooleanSetting setting, boolean enabled);
 
+    /**
+     * @return the player's level, or the setting's default while nothing is loaded or stored for
+     *         the player
+     */
+    int level(UUID player, LevelSetting setting);
+
+    /**
+     * Sets the level at once; saving happens later, in the background. Level changes do not reach
+     * the switch listeners.
+     *
+     * @throws IllegalArgumentException if {@code level} is not one of the setting's levels
+     */
+    void setLevel(UUID player, LevelSetting setting, int level);
+
     /** Called on the tick thread whenever a player's effective value changes. */
     void addChangeListener(SettingChangeListener listener);
 }

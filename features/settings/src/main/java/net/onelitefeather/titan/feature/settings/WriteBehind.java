@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Predicate;
 import net.onelitefeather.titan.core.settings.SettingKey;
+import net.onelitefeather.titan.core.settings.SettingValue;
 
 /**
  * The queue of switched settings waiting to be saved. A switch waits for the debounce, so several
@@ -52,7 +53,7 @@ final class WriteBehind {
     }
 
     /** Queues {@code value}; a switch that is already queued waits for the debounce again. */
-    synchronized void changed(UUID player, SettingKey key, boolean value) {
+    synchronized void changed(UUID player, SettingKey key, SettingValue value) {
         this.pending.put(new Target(player, key), new Pending(value, this.clock.instant().plus(this.debounce), 0));
     }
 
@@ -108,10 +109,10 @@ final class WriteBehind {
     }
 
     /** {@code dueAt} is {@code null} for a parked write, which waits for the player to leave. */
-    private record Pending(boolean value, Instant dueAt, int failures) {
+    private record Pending(SettingValue value, Instant dueAt, int failures) {
     }
 
     /** One write to perform: the value to store and how many attempts have failed so far. */
-    record Write(UUID player, SettingKey key, boolean value, int failures) {
+    record Write(UUID player, SettingKey key, SettingValue value, int failures) {
     }
 }

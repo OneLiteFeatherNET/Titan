@@ -24,7 +24,6 @@ import javax.sound.midi.MidiSystem;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.ShortMessage;
 import javax.sound.midi.Track;
-import net.minestom.server.item.Material;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,7 +33,6 @@ class MidiSongParserTest {
     private static final int TICKS_PER_QUARTER = 24;
     private static final int TEMPO_120_BPM = 500_000;
     private static final int TEMPO_60_BPM = 1_000_000;
-    private static final int MAX_FILE_BYTES = 512 * 1024;
 
     /** A type 0 file with one track: the track and its events are what the test builds. */
     private static final class Score {
@@ -70,33 +68,43 @@ class MidiSongParserTest {
         }
     }
 
-    private static MidiSong parse(byte[] bytes) throws SongFormatException {
-        return MidiSongParser.parse("sunrise", "Sunrise", "Beispiel", Material.MUSIC_DISC_CAT, bytes);
+    private static List<MidiNote> parse(byte[] bytes) throws SongFormatException {
+        return MidiSongParser.notes(bytes);
     }
 
     @DisplayName("At 120 BPM a quarter note of 24 ticks lands on game tick 10 and two quarters on tick 20")
     @Test
     void ticksFollowTheDefaultTempo() throws Exception {
-        MidiSong song = parse(new Score().note(24, 66, 100).note(48, 66, 100).bytes());
+        List<MidiNote> notes = parse(new Score().note(24, 66, 100).note(48, 66, 100).bytes());
 
-        Assertions.assertEquals(List.of(10, 20), song.notes().stream().map(MidiNote::tick).toList(), "120 BPM must map a quarter note to 10 game ticks");
+        Assertions.assertEquals(List.of(10, 20), notes.stream().map(MidiNote::tick).toList(), "120 BPM must map a quarter note to 10 game ticks");
     }
 
     @DisplayName("A tempo change is taken into account for the notes after it")
     @Test
     void tempoChangeIsTakenIntoAccount() throws Exception {
-        MidiSong song = parse(new Score().tempo(24, TEMPO_60_BPM).note(48, 66, 100).bytes());
+        List<MidiNote> notes = parse(new Score().tempo(24, TEMPO_60_BPM).note(48, 66, 100).bytes());
 
-        Assertions.assertEquals(30, song.notes().getFirst().tick(), "after the switch to 60 BPM, 500 ms before the note plus 1000 ms after it must be game tick 30");
+        Assertions.assertEquals(30, notes.getFirst().tick(), "after the switch to 60 BPM, 500 ms before the note plus 1000 ms after it must be game tick 30");
     }
 
     @DisplayName("Note-off events and note-ons with velocity 0 are not played")
     @Test
     void noteOffAndZeroVelocityAreIgnored() throws Exception {
-        MidiSong song = parse(new Score().note(24, 66, 0).noteOff(30, 66).note(48, 66, 90).bytes());
+        List<MidiNote> notes = parse(new Score().note(24, 66, 0).noteOff(30, 66).note(48, 66, 90).bytes());
 
-        Assertions.assertEquals(1, song.notes().size(), "only the note with a velocity above 0 must remain");
-        Assertions.assertEquals(20, song.notes().getFirst().tick(), "the remaining note must be the one at tick 48");
+        Assertions.assertEquals(1, notes.size(), "only the note with a velocity above 0 must remain");
+        Assertions.assertEquals(20, notes.getFirst().tick(), "the remaining note must be the one at tick 48");
+    }
+
+    @DisplayName("A file with no note-on of velocity above 0 is rejected")
+    @Test
+    void fileWithoutNotesIsRejected() throws Exception {
+        byte[] bytes = new Score().noteOff(24, 66).bytes();
+
+        SongFormatException rejected = Assertions.assertThrows(SongFormatException.class, () -> parse(bytes), "a file without notes must be rejected");
+
+        Assertions.assertFalse(rejected.getMessage().isBlank(), "the rejection must name its reason");
     }
 
     @DisplayName("Broken bytes are rejected with a reason")
@@ -107,30 +115,18 @@ class MidiSongParserTest {
         Assertions.assertFalse(rejected.getMessage().isBlank(), "a rejection must name its reason");
     }
 
-    @DisplayName("A file larger than 512 KiB is rejected before it is read")
+    @DisplayName("A song with 60 000 notes and about 40 minutes of length is parsed without a limit")
     @Test
-    void fileLargerThanTheLimitIsRejected() {
-        byte[] huge = new byte[MAX_FILE_BYTES + 1];
-
-        Assertions.assertThrows(SongFormatException.class, () -> parse(huge), "a file above 512 KiB must be rejected");
-    }
-
-    @DisplayName("More than 20 000 notes reject the song")
-    @Test
-    void tooManyNotesAreRejected() throws Exception {
+    void largeSongIsParsed() throws Exception {
         Score score = new Score();
-        for (int i = 0; i <= 20_000; i++) {
-            score.note(i, 66, 100);
+        for (int i = 0; i < 60_000; i++) {
+            score.note(2 * i, 66, 100);
         }
 
-        Assertions.assertThrows(SongFormatException.class, () -> parse(score.bytes()), "a song with 20 001 notes must be rejected");
-    }
+        List<MidiNote> notes = parse(score.bytes());
 
-    @DisplayName("A song longer than 15 minutes is rejected")
-    @Test
-    void tooLongSongIsRejected() throws Exception {
-        byte[] bytes = new Score().note(43_300, 66, 100).bytes();
-
-        Assertions.assertThrows(SongFormatException.class, () -> parse(bytes), "a note after 15 minutes must reject the song");
+        Assertions.assertEquals(60_000, notes.size(), "every note of a large song must be kept");
+        int lastTick = notes.getLast().tick();
+        Assertions.assertTrue(lastTick > 15 * 60 * 20, "a song longer than fifteen minutes must be accepted, was " + lastTick + " ticks");
     }
 }

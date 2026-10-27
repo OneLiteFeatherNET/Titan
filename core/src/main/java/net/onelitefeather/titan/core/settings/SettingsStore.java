@@ -28,10 +28,10 @@ public interface SettingsStore {
      * @return the stored values of {@code player}; a player nothing is stored for has none
      * @throws SettingsStoreException if the store cannot be read
      */
-    Map<SettingKey, Boolean> load(UUID player);
+    Map<SettingKey, SettingValue> load(UUID player);
 
     /**
      * @throws SettingsStoreException if the value could not be written
      */
-    void save(UUID player, SettingKey key, boolean enabled);
+    void save(UUID player, SettingKey key, SettingValue value);
 }

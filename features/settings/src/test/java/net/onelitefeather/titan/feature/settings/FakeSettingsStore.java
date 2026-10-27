@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import net.onelitefeather.titan.core.settings.SettingKey;
+import net.onelitefeather.titan.core.settings.SettingValue;
 import net.onelitefeather.titan.core.settings.SettingsStore;
 
 /**
@@ -30,25 +31,29 @@ import net.onelitefeather.titan.core.settings.SettingsStore;
  */
 final class FakeSettingsStore implements SettingsStore {
 
-    private final Map<UUID, Map<SettingKey, Boolean>> stored = new ConcurrentHashMap<>();
+    private final Map<UUID, Map<SettingKey, SettingValue>> stored = new ConcurrentHashMap<>();
     private final List<Save> saves = new CopyOnWriteArrayList<>();
     private final AtomicInteger loads = new AtomicInteger();
 
     FakeSettingsStore with(UUID player, SettingKey key, boolean value) {
+        return with(player, key, new SettingValue.Flag(value));
+    }
+
+    FakeSettingsStore with(UUID player, SettingKey key, SettingValue value) {
         this.stored.computeIfAbsent(player, ignored -> new ConcurrentHashMap<>()).put(key, value);
         return this;
     }
 
     @Override
-    public Map<SettingKey, Boolean> load(UUID player) {
+    public Map<SettingKey, SettingValue> load(UUID player) {
         this.loads.incrementAndGet();
         return Map.copyOf(this.stored.getOrDefault(player, Map.of()));
     }
 
     @Override
-    public void save(UUID player, SettingKey key, boolean enabled) {
-        this.saves.add(new Save(player, key, enabled));
-        this.stored.computeIfAbsent(player, ignored -> new ConcurrentHashMap<>()).put(key, enabled);
+    public void save(UUID player, SettingKey key, SettingValue value) {
+        this.saves.add(new Save(player, key, value));
+        this.stored.computeIfAbsent(player, ignored -> new ConcurrentHashMap<>()).put(key, value);
     }
 
     int loads() {
@@ -59,6 +64,6 @@ final class FakeSettingsStore implements SettingsStore {
         return new ArrayList<>(this.saves);
     }
 
-    record Save(UUID player, SettingKey key, boolean value) {
+    record Save(UUID player, SettingKey key, SettingValue value) {
     }
 }

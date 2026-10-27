@@ -27,6 +27,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 import net.onelitefeather.titan.core.settings.SettingKey;
+import net.onelitefeather.titan.core.settings.SettingValue;
 import net.onelitefeather.titan.core.settings.SettingsStoreException;
 import net.onelitefeather.titan.core.settings.SettingsTelemetry;
 import net.onelitefeather.titan.core.telemetry.Telemetry;
@@ -53,7 +54,7 @@ class SettingsLogRedactionTest {
         try (FakeOtis otis = new FakeOtis().always(FakeOtis.Reply.empty(401))) {
             OtisSettings settings = new OtisSettings(otis.url(), TOKEN, Duration.ofSeconds(1), Duration.ofSeconds(2), 0, 1, Duration.ofSeconds(30));
             OtisSettingsStore store = OtisSettingsStore.create(settings, Clock.fixed(Instant.parse("2026-10-24T12:00:00Z"), ZoneOffset.UTC), new SettingsTelemetry(Telemetry.noop()));
-            SettingsStoreException failure = Assertions.assertThrows(SettingsStoreException.class, () -> store.save(PLAYER, TAG, true), "a 401 must fail the save");
+            SettingsStoreException failure = Assertions.assertThrows(SettingsStoreException.class, () -> store.save(PLAYER, TAG, new SettingValue.Flag(true)), "a 401 must fail the save");
             Assertions.assertFalse(failure.getMessage().contains(TOKEN), "the failure message must not contain the token");
             // The one-failure threshold opened the breaker, so the warning about it was logged too.
             Assertions.assertFalse(messages(appender).isEmpty(), "the open breaker must have logged a warning to check");

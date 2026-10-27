@@ -18,6 +18,7 @@ package net.onelitefeather.titan.feature.radio;
 import java.util.HashSet;
 import java.util.Set;
 import net.minestom.server.item.Material;
+import net.minestom.server.sound.SoundEvent;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -60,6 +61,20 @@ class VanillaDiscsTest {
         VanillaDiscs.ALL.forEach(disc -> distinct.add(disc.disc()));
 
         Assertions.assertEquals(VanillaDiscs.ALL.size(), distinct.size(), "every disc must be listed once");
+    }
+
+    @DisplayName("A vanilla disc longer than fifteen minutes is accepted, as there is no length limit")
+    @Test
+    void discLongerThanFifteenMinutesIsAccepted() {
+        int twentyMinutes = 20 * 60 * RadioLimits.TICKS_PER_SECOND;
+
+        Assertions.assertDoesNotThrow(() -> new VanillaDisc(Material.MUSIC_DISC_13, SoundEvent.MUSIC_DISC_13, "13", "C418", twentyMinutes), "a length above fifteen minutes must not be rejected");
+    }
+
+    @DisplayName("A vanilla disc with no length is rejected")
+    @Test
+    void discWithoutLengthIsRejected() {
+        Assertions.assertThrows(IllegalArgumentException.class, () -> new VanillaDisc(Material.MUSIC_DISC_13, SoundEvent.MUSIC_DISC_13, "13", "C418", 0), "a length of zero ticks must be rejected");
     }
 
     @DisplayName("Every length lies between zero and fifteen minutes")

@@ -13,14 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.onelitefeather.titan.feature.radio;
+package net.onelitefeather.titan.core.settings;
 
-/** The two menus of the radio: the vanilla discs, and the custom MIDI songs. */
-enum RadioMenu {
-    VANILLA, SONGS;
+/**
+ * A stored player value: a switch ({@link Flag}) or one level of a {@link LevelSetting}. Both are
+ * kept under the same key format, so the store does not need to know which one it holds.
+ */
+public sealed interface SettingValue permits SettingValue.Flag, SettingValue.Level {
 
-    /** The menu the switch button opens. */
-    RadioMenu other() {
-        return this == VANILLA ? SONGS : VANILLA;
+    /** The state of a switch. */
+    record Flag(boolean enabled) implements SettingValue {
+    }
+
+    /** One whole-number level of a {@link LevelSetting}. */
+    record Level(int value) implements SettingValue {
     }
 }

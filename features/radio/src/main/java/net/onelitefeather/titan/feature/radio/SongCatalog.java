@@ -16,14 +16,19 @@
 package net.onelitefeather.titan.feature.radio;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import net.minestom.server.item.Material;
 import org.slf4j.Logger;
@@ -33,8 +38,9 @@ import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 /**
- * Reads {@code songs.yaml} and the MIDI files it names, once at start. A broken entry or file is
- * logged with its name and skipped; nothing in here stops the lobby.
+ * Reads {@code songs.yaml} and the categories it declares, once at start. Only the metadata and the
+ * MIDI header of each file are checked here; the notes are read when a title starts. A broken entry
+ * is logged with its name and skipped; nothing in here stops the lobby.
  */
 final class SongCatalog {
 
@@ -43,6 +49,9 @@ final class SongCatalog {
     private static final Logger LOG = LoggerFactory.getLogger(SongCatalog.class);
     private static final String DISC_PREFIX = "MUSIC_DISC_";
     private static final Map<String, Material> DISCS = discsByName();
+    private static final Map<String, Material> MATERIALS = materialsByName();
+    private static final byte[] MIDI_HEADER = "MThd".getBytes(StandardCharsets.US_ASCII);
+    private static final Material FALLBACK_ICON = Material.PAPER;
 
     private SongCatalog() {
     }
@@ -51,11 +60,14 @@ final class SongCatalog {
     record Rejection(String name, String reason) {
     }
 
-    /** The songs in configuration order and the entries that were rejected. */
-    record Load(List<MidiSong> songs, List<Rejection> rejections) {
+    /**
+     * The songs in configuration order, the declared categories in declaration order, and the
+     * entries that were rejected.
+     */
+    record Load(List<MidiSong> songs, List<RadioCategory> categories, List<Rejection> rejections) {
 
         static Load empty() {
-            return new Load(List.of(), List.of());
+            return new Load(List.of(), List.of(), List.of());
         }
     }
 
@@ -65,14 +77,15 @@ final class SongCatalog {
         if (!Files.isDirectory(directory) || !Files.isRegularFile(index)) {
             return Load.empty();
         }
-        List<?> entries;
+        Map<?, ?> root;
         try {
-            entries = entries(index);
+            root = root(index);
         } catch (IOException | RuntimeException e) {
             return unreadableIndex();
         }
         Builder builder = new Builder(directory);
-        for (Object entry : entries) {
+        builder.declareCategories(root.get("categories"));
+        for (Object entry : songs(root)) {
             builder.add(entry);
         }
         return builder.build();
@@ -81,19 +94,27 @@ final class SongCatalog {
     private static Load unreadableIndex() {
         String reason = "it is not a readable songs list";
         LOG.warn("Radio song {} skipped: {}", INDEX, reason);
-        return new Load(List.of(), List.of(new Rejection(INDEX, reason)));
+        return new Load(List.of(), List.of(), List.of(new Rejection(INDEX, reason)));
     }
 
-    private static List<?> entries(Path index) throws IOException {
+    private static Map<?, ?> root(Path index) throws IOException {
         Yaml yaml = new Yaml(new SafeConstructor(new LoaderOptions()));
         Object root = yaml.load(Files.readString(index));
         if (root == null) {
-            return List.of();
+            return Map.of();
         }
-        if (!(root instanceof Map<?, ?> map) || !(map.get("songs") instanceof List<?> songs)) {
-            throw new IOException("the file needs a songs list");
+        if (!(root instanceof Map<?, ?> map)) {
+            throw new IOException("the file needs a mapping with songs and categories");
         }
-        return songs;
+        if (map.get("songs") != null && !(map.get("songs") instanceof List<?>)) {
+            throw new IOException("songs must be a list");
+        }
+        return map;
+    }
+
+    // A file with categories only is valid: it declares categories and no songs yet.
+    private static List<?> songs(Map<?, ?> root) {
+        return root.get("songs") instanceof List<?> songs ? songs : List.of();
     }
 
     private static Map<String, Material> discsByName() {
@@ -107,22 +128,110 @@ final class SongCatalog {
         return Map.copyOf(discs);
     }
 
-    /** Collects the songs of one file in order, rejecting what does not fit. */
+    private static Map<String, Material> materialsByName() {
+        Map<String, Material> materials = new HashMap<>();
+        for (Material material : Material.values()) {
+            materials.put(material.key().value().toUpperCase(Locale.ROOT), material);
+        }
+        return Map.copyOf(materials);
+    }
+
+    /** Collects the categories and the songs of one file in order, rejecting what does not fit. */
     private static final class Builder {
 
         private final Path directory;
+        private final Map<String, RadioCategory> categories = new LinkedHashMap<>();
         private final List<MidiSong> songs = new ArrayList<>();
         private final List<Rejection> rejections = new ArrayList<>();
         private final Set<String> ids = new HashSet<>();
-        private final Set<Material> discs = new HashSet<>();
 
         Builder(Path directory) {
-            this.directory = directory;
+            this.directory = Objects.requireNonNull(directory, "directory must not be null");
+        }
+
+        void declareCategories(Object raw) {
+            if (raw == null) {
+                return;
+            }
+            if (!(raw instanceof List<?> entries)) {
+                reject(INDEX, "categories must be a list");
+                return;
+            }
+            for (Object entry : entries) {
+                declareCategory(entry);
+            }
+        }
+
+        private void declareCategory(Object entry) {
+            if (!(entry instanceof Map<?, ?> fields)) {
+                reject(INDEX, "a category is not a mapping");
+                return;
+            }
+            String id = text(fields, "id");
+            String name = "category " + (id == null ? "without id" : id);
+            if (!RadioCategory.isValidId(id)) {
+                reject(name, "the id must be lower case letters, digits, underscore or dash, up to 32 characters");
+                return;
+            }
+            if (RadioCategory.isReserved(id)) {
+                reject(name, "the id " + id + " is reserved for a built-in category");
+                return;
+            }
+            if (this.categories.containsKey(id)) {
+                reject(name, "the id " + id + " is already declared");
+                return;
+            }
+            if (this.categories.size() >= RadioCategories.MAX_DECLARED) {
+                reject(name, "more than " + RadioCategories.MAX_DECLARED + " categories are declared");
+                return;
+            }
+            String[] names = categoryNames(id, fields.get("name"));
+            Material icon = categoryIcon(id, text(fields, "icon"));
+            this.categories.put(id, new RadioCategory(id, names[0], names[1], icon, categoryOrder(id, fields.get("order"))));
+        }
+
+        // A name is text for both languages or a map with de and en; anything else, or nothing, takes the id.
+        private static String[] categoryNames(String id, Object raw) {
+            String german = null;
+            String english = null;
+            if (raw instanceof Map<?, ?> names) {
+                german = text(names, "de");
+                english = text(names, "en");
+            } else if (raw instanceof String text && !text.isBlank()) {
+                german = text.trim();
+                english = german;
+            }
+            if (german == null && english == null) {
+                LOG.warn("Radio category {} has no name, using its id", id);
+                return new String[]{id, id};
+            }
+            return new String[]{german != null ? german : english, english != null ? english : german};
+        }
+
+        private static Material categoryIcon(String id, String name) {
+            Material icon = name == null ? null : MATERIALS.get(name.toUpperCase(Locale.ROOT));
+            if (icon == null) {
+                LOG.warn("Radio category {} has no known icon ({}), using {}", id, name, FALLBACK_ICON);
+                return FALLBACK_ICON;
+            }
+            return icon;
+        }
+
+        private static int categoryOrder(String id, Object raw) {
+            if (raw == null) {
+                return 0;
+            }
+            try {
+                return Integer.parseInt(String.valueOf(raw).trim());
+            } catch (NumberFormatException e) {
+                LOG.warn("Radio category {} has an order that is no whole number ({}), using 0", id, raw);
+                return 0;
+            }
         }
 
         void add(Object entry) {
             if (!(entry instanceof Map<?, ?> fields)) {
-                reject("songs.yaml", "an entry is not a mapping");
+                reject(INDEX, "an entry is not a mapping");
                 return;
             }
             String id = text(fields, "id");
@@ -142,39 +251,49 @@ final class SongCatalog {
                 reject(name, "the id " + id + " is already used");
                 return;
             }
-            if (this.discs.contains(disc)) {
-                reject(name, "the disc " + disc.key().value() + " is already used by another song");
-                return;
-            }
-            if (this.songs.size() == RadioLimits.MAX_SONGS) {
-                reject(name, "only " + RadioLimits.MAX_SONGS + " songs are loaded");
-                return;
-            }
-            loadFile(name, id, text(fields, "title"), text(fields, "artist"), disc, file);
+            loadFile(name, id, text(fields, "title"), text(fields, "artist"), disc, file, fields);
         }
 
-        // The id and the disc are reserved only once the song is accepted, so a rejected entry blocks nothing.
-        private void loadFile(String name, String id, String title, String artist, Material disc, String file) {
+        // The id is reserved only once the song is accepted, so a rejected entry blocks nothing.
+        private void loadFile(String name, String id, String title, String artist, Material disc, String file, Map<?, ?> fields) {
             Path path = this.directory.resolve(file).normalize();
             if (!path.startsWith(this.directory.normalize()) || !Files.isRegularFile(path)) {
                 reject(name, "the file is missing or outside radio/");
                 return;
             }
             try {
-                if (Files.size(path) > RadioLimits.MAX_FILE_BYTES) {
-                    reject(name, "the file is larger than 512 KiB");
+                if (!hasMidiHeader(path)) {
+                    reject(name, "the file is not a MIDI file");
                     return;
                 }
-                MidiSong song = MidiSongParser.parse(id, title, artist, disc, Files.readAllBytes(path));
-                this.ids.add(id);
-                this.discs.add(disc);
-                this.songs.add(song);
-                LOG.info("Radio song {} loaded", name);
-            } catch (SongFormatException e) {
-                reject(name, e.getMessage());
             } catch (IOException | RuntimeException e) {
                 reject(name, "the file cannot be read");
+                return;
             }
+            this.ids.add(id);
+            this.songs.add(new MidiSong(id, title, artist, disc, songCategory(name, fields), path));
+            LOG.info("Radio song {} loaded", name);
+        }
+
+        // Reads only the first four bytes: the body is read when the title plays.
+        private static boolean hasMidiHeader(Path path) throws IOException {
+            try (InputStream in = Files.newInputStream(path)) {
+                return Arrays.equals(in.readNBytes(MIDI_HEADER.length), MIDI_HEADER);
+            }
+        }
+
+        private RadioCategory songCategory(String name, Map<?, ?> fields) {
+            String categoryId = text(fields, "category");
+            if (categoryId == null) {
+                LOG.warn("Radio song {} has no category, using other", name);
+                return RadioCategories.OTHER;
+            }
+            RadioCategory declared = this.categories.get(categoryId);
+            if (declared == null) {
+                LOG.warn("Radio song {} names the category {}, which is not declared, using other", name, categoryId);
+                return RadioCategories.OTHER;
+            }
+            return declared;
         }
 
         private void reject(String name, String reason) {
@@ -183,7 +302,7 @@ final class SongCatalog {
         }
 
         Load build() {
-            return new Load(List.copyOf(this.songs), List.copyOf(this.rejections));
+            return new Load(List.copyOf(this.songs), List.copyOf(this.categories.values()), List.copyOf(this.rejections));
         }
 
         private static String text(Map<?, ?> fields, String key) {

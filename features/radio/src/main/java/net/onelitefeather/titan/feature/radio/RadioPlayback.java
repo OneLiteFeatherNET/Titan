@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.IntSupplier;
 import net.kyori.adventure.sound.Sound;
 
 /**
@@ -32,16 +33,30 @@ final class RadioPlayback {
 
     private final RadioSong song;
     private final RadioSink sink;
+    private final IntSupplier volume;
     private final List<MidiNote> notes;
+    /** The tick of the last note of a MIDI song; a MIDI song ends there. */
+    private final long lastNoteTick;
     private int cursor;
     private long startTick;
     private boolean started;
     private boolean closed;
 
-    RadioPlayback(RadioSong song, RadioSink sink) {
+    /**
+     * @param song  the title to play
+     * @param notes the notes of a MIDI song, sorted by tick and not empty; a vanilla disc takes
+     *              none
+     * @param sink  receives the sounds
+     */
+    RadioPlayback(RadioSong song, List<MidiNote> notes, RadioSink sink, IntSupplier volume) {
         this.song = Objects.requireNonNull(song, "song must not be null");
         this.sink = Objects.requireNonNull(sink, "sink must not be null");
-        this.notes = song instanceof MidiSong midi ? midi.notes() : List.of();
+        this.volume = Objects.requireNonNull(volume, "volume must not be null");
+        this.notes = List.copyOf(Objects.requireNonNull(notes, "notes must not be null"));
+        if (song instanceof MidiSong && this.notes.isEmpty()) {
+            throw new IllegalArgumentException("a MIDI song needs at least one note");
+        }
+        this.lastNoteTick = this.notes.isEmpty() ? 0 : this.notes.getLast().tick();
     }
 
     RadioSong song() {
@@ -56,7 +71,7 @@ final class RadioPlayback {
         this.started = true;
         this.startTick = now;
         if (this.song instanceof VanillaDisc disc) {
-            this.sink.playRecord(Sound.sound(disc.sound(), Sound.Source.RECORD, 1.0f, 1.0f));
+            this.sink.playRecord(Sound.sound(disc.sound(), Sound.Source.RECORD, Volume.factor(this.volume.getAsInt()), 1.0f));
             return PlaybackTick.NOTHING;
         }
         return new PlaybackTick(false, playDue(0));
@@ -72,7 +87,7 @@ final class RadioPlayback {
             return tickDisc(disc, elapsed);
         }
         int dropped = playDue(elapsed);
-        boolean ended = this.cursor == this.notes.size() && elapsed >= ((MidiSong) this.song).lengthTicks();
+        boolean ended = this.cursor == this.notes.size() && elapsed >= this.lastNoteTick;
         if (ended) {
             this.closed = true;
         }
@@ -125,7 +140,7 @@ final class RadioPlayback {
         return dropped;
     }
 
-    private static Sound noteSound(MidiNote note) {
-        return Sound.sound(note.instrument().sound(), Sound.Source.RECORD, note.volume(), Pitch.of(note.semitone()));
+    private Sound noteSound(MidiNote note) {
+        return Sound.sound(note.instrument().sound(), Sound.Source.RECORD, note.volume() * Volume.factor(this.volume.getAsInt()), Pitch.of(note.semitone()));
     }
 }

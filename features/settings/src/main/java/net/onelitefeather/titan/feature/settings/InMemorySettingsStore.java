@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import net.onelitefeather.titan.core.settings.SettingKey;
+import net.onelitefeather.titan.core.settings.SettingValue;
 import net.onelitefeather.titan.core.settings.SettingsStore;
 
 /**
@@ -27,15 +28,15 @@ import net.onelitefeather.titan.core.settings.SettingsStore;
  */
 final class InMemorySettingsStore implements SettingsStore {
 
-    private final Map<UUID, Map<SettingKey, Boolean>> values = new ConcurrentHashMap<>();
+    private final Map<UUID, Map<SettingKey, SettingValue>> values = new ConcurrentHashMap<>();
 
     @Override
-    public Map<SettingKey, Boolean> load(UUID player) {
+    public Map<SettingKey, SettingValue> load(UUID player) {
         return Map.copyOf(this.values.getOrDefault(player, Map.of()));
     }
 
     @Override
-    public void save(UUID player, SettingKey key, boolean enabled) {
-        this.values.computeIfAbsent(player, ignored -> new ConcurrentHashMap<>()).put(key, enabled);
+    public void save(UUID player, SettingKey key, SettingValue value) {
+        this.values.computeIfAbsent(player, ignored -> new ConcurrentHashMap<>()).put(key, value);
     }
 }

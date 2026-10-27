@@ -30,7 +30,6 @@ import javax.sound.midi.MidiSystem;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.ShortMessage;
 import javax.sound.midi.Track;
-import net.minestom.server.item.Material;
 
 /**
  * Reads a standard MIDI file with {@code javax.sound.midi} and keeps its note-ons. Nothing is
@@ -46,15 +45,11 @@ final class MidiSongParser {
     }
 
     /**
-     * Parses {@code data} into a song.
+     * The notes of {@code data} in game ticks, sorted by tick. There is no size or length limit.
      *
-     * @throws SongFormatException if the bytes are no playable MIDI file, or the song is over a
-     *                             limit
+     * @throws SongFormatException if the bytes are no playable MIDI file or have no notes
      */
-    static MidiSong parse(String id, String title, String artist, Material disc, byte[] data) throws SongFormatException {
-        if (data.length > RadioLimits.MAX_FILE_BYTES) {
-            throw new SongFormatException("the file is larger than " + RadioLimits.MAX_FILE_BYTES / 1024 + " KiB");
-        }
+    static List<MidiNote> notes(byte[] data) throws SongFormatException {
         Sequence sequence = read(data);
         if (sequence.getDivisionType() != Sequence.PPQ) {
             throw new SongFormatException("SMPTE timing is not supported");
@@ -63,12 +58,7 @@ final class MidiSongParser {
         if (notes.isEmpty()) {
             throw new SongFormatException("the file has no notes");
         }
-        List<MidiNote> mapped = NoteMapper.map(notes);
-        int lastTick = mapped.getLast().tick();
-        if (lastTick > RadioLimits.MAX_TICKS_PER_SONG) {
-            throw new SongFormatException("the song is longer than fifteen minutes");
-        }
-        return new MidiSong(id, title, artist, disc, mapped);
+        return NoteMapper.map(notes);
     }
 
     private static Sequence read(byte[] data) throws SongFormatException {
@@ -100,9 +90,6 @@ final class MidiSongParser {
             if (message.getCommand() == ShortMessage.PROGRAM_CHANGE) {
                 programs[channel] = message.getData1();
             } else if (message.getCommand() == ShortMessage.NOTE_ON && message.getData2() > 0) {
-                if (notes.size() == RadioLimits.MAX_NOTES_PER_SONG) {
-                    throw new SongFormatException("the song has more than " + RadioLimits.MAX_NOTES_PER_SONG + " notes");
-                }
                 notes.add(new NoteMapper.RawNote(tempo.micros(event.tick()), channel, programs[channel], message.getData1(), message.getData2()));
             }
         }

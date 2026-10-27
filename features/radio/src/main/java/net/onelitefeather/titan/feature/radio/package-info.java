@@ -14,16 +14,19 @@
  * limitations under the License.
  */
 /**
- * The {@code radio} column: a hotbar item that opens two menus, the vanilla music discs and the
- * MIDI songs from {@code radio/songs.yaml}. Each title plays only for the player who started it:
+ * The {@code radio} column: a hotbar item that opens the category overview; each category lists its
+ * titles, the vanilla music discs and the MIDI songs from {@code radio/songs.yaml}. Each title
+ * plays only for the player who started it:
  * a vanilla disc through the client's own record sound, a MIDI song as note block sounds sent
- * tick by tick. The play mode of the session (once, loop, shuffle) lives in the session only.
+ * tick by tick. The play mode lives in the session, the volume in the player's settings.
  */
-@InjectModule(name = "radioColumn", requires = {EventNode.class, Scheduler.class, Telemetry.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"}, provides = {LobbyItem.class})
+@InjectModule(name = "radioColumn", requires = {EventNode.class, Scheduler.class, Telemetry.class, PlayerSettings.class, SettingsRegistry.class}, requiresString = {"net.minestom.server.event.EventNode<net.minestom.server.event.Event>:titan"}, provides = {LobbyItem.class})
 package net.onelitefeather.titan.feature.radio;
 
 import io.avaje.inject.InjectModule;
 import net.minestom.server.event.EventNode;
 import net.minestom.server.timer.Scheduler;
 import net.onelitefeather.titan.core.module.item.LobbyItem;
+import net.onelitefeather.titan.core.settings.PlayerSettings;
+import net.onelitefeather.titan.core.settings.SettingsRegistry;
 import net.onelitefeather.titan.core.telemetry.Telemetry;

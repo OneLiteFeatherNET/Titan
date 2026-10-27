@@ -23,11 +23,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import net.onelitefeather.titan.core.settings.SettingKey;
+import net.onelitefeather.titan.core.settings.SettingValue;
 
 /**
  * The two JSON shapes the adapter needs from Otis: the list of stored settings it reads, and the
- * value body it writes. Fields the adapter does not use are ignored, and so are entries that are
- * not a boolean under a valid key.
+ * value body it writes. Fields the adapter does not use are ignored. A boolean becomes a flag and a
+ * whole number a level; text and fractions are dropped, as is any entry under an invalid key.
  */
 final class OtisJson {
 
@@ -35,16 +36,16 @@ final class OtisJson {
     }
 
     /** @param body a JSON array of {@code {key, value, version, updatedAt}} entries */
-    static Map<SettingKey, Boolean> parseSettings(String body) {
+    static Map<SettingKey, SettingValue> parseSettings(String body) {
         JsonArray entries = JsonParser.parseString(body).getAsJsonArray();
-        Map<SettingKey, Boolean> values = new HashMap<>();
+        Map<SettingKey, SettingValue> values = new HashMap<>();
         for (JsonElement element : entries) {
             if (!element.isJsonObject()) {
                 continue;
             }
             JsonObject entry = element.getAsJsonObject();
             Optional<SettingKey> key = keyOf(entry);
-            Optional<Boolean> value = booleanOf(entry.get("value"));
+            Optional<SettingValue> value = valueOf(entry.get("value"));
             if (key.isPresent() && value.isPresent()) {
                 values.put(key.get(), value.get());
             }
@@ -52,10 +53,16 @@ final class OtisJson {
         return Map.copyOf(values);
     }
 
-    /** @return the body that sets a value: {@code {"value": true}} */
-    static String valueBody(boolean enabled) {
+    /**
+     * @return the body that sets a value: {@code {"value": true}} for a flag, {@code {"value": 75}}
+     *         for a level
+     */
+    static String valueBody(SettingValue value) {
         JsonObject body = new JsonObject();
-        body.addProperty("value", enabled);
+        switch (value) {
+            case SettingValue.Flag flag -> body.addProperty("value", flag.enabled());
+            case SettingValue.Level level -> body.addProperty("value", level.value());
+        }
         return body.toString();
     }
 
@@ -71,10 +78,28 @@ final class OtisJson {
         }
     }
 
-    private static Optional<Boolean> booleanOf(JsonElement value) {
-        if (value == null || !value.isJsonPrimitive() || !value.getAsJsonPrimitive().isBoolean()) {
+    private static Optional<SettingValue> valueOf(JsonElement value) {
+        if (value == null || !value.isJsonPrimitive()) {
             return Optional.empty();
         }
-        return Optional.of(value.getAsBoolean());
+        if (value.getAsJsonPrimitive().isBoolean()) {
+            return Optional.of(new SettingValue.Flag(value.getAsBoolean()));
+        }
+        if (value.getAsJsonPrimitive().isNumber()) {
+            return wholeNumber(value.getAsString());
+        }
+        return Optional.empty();
+    }
+
+    // Only a whole number is a level: "75" yes, "75.0" and "1e2" no, and a number outside int is no level.
+    private static Optional<SettingValue> wholeNumber(String literal) {
+        if (!literal.matches("-?\\d{1,10}")) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(new SettingValue.Level(Integer.parseInt(literal)));
+        } catch (NumberFormatException outOfRange) {
+            return Optional.empty();
+        }
     }
 }

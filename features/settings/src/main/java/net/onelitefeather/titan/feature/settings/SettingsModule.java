@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -43,7 +44,9 @@ import net.minestom.server.timer.Task;
 import net.minestom.server.timer.TaskSchedule;
 import net.onelitefeather.titan.core.module.FeatureNode;
 import net.onelitefeather.titan.core.settings.BooleanSetting;
+import net.onelitefeather.titan.core.settings.LevelSetting;
 import net.onelitefeather.titan.core.settings.SettingKey;
+import net.onelitefeather.titan.core.settings.SettingValue;
 import net.onelitefeather.titan.core.settings.SettingsRegistry;
 import net.onelitefeather.titan.core.settings.SettingsStore;
 import net.onelitefeather.titan.core.settings.SettingsStoreException;
@@ -165,7 +168,7 @@ public final class SettingsModule {
     // Runs on the IO executor: the store may block.
     private void loadAndApply(UUID player, long session) {
         long started = this.clock.millis();
-        Map<SettingKey, Boolean> loaded = Map.of();
+        Map<SettingKey, SettingValue> loaded = Map.of();
         String outcome = SettingsTelemetry.OK;
         try {
             loaded = this.store.load(player);
@@ -174,15 +177,28 @@ public final class SettingsModule {
             LOG.warn("Could not load the settings of a player: {}", failure.failure());
         }
         this.settingsTelemetry.loaded(this.clock.millis() - started, outcome);
-        Map<BooleanSetting, Boolean> known = known(loaded);
-        this.scheduler.scheduleNextTick(() -> this.playerSettings.applyLoaded(player, session, known));
+        Map<BooleanSetting, Boolean> flags = new HashMap<>();
+        Map<LevelSetting, Integer> levels = new HashMap<>();
+        loaded.forEach((key, value) -> known(key, value, flags, levels));
+        this.scheduler.scheduleNextTick(() -> {
+            this.playerSettings.applyLoaded(player, session, flags);
+            levels.forEach((setting, level) -> this.playerSettings.applyLoadedLevel(player, session, setting, level));
+        });
     }
 
-    // A stored key the registry no longer offers is dropped: nothing reads it.
-    private Map<BooleanSetting, Boolean> known(Map<SettingKey, Boolean> loaded) {
-        Map<BooleanSetting, Boolean> known = new HashMap<>();
-        loaded.forEach((key, value) -> this.registry.find(key).ifPresent(setting -> known.put(setting, value)));
-        return known;
+    // A stored key the registry no longer offers is dropped: nothing reads it. A value of the wrong
+    // kind or outside a level's list is dropped with a warning that names the key, never the value.
+    private void known(SettingKey key, SettingValue value, Map<BooleanSetting, Boolean> flags, Map<LevelSetting, Integer> levels) {
+        Optional<BooleanSetting> flag = this.registry.find(key);
+        Optional<LevelSetting> level = this.registry.findLevel(key);
+        if (flag.isPresent() && value instanceof SettingValue.Flag stored) {
+            flags.put(flag.get(), stored.enabled());
+        } else
+            if (level.isPresent() && value instanceof SettingValue.Level stored && level.get().allows(stored.value())) {
+                levels.put(level.get(), stored.value());
+            } else if (flag.isPresent() || level.isPresent()) {
+                LOG.warn("A stored value of {} does not fit its setting, the default is used", key);
+            }
     }
 
     private void saveDue() {

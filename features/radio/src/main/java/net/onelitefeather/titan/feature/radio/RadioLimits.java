@@ -16,16 +16,13 @@
 package net.onelitefeather.titan.feature.radio;
 
 /**
- * The bounds of the radio. They keep a MIDI song's memory and the packets per player and tick
- * within what a lobby can carry.
+ * The bounds of the radio. Songs have no size, count or length limit; the only bound left is the
+ * number of notes a player receives per tick, which keeps the packets per player within what a
+ * lobby can carry.
  */
 final class RadioLimits {
 
     static final int TICKS_PER_SECOND = 20;
-    static final long MAX_FILE_BYTES = 512L * 1024;
-    static final int MAX_NOTES_PER_SONG = 20_000;
-    static final int MAX_TICKS_PER_SONG = 15 * 60 * TICKS_PER_SECOND;
-    static final int MAX_SONGS = 18;
     static final int MAX_NOTES_PER_TICK = 16;
     /**
      * A vanilla disc's client may run a little past the table length; the server cuts it after

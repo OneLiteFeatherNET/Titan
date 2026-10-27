@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import net.onelitefeather.titan.core.settings.BooleanSetting;
+import net.onelitefeather.titan.core.settings.LevelSetting;
 import net.onelitefeather.titan.core.settings.PlayerSettings;
 import net.onelitefeather.titan.core.settings.SettingChangeListener;
 
@@ -56,6 +57,16 @@ final class FakePlayerSettings implements PlayerSettings {
                 listener.changed(player, setting, previous, enabled);
             }
         }
+    }
+
+    @Override
+    public int level(UUID player, LevelSetting setting) {
+        return setting.defaultLevel();
+    }
+
+    @Override
+    public void setLevel(UUID player, LevelSetting setting, int level) {
+        throw new UnsupportedOperationException("the fake holds switches only");
     }
 
     @Override

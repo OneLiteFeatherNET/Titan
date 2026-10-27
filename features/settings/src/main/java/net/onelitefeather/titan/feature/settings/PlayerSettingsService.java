@@ -23,9 +23,11 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import net.onelitefeather.titan.core.settings.BooleanSetting;
+import net.onelitefeather.titan.core.settings.LevelSetting;
 import net.onelitefeather.titan.core.settings.PlayerSettings;
 import net.onelitefeather.titan.core.settings.SettingChangeListener;
 import net.onelitefeather.titan.core.settings.SettingKey;
+import net.onelitefeather.titan.core.settings.SettingValue;
 import net.onelitefeather.titan.core.settings.SettingsTelemetry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,11 +83,30 @@ final class PlayerSettingsService implements PlayerSettings {
         synchronized (this) {
             PlayerValues values = this.players.computeIfAbsent(player, ignored -> new PlayerValues(0));
             previous = values.effective(setting);
-            values.stored.put(setting.key(), new Stored(enabled, true));
-            this.writes.changed(player, setting.key(), enabled);
+            values.stored.put(setting.key(), new Stored(new SettingValue.Flag(enabled), true));
+            this.writes.changed(player, setting.key(), new SettingValue.Flag(enabled));
             this.telemetry.toggled(setting.key());
         }
         notifyChanged(player, setting, previous, enabled);
+    }
+
+    @Override
+    public synchronized int level(UUID player, LevelSetting setting) {
+        PlayerValues values = this.players.get(player);
+        return values == null ? setting.defaultLevel() : values.effective(setting);
+    }
+
+    /**
+     * Level changes are not switches: no switch listener hears them and no telemetry counts them.
+     */
+    @Override
+    public synchronized void setLevel(UUID player, LevelSetting setting, int level) {
+        if (!setting.allows(level)) {
+            throw new IllegalArgumentException(level + " is not a level of " + setting.key() + ": " + setting.levels());
+        }
+        PlayerValues values = this.players.computeIfAbsent(player, ignored -> new PlayerValues(0));
+        values.stored.put(setting.key(), new Stored(new SettingValue.Level(level), true));
+        this.writes.changed(player, setting.key(), new SettingValue.Level(level));
     }
 
     @Override
@@ -112,7 +133,7 @@ final class PlayerSettingsService implements PlayerSettings {
                     continue;
                 }
                 boolean previous = values.effective(setting);
-                values.stored.put(setting.key(), new Stored(entry.getValue(), false));
+                values.stored.put(setting.key(), new Stored(new SettingValue.Flag(entry.getValue()), false));
                 if (previous != entry.getValue()) {
                     changes.add(new Change(player, setting, previous, entry.getValue()));
                 }
@@ -120,6 +141,25 @@ final class PlayerSettingsService implements PlayerSettings {
         }
         changes.forEach(change -> notifyChanged(change.player(), change.setting(), change.previous(), change.current()));
         return true;
+    }
+
+    /**
+     * Applies a loaded level, unless the player has set it during this session.
+     *
+     * @return {@code false} if the session has ended or been replaced, and nothing was applied
+     */
+    boolean applyLoadedLevel(UUID player, long session, LevelSetting setting, int level) {
+        synchronized (this) {
+            PlayerValues values = this.players.get(player);
+            if (values == null || values.session != session) {
+                return false;
+            }
+            Stored current = values.stored.get(setting.key());
+            if (current == null || !current.touched()) {
+                values.stored.put(setting.key(), new Stored(new SettingValue.Level(level), false));
+            }
+            return true;
+        }
     }
 
     private void notifyChanged(UUID player, BooleanSetting setting, boolean previous, boolean current) {
@@ -143,7 +183,7 @@ final class PlayerSettingsService implements PlayerSettings {
      * One stored value: {@code touched} marks a value the player switched, which a load keeps out
      * of.
      */
-    private record Stored(boolean enabled, boolean touched) {
+    private record Stored(SettingValue value, boolean touched) {
     }
 
     private static final class PlayerValues {
@@ -157,7 +197,12 @@ final class PlayerSettingsService implements PlayerSettings {
 
         boolean effective(BooleanSetting setting) {
             Stored value = this.stored.get(setting.key());
-            return value == null ? setting.defaultValue() : value.enabled();
+            return value == null || !(value.value() instanceof SettingValue.Flag flag) ? setting.defaultValue() : flag.enabled();
+        }
+
+        int effective(LevelSetting setting) {
+            Stored value = this.stored.get(setting.key());
+            return value == null || !(value.value() instanceof SettingValue.Level level) ? setting.defaultLevel() : level.value();
         }
     }
 }
