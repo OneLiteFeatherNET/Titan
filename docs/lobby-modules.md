@@ -687,12 +687,14 @@ Ein Jukebox-Item auf Hotbar-Slot 5 (`titan:radio`) öffnet das Radio. Es ist imm
     - id: sunrise
       title: Sunrise
       artist: Beispiel
+      midi: Beispiel-Transkription
       disc: MUSIC_DISC_CAT
       file: sunrise.mid
       category: games
   ```
 
   Regeln: Die Id ist `[a-z0-9_-]{1,32}`. `minecraft` und `other` sind reserviert und werden mit WARN übersprungen. Höchstens 20 deklarierte Kategorien, der Überschuss wird mit WARN übersprungen. Der Name ist ein Text oder `{ de, en }`; fehlt eine Sprache, gilt die andere. Das Symbol ist ein Vanilla-Item; unbekannt oder fehlend wird `PAPER` mit WARN. Die Reihenfolge ist aufsteigend, bei gleichen Werten entscheidet die Id. Ein Titel ohne `category` oder mit einer unbekannten Id landet in „Sonstige“, mit WARN. Eine alte `songs.yaml` ohne `categories` und ohne `category` bleibt gültig: alle Titel stehen dann in „Sonstige“.
+- **Lore der Songs:** `artist` ist der Original-Künstler und Pflicht. Ein MIDI-Song zeigt die Zeile `Original: <artist>`. Das optionale Feld `midi` nennt, wer das MIDI gemacht hat oder woher die Datei stammt, und erscheint als eigene Zeile `MIDI: <midi>`. Ohne `midi` fehlt diese Zeile. Eine Vanilla-Platte zeigt `<Künstler> · Schallplatte` und keine MIDI-Zeile. Der Tooltip zeigt nie die Beschreibung der Schallplatte aus dem Client.
 - **Keine Grenzen:** Es gibt keine Obergrenze für Titelzahl, Dateigröße, Noten oder Länge. Die einzige Grenze ist die Paketzahl: höchstens 16 Noten je Tick und Spieler. Die leisesten fallen weg und zählen als verworfen. Sie schützt die Verbindung, nicht den Inhalt einer Datei.
 - **Laden:** Beim Start liest die Lobby nur `songs.yaml` und den MIDI-Kopf (`MThd`) jeder Datei. Die Noten lädt sie beim Start eines Titels, außerhalb des Tick-Threads; während des Ladens steht „Lädt …“ in der Aktionsleiste. Ein kleiner Cache hält die 8 zuletzt gespielten, nicht laufenden Titel. Laufende Titel bleiben immer im Speicher. Ein Titel, der nicht lesbar ist, zeigt „Dieser Titel kann nicht abgespielt werden“, wird mit Dateiname als WARN protokolliert und zählt als `rejected`.
 - **Lautstärke:** Stufen 25, 50, 75 und 100 Prozent, Standard 100. Linksklick erhöht, Rechtsklick senkt, an den Rändern bleibt der Wert. Der Wert ist eine Spielereinstellung und liegt in Otis unter `titan:radio.volume` als JSON-Zahl; er gilt über den Logout hinaus. Er steht nicht im Einstellungsmenü. MIDI-Noten folgen sofort. Eine laufende Schallplatte behält die Lautstärke, mit der sie gestartet wurde; „Läuft jetzt“ zeigt dann „Lautstärke wirkt ab dem nächsten Titel“. Ohne Otis spielt das Radio mit 100 Prozent.
