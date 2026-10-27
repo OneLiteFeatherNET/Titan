@@ -260,44 +260,50 @@ public final class RadioModule {
     }
 
     private void control(Player player, RadioSession session, RadioMenuLayout.Control control, boolean right) {
-        RadioSessionState state = session.view();
-        List<RadioSong> titles = state.inOverview() ? List.of() : titlesOf(state.openCategory());
-        int pages = PageLayout.pageCount(titles.size());
-        int page = PageLayout.clampPage(state.page(), titles.size());
         switch (control) {
-            case BACK -> {
-                if (!state.inOverview()) {
-                    state.showOverview();
-                    show(player, session);
-                }
-            }
-            case PREVIOUS -> {
-                if (!state.inOverview() && page > 1) {
-                    state.page(page - 1);
-                    show(player, session);
-                }
-            }
-            case FORWARD -> {
-                if (!state.inOverview() && page < pages) {
-                    state.page(page + 1);
-                    show(player, session);
-                }
-            }
+            case BACK -> back(player, session);
+            case PREVIOUS -> turnPage(player, session, -1);
+            case FORWARD -> turnPage(player, session, 1);
             case STOP -> stop(player, StopReason.USER);
             case NEXT -> next(player, session);
             case MODE -> {
                 session.mode(session.mode().next());
                 refresh(player);
             }
-            case VOLUME -> {
-                int current = this.settings.level(player.getUuid(), Volume.SETTING);
-                this.settings.setLevel(player.getUuid(), Volume.SETTING, right ? Volume.down(current) : Volume.up(current));
-                refresh(player);
-            }
+            case VOLUME -> volume(player, right);
             case PAGE_INFO, NOW_PLAYING, NONE -> {
                 // Information only: a click on it does nothing.
             }
         }
+    }
+
+    private void back(Player player, RadioSession session) {
+        if (!session.view().inOverview()) {
+            session.view().showOverview();
+            show(player, session);
+        }
+    }
+
+    // A page change moves within the open category only; a page outside it is clamped and changes nothing.
+    private void turnPage(Player player, RadioSession session, int delta) {
+        RadioSessionState state = session.view();
+        if (state.inOverview()) {
+            return;
+        }
+        int size = titlesOf(state.openCategory()).size();
+        int current = PageLayout.clampPage(state.page(), size);
+        int target = PageLayout.clampPage(current + delta, size);
+        if (target != current) {
+            state.page(target);
+            show(player, session);
+        }
+    }
+
+    // A left click raises the volume one step, a right click lowers it; the edges hold.
+    private void volume(Player player, boolean quieter) {
+        int current = this.settings.level(player.getUuid(), Volume.SETTING);
+        this.settings.setLevel(player.getUuid(), Volume.SETTING, quieter ? Volume.down(current) : Volume.up(current));
+        refresh(player);
     }
 
     // A cached title starts at once; an uncached one shows the loading text and starts when its notes are read.
