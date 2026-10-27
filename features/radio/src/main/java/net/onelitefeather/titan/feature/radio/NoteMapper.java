@@ -21,9 +21,10 @@ import java.util.List;
 
 /**
  * Turns the note-on events of a song into {@link MidiNote}s: the tick on the 50 ms grid, the
- * instrument, and a note block note. The melodic part of a song is transposed once, by whole
- * octaves, so that its median lies in the middle of the range; every note is then folded into the
- * range by octaves.
+ * instrument, and a note block note. A note keeps the octave it has in the MIDI file: a melodic
+ * note
+ * plays on the instrument whose register holds it, a range extension if its own register does not.
+ * Only a key outside the span of all registers is folded by octaves first.
  */
 final class NoteMapper {
 
@@ -38,12 +39,16 @@ final class NoteMapper {
     }
 
     static List<MidiNote> map(List<RawNote> notes) {
-        int shift = transposition(notes);
         List<MidiNote> mapped = new ArrayList<>(notes.size());
         for (RawNote note : notes) {
-            boolean drum = note.channel() == InstrumentMapper.DRUM_CHANNEL;
-            int semitone = drum ? Pitch.CENTRE : Pitch.fold(note.key() - Pitch.LOWEST_KEY + shift);
-            mapped.add(new MidiNote(tick(note.micros()), InstrumentMapper.of(note.channel(), note.program(), note.key()), semitone, note.velocity()));
+            RadioInstrument instrument = InstrumentMapper.of(note.channel(), note.program(), note.key());
+            if (note.channel() == InstrumentMapper.DRUM_CHANNEL) {
+                mapped.add(new MidiNote(tick(note.micros()), instrument, Pitch.CENTRE, note.velocity()));
+            } else {
+                int key = Pitch.foldIntoSpan(note.key());
+                RadioInstrument played = instrument.playing(key);
+                mapped.add(new MidiNote(tick(note.micros()), played, played.semitoneOf(key), note.velocity()));
+            }
         }
         mapped.sort(Comparator.comparingInt(MidiNote::tick));
         return List.copyOf(mapped);
@@ -52,14 +57,5 @@ final class NoteMapper {
     /** The tick nearest to {@code micros}; half a tick rounds up. */
     static int tick(long micros) {
         return Math.toIntExact((micros + MICROS_PER_TICK / 2) / MICROS_PER_TICK);
-    }
-
-    // The melodic median, lower of the two in an even count, decides the shift; no melodic note means no shift.
-    private static int transposition(List<RawNote> notes) {
-        List<Integer> melodic = notes.stream().filter(note -> note.channel() != InstrumentMapper.DRUM_CHANNEL).map(note -> note.key() - Pitch.LOWEST_KEY).sorted().toList();
-        if (melodic.isEmpty()) {
-            return 0;
-        }
-        return Pitch.transposition(melodic.get((melodic.size() - 1) / 2));
     }
 }

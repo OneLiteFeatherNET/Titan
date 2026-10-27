@@ -26,8 +26,8 @@ final class InstrumentMapper {
     /**
      * The General MIDI programs 0 to 127 in groups, each ending at the upper bound of its entry.
      */
-    private static final int[] MELODIC_UPPER_BOUNDS = {7, 11, 13, 14, 15, 23, 31, 39, 55, 63, 79, 87, 103, 111, 119, 127};
-    private static final RadioInstrument[] MELODIC_INSTRUMENTS = {RadioInstrument.HARP, RadioInstrument.CHIME, RadioInstrument.XYLOPHONE, RadioInstrument.BELL, RadioInstrument.IRON_XYLOPHONE, RadioInstrument.FLUTE, RadioInstrument.GUITAR, RadioInstrument.BASS, RadioInstrument.HARP, RadioInstrument.DIDGERIDOO, RadioInstrument.FLUTE, RadioInstrument.BIT, RadioInstrument.PLING, RadioInstrument.BANJO, RadioInstrument.COW_BELL, RadioInstrument.HAT};
+    private static final int[] MELODIC_UPPER_BOUNDS = {7, 11, 13, 14, 15, 23, 31, 39, 55, 56, 57, 58, 59, 60, 63, 79, 87, 103, 111, 119, 127};
+    private static final RadioInstrument[] MELODIC_INSTRUMENTS = {RadioInstrument.HARP, RadioInstrument.CHIME, RadioInstrument.XYLOPHONE, RadioInstrument.BELL, RadioInstrument.IRON_XYLOPHONE, RadioInstrument.FLUTE, RadioInstrument.GUITAR, RadioInstrument.BASS, RadioInstrument.HARP, RadioInstrument.TRUMPET, RadioInstrument.TRUMPET_WEATHERED, RadioInstrument.TRUMPET_OXIDIZED, RadioInstrument.TRUMPET, RadioInstrument.TRUMPET_EXPOSED, RadioInstrument.TRUMPET, RadioInstrument.FLUTE, RadioInstrument.BIT, RadioInstrument.PLING, RadioInstrument.BANJO, RadioInstrument.COW_BELL, RadioInstrument.HAT};
 
     private InstrumentMapper() {
     }
