@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import net.onelitefeather.titan.core.settings.SettingKey;
+import net.onelitefeather.titan.core.settings.SettingValue;
 import net.onelitefeather.titan.core.settings.SettingsStore;
 import net.onelitefeather.titan.core.settings.SettingsStoreException;
 import net.onelitefeather.titan.core.settings.SettingsStoreException.Failure;
@@ -74,7 +75,7 @@ final class OtisSettingsStore implements SettingsStore {
     }
 
     @Override
-    public Map<SettingKey, Boolean> load(UUID player) {
+    public Map<SettingKey, SettingValue> load(UUID player) {
         for (int attempt = 0;; attempt++) {
             try {
                 return loadOnce(player);
@@ -88,9 +89,9 @@ final class OtisSettingsStore implements SettingsStore {
     }
 
     @Override
-    public void save(UUID player, SettingKey key, boolean enabled) {
+    public void save(UUID player, SettingKey key, SettingValue value) {
         URI uri = URI.create(this.baseUrl + "/v1/players/" + player + "/settings/" + key);
-        HttpRequest request = withAuthorization(HttpRequest.newBuilder(uri)).header("Content-Type", "application/json").PUT(HttpRequest.BodyPublishers.ofString(OtisJson.valueBody(enabled))).build();
+        HttpRequest request = withAuthorization(HttpRequest.newBuilder(uri)).header("Content-Type", "application/json").PUT(HttpRequest.BodyPublishers.ofString(OtisJson.valueBody(value))).build();
         HttpResponse<String> response = exchange(request, "save");
         int status = response.statusCode();
         if (status / 100 != 2) {
@@ -98,7 +99,7 @@ final class OtisSettingsStore implements SettingsStore {
         }
     }
 
-    private Map<SettingKey, Boolean> loadOnce(UUID player) {
+    private Map<SettingKey, SettingValue> loadOnce(UUID player) {
         URI uri = URI.create(this.baseUrl + "/v1/players/" + player + "/settings?namespace=" + NAMESPACE);
         HttpRequest request = withAuthorization(HttpRequest.newBuilder(uri)).GET().build();
         HttpResponse<String> response = exchange(request, "load");
