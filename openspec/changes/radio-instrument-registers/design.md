@@ -18,7 +18,7 @@ Zusätzlich kommen in der aktuellen Minecraft-Version vier Trompeten-Instrumente
 
 **Nicht-Ziele**
 
-- Keine Änderung an der Verschiebung des ganzen Songs.
+- Keine Verschiebung des ganzen Songs; sie entfällt (D4).
 - Keine Änderung am Schlagzeug.
 - Keine Mob-Köpfe als Instrumente.
 
@@ -42,7 +42,7 @@ Schlagzeug (basedrum, snare, hat) hat kein Register; es wird über die Taste auf
 
 ### D2 Erweiterungsinstrument statt Falten
 
-Liegt die (verschobene) Taste einer Melodie-Note außerhalb des Registers ihres Instruments, wählt `RadioInstrument` aus der Erweiterungsgruppe {Bass, Gitarre, Flöte, Glocke} das Instrument, dessen Register die Taste enthält. Gibt es mehrere, gewinnt das, dessen Grundtaste der Grundtaste des Instruments am nächsten liegt. Bei Gleichstand gilt die Reihenfolge der Aufzählung. Die vier Register decken Taste 30 bis 102 lückenlos ab, sodass für jede Taste in diesem Bereich ein Instrument existiert.
+Liegt die Taste einer Melodie-Note außerhalb des Registers ihres Instruments, wählt `RadioInstrument` aus der Erweiterungsgruppe {Bass, Gitarre, Flöte, Glocke} das Instrument, dessen Register die Taste enthält. Gibt es mehrere, gewinnt das, dessen Grundtaste der Grundtaste des Instruments am nächsten liegt. Bei Gleichstand gilt die Reihenfolge der Aufzählung. Die vier Register decken Taste 30 bis 102 lückenlos ab, sodass für jede Taste in diesem Bereich ein Instrument existiert.
 
 Beispiele:
 
@@ -55,13 +55,11 @@ Die Gruppe ist bewusst klein: Die vier Register decken den Gesamtbereich ab, die
 
 ### D3 Faltung nur außerhalb des Gesamtbereichs
 
-Liegt die verschobene Taste außerhalb von 30 bis 102, faltet `Pitch` sie um Oktaven in diesen Bereich. Die Tonhöhenklasse bleibt. Danach wählt D2 das Instrument. Diese Faltung ist die letzte Instanz; im Normalfall greift sie nicht.
+Liegt die Taste außerhalb von 30 bis 102, faltet `Pitch` sie um Oktaven in diesen Bereich. Die Tonhöhenklasse bleibt. Danach wählt D2 das Instrument. Diese Faltung ist die letzte Instanz; im Normalfall greift sie nicht.
 
-### D4 Verschiebung des Songs bleibt
+### D4 Keine Verschiebung des Songs
 
-`NoteMapper.transposition` bleibt unverändert: Der Median der Melodie-Tasten wird um ganze Oktaven in die Mitte gelegt (Note 12 der Harfe, also Taste 66). Die Verschiebung gilt für die Taste, bevor D1 bis D3 greifen.
-
-Das hat eine Grenze, die vor dem Merge geklärt werden muss (siehe „Offen“).
+Der Song wird nicht als Ganzes verschoben. Die frühere Verschiebung um ganze Oktaven, bis der Median der Melodie in der Mitte lag, entfällt. Die Register decken F#1 bis F#7 ab, also passt eine Stimme ohne Verschiebung in das Register ihres Instruments. Die Verschiebung hatte dagegen Noten von ihrer geschriebenen Oktave weggeschoben, sobald der Median nicht in der Mitte lag: Eine reine Bass-Stimme mit Median F#2 (Taste 42) wäre um zwei Oktaven nach oben gerückt und hätte auf Gitarre und Flöte gelegen. Jede Note klingt nun in der Oktave, die sie im MIDI-Stück hat. Nur eine Note außerhalb von 30 bis 102 wird gefaltet (D3).
 
 ### D5 Blechbläser und Trompeten
 
@@ -84,15 +82,14 @@ Die Mob-Köpfe des Notenblocks (Zombie, Skelett, Creeper, Drache, Wither-Skelett
 
 ## Offen
 
-- **Verschiebung bei tiefen Songs (Owner-Entscheidung).** D4 verschiebt den ganzen Song, sobald der Median nicht in der Mitte liegt. Eine reine Bass-Stimme mit Median F#2 (Taste 42) wird um zwei Oktaven nach oben verschoben. Dann landen ihre Noten auf Gitarre und Flöte statt auf dem Bass. Die Anforderung verlangt die Verschiebung ausdrücklich unverändert. Vor dem Merge soll der Owner entscheiden, ob die Verschiebung für diesen Fall entfällt oder pro Instrument gilt. Der Code-Pull-Request ändert das nicht ohne diese Entscheidung.
 - **Trompeten-Register.** `trumpet` und `trumpet_exposed` sind laut Wiki auf 54. `trumpet_weathered` und `trumpet_oxidized` sind mit 54 angenommen (D5); die Tuba-Variante kann tiefer liegen.
-- **Minecraft-Version.** Die Trompeten-Sounds gibt es nur in einer passenden Minecraft-Version. Ob der Server und der Client-Stand dazu passen, prüft diese Änderung nicht.
+- **Minecraft-Version.** Die Trompeten-Sounds gibt es ab Minecraft 26.1. Ob der Server und der Client-Stand dazu passen, prüft diese Änderung nicht.
 
 ## Tests
 
 Alle Tests folgen F.I.R.S.T.: Unit-Tests ohne Server, ohne Zeit und ohne Dateisystem, jeder Test baut seine Fixtures selbst.
 
 - `RadioInstrumentTest` (neu): Grundtasten (Tabelle D1 inklusive Trompeten), Registergrenzen, Erweiterungswahl nach D2 (Harfe 50 bis Gitarre, Harfe 35 bis Bass, Harfe 79 bis Flöte, Harfe 96 bis Glocke, Glocke 60 bis Gitarre).
-- `PitchTest`: `foldIntoSpan` faltet nur außerhalb von 30 bis 102, Tonhöhenklasse bleibt. Die Transposition bleibt getestet.
-- `NoteMapperTest`: Hohe Note über F#5 bleibt in der Oktave (Flöte, Note 13), Glocke bei 96, Bass-Stimme in ihrer Oktave (Taste 42 auf Bass, Note 12), zu tiefe Note (20 auf 32), zu hohe Note (110 auf 98), ganzer Song wird verschoben, Schlagzeug unverändert.
+- `PitchTest`: `foldIntoSpan` faltet nur außerhalb von 30 bis 102, Tonhöhenklasse bleibt. Die Tests der Transposition entfallen.
+- `NoteMapperTest`: Hohe Note über F#5 bleibt in der Oktave (Flöte, Note 13), Glocke bei 96, Bass-Stimme in ihrer Oktave (Taste 42 auf Bass, Note 12), reiner Bass-Song mit Median F#2 bleibt in seiner Oktave, zu tiefe Note (20 auf 32), zu hohe Note (110 auf 98), Schlagzeug unverändert.
 - `InstrumentMapperTest`: Blechbläser-Programme 56 bis 63 nach D5; Schlagzeug bleibt.

@@ -7,7 +7,7 @@ Die Lobby MUSS jede Note eines MIDI-Songs einem der 20 Notenblock-Instrumente zu
 
 Liegt eine Melodie-Note außerhalb des Registers ihres Instruments, MUSS die Lobby auf ein Erweiterungsinstrument wechseln: Bass, Gitarre, Flöte oder Glocke, deren Register die Taste enthält. Gibt es mehrere, MUSS das gewählt werden, dessen Grundtaste der des Instruments am nächsten liegt. Nur eine Note außerhalb des Gesamtbereichs von Taste 30 bis 102 DARF um Oktaven verschoben werden, bis sie darin liegt; ihre Tonhöhenklasse bleibt erhalten.
 
-Die Melodie eines Songs MUSS wie bisher um ganze Oktaven verschoben werden, sodass ihr Median in der Mitte des Bereichs liegt. Schlagzeug wird davon nicht verschoben.
+Die Lobby MUSS jede Melodie-Note in der Oktave spielen, in der sie geschrieben ist. Die Melodie DARF NICHT als Ganzes um Oktaven verschoben werden. Schlagzeug wird davon nicht betroffen.
 
 #### Scenario: Schlagzeug
 
@@ -26,18 +26,23 @@ Die Melodie eines Songs MUSS wie bisher um ganze Oktaven verschoben werden, soda
 
 #### Scenario: Hohe Melodie-Note über F#5 bleibt in der Oktave
 
-- **WHEN** eine Klavier-Stimme (Programm 0) die Taste 79 spielt und der Median des Songs in der Mitte liegt
+- **WHEN** eine Klavier-Stimme (Programm 0) die Taste 79 spielt
 - **THEN** wird die Flöte mit Note 13 gewählt, und die Note klingt eine Oktave über F#5 wie Taste 79, nicht eine Oktave tiefer
 
 #### Scenario: Sehr hohe Melodie-Note auf der Glocke
 
-- **WHEN** eine Klavier-Stimme die Taste 96 spielt und der Median des Songs in der Mitte liegt
+- **WHEN** eine Klavier-Stimme die Taste 96 spielt
 - **THEN** wird die Glocke mit Note 18 gewählt, und die Note klingt wie Taste 96
 
 #### Scenario: Bass-Stimme bleibt in ihrer Oktave
 
-- **WHEN** eine Bass-Stimme (Programm 32) die Taste 42 spielt und der Median des Songs in der Mitte liegt
+- **WHEN** eine Bass-Stimme (Programm 32) die Taste 42 spielt
 - **THEN** wird der Bass mit Note 12 gewählt, und die Note klingt wie Taste 42
+
+#### Scenario: Reiner Bass-Song bleibt in seiner Oktave
+
+- **WHEN** ein Song nur Bass-Noten (Programm 32) auf Taste 42 hat, also einen Median von F#2
+- **THEN** spielt jede Note den Bass mit Note 12 und klingt wie Taste 42, ohne Verschiebung
 
 #### Scenario: Blechbläser
 
@@ -46,10 +51,10 @@ Die Melodie eines Songs MUSS wie bisher um ganze Oktaven verschoben werden, soda
 
 #### Scenario: Zu tiefe Melodie-Note
 
-- **WHEN** eine Melodie-Note die Taste 20 hat, der Median in der Mitte liegt
+- **WHEN** eine Melodie-Note die Taste 20 hat
 - **THEN** wird sie um eine Oktave auf Taste 32 gefaltet, und sie spielt den Bass mit Note 2
 
 #### Scenario: Zu hohe Melodie-Note außerhalb des Gesamtbereichs
 
-- **WHEN** eine Melodie-Note die Taste 110 hat, der Median in der Mitte liegt
+- **WHEN** eine Melodie-Note die Taste 110 hat
 - **THEN** wird sie um eine Oktave auf Taste 98 gefaltet, und sie spielt die Glocke mit Note 20
