@@ -55,10 +55,11 @@ final class NoteMapper {
         Map<Track, Integer> shifts = trackShifts(notes);
         List<MidiNote> mapped = new ArrayList<>(notes.size());
         for (RawNote note : notes) {
-            RadioInstrument instrument = InstrumentMapper.of(note.channel(), note.program(), note.key());
             if (note.channel() == InstrumentMapper.DRUM_CHANNEL) {
-                mapped.add(new MidiNote(tick(note.micros()), instrument, Pitch.CENTRE, note.velocity()));
+                InstrumentMapper.DrumSound drum = InstrumentMapper.drum(note.key());
+                mapped.add(new MidiNote(tick(note.micros()), drum.instrument(), drum.semitone(), note.velocity()));
             } else {
+                RadioInstrument instrument = InstrumentMapper.of(note.channel(), note.program(), note.key());
                 int key = Pitch.foldIntoSpan(note.key() + shifts.get(Track.of(note)));
                 RadioInstrument played = instrument.playing(key);
                 mapped.add(new MidiNote(tick(note.micros()), played, played.semitoneOf(key), note.velocity()));
