@@ -46,7 +46,16 @@ class MidiSongParserTest {
         }
 
         Score note(long tick, int key, int velocity) throws Exception {
-            this.track.add(new MidiEvent(new ShortMessage(ShortMessage.NOTE_ON, 0, key, velocity), tick));
+            return noteOn(tick, 0, key, velocity);
+        }
+
+        Score noteOn(long tick, int channel, int key, int velocity) throws Exception {
+            this.track.add(new MidiEvent(new ShortMessage(ShortMessage.NOTE_ON, channel, key, velocity), tick));
+            return this;
+        }
+
+        Score controlChange(long tick, int channel, int controller, int value) throws Exception {
+            this.track.add(new MidiEvent(new ShortMessage(ShortMessage.CONTROL_CHANGE, channel, controller, value), tick));
             return this;
         }
 
@@ -113,6 +122,64 @@ class MidiSongParserTest {
         SongFormatException rejected = Assertions.assertThrows(SongFormatException.class, () -> parse(new byte[]{1, 2, 3}), "bytes that are no MIDI file must be rejected");
 
         Assertions.assertFalse(rejected.getMessage().isBlank(), "a rejection must name its reason");
+    }
+
+    @DisplayName("Without volume or expression controls a note keeps its velocity")
+    @Test
+    void velocityIsKeptWithoutControlChanges() throws Exception {
+        List<MidiNote> notes = parse(new Score().note(24, 66, 100).bytes());
+
+        Assertions.assertEquals(100, notes.getFirst().velocity(), "a channel without controls must keep the velocity of the note");
+    }
+
+    @DisplayName("Channel volume, control 7, scales the velocity of the notes that follow it")
+    @Test
+    void channelVolumeScalesTheVelocity() throws Exception {
+        List<MidiNote> notes = parse(new Score().controlChange(0, 0, 7, 64).note(24, 66, 127).bytes());
+
+        Assertions.assertEquals(64, notes.getFirst().velocity(), "a velocity of 127 at channel volume 64 must become 64");
+    }
+
+    @DisplayName("Expression, control 11, scales the velocity of the notes that follow it")
+    @Test
+    void expressionScalesTheVelocity() throws Exception {
+        List<MidiNote> notes = parse(new Score().controlChange(0, 0, 11, 64).note(24, 66, 127).bytes());
+
+        Assertions.assertEquals(64, notes.getFirst().velocity(), "a velocity of 127 at expression 64 must become 64");
+    }
+
+    @DisplayName("Channel volume and expression multiply and the result is rounded")
+    @Test
+    void volumeAndExpressionMultiply() throws Exception {
+        List<MidiNote> notes = parse(new Score().controlChange(0, 0, 7, 64).controlChange(0, 0, 11, 127).note(24, 66, 100).bytes());
+
+        Assertions.assertEquals(50, notes.getFirst().velocity(), "a velocity of 100 at volume 64 and expression 127 must become 50.39, rounded to 50");
+    }
+
+    @DisplayName("A control change on another channel does not scale the notes of this channel")
+    @Test
+    void controlChangeOnAnotherChannelDoesNotApply() throws Exception {
+        List<MidiNote> notes = parse(new Score().controlChange(0, 1, 7, 0).noteOn(24, 0, 66, 100).bytes());
+
+        Assertions.assertEquals(100, notes.getFirst().velocity(), "channel 1 volume must not change the notes of channel 0");
+    }
+
+    @DisplayName("A control change only scales the notes after its tick")
+    @Test
+    void controlChangeAppliesFromItsTickOn() throws Exception {
+        List<MidiNote> notes = parse(new Score().note(24, 66, 100).controlChange(48, 0, 7, 64).note(72, 66, 100).bytes());
+
+        Assertions.assertEquals(List.of(100, 50), notes.stream().map(MidiNote::velocity).toList(), "the note before the control change keeps 100, the one after it becomes 50");
+    }
+
+    @DisplayName("A note whose scaled velocity rounds to zero is not played")
+    @Test
+    void scaledVelocityOfZeroIsSkipped() throws Exception {
+        List<MidiNote> notes = parse(new Score().controlChange(0, 0, 7, 1).note(24, 66, 1).note(48, 66, 127).bytes());
+
+        Assertions.assertEquals(1, notes.size(), "the note that scales to zero must be dropped");
+        Assertions.assertEquals(20, notes.getFirst().tick(), "the note that remains must be the one at tick 48");
+        Assertions.assertEquals(1, notes.getFirst().velocity(), "a velocity of 127 at volume 1 must remain at velocity 1");
     }
 
     @DisplayName("A song with 60 000 notes and about 40 minutes of length is parsed without a limit")

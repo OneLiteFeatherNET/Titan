@@ -178,13 +178,22 @@ class NoteMapperTest {
         Assertions.assertEquals(List.of(42, 42), notes.stream().map(NoteMapperTest::soundingKey).toList(), "the bass notes must sound as key 42, their real octave");
     }
 
-    @DisplayName("Drum notes keep their key-based instrument and play at pitch one")
+    @DisplayName("Drum notes play the fixed note of their key and are not transposed")
     @Test
-    void drumNotesPlayAtPitchOne() {
+    void drumNotesPlayTheirFixedNote() {
         List<MidiNote> notes = NoteMapper.map(List.of(new NoteMapper.RawNote(0, DRUM_CHANNEL, 0, 36, 100)));
 
         Assertions.assertEquals(RadioInstrument.BASEDRUM, notes.getFirst().instrument(), "the bass drum key must play basedrum");
-        Assertions.assertEquals(12, notes.getFirst().semitone(), "a drum note must not be transposed or folded");
+        Assertions.assertEquals(6, notes.getFirst().semitone(), "the bass drum key must play note 6, not be transposed or folded");
+    }
+
+    @DisplayName("A pitched percussion program on a melodic channel follows the register like any other track")
+    @Test
+    void timpaniOnAMelodicChannelKeepsItsKeyPitch() {
+        List<MidiNote> notes = NoteMapper.map(List.of(new NoteMapper.RawNote(0, MELODY_CHANNEL, 47, 60, 100)));
+
+        Assertions.assertEquals(RadioInstrument.BASEDRUM, notes.getFirst().instrument(), "program 47 must play basedrum");
+        Assertions.assertEquals(6, notes.getFirst().semitone(), "key 60 on the basedrum register must be note 6");
     }
 
     @DisplayName("The notes come out sorted by tick")

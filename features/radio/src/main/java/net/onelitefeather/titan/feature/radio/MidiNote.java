@@ -23,7 +23,7 @@ import java.util.Objects;
  * @param tick       the game tick the note starts on, counted from the start of the song
  * @param instrument the note block instrument that plays it
  * @param semitone   the note block note, {@code 0} to {@link Pitch#HIGHEST}
- * @param velocity   the MIDI velocity, {@code 1} to {@code 127}
+ * @param velocity   the velocity after channel volume and expression, {@code 1} to {@code 127}
  */
 record MidiNote(int tick, RadioInstrument instrument, int semitone, int velocity) {
 
