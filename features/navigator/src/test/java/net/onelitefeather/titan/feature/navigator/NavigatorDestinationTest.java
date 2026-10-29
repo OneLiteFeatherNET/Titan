@@ -54,7 +54,28 @@ class NavigatorDestinationTest {
         Assertions.assertEquals(Destination.Group.SERVER, Destination.SURVIVAL.group());
         Assertions.assertEquals(Destination.Group.SERVER, Destination.CREATIVE.group());
         Assertions.assertEquals(Destination.Group.SERVER, Destination.BUILD.group());
+        Assertions.assertEquals(Destination.Group.SERVER, Destination.SKYGRID.group());
         Assertions.assertEquals(Destination.Group.STAGING, Destination.SLENDER_STAGING.group());
+    }
+
+    @DisplayName("SkyGrid forwards to the SkyGrid task and needs titan.navigator.skygrid")
+    @Test
+    void skygridForwardsToTheSkygridTaskBehindItsPermission() {
+        Assertions.assertEquals("SkyGrid", Destination.SKYGRID.task());
+        Assertions.assertEquals("titan.navigator.skygrid", Destination.SKYGRID.permission(), "SkyGrid must be gated by its permission");
+    }
+
+    @DisplayName("SkyGrid is shown with the diamond ore icon")
+    @Test
+    void skygridUsesTheDiamondOreIcon() {
+        Assertions.assertEquals(Material.DIAMOND_ORE, Destination.SKYGRID.item(List.of(Component.empty())).material());
+    }
+
+    @DisplayName("SkyGrid is visible only with titan.navigator.skygrid")
+    @Test
+    void skygridIsVisibleOnlyWithItsGrant() {
+        Assertions.assertFalse(Destination.visible(Set.of()).contains(Destination.SKYGRID), "SkyGrid must be hidden without titan.navigator.skygrid");
+        Assertions.assertTrue(Destination.visible(Set.of(Destination.SKYGRID)).contains(Destination.SKYGRID), "SkyGrid must be visible with titan.navigator.skygrid");
     }
 
     @DisplayName("Every main-grid destination names a description")
@@ -155,7 +176,7 @@ class NavigatorDestinationTest {
     void onlyTheGatedDestinationsNeedAPermission() {
         Set<Destination> permissioned = Arrays.stream(Destination.values()).filter(destination -> destination.permission() != null).collect(Collectors.toSet());
 
-        Assertions.assertEquals(Set.of(Destination.SLENDER, Destination.BOUNCE, Destination.TAMIAS, Destination.BUILD, Destination.SLENDER_STAGING, Destination.BOUNCE_STAGING, Destination.ELYTRA_RACE_STAGING, Destination.TAMIAS_STAGING), permissioned);
+        Assertions.assertEquals(Set.of(Destination.SLENDER, Destination.BOUNCE, Destination.TAMIAS, Destination.BUILD, Destination.SKYGRID, Destination.SLENDER_STAGING, Destination.BOUNCE_STAGING, Destination.ELYTRA_RACE_STAGING, Destination.TAMIAS_STAGING), permissioned);
     }
 
     @DisplayName("A staging entry never appears in the main menu, not even with its own grant")

@@ -59,6 +59,11 @@ class NavigatorPlayerCountTest {
         return inventory.getItemStack(21);
     }
 
+    // The team menu shows four servers, so the centred server row moves Survival to slot 20.
+    private static ItemStack teamSurvival(Inventory inventory) {
+        return inventory.getItemStack(20);
+    }
+
     @DisplayName("The first refresh shows the count under the mode, in both menus")
     @Test
     void firstRefreshShowsTheCount(Env env) {
@@ -68,7 +73,7 @@ class NavigatorPlayerCountTest {
             tick(env, 2);
 
             Assertions.assertEquals(expected(4, "players", "A survival server", HINT), lore(survival(fixture.module().publicInventory())));
-            Assertions.assertEquals(expected(4, "players", "A survival server", HINT), lore(survival(fixture.module().teamInventory())));
+            Assertions.assertEquals(expected(4, "players", "A survival server", HINT), lore(teamSurvival(fixture.module().teamInventory())));
         }
     }
 
@@ -135,7 +140,7 @@ class NavigatorPlayerCountTest {
             tick(env, 2);
 
             Assertions.assertEquals(expected(4, "Spieler", "Ein Survival-Server", GERMAN_HINT), lore(survival(fixture.module().publicInventory(Locale.GERMAN))), "the German public menu must get the count refresh");
-            Assertions.assertEquals(expected(4, "Spieler", "Ein Survival-Server", GERMAN_HINT), lore(survival(fixture.module().teamInventory(Locale.GERMAN))), "the German team menu must get the count refresh");
+            Assertions.assertEquals(expected(4, "Spieler", "Ein Survival-Server", GERMAN_HINT), lore(teamSurvival(fixture.module().teamInventory(Locale.GERMAN))), "the German team menu must get the count refresh");
         }
     }
 

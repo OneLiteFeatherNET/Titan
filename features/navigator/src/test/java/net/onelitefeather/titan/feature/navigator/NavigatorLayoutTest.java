@@ -27,7 +27,8 @@ class NavigatorLayoutTest {
 
     private static final List<Destination> FOUR_MINIGAMES = List.of(Destination.ELYTRA_RACE, Destination.BOUNCE, Destination.TAMIAS, Destination.SLENDER);
     private static final List<Destination> THREE_SERVERS = List.of(Destination.SURVIVAL, Destination.CREATIVE, Destination.BUILD);
-    private static final List<Destination> ALL_MAIN = List.of(Destination.ELYTRA_RACE, Destination.BOUNCE, Destination.TAMIAS, Destination.SLENDER, Destination.SURVIVAL, Destination.CREATIVE, Destination.BUILD);
+    private static final List<Destination> FOUR_SERVERS = List.of(Destination.SURVIVAL, Destination.CREATIVE, Destination.BUILD, Destination.SKYGRID);
+    private static final List<Destination> ALL_MAIN = List.of(Destination.ELYTRA_RACE, Destination.BOUNCE, Destination.TAMIAS, Destination.SLENDER, Destination.SURVIVAL, Destination.CREATIVE, Destination.BUILD, Destination.SKYGRID);
 
     @DisplayName("The navigator has four rows of nine slots")
     @Test
@@ -119,6 +120,17 @@ class NavigatorLayoutTest {
         Assertions.assertEquals(21, slots.get(Destination.SURVIVAL));
         Assertions.assertEquals(22, slots.get(Destination.CREATIVE));
         Assertions.assertEquals(23, slots.get(Destination.BUILD));
+    }
+
+    @DisplayName("Four servers sit on slots 20 to 23, centred, with SkyGrid last")
+    @Test
+    void fourServersSitOnSlots20To23() {
+        Map<Destination, Integer> slots = NavigatorLayout.mainSlots(FOUR_SERVERS);
+
+        Assertions.assertEquals(20, slots.get(Destination.SURVIVAL), "Survival moves left once four servers are shown");
+        Assertions.assertEquals(21, slots.get(Destination.CREATIVE));
+        Assertions.assertEquals(22, slots.get(Destination.BUILD));
+        Assertions.assertEquals(23, slots.get(Destination.SKYGRID), "SkyGrid follows Build in the server row");
     }
 
     @DisplayName("Minigames and servers never share a slot, even with every entry visible")
