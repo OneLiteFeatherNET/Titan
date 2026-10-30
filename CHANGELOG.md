@@ -1,5 +1,20 @@
 # Changelog
 
+## [4.12.0](https://github.com/OneLiteFeatherNET/Titan/compare/v4.11.1...v4.12.0) (2026-10-30)
+
+
+### Features
+
+* **navigator:** add a permission-gated skygrid entry ([#532](https://github.com/OneLiteFeatherNET/Titan/issues/532)) ([1284f70](https://github.com/OneLiteFeatherNET/Titan/commit/1284f700d95995941f7508576334c112f2e65d4b))
+* **radio:** map every midi program and drum key to a fitting note block sound ([#528](https://github.com/OneLiteFeatherNET/Titan/issues/528)) ([670f720](https://github.com/OneLiteFeatherNET/Titan/commit/670f72002940ad17662cc7e18346529f50d22ee8))
+* **radio:** show original artist and midi source instead of the disc description ([#527](https://github.com/OneLiteFeatherNET/Titan/issues/527)) ([21f47c8](https://github.com/OneLiteFeatherNET/Titan/commit/21f47c836970eaf302a2fca78dec9a4f29b25cf6))
+
+
+### Bug Fixes
+
+* **deps:** update dependency org.flywaydb:flyway-database-postgresql to v13.12.0 ([2af9b99](https://github.com/OneLiteFeatherNET/Titan/commit/2af9b99a6cc34876e2a91b27851e2f1a1c09dd17))
+* **deps:** update flyway to v13.12.0 ([#531](https://github.com/OneLiteFeatherNET/Titan/issues/531)) ([2af9b99](https://github.com/OneLiteFeatherNET/Titan/commit/2af9b99a6cc34876e2a91b27851e2f1a1c09dd17))
+
 ## [4.11.1](https://github.com/OneLiteFeatherNET/Titan/compare/v4.11.0...v4.11.1) (2026-10-27)
 
 
