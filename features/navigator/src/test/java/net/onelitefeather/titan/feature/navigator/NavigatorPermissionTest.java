@@ -373,9 +373,9 @@ class NavigatorPermissionTest {
         }
     }
 
-    @DisplayName("Starting the navigator creates ninety-six shared inventories: sixty-four for the main menu and thirty-two for the submenu")
+    @DisplayName("Starting the navigator creates one hundred sixty shared inventories: one hundred twenty-eight for the main menu and thirty-two for the submenu")
     @Test
-    void startCreatesNinetySixSharedInventories(Env env) {
+    void startCreatesOneHundredSixtySharedInventories(Env env) {
         try (NavigatorFixture fixture = start(env, new RecordingDeliver(), new FakePermissionService())) {
             Set<Inventory> main = new HashSet<>();
             for (Set<Destination> granted : subsets(Destination.livePermissioned())) {
@@ -392,11 +392,11 @@ class NavigatorPermissionTest {
                 }
             }
 
-            Assertions.assertEquals(64, main.size(), "four live permissions plus the staging hub bit, in two languages, make sixty-four distinct main menus");
+            Assertions.assertEquals(128, main.size(), "five live permissions plus the staging hub bit, in two languages, make one hundred twenty-eight distinct main menus");
             Assertions.assertEquals(32, submenu.size(), "four staging permissions in two languages make thirty-two distinct submenus");
             Set<Inventory> all = new HashSet<>(main);
             all.addAll(submenu);
-            Assertions.assertEquals(96, all.size(), "ninety-six distinct shared inventories in total");
+            Assertions.assertEquals(160, all.size(), "one hundred sixty distinct shared inventories in total");
         }
     }
 
