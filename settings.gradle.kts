@@ -55,7 +55,7 @@ dependencyResolutionManagement {
             version("logback", "1.6.6")
             version("sentry", "8.62.0")
             // The API the OpenTelemetry Java agent 2.16.0 bundles (SDK/API 1.50.0); keep both in step.
-            version("opentelemetry", "1.67.0")
+            version("opentelemetry", "1.68.0")
 
             version("hibernate", "7.4.14.Final")
             version("hikaricp", "7.1.0")
