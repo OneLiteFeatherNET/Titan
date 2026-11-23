@@ -59,7 +59,7 @@ dependencyResolutionManagement {
 
             version("hibernate", "7.4.14.Final")
             version("hikaricp", "7.1.0")
-            version("postgresql", "42.7.14")
+            version("postgresql", "42.7.15")
             version("flyway", "13.12.0")
             version("testcontainers", "2.0.5")
 
