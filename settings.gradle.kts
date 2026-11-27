@@ -43,7 +43,7 @@ dependencyResolutionManagement {
             version("minestom-extensions", "2.2.0")
             version("pica", "0.1.6")
 
-            version("mockito", "5.24.0")
+            version("mockito", "5.25.0")
             version("archunit", "1.5.1")
             version("pmd", "7.28.0")
             version("avaje-inject", "12.7")
